@@ -60,7 +60,7 @@ importers:
 
   .:
     devDependencies:
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:tooling/prettier
       '@turbo/gen':
@@ -82,16 +82,16 @@ importers:
         specifier: 'catalog:'
         version: 0.37.2
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tailwind-config':
+      '@filc/tailwind-config':
         specifier: workspace:*
         version: link:../../tooling/tailwind
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -191,19 +191,19 @@ importers:
         specifier: 2.2.2
         version: 2.2.2
     devDependencies:
-      '@acme/api':
+      '@filc/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tailwind-config':
+      '@filc/tailwind-config':
         specifier: workspace:*
         version: link:../../tooling/tailwind
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@babel/core':
@@ -236,19 +236,19 @@ importers:
 
   apps/nextjs:
     dependencies:
-      '@acme/api':
+      '@filc/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@acme/auth':
+      '@filc/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@acme/db':
+      '@filc/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@acme/ui':
+      '@filc/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@acme/validators':
+      '@filc/validators':
         specifier: workspace:*
         version: link:../../packages/validators
       '@t3-oss/env-nextjs':
@@ -285,16 +285,16 @@ importers:
         specifier: 'catalog:'
         version: 3.24.1
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tailwind-config':
+      '@filc/tailwind-config':
         specifier: workspace:*
         version: link:../../tooling/tailwind
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -327,13 +327,13 @@ importers:
 
   packages/api:
     dependencies:
-      '@acme/auth':
+      '@filc/auth':
         specifier: workspace:*
         version: link:../auth
-      '@acme/db':
+      '@filc/db':
         specifier: workspace:*
         version: link:../db
-      '@acme/validators':
+      '@filc/validators':
         specifier: workspace:*
         version: link:../validators
       '@trpc/server':
@@ -346,13 +346,13 @@ importers:
         specifier: 'catalog:'
         version: 3.24.1
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       eslint:
@@ -367,7 +367,7 @@ importers:
 
   packages/auth:
     dependencies:
-      '@acme/db':
+      '@filc/db':
         specifier: workspace:*
         version: link:../db
       '@auth/core':
@@ -395,13 +395,13 @@ importers:
         specifier: 'catalog:'
         version: 3.24.1
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/react':
@@ -432,13 +432,13 @@ importers:
         specifier: 'catalog:'
         version: 3.24.1
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       dotenv-cli:
@@ -484,16 +484,16 @@ importers:
         specifier: ^2.6.0
         version: 2.6.0
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tailwind-config':
+      '@filc/tailwind-config':
         specifier: workspace:*
         version: link:../../tooling/tailwind
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/react':
@@ -521,13 +521,13 @@ importers:
         specifier: 'catalog:'
         version: 3.24.1
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       eslint:
@@ -570,10 +570,10 @@ importers:
         specifier: ^8.21.0
         version: 8.21.0(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3)
     devDependencies:
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../prettier
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../typescript
       eslint:
@@ -600,7 +600,7 @@ importers:
         specifier: ^0.6.11
         version: 0.6.11(@ianvs/prettier-plugin-sort-imports@4.4.1(prettier@3.4.2))(prettier@3.4.2)
     devDependencies:
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../typescript
       '@types/node':
@@ -622,13 +622,13 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@types/node@22.10.10)(typescript@5.7.3)))
     devDependencies:
-      '@acme/eslint-config':
+      '@filc/eslint-config':
         specifier: workspace:*
         version: link:../eslint
-      '@acme/prettier-config':
+      '@filc/prettier-config':
         specifier: workspace:*
         version: link:../prettier
-      '@acme/tsconfig':
+      '@filc/tsconfig':
         specifier: workspace:*
         version: link:../typescript
       '@types/node':

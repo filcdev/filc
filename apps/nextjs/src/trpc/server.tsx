@@ -4,9 +4,9 @@ import { headers } from "next/headers";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 
-import type { AppRouter } from "@acme/api";
-import { appRouter, createTRPCContext } from "@acme/api";
-import { auth } from "@acme/auth";
+import type { AppRouter } from "@filc/api";
+import { appRouter, createTRPCContext } from "@filc/api";
+import { auth } from "@filc/auth";
 
 import { createQueryClient } from "./query-client";
 
