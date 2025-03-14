@@ -1,0 +1,115 @@
+enum Day {
+    Monday
+    Tuesday
+    Wednesday
+    Thursday
+    Friday
+    Saturday
+    Sunday
+}
+
+enum WeekType {
+    WeekA
+    WeekB
+    Both
+    None
+}
+
+model Room {
+    id    String @id @default(cuid())
+    name  String
+    short String
+
+    lessons Lesson[]
+    subtitutions Substitution[]
+
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
+}
+
+model Subject {
+    id    String @id @default(cuid())
+    name  String
+    short String
+
+    lessons Lesson[]
+    substitutions Substitution[]
+
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
+}
+
+model Teacher {
+    id    String @id @default(cuid())
+    email String
+    name  String
+    short String
+
+    lessons Lesson[]
+    substituted Substitution[]
+    missing Substitution[] @relation("MissingTeacher")
+
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
+}
+
+model Class {
+    id   String @id @default(cuid())
+    name String
+
+    lessons Lesson[]
+    substitutions Substitution[]
+    users User[]
+
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
+}
+
+model Lesson {
+    id String @id @default(cuid())
+
+    day      Day
+    weekType WeekType
+    lesson   Int
+
+    group String?
+
+    classId String?
+    class   Class?  @relation(fields: [classId], references: [id])
+
+    subjectId String
+    subject   Subject @relation(fields: [subjectId], references: [id])
+
+    teacherId String
+    teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+    roomId String
+    room   Room   @relation(fields: [roomId], references: [id])
+
+    subtitutions Substitution[]
+}
+
+model Substitution {
+    id   String   @id @default(cuid())
+    date DateTime
+
+    consolidated Boolean
+
+    lessonId String
+    lesson Lesson @relation(fields: [lessonId], references: [id])
+
+    missingTeacherId String
+    missingTeacher   Teacher @relation("MissingTeacher", fields: [missingTeacherId], references: [id])
+
+    teacherId String
+    teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+    subject   Subject @relation(fields: [subjectId], references: [id])
+    subjectId String
+
+    room   Room   @relation(fields: [roomId], references: [id])
+    roomId String
+
+    class   Class  @relation(fields: [classId], references: [id])
+    classId String
+}
