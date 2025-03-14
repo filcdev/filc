@@ -10,7 +10,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import type { Session } from "@filc/auth";
+import type { Session, User } from "@filc/auth";
 import { auth, validateToken } from "@filc/auth";
 import { prisma } from "@filc/db";
 
@@ -21,8 +21,11 @@ import { prisma } from "@filc/db";
  */
 const isomorphicGetSession = async (headers: Headers) => {
   const authToken = headers.get("Authorization") ?? null;
-  if (authToken) return validateToken(authToken);
-  return auth();
+  if (authToken && authToken.startsWith("Bearer ")) {
+    const token = authToken.slice(7); // Remove 'Bearer ' prefix
+    return await validateToken(token);
+  }
+  return await auth();
 };
 
 /**
@@ -39,18 +42,19 @@ const isomorphicGetSession = async (headers: Headers) => {
  */
 export const createTRPCContext = async (opts: {
   headers: Headers;
-  session: Session | null;
 }) => {
-  const authToken = opts.headers.get("Authorization") ?? null;
-  const session = await isomorphicGetSession(opts.headers);
+  const sessionData = await isomorphicGetSession(opts.headers);
+  const session = sessionData?.session ?? null;
+  const user = sessionData?.user ?? null;
 
   const source = opts.headers.get("x-trpc-source") ?? "unknown";
-  console.log(">>> tRPC Request from", source, "by", session?.user);
+  console.log(">>> tRPC Request from", source, "by", user?.username);
 
   return {
     session,
-    db,
-    token: authToken,
+    user,
+    db: prisma,
+    headers: opts.headers,
   };
 };
 
@@ -99,12 +103,6 @@ export const createTRPCRouter = t.router;
 const timingMiddleware = t.middleware(async ({ next, path }) => {
   const start = Date.now();
 
-  if (t._config.isDev) {
-    // artificial delay in dev 100-500ms
-    const waitMs = Math.floor(Math.random() * 400) + 100;
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
-  }
-
   const result = await next();
 
   const end = Date.now();
@@ -133,13 +131,15 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
+    if (!ctx.session || !ctx.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
     return next({
       ctx: {
         // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
+        session: ctx.session,
+        // infers the `user` as non-nullable
+        user: ctx.user,
       },
     });
   });

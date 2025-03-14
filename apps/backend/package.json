@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@filc/api": "workspace:*",
     "@filc/db": "workspace:*",
     "@trpc/server": "catalog:",
     "zod": "catalog:"

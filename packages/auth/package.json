@@ -1,5 +1,38 @@
 {
-  "name": "auth",
+  "name": "@filc/auth",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "tsc",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@filc/db": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@filc/eslint-config": "workspace:*",
+    "@filc/prettier-config": "workspace:*",
+    "@filc/tsconfig": "workspace:*",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  },
+  "prettier": "@filc/prettier-config"
 }
