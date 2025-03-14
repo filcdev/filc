@@ -1,0 +1,85 @@
+export const Permission = {
+    VIEW_USERS: 'VIEW_USERS',
+    CREATE_USERS: 'CREATE_USERS',
+    UPDATE_USERS: 'UPDATE_USERS',
+    DELETE_USERS: 'DELETE_USERS',
+  
+    VIEW_ROLES: 'VIEW_ROLES',
+    CREATE_ROLES: 'CREATE_ROLES',
+    UPDATE_ROLES: 'UPDATE_ROLES',
+    DELETE_ROLES: 'DELETE_ROLES',
+  
+    MANAGE_PERMISSIONS: 'MANAGE_PERMISSIONS',
+  
+    VIEW_CLASSES: 'VIEW_CLASSES',
+    CREATE_CLASSES: 'CREATE_CLASSES',
+    UPDATE_CLASSES: 'UPDATE_CLASSES',
+    DELETE_CLASSES: 'DELETE_CLASSES',
+  
+    VIEW_SUBSTITUTIONS: 'VIEW_SUBSTITUTIONS',
+    CREATE_SUBSTITUTIONS: 'CREATE_SUBSTITUTIONS',
+    UPDATE_SUBSTITUTIONS: 'UPDATE_SUBSTITUTIONS',
+    DELETE_SUBSTITUTIONS: 'DELETE_SUBSTITUTIONS',
+    CONSOLIDATE_SUBSTITUTIONS: 'CONSOLIDATE_SUBSTITUTIONS',
+  
+    VIEW_ROOMS: 'VIEW_ROOMS',
+    CREATE_ROOMS: 'CREATE_ROOMS',
+    UPDATE_ROOMS: 'UPDATE_ROOMS',
+    DELETE_ROOMS: 'DELETE_ROOMS',
+  
+    VIEW_SUBJECTS: 'VIEW_SUBJECTS',
+    CREATE_SUBJECTS: 'CREATE_SUBJECTS',
+    UPDATE_SUBJECTS: 'UPDATE_SUBJECTS',
+    DELETE_SUBJECTS: 'DELETE_SUBJECTS',
+  
+    VIEW_TEACHERS: 'VIEW_TEACHERS',
+    CREATE_TEACHERS: 'CREATE_TEACHERS',
+    UPDATE_TEACHERS: 'UPDATE_TEACHERS',
+    DELETE_TEACHERS: 'DELETE_TEACHERS',
+  
+    VIEW_LESSONS: 'VIEW_LESSONS',
+    CREATE_LESSONS: 'CREATE_LESSONS',
+    UPDATE_LESSONS: 'UPDATE_LESSONS',
+    DELETE_LESSONS: 'DELETE_LESSONS',
+  
+    ADMIN: 'ADMIN'
+  } as const
+  
+  export type PermissionType = (typeof Permission)[keyof typeof Permission]
+  
+  export const RolePermissions = {
+    ADMIN: [Permission.ADMIN],
+    TEACHER: [
+      Permission.VIEW_USERS,
+      Permission.VIEW_CLASSES,
+      Permission.CREATE_CLASSES,
+      Permission.UPDATE_CLASSES,
+      Permission.VIEW_SUBSTITUTIONS,
+      Permission.VIEW_ROOMS,
+      Permission.VIEW_SUBJECTS,
+      Permission.VIEW_TEACHERS,
+      Permission.VIEW_LESSONS
+    ],
+    STUDENT: [Permission.VIEW_CLASSES, Permission.VIEW_SUBSTITUTIONS]
+  }
+  
+  export const DefaultRoles = [
+    {
+      name: 'Admin',
+      description: 'System administrator with full access',
+      permissions: RolePermissions.ADMIN,
+      color: '#FF5555'
+    },
+    {
+      name: 'Teacher',
+      description: 'Teacher with class management access',
+      permissions: RolePermissions.TEACHER,
+      color: '#55AA55'
+    },
+    {
+      name: 'Student',
+      description: 'Regular student user',
+      permissions: RolePermissions.STUDENT,
+      color: '#5555FF'
+    }
+  ]

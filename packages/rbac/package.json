@@ -1,0 +1,21 @@
+{
+  "name": "@filc/rbac",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "license": "PROPRIETARY",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@filc/eslint-config": "workspace:*",
+    "@filc/prettier-config": "workspace:*",
+    "@filc/tsconfig": "workspace:*"
+  },
+  "main": "./src/permissions.ts",
+  "prettier": "@filc/prettier-config"
+}
