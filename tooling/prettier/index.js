@@ -10,6 +10,10 @@ const config = {
     "@ianvs/prettier-plugin-sort-imports",
     "prettier-plugin-tailwindcss",
   ],
+  tabWidth: 2,
+  semi: false,
+  singleQuote: true,
+  trailingComma: "none",
   tailwindConfig: fileURLToPath(
     new URL("../../tooling/tailwind/web.ts", import.meta.url),
   ),

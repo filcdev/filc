@@ -1,49 +1,32 @@
 {
   "name": "@filc/db",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "default": "./src/client.ts"
-    },
-    "./schema": {
-      "types": "./dist/schema.d.ts",
-      "default": "./src/schema.ts"
-    }
-  },
-  "license": "MIT",
   "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev --skip-generate",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
     "build": "tsc",
-    "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev": "tsc",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
-    "lint": "eslint",
-    "push": "pnpm with-env drizzle-kit push",
-    "studio": "pnpm with-env drizzle-kit studio",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "with-env": "dotenv -e ../../.env --"
-  },
-  "dependencies": {
-    "@vercel/postgres": "^0.10.0",
-    "drizzle-orm": "^0.38.4",
-    "drizzle-zod": "^0.6.1",
-    "zod": "catalog:"
+    "dev": "tsc -w",
+    "lint": "eslint"
   },
   "devDependencies": {
     "@filc/eslint-config": "workspace:*",
     "@filc/prettier-config": "workspace:*",
     "@filc/tsconfig": "workspace:*",
-    "dotenv-cli": "^8.0.0",
-    "drizzle-kit": "^0.30.2",
     "eslint": "catalog:",
     "prettier": "catalog:",
+    "prisma": "^6.5.0",
     "typescript": "catalog:"
   },
+  "dependencies": {
+    "@prisma/client": "^6.5.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
   "prettier": "@filc/prettier-config"
 }

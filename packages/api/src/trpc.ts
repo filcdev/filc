@@ -12,7 +12,7 @@ import { ZodError } from "zod";
 
 import type { Session } from "@filc/auth";
 import { auth, validateToken } from "@filc/auth";
-import { db } from "@filc/db/client";
+import { prisma } from "@filc/db";
 
 /**
  * Isomorphic Session getter for API requests

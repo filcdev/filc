@@ -1,0 +1,31 @@
+{
+  "name": "@filc/backend",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "tsx --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@filc/db": "workspace:*",
+    "@trpc/server": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@filc/eslint-config": "workspace:*",
+    "@filc/prettier-config": "workspace:*",
+    "@filc/tsconfig": "workspace:*",
+    "@types/express": "^5.0.0",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "express": "^4.21.2",
+    "prettier": "catalog:",
+    "tsx": "^4.19.3",
+    "typescript": "catalog:"
+  }
+}

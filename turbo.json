@@ -43,6 +43,15 @@
     "ui-add": {
       "cache": false,
       "interactive": true
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:deploy": {
+      "cache": false
     }
   },
   "globalEnv": [

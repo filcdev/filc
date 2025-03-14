@@ -1,4 +1,0 @@
-{
-  "extends": "@filc/tsconfig/base.json",
-  "include": ["routes"]
-}
