@@ -9,7 +9,7 @@
       "default": "./src/index.ts"
     }
   },
-  "license": "PROPRIETARY",
+  "license": "MIT",
   "scripts": {
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",

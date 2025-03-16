@@ -7,7 +7,7 @@
     "./native": "./native.ts",
     "./web": "./web.ts"
   },
-  "license": "PROPRIETARY",
+  "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
