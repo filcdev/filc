@@ -9,7 +9,7 @@
       "default": "./src/index.ts"
     }
   },
-  "license": "MIT",
+  "license": "PROPRIETARY",
   "scripts": {
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
@@ -21,6 +21,7 @@
   "dependencies": {
     "@filc/auth": "workspace:*",
     "@filc/db": "workspace:*",
+    "@filc/rbac": "workspace:*",
     "@trpc/server": "catalog:",
     "superjson": "2.2.2",
     "zod": "catalog:"

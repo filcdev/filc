@@ -1,11 +1,11 @@
 {
-  "name": "create-t3-turbo",
+  "name": "filc",
   "private": true,
   "engines": {
-    "node": ">=22.11.0",
-    "pnpm": "^9.15.4"
+    "node": ">=23.9.0",
+    "pnpm": "^10.6.3"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.6.3",
   "scripts": {
     "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
@@ -18,7 +18,7 @@
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
     "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
-    "lint:ws": "pnpm dlx sherif@latest",
+    "lint:ws": "pnpm dlx sherif@latest -f",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
     "ui-add": "turbo run ui-add"

@@ -109,6 +109,9 @@ importers:
       '@filc/db':
         specifier: workspace:*
         version: link:../db
+      '@filc/rbac':
+        specifier: workspace:*
+        version: link:../rbac
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.0.0-rc.824(typescript@5.7.3)
@@ -143,6 +146,9 @@ importers:
       '@filc/db':
         specifier: workspace:*
         version: link:../db
+      '@filc/rbac':
+        specifier: workspace:*
+        version: link:../rbac
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -207,6 +213,10 @@ importers:
         version: 5.7.3
 
   packages/rbac:
+    dependencies:
+      '@filc/db':
+        specifier: workspace:*
+        version: link:../db
     devDependencies:
       '@filc/eslint-config':
         specifier: workspace:*
@@ -217,6 +227,9 @@ importers:
       '@filc/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      typescript:
+        specifier: ^5.0.0
+        version: 5.7.3
 
   packages/ui:
     dependencies:
