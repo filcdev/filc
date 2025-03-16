@@ -3,14 +3,41 @@
  */
 
 import type { Prisma } from "@filc/db";
+import type { PermissionType } from "@filc/rbac";
 
 export type Session = Prisma.SessionGetPayload<{
   include: {
     user: {
       include: {
         roles: {
-          select: { id: true; name: true; description: true; color: true }
+          include: {
+            permissions: {
+              select: { id: true; name: true }
+            }
+          }
         }
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
+        }
+      }
+    }
+  }
+}>;
+
+export type User = Prisma.UserGetPayload<{
+  include: {
+    roles: {
+      include: {
+        permissions: {
+          select: { id: true; name: true }
+        }
+      }
+    }
+    permissionOverrides: {
+      include: {
+        permission: true
       }
     }
   }
@@ -33,20 +60,35 @@ export interface RegisterCredentials {
   username: string;
   password: string;
   classId: string;
+  roles?: string[]; // Role IDs to assign
 }
 
 export interface AuthResult {
   user: Prisma.UserGetPayload<{
-          include: {
-            roles: {
-              select: { id: true; name: true; description: true; color: true }
-            }
+    include: {
+      roles: {
+        include: {
+          permissions: {
+            select: { id: true; name: true }
           }
-        }>;
+        }
+      }
+      permissionOverrides: {
+        include: {
+          permission: true
+        }
+      }
+    }
+  }>;
   token: string;
 }
 
 export interface AuthError {
   message: string;
   code: 'auth/invalid-credentials' | 'auth/user-exists' | 'auth/unknown' | 'auth/unauthorized';
+}
+
+export interface AuthorizeOptions {
+  requiredPermissions?: PermissionType[];
+  anyOf?: PermissionType[];
 }

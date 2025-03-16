@@ -1,43 +1,23 @@
-/**
- * YOU PROBABLY DON'T NEED TO EDIT THIS FILE, UNLESS:
- * 1. You want to modify request context (see Part 1)
- * 2. You want to create a new middleware or type of procedure (see Part 3)
- *
- * tl;dr - this is where all the tRPC server stuff is created and plugged in.
- * The pieces you will need to use are documented accordingly near the end
- */
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import type { Session, User } from "@filc/auth";
 import { auth, validateToken } from "@filc/auth";
 import { prisma } from "@filc/db";
+import { hasAnyPermission } from "@filc/rbac";
+import type { PermissionType } from "@filc/rbac";
 
-/**
- * Isomorphic Session getter for API requests
- * - Expo requests will have a session token in the Authorization header
- * - Next.js requests will have a session token in cookies
- */
 const isomorphicGetSession = async (headers: Headers) => {
   const authToken = headers.get("Authorization") ?? null;
-  if (authToken && authToken.startsWith("Bearer ")) {
-    const token = authToken.slice(7); // Remove 'Bearer ' prefix
+  if (authToken?.startsWith("Bearer ")) {
+    const token = authToken.slice(7);
     return await validateToken(token);
   }
+
   return await auth();
 };
 
 /**
- * 1. CONTEXT
- *
- * This section defines the "contexts" that are available in the backend API.
- *
- * These allow you to access things when processing a request, like the database, the session, etc.
- *
- * This helper generates the "internals" for a tRPC context. The API handler and RSC clients each
- * wrap this and provides the required context.
- *
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: {
@@ -53,9 +33,13 @@ export const createTRPCContext = async (opts: {
   return {
     session,
     user,
-    db: prisma,
+    prisma,
     headers: opts.headers,
-  };
+    authorize: async (permissions: PermissionType[]) => {
+      if (!user) return false;
+      return hasAnyPermission(user, permissions);
+    }
+  }
 };
 
 /**
@@ -140,6 +124,10 @@ export const protectedProcedure = t.procedure
         session: ctx.session,
         // infers the `user` as non-nullable
         user: ctx.user,
+        // infers the `prisma` as non-nullable
+        prisma: ctx.prisma,
+        // infers the `authorize` as non-nullable
+        authorize: ctx.authorize,
       },
     });
   });

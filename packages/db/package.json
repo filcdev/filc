@@ -25,7 +25,10 @@
     "@prisma/client": "^6.5.0"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./dist/index.d.ts"
+    }
   },
   "main": "./src/index.ts",
   "prettier": "@filc/prettier-config"

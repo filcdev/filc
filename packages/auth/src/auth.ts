@@ -1,13 +1,13 @@
 import { z } from 'zod'
-
-import type { Session , Prisma } from '@filc/db'
+import type { Session, Prisma } from '@filc/db'
 import { prisma } from '@filc/db'
-
+import { hasPermission, hasAnyPermission } from '@filc/rbac'
 import type {
   AuthError,
   AuthResult,
   LoginCredentials,
   RegisterCredentials,
+  AuthorizeOptions
 } from './types'
 import {
   comparePassword,
@@ -27,7 +27,8 @@ export const registerSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3).max(20),
   password: z.string().min(8),
-  classId: z.string()
+  classId: z.string(),
+  roles: z.array(z.string()).optional()
 })
 
 /**
@@ -51,7 +52,16 @@ export async function login(
       where: { email: credentials.email },
       include: {
         roles: {
-          select: { id: true, name: true, description: true, color: true }
+          include: {
+            permissions: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
         }
       }
     })
@@ -68,6 +78,7 @@ export async function login(
       credentials.password,
       user.password
     )
+
     if (!passwordValid) {
       return {
         code: 'auth/invalid-credentials',
@@ -86,15 +97,8 @@ export async function login(
 
     // Remove password from user object
     const { password: _, ...safeUser } = user
-
     return {
-      user: safeUser as Prisma.UserGetPayload<{
-        include: {
-          roles: {
-            select: { id: true; name: true; description: true; color: true }
-          }
-        }
-      }>,
+      user: safeUser,
       token
     }
   } catch (error) {
@@ -139,17 +143,31 @@ export async function register(
     // Hash password
     const hashedPassword = await hashPassword(data.password)
 
-    // Create user
+    // Create user with roles
     const user = await prisma.user.create({
       data: {
         email: data.email,
         username: data.username,
         password: hashedPassword,
-        classId: data.classId
+        classId: data.classId,
+        ...(data.roles && {
+          roles: {
+            connect: data.roles.map(roleId => ({ id: roleId }))
+          }
+        })
       },
       include: {
         roles: {
-          select: { id: true, name: true, description: true, color: true }
+          include: {
+            permissions: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
         }
       }
     })
@@ -165,15 +183,8 @@ export async function register(
 
     // Remove password from user object
     const { password: _, ...safeUser } = user
-
     return {
-      user: safeUser as Prisma.UserGetPayload<{
-        include: {
-          roles: {
-            select: { id: true; name: true; description: true; color: true }
-          }
-        }
-      }>,
+      user: safeUser,
       token
     }
   } catch (error) {
@@ -204,15 +215,17 @@ export async function validateToken(token: string): Promise<{
   user: Prisma.UserGetPayload<{
     include: {
       roles: {
-        select: { id: true; name: true; description: true; color: true }
+        include: {
+          permissions: {
+            select: { id: true, name: true }
+          }
+        }
       }
-    }
-    select: {
-      id: true
-      email: true
-      username: true
-      classId: true
-      roles: true
+      permissionOverrides: {
+        include: {
+          permission: true
+        }
+      }
     }
   }>
   session: Session
@@ -225,7 +238,24 @@ export async function validateToken(token: string): Promise<{
     // Fetch session
     const session = await prisma.session.findUnique({
       where: { id: payload.sessionId },
-      include: { user: { include: { roles: true } } }
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: {
+                permissions: {
+                  select: { id: true, name: true }
+                }
+              }
+            },
+            permissionOverrides: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      }
     })
 
     // Check if session is valid
@@ -238,22 +268,8 @@ export async function validateToken(token: string): Promise<{
     }
 
     const { password: _, ...safeUser } = session.user
-
     return {
-      user: safeUser as Prisma.UserGetPayload<{
-        include: {
-          roles: {
-            select: { id: true; name: true; description: true; color: true }
-          }
-        }
-        select: {
-          id: true
-          email: true
-          username: true
-          classId: true
-          roles: true
-        }
-      }>,
+      user: safeUser,
       session
     }
   } catch (error) {
@@ -276,21 +292,59 @@ export async function logout(sessionId: string): Promise<boolean> {
 }
 
 /**
+ * Authorize a user based on permissions
+ */
+export async function authorize(
+  user: Prisma.UserGetPayload<{
+    include: {
+      roles: {
+        include: {
+          permissions: {
+            select: { id: true, name: true }
+          }
+        }
+      }
+    }
+  }>,
+  options: AuthorizeOptions
+): Promise<boolean> {
+  if (!options.requiredPermissions?.length && !options.anyOf?.length) {
+    return true
+  }
+
+  if (options.requiredPermissions?.length) {
+    for (const permission of options.requiredPermissions) {
+      const hasRequired = await hasPermission(user, permission)
+      if (!hasRequired) return false
+    }
+    return true
+  }
+
+  if (options.anyOf?.length) {
+    return hasAnyPermission(user, options.anyOf)
+  }
+
+  return false
+}
+
+/**
  * Get current session from cookie (for server-side usage)
  */
 export async function auth(): Promise<{
   user: Prisma.UserGetPayload<{
     include: {
       roles: {
-        select: { id: true; name: true; description: true; color: true }
+        include: {
+          permissions: {
+            select: { id: true, name: true }
+          }
+        }
       }
-    }
-    select: {
-      id: true
-      email: true
-      username: true
-      classId: true
-      roles: true
+      permissionOverrides: {
+        include: {
+          permission: true
+        }
+      }
     }
   }>
   session: Session
@@ -298,11 +352,5 @@ export async function auth(): Promise<{
   // This is a placeholder for server-side auth with cookies
   // In a real implementation, this would extract the token from cookies
   // and validate it using validateToken
-
-
-  // shut eslint up
-  await new Promise((resolve) => resolve(null))
-
-  // For now, returns null to indicate no session
   return null
 }
