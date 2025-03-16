@@ -1,12 +1,4 @@
 {
-    "extends": "@filc/tsconfig/base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "declaration": true,
-        "declarationMap": true,
-        "declarationDir": "dist",
-        "composite": true
-    },
+    "extends": "@filc/tsconfig/internal-package.json",
     "include": ["src"],
 }
