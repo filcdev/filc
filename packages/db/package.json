@@ -9,7 +9,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "build": "tsc",
-    "dev": "tsc -w",
+    "dev": "tsc",
     "lint": "eslint"
   },
   "devDependencies": {
