@@ -1,34 +1,32 @@
-import { initTRPC, TRPCError } from "@trpc/server";
-import superjson from "superjson";
-import { ZodError } from "zod";
+import { initTRPC, TRPCError } from '@trpc/server'
+import superjson from 'superjson'
+import { ZodError } from 'zod'
 
-import { auth, validateToken } from "@filc/auth";
-import { prisma } from "@filc/db";
-import { hasAnyPermission } from "@filc/rbac";
-import type { PermissionType } from "@filc/rbac";
+import type { PermissionType } from '@filc/rbac'
+import { auth, validateToken } from '@filc/auth'
+import { prisma } from '@filc/db'
+import { hasAnyPermission } from '@filc/rbac'
 
 const isomorphicGetSession = async (headers: Headers) => {
-  const authToken = headers.get("Authorization") ?? null;
-  if (authToken?.startsWith("Bearer ")) {
-    const token = authToken.slice(7);
-    return await validateToken(token);
+  const authToken = headers.get('Authorization') ?? null
+  if (authToken?.startsWith('Bearer ')) {
+    const token = authToken.slice(7)
+    return await validateToken(token)
   }
 
-  return await auth();
-};
+  return await auth()
+}
 
 /**
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: {
-  headers: Headers;
-}) => {
-  const sessionData = await isomorphicGetSession(opts.headers);
-  const session = sessionData?.session ?? null;
-  const user = sessionData?.user ?? null;
+export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const sessionData = await isomorphicGetSession(opts.headers)
+  const session = sessionData?.session ?? null
+  const user = sessionData?.user ?? null
 
-  const source = opts.headers.get("x-trpc-source") ?? "unknown";
-  console.log(">>> tRPC Request from", source, "by", user?.username);
+  const source = opts.headers.get('x-trpc-source') ?? 'unknown'
+  console.log('>>> tRPC Request from', source, 'by', user?.username)
 
   return {
     session,
@@ -36,11 +34,11 @@ export const createTRPCContext = async (opts: {
     prisma,
     headers: opts.headers,
     authorize: async (permissions: PermissionType[]) => {
-      if (!user) return false;
-      return hasAnyPermission(user, permissions);
+      if (!user) return false
+      return hasAnyPermission(user, permissions)
     }
   }
-};
+}
 
 /**
  * 2. INITIALIZATION
@@ -54,16 +52,16 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
     ...shape,
     data: {
       ...shape.data,
-      zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
-    },
-  }),
-});
+      zodError: error.cause instanceof ZodError ? error.cause.flatten() : null
+    }
+  })
+})
 
 /**
  * Create a server-side caller
  * @see https://trpc.io/docs/server/server-side-calls
  */
-export const createCallerFactory = t.createCallerFactory;
+export const createCallerFactory = t.createCallerFactory
 
 /**
  * 3. ROUTER & PROCEDURE (THE IMPORTANT BIT)
@@ -76,7 +74,7 @@ export const createCallerFactory = t.createCallerFactory;
  * This is how you create new routers and subrouters in your tRPC API
  * @see https://trpc.io/docs/router
  */
-export const createTRPCRouter = t.router;
+export const createTRPCRouter = t.router
 
 /**
  * Middleware for timing procedure execution and adding an articifial delay in development.
@@ -85,15 +83,15 @@ export const createTRPCRouter = t.router;
  * network latency that would occur in production but not in local development.
  */
 const timingMiddleware = t.middleware(async ({ next, path }) => {
-  const start = Date.now();
+  const start = Date.now()
 
-  const result = await next();
+  const result = await next()
 
-  const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  const end = Date.now()
+  console.log(`[TRPC] ${path} took ${end - start}ms to execute`)
 
-  return result;
-});
+  return result
+})
 
 /**
  * Public (unauthed) procedure
@@ -102,7 +100,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * tRPC API. It does not guarantee that a user querying is authorized, but you
  * can still access user session data if they are logged in
  */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+export const publicProcedure = t.procedure.use(timingMiddleware)
 
 /**
  * Protected (authenticated) procedure
@@ -116,7 +114,7 @@ export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
     if (!ctx.session || !ctx.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
+      throw new TRPCError({ code: 'UNAUTHORIZED' })
     }
     return next({
       ctx: {
@@ -127,7 +125,7 @@ export const protectedProcedure = t.procedure
         // infers the `prisma` as non-nullable
         prisma: ctx.prisma,
         // infers the `authorize` as non-nullable
-        authorize: ctx.authorize,
-      },
-    });
-  });
+        authorize: ctx.authorize
+      }
+    })
+  })

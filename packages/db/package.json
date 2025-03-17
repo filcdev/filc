@@ -8,8 +8,11 @@
     "db:migrate": "prisma migrate dev --skip-generate",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
+    "prebuild": "pnpm run db:generate",
+    "predev": "pnpm run db:generate",
+    "prelint": "pnpm run db:generate",
     "build": "tsc",
-    "dev": "tsc -w",
+    "dev": "tsc",
     "lint": "eslint"
   },
   "devDependencies": {

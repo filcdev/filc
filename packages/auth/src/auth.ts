@@ -1,13 +1,15 @@
 import { z } from 'zod'
-import type { Session, Prisma } from '@filc/db'
+
+import type { Prisma, Session } from '@filc/db'
 import { prisma } from '@filc/db'
-import { hasPermission, hasAnyPermission } from '@filc/rbac'
+import { hasAnyPermission, hasPermission } from '@filc/rbac'
+
 import type {
   AuthError,
+  AuthorizeOptions,
   AuthResult,
   LoginCredentials,
-  RegisterCredentials,
-  AuthorizeOptions
+  RegisterCredentials
 } from './types'
 import {
   comparePassword,
@@ -90,7 +92,7 @@ export async function login(
     const session = await createSession(user.id)
 
     // Create JWT token
-    const token = createToken({
+    const token = await createToken({
       sub: user.id,
       sessionId: session.id
     })
@@ -152,7 +154,7 @@ export async function register(
         classId: data.classId,
         ...(data.roles && {
           roles: {
-            connect: data.roles.map(roleId => ({ id: roleId }))
+            connect: data.roles.map((roleId) => ({ id: roleId }))
           }
         })
       },
@@ -176,7 +178,7 @@ export async function register(
     const session = await createSession(user.id)
 
     // Create JWT token
-    const token = createToken({
+    const token = await createToken({
       sub: user.id,
       sessionId: session.id
     })
@@ -217,7 +219,7 @@ export async function validateToken(token: string): Promise<{
       roles: {
         include: {
           permissions: {
-            select: { id: true, name: true }
+            select: { id: true; name: true }
           }
         }
       }
@@ -227,12 +229,15 @@ export async function validateToken(token: string): Promise<{
         }
       }
     }
+    omit: {
+      password: true
+    }
   }>
   session: Session
 } | null> {
   try {
     // Verify token
-    const payload = verifyToken(token)
+    const payload = await verifyToken(token)
     if (!payload) return null
 
     // Fetch session
@@ -300,8 +305,13 @@ export async function authorize(
       roles: {
         include: {
           permissions: {
-            select: { id: true, name: true }
+            select: { id: true; name: true }
           }
+        }
+      }
+      permissionOverrides: {
+        include: {
+          permission: true
         }
       }
     }
@@ -314,7 +324,7 @@ export async function authorize(
 
   if (options.requiredPermissions?.length) {
     for (const permission of options.requiredPermissions) {
-      const hasRequired = await hasPermission(user, permission)
+      const hasRequired = hasPermission(user, permission)
       if (!hasRequired) return false
     }
     return true
@@ -336,7 +346,7 @@ export async function auth(): Promise<{
       roles: {
         include: {
           permissions: {
-            select: { id: true, name: true }
+            select: { id: true; name: true }
           }
         }
       }
@@ -352,5 +362,9 @@ export async function auth(): Promise<{
   // This is a placeholder for server-side auth with cookies
   // In a real implementation, this would extract the token from cookies
   // and validate it using validateToken
+
+  // shut eslint up
+  await Promise.resolve(null)
+
   return null
 }

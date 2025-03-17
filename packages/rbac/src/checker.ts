@@ -1,4 +1,5 @@
 import type { Prisma } from '@filc/db'
+
 import type { PermissionType } from './permissions'
 import { Permission } from './permissions'
 
@@ -17,20 +18,27 @@ type UserWithPermissions = Prisma.UserGetPayload<{
       }
     }
   }
+  omit: { password: true }
 }>
 
 export function hasPermission(
   user: UserWithPermissions,
   requiredPermission: PermissionType
 ): boolean {
-  if (user.roles.some(role => 
-    role.permissions.some(permission => permission.name === Permission.ADMIN)
-  )) {
+  if (
+    user.roles.some((role) =>
+      role.permissions.some(
+        (permission) => permission.name === Permission.ADMIN
+      )
+    )
+  ) {
     return true
   }
 
-  const hasRolePermission = user.roles.some(role =>
-    role.permissions.some(permission => permission.name === requiredPermission)
+  const hasRolePermission = user.roles.some((role) =>
+    role.permissions.some(
+      (permission) => permission.name === requiredPermission
+    )
   )
 
   if (hasRolePermission) {
@@ -38,7 +46,7 @@ export function hasPermission(
   }
 
   const override = user.permissionOverrides.find(
-    override => override.permission.name === requiredPermission
+    (override) => override.permission.name === requiredPermission
   )
 
   return override ? override.granted : false
@@ -52,8 +60,9 @@ export async function hasAnyPermission(
   user: UserWithPermissions,
   permissions: PermissionType[]
 ): Promise<boolean> {
-  return Promise.any(permissions.map(permission => hasPermission(user, permission)))
-    .catch(() => false)
+  return Promise.any(
+    permissions.map((permission) => hasPermission(user, permission))
+  ).catch(() => false)
 }
 
 export function requireAnyPermission(permissions: PermissionType[]) {
