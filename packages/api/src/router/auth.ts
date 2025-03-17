@@ -1,22 +1,28 @@
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
+
+import {
+  login,
+  loginSchema,
+  logout,
+  register,
+  registerSchema
+} from '@filc/auth'
 import { Permission } from '@filc/rbac'
-import { login, loginSchema, logout, register, registerSchema } from '@filc/auth'
+
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc'
 
 export const authRouter = createTRPCRouter({
-  login: publicProcedure
-    .input(loginSchema)
-    .mutation(async ({ input }) => {
-      const result = await login(input)
-      if ('code' in result) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: result.message
-        })
-      }
-      return result
-    }),
+  login: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
+    const result = await login(input)
+    if ('code' in result) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: result.message
+      })
+    }
+    return result
+  }),
 
   register: publicProcedure
     .input(registerSchema)
@@ -38,34 +44,34 @@ export const authRouter = createTRPCRouter({
       return result
     }),
 
-  logout: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      try {
-        const { session } = ctx
-        const result = await logout(session.id)
-        return { success: result }
-      } catch (_error) {
-        console.error(_error)
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to logout'
-        })
-      }
-    }),
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const { session } = ctx
+      const result = await logout(session.id)
+      return { success: result }
+    } catch (_error) {
+      console.error(_error)
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to logout'
+      })
+    }
+  }),
 
-  getSession: publicProcedure
-    .query(({ ctx }) => {
-      return ctx.session
-    }),
+  getSession: publicProcedure.query(({ ctx }) => {
+    return ctx.session
+  }),
 
   // Role Management
   assignRole: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      roleId: z.string()
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        roleId: z.string()
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      if (!await ctx.authorize([Permission.MANAGE_PERMISSIONS])) {
+      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Insufficient permissions'
@@ -90,12 +96,14 @@ export const authRouter = createTRPCRouter({
     }),
 
   removeRole: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      roleId: z.string()
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        roleId: z.string()
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      if (!await ctx.authorize([Permission.MANAGE_PERMISSIONS])) {
+      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Insufficient permissions'
@@ -121,12 +129,14 @@ export const authRouter = createTRPCRouter({
 
   // Permission Management
   grantPermission: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      permissionId: z.string()
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        permissionId: z.string()
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      if (!await ctx.authorize([Permission.MANAGE_PERMISSIONS])) {
+      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Insufficient permissions'
@@ -146,12 +156,14 @@ export const authRouter = createTRPCRouter({
     }),
 
   revokePermission: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      permissionId: z.string()
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        permissionId: z.string()
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      if (!await ctx.authorize([Permission.MANAGE_PERMISSIONS])) {
+      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Insufficient permissions'
@@ -169,21 +181,20 @@ export const authRouter = createTRPCRouter({
     }),
 
   // Role Listing
-  getRoles: protectedProcedure
-    .query(async ({ ctx }) => {
-      if (!await ctx.authorize([Permission.VIEW_ROLES])) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Insufficient permissions'
-        })
-      }
-
-      return ctx.prisma.role.findMany({
-        include: {
-          permissions: true
-        }
+  getRoles: protectedProcedure.query(async ({ ctx }) => {
+    if (!(await ctx.authorize([Permission.VIEW_ROLES]))) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Insufficient permissions'
       })
-    }),
+    }
+
+    return ctx.prisma.role.findMany({
+      include: {
+        permissions: true
+      }
+    })
+  }),
 
   getSecretMessage: protectedProcedure.query(() => {
     return 'You are authenticated!'

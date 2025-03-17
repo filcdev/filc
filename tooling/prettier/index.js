@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { fileURLToPath } from 'node:url'
 
 /** @typedef {import("prettier").Config} PrettierConfig */
 /** @typedef {import("prettier-plugin-tailwindcss").PluginOptions} TailwindConfig */
@@ -7,48 +7,48 @@ import { fileURLToPath } from "node:url";
 /** @type { PrettierConfig | SortImportsConfig | TailwindConfig } */
 const config = {
   plugins: [
-    "@ianvs/prettier-plugin-sort-imports",
-    "prettier-plugin-tailwindcss",
+    '@ianvs/prettier-plugin-sort-imports',
+    'prettier-plugin-tailwindcss'
   ],
   tabWidth: 2,
   semi: false,
   singleQuote: true,
-  trailingComma: "none",
+  trailingComma: 'none',
   tailwindConfig: fileURLToPath(
-    new URL("../../tooling/tailwind/web.ts", import.meta.url),
+    new URL('../../tooling/tailwind/web.ts', import.meta.url)
   ),
-  tailwindFunctions: ["cn", "cva"],
+  tailwindFunctions: ['cn', 'cva'],
   importOrder: [
-    "<TYPES>",
-    "^(react/(.*)$)|^(react$)|^(react-native(.*)$)",
-    "^(next/(.*)$)|^(next$)",
-    "^(expo(.*)$)|^(expo$)",
-    "<THIRD_PARTY_MODULES>",
-    "",
-    "<TYPES>^@filc",
-    "^@filc/(.*)$",
-    "",
-    "<TYPES>^[.|..|~]",
-    "^~/",
-    "^[../]",
-    "^[./]",
+    '<TYPES>',
+    '^(react/(.*)$)|^(react$)|^(react-native(.*)$)',
+    '^(next/(.*)$)|^(next$)',
+    '^(expo(.*)$)|^(expo$)',
+    '<THIRD_PARTY_MODULES>',
+    '',
+    '<TYPES>^@filc',
+    '^@filc/(.*)$',
+    '',
+    '<TYPES>^[.|..|~]',
+    '^~/',
+    '^[../]',
+    '^[./]'
   ],
-  importOrderParserPlugins: ["typescript", "jsx", "decorators-legacy"],
-  importOrderTypeScriptVersion: "4.4.0",
+  importOrderParserPlugins: ['typescript', 'jsx', 'decorators-legacy'],
+  importOrderTypeScriptVersion: '4.4.0',
   overrides: [
     {
-      files: "*.json.hbs",
+      files: '*.json.hbs',
       options: {
-        parser: "json",
-      },
+        parser: 'json'
+      }
     },
     {
-      files: "*.js.hbs",
+      files: '*.js.hbs',
       options: {
-        parser: "babel",
-      },
-    },
-  ],
-};
+        parser: 'babel'
+      }
+    }
+  ]
+}
 
-export default config;
+export default config

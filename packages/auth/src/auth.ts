@@ -1,13 +1,15 @@
 import { z } from 'zod'
-import type { Session, Prisma } from '@filc/db'
+
+import type { Prisma, Session } from '@filc/db'
 import { prisma } from '@filc/db'
-import { hasPermission, hasAnyPermission } from '@filc/rbac'
+import { hasAnyPermission, hasPermission } from '@filc/rbac'
+
 import type {
   AuthError,
+  AuthorizeOptions,
   AuthResult,
   LoginCredentials,
-  RegisterCredentials,
-  AuthorizeOptions
+  RegisterCredentials
 } from './types'
 import {
   comparePassword,
@@ -152,7 +154,7 @@ export async function register(
         classId: data.classId,
         ...(data.roles && {
           roles: {
-            connect: data.roles.map(roleId => ({ id: roleId }))
+            connect: data.roles.map((roleId) => ({ id: roleId }))
           }
         })
       },
@@ -217,7 +219,7 @@ export async function validateToken(token: string): Promise<{
       roles: {
         include: {
           permissions: {
-            select: { id: true, name: true }
+            select: { id: true; name: true }
           }
         }
       }
@@ -226,7 +228,7 @@ export async function validateToken(token: string): Promise<{
           permission: true
         }
       }
-    },
+    }
     omit: {
       password: true
     }
@@ -303,16 +305,16 @@ export async function authorize(
       roles: {
         include: {
           permissions: {
-            select: { id: true, name: true }
+            select: { id: true; name: true }
           }
         }
-      },
+      }
       permissionOverrides: {
         include: {
           permission: true
         }
       }
-    },
+    }
   }>,
   options: AuthorizeOptions
 ): Promise<boolean> {
@@ -344,7 +346,7 @@ export async function auth(): Promise<{
       roles: {
         include: {
           permissions: {
-            select: { id: true, name: true }
+            select: { id: true; name: true }
           }
         }
       }
