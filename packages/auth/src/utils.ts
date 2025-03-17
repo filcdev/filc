@@ -1,5 +1,5 @@
-import { compare, hash } from "bcryptjs";
-import { sign, verify } from "jsonwebtoken";
+import { compare, hash } from "@node-rs/bcrypt";
+import { sign, verify } from "@node-rs/jsonwebtoken";
 import type { TokenPayload } from "./types";
 
 export const SESSION_EXPIRY_DAYS = 30;
@@ -25,18 +25,20 @@ export async function comparePassword(
 /**
  * Create a JWT token
  */
-export function createToken(payload: Omit<TokenPayload, "iat" | "exp">): string {
-  return sign(payload, JWT_SECRET, {
-    expiresIn: `${SESSION_EXPIRY_DAYS}d`,
-  });
+export async function createToken(payload: Omit<TokenPayload, "iat" | "exp">): Promise<string> {
+  return await sign({
+    data: payload,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + SESSION_EXPIRY_DAYS * 24 * 60 * 60,
+  }, JWT_SECRET);
 }
 
 /**
  * Verify a JWT token
  */
-export function verifyToken(token: string): TokenPayload | null {
+export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    return verify(token, JWT_SECRET) as TokenPayload;
+    return await verify(token, JWT_SECRET) as TokenPayload;
   } catch (error) {
     console.error("Token verification error:", error);
     return null;

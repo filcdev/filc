@@ -90,7 +90,7 @@ export async function login(
     const session = await createSession(user.id)
 
     // Create JWT token
-    const token = createToken({
+    const token = await createToken({
       sub: user.id,
       sessionId: session.id
     })
@@ -176,7 +176,7 @@ export async function register(
     const session = await createSession(user.id)
 
     // Create JWT token
-    const token = createToken({
+    const token = await createToken({
       sub: user.id,
       sessionId: session.id
     })
@@ -235,7 +235,7 @@ export async function validateToken(token: string): Promise<{
 } | null> {
   try {
     // Verify token
-    const payload = verifyToken(token)
+    const payload = await verifyToken(token)
     if (!payload) return null
 
     // Fetch session

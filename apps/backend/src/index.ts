@@ -10,9 +10,12 @@ app.use(
     router: appRouter,
     createContext: () => createTRPCContext({
       headers: new Headers(),
-      session: null,
     }),
   }),
 );
+
+app.get('/', (req, res) => {
+  res.send('Hello World');
+});
 
 app.listen(4000);
