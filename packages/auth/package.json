@@ -21,7 +21,7 @@
   "dependencies": {
     "@filc/db": "workspace:*",
     "@filc/rbac": "workspace:*",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
     "zod": "catalog:"
   },
@@ -29,8 +29,7 @@
     "@filc/eslint-config": "workspace:*",
     "@filc/prettier-config": "workspace:*",
     "@filc/tsconfig": "workspace:*",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.5",
+    "@types/jsonwebtoken": "^9.0.9",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
