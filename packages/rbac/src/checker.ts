@@ -16,7 +16,8 @@ type UserWithPermissions = Prisma.UserGetPayload<{
         permission: true
       }
     }
-  }
+  },
+  omit: { password: true }
 }>
 
 export function hasPermission(

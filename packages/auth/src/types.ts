@@ -78,6 +78,9 @@ export interface AuthResult {
           permission: true
         }
       }
+    },
+    omit: {
+      password: true;
     }
   }>;
   token: string;
