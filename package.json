@@ -10,8 +10,10 @@
     "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
-    "db:push": "turbo -F @filc/db push",
-    "db:studio": "turbo -F @filc/db studio",
+    "db:push": "turbo -F @filc/db db:push",
+    "db:studio": "turbo -F @filc/db db:studio",
+    "db:generate": "turbo -F @filc/db db:generate",
+    "db:migrate": "turbo -F @filc/db db:migrate",
     "dev": "turbo watch dev --continue",
     "dev:next": "turbo watch dev -F @filc/nextjs...",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
@@ -25,9 +27,9 @@
   },
   "devDependencies": {
     "@filc/prettier-config": "workspace:*",
-    "@turbo/gen": "^2.3.4",
+    "@turbo/gen": "^2.4.4",
     "prettier": "catalog:",
-    "turbo": "^2.3.4",
+    "turbo": "^2.4.4",
     "typescript": "catalog:"
   },
   "prettier": "@filc/prettier-config"

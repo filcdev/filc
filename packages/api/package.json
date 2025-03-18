@@ -23,7 +23,7 @@
     "@filc/db": "workspace:*",
     "@filc/rbac": "workspace:*",
     "@trpc/server": "catalog:",
-    "superjson": "2.2.2",
+    "superjson": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

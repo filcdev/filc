@@ -14,9 +14,6 @@ const config = {
   semi: false,
   singleQuote: true,
   trailingComma: 'none',
-  tailwindConfig: fileURLToPath(
-    new URL('../../tooling/tailwind/web.ts', import.meta.url)
-  ),
   tailwindFunctions: ['cn', 'cva'],
   importOrder: [
     '<TYPES>',

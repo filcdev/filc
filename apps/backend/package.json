@@ -15,12 +15,14 @@
     "@filc/api": "workspace:*",
     "@filc/db": "workspace:*",
     "@trpc/server": "catalog:",
+    "cors": "^2.8.5",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@filc/eslint-config": "workspace:*",
     "@filc/prettier-config": "workspace:*",
     "@filc/tsconfig": "workspace:*",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "catalog:",
     "eslint": "catalog:",
