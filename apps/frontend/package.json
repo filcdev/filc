@@ -12,10 +12,15 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@filc/api": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "^1.114.3",
     "@tanstack/react-router-devtools": "^1.114.3",
+    "@trpc/client": "catalog:",
+    "@trpc/tanstack-react-query": "catalog:",
     "react": "catalog:react19",
-    "react-dom": "catalog:react19"
+    "react-dom": "catalog:react19",
+    "superjson": "catalog:"
   },
   "devDependencies": {
     "@filc/eslint-config": "workspace:*",

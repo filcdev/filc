@@ -1,32 +1,33 @@
 import { StrictMode } from 'react'
-import ReactDOM from 'react-dom/client'
 import {
-  Outlet,
-  RouterProvider,
   createRootRoute,
   createRoute,
   createRouter,
+  Outlet,
+  RouterProvider
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import ReactDOM from 'react-dom/client'
 
 import './styles.css'
-import reportWebVitals from './reportWebVitals.ts'
 
 import App from './App.tsx'
+import reportWebVitals from './reportWebVitals.ts'
+import TRPCProvider from './utils/trpc/Provider.tsx'
 
 const rootRoute = createRootRoute({
   component: () => (
-    <>
+    <TRPCProvider>
       <Outlet />
       <TanStackRouterDevtools />
-    </>
-  ),
+    </TRPCProvider>
+  )
 })
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: App,
+  component: App
 })
 
 const routeTree = rootRoute.addChildren([indexRoute])
@@ -37,7 +38,7 @@ const router = createRouter({
   defaultPreload: 'intent',
   scrollRestoration: true,
   defaultStructuralSharing: true,
-  defaultPreloadStaleTime: 0,
+  defaultPreloadStaleTime: 0
 })
 
 declare module '@tanstack/react-router' {
@@ -52,11 +53,8 @@ if (rootElement && !rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <RouterProvider router={router} />
-    </StrictMode>,
+    </StrictMode>
   )
 }
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals()
