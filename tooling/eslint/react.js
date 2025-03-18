@@ -13,12 +13,18 @@ export default [
     },
     rules: {
       ...reactPlugin.configs['jsx-runtime'].rules,
+      ...reactPlugin.configs.recommended.rules,
       ...hooksPlugin.configs.recommended.rules,
       'react-compiler/react-compiler': 'error'
     },
     languageOptions: {
       globals: {
         React: 'writable'
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
       }
     }
   }
