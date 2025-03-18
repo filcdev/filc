@@ -29,14 +29,11 @@
     "clean": {
       "cache": false
     },
-    "//#clean": {
-      "cache": false
-    },
-    "push": {
+    "db:push": {
       "cache": false,
       "interactive": true
     },
-    "studio": {
+    "db:studio": {
       "cache": false,
       "persistent": true
     },
@@ -56,6 +53,7 @@
   },
   "globalEnv": [
     "JWT_SECRET",
+    "DATABASE_URL",
     "PORT"
   ],
   "globalPassThroughEnv": [
