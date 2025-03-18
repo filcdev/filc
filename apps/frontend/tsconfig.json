@@ -9,7 +9,7 @@
     "types": ["vite/client"],
 
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*"]
     },
 
     /* Bundler mode */
