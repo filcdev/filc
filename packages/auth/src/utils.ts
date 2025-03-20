@@ -27,7 +27,7 @@ export async function comparePassword(
  * Create a JWT token
  */
 export async function createToken(
-  payload: Omit<TokenPayload, 'iat' | 'exp'>
+  payload: TokenPayload['data']
 ): Promise<string> {
   return await sign(
     {
@@ -46,6 +46,7 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
     return (await verify(token, JWT_SECRET)) as TokenPayload
   } catch (error) {
+    // check if errr has code
     console.error('Token verification error:', error)
     return null
   }

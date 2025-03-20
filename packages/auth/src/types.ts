@@ -41,11 +41,16 @@ export type User = Prisma.UserGetPayload<{
       }
     }
   }
+  omit: {
+    password: true
+  }
 }>
 
 export interface TokenPayload {
-  sub: string
-  sessionId: string
+  data: {
+    sub: string
+    sessionId: string
+  }
   iat: number
   exp: number
 }
@@ -64,25 +69,7 @@ export interface RegisterCredentials {
 }
 
 export interface AuthResult {
-  user: Prisma.UserGetPayload<{
-    include: {
-      roles: {
-        include: {
-          permissions: {
-            select: { id: true; name: true }
-          }
-        }
-      }
-      permissionOverrides: {
-        include: {
-          permission: true
-        }
-      }
-    }
-    omit: {
-      password: true
-    }
-  }>
+  user: User
   token: string
 }
 

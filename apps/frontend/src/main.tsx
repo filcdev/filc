@@ -9,17 +9,22 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import ReactDOM from 'react-dom/client'
 
+import TRPCProvider from './utils/trpc/provider'
+
 import './styles.css'
 
 import App from './App.tsx'
 import reportWebVitals from './reportWebVitals.ts'
+import AuthProvider from './utils/auth.tsx'
 import TRPCProvider from './utils/trpc/Provider.tsx'
 
 const rootRoute = createRootRoute({
   component: () => (
     <TRPCProvider>
-      <Outlet />
-      <TanStackRouterDevtools />
+      <AuthProvider>
+        <Outlet />
+        <TanStackRouterDevtools />
+      </AuthProvider>
     </TRPCProvider>
   )
 })

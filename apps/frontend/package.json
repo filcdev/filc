@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@filc/api": "workspace:*",
+    "@filc/auth": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "^1.114.3",
     "@tanstack/react-router-devtools": "^1.114.3",

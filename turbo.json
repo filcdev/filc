@@ -17,6 +17,9 @@
     "@filc/frontend#dev": {
       "persistent": true
     },
+    "@filc/backend#dev": {
+      "persistent": true
+    },
     "format": {
       "outputs": [".cache/.prettiercache"],
       "outputLogs": "new-only"

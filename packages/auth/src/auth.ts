@@ -98,9 +98,8 @@ export async function login(
     })
 
     // Remove password from user object
-    const { password: _, ...safeUser } = user
     return {
-      user: safeUser,
+      user,
       token
     }
   } catch (error) {
@@ -236,15 +235,15 @@ export async function validateToken(token: string): Promise<{
   session: Session
 } | null> {
   try {
-    // Verify token
     const payload = await verifyToken(token)
     if (!payload) return null
 
     // Fetch session
     const session = await prisma.session.findUnique({
-      where: { id: payload.sessionId },
+      where: { id: payload.data.sessionId },
       include: {
         user: {
+          omit: { password: true },
           include: {
             roles: {
               include: {
@@ -267,14 +266,13 @@ export async function validateToken(token: string): Promise<{
     if (
       !session ||
       session.expiresAt < new Date() ||
-      session.userId !== payload.sub
+      session.userId !== payload.data.sub
     ) {
       return null
     }
 
-    const { password: _, ...safeUser } = session.user
     return {
-      user: safeUser,
+      user: session.user,
       session
     }
   } catch (error) {
@@ -338,9 +336,9 @@ export async function authorize(
 }
 
 /**
- * Get current session from cookie (for server-side usage)
+ * Get current session from authorization header (for server-side usage)
  */
-export async function auth(): Promise<{
+export async function auth(authHeader?: string): Promise<{
   user: Prisma.UserGetPayload<{
     include: {
       roles: {
@@ -356,15 +354,18 @@ export async function auth(): Promise<{
         }
       }
     }
+    omit: {
+      password: true
+    }
   }>
   session: Session
 } | null> {
-  // This is a placeholder for server-side auth with cookies
-  // In a real implementation, this would extract the token from cookies
-  // and validate it using validateToken
+  if (!authHeader) return null
 
-  // shut eslint up
-  await Promise.resolve(null)
+  // Extract token from Bearer authorization header
+  const token = authHeader.split(' ')[1]
+  if (!token) return null
 
-  return null
+  // Validate the token
+  return await validateToken(token)
 }
