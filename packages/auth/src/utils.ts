@@ -46,6 +46,7 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
     return (await verify(token, JWT_SECRET)) as TokenPayload
   } catch (error) {
+    // check if errr has code
     console.error('Token verification error:', error)
     return null
   }

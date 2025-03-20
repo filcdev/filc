@@ -44,24 +44,21 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Token found in localStorage:', storedToken)
       setToken(storedToken)
     }
-  }, [getSessionQuery.data])
+  }, [])
 
   useEffect(() => {
     const refetchUser = async () => {
-      console.log('Refetching user session...')
       if (token) {
-        await getSessionQuery.refetch()
-        console.log('Refetched user session:', getSessionQuery.data)
-        if (getSessionQuery.data) {
-          console.log('User session:', getSessionQuery.data)
-          setUser(getSessionQuery.data.user)
+        const result = await getSessionQuery.refetch()
+        if (result.data) {
+          setUser(result.data.user)
         }
       }
     }
     refetchUser().catch((err) => {
       console.error('Error fetching user session:', err)
     });
-  }, [token])
+  }, [token, getSessionQuery])
 
   useEffect(() => {
     setAuthToken(token)
