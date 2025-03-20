@@ -361,11 +361,11 @@ export async function auth(authHeader?: string): Promise<{
   session: Session
 } | null> {
   if (!authHeader) return null
-  
+
   // Extract token from Bearer authorization header
   const token = authHeader.split(' ')[1]
   if (!token) return null
-  
+
   // Validate the token
   return await validateToken(token)
 }

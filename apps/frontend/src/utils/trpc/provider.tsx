@@ -29,7 +29,7 @@ function getQueryClient() {
   }
 }
 
-let token: string;
+let token: string
 
 export function setToken(newToken: string) {
   token = newToken
@@ -46,7 +46,7 @@ export default function Provider({ children }: { children: ReactNode }) {
           transformer: superjson,
           headers() {
             return {
-              "x-filc-authtok": token
+              'x-filc-authtok': token
             }
           }
         })

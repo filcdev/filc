@@ -1,3 +1,4 @@
+import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import { initTRPC, TRPCError } from '@trpc/server'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
@@ -6,13 +7,16 @@ import type { PermissionType } from '@filc/rbac'
 import { validateToken } from '@filc/auth'
 import { prisma } from '@filc/db'
 import { hasAnyPermission } from '@filc/rbac'
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 
 /**
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async ({ req }: CreateExpressContextOptions) => {
-  const sessionData = await validateToken(req.headers['x-filc-authtok'] as string)
+export const createTRPCContext = async ({
+  req
+}: CreateExpressContextOptions) => {
+  const sessionData = await validateToken(
+    req.headers['x-filc-authtok'] as string
+  )
   const session = sessionData?.session ?? null
   const user = sessionData?.user ?? null
 

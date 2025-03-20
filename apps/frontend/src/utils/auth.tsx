@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { setToken as setAuthToken } from './trpc/provider'
 
 import type { User } from '@filc/auth'
 
 import { useTRPC } from './trpc'
+import { setToken as setAuthToken } from './trpc/provider'
 
 interface AuthContextType {
   token: string
@@ -24,11 +24,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   token: '',
   user: null,
-  login: async () => {return await Promise.resolve()},
-  register: async () => {return await Promise.resolve()},
-  logout: () => {return},
-  getAuthToken: () => {return ''}
-});
+  login: async () => {
+    return await Promise.resolve()
+  },
+  register: async () => {
+    return await Promise.resolve()
+  },
+  logout: () => {
+    return
+  },
+  getAuthToken: () => {
+    return ''
+  }
+})
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const trpc = useTRPC()
@@ -41,12 +49,13 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedToken = localStorage.getItem('site')
     if (storedToken) {
-      console.log('Token found in localStorage:', storedToken)
       setToken(storedToken)
     }
   }, [])
 
   useEffect(() => {
+    if (user && !getSessionQuery.isStale) return
+
     const refetchUser = async () => {
       if (token) {
         const result = await getSessionQuery.refetch()
@@ -57,8 +66,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     refetchUser().catch((err) => {
       console.error('Error fetching user session:', err)
-    });
-  }, [token, getSessionQuery])
+    })
+  }, [token, user, getSessionQuery])
 
   useEffect(() => {
     setAuthToken(token)
@@ -96,6 +105,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null)
     setToken('')
+    setAuthToken('')
+    loginQuery.reset()
+    registerQuery.reset()
     localStorage.removeItem('site')
   }
 
@@ -104,7 +116,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, login, register, logout, getAuthToken }}>
+    <AuthContext.Provider
+      value={{ token, user, login, register, logout, getAuthToken }}
+    >
       {children}
     </AuthContext.Provider>
   )

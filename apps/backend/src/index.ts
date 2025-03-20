@@ -14,7 +14,7 @@ app.use(
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext: (opts: trpcExpress.CreateExpressContextOptions) =>
-      createTRPCContext(opts),
+      createTRPCContext(opts)
   })
 )
 
