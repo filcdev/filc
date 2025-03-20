@@ -127,6 +127,9 @@ importers:
       '@filc/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@filc/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.68.0(react@19.0.0)

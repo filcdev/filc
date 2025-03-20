@@ -245,6 +245,7 @@ export async function validateToken(token: string): Promise<{
       where: { id: payload.sessionId },
       include: {
         user: {
+          omit: { password: true },
           include: {
             roles: {
               include: {
@@ -272,9 +273,8 @@ export async function validateToken(token: string): Promise<{
       return null
     }
 
-    const { password: _, ...safeUser } = session.user
     return {
-      user: safeUser,
+      user: session.user,
       session
     }
   } catch (error) {
@@ -338,9 +338,9 @@ export async function authorize(
 }
 
 /**
- * Get current session from cookie (for server-side usage)
+ * Get current session from authorization header (for server-side usage)
  */
-export async function auth(): Promise<{
+export async function auth(authHeader?: string): Promise<{
   user: Prisma.UserGetPayload<{
     include: {
       roles: {
@@ -356,15 +356,18 @@ export async function auth(): Promise<{
         }
       }
     }
+    omit: {
+      password: true
+    }
   }>
   session: Session
 } | null> {
-  // This is a placeholder for server-side auth with cookies
-  // In a real implementation, this would extract the token from cookies
-  // and validate it using validateToken
-
-  // shut eslint up
-  await Promise.resolve(null)
-
-  return null
+  if (!authHeader) return null
+  
+  // Extract token from Bearer authorization header
+  const token = authHeader.split(' ')[1]
+  if (!token) return null
+  
+  // Validate the token
+  return await validateToken(token)
 }
