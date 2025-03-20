@@ -98,9 +98,8 @@ export async function login(
     })
 
     // Remove password from user object
-    const { password: _, ...safeUser } = user
     return {
-      user: safeUser,
+      user,
       token
     }
   } catch (error) {
@@ -236,13 +235,12 @@ export async function validateToken(token: string): Promise<{
   session: Session
 } | null> {
   try {
-    // Verify token
     const payload = await verifyToken(token)
     if (!payload) return null
 
     // Fetch session
     const session = await prisma.session.findUnique({
-      where: { id: payload.sessionId },
+      where: { id: payload.data.sessionId },
       include: {
         user: {
           omit: { password: true },
@@ -268,7 +266,7 @@ export async function validateToken(token: string): Promise<{
     if (
       !session ||
       session.expiresAt < new Date() ||
-      session.userId !== payload.sub
+      session.userId !== payload.data.sub
     ) {
       return null
     }

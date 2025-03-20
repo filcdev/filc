@@ -27,7 +27,7 @@ export async function comparePassword(
  * Create a JWT token
  */
 export async function createToken(
-  payload: Omit<TokenPayload, 'iat' | 'exp'>
+  payload: TokenPayload['data']
 ): Promise<string> {
   return await sign(
     {

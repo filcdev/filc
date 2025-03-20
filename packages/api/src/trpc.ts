@@ -3,36 +3,23 @@ import superjson from 'superjson'
 import { ZodError } from 'zod'
 
 import type { PermissionType } from '@filc/rbac'
-import { auth, validateToken } from '@filc/auth'
+import { validateToken } from '@filc/auth'
 import { prisma } from '@filc/db'
 import { hasAnyPermission } from '@filc/rbac'
-
-const isomorphicGetSession = async (headers: Headers) => {
-  const authToken = headers.get('Authorization') ?? null
-  if (authToken?.startsWith('Bearer ')) {
-    const token = authToken.slice(7)
-    return await validateToken(token)
-  }
-
-  return await auth()
-}
+import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 
 /**
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const sessionData = await isomorphicGetSession(opts.headers)
+export const createTRPCContext = async ({ req }: CreateExpressContextOptions) => {
+  const sessionData = await validateToken(req.headers['x-filc-authtok'] as string)
   const session = sessionData?.session ?? null
   const user = sessionData?.user ?? null
-
-  const source = opts.headers.get('x-trpc-source') ?? 'unknown'
-  console.log('>>> tRPC Request from', source, 'by', user?.username)
 
   return {
     session,
     user,
     prisma,
-    headers: opts.headers,
     authorize: async (permissions: PermissionType[]) => {
       if (!user) return false
       return hasAnyPermission(user, permissions)

@@ -13,10 +13,8 @@ app.use(
   '/trpc',
   trpcExpress.createExpressMiddleware({
     router: appRouter,
-    createContext: () =>
-      createTRPCContext({
-        headers: new Headers()
-      })
+    createContext: (opts: trpcExpress.CreateExpressContextOptions) =>
+      createTRPCContext(opts),
   })
 )
 
