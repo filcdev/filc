@@ -16,6 +16,7 @@ import './styles.css'
 import App from './App.tsx'
 import reportWebVitals from './reportWebVitals.ts'
 import AuthProvider from './utils/auth.tsx'
+import TRPCProvider from './utils/trpc/Provider.tsx'
 
 const rootRoute = createRootRoute({
   component: () => (
