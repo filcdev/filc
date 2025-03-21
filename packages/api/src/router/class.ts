@@ -8,7 +8,7 @@ import {
   publicProcedure
 } from '../trpc'
 
-export const authRouter = createTRPCRouter({
+export const classRouter = createTRPCRouter({
   getAll: publicProcedure.query(({ ctx }) => {
     return ctx.prisma.class.findMany()
   }),
