@@ -59,6 +59,7 @@
   },
   "globalEnv": [
     "JWT_SECRET",
+    "REFRESH_TOKEN_SECRET",
     "DATABASE_URL",
     "PORT"
   ],

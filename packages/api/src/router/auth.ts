@@ -5,6 +5,8 @@ import {
   login,
   loginSchema,
   logout,
+  refreshAccessToken,
+  refreshTokenSchema,
   register,
   registerSchema
 } from '@filc/auth'
@@ -172,5 +174,27 @@ export const authRouter = createTRPCRouter({
         permissions: true
       }
     })
-  })
+  }),
+
+  refresh: publicProcedure
+    .input(refreshTokenSchema)
+    .mutation(async ({ input }) => {
+      const result = await refreshAccessToken(input)
+
+      if ('code' in result) {
+        // Handle different error types
+        if (result.code === 'auth/invalid-token') {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: result.message
+          })
+        } else {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: result.message
+          })
+        }
+      }
+      return result
+    })
 })

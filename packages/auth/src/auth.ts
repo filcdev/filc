@@ -9,13 +9,19 @@ import type {
   AuthorizeOptions,
   AuthResult,
   LoginCredentials,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
   RegisterCredentials
 } from './types'
 import {
   comparePassword,
+  createRefreshToken,
   createToken,
+  generateSecureToken,
   getExpiryDate,
+  getRefreshTokenExpiryDate,
   hashPassword,
+  verifyRefreshToken,
   verifyToken
 } from './utils'
 
@@ -31,6 +37,10 @@ export const registerSchema = z.object({
   password: z.string().min(8),
   classId: z.string(),
   roles: z.array(z.string()).optional()
+})
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string()
 })
 
 /**
@@ -91,16 +101,15 @@ export async function login(
     // Create session
     const session = await createSession(user.id)
 
-    // Create JWT token
-    const token = await createToken({
-      sub: user.id,
-      sessionId: session.id
-    })
+    // Create tokens
+    const { token, refreshToken } = await createTokenPair(user.id, session.id)
 
     // Remove password from user object
+    const { password: _, ...safeUser } = user
     return {
-      user,
-      token
+      user: safeUser,
+      token,
+      refreshToken
     }
   } catch (error) {
     console.error('Login error:', error)
@@ -176,17 +185,15 @@ export async function register(
     // Create session
     const session = await createSession(user.id)
 
-    // Create JWT token
-    const token = await createToken({
-      sub: user.id,
-      sessionId: session.id
-    })
+    // Create tokens
+    const { token, refreshToken } = await createTokenPair(user.id, session.id)
 
     // Remove password from user object
     const { password: _, ...safeUser } = user
     return {
       user: safeUser,
-      token
+      token,
+      refreshToken
     }
   } catch (error) {
     console.error('Registration error:', error)
@@ -207,6 +214,111 @@ export async function createSession(userId: string): Promise<Session> {
       expiresAt: getExpiryDate()
     }
   })
+}
+
+/**
+ * Create a token pair (access and refresh tokens)
+ */
+export async function createTokenPair(
+  userId: string,
+  sessionId: string
+): Promise<{ token: string; refreshToken: string }> {
+  // Generate a random token ID for the refresh token
+  const tokenId = generateSecureToken(24)
+
+  // Create access token
+  const token = await createToken({
+    sub: userId,
+    sessionId
+  })
+
+  // Create refresh token
+  const refreshTokenJWT = await createRefreshToken({
+    sub: userId,
+    sessionId,
+    tokenId
+  })
+
+  // Store refresh token in the database
+  await prisma.refreshToken.create({
+    data: {
+      token: tokenId,
+      userId,
+      sessionId,
+      expiresAt: getRefreshTokenExpiryDate()
+    }
+  })
+
+  return {
+    token,
+    refreshToken: refreshTokenJWT
+  }
+}
+
+/**
+ * Refresh access token using a refresh token
+ */
+export async function refreshAccessToken(
+  refreshTokenRequest: RefreshTokenRequest
+): Promise<RefreshTokenResponse | AuthError> {
+  try {
+    // Validate refresh token
+    const result = refreshTokenSchema.safeParse(refreshTokenRequest)
+    if (!result.success) {
+      return {
+        code: 'auth/invalid-token',
+        message: 'Invalid refresh token format'
+      }
+    }
+
+    // Verify the refresh token JWT
+    const payload = await verifyRefreshToken(refreshTokenRequest.refreshToken)
+    if (!payload) {
+      return {
+        code: 'auth/invalid-token',
+        message: 'Invalid refresh token'
+      }
+    }
+
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: {
+        token: payload.data.tokenId,
+        userId: payload.data.sub,
+        sessionId: payload.data.sessionId,
+        isRevoked: false,
+        expiresAt: {
+          gt: new Date()
+        }
+      }
+    })
+
+    if (!storedToken) {
+      return {
+        code: 'auth/invalid-token',
+        message: 'Refresh token not found or expired'
+      }
+    }
+
+    // Revoke the old refresh token for security
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { isRevoked: true }
+    })
+
+    // Create a new token pair
+    const { token, refreshToken } = await createTokenPair(
+      payload.data.sub,
+      payload.data.sessionId
+    )
+
+    return { token, refreshToken }
+  } catch (error) {
+    console.error('Token refresh error:', error)
+    return {
+      code: 'auth/unknown',
+      message: 'An unexpected error occurred during token refresh'
+    }
+  }
 }
 
 /**
@@ -243,7 +355,6 @@ export async function validateToken(token: string): Promise<{
       where: { id: payload.data.sessionId },
       include: {
         user: {
-          omit: { password: true },
           include: {
             roles: {
               include: {
@@ -271,8 +382,11 @@ export async function validateToken(token: string): Promise<{
       return null
     }
 
+    // Omit password from user object
+    const { password: _, ...user } = session.user
+
     return {
-      user: session.user,
+      user,
       session
     }
   } catch (error) {
@@ -282,10 +396,17 @@ export async function validateToken(token: string): Promise<{
 }
 
 /**
- * Logout user by invalidating session
+ * Logout user by invalidating session and all refresh tokens
  */
 export async function logout(sessionId: string): Promise<boolean> {
   try {
+    // Revoke all refresh tokens for this session
+    await prisma.refreshToken.updateMany({
+      where: { sessionId },
+      data: { isRevoked: true }
+    })
+    
+    // Delete the session
     await prisma.session.delete({ where: { id: sessionId } })
     return true
   } catch (error) {

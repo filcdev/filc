@@ -15,8 +15,10 @@ export {
   logout,
   validateToken,
   auth,
+  refreshAccessToken,
   loginSchema,
-  registerSchema
+  registerSchema,
+  refreshTokenSchema
 } from './auth'
 
 // Export utility functions
@@ -24,7 +26,11 @@ export {
   hashPassword,
   comparePassword,
   createToken,
+  createRefreshToken,
   verifyToken,
+  verifyRefreshToken,
   extractTokenFromHeaders,
-  SESSION_EXPIRY_DAYS
+  SESSION_EXPIRY_DAYS,
+  ACCESS_TOKEN_EXPIRY_MINUTES,
+  REFRESH_TOKEN_EXPIRY_DAYS
 } from './utils'

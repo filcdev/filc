@@ -11,6 +11,7 @@ model User {
   roles     Role[]
   
   permissionOverrides UserPermission[]
+  refreshTokens      RefreshToken[]
   
   @@index([email, username])
 }
@@ -22,6 +23,7 @@ model Session {
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  refreshTokens RefreshToken[]
   
   @@index([userId])
 }
@@ -58,4 +60,20 @@ model UserPermission {
   updatedAt    DateTime   @updatedAt
 
   @@unique([userId, permissionId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  sessionId String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
 }

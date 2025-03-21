@@ -55,6 +55,16 @@ export interface TokenPayload {
   exp: number
 }
 
+export interface RefreshTokenPayload {
+  data: {
+    sub: string
+    sessionId: string
+    tokenId: string
+  }
+  iat: number
+  exp: number
+}
+
 export interface LoginCredentials {
   email: string
   password: string
@@ -71,6 +81,7 @@ export interface RegisterCredentials {
 export interface AuthResult {
   user: User
   token: string
+  refreshToken: string
 }
 
 export interface AuthError {
@@ -80,9 +91,20 @@ export interface AuthError {
     | 'auth/user-exists'
     | 'auth/unknown'
     | 'auth/unauthorized'
+    | 'auth/invalid-token'
+    | 'auth/expired-token'
 }
 
 export interface AuthorizeOptions {
   requiredPermissions?: PermissionType[]
   anyOf?: PermissionType[]
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string
+}
+
+export interface RefreshTokenResponse {
+  token: string
+  refreshToken: string
 }
