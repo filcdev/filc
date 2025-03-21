@@ -7,11 +7,12 @@ import {
   useState
 } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+
 import type { User } from '@filc/auth'
 
+import { useStronghold } from './store'
 import { useTRPC } from './trpc'
 import { setToken as setAuthToken } from './trpc/provider'
-import { useStronghold } from './store';
 
 interface AuthContextType {
   token: string
@@ -48,7 +49,8 @@ const AuthContext = createContext<AuthContextType>({
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const trpc = useTRPC()
-  const { getRecord, editRecord, insertRecord, stronghold, client } = useStronghold()
+  const { getRecord, editRecord, insertRecord, stronghold, client } =
+    useStronghold()
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState('')
   const [refreshToken, setRefreshToken] = useState('')
@@ -155,12 +157,14 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    loadTokens().catch((err) => {
-      console.error('Error loading tokens:')
-      throw err
-    }).finally(() => {
-      console.log('Tokens loaded successfully', { token, refreshToken })
-    })
+    loadTokens()
+      .catch((err) => {
+        console.error('Error loading tokens:')
+        throw err
+      })
+      .finally(() => {
+        console.log('Tokens loaded successfully', { token, refreshToken })
+      })
   }, [client, stronghold])
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 {
-  "name": "mobile",
+  "name": "@filc/mobile",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@filc/api": "workspace:*",
@@ -32,5 +34,6 @@
     "@vitejs/plugin-react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
-  }
+  },
+  "prettier": "@filc/prettier-config"
 }

@@ -16,7 +16,7 @@ const ClassSelector = ({ onChange }: ClassSelectorProps) => {
     <select
       onChange={(e) => onChange(e.target.value)}
       className="p-3 text-center"
-      defaultValue={""}
+      defaultValue={''}
     >
       <option value="" disabled>
         Válaszd ki az osztályod

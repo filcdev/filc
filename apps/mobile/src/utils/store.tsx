@@ -6,7 +6,7 @@ import {
   useState
 } from 'react'
 import { appDataDir } from '@tauri-apps/api/path'
-import { Client, Store, Stronghold,  } from '@tauri-apps/plugin-stronghold'
+import { Client, Store, Stronghold } from '@tauri-apps/plugin-stronghold'
 
 interface StrongholdContextType {
   stronghold: Stronghold | null

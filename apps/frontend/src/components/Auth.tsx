@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useAuth } from '@/utils/auth'
+import { TRPCClientError } from '@trpc/client'
 
 import ClassSelector from './ClassSelector'
 import TextInput from './TextInput'
-import { TRPCClientError } from '@trpc/client'
 
 type AuthState = 'login' | 'register'
 
@@ -89,7 +89,7 @@ const Auth = () => {
       </div>
       <button
         onClick={authState === 'login' ? onLogin : onRegister}
-        className="mt-3 w-full flex justify-center py-4 border border-transparent rounded-md shadow-sm text-xl font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 cursor-pointer"
+        className="mt-3 flex w-full cursor-pointer justify-center rounded-md border border-transparent bg-blue-600 py-4 text-xl font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
         {stateText}
       </button>
