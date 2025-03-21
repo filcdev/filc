@@ -23,7 +23,8 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
-    "ui-add": "turbo run ui-add"
+    "ui-add": "turbo run ui-add",
+    "fuck": "pnpm dlx sherif@latest -f"
   },
   "devDependencies": {
     "@filc/prettier-config": "workspace:*",

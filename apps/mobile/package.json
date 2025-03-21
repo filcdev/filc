@@ -1,41 +1,36 @@
 {
-  "name": "@filc/frontend",
+  "name": "mobile",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "vite",
     "dev": "vite",
-    "build": "vite build && tsc",
-    "serve": "vite preview",
-    "test": "vitest run",
-    "lint": "eslint",
-    "format": "prettier --write ."
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@filc/api": "workspace:*",
     "@filc/auth": "workspace:*",
     "@tailwindcss/vite": "^4.0.15",
     "@tanstack/react-query": "catalog:",
-    "@tanstack/react-router": "^1.114.3",
-    "@tanstack/react-router-devtools": "^1.114.3",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-stronghold": "2.2.0",
     "@trpc/client": "catalog:",
     "@trpc/tanstack-react-query": "catalog:",
     "react": "catalog:react19",
-    "react-dom": "catalog:react19",
-    "superjson": "catalog:",
-    "tailwindcss": "catalog:"
+    "react-dom": "catalog:react19"
   },
   "devDependencies": {
     "@filc/eslint-config": "workspace:*",
     "@filc/prettier-config": "workspace:*",
     "@filc/tsconfig": "workspace:*",
+    "@tauri-apps/cli": "^2",
     "@types/react": "catalog:react19",
     "@types/react-dom": "catalog:react19",
     "@vitejs/plugin-react": "catalog:",
-    "jsdom": "^26.0.0",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "web-vitals": "^4.2.4"
-  },
-  "prettier": "@filc/prettier-config"
+    "vite": "catalog:"
+  }
 }
