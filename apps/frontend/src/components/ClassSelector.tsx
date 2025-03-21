@@ -14,10 +14,11 @@ const ClassSelector = ({ onChange }: ClassSelectorProps) => {
 
   return (
     <select
-      onSelect={(e) => onChange(e.currentTarget.value)}
+      onChange={(e) => onChange(e.target.value)}
       className="p-3 text-center"
+      defaultValue={""}
     >
-      <option value="" disabled selected>
+      <option value="" disabled>
         Válaszd ki az osztályod
       </option>
       {classesQuery.data?.map((classItem) => (
