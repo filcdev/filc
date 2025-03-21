@@ -10,7 +10,12 @@ import {
 } from '@filc/auth'
 import { Permission } from '@filc/rbac'
 
-import { createTRPCRouter, permissionProtectedProcedureFactory, protectedProcedure, publicProcedure } from '../trpc'
+import {
+  createTRPCRouter,
+  permissionProtectedProcedureFactory,
+  protectedProcedure,
+  publicProcedure
+} from '../trpc'
 
 export const authRouter = createTRPCRouter({
   login: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
@@ -65,7 +70,9 @@ export const authRouter = createTRPCRouter({
     }
   }),
 
-  assignRole: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
+  assignRole: permissionProtectedProcedureFactory([
+    Permission.MANAGE_PERMISSIONS
+  ])
     .input(
       z.object({
         userId: z.string(),
@@ -90,7 +97,9 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  removeRole: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
+  removeRole: permissionProtectedProcedureFactory([
+    Permission.MANAGE_PERMISSIONS
+  ])
     .input(
       z.object({
         userId: z.string(),
@@ -115,7 +124,9 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  grantPermission: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
+  grantPermission: permissionProtectedProcedureFactory([
+    Permission.MANAGE_PERMISSIONS
+  ])
     .input(
       z.object({
         userId: z.string(),
@@ -135,7 +146,9 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  revokePermission: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
+  revokePermission: permissionProtectedProcedureFactory([
+    Permission.MANAGE_PERMISSIONS
+  ])
     .input(
       z.object({
         userId: z.string(),
@@ -159,5 +172,5 @@ export const authRouter = createTRPCRouter({
         permissions: true
       }
     })
-  }),
+  })
 })

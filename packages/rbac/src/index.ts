@@ -10,3 +10,4 @@ export {
   requirePermission,
   requireAnyPermission
 } from './checker'
+export { seedRolesAndPermissions } from './seed'

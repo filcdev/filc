@@ -14,6 +14,7 @@
   "dependencies": {
     "@filc/api": "workspace:*",
     "@filc/db": "workspace:*",
+    "@filc/rbac": "workspace:*",
     "@trpc/server": "catalog:",
     "cors": "^2.8.5",
     "zod": "catalog:"

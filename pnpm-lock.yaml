@@ -78,6 +78,9 @@ importers:
       '@filc/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@filc/rbac':
+        specifier: workspace:*
+        version: link:../../packages/rbac
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.0.0-rc.833(typescript@5.7.3)
