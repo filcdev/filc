@@ -27,16 +27,18 @@ import {
 
 // Schema validations
 export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8)
+  email: z.string().email("Kérlek adj meg egy érvényes email címet!"),
+  password: z.string().min(8, "A jelszó legalább 8 karakter hosszú kell, hogy legyen!")
 })
 
 export const registerSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(20),
-  password: z.string().min(8),
+  email: z.string().email("Kérlek adj meg egy érvényes email címet!"),
+  username: z.string()
+  .min(3, "A felhasználónév minimum 3 karakter hosszú kell, hogy legyen!")
+  .regex(/^[a-zA-Z0-9_]+$/, "A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat!")
+  .max(20, "A felhasználónév maximum 20 karakter hosszú lehet!"),
+  password: z.string().min(8, "A jelszó legalább 8 karakter hosszú kell, hogy legyen!"),
   classId: z.string(),
-  roles: z.array(z.string()).optional()
 })
 
 export const refreshTokenSchema = z.object({
