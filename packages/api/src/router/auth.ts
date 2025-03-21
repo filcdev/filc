@@ -73,13 +73,6 @@ export const authRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Insufficient permissions'
-        })
-      }
-
       return ctx.prisma.user.update({
         where: { id: input.userId },
         data: {
@@ -105,13 +98,6 @@ export const authRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Insufficient permissions'
-        })
-      }
-
       return ctx.prisma.user.update({
         where: { id: input.userId },
         data: {
@@ -137,13 +123,6 @@ export const authRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Insufficient permissions'
-        })
-      }
-
       return ctx.prisma.userPermission.create({
         data: {
           userId: input.userId,
@@ -164,13 +143,6 @@ export const authRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!(await ctx.authorize([Permission.MANAGE_PERMISSIONS]))) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Insufficient permissions'
-        })
-      }
-
       return ctx.prisma.userPermission.delete({
         where: {
           userId_permissionId: {
@@ -182,13 +154,6 @@ export const authRouter = createTRPCRouter({
     }),
 
   getRoles: protectedProcedure.query(async ({ ctx }) => {
-    if (!(await ctx.authorize([Permission.VIEW_ROLES]))) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Insufficient permissions'
-      })
-    }
-
     return ctx.prisma.role.findMany({
       include: {
         permissions: true
