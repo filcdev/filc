@@ -35,7 +35,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="flex h-screen w-[30%] self-center mx-auto flex-col items-center justify-center gap-5 text-2xl">
+    <div className="mx-auto flex h-screen w-[30%] flex-col items-center justify-center gap-5 self-center text-2xl">
       <h2 className="text-6xl">{stateText}</h2>
       <TextInput value={email} onChange={setEmail} placeholder="Email" />
       <TextInput
@@ -61,7 +61,7 @@ const Auth = () => {
       </div>
       <button
         onClick={authState === 'login' ? onLogin : onRegister}
-        className="rounded-lg bg-blue-500 px-15 py-5 text-3xl text-white mt-3"
+        className="px-15 mt-3 rounded-lg bg-blue-500 py-5 text-3xl text-white"
       >
         {stateText}
       </button>

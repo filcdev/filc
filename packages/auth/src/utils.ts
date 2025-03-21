@@ -1,6 +1,6 @@
+import { randomBytes } from 'crypto'
 import { compare, hash } from '@node-rs/bcrypt'
 import { sign, verify } from '@node-rs/jsonwebtoken'
-import { randomBytes } from 'crypto'
 
 import type { RefreshTokenPayload, TokenPayload } from './types'
 
@@ -8,7 +8,8 @@ export const SESSION_EXPIRY_DAYS = 30
 export const ACCESS_TOKEN_EXPIRY_MINUTES = 15 // Access token expires in 15 minutes
 export const REFRESH_TOKEN_EXPIRY_DAYS = 30 // Refresh token expires in 30 days
 const JWT_SECRET = process.env.JWT_SECRET ?? 'supersecret'
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET ?? 'refresh-supersecret'
+const REFRESH_TOKEN_SECRET =
+  process.env.REFRESH_TOKEN_SECRET ?? 'refresh-supersecret'
 
 /**
  * Hash a password
@@ -53,7 +54,8 @@ export async function createRefreshToken(
     {
       data: payload,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60
+      exp:
+        Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60
     },
     REFRESH_TOKEN_SECRET
   )
@@ -74,7 +76,9 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
 /**
  * Verify a JWT refresh token
  */
-export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
+export async function verifyRefreshToken(
+  token: string
+): Promise<RefreshTokenPayload | null> {
   try {
     return (await verify(token, REFRESH_TOKEN_SECRET)) as RefreshTokenPayload
   } catch (error) {

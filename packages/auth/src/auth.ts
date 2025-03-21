@@ -405,7 +405,7 @@ export async function logout(sessionId: string): Promise<boolean> {
       where: { sessionId },
       data: { isRevoked: true }
     })
-    
+
     // Delete the session
     await prisma.session.delete({ where: { id: sessionId } })
     return true

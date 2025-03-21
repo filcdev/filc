@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react'
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState
+} from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 import type { User } from '@filc/auth'
@@ -131,8 +137,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsRefreshing(false)
     }
-  }
-  , [refreshToken, isRefreshing, refreshTokenQuery, getSessionQuery, logout])
+  }, [refreshToken, isRefreshing, refreshTokenQuery, getSessionQuery, logout])
 
   useEffect(() => {
     const storedToken = localStorage.getItem('site-token')
