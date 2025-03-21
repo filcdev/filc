@@ -14,6 +14,7 @@
   "dependencies": {
     "@filc/api": "workspace:*",
     "@filc/auth": "workspace:*",
+    "@tailwindcss/vite": "^4.0.15",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "^1.114.3",
     "@tanstack/react-router-devtools": "^1.114.3",
@@ -21,7 +22,8 @@
     "@trpc/tanstack-react-query": "catalog:",
     "react": "catalog:react19",
     "react-dom": "catalog:react19",
-    "superjson": "catalog:"
+    "superjson": "catalog:",
+    "tailwindcss": "catalog:"
   },
   "devDependencies": {
     "@filc/eslint-config": "workspace:*",
