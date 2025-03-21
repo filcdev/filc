@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { Prisma, Session } from '@filc/db'
-import { prisma } from '@filc/db'
+import { prisma, PrismaClientKnownRequestError, PrismaClientValidationError } from '@filc/db'
 import { hasAnyPermission, hasPermission } from '@filc/rbac'
 
 import type {
@@ -196,6 +196,27 @@ export async function register(
       refreshToken
     }
   } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return {
+          code: 'auth/user-exists',
+          message: 'Email or username already in use'
+        }
+      }
+      if (error.code === 'P2003') {
+        return {
+          code: 'auth/invalid-class',
+          message: 'Invalid class ID'
+        }
+      }
+    }
+    if (error instanceof PrismaClientValidationError) {
+      return {
+        code: 'auth/invalid-credentials',
+        message: 'Invalid registration data'
+      }
+    }
+
     console.error('Registration error:', error)
     return {
       code: 'auth/unknown',

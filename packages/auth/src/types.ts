@@ -93,6 +93,7 @@ export interface AuthError {
     | 'auth/unauthorized'
     | 'auth/invalid-token'
     | 'auth/expired-token'
+    | 'auth/invalid-class'
 }
 
 export interface AuthorizeOptions {
