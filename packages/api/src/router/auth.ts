@@ -10,7 +10,7 @@ import {
 } from '@filc/auth'
 import { Permission } from '@filc/rbac'
 
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc'
+import { createTRPCRouter, permissionProtectedProcedureFactory, protectedProcedure, publicProcedure } from '../trpc'
 
 export const authRouter = createTRPCRouter({
   login: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
@@ -65,8 +65,7 @@ export const authRouter = createTRPCRouter({
     }
   }),
 
-  // Role Management
-  assignRole: protectedProcedure
+  assignRole: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
     .input(
       z.object({
         userId: z.string(),
@@ -98,7 +97,7 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  removeRole: protectedProcedure
+  removeRole: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
     .input(
       z.object({
         userId: z.string(),
@@ -130,8 +129,7 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  // Permission Management
-  grantPermission: protectedProcedure
+  grantPermission: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
     .input(
       z.object({
         userId: z.string(),
@@ -158,7 +156,7 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  revokePermission: protectedProcedure
+  revokePermission: permissionProtectedProcedureFactory([Permission.MANAGE_PERMISSIONS])
     .input(
       z.object({
         userId: z.string(),
@@ -183,7 +181,6 @@ export const authRouter = createTRPCRouter({
       })
     }),
 
-  // Role Listing
   getRoles: protectedProcedure.query(async ({ ctx }) => {
     if (!(await ctx.authorize([Permission.VIEW_ROLES]))) {
       throw new TRPCError({
@@ -198,8 +195,4 @@ export const authRouter = createTRPCRouter({
       }
     })
   }),
-
-  getSecretMessage: protectedProcedure.query(() => {
-    return 'You are authenticated!'
-  })
 })
