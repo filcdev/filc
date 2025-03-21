@@ -72,7 +72,7 @@ const Auth = () => {
       </div>
       <button
         onClick={authState === 'login' ? onLogin : onRegister}
-        className="mt-3 rounded-lg bg-blue-500 px-12 py-4 text-3xl text-white"
+        className="mt-3 w-full flex justify-center py-4 border border-transparent rounded-md shadow-sm text-xl font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 cursor-pointer"
       >
         {stateText}
       </button>
