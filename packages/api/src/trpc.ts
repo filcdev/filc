@@ -48,6 +48,12 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 
   const result = await next()
 
+  // add delay in dev
+  if (t._config.isDev) {
+    const delay = Math.floor(Math.random() * 1000)
+    await new Promise((resolve) => setTimeout(resolve, delay))
+  }
+
   const end = Date.now()
   console.log(`[TRPC] ${path} took ${end - start}ms to execute`)
 
