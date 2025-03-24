@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+import { Toaster } from '@/components/ui/sonner'
 import {
   createRootRoute,
   createRoute,
@@ -8,16 +9,14 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import ReactDOM from 'react-dom/client'
-import { Toaster } from "@/components/ui/sonner"
-
 
 import TRPCProvider from './lib/trpc/provider.tsx'
 
 import './styles.css'
 
 import App from './App.tsx'
-import reportWebVitals from './reportWebVitals.ts'
 import AuthProvider from './lib/auth.tsx'
+import reportWebVitals from './reportWebVitals.ts'
 
 const rootRoute = createRootRoute({
   component: () => (
