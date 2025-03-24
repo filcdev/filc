@@ -1,99 +1,165 @@
 import { useState } from 'react'
-import { useAuth } from '@/utils/auth'
-
-import ClassSelector from './ClassSelector'
-import TextInput from './TextInput'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { useAuth } from '@/lib/auth'
+import { useTRPC } from '@/lib/trpc'
+import { useQuery } from '@tanstack/react-query'
 import { TRPCClientError } from '@trpc/client'
 
 type AuthState = 'login' | 'register'
 
 const Auth = () => {
   const { login, register } = useAuth()
+  const trpc = useTRPC()
+  const [isPending, setIsPending] = useState(false)
   const [password, setPassword] = useState<string>('')
   const [email, setEmail] = useState<string>('')
   const [username, setUserName] = useState<string>('')
   const [classId, setClassId] = useState<string>('')
   const [error, setError] = useState<string>('')
-
   const [authState, setAuthState] = useState<AuthState>('login')
-  const stateText = authState === 'login' ? 'Bejelentkezés' : 'Regisztráció'
 
-  const onLogin = async () => {
+  const classesQuery = useQuery(trpc.class.getAll.queryOptions())
+
+  const onSubmit = async (e: React.FormEvent) => {
+    setIsPending(true)
+    e.preventDefault()
     setError('')
     try {
-      await login({ email, password })
-    } catch (err: unknown) {
+      if (authState === 'login') {
+        await login({ email, password })
+      } else {
+        await register({ email, username, password, classId })
+      }
+    } catch (err) {
       if (err instanceof TRPCClientError) {
         setError(err.message)
       } else {
-        console.error(err)
+        setError('Hiba történt a bejelentkezés során.')
       }
-    }
-  }
-
-  const onRegister = async () => {
-    setError('')
-    try {
-      await register({
-        email,
-        password,
-        username,
-        classId
-      })
-    } catch (err: unknown) {
-      if (err instanceof TRPCClientError) {
-        setError(err.message)
-      } else {
-        console.error(err)
-      }
+    } finally {
+      setIsPending(false)
     }
   }
 
   return (
-    <div className="mx-auto flex h-screen w-[30%] flex-col items-center justify-center gap-5 self-center text-2xl">
-      <h2 className="mb-3 text-6xl">{stateText}</h2>
-      {error && (
-        <div className="mb-3 w-full rounded-md bg-red-100 p-4 text-red-700">
-          {error}
-        </div>
-      )}
-      {authState === 'register' && (
-        <>
-          <ClassSelector onChange={setClassId} />
-          <TextInput
-            value={username}
-            onChange={setUserName}
-            placeholder="Felhasználónév"
-          />
-        </>
-      )}
-      <TextInput value={email} onChange={setEmail} placeholder="Email" />
-      <TextInput
-        value={password}
-        onChange={setPassword}
-        placeholder="Jelszó"
-        password
-      />
-      <div className="flex gap-4 text-center">
-        <span>
-          {authState === 'login' ? 'Még nincs fiókod?' : 'Már regisztráltál?'}
-        </span>
-        <span
-          className="cursor-pointer select-none text-blue-500 underline hover:text-blue-700"
-          onClick={() =>
-            setAuthState((prev) => (prev === 'login' ? 'register' : 'login'))
-          }
-        >
-          {authState === 'login' ? 'Regisztálj' : 'Jelentkezz be'}
-        </span>
+    <main className="flex grow items-center justify-center">
+      <div className="bg-background absolute top-0 left-0 h-dvh w-dvw overflow-hidden">
+        <div
+          className="translate-[-50%] absolute left-[50%] top-[50%] aspect-square h-[40vmax] scale-150 animate-spin rounded-full bg-gradient-to-tr from-green-500 to-blue-500"
+          style={{ animationDuration: '5s' }}
+        ></div>
+        <div className="z-2 absolute h-screen w-screen backdrop-blur-[13vmax]"></div>
       </div>
-      <button
-        onClick={authState === 'login' ? onLogin : onRegister}
-        className="mt-3 w-full flex justify-center py-4 border border-transparent rounded-md shadow-sm text-xl font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 cursor-pointer"
-      >
-        {stateText}
-      </button>
-    </div>
+      <Card className="min-w-md z-3 bg-background/80">
+        <CardHeader>
+          <CardTitle>
+            {authState === 'login' ? 'Bejelentkezés' : 'Regisztráció'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit}>
+            <div className="flex flex-col gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@petrik.hu"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              {authState === 'register' ? (
+                <div className="grid gap-2">
+                  <Label htmlFor="username">Felhasználónév</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    required
+                    value={username}
+                    onChange={(e) => setUserName(e.target.value)}
+                  />
+                </div>
+              ) : null}
+              <div className="grid gap-2">
+                <div className="flex items-center">
+                  <Label htmlFor="password">Jelszó</Label>
+                  {authState === 'login' ? (
+                    <a
+                      href="#"
+                      className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    >
+                      Elfelejtett jelszó?
+                    </a>
+                  ) : null}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {authState === 'register' ? (
+                <div className="grid gap-2">
+                  <Label htmlFor="username">Osztály</Label>
+                  <Select value={classId} onValueChange={setClassId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Válassz osztályt" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {classesQuery.data?.map((classItem) => (
+                          <SelectItem key={classItem.id} value={classItem.id}>
+                            {classItem.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending
+                  ? 'Várj...'
+                  : authState === 'login'
+                    ? 'Bejelentkezés'
+                    : 'Regisztráció'}
+              </Button>
+            </div>
+            <div className="mt-4 text-center text-sm">
+              <p className="text-red-500">{error}</p>
+              {authState === 'login'
+                ? 'Még nincs fiókod?'
+                : 'Már van fiókod?'}{' '}
+              <a
+                href="#"
+                className="underline underline-offset-4"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setAuthState(authState === 'login' ? 'register' : 'login')
+                }}
+              >
+                {authState === 'login' ? 'Regisztrálj most!' : 'Jelentkezz be!'}
+              </a>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </main>
   )
 }
 

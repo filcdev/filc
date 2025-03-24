@@ -1,10 +1,11 @@
 import Auth from './components/Auth'
-import { useAuth } from './utils/auth'
+import { useAuth } from './lib/auth'
 
 const Index = () => {
   const { user, logout, token } = useAuth()
 
   if (!user) return <Auth />
+
   return (
     <div>
       {JSON.stringify(user)}

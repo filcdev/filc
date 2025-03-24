@@ -9,13 +9,13 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import ReactDOM from 'react-dom/client'
 
-import TRPCProvider from './utils/trpc/provider'
+import TRPCProvider from './lib/trpc/provider.tsx'
 
 import './styles.css'
 
 import App from './App.tsx'
 import reportWebVitals from './reportWebVitals.ts'
-import AuthProvider from './utils/auth.tsx'
+import AuthProvider from './lib/auth.tsx'
 
 const rootRoute = createRootRoute({
   component: () => (

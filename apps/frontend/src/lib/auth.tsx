@@ -66,18 +66,14 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshTokenQuery = useMutation(trpc.auth.refresh.mutationOptions())
 
   const login = async (data: { email: string; password: string }) => {
-    try {
-      const res = await loginQuery.mutateAsync(data)
-      setUser(res.user)
-      setToken(res.token)
-      setRefreshToken(res.refreshToken)
-      localStorage.setItem('site-token', res.token)
-      localStorage.setItem('site-refresh-token', res.refreshToken)
-      return
-    } catch (err) {
-      console.error(err)
-      throw err
-    }
+    const res = await loginQuery.mutateAsync(data)
+
+    setUser(res.user)
+    setToken(res.token)
+    setRefreshToken(res.refreshToken)
+    localStorage.setItem('site-token', res.token)
+    localStorage.setItem('site-refresh-token', res.refreshToken)
+    return
   }
 
   const register = async (data: {
@@ -86,18 +82,14 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string
     classId: string
   }) => {
-    try {
-      const res = await registerQuery.mutateAsync(data)
-      setUser(res.user)
-      setToken(res.token)
-      setRefreshToken(res.refreshToken)
-      localStorage.setItem('site-token', res.token)
-      localStorage.setItem('site-refresh-token', res.refreshToken)
-      return
-    } catch (err) {
-      console.error(err)
-      throw err
-    }
+    const res = await registerQuery.mutateAsync(data)
+
+    setUser(res.user)
+    setToken(res.token)
+    setRefreshToken(res.refreshToken)
+    localStorage.setItem('site-token', res.token)
+    localStorage.setItem('site-refresh-token', res.refreshToken)
+    return
   }
 
   const logout = useCallback(() => {
