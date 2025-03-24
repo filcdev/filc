@@ -15,7 +15,7 @@ import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { useQuery } from '@tanstack/react-query'
 import { TRPCClientError } from '@trpc/client'
-import { toast } from "sonner"
+import { toast } from 'sonner'
 
 type AuthState = 'login' | 'register'
 
@@ -43,10 +43,15 @@ const Auth = () => {
     } catch (err) {
       if (err instanceof TRPCClientError) {
         // try parsing it as JSON
-        const parsedError = JSON.parse(err.message) as Zod.ZodError[]
-        if (parsedError.length > 0) {
-          toast.error(parsedError[0]?.message)
-        } else {
+        try {
+          const parsedError = JSON.parse(err.message) as Zod.ZodError[]
+          if (parsedError.length > 0) {
+            toast.error(parsedError[0]?.message)
+          }
+        } catch (_err) {
+          // TODO: fix eslint unused regex
+          void _err
+          // guess it wasn't JSON
           toast.error(err.message)
         }
       } else {
@@ -59,7 +64,7 @@ const Auth = () => {
 
   return (
     <main className="flex grow items-center justify-center">
-      <div className="bg-background absolute top-0 left-0 h-dvh w-dvw overflow-hidden">
+      <div className="bg-background absolute left-0 top-0 h-dvh w-dvw overflow-hidden">
         <div
           className="translate-[-50%] absolute left-[50%] top-[50%] aspect-square h-[40vmax] scale-150 animate-spin rounded-full bg-gradient-to-tr from-green-500 to-blue-500"
           style={{ animationDuration: '5s' }}
@@ -146,9 +151,7 @@ const Auth = () => {
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              {authState === 'login'
-                ? 'Még nincs fiókod?'
-                : 'Már van fiókod?'}{' '}
+              {authState === 'login' ? 'Még nincs fiókod?' : 'Már van fiókod?'}{' '}
               <a
                 href="#"
                 className="underline underline-offset-4"
