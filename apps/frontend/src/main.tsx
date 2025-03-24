@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import ReactDOM from 'react-dom/client'
+import { Toaster } from "@/components/ui/sonner"
+
 
 import TRPCProvider from './lib/trpc/provider.tsx'
 
@@ -23,6 +25,7 @@ const rootRoute = createRootRoute({
       <AuthProvider>
         <Outlet />
         <TanStackRouterDevtools />
+        <Toaster richColors />
       </AuthProvider>
     </TRPCProvider>
   )

@@ -57,7 +57,7 @@ export async function login(
     if (!result.success) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid email or password format'
+        message: 'Érvénytelen email vagy jelszó formátum'
       }
     }
 
@@ -83,7 +83,7 @@ export async function login(
     if (!user) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid email or password'
+        message: 'Érvénytelen email vagy jelszó'
       }
     }
 
@@ -96,7 +96,7 @@ export async function login(
     if (!passwordValid) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid email or password'
+        message: 'Érvénytelen email vagy jelszó'
       }
     }
 
@@ -117,7 +117,7 @@ export async function login(
     console.error('Login error:', error)
     return {
       code: 'auth/unknown',
-      message: 'An unexpected error occurred during login'
+      message: 'Váratlan hiba történt a bejelentkezés során'
     }
   }
 }
@@ -134,7 +134,7 @@ export async function register(
     if (!result.success) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid registration data'
+        message: 'Érvénytelen regisztrációs adatok'
       }
     }
 
@@ -148,7 +148,7 @@ export async function register(
     if (existingUser) {
       return {
         code: 'auth/user-exists',
-        message: 'Email or username already in use'
+        message: 'Ez az email cím vagy felhasználónév már használatban van'
       }
     }
 
@@ -202,27 +202,27 @@ export async function register(
       if (error.code === 'P2002') {
         return {
           code: 'auth/user-exists',
-          message: 'Email or username already in use'
+          message: 'Ez az email cím vagy felhasználónév már használatban van'
         }
       }
       if (error.code === 'P2003') {
         return {
           code: 'auth/invalid-class',
-          message: 'Invalid class ID'
+          message: 'Érvénytelen osztályazonosító'
         }
       }
     }
     if (error instanceof PrismaClientValidationError) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid registration data'
+        message: 'Érvénytelen regisztrációs adatok'
       }
     }
 
     console.error('Registration error:', error)
     return {
       code: 'auth/unknown',
-      message: 'An unexpected error occurred during registration'
+      message: 'Váratlan hiba történt a regisztráció során'
     }
   }
 }
@@ -290,7 +290,7 @@ export async function refreshAccessToken(
     if (!result.success) {
       return {
         code: 'auth/invalid-token',
-        message: 'Invalid refresh token format'
+        message: 'Érvénytelen token formátum'
       }
     }
 
@@ -299,7 +299,7 @@ export async function refreshAccessToken(
     if (!payload) {
       return {
         code: 'auth/invalid-token',
-        message: 'Invalid refresh token'
+        message: 'Érvénytelen token'
       }
     }
 
@@ -318,7 +318,7 @@ export async function refreshAccessToken(
     if (!storedToken) {
       return {
         code: 'auth/invalid-token',
-        message: 'Refresh token not found or expired'
+        message: 'A token nem található vagy lejárt'
       }
     }
 
@@ -339,7 +339,7 @@ export async function refreshAccessToken(
     console.error('Token refresh error:', error)
     return {
       code: 'auth/unknown',
-      message: 'An unexpected error occurred during token refresh'
+      message: 'Váratlan hiba történt a token frissítése során'
     }
   }
 }

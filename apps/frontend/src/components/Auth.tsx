@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { useQuery } from '@tanstack/react-query'
 import { TRPCClientError } from '@trpc/client'
+import { toast } from "sonner"
 
 type AuthState = 'login' | 'register'
 
@@ -26,7 +27,6 @@ const Auth = () => {
   const [email, setEmail] = useState<string>('')
   const [username, setUserName] = useState<string>('')
   const [classId, setClassId] = useState<string>('')
-  const [error, setError] = useState<string>('')
   const [authState, setAuthState] = useState<AuthState>('login')
 
   const classesQuery = useQuery(trpc.class.getAll.queryOptions())
@@ -34,7 +34,6 @@ const Auth = () => {
   const onSubmit = async (e: React.FormEvent) => {
     setIsPending(true)
     e.preventDefault()
-    setError('')
     try {
       if (authState === 'login') {
         await login({ email, password })
@@ -43,9 +42,15 @@ const Auth = () => {
       }
     } catch (err) {
       if (err instanceof TRPCClientError) {
-        setError(err.message)
+        // try parsing it as JSON
+        const parsedError = JSON.parse(err.message) as Zod.ZodError[]
+        if (parsedError.length > 0) {
+          toast.error(parsedError[0]?.message)
+        } else {
+          toast.error(err.message)
+        }
       } else {
-        setError('Hiba történt a bejelentkezés során.')
+        toast.error('Hiba történt a bejelentkezés során')
       }
     } finally {
       setIsPending(false)
@@ -141,7 +146,6 @@ const Auth = () => {
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              <p className="text-red-500">{error}</p>
               {authState === 'login'
                 ? 'Még nincs fiókod?'
                 : 'Már van fiókod?'}{' '}
