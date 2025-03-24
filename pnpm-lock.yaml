@@ -264,6 +264,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.4.2
+      trpc-swift:
+        specifier: 1.0.0-beta.33
+        version: 1.0.0-beta.33
       typescript:
         specifier: 'catalog:'
         version: 5.7.3
@@ -4155,6 +4158,10 @@ packages:
   tr46@5.1.0:
     resolution: {integrity: sha512-IUWnUK7ADYR5Sl1fZlO1INDUhVhatWl7BtJWsIhwJ0UAK7ilzzIa8uIqOO/aYVWHZPJkKbEL+362wrzoeRF7bw==}
     engines: {node: '>=18'}
+
+  trpc-swift@1.0.0-beta.33:
+    resolution: {integrity: sha512-xlukebRUgpNXruCF0KY+PZ31KiWJCBO1Nf+6b742tlkYOc5mtF3SWVT87fgdTiWAnmwQVppepj+a8Rg1yr8Bzg==}
+    hasBin: true
 
   ts-api-utils@2.0.0:
     resolution: {integrity: sha512-xCt/TOAc+EOHS1XPnijD3/yzpH6qg2xppZO1YDqGoVsNXfQfzHpOdNuXwrwOU8u4ITXJyDCTyt8w5g1sZv9ynQ==}
@@ -8405,6 +8412,8 @@ snapshots:
   tr46@5.1.0:
     dependencies:
       punycode: 2.3.1
+
+  trpc-swift@1.0.0-beta.33: {}
 
   ts-api-utils@2.0.0(typescript@5.7.3):
     dependencies:

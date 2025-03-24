@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev": "tsc",
+    "dev": "tsc && pnpm trpc-swift",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
@@ -32,6 +32,7 @@
     "@filc/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
+    "trpc-swift": "1.0.0-beta.33",
     "typescript": "catalog:"
   },
   "prettier": "@filc/prettier-config"

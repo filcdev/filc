@@ -1,0 +1,4 @@
+[tools]
+# this is needed for trpc swift
+bun = "latest"
+node = "23.9.0"
