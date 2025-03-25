@@ -39,7 +39,7 @@ export type User = Prisma.UserGetPayload<{
       include: {
         permission: true
       }
-    }
+    },
   }
   omit: {
     password: true
@@ -72,10 +72,13 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials {
   email: string
-  username: string
   password: string
-  classId: string
   roles?: string[] // Role IDs to assign
+}
+
+export interface CompleteOnboardingData {
+  username: string
+  classId: string
 }
 
 export interface AuthResult {
@@ -94,6 +97,9 @@ export interface AuthError {
     | 'auth/invalid-token'
     | 'auth/expired-token'
     | 'auth/invalid-class'
+    | 'auth/verification-failed'
+    | 'auth/already-verified'
+    | 'auth/not-verified'
 }
 
 export interface AuthorizeOptions {

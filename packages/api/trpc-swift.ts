@@ -1,7 +1,8 @@
-import type { TRPCSwiftConfiguration } from "trpc-swift";
-import { appRouter } from "./src";
+import type { TRPCSwiftConfiguration } from 'trpc-swift'
+
+import { appRouter } from './src'
 
 export default {
   router: appRouter,
-  outFile: "./generated.swift",
-} satisfies TRPCSwiftConfiguration;
+  outFile: './generated.swift'
+} satisfies TRPCSwiftConfiguration

@@ -479,20 +479,56 @@ class AppRouter {
         
         struct RegisterInput: Codable, Equatable, Hashable {
             var email: String
-            var username: String
             var password: String
-            var classId: String
+            var roles: [String]?
             
-            init(email: String, username: String, password: String, classId: String) {
+            init(email: String, password: String, roles: [String]? = nil) {
                 self.email = email
-                self.username = username
                 self.password = password
-                self.classId = classId
+                self.roles = roles
             }
         }
         
         func register(input: RegisterInput) async throws -> Void {
             let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("register"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        struct VerifyEmailInput: Codable, Equatable, Hashable {
+            var token: String
+            
+            init(token: String) {
+                self.token = token
+            }
+        }
+        
+        func verifyEmail(input: VerifyEmailInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("verifyEmail"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        struct ResendVerificationInput: Codable, Equatable, Hashable {
+            var email: String
+            
+            init(email: String) {
+                self.email = email
+            }
+        }
+        
+        func resendVerification(input: ResendVerificationInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("resendVerification"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        struct CompleteOnboardingInput: Codable, Equatable, Hashable {
+            var username: String
+            var classId: String
+            
+            init(username: String, classId: String) {
+                self.username = username
+                self.classId = classId
+            }
+        }
+        
+        func completeOnboarding(input: CompleteOnboardingInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("completeOnboarding"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
         }
         
         func logout() async throws -> Void {

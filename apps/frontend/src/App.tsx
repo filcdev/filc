@@ -1,10 +1,16 @@
 import Auth from './components/Auth'
+import Onboarding from './components/Onboarding'
+import VerifyEmail from './components/VerifyEmail'
 import { useAuth } from './lib/auth'
 
 const Index = () => {
   const { user, logout, token } = useAuth()
 
   if (!user) return <Auth />
+  if (!user.isEmailVerified) return <VerifyEmail email={user.email} />
+  if (!user.isOnboarded) return <Onboarding />
+
+
 
   return (
     <div>

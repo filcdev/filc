@@ -61,7 +61,8 @@
     "JWT_SECRET",
     "REFRESH_TOKEN_SECRET",
     "DATABASE_URL",
-    "PORT"
+    "PORT",
+    "APP_HOST"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

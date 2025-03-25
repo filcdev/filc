@@ -7,9 +7,29 @@ import type { RefreshTokenPayload, TokenPayload } from './types'
 export const SESSION_EXPIRY_DAYS = 30
 export const ACCESS_TOKEN_EXPIRY_MINUTES = 15 // Access token expires in 15 minutes
 export const REFRESH_TOKEN_EXPIRY_DAYS = 30 // Refresh token expires in 30 days
-const JWT_SECRET = process.env.JWT_SECRET ?? 'supersecret'
-const REFRESH_TOKEN_SECRET =
-  process.env.REFRESH_TOKEN_SECRET ?? 'refresh-supersecret'
+const JWT_SECRET = process.env.JWT_SECRET
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET
+
+// Ensure we have proper JWT secrets
+if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'JWT_SECRET and REFRESH_TOKEN_SECRET must be set in production'
+    )
+  }
+  console.warn(
+    'Warning: JWT_SECRET and/or REFRESH_TOKEN_SECRET environment variables not set. ' +
+      'Using insecure default secrets - DO NOT USE IN PRODUCTION!'
+  )
+}
+
+// Use secure defaults only for development
+const finalJwtSecret = JWT_SECRET ?? 'dev_jwt_secret_do_not_use_in_production'
+const finalRefreshSecret =
+  REFRESH_TOKEN_SECRET ?? 'dev_refresh_secret_do_not_use_in_production'
+
+// Constants for verification
+export const VERIFICATION_TOKEN_EXPIRY_HOURS = 24
 
 /**
  * Hash a password
@@ -40,7 +60,7 @@ export async function createToken(
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_EXPIRY_MINUTES * 60
     },
-    JWT_SECRET
+    finalJwtSecret
   )
 }
 
@@ -57,7 +77,7 @@ export async function createRefreshToken(
       exp:
         Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60
     },
-    REFRESH_TOKEN_SECRET
+    finalRefreshSecret
   )
 }
 
@@ -66,7 +86,7 @@ export async function createRefreshToken(
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    return (await verify(token, JWT_SECRET)) as TokenPayload
+    return (await verify(token, finalJwtSecret)) as TokenPayload
   } catch (error) {
     console.error('Token verification error:', error)
     return null
@@ -80,7 +100,7 @@ export async function verifyRefreshToken(
   token: string
 ): Promise<RefreshTokenPayload | null> {
   try {
-    return (await verify(token, REFRESH_TOKEN_SECRET)) as RefreshTokenPayload
+    return (await verify(token, finalRefreshSecret)) as RefreshTokenPayload
   } catch (error) {
     console.error('Refresh token verification error:', error)
     return null
@@ -121,4 +141,31 @@ export function extractTokenFromHeaders(headers: Headers): string | null {
     return null
   }
   return authHeader.slice(7) // Remove 'Bearer ' prefix
+}
+
+/**
+ * Generate a random verification token
+ * @returns Random token string
+ */
+export function generateVerificationToken(): string {
+  return generateSecureToken(32)
+}
+
+/**
+ * Get expiry date for verification token
+ * @returns Date object with expiry timestamp
+ */
+export function getVerificationExpiry(): Date {
+  const expiryDate = new Date()
+  expiryDate.setHours(expiryDate.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS)
+  return expiryDate
+}
+
+/**
+ * Check if a verification token is expired
+ * @param expires Expiration date
+ * @returns Boolean indicating if the token is expired
+ */
+export function isVerificationExpired(expires: Date): boolean {
+  return new Date() > expires
 }

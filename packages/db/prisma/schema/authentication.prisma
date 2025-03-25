@@ -1,14 +1,20 @@
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
-  username  String    @unique
+  username  String?    @unique
   password  String
-  classId   String
-  class     Class     @relation(fields: [classId], references: [id])
+  classId   String?
+  class     Class?     @relation(fields: [classId], references: [id])
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   sessions  Session[]
   roles     Role[]
+  
+  // Email verification fields
+  isEmailVerified    Boolean  @default(false)
+  verificationToken  String?
+  verificationExpires DateTime?
+  isOnboarded        Boolean  @default(false)
   
   permissionOverrides UserPermission[]
   refreshTokens      RefreshToken[]

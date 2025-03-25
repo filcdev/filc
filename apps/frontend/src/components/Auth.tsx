@@ -1,19 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/lib/auth'
-import { useTRPC } from '@/lib/trpc'
-import { useQuery } from '@tanstack/react-query'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
 
@@ -21,15 +12,51 @@ type AuthState = 'login' | 'register'
 
 const Auth = () => {
   const { login, register } = useAuth()
-  const trpc = useTRPC()
   const [isPending, setIsPending] = useState(false)
   const [password, setPassword] = useState<string>('')
   const [email, setEmail] = useState<string>('')
-  const [username, setUserName] = useState<string>('')
-  const [classId, setClassId] = useState<string>('')
   const [authState, setAuthState] = useState<AuthState>('login')
+  const [passwordStrength, setPasswordStrength] = useState(0)
+  const [passwordChecks, setPasswordChecks] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false
+  })
 
-  const classesQuery = useQuery(trpc.class.getAll.queryOptions())
+  useEffect(() => {
+    if (authState !== 'register') return
+
+    const checks = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password)
+    }
+
+    setPasswordChecks(checks)
+
+    const passedChecks = Object.values(checks).filter(Boolean).length
+    setPasswordStrength((passedChecks / 5) * 100)
+  }, [password, authState])
+
+  const getStrengthColor = () => {
+    if (passwordStrength <= 20) return 'bg-red-500'
+    if (passwordStrength <= 40) return 'bg-orange-500'
+    if (passwordStrength <= 60) return 'bg-yellow-500'
+    if (passwordStrength <= 80) return 'bg-green-300'
+    return 'bg-green-500'
+  }
+
+  const getStrengthText = () => {
+    if (passwordStrength <= 20) return 'Nagyon gyenge'
+    if (passwordStrength <= 40) return 'Gyenge'
+    if (passwordStrength <= 60) return 'Közepes'
+    if (passwordStrength <= 80) return 'Erős'
+    return 'Nagyon erős'
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     setIsPending(true)
@@ -38,7 +65,17 @@ const Auth = () => {
       if (authState === 'login') {
         await login({ email, password })
       } else {
-        await register({ email, username, password, classId })
+        // Check if all requirements are met
+        if (Object.values(passwordChecks).some((check) => !check)) {
+          toast.error('A jelszó nem felel meg az összes követelménynek')
+          setIsPending(false)
+          return
+        }
+
+        await register({ email, password })
+        toast.success(
+          'Regisztráció sikeres! Ellenőrizd az email fiókod a megerősítő linkért.'
+        )
       }
     } catch (err) {
       if (err instanceof TRPCClientError) {
@@ -49,8 +86,6 @@ const Auth = () => {
             toast.error(parsedError[0]?.message)
           }
         } catch (_err) {
-          // TODO: fix eslint unused regex
-          void _err
           // guess it wasn't JSON
           toast.error(err.message)
         }
@@ -91,18 +126,6 @@ const Auth = () => {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              {authState === 'register' ? (
-                <div className="grid gap-2">
-                  <Label htmlFor="username">Felhasználónév</Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => setUserName(e.target.value)}
-                  />
-                </div>
-              ) : null}
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Jelszó</Label>
@@ -111,6 +134,7 @@ const Auth = () => {
                       href="#"
                       className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                     >
+                      {/* TODO: Implement forgotten password functionality */}
                       Elfelejtett jelszó?
                     </a>
                   ) : null}
@@ -122,27 +146,81 @@ const Auth = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+
+                {authState === 'register' && (
+                  <div className="mt-2">
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span>Jelszó erőssége:</span>
+                      <span>{getStrengthText()}</span>
+                    </div>
+                    <Progress
+                      value={passwordStrength}
+                      className={`h-2 ${getStrengthColor()}`}
+                    />
+
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm font-medium">
+                        A jelszónak tartalmaznia kell:
+                      </p>
+                      <ul className="space-y-1 text-xs">
+                        <li
+                          className={
+                            passwordChecks.length
+                              ? 'text-green-500'
+                              : 'text-gray-500'
+                          }
+                        >
+                          ✓ Legalább 8 karaktert
+                        </li>
+                        <li
+                          className={
+                            passwordChecks.uppercase
+                              ? 'text-green-500'
+                              : 'text-gray-500'
+                          }
+                        >
+                          ✓ Legalább egy nagybetűt (A-Z)
+                        </li>
+                        <li
+                          className={
+                            passwordChecks.lowercase
+                              ? 'text-green-500'
+                              : 'text-gray-500'
+                          }
+                        >
+                          ✓ Legalább egy kisbetűt (a-z)
+                        </li>
+                        <li
+                          className={
+                            passwordChecks.number
+                              ? 'text-green-500'
+                              : 'text-gray-500'
+                          }
+                        >
+                          ✓ Legalább egy számot (0-9)
+                        </li>
+                        <li
+                          className={
+                            passwordChecks.special
+                              ? 'text-green-500'
+                              : 'text-gray-500'
+                          }
+                        >
+                          ✓ Legalább egy speciális karaktert (!@#$%^&*)
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
-              {authState === 'register' ? (
-                <div className="grid gap-2">
-                  <Label htmlFor="username">Osztály</Label>
-                  <Select value={classId} onValueChange={setClassId}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Válassz osztályt" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {classesQuery.data?.map((classItem) => (
-                          <SelectItem key={classItem.id} value={classItem.id}>
-                            {classItem.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-              <Button type="submit" className="w-full" disabled={isPending}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={
+                  isPending ||
+                  (authState === 'register' && passwordStrength < 100)
+                }
+              >
                 {isPending
                   ? 'Várj...'
                   : authState === 'login'

@@ -16,8 +16,13 @@ export {
   validateToken,
   auth,
   refreshAccessToken,
+  verifyEmail,
+  resendVerification,
+  completeOnboarding,
   loginSchema,
   registerSchema,
+  verifyEmailSchema,
+  completeOnboardingSchema,
   refreshTokenSchema
 } from './auth'
 
@@ -30,7 +35,11 @@ export {
   verifyToken,
   verifyRefreshToken,
   extractTokenFromHeaders,
+  generateVerificationToken,
+  getVerificationExpiry,
+  isVerificationExpired,
   SESSION_EXPIRY_DAYS,
   ACCESS_TOKEN_EXPIRY_MINUTES,
-  REFRESH_TOKEN_EXPIRY_DAYS
+  REFRESH_TOKEN_EXPIRY_DAYS,
+  VERIFICATION_TOKEN_EXPIRY_HOURS
 } from './utils'

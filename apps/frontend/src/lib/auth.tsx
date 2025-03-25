@@ -18,15 +18,19 @@ interface AuthContextType {
   refreshToken: string
   user: User | null
   login: (data: { email: string; password: string }) => Promise<void>
-  register: (data: {
-    email: string
+  register: (data: { email: string; password: string }) => Promise<void>
+  verifyEmail: (token: string) => Promise<void>
+  resendVerification: (email: string) => Promise<void>
+  completeOnboarding: (data: {
     username: string
-    password: string
     classId: string
   }) => Promise<void>
   logout: () => void
   getAuthToken: () => string
   refreshAccessToken: () => Promise<boolean>
+  isVerified: boolean
+  isOnboarded: boolean
+  // TODO: Add password reset functionality
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -39,6 +43,15 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {
     return await Promise.resolve()
   },
+  verifyEmail: async () => {
+    return await Promise.resolve()
+  },
+  resendVerification: async () => {
+    return await Promise.resolve()
+  },
+  completeOnboarding: async () => {
+    return await Promise.resolve()
+  },
   logout: () => {
     return
   },
@@ -48,12 +61,16 @@ const AuthContext = createContext<AuthContextType>({
   refreshAccessToken: async () => {
     await Promise.resolve()
     return false
-  }
+  },
+  isVerified: false,
+  isOnboarded: false
 })
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const trpc = useTRPC()
   const [user, setUser] = useState<User | null>(null)
+  const [isVerified, setIsVerified] = useState<boolean>(false)
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(false)
   const [token, setToken] = useState(localStorage.getItem('site-token') ?? '')
   const [refreshToken, setRefreshToken] = useState(
     localStorage.getItem('site-refresh-token') ?? ''
@@ -62,6 +79,13 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loginQuery = useMutation(trpc.auth.login.mutationOptions())
   const registerQuery = useMutation(trpc.auth.register.mutationOptions())
+  const verifyEmailQuery = useMutation(trpc.auth.verifyEmail.mutationOptions())
+  const resendVerificationQuery = useMutation(
+    trpc.auth.resendVerification.mutationOptions()
+  )
+  const completeOnboardingQuery = useMutation(
+    trpc.auth.completeOnboarding.mutationOptions()
+  )
   const getSessionQuery = useQuery(trpc.auth.getSession.queryOptions())
   const refreshTokenQuery = useMutation(trpc.auth.refresh.mutationOptions())
 
@@ -73,22 +97,47 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRefreshToken(res.refreshToken)
     localStorage.setItem('site-token', res.token)
     localStorage.setItem('site-refresh-token', res.refreshToken)
+    setIsVerified(res.user.isEmailVerified)
+    setIsOnboarded(res.user.isOnboarded)
     return
   }
 
-  const register = async (data: {
-    email: string
-    username: string
-    password: string
-    classId: string
-  }) => {
+  const register = async (data: { email: string; password: string }) => {
     const res = await registerQuery.mutateAsync(data)
 
+    setUser(res.user)
+    setIsVerified(res.user.isEmailVerified)
+    setIsOnboarded(res.user.isOnboarded)
+
+    // We intentionally don't store tokens in localStorage after registration
+    // since the user needs to verify their email first
+    return
+  }
+
+  const verifyEmail = async (token: string) => {
+    const res = await verifyEmailQuery.mutateAsync({ token })
+    setUser(res.user)
+    setIsVerified(res.user.isEmailVerified)
+    return
+  }
+
+  const resendVerification = async (email: string) => {
+    await resendVerificationQuery.mutateAsync({ email })
+    return
+  }
+
+  const completeOnboarding = async (data: {
+    username: string
+    classId: string
+  }) => {
+    const res = await completeOnboardingQuery.mutateAsync(data)
     setUser(res.user)
     setToken(res.token)
     setRefreshToken(res.refreshToken)
     localStorage.setItem('site-token', res.token)
     localStorage.setItem('site-refresh-token', res.refreshToken)
+    setIsVerified(res.user.isEmailVerified)
+    setIsOnboarded(res.user.isOnboarded)
     return
   }
 
@@ -97,6 +146,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken('')
     setRefreshToken('')
     setAuthToken('')
+    setIsVerified(false)
+    setIsOnboarded(false)
     loginQuery.reset()
     registerQuery.reset()
     localStorage.removeItem('site-token')
@@ -122,37 +173,27 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       await getSessionQuery.refetch()
       return true
     } catch (error) {
-      console.error('Failed to refresh token:', error)
-      // If refresh fails, log out the user
+      console.error('Error refreshing token:', error)
+      // Clear token and session on refresh error
       logout()
       return false
     } finally {
       setIsRefreshing(false)
     }
-  }, [refreshToken, isRefreshing, refreshTokenQuery, getSessionQuery, logout])
+  }, [refreshToken, refreshTokenQuery, getSessionQuery, logout, isRefreshing])
 
+  // On initial load and token changes, get user session
   useEffect(() => {
-    const storedToken = localStorage.getItem('site-token')
-    const storedRefreshToken = localStorage.getItem('site-refresh-token')
-    if (storedToken) {
-      setToken(storedToken)
-    }
-    if (storedRefreshToken) {
-      setRefreshToken(storedRefreshToken)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (user && !getSessionQuery.isStale) return
-
-    const refetchUser = async () => {
-      if (token) {
+    async function refetchUser() {
+      if (token && !user) {
         try {
           const result = await getSessionQuery.refetch()
-          if (result.data && result.data.user) {
+          if (result.data?.user) {
             setUser(result.data.user)
+            setIsVerified(result.data.user.isEmailVerified)
+            setIsOnboarded(result.data.user.isOnboarded)
           } else {
-            // Session might be expired, try to refresh the token
+            // Try to refresh the token if session is invalid
             await refreshAccessToken()
           }
         } catch (error) {
@@ -194,9 +235,14 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         login,
         register,
+        verifyEmail,
+        resendVerification,
+        completeOnboarding,
         logout,
         getAuthToken,
-        refreshAccessToken
+        refreshAccessToken,
+        isVerified,
+        isOnboarded
       }}
     >
       {children}

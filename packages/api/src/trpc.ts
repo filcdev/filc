@@ -21,6 +21,7 @@ export const createTRPCContext = async ({
     session,
     user,
     prisma,
+    req,
     authorize: async (permissions: PermissionType[]) => {
       if (!user) return false
       return hasAnyPermission(user, permissions)
@@ -62,6 +63,60 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 
 export const publicProcedure = t.procedure.use(timingMiddleware)
 
+/**
+ * CSRF protection middleware for mutation procedures
+ * Checks that the request has the proper origin and referer headers
+ */
+const csrfMiddleware = t.middleware(({ ctx, next }) => {
+  // In development mode, skip CSRF checks
+  if (t._config.isDev) {
+    return next({ ctx })
+  }
+
+  const { req } = ctx
+
+  const origin = req.headers.origin
+  const referer = req.headers.referer
+
+  const appHost = process.env.APP_HOST ?? req.headers.host
+
+  if (!origin || !referer) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Missing required headers for CSRF protection'
+    })
+  }
+
+  // Check if the origin and referer are from our app
+  try {
+    const originHost = new URL(origin).host
+    const refererHost = new URL(referer).host
+
+    if (originHost !== appHost || refererHost !== appHost) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Invalid request origin'
+      })
+    }
+  } catch (error) {
+    console.error(error)
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Invalid request headers'
+    })
+  }
+
+  return next({
+    ctx: {
+      session: ctx.session,
+      user: ctx.user,
+      prisma: ctx.prisma,
+      authorize: ctx.authorize
+    }
+  })
+})
+
+// Protected procedures - require authentication and include CSRF protection
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
@@ -77,6 +132,10 @@ export const protectedProcedure = t.procedure
       }
     })
   })
+  .use(csrfMiddleware)
+
+// Mutation procedures that need CSRF protection but don't require authentication
+export const protectedPublicMutation = publicProcedure.use(csrfMiddleware)
 
 export const permissionProtectedProcedureFactory = (
   permissions: PermissionType[]
