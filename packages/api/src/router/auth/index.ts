@@ -183,9 +183,9 @@ export const authRouter = createTRPCRouter({
         }
       }
       return result
-    }),
+    })
 
   // TODO: Implement requestPasswordReset endpoint
-  
+
   // TODO: Implement resetPassword endpoint
 })

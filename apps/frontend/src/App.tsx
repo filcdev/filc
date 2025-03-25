@@ -10,8 +10,6 @@ const Index = () => {
   if (!user.isEmailVerified) return <VerifyEmail email={user.email} />
   if (!user.isOnboarded) return <Onboarding />
 
-
-
   return (
     <div>
       {JSON.stringify(user)}

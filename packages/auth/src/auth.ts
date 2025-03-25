@@ -240,7 +240,9 @@ export async function register(
     })
 
     // TODO: Implement email sending service to send verification emails
-    console.log(`Verification email sent to ${data.email} with token ${verificationToken}`)
+    console.log(
+      `Verification email sent to ${data.email} with token ${verificationToken}`
+    )
 
     // Remove password from user object
     const { password: _, ...safeUser } = user
@@ -417,7 +419,9 @@ export async function resendVerification(
     })
 
     // TODO: Implement actual email sending functionality with proper templates
-    console.log(`Verification email sent to ${email} with token ${verificationToken}`)
+    console.log(
+      `Verification email sent to ${email} with token ${verificationToken}`
+    )
 
     return {
       success: true,

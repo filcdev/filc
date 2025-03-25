@@ -39,7 +39,7 @@ export type User = Prisma.UserGetPayload<{
       include: {
         permission: true
       }
-    },
+    }
   }
   omit: {
     password: true

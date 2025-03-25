@@ -162,11 +162,17 @@ const Onboarding = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                    {classesQuery.isLoading ? <SelectItem disabled value="null">Betöltés...</SelectItem> : classesQuery.data?.map((classItem) => (
-                        <SelectItem key={classItem.id} value={classItem.id}>
-                          {classItem.name}
+                      {classesQuery.isLoading ? (
+                        <SelectItem disabled value="null">
+                          Betöltés...
                         </SelectItem>
-                      ))}
+                      ) : (
+                        classesQuery.data?.map((classItem) => (
+                          <SelectItem key={classItem.id} value={classItem.id}>
+                            {classItem.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
