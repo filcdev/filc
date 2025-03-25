@@ -1,0 +1,33 @@
+model Role {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String?
+  color       String?       @default("#000000")
+  permissions Permission[] 
+  users       User[]       
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Permission {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  roles       Role[]
+  userOverrides UserPermission[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  granted      Boolean
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, permissionId])
+}
