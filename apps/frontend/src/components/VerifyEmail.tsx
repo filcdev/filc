@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import BlobBackground from '@/components/ui/blob-background'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -93,13 +94,7 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
 
   return (
     <main className="flex grow items-center justify-center">
-      <div className="bg-background absolute left-0 top-0 h-dvh w-dvw overflow-hidden">
-        <div
-          className="translate-[-50%] absolute left-[50%] top-[50%] aspect-square h-[40vmax] scale-150 animate-spin rounded-full bg-gradient-to-tr from-green-500 to-blue-500"
-          style={{ animationDuration: '5s' }}
-        ></div>
-        <div className="z-2 absolute h-screen w-screen backdrop-blur-[13vmax]"></div>
-      </div>
+      <BlobBackground />
       <Card className="min-w-md z-3 bg-background/80">
         <CardHeader>
           <CardTitle>Email cím megerősítése</CardTitle>
