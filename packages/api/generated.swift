@@ -503,6 +503,64 @@ class AppRouter {
             let _: TRPCClient.EmptyObject = try await TRPCClient.sendQuery(url: url.appendingPathExtension("getSession"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: TRPCClient.EmptyObject())
         }
         
+        struct RefreshInput: Codable, Equatable, Hashable {
+            var refreshToken: String
+            
+            init(refreshToken: String) {
+                self.refreshToken = refreshToken
+            }
+        }
+        
+        func refresh(input: RefreshInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("refresh"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        
+    }
+    lazy var class = ClassRouter(url: url.appendingPathComponent("class"), middlewares: middlewares, responseMiddlewares: responseMiddlewares)
+    
+    class ClassRouter {
+        fileprivate var url: URL
+        fileprivate var middlewares: [TRPCMiddleware]
+        fileprivate var responseMiddlewares: [TRPCResponseMiddleware]
+        
+        init(url: URL, middlewares: [TRPCMiddleware] = [], responseMiddlewares: [TRPCResponseMiddleware] = []) {
+            self.url = url
+            self.middlewares = middlewares
+            self.responseMiddlewares = responseMiddlewares
+        }
+        
+        func getAll() async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendQuery(url: url.appendingPathExtension("getAll"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: TRPCClient.EmptyObject())
+        }
+        
+        struct CreateInput: Codable, Equatable, Hashable {
+            var name: String
+            
+            init(name: String) {
+                self.name = name
+            }
+        }
+        
+        func create(input: CreateInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("create"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        
+    }
+    lazy var permission = PermissionRouter(url: url.appendingPathComponent("permission"), middlewares: middlewares, responseMiddlewares: responseMiddlewares)
+    
+    class PermissionRouter {
+        fileprivate var url: URL
+        fileprivate var middlewares: [TRPCMiddleware]
+        fileprivate var responseMiddlewares: [TRPCResponseMiddleware]
+        
+        init(url: URL, middlewares: [TRPCMiddleware] = [], responseMiddlewares: [TRPCResponseMiddleware] = []) {
+            self.url = url
+            self.middlewares = middlewares
+            self.responseMiddlewares = responseMiddlewares
+        }
+        
         struct AssignRoleInput: Codable, Equatable, Hashable {
             var userId: String
             var roleId: String
@@ -561,49 +619,6 @@ class AppRouter {
         
         func getRoles() async throws -> Void {
             let _: TRPCClient.EmptyObject = try await TRPCClient.sendQuery(url: url.appendingPathExtension("getRoles"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: TRPCClient.EmptyObject())
-        }
-        
-        struct RefreshInput: Codable, Equatable, Hashable {
-            var refreshToken: String
-            
-            init(refreshToken: String) {
-                self.refreshToken = refreshToken
-            }
-        }
-        
-        func refresh(input: RefreshInput) async throws -> Void {
-            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("refresh"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
-        }
-        
-        
-    }
-    lazy var class = ClassRouter(url: url.appendingPathComponent("class"), middlewares: middlewares, responseMiddlewares: responseMiddlewares)
-    
-    class ClassRouter {
-        fileprivate var url: URL
-        fileprivate var middlewares: [TRPCMiddleware]
-        fileprivate var responseMiddlewares: [TRPCResponseMiddleware]
-        
-        init(url: URL, middlewares: [TRPCMiddleware] = [], responseMiddlewares: [TRPCResponseMiddleware] = []) {
-            self.url = url
-            self.middlewares = middlewares
-            self.responseMiddlewares = responseMiddlewares
-        }
-        
-        func getAll() async throws -> Void {
-            let _: TRPCClient.EmptyObject = try await TRPCClient.sendQuery(url: url.appendingPathExtension("getAll"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: TRPCClient.EmptyObject())
-        }
-        
-        struct CreateInput: Codable, Equatable, Hashable {
-            var name: String
-            
-            init(name: String) {
-                self.name = name
-            }
-        }
-        
-        func create(input: CreateInput) async throws -> Void {
-            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("create"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
         }
         
         
