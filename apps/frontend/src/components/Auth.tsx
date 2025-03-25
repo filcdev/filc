@@ -85,6 +85,7 @@ const Auth = () => {
           if (parsedError.length > 0) {
             toast.error(parsedError[0]?.message)
           }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_err) {
           // guess it wasn't JSON
           toast.error(err.message)
