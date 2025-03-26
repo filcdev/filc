@@ -15,15 +15,17 @@ import {
 import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
+import { useRouter } from '@tanstack/react-router'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
 
 const Onboarding = () => {
   const { completeOnboarding, user } = useAuth()
   const trpc = useTRPC()
+  const router = useRouter()
   const [username, setUsername] = useState<string>('')
   const [classId, setClassId] = useState<string>('')
   const [isPending, setIsPending] = useState(false)
@@ -31,11 +33,11 @@ const Onboarding = () => {
   const classesQuery = useQuery(trpc.class.getAll.queryOptions())
 
   if (!user) {
-    throw redirect({ to: '/auth' })
+    void router.navigate({ to: '/auth' })
   } else if (!user.isEmailVerified) {
-    throw redirect({ to: '/auth/verify' })
+    void router.navigate({ to: '/auth/verify' })
   } else if (user.isOnboarded) {
-    throw redirect({ to: '/' })
+    void router.navigate({ to: '/' })
   }
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {

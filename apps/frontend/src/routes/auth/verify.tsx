@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 
 interface VerifyEmailProps {
   email?: string
@@ -15,6 +15,7 @@ interface VerifyEmailProps {
 
 const VerifyEmail = ({ email }: VerifyEmailProps) => {
   const { verifyEmail, resendVerification, user } = useAuth()
+  const router = useRouter()
   const [token, setToken] = useState<string>('')
   const [isPending, setIsPending] = useState(false)
   const [isResending, setIsResending] = useState(false)
@@ -35,11 +36,11 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
   }, [resendCooldown])
 
   if (!user) {
-    throw redirect({ to: '/auth'})
+    void router.navigate({ to: '/auth' })
   } else if (user.isEmailVerified) {
     if (user.isOnboarded)
-      throw redirect({ to: '/' })
-    else throw redirect({ to: '/auth/onboarding' })
+      void router.navigate({ to: '/' })
+    else void router.navigate({ to: '/auth/onboarding' })
   }
 
   const handleVerify = async (e: React.FormEvent) => {
