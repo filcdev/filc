@@ -20,6 +20,11 @@ export default [
       ...hooksPlugin.configs.recommended.rules,
       'react-compiler/react-compiler': 'error'
     },
+    settings: {
+      react: {
+        version: 'detect'
+      }
+    },
     languageOptions: {
       globals: {
         React: 'writable'
