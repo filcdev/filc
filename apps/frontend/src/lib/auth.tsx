@@ -128,7 +128,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const logout = useCallback(() => {
-    console.log("Goodbye")
+    console.log('Goodbye')
     setUser(null)
     setToken('')
     setRefreshToken('')

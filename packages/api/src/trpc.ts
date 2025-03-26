@@ -144,7 +144,11 @@ export const permissionProtectedProcedureFactory = (
   return t.procedure
     .use(timingMiddleware)
     .use(({ ctx, next }) => {
-      if (!ctx.session || !ctx.user || (mustBeVerified && !ctx.user.isEmailVerified)) {
+      if (
+        !ctx.session ||
+        !ctx.user ||
+        (mustBeVerified && !ctx.user.isEmailVerified)
+      ) {
         throw new TRPCError({ code: 'UNAUTHORIZED' })
       }
       return next({

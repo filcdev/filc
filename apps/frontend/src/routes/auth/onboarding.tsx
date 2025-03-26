@@ -15,10 +15,9 @@ import {
 import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
-import { useRouter } from '@tanstack/react-router'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
 

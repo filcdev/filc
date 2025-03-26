@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
 
 interface VerifyEmailProps {
   email?: string
@@ -38,8 +38,7 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
   if (!user) {
     void router.navigate({ to: '/auth' })
   } else if (user.isEmailVerified) {
-    if (user.isOnboarded)
-      void router.navigate({ to: '/' })
+    if (user.isOnboarded) void router.navigate({ to: '/' })
     else void router.navigate({ to: '/auth/onboarding' })
   }
 
@@ -165,5 +164,5 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
 }
 
 export const Route = createFileRoute('/auth/verify')({
-  component: VerifyEmail,
+  component: VerifyEmail
 })
