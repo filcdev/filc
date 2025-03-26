@@ -88,7 +88,9 @@ export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
     return (await verify(token, finalJwtSecret)) as TokenPayload
   } catch (error) {
-    console.error('Token verification error:', error)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Token verification error:', error)
+    }
     return null
   }
 }
@@ -102,7 +104,9 @@ export async function verifyRefreshToken(
   try {
     return (await verify(token, finalRefreshSecret)) as RefreshTokenPayload
   } catch (error) {
-    console.error('Refresh token verification error:', error)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Refresh token verification error:', error)
+    }
     return null
   }
 }

@@ -138,12 +138,13 @@ export const protectedProcedure = t.procedure
 export const protectedPublicMutation = publicProcedure.use(csrfMiddleware)
 
 export const permissionProtectedProcedureFactory = (
-  permissions: PermissionType[]
+  permissions: PermissionType[],
+  mustBeVerified = true
 ) => {
   return t.procedure
     .use(timingMiddleware)
     .use(({ ctx, next }) => {
-      if (!ctx.session || !ctx.user) {
+      if (!ctx.session || !ctx.user || (mustBeVerified && !ctx.user.isEmailVerified)) {
         throw new TRPCError({ code: 'UNAUTHORIZED' })
       }
       return next({
