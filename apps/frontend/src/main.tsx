@@ -1,66 +1,28 @@
-import { StrictMode } from 'react'
-import { Toaster } from '@/components/ui/sonner'
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider
-} from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-import ReactDOM from 'react-dom/client'
-
-import TRPCProvider from './lib/trpc/provider.tsx'
-
 import './styles.css'
+import { StrictMode } from 'react'
+import ReactDOM from 'react-dom/client'
+import { RouterProvider, createRouter } from '@tanstack/react-router'
 
-import App from './App.tsx'
-import AuthProvider from './lib/auth.tsx'
-import reportWebVitals from './reportWebVitals.ts'
+// Import the generated route tree
+import { routeTree } from './routeTree.gen'
 
-const rootRoute = createRootRoute({
-  component: () => (
-    <TRPCProvider>
-      <AuthProvider>
-        <Outlet />
-        <TanStackRouterDevtools />
-        <Toaster richColors />
-      </AuthProvider>
-    </TRPCProvider>
-  )
-})
+// Create a new router instance
+const router = createRouter({ routeTree })
 
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: App
-})
-
-const routeTree = rootRoute.addChildren([indexRoute])
-
-const router = createRouter({
-  routeTree,
-  context: {},
-  defaultPreload: 'intent',
-  scrollRestoration: true,
-  defaultStructuralSharing: true,
-  defaultPreloadStaleTime: 0
-})
-
+// Register the router instance for type safety
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
 }
 
-const rootElement = document.getElementById('app')
-if (rootElement && !rootElement.innerHTML) {
+// Render the app
+const rootElement = document.getElementById('app')!
+if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
       <RouterProvider router={router} />
-    </StrictMode>
+    </StrictMode>,
   )
 }
-
-reportWebVitals()
