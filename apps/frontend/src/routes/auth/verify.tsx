@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 interface VerifyEmailProps {
   email?: string
@@ -32,6 +33,14 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
       if (timer) clearTimeout(timer)
     }
   }, [resendCooldown])
+
+  if (!user) {
+    throw redirect({ to: '/auth'})
+  } else if (user.isEmailVerified) {
+    if (user.isOnboarded)
+      throw redirect({ to: '/' })
+    else throw redirect({ to: '/auth/onboarding' })
+  }
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -154,4 +163,6 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
   )
 }
 
-export default VerifyEmail
+export const Route = createFileRoute('/auth/verify')({
+  component: VerifyEmail,
+})

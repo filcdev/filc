@@ -1,13 +1,11 @@
-import Auth from '@/components/Auth'
-import Onboarding from '@/components/Onboarding'
+import { Navbar } from '@/components/navbar'
 import BlobBackground from '@/components/ui/blob-background'
-import VerifyEmail from '@/components/VerifyEmail'
 import { useAuth } from '@/lib/auth'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader } from 'lucide-react'
 
 const Index = () => {
-  const { user, logout, token, isRefreshing } = useAuth()
+  const { user, logout, isRefreshing } = useAuth()
 
   if (isRefreshing)
     return (
@@ -19,18 +17,24 @@ const Index = () => {
         </div>
       </main>
     )
-  if (!user) return <Auth />
-  if (!user.isEmailVerified) return <VerifyEmail email={user.email} />
-  if (!user.isOnboarded) return <Onboarding />
 
   return (
-    <div>
-      {JSON.stringify(user)}
-      {token}
-      {<p>Logged in as {user.email}</p>}
-      {<p>Logged in as {user.username}</p>}
-      <button onClick={logout}>Logout</button>
-    </div>
+    <>
+      <div className="-z-10">
+        <BlobBackground />
+      </div>
+      <Navbar />
+      <main>
+        {user ? JSON.stringify(user) : <p>Not logged in</p>}
+        <button
+          onClick={() => {
+            logout()
+          }}
+        >
+          Goobye
+        </button>
+      </main>
+    </>
   )
 }
 

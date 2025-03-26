@@ -7,13 +7,15 @@ import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/lib/auth'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 
-import BlobBackground from './ui/blob-background'
+import BlobBackground from '@/components/ui/blob-background'
 
 type AuthState = 'login' | 'register'
 
 const Auth = () => {
-  const { login, register } = useAuth()
+  const { login, register, user } = useAuth()
+  const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [password, setPassword] = useState<string>('')
   const [email, setEmail] = useState<string>('')
@@ -26,6 +28,21 @@ const Auth = () => {
     number: false,
     special: false
   })
+
+  if (user) {
+    if (user.isEmailVerified) {
+      if (user.isOnboarded) {
+        void router.navigate({ to: '/' })
+      } else {
+        void router.navigate({ to: '/auth/onboarding' })
+      }
+    } else {
+      toast.error(
+        'A fiókod még nincs aktiválva. Kérlek ellenőrizd az email fiókod a megerősítő linkért.'
+      )
+      void router.navigate({ to: '/auth/verify' })
+    }
+  }
 
   useEffect(() => {
     if (authState !== 'register') return
@@ -245,4 +262,6 @@ const Auth = () => {
   )
 }
 
-export default Auth
+export const Route = createFileRoute('/auth/')({
+  component: Auth,
+})

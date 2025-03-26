@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
 
@@ -27,11 +28,16 @@ const Onboarding = () => {
   const [classId, setClassId] = useState<string>('')
   const [isPending, setIsPending] = useState(false)
   const [usernameError, setUsernameError] = useState<string | null>(null)
-
-  // TODO: Add error handling for class loading failures with retry mechanism
   const classesQuery = useQuery(trpc.class.getAll.queryOptions())
 
-  // Validate username as user types
+  if (!user) {
+    throw redirect({ to: '/auth' })
+  } else if (!user.isEmailVerified) {
+    throw redirect({ to: '/auth/verify' })
+  } else if (user.isOnboarded) {
+    throw redirect({ to: '/' })
+  }
+
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setUsername(value)
@@ -67,12 +73,6 @@ const Onboarding = () => {
 
     if (!classId) {
       toast.error('Kérjük, válassz osztályt')
-      return
-    }
-
-    // Ensure user is verified before completing onboarding
-    if (user && !user.isEmailVerified) {
-      toast.error('Először erősítsd meg az email címedet')
       return
     }
 
@@ -188,4 +188,6 @@ const Onboarding = () => {
   )
 }
 
-export default Onboarding
+export const Route = createFileRoute('/auth/onboarding')({
+  component: Onboarding
+})
