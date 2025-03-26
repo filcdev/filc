@@ -1,7 +1,15 @@
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/lib/auth'
 import { useRouter } from '@tanstack/react-router'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 const AuthenticatedUserSection = () => {
   const { user, logout } = useAuth()
@@ -15,11 +23,23 @@ const AuthenticatedUserSection = () => {
       <Button variant="outline" size="sm" onClick={logout}>
         Kijelentkezés
       </Button>
-      <Avatar>
-        <AvatarFallback>
-          {user.username?.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Avatar>
+            <AvatarFallback>
+              {user.username?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end'>
+          <DropdownMenuLabel>Szia, {user.username}!</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Profile</DropdownMenuItem>
+          <DropdownMenuItem>Billing</DropdownMenuItem>
+          <DropdownMenuItem>Team</DropdownMenuItem>
+          <DropdownMenuItem>Subscription</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
