@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom/client'
 
 import { routeTree } from './routeTree.gen'
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+ 
 const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
