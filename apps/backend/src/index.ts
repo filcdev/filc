@@ -2,6 +2,7 @@ import type { Request } from 'express'
 import * as trpcExpress from '@trpc/server/adapters/express'
 import cors from 'cors'
 import express from 'express'
+import dotenv from 'dotenv'
 
 import { appRouter, createTRPCContext } from '@filc/api'
 import { seedRolesAndPermissions } from '@filc/rbac'
@@ -32,5 +33,7 @@ async function main() {
     console.log(`✅ Server is running on http://localhost:${PORT}`)
   })
 }
+
+dotenv.config()
 
 main().catch(console.error)
