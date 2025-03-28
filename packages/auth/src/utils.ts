@@ -1,14 +1,18 @@
 import { randomBytes } from 'crypto'
 import { compare, hash } from '@node-rs/bcrypt'
 import { sign, verify } from '@node-rs/jsonwebtoken'
-
+import { authConfig } from '@filc/config'
 import type { RefreshTokenPayload, TokenPayload } from './types'
 
-export const SESSION_EXPIRY_DAYS = 30
-export const ACCESS_TOKEN_EXPIRY_MINUTES = 10 // Access token expires in 10 minutes
-export const REFRESH_TOKEN_EXPIRY_DAYS = 30 // Refresh token expires in 30 days
-const JWT_SECRET = process.env.JWT_SECRET
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET
+// Constants from config
+export const SESSION_EXPIRY_DAYS = authConfig.session.expiryInDays
+export const ACCESS_TOKEN_EXPIRY_MINUTES = authConfig.tokens.accessToken.expiryInMinutes
+export const REFRESH_TOKEN_EXPIRY_DAYS = authConfig.tokens.refreshToken.expiryInDays
+export const VERIFICATION_TOKEN_EXPIRY_HOURS = authConfig.verification.tokenExpiryInHours
+
+// Get secrets from config or environment
+const JWT_SECRET = authConfig.tokens.accessToken.secret || process.env.JWT_SECRET
+const REFRESH_TOKEN_SECRET = authConfig.tokens.refreshToken.secret || process.env.REFRESH_TOKEN_SECRET
 
 // Ensure we have proper JWT secrets
 if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
@@ -23,13 +27,9 @@ if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
   )
 }
 
-// Use secure defaults only for development
+// Use config values with fallbacks
 const finalJwtSecret = JWT_SECRET ?? 'dev_jwt_secret_do_not_use_in_production'
-const finalRefreshSecret =
-  REFRESH_TOKEN_SECRET ?? 'dev_refresh_secret_do_not_use_in_production'
-
-// Constants for verification
-export const VERIFICATION_TOKEN_EXPIRY_HOURS = 24
+const finalRefreshSecret = REFRESH_TOKEN_SECRET ?? 'dev_refresh_secret_do_not_use_in_production'
 
 /**
  * Hash a password

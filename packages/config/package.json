@@ -1,13 +1,10 @@
 {
-  "name": "@filc/auth",
-  "version": "0.0.0",
+  "name": "@filc/config",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
-    }
+    ".": "./src/index.ts"
   },
   "license": "MIT",
   "scripts": {
@@ -17,14 +14,6 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
-  },
-  "dependencies": {
-    "@filc/config": "workspace:*",
-    "@filc/db": "workspace:*",
-    "@filc/rbac": "workspace:*",
-    "@node-rs/bcrypt": "^1.10.7",
-    "@node-rs/jsonwebtoken": "^0.5.9",
-    "zod": "catalog:"
   },
   "devDependencies": {
     "@filc/eslint-config": "workspace:*",

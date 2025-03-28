@@ -1,10 +1,19 @@
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from '../generated/client'
+import { databaseConfig } from '@filc/config'
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+// Create PrismaClient with configuration from central config file
+export const prisma = globalForPrisma.prisma ?? 
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseConfig.url
+      }
+    }
+  })
 
+// Save prisma client to global in development to prevent multiple instances
 if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = prisma
 }

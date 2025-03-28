@@ -1,5 +1,4 @@
 import { z } from 'zod'
-
 import type { Prisma, Session } from '@filc/db'
 import {
   prisma,
@@ -7,7 +6,7 @@ import {
   PrismaClientValidationError
 } from '@filc/db'
 import { hasAnyPermission, hasPermission } from '@filc/rbac'
-
+import { authConfig } from '@filc/config'
 import type {
   AuthError,
   AuthorizeOptions,
@@ -33,34 +32,34 @@ import {
   verifyToken
 } from './utils'
 
-// Schema validations
+// Schema validations using config values
 export const loginSchema = z.object({
   email: z.string().email('Kérlek adj meg egy érvényes email címet!'),
   password: z
     .string()
-    .min(8, 'A jelszó legalább 8 karakter hosszú kell, hogy legyen!')
+    .min(authConfig.passwords.minLength, `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`)
 })
 
 export const registerSchema = z.object({
   email: z.string().email('Kérlek adj meg egy érvényes email címet!'),
   password: z
     .string()
-    .min(8, 'A jelszó legalább 8 karakter hosszú kell, hogy legyen!')
-    .max(100, 'A jelszó túl hosszú!')
+    .min(authConfig.passwords.minLength, `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`)
+    .max(authConfig.passwords.maxLength, 'A jelszó túl hosszú!')
     .refine(
-      (password) => /[A-Z]/.test(password),
+      (password) => !authConfig.passwords.requireUppercase || /[A-Z]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy nagybetűt!'
     )
     .refine(
-      (password) => /[a-z]/.test(password),
+      (password) => !authConfig.passwords.requireLowercase || /[a-z]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy kisbetűt!'
     )
     .refine(
-      (password) => /[0-9]/.test(password),
+      (password) => !authConfig.passwords.requireNumbers || /[0-9]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy számot!'
     )
     .refine(
-      (password) => /[^A-Za-z0-9]/.test(password),
+      (password) => !authConfig.passwords.requireSpecial || /[^A-Za-z0-9]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy speciális karaktert!'
     ),
   roles: z.array(z.string()).optional()
@@ -73,12 +72,12 @@ export const verifyEmailSchema = z.object({
 export const completeOnboardingSchema = z.object({
   username: z
     .string()
-    .min(3, 'A felhasználónév minimum 3 karakter hosszú kell, hogy legyen!')
+    .min(authConfig.username.minLength, `A felhasználónév minimum ${authConfig.username.minLength} karakter hosszú kell, hogy legyen!`)
     .regex(
-      /^[a-zA-Z0-9_]+$/,
+      new RegExp(authConfig.username.pattern),
       'A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat!'
     )
-    .max(20, 'A felhasználónév maximum 20 karakter hosszú lehet!'),
+    .max(authConfig.username.maxLength, `A felhasználónév maximum ${authConfig.username.maxLength} karakter hosszú lehet!`),
   classId: z.string()
 })
 
