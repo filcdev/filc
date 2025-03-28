@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
+import BlobBackground from '@/components/ui/blob-background'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/lib/auth'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-
-import BlobBackground from '@/components/ui/blob-background'
 
 type AuthState = 'login' | 'register'
 
@@ -263,5 +262,5 @@ const Auth = () => {
 }
 
 export const Route = createFileRoute('/auth/')({
-  component: Auth,
+  component: Auth
 })

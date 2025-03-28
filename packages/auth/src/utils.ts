@@ -1,18 +1,25 @@
 import { randomBytes } from 'crypto'
 import { compare, hash } from '@node-rs/bcrypt'
 import { sign, verify } from '@node-rs/jsonwebtoken'
+
 import { authConfig } from '@filc/config'
+
 import type { RefreshTokenPayload, TokenPayload } from './types'
 
 // Constants from config
 export const SESSION_EXPIRY_DAYS = authConfig.session.expiryInDays
-export const ACCESS_TOKEN_EXPIRY_MINUTES = authConfig.tokens.accessToken.expiryInMinutes
-export const REFRESH_TOKEN_EXPIRY_DAYS = authConfig.tokens.refreshToken.expiryInDays
-export const VERIFICATION_TOKEN_EXPIRY_HOURS = authConfig.verification.tokenExpiryInHours
+export const ACCESS_TOKEN_EXPIRY_MINUTES =
+  authConfig.tokens.accessToken.expiryInMinutes
+export const REFRESH_TOKEN_EXPIRY_DAYS =
+  authConfig.tokens.refreshToken.expiryInDays
+export const VERIFICATION_TOKEN_EXPIRY_HOURS =
+  authConfig.verification.tokenExpiryInHours
 
 // Get secrets from config or environment
-const JWT_SECRET = authConfig.tokens.accessToken.secret || process.env.JWT_SECRET
-const REFRESH_TOKEN_SECRET = authConfig.tokens.refreshToken.secret || process.env.REFRESH_TOKEN_SECRET
+const JWT_SECRET =
+  authConfig.tokens.accessToken.secret || process.env.JWT_SECRET
+const REFRESH_TOKEN_SECRET =
+  authConfig.tokens.refreshToken.secret || process.env.REFRESH_TOKEN_SECRET
 
 // Ensure we have proper JWT secrets
 if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
@@ -29,7 +36,8 @@ if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
 
 // Use config values with fallbacks
 const finalJwtSecret = JWT_SECRET ?? 'dev_jwt_secret_do_not_use_in_production'
-const finalRefreshSecret = REFRESH_TOKEN_SECRET ?? 'dev_refresh_secret_do_not_use_in_production'
+const finalRefreshSecret =
+  REFRESH_TOKEN_SECRET ?? 'dev_refresh_secret_do_not_use_in_production'
 
 /**
  * Hash a password
@@ -55,7 +63,7 @@ export async function createToken(
   payload: TokenPayload['data']
 ): Promise<{ token: string; jwtId: string }> {
   const jwtId = generateSecureToken(16) // Generate a shorter ID for JWT
-  
+
   const token = await sign(
     {
       data: { ...payload, jwtId },
@@ -64,7 +72,7 @@ export async function createToken(
     },
     finalJwtSecret
   )
-  
+
   return { token, jwtId }
 }
 
@@ -147,7 +155,7 @@ export async function updateSessionJwtId(sessionId: string, jwtId: string) {
   const { prisma } = await import('@filc/db')
   return await prisma.session.update({
     where: { id: sessionId },
-    data: { 
+    data: {
       activeJwtId: jwtId,
       lastActivity: new Date()
     }

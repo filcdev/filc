@@ -53,7 +53,7 @@ export const Navbar = () => {
   }
 
   return (
-    <header className="bg-background/30 m-4 flex items-center justify-between rounded-lg border px-4 py-1.5 h-12">
+    <header className="bg-background/30 m-4 flex h-12 items-center justify-between rounded-lg border px-4 py-1.5">
       <div>
         <span className="text-lg font-semibold">Filc</span>
       </div>

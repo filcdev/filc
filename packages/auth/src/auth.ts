@@ -1,12 +1,14 @@
 import { z } from 'zod'
+
 import type { Prisma, Session } from '@filc/db'
+import { authConfig } from '@filc/config'
 import {
   prisma,
   PrismaClientKnownRequestError,
   PrismaClientValidationError
 } from '@filc/db'
 import { hasAnyPermission, hasPermission } from '@filc/rbac'
-import { authConfig } from '@filc/config'
+
 import type {
   AuthError,
   AuthorizeOptions,
@@ -37,29 +39,39 @@ export const loginSchema = z.object({
   email: z.string().email('Kérlek adj meg egy érvényes email címet!'),
   password: z
     .string()
-    .min(authConfig.passwords.minLength, `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`)
+    .min(
+      authConfig.passwords.minLength,
+      `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`
+    )
 })
 
 export const registerSchema = z.object({
   email: z.string().email('Kérlek adj meg egy érvényes email címet!'),
   password: z
     .string()
-    .min(authConfig.passwords.minLength, `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`)
+    .min(
+      authConfig.passwords.minLength,
+      `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`
+    )
     .max(authConfig.passwords.maxLength, 'A jelszó túl hosszú!')
     .refine(
-      (password) => !authConfig.passwords.requireUppercase || /[A-Z]/.test(password),
+      (password) =>
+        !authConfig.passwords.requireUppercase || /[A-Z]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy nagybetűt!'
     )
     .refine(
-      (password) => !authConfig.passwords.requireLowercase || /[a-z]/.test(password),
+      (password) =>
+        !authConfig.passwords.requireLowercase || /[a-z]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy kisbetűt!'
     )
     .refine(
-      (password) => !authConfig.passwords.requireNumbers || /[0-9]/.test(password),
+      (password) =>
+        !authConfig.passwords.requireNumbers || /[0-9]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy számot!'
     )
     .refine(
-      (password) => !authConfig.passwords.requireSpecial || /[^A-Za-z0-9]/.test(password),
+      (password) =>
+        !authConfig.passwords.requireSpecial || /[^A-Za-z0-9]/.test(password),
       'A jelszónak tartalmaznia kell legalább egy speciális karaktert!'
     ),
   roles: z.array(z.string()).optional()
@@ -72,12 +84,18 @@ export const verifyEmailSchema = z.object({
 export const completeOnboardingSchema = z.object({
   username: z
     .string()
-    .min(authConfig.username.minLength, `A felhasználónév minimum ${authConfig.username.minLength} karakter hosszú kell, hogy legyen!`)
+    .min(
+      authConfig.username.minLength,
+      `A felhasználónév minimum ${authConfig.username.minLength} karakter hosszú kell, hogy legyen!`
+    )
     .regex(
       new RegExp(authConfig.username.pattern),
       'A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat!'
     )
-    .max(authConfig.username.maxLength, `A felhasználónév maximum ${authConfig.username.maxLength} karakter hosszú lehet!`),
+    .max(
+      authConfig.username.maxLength,
+      `A felhasználónév maximum ${authConfig.username.maxLength} karakter hosszú lehet!`
+    ),
   classId: z.string()
 })
 
@@ -583,30 +601,30 @@ export async function createTokenPair(
 ): Promise<{ token: string; refreshToken: string }> {
   // Generate a random token ID for the refresh token
   const tokenId = generateSecureToken(24)
-  
+
   // Create access token with JWT ID
   const { token, jwtId } = await createToken({
     sub: userId,
     sessionId,
     jwtId: tokenId
   })
-  
+
   // Update session with the new JWT ID
   await prisma.session.update({
     where: { id: sessionId },
-    data: { 
+    data: {
       activeJwtId: jwtId,
       lastActivity: new Date()
     }
   })
-  
+
   // Create refresh token
   const refreshTokenJWT = await createRefreshToken({
     sub: userId,
     sessionId,
     tokenId
   })
-  
+
   // Store refresh token in the database
   await prisma.refreshToken.create({
     data: {
@@ -616,7 +634,7 @@ export async function createTokenPair(
       expiresAt: getRefreshTokenExpiryDate()
     }
   })
-  
+
   return {
     token,
     refreshToken: refreshTokenJWT
@@ -666,22 +684,22 @@ export async function refreshAccessToken(
         message: 'A token nem található vagy lejárt'
       }
     }
-    
+
     // Check if the session still exists and is valid
     const session = await prisma.session.findUnique({
-      where: { 
+      where: {
         id: payload.data.sessionId,
         expiresAt: { gt: new Date() }
       }
     })
-    
+
     if (!session) {
       // If session is expired or missing, revoke the token and return an error
       await prisma.refreshToken.update({
         where: { id: storedToken.id },
         data: { isRevoked: true }
       })
-      
+
       return {
         code: 'auth/invalid-token',
         message: 'A munkamenet lejárt vagy nem található'
@@ -770,13 +788,13 @@ export async function validateToken(token: string): Promise<{
     ) {
       return null
     }
-    
+
     // Verify the JWT ID matches the one stored in the session
     if (session.activeJwtId !== payload.data.jwtId) {
       // JWT ID doesn't match - this could be a reused token
       return null
     }
-    
+
     // Update last activity timestamp
     await prisma.session.update({
       where: { id: session.id },
@@ -811,12 +829,12 @@ export async function logout(sessionId: string): Promise<boolean> {
     // and setting an expiration date in the past
     await prisma.session.update({
       where: { id: sessionId },
-      data: { 
+      data: {
         activeJwtId: null,
         expiresAt: new Date(0) // Set to past date to invalidate
       }
     })
-    
+
     return true
   } catch (error) {
     console.error('Logout error:', error)
