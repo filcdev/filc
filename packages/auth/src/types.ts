@@ -50,6 +50,7 @@ export interface TokenPayload {
   data: {
     sub: string
     sessionId: string
+    jwtId: string
   }
   iat: number
   exp: number

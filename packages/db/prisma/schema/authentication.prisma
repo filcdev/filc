@@ -27,11 +27,19 @@ model Session {
   userId    String
   expiresAt DateTime
   
+  // Metadata for user agent, IP address, etc.
+  metadata  Json?    @default("\"{}\"")
+  
+  // Store active JWT IDs for validation
+  activeJwtId String?
+  lastActivity DateTime @default(now())
+  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   refreshTokens RefreshToken[]
   
   @@index([userId])
+  @@index([activeJwtId])
 }
 
 model RefreshToken {

@@ -5,7 +5,7 @@ import { sign, verify } from '@node-rs/jsonwebtoken'
 import type { RefreshTokenPayload, TokenPayload } from './types'
 
 export const SESSION_EXPIRY_DAYS = 30
-export const ACCESS_TOKEN_EXPIRY_MINUTES = 15 // Access token expires in 15 minutes
+export const ACCESS_TOKEN_EXPIRY_MINUTES = 10 // Access token expires in 10 minutes
 export const REFRESH_TOKEN_EXPIRY_DAYS = 30 // Refresh token expires in 30 days
 const JWT_SECRET = process.env.JWT_SECRET
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET
@@ -49,19 +49,23 @@ export async function comparePassword(
 }
 
 /**
- * Create a JWT access token
+ * Create a JWT access token with a JWT ID to allow token validation
  */
 export async function createToken(
   payload: TokenPayload['data']
-): Promise<string> {
-  return await sign(
+): Promise<{ token: string; jwtId: string }> {
+  const jwtId = generateSecureToken(16) // Generate a shorter ID for JWT
+  
+  const token = await sign(
     {
-      data: payload,
+      data: { ...payload, jwtId },
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_EXPIRY_MINUTES * 60
     },
     finalJwtSecret
   )
+  
+  return { token, jwtId }
 }
 
 /**
@@ -134,6 +138,20 @@ export function getRefreshTokenExpiryDate(): Date {
   const expiryDate = new Date()
   expiryDate.setDate(expiryDate.getDate() + REFRESH_TOKEN_EXPIRY_DAYS)
   return expiryDate
+}
+
+/**
+ * Update session with new JWT ID and last activity timestamp
+ */
+export async function updateSessionJwtId(sessionId: string, jwtId: string) {
+  const { prisma } = await import('@filc/db')
+  return await prisma.session.update({
+    where: { id: sessionId },
+    data: { 
+      activeJwtId: jwtId,
+      lastActivity: new Date()
+    }
+  })
 }
 
 /**
