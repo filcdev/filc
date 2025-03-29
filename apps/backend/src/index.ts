@@ -4,24 +4,42 @@ import cors from 'cors'
 import express from 'express'
 
 import { appRouter, createTRPCContext } from '@filc/api'
+import { appConfig, backendConfig } from '@filc/config'
+import { seedRolesAndPermissions } from '@filc/rbac'
 
-const app = express()
+async function main() {
+  console.log(`Starting ${appConfig.name} v${appConfig.version}`)
 
-app.use(cors<Request>())
+  try {
+    await seedRolesAndPermissions()
+  } catch (error) {
+    console.error('Failed to seed roles and permissions:', error)
+  }
 
-app.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: appRouter,
-    createContext: (opts: trpcExpress.CreateExpressContextOptions) =>
-      createTRPCContext(opts)
+  const app = express()
+  app.use(cors<Request>())
+
+  app.use(
+    '/trpc',
+    trpcExpress.createExpressMiddleware({
+      router: appRouter,
+      createContext: (opts: trpcExpress.CreateExpressContextOptions) =>
+        createTRPCContext(opts)
+    })
+  )
+
+  app.get('/', (req, res) => {
+    res.send(`${appConfig.name} API Server`)
   })
-)
 
-app.get('/', (req, res) => {
-  res.send('Hello World')
-})
+  // Use port from config with environment variable fallback
+  const PORT = backendConfig.port
 
-app.listen(4000)
+  app.listen(PORT, () => {
+    console.log(
+      `✅ Server is running on ${backendConfig.url || `http://localhost:${PORT}`}`
+    )
+  })
+}
 
-console.log('Server is running on http://localhost:4000')
+main().catch(console.error)

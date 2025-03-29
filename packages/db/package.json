@@ -25,6 +25,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@filc/config": "workspace:*",
     "@prisma/client": "^6.5.0"
   },
   "exports": {

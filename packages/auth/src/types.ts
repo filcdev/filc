@@ -50,6 +50,17 @@ export interface TokenPayload {
   data: {
     sub: string
     sessionId: string
+    jwtId: string
+  }
+  iat: number
+  exp: number
+}
+
+export interface RefreshTokenPayload {
+  data: {
+    sub: string
+    sessionId: string
+    tokenId: string
   }
   iat: number
   exp: number
@@ -62,15 +73,19 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials {
   email: string
-  username: string
   password: string
-  classId: string
   roles?: string[] // Role IDs to assign
+}
+
+export interface CompleteOnboardingData {
+  username: string
+  classId: string
 }
 
 export interface AuthResult {
   user: User
   token: string
+  refreshToken: string
 }
 
 export interface AuthError {
@@ -80,9 +95,24 @@ export interface AuthError {
     | 'auth/user-exists'
     | 'auth/unknown'
     | 'auth/unauthorized'
+    | 'auth/invalid-token'
+    | 'auth/expired-token'
+    | 'auth/invalid-class'
+    | 'auth/verification-failed'
+    | 'auth/already-verified'
+    | 'auth/not-verified'
 }
 
 export interface AuthorizeOptions {
   requiredPermissions?: PermissionType[]
   anyOf?: PermissionType[]
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string
+}
+
+export interface RefreshTokenResponse {
+  token: string
+  refreshToken: string
 }

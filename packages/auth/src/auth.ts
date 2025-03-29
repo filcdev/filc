@@ -1,36 +1,106 @@
 import { z } from 'zod'
 
 import type { Prisma, Session } from '@filc/db'
-import { prisma } from '@filc/db'
+import { authConfig } from '@filc/config'
+import {
+  prisma,
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError
+} from '@filc/db'
 import { hasAnyPermission, hasPermission } from '@filc/rbac'
 
 import type {
   AuthError,
   AuthorizeOptions,
   AuthResult,
+  CompleteOnboardingData,
   LoginCredentials,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
   RegisterCredentials
 } from './types'
 import {
   comparePassword,
+  createRefreshToken,
   createToken,
+  generateSecureToken,
+  generateVerificationToken,
   getExpiryDate,
+  getRefreshTokenExpiryDate,
+  getVerificationExpiry,
   hashPassword,
+  isVerificationExpired,
+  verifyRefreshToken,
   verifyToken
 } from './utils'
 
-// Schema validations
+// Schema validations using config values
 export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8)
+  email: z.string().email('Kérlek adj meg egy érvényes email címet!'),
+  password: z
+    .string()
+    .min(
+      authConfig.passwords.minLength,
+      `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`
+    )
 })
 
 export const registerSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(20),
-  password: z.string().min(8),
-  classId: z.string(),
+  email: z.string().email('Kérlek adj meg egy érvényes email címet!'),
+  password: z
+    .string()
+    .min(
+      authConfig.passwords.minLength,
+      `A jelszó legalább ${authConfig.passwords.minLength} karakter hosszú kell, hogy legyen!`
+    )
+    .max(authConfig.passwords.maxLength, 'A jelszó túl hosszú!')
+    .refine(
+      (password) =>
+        !authConfig.passwords.requireUppercase || /[A-Z]/.test(password),
+      'A jelszónak tartalmaznia kell legalább egy nagybetűt!'
+    )
+    .refine(
+      (password) =>
+        !authConfig.passwords.requireLowercase || /[a-z]/.test(password),
+      'A jelszónak tartalmaznia kell legalább egy kisbetűt!'
+    )
+    .refine(
+      (password) =>
+        !authConfig.passwords.requireNumbers || /[0-9]/.test(password),
+      'A jelszónak tartalmaznia kell legalább egy számot!'
+    )
+    .refine(
+      (password) =>
+        !authConfig.passwords.requireSpecial || /[^A-Za-z0-9]/.test(password),
+      'A jelszónak tartalmaznia kell legalább egy speciális karaktert!'
+    ),
   roles: z.array(z.string()).optional()
+})
+
+export const verifyEmailSchema = z.object({
+  token: z.string()
+})
+
+export const completeOnboardingSchema = z.object({
+  username: z
+    .string()
+    .min(
+      authConfig.username.minLength,
+      `A felhasználónév minimum ${authConfig.username.minLength} karakter hosszú kell, hogy legyen!`
+    )
+    .regex(
+      new RegExp(authConfig.username.pattern),
+      'A felhasználónév csak betűket, számokat és aláhúzásokat tartalmazhat!'
+    )
+    .max(
+      authConfig.username.maxLength,
+      `A felhasználónév maximum ${authConfig.username.maxLength} karakter hosszú lehet!`
+    ),
+  classId: z.string()
+})
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string()
 })
 
 /**
@@ -45,7 +115,7 @@ export async function login(
     if (!result.success) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid email or password format'
+        message: 'Érvénytelen email vagy jelszó formátum'
       }
     }
 
@@ -71,7 +141,7 @@ export async function login(
     if (!user) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid email or password'
+        message: 'Érvénytelen email vagy jelszó'
       }
     }
 
@@ -84,29 +154,35 @@ export async function login(
     if (!passwordValid) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid email or password'
+        message: 'Érvénytelen email vagy jelszó'
+      }
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return {
+        code: 'auth/not-verified',
+        message: 'Kérlek erősítsd meg az email címed a folytatás előtt'
       }
     }
 
     // Create session
     const session = await createSession(user.id)
 
-    // Create JWT token
-    const token = await createToken({
-      sub: user.id,
-      sessionId: session.id
-    })
+    // Create tokens
+    const { token, refreshToken } = await createTokenPair(user.id, session.id)
 
     // Remove password from user object
     return {
-      user,
-      token
+      user: safeUser,
+      token,
+      refreshToken
     }
   } catch (error) {
     console.error('Login error:', error)
     return {
       code: 'auth/unknown',
-      message: 'An unexpected error occurred during login'
+      message: 'Váratlan hiba történt a bejelentkezés során'
     }
   }
 }
@@ -123,34 +199,40 @@ export async function register(
     if (!result.success) {
       return {
         code: 'auth/invalid-credentials',
-        message: 'Invalid registration data'
+        message: 'Érvénytelen regisztrációs adatok'
       }
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [{ email: data.email }, { username: data.username }]
+        email: data.email
       }
     })
 
     if (existingUser) {
       return {
         code: 'auth/user-exists',
-        message: 'Email or username already in use'
+        message: 'Ez az email cím már használatban van'
       }
     }
 
     // Hash password
     const hashedPassword = await hashPassword(data.password)
 
-    // Create user with roles
+    // Generate verification token
+    const verificationToken = generateVerificationToken()
+    const verificationExpires = getVerificationExpiry()
+
+    // Create user with verification token but without username and classId
     const user = await prisma.user.create({
       data: {
         email: data.email,
-        username: data.username,
         password: hashedPassword,
-        classId: data.classId,
+        verificationToken,
+        verificationExpires,
+        isEmailVerified: false,
+        isOnboarded: false,
         ...(data.roles && {
           roles: {
             connect: data.roles.map((roleId) => ({ id: roleId }))
@@ -173,26 +255,326 @@ export async function register(
       }
     })
 
-    // Create session
-    const session = await createSession(user.id)
-
-    // Create JWT token
-    const token = await createToken({
-      sub: user.id,
-      sessionId: session.id
-    })
+    // TODO: Implement email sending service to send verification emails
+    console.log(
+      `Verification email sent to ${data.email} with token ${verificationToken}`
+    )
 
     // Remove password from user object
     const { password: _, ...safeUser } = user
     return {
       user: safeUser,
-      token
+      token: '', // No token since email needs verification
+      refreshToken: ''
     }
   } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return {
+          code: 'auth/user-exists',
+          message: 'Ez az email cím vagy felhasználónév már használatban van'
+        }
+      }
+    }
+    if (error instanceof PrismaClientValidationError) {
+      return {
+        code: 'auth/invalid-credentials',
+        message: 'Érvénytelen regisztrációs adatok'
+      }
+    }
+
     console.error('Registration error:', error)
     return {
       code: 'auth/unknown',
-      message: 'An unexpected error occurred during registration'
+      message: 'Váratlan hiba történt a regisztráció során'
+    }
+  }
+}
+
+/**
+ * Verify email using token
+ */
+export async function verifyEmail(
+  token: string
+): Promise<AuthResult | AuthError> {
+  try {
+    if (!token || token.length < 32) {
+      return {
+        code: 'auth/verification-failed',
+        message: 'Érvénytelen megerősítő kód'
+      }
+    }
+
+    // Find user with this verification token
+    const user = await prisma.user.findFirst({
+      where: {
+        verificationToken: token
+      },
+      include: {
+        roles: {
+          include: {
+            permissions: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
+        }
+      }
+    })
+
+    if (!user) {
+      return {
+        code: 'auth/verification-failed',
+        message: 'Érvénytelen vagy lejárt megerősítő kód'
+      }
+    }
+
+    // Check if already verified
+    if (user.isEmailVerified) {
+      return {
+        code: 'auth/already-verified',
+        message: 'Az email cím már meg lett erősítve'
+      }
+    }
+
+    // Check if token expired
+    if (
+      !user.verificationExpires ||
+      isVerificationExpired(user.verificationExpires)
+    ) {
+      return {
+        code: 'auth/verification-failed',
+        message: 'A megerősítő kód lejárt'
+      }
+    }
+
+    // Mark user as verified and clear verification token
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        isEmailVerified: true,
+        verificationToken: null,
+        verificationExpires: null
+      },
+      include: {
+        roles: {
+          include: {
+            permissions: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
+        }
+      }
+    })
+
+    // Create session (without token since onboarding is not complete)
+    const { password: _, ...safeUser } = updatedUser
+    return {
+      user: safeUser,
+      token: '',
+      refreshToken: ''
+    }
+  } catch (error) {
+    console.error('Email verification error:', error)
+    return {
+      code: 'auth/unknown',
+      message: 'Váratlan hiba történt az email megerősítése során'
+    }
+  }
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerification(
+  email: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        message: 'Nem található felhasználó ezzel az email címmel'
+      }
+    }
+
+    // Check if already verified
+    if (user.isEmailVerified) {
+      return {
+        success: false,
+        message: 'Ez az email cím már meg lett erősítve'
+      }
+    }
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken()
+    const verificationExpires = getVerificationExpiry()
+
+    // Update user with new token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationToken,
+        verificationExpires
+      }
+    })
+
+    // TODO: Implement actual email sending functionality with proper templates
+    console.log(
+      `Verification email sent to ${email} with token ${verificationToken}`
+    )
+
+    return {
+      success: true,
+      message: 'Megerősítő email újraküldve'
+    }
+  } catch (error) {
+    console.error('Resend verification error:', error)
+    return {
+      success: false,
+      message: 'Váratlan hiba történt a megerősítő email újraküldése során'
+    }
+  }
+}
+
+/**
+ * Complete user onboarding by setting username and class
+ */
+export async function completeOnboarding(
+  userId: string,
+  data: CompleteOnboardingData
+): Promise<AuthResult | AuthError> {
+  try {
+    // Validate onboarding data
+    const result = completeOnboardingSchema.safeParse(data)
+    if (!result.success) {
+      return {
+        code: 'auth/invalid-credentials',
+        message: 'Érvénytelen onboarding adatok'
+      }
+    }
+
+    // Check if username already exists
+    const existingUsername = await prisma.user.findUnique({
+      where: { username: data.username }
+    })
+
+    if (existingUsername) {
+      return {
+        code: 'auth/user-exists',
+        message: 'Ez a felhasználónév már használatban van'
+      }
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        roles: {
+          include: {
+            permissions: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
+        }
+      }
+    })
+
+    if (!user) {
+      return {
+        code: 'auth/unauthorized',
+        message: 'Nem található felhasználó'
+      }
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return {
+        code: 'auth/not-verified',
+        message: 'Kérlek erősítsd meg az email címed a folytatás előtt'
+      }
+    }
+
+    // Complete onboarding
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        username: data.username,
+        classId: data.classId,
+        isOnboarded: true
+      },
+      include: {
+        roles: {
+          include: {
+            permissions: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        permissionOverrides: {
+          include: {
+            permission: true
+          }
+        }
+      }
+    })
+
+    // Create session
+    const session = await createSession(updatedUser.id)
+
+    // Create tokens
+    const { token, refreshToken } = await createTokenPair(
+      updatedUser.id,
+      session.id
+    )
+
+    // Remove password from user object
+    const { password: _, ...safeUser } = updatedUser
+    return {
+      user: safeUser,
+      token,
+      refreshToken
+    }
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return {
+          code: 'auth/user-exists',
+          message: 'Ez a felhasználónév már használatban van'
+        }
+      }
+      if (error.code === 'P2003') {
+        return {
+          code: 'auth/invalid-class',
+          message: 'Érvénytelen osztályazonosító'
+        }
+      }
+    }
+
+    console.error('Onboarding error:', error)
+    return {
+      code: 'auth/unknown',
+      message: 'Váratlan hiba történt az onboarding során'
     }
   }
 }
@@ -207,6 +589,142 @@ export async function createSession(userId: string): Promise<Session> {
       expiresAt: getExpiryDate()
     }
   })
+}
+
+/**
+ * Create a token pair (access and refresh tokens)
+ */
+export async function createTokenPair(
+  userId: string,
+  sessionId: string
+): Promise<{ token: string; refreshToken: string }> {
+  // Generate a random token ID for the refresh token
+  const tokenId = generateSecureToken(24)
+
+  // Create access token with JWT ID
+  const { token, jwtId } = await createToken({
+    sub: userId,
+    sessionId,
+    jwtId: tokenId
+  })
+
+  // Update session with the new JWT ID
+  await prisma.session.update({
+    where: { id: sessionId },
+    data: {
+      activeJwtId: jwtId,
+      lastActivity: new Date()
+    }
+  })
+
+  // Create refresh token
+  const refreshTokenJWT = await createRefreshToken({
+    sub: userId,
+    sessionId,
+    tokenId
+  })
+
+  // Store refresh token in the database
+  await prisma.refreshToken.create({
+    data: {
+      token: tokenId,
+      userId,
+      sessionId,
+      expiresAt: getRefreshTokenExpiryDate()
+    }
+  })
+
+  return {
+    token,
+    refreshToken: refreshTokenJWT
+  }
+}
+
+/**
+ * Refresh access token using a refresh token
+ */
+export async function refreshAccessToken(
+  refreshTokenRequest: RefreshTokenRequest
+): Promise<RefreshTokenResponse | AuthError> {
+  try {
+    // Validate refresh token
+    const result = refreshTokenSchema.safeParse(refreshTokenRequest)
+    if (!result.success) {
+      return {
+        code: 'auth/invalid-token',
+        message: 'Érvénytelen token formátum'
+      }
+    }
+
+    // Verify the refresh token JWT
+    const payload = await verifyRefreshToken(refreshTokenRequest.refreshToken)
+    if (!payload) {
+      return {
+        code: 'auth/invalid-token',
+        message: 'Érvénytelen token'
+      }
+    }
+
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: {
+        token: payload.data.tokenId,
+        userId: payload.data.sub,
+        sessionId: payload.data.sessionId,
+        isRevoked: false,
+        expiresAt: {
+          gt: new Date()
+        }
+      }
+    })
+
+    if (!storedToken) {
+      return {
+        code: 'auth/invalid-token',
+        message: 'A token nem található vagy lejárt'
+      }
+    }
+
+    // Check if the session still exists and is valid
+    const session = await prisma.session.findUnique({
+      where: {
+        id: payload.data.sessionId,
+        expiresAt: { gt: new Date() }
+      }
+    })
+
+    if (!session) {
+      // If session is expired or missing, revoke the token and return an error
+      await prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { isRevoked: true }
+      })
+
+      return {
+        code: 'auth/invalid-token',
+        message: 'A munkamenet lejárt vagy nem található'
+      }
+    }
+
+    // Revoke the old refresh token for security
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { isRevoked: true }
+    })
+
+    // Create a new token pair
+    const { token, refreshToken } = await createTokenPair(
+      payload.data.sub,
+      payload.data.sessionId
+    )
+
+    return { token, refreshToken }
+  } catch (error) {
+    console.error('Token refresh error:', error)
+    return {
+      code: 'auth/unknown',
+      message: 'Váratlan hiba történt a token frissítése során'
+    }
+  }
 }
 
 /**
@@ -271,8 +789,23 @@ export async function validateToken(token: string): Promise<{
       return null
     }
 
+    // Verify the JWT ID matches the one stored in the session
+    if (session.activeJwtId !== payload.data.jwtId) {
+      // JWT ID doesn't match - this could be a reused token
+      return null
+    }
+
+    // Update last activity timestamp
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { lastActivity: new Date() }
+    })
+
+    // Omit password from user object
+    const { password: _, ...user } = session.user
+
     return {
-      user: session.user,
+      user,
       session
     }
   } catch (error) {
@@ -282,11 +815,26 @@ export async function validateToken(token: string): Promise<{
 }
 
 /**
- * Logout user by invalidating session
+ * Logout user by invalidating session and all refresh tokens
  */
 export async function logout(sessionId: string): Promise<boolean> {
   try {
-    await prisma.session.delete({ where: { id: sessionId } })
+    // Revoke all refresh tokens for this session
+    await prisma.refreshToken.updateMany({
+      where: { sessionId },
+      data: { isRevoked: true }
+    })
+
+    // Instead of deleting the session, invalidate it by clearing the JWT ID
+    // and setting an expiration date in the past
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        activeJwtId: null,
+        expiresAt: new Date(0) // Set to past date to invalidate
+      }
+    })
+
     return true
   } catch (error) {
     console.error('Logout error:', error)
@@ -366,6 +914,6 @@ export async function auth(authHeader?: string): Promise<{
   const token = authHeader.split(' ')[1]
   if (!token) return null
 
-  // Validate the token
+  // Validate the token against the session
   return await validateToken(token)
 }

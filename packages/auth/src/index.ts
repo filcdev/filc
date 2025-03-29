@@ -15,8 +15,17 @@ export {
   logout,
   validateToken,
   auth,
+  refreshAccessToken,
+  verifyEmail,
+  resendVerification,
+  completeOnboarding,
+  createSession,
+  createTokenPair,
   loginSchema,
-  registerSchema
+  registerSchema,
+  verifyEmailSchema,
+  completeOnboardingSchema,
+  refreshTokenSchema
 } from './auth'
 
 // Export utility functions
@@ -24,7 +33,16 @@ export {
   hashPassword,
   comparePassword,
   createToken,
+  createRefreshToken,
   verifyToken,
+  verifyRefreshToken,
   extractTokenFromHeaders,
-  SESSION_EXPIRY_DAYS
+  generateVerificationToken,
+  getVerificationExpiry,
+  isVerificationExpired,
+  updateSessionJwtId,
+  SESSION_EXPIRY_DAYS,
+  ACCESS_TOKEN_EXPIRY_MINUTES,
+  REFRESH_TOKEN_EXPIRY_DAYS,
+  VERIFICATION_TOKEN_EXPIRY_HOURS
 } from './utils'

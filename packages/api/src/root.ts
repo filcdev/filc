@@ -1,10 +1,12 @@
 import { authRouter } from './router/auth'
-// import { postRouter } from "./router/post";
+import { permissionsRouter } from './router/auth/permissions'
+import { classRouter } from './router/class'
 import { createTRPCRouter } from './trpc'
 
 export const appRouter = createTRPCRouter({
-  auth: authRouter
-  // post: postRouter,
+  auth: authRouter,
+  class: classRouter,
+  permission: permissionsRouter
 })
 
 export type AppRouter = typeof appRouter

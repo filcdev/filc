@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@filc/config": "workspace:*",
     "@filc/db": "workspace:*",
     "@filc/rbac": "workspace:*",
     "@node-rs/bcrypt": "^1.10.7",

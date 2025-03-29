@@ -1,50 +1,12 @@
-import { StrictMode } from 'react'
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  RouterProvider
-} from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-import ReactDOM from 'react-dom/client'
-
-import TRPCProvider from './utils/trpc/provider'
-
 import './styles.css'
 
-import App from './App.tsx'
-import reportWebVitals from './reportWebVitals.ts'
-import AuthProvider from './utils/auth.tsx'
-import TRPCProvider from './utils/trpc/Provider.tsx'
+import { StrictMode } from 'react'
+import { createRouter, RouterProvider } from '@tanstack/react-router'
+import ReactDOM from 'react-dom/client'
 
-const rootRoute = createRootRoute({
-  component: () => (
-    <TRPCProvider>
-      <AuthProvider>
-        <Outlet />
-        <TanStackRouterDevtools />
-      </AuthProvider>
-    </TRPCProvider>
-  )
-})
+import { routeTree } from './routeTree.gen'
 
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: App
-})
-
-const routeTree = rootRoute.addChildren([indexRoute])
-
-const router = createRouter({
-  routeTree,
-  context: {},
-  defaultPreload: 'intent',
-  scrollRestoration: true,
-  defaultStructuralSharing: true,
-  defaultPreloadStaleTime: 0
-})
+const router = createRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -52,8 +14,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
+// Render the app
 const rootElement = document.getElementById('app')
-if (rootElement && !rootElement.innerHTML) {
+if (!rootElement) {
+  throw new Error('Root element not found')
+}
+if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
@@ -61,5 +27,3 @@ if (rootElement && !rootElement.innerHTML) {
     </StrictMode>
   )
 }
-
-reportWebVitals()

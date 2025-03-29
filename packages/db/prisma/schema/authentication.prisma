@@ -1,16 +1,23 @@
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
-  username  String    @unique
+  username  String?    @unique
   password  String
-  classId   String
-  class     Class     @relation(fields: [classId], references: [id])
+  classId   String?
+  class     Class?     @relation(fields: [classId], references: [id])
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   sessions  Session[]
   roles     Role[]
   
+  // Email verification fields
+  isEmailVerified    Boolean  @default(false)
+  verificationToken  String?
+  verificationExpires DateTime?
+  isOnboarded        Boolean  @default(false)
+  
   permissionOverrides UserPermission[]
+  refreshTokens      RefreshToken[]
   
   @@index([email, username])
 }
@@ -20,42 +27,33 @@ model Session {
   userId    String
   expiresAt DateTime
   
+  // Metadata for user agent, IP address, etc.
+  metadata  Json?    @default("\"{}\"")
+  
+  // Store active JWT IDs for validation
+  activeJwtId String?
+  lastActivity DateTime @default(now())
+  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  refreshTokens RefreshToken[]
+  
+  @@index([userId])
+  @@index([activeJwtId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  sessionId String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   
   @@index([userId])
-}
-
-model Role {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  description String?
-  color       String?       @default("#000000")
-  permissions Permission[] 
-  users       User[]       
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-}
-
-model Permission {
-  id          String      @id @default(cuid())
-  name        String      @unique
-  description String?
-  roles       Role[]
-  userOverrides UserPermission[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
-
-model UserPermission {
-  id           String     @id @default(cuid())
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permissionId String
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  granted      Boolean
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@unique([userId, permissionId])
+  @@index([token])
 }
