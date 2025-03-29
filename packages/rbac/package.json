@@ -9,7 +9,8 @@
   },
   "scripts": {
     "lint": "eslint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "build": "tsc && tsc-alias"
   },
   "dependencies": {
     "@filc/db": "workspace:*"
@@ -20,7 +21,9 @@
     "@filc/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "exports": {
+    "import": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
   "prettier": "@filc/prettier-config"
 }

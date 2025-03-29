@@ -4,7 +4,7 @@
  * Central configuration module for the Filc application
  */
 
-import configFile from '../../../filc.config.json'
+import configFile from '../../../filc.config.json' with { type: 'json' }
 
 /**
  * App configuration

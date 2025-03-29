@@ -11,35 +11,35 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthIndexImport } from './routes/auth/index'
-import { Route as AuthOnboardingImport } from './routes/auth/onboarding'
-import { Route as AuthVerifyImport } from './routes/auth/verify'
 import { Route as IndexImport } from './routes/index'
+import { Route as AuthIndexImport } from './routes/auth/index'
+import { Route as AuthVerifyImport } from './routes/auth/verify'
+import { Route as AuthOnboardingImport } from './routes/auth/onboarding'
 
 // Create/Update Routes
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => rootRoute,
 } as any)
 
 const AuthIndexRoute = AuthIndexImport.update({
   id: '/auth/',
   path: '/auth/',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => rootRoute,
 } as any)
 
 const AuthVerifyRoute = AuthVerifyImport.update({
   id: '/auth/verify',
   path: '/auth/verify',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => rootRoute,
 } as any)
 
 const AuthOnboardingRoute = AuthOnboardingImport.update({
   id: '/auth/onboarding',
   path: '/auth/onboarding',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => rootRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -121,7 +121,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthVerifyRoute: AuthVerifyRoute,
-  AuthIndexRoute: AuthIndexRoute
+  AuthIndexRoute: AuthIndexRoute,
 }
 
 export const routeTree = rootRoute
