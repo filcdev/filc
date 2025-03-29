@@ -22,9 +22,12 @@
     "checkJs": true,
 
     /** Transpile using Bundler (not tsc) */
-    "module": "Preserve",
-    "moduleResolution": "Bundler",
-    "noEmit": true
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+  },
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "verbose": false
   },
   "exclude": ["node_modules", "build", "dist", ".next", ".expo"]
 }
