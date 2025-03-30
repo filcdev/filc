@@ -3,12 +3,52 @@
  *
  * Central configuration module for the Filc application
  */
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-import configFile from '../../../filc.config.json' with { type: 'json' }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-/**
- * App configuration
- */
+let configFile = {} as unknown
+
+if (process.env.NODE_ENV === 'production') {
+  if (!fs.existsSync('/opt/filc/filc.config.json')) {
+    throw new Error(
+      'Configuration file not found. Mount your filc.config.json file to /opt/filc/filc.config.json'
+    )
+  }
+  configFile = fs.readFileSync(
+    '/opt/filc/filc.config.json',
+    'utf-8'
+  )
+} else {
+  const configPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'filc.config.json'
+  )
+  if (fs.existsSync(configPath)) {
+    const content = fs.readFileSync(configPath, 'utf-8')
+    try {
+      configFile = JSON.parse(content)
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    catch (_) {
+      throw new Error(
+        'Error parsing configuration file. Please ensure it is valid JSON.'
+      )
+    }
+  } else {
+    throw new Error(
+      'Configuration file not found. Please create a config.json file in the root directory.'
+    )
+  }
+}
+
 export interface AppConfig {
   name: string
   version: string
