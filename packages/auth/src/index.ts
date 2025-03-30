@@ -40,9 +40,5 @@ export {
   generateVerificationToken,
   getVerificationExpiry,
   isVerificationExpired,
-  updateSessionJwtId,
-  SESSION_EXPIRY_DAYS,
-  ACCESS_TOKEN_EXPIRY_MINUTES,
-  REFRESH_TOKEN_EXPIRY_DAYS,
-  VERIFICATION_TOKEN_EXPIRY_HOURS
+  updateSessionJwtId
 } from './utils'

@@ -5,9 +5,9 @@ import { ZodError } from 'zod'
 
 import type { PermissionType } from '@filc/rbac'
 import { validateToken } from '@filc/auth'
+import { backendConfig } from '@filc/config'
 import { prisma } from '@filc/db'
 import { hasAnyPermission } from '@filc/rbac'
-import { backendConfig } from '@filc/config'
 
 export const createTRPCContext = async ({
   req
@@ -79,7 +79,7 @@ const csrfMiddleware = t.middleware(({ ctx, next }) => {
   const origin = req.headers.origin
   const referer = req.headers.referer
 
-  const appHost = backendConfig.url ?? req.headers.host
+  const appHost = backendConfig.url
 
   if (!origin || !referer) {
     throw new TRPCError({
