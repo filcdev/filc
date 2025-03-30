@@ -58,14 +58,11 @@
     }
   },
   "globalEnv": [
-    "JWT_SECRET",
-    "REFRESH_TOKEN_SECRET",
-    "DATABASE_URL",
-    "PORT",
-    "APP_HOST"
+    "MODE"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
+    "MODE",
     "CI",
     "npm_lifecycle_event"
   ]
