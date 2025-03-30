@@ -5,8 +5,8 @@ import express from 'express'
 
 import { appRouter, createTRPCContext } from '@filc/api'
 import { appConfig, backendConfig } from '@filc/config'
-import { seedRolesAndPermissions } from '@filc/rbac'
 import { migrate } from '@filc/db'
+import { seedRolesAndPermissions } from '@filc/rbac'
 
 async function main() {
   console.log(`Starting ${appConfig.name} v${appConfig.version}`)

@@ -42,7 +42,10 @@ export default function Provider({ children }: { children: ReactNode }) {
     createTRPCClient<AppRouter>({
       links: [
         httpBatchLink({
-          url: 'http://localhost:4000/trpc',
+          url:
+            import.meta.env.MODE === 'development'
+              ? 'http://localhost:4000/trpc'
+              : '/trpc',
           transformer: superjson,
           headers() {
             return {

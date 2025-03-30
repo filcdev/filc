@@ -13,24 +13,23 @@ const __dirname = dirname(__filename)
 const exists = (filePath: string) =>
   fs.existsSync(filePath) && fs.statSync(filePath).isFile()
 
-const parse = (filePath: string) => {
+const parse = (filePath: string): Config => {
   const fileContent = fs.readFileSync(filePath, 'utf-8')
   try {
-    return JSON.parse(fileContent)
+    const parsedContent = JSON.parse(fileContent) as Config
+    return parsedContent
   } catch (_error) {
     throw new Error(`Error parsing JSON file at ${filePath}`)
   }
 }
 
-const loadConfigFile = () => {
+const loadConfigFile = (): Config => {
   if (process.env.NODE_ENV === 'production') {
     const prodConfigPath = '/opt/filc/filc.config.json'
     if (!exists(prodConfigPath)) {
       throw new Error(`Production config file not found at ${prodConfigPath}`)
     }
-    console.log(
-      `⚙️ Loading production config file from ${prodConfigPath}`
-    )
+    console.log(`⚙️ Loading production config file from ${prodConfigPath}`)
     return {
       ...parse(prodConfigPath),
       isDevelopment: false
@@ -46,17 +45,13 @@ const loadConfigFile = () => {
     if (!exists(devConfigPath)) {
       throw new Error(`Development config file not found at ${devConfigPath}`)
     }
-    console.log(
-      `⚙️ Loading development config file from ${devConfigPath}`
-    )
+    console.log(`⚙️ Loading development config file from ${devConfigPath}`)
     return {
       ...parse(devConfigPath),
       isDevelopment: true
     }
   }
 }
-
-const configFile = loadConfigFile()
 
 export interface AppConfig {
   name: string
@@ -150,7 +145,7 @@ export interface Config {
 }
 
 // Type assertion to ensure the config file matches our expected structure
-const config = configFile as Config
+const config = loadConfigFile()
 
 // Export configuration sections
 export const appConfig = config.app
