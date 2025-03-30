@@ -39,6 +39,6 @@
     }
   },
   "database": {
-    "url": "file://opt/filc.db"
+    "url": "file://tmp/filc.db"
   }
 }
