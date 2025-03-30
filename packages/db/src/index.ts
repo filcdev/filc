@@ -1,5 +1,7 @@
 export { prisma } from './client';
 
+export { migrate } from './migrate';
+
 export type { PrismaPromise } from '../generated/client';
 export {
   PrismaClientValidationError,
