@@ -1,27 +1,74 @@
-#syntax=docker/dockerfile:1.4
 ARG NODE_VERSION="23.10.0"
-FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine as base
-RUN apk add --no-cache libc6-compat
+ARG BACKEND_PROJECT="@filc/backend"
+ARG BACKEND_DIRECTORY="apps/backend"
+ARG FRONTEND_PROJECT="@filc/frontend"
+ARG FRONTEND_DIRECTORY="apps/frontend"
+
+FROM --platform=linux/amd64 node:${NODE_VERSION}-alpine AS alpine
 RUN apk update
-WORKDIR /workspace
+RUN apk add --no-cache libc6-compat
+
+FROM alpine AS base
 RUN corepack enable
+RUN pnpm install turbo
+RUN pnpm config set store-dir ~/.pnpm-store
 
-FROM base as fetcher
-COPY pnpm*.yaml ./
+# Prune backend
+FROM base AS backend-pruner
+ARG BACKEND_PROJECT
+WORKDIR /app
 COPY . .
-RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm-store \
-  pnpm fetch --ignore-scripts
+RUN pnpm dlx turbo prune --scope=${BACKEND_PROJECT} --docker
 
-FROM fetcher as builder
-ARG APP_NAME="@filc/backend"
-ENV APP_NAME=${APP_NAME}
-WORKDIR /workspace
+# Prune frontend
+FROM base AS frontend-pruner
+ARG FRONTEND_PROJECT
+WORKDIR /app
 COPY . .
-RUN pnpm install --frozen-lockfile --offline
-RUN --mount=type=cache,target=/workspace/node_modules/.cache \
-  pnpm turbo run build --filter="${APP_NAME}"
+RUN pnpm dlx turbo prune --scope=${FRONTEND_PROJECT} --docker
 
-FROM builder as deployer
-WORKDIR /workspace/apps/backend
+# Combine and build both projects
+FROM base AS builder
+WORKDIR /app
+# Copy package.json files from both pruners
+COPY --from=backend-pruner /app/out/json/ .
+COPY --from=frontend-pruner /app/out/json/ .
+# Use one of the workspace files (they should be identical)
+COPY --from=backend-pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=backend-pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
+# Install dependencies
+RUN --mount=type=cache,id=pnpm,target=~/.pnpm-store pnpm install
+# Copy source code from both pruners
+COPY --from=backend-pruner /app/out/full .
+COPY --from=frontend-pruner /app/out/full .
+# Build both projects
+ARG BACKEND_PROJECT
+ARG FRONTEND_PROJECT
+RUN pnpm build
+
+# Backend runner
+FROM base AS backend-runner
+ARG BACKEND_DIRECTORY
+RUN addgroup -g 1001 -S filc
+RUN adduser -u 1001 -S filc -G filc
+USER filc
+WORKDIR /app
 ENV NODE_ENV=production
+COPY --from=builder --chown=filc:filc /app .
+WORKDIR /app/${BACKEND_DIRECTORY}
+RUN corepack install
+EXPOSE 4000
 CMD ["node", "dist/index.js"]
+
+# Frontend with Nginx
+FROM nginx:alpine AS frontend
+ARG FRONTEND_DIRECTORY
+WORKDIR /usr/share/nginx/html
+# Remove default nginx static assets
+RUN rm -rf ./*
+# Copy static assets from builder stage
+COPY --from=builder /app/${FRONTEND_DIRECTORY}/dist .
+# Copy custom nginx conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
