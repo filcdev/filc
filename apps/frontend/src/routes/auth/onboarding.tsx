@@ -98,7 +98,7 @@ const Onboarding = () => {
     return (
       <main className="flex grow items-center justify-center">
         <BlobBackground />
-        <Card className="min-w-md z-3 bg-background/80">
+        <Card className="bg-background/80 z-3 min-w-md">
           <CardContent className="p-6">
             <p className="text-center text-red-500">
               Hiba történt. Kérjük, próbáld újra később.
@@ -112,7 +112,7 @@ const Onboarding = () => {
   return (
     <main className="flex grow items-center justify-center">
       <BlobBackground />
-      <Card className="min-w-md z-3 bg-background/80">
+      <Card className="bg-background/80 z-3 min-w-md">
         <CardHeader>
           <CardTitle>Profil beállítása</CardTitle>
         </CardHeader>

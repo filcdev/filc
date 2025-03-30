@@ -24,7 +24,7 @@ function getQueryClient() {
   if (typeof window === 'undefined') {
     return makeQueryClient()
   } else {
-    if (!browserQueryClient) browserQueryClient = makeQueryClient()
+    browserQueryClient ??= makeQueryClient()
     return browserQueryClient
   }
 }

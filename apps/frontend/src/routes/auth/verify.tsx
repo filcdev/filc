@@ -104,7 +104,7 @@ const VerifyEmail = ({ email }: VerifyEmailProps) => {
   return (
     <main className="flex grow items-center justify-center">
       <BlobBackground />
-      <Card className="min-w-md z-3 bg-background/80">
+      <Card className="bg-background/80 z-3 min-w-md">
         <CardHeader>
           <CardTitle>Email cím megerősítése</CardTitle>
         </CardHeader>
