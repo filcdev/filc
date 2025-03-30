@@ -20,7 +20,7 @@
       "outputs": [".cache/.eslintcache"]
     },
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "db:generate"],
       "outputs": [".cache/tsbuildinfo.json"]
     },
     "clean": {
