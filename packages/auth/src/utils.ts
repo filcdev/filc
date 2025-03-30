@@ -6,39 +6,6 @@ import { authConfig } from '@filc/config'
 
 import type { RefreshTokenPayload, TokenPayload } from './types'
 
-// Constants from config
-export const SESSION_EXPIRY_DAYS = authConfig.session.expiryInDays
-export const ACCESS_TOKEN_EXPIRY_MINUTES =
-  authConfig.tokens.accessToken.expiryInMinutes
-export const REFRESH_TOKEN_EXPIRY_DAYS =
-  authConfig.tokens.refreshToken.expiryInDays
-export const VERIFICATION_TOKEN_EXPIRY_HOURS =
-  authConfig.verification.tokenExpiryInHours
-
-// Get secrets from config or environment
-const JWT_SECRET =
-  authConfig.tokens.accessToken.secret || process.env.JWT_SECRET
-const REFRESH_TOKEN_SECRET =
-  authConfig.tokens.refreshToken.secret || process.env.REFRESH_TOKEN_SECRET
-
-// Ensure we have proper JWT secrets
-if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'JWT_SECRET and REFRESH_TOKEN_SECRET must be set in production'
-    )
-  }
-  console.warn(
-    'Warning: JWT_SECRET and/or REFRESH_TOKEN_SECRET environment variables not set. ' +
-      'Using insecure default secrets - DO NOT USE IN PRODUCTION!'
-  )
-}
-
-// Use config values with fallbacks
-const finalJwtSecret = JWT_SECRET ?? 'dev_jwt_secret_do_not_use_in_production'
-const finalRefreshSecret =
-  REFRESH_TOKEN_SECRET ?? 'dev_refresh_secret_do_not_use_in_production'
-
 /**
  * Hash a password
  */
@@ -68,9 +35,9 @@ export async function createToken(
     {
       data: { ...payload, jwtId },
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_EXPIRY_MINUTES * 60
+      exp: Math.floor(Date.now() / 1000) + authConfig.tokens.accessToken.expiryInMinutes * 60
     },
-    finalJwtSecret
+    authConfig.tokens.accessToken.secret
   )
 
   return { token, jwtId }
@@ -87,9 +54,9 @@ export async function createRefreshToken(
       data: payload,
       iat: Math.floor(Date.now() / 1000),
       exp:
-        Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60
+        Math.floor(Date.now() / 1000) + authConfig.tokens.refreshToken.expiryInDays * 24 * 60 * 60
     },
-    finalRefreshSecret
+    authConfig.tokens.refreshToken.secret
   )
 }
 
@@ -98,7 +65,7 @@ export async function createRefreshToken(
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    return (await verify(token, finalJwtSecret)) as TokenPayload
+    return (await verify(token, authConfig.tokens.accessToken.secret)) as TokenPayload
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Token verification error:', error)
@@ -114,7 +81,7 @@ export async function verifyRefreshToken(
   token: string
 ): Promise<RefreshTokenPayload | null> {
   try {
-    return (await verify(token, finalRefreshSecret)) as RefreshTokenPayload
+    return (await verify(token, authConfig.tokens.refreshToken.secret)) as RefreshTokenPayload
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Refresh token verification error:', error)
@@ -135,7 +102,7 @@ export function generateSecureToken(length = 64): string {
  */
 export function getExpiryDate(): Date {
   const expiryDate = new Date()
-  expiryDate.setDate(expiryDate.getDate() + SESSION_EXPIRY_DAYS)
+  expiryDate.setDate(expiryDate.getDate() + authConfig.session.expiryInDays)
   return expiryDate
 }
 
@@ -144,7 +111,7 @@ export function getExpiryDate(): Date {
  */
 export function getRefreshTokenExpiryDate(): Date {
   const expiryDate = new Date()
-  expiryDate.setDate(expiryDate.getDate() + REFRESH_TOKEN_EXPIRY_DAYS)
+  expiryDate.setDate(expiryDate.getDate() + authConfig.tokens.refreshToken.expiryInDays)
   return expiryDate
 }
 
@@ -187,7 +154,7 @@ export function generateVerificationToken(): string {
  */
 export function getVerificationExpiry(): Date {
   const expiryDate = new Date()
-  expiryDate.setHours(expiryDate.getHours() + VERIFICATION_TOKEN_EXPIRY_HOURS)
+  expiryDate.setHours(expiryDate.getHours() + authConfig.verification.tokenExpiryInHours)
   return expiryDate
 }
 
