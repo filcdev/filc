@@ -1,0 +1,44 @@
+{
+  "app": {
+    "name": "Filc",
+    "version": "1.0.0"
+  },
+  "backend": {
+    "url": "http://localhost:4000",
+    "port": 4000
+  },
+  "auth": {
+    "tokens": {
+      "accessToken": {
+        "expiryInMinutes": 15,
+        "secret": "XjBR9ZvB4LNoNVBzBX9YmNRs+xy/fiHatbi4HNbQGA8="
+      },
+      "refreshToken": {
+        "expiryInDays": 30,
+        "secret": "ZJPPnOzz/Mjlm/1hk3sWjcfDGnFEaqt8Ih2ogzaa10o="
+      }
+    },
+    "session": {
+      "expiryInDays": 7
+    },
+    "verification": {
+      "tokenExpiryInHours": 24
+    },
+    "passwords": {
+      "minLength": 8,
+      "maxLength": 64,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumbers": true,
+      "requireSpecial": true
+    },
+    "username": {
+      "minLength": 3,
+      "maxLength": 20,
+      "pattern": "^[a-zA-Z0-9_]+$"
+    }
+  },
+  "database": {
+    "url": "file://opt/filc.db"
+  }
+}
