@@ -18,7 +18,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     icon: {
       light: './assets/icon-light.png',
-      dark: './assets/icon-dark.png',
+      dark: './assets/icon-dark.png'
       // tinted: "",
     }
   },
