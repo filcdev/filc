@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   // Ignore files not tracked by VCS and any config files
-  includeIgnoreFile(path.join(import.meta.dirname, '../../.gitignore')),
+  includeIgnoreFile(path.join(import.meta.dirname, '../../../.gitignore')),
   { ignores: ['**/*.config.*'] },
   {
     files: ['**/*.js', '**/*.ts', '**/*.tsx'],
