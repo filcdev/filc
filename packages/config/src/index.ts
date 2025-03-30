@@ -29,7 +29,7 @@ const loadConfigFile = () => {
     }
     return parse(prodConfigPath)
   } else {
-    const devConfigPath = path.join(__dirname, '..', '..', 'filc.config.json')
+    const devConfigPath = path.join(__dirname, '..', '..', '..', 'filc.config.json')
     if (!exists(devConfigPath)) {
       throw new Error(`Development config file not found at ${devConfigPath}`)
     }
