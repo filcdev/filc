@@ -4,3 +4,5 @@ node_modules
 .gitignore
 *.md
 dist
+filc.config.prod.json
+filc.config.json

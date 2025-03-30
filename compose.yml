@@ -3,16 +3,17 @@ services:
     image: filc-backend:latest
     build:
       context: .
+      target: backend-runner
       dockerfile: Dockerfile
     ports:
       - "4000:4000"
     volumes:
       - ./filc.config.prod.json:/opt/filc/filc.config.json
-  # frontend:
-  #   image: filc-frontend:latest
-  #   build:
-  #     context: .
-  #     target: frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "80:80"
+  frontend:
+    image: filc-frontend:latest
+    build:
+      context: .
+      target: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
