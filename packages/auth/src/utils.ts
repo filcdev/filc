@@ -35,7 +35,9 @@ export async function createToken(
     {
       data: { ...payload, jwtId },
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + authConfig.tokens.accessToken.expiryInMinutes * 60
+      exp:
+        Math.floor(Date.now() / 1000) +
+        authConfig.tokens.accessToken.expiryInMinutes * 60
     },
     authConfig.tokens.accessToken.secret
   )
@@ -54,7 +56,8 @@ export async function createRefreshToken(
       data: payload,
       iat: Math.floor(Date.now() / 1000),
       exp:
-        Math.floor(Date.now() / 1000) + authConfig.tokens.refreshToken.expiryInDays * 24 * 60 * 60
+        Math.floor(Date.now() / 1000) +
+        authConfig.tokens.refreshToken.expiryInDays * 24 * 60 * 60
     },
     authConfig.tokens.refreshToken.secret
   )
@@ -65,7 +68,10 @@ export async function createRefreshToken(
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    return (await verify(token, authConfig.tokens.accessToken.secret)) as TokenPayload
+    return (await verify(
+      token,
+      authConfig.tokens.accessToken.secret
+    )) as TokenPayload
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Token verification error:', error)
@@ -81,7 +87,10 @@ export async function verifyRefreshToken(
   token: string
 ): Promise<RefreshTokenPayload | null> {
   try {
-    return (await verify(token, authConfig.tokens.refreshToken.secret)) as RefreshTokenPayload
+    return (await verify(
+      token,
+      authConfig.tokens.refreshToken.secret
+    )) as RefreshTokenPayload
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Refresh token verification error:', error)
@@ -111,7 +120,9 @@ export function getExpiryDate(): Date {
  */
 export function getRefreshTokenExpiryDate(): Date {
   const expiryDate = new Date()
-  expiryDate.setDate(expiryDate.getDate() + authConfig.tokens.refreshToken.expiryInDays)
+  expiryDate.setDate(
+    expiryDate.getDate() + authConfig.tokens.refreshToken.expiryInDays
+  )
   return expiryDate
 }
 
@@ -154,7 +165,9 @@ export function generateVerificationToken(): string {
  */
 export function getVerificationExpiry(): Date {
   const expiryDate = new Date()
-  expiryDate.setHours(expiryDate.getHours() + authConfig.verification.tokenExpiryInHours)
+  expiryDate.setHours(
+    expiryDate.getHours() + authConfig.verification.tokenExpiryInHours
+  )
   return expiryDate
 }
 
