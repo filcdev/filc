@@ -3,13 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "vite",
     "dev": "vite",
     "build": "vite build && tsc",
-    "serve": "vite preview",
-    "test": "vitest run",
+    "start": "vite",
     "lint": "eslint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "clean": "git clean -xdf .cache .turbo dist node_modules"
   },
   "dependencies": {
     "@filc/api": "workspace:*",

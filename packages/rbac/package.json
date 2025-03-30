@@ -8,9 +8,12 @@
     "access": "public"
   },
   "scripts": {
+    "dev": "tsc",
+    "build": "tsc && tsc-alias",
     "lint": "eslint",
-    "format": "prettier --write .",
-    "build": "tsc && tsc-alias"
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "clean": "git clean -xdf .cache .turbo dist node_modules"
   },
   "dependencies": {
     "@filc/db": "workspace:*"

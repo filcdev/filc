@@ -9,7 +9,9 @@
     "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
     "lint": "eslint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "clean": "git clean -xdf .cache .turbo dist node_modules"
   },
   "dependencies": {
     "@filc/api": "workspace:*",

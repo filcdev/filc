@@ -8,9 +8,9 @@
     "./react": "./react.js"
   },
   "scripts": {
-    "clean": "git clean -xdf .cache .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "clean": "git clean -xdf .cache .turbo node_modules"
   },
   "dependencies": {
     "@eslint/compat": "^1.2.7",
