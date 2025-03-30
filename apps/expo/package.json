@@ -28,6 +28,7 @@
     "expo-secure-store": "14.0.2-canary-20250304-f08e984",
     "expo-splash-screen": "0.29.23-canary-20250304-f08e984",
     "expo-status-bar": "2.0.2-canary-20250304-f08e984",
+    "expo-system-ui": "5.0.0-canary-20250304-f08e984",
     "expo-web-browser": "14.1.0-canary-20250304-f08e984",
     "nativewind": "~4.1.23",
     "react": "catalog:react19",
