@@ -7,9 +7,9 @@
     ".": "./index.js"
   },
   "scripts": {
-    "clean": "git clean -xdf .cache .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "clean": "git clean -xdf .cache .turbo node_modules"
   },
   "dependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",

@@ -1,15 +1,13 @@
-export { prisma } from './client';
+export { prisma } from './client'
 
-export { migrate } from './migrate';
+export { migrate } from './migrate'
 
-export type { PrismaPromise } from '../generated/client';
+export type { PrismaPromise } from '../generated/client'
 export {
   PrismaClientValidationError,
-  PrismaClientKnownRequestError,
-} from '../generated/client/runtime/library';
+  PrismaClientKnownRequestError
+} from '../generated/client/runtime/library'
 
-export * from '../generated/client';
+export * from '../generated/client'
 
-export * from '../generated/client/runtime/library';
-
-
+export * from '../generated/client/runtime/library'

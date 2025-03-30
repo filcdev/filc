@@ -9,12 +9,12 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc && tsc-alias",
-    "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "tsc && pnpm trpc-swift",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "build": "tsc && tsc-alias",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "clean": "git clean -xdf .cache .turbo dist node_modules"
   },
   "dependencies": {
     "@filc/auth": "workspace:*",
