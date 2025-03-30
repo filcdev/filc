@@ -10,32 +10,34 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-let configFile = {} as unknown
+const exists = (filePath: string) => fs.existsSync(filePath) && fs.statSync(filePath).isFile()
 
-if (process.env.NODE_ENV === 'production') {
-  if (!fs.existsSync('/opt/filc/filc.config.json')) {
-    throw new Error(
-      'Configuration file not found. Mount your filc.config.json file to /opt/filc/filc.config.json'
-    )
-  }
-  configFile = fs.readFileSync('/opt/filc/filc.config.json', 'utf-8')
-} else {
-  const configPath = path.join(__dirname, '..', '..', '..', 'filc.config.json')
-  if (fs.existsSync(configPath)) {
-    const content = fs.readFileSync(configPath, 'utf-8')
-    try {
-      configFile = JSON.parse(content)
-    } catch (_error) {
-      throw new Error(
-        'Error parsing configuration file. Please ensure it is valid JSON.'
-      )
-    }
-  } else {
-    throw new Error(
-      'Configuration file not found. Please create a config.json file in the root directory.'
-    )
+const parse = (filePath: string) => {
+  const fileContent = fs.readFileSync(filePath, 'utf-8')
+  try {
+    return JSON.parse(fileContent)
+  } catch (_error) {
+    throw new Error(`Error parsing JSON file at ${filePath}`)
   }
 }
+
+const loadConfigFile = () => {
+  if (process.env.NODE_ENV === 'production') {
+    const prodConfigPath = '/opt/filc/filc.config.json'
+    if (!exists(prodConfigPath)) {
+      throw new Error(`Production config file not found at ${prodConfigPath}`)
+    }
+    return parse(prodConfigPath)
+  } else {
+    const devConfigPath = path.join(__dirname, '..', '..', 'filc.config.json')
+    if (!exists(devConfigPath)) {
+      throw new Error(`Development config file not found at ${devConfigPath}`)
+    }
+    return parse(devConfigPath)
+  }
+}
+
+const configFile = loadConfigFile()
 
 export interface AppConfig {
   name: string
