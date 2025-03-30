@@ -4,12 +4,11 @@
  * Central configuration module for the Filc application
  */
 import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import path, { dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 let configFile = {} as unknown
 
@@ -19,25 +18,15 @@ if (process.env.NODE_ENV === 'production') {
       'Configuration file not found. Mount your filc.config.json file to /opt/filc/filc.config.json'
     )
   }
-  configFile = fs.readFileSync(
-    '/opt/filc/filc.config.json',
-    'utf-8'
-  )
+  configFile = fs.readFileSync('/opt/filc/filc.config.json', 'utf-8')
 } else {
-  const configPath = path.join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'filc.config.json'
-  )
+  const configPath = path.join(__dirname, '..', '..', '..', 'filc.config.json')
   if (fs.existsSync(configPath)) {
     const content = fs.readFileSync(configPath, 'utf-8')
     try {
       configFile = JSON.parse(content)
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    catch (_) {
+    } catch (_) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       throw new Error(
         'Error parsing configuration file. Please ensure it is valid JSON.'
       )
