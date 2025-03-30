@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@filc/auth": "workspace:*",
+    "@filc/config": "workspace:*",
     "@filc/db": "workspace:*",
     "@filc/rbac": "workspace:*",
     "@trpc/server": "catalog:",
