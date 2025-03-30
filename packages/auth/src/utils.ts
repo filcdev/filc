@@ -68,6 +68,9 @@ export async function createRefreshToken(
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
+    if (!token) {
+      return null
+    }
     return (await verify(
       token,
       authConfig.tokens.accessToken.secret
