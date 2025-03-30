@@ -10,7 +10,8 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const exists = (filePath: string) => fs.existsSync(filePath) && fs.statSync(filePath).isFile()
+const exists = (filePath: string) =>
+  fs.existsSync(filePath) && fs.statSync(filePath).isFile()
 
 const parse = (filePath: string) => {
   const fileContent = fs.readFileSync(filePath, 'utf-8')
@@ -27,13 +28,31 @@ const loadConfigFile = () => {
     if (!exists(prodConfigPath)) {
       throw new Error(`Production config file not found at ${prodConfigPath}`)
     }
-    return parse(prodConfigPath)
+    console.log(
+      `⚙️ Loading production config file from ${prodConfigPath}`
+    )
+    return {
+      ...parse(prodConfigPath),
+      isDevelopment: false
+    }
   } else {
-    const devConfigPath = path.join(__dirname, '..', '..', '..', 'filc.config.json')
+    const devConfigPath = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'filc.config.json'
+    )
     if (!exists(devConfigPath)) {
       throw new Error(`Development config file not found at ${devConfigPath}`)
     }
-    return parse(devConfigPath)
+    console.log(
+      `⚙️ Loading development config file from ${devConfigPath}`
+    )
+    return {
+      ...parse(devConfigPath),
+      isDevelopment: true
+    }
   }
 }
 
@@ -127,6 +146,7 @@ export interface Config {
   backend: BackendConfig
   auth: AuthConfig
   database: DatabaseConfig
+  isDevelopment: boolean
 }
 
 // Type assertion to ensure the config file matches our expected structure
