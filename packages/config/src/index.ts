@@ -25,8 +25,7 @@ if (process.env.NODE_ENV === 'production') {
     const content = fs.readFileSync(configPath, 'utf-8')
     try {
       configFile = JSON.parse(content)
-    } catch (_) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       throw new Error(
         'Error parsing configuration file. Please ensure it is valid JSON.'
       )

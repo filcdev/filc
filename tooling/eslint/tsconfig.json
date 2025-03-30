@@ -1,5 +1,8 @@
 {
   "extends": "@filc/tsconfig/base.json",
   "include": ["."],
+  "compilerOptions": {
+    "noEmit": true
+  },
   "exclude": ["node_modules"]
 }
