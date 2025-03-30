@@ -1,7 +1,6 @@
 import {Text, View} from "react-native";
 import {Link} from "expo-router";
-import {LinearGradient} from "expo-linear-gradient";
-import BackGroundLinearGradient from "@/app/ui/core/background";
+import BackGroundLinearGradient from "@/ui/core/background";
 
 
 export default function Index() {
@@ -9,7 +8,7 @@ export default function Index() {
         <BackGroundLinearGradient>
             <View className="flex-1 items-center justify-center">
                 <Text>PetrikAppAlma</Text>
-                <Link href="/loginpage" className="text-blue-500">Alma</Link>
+                <Link href="/loginpage" className="text-blue-500 p-4 bg-primary">Alma</Link>
             </View>
         </BackGroundLinearGradient>
     )

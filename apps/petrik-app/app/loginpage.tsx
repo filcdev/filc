@@ -1,7 +1,6 @@
 import React from 'react';
 import {View, Text} from 'react-native';
-import {LinearGradient} from "expo-linear-gradient";
-import BackGroundLinearGradient from "@/app/ui/core/background";
+import BackGroundLinearGradient from "@/ui/core/background";
 
 const loginPage = () => {
     return (
