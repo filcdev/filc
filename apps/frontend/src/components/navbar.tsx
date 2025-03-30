@@ -1,3 +1,5 @@
+import { useRouter } from '@tanstack/react-router'
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,7 +11,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/lib/auth'
-import { useRouter } from '@tanstack/react-router'
 
 const AuthenticatedUserSection = () => {
   const { user, logout } = useAuth()
