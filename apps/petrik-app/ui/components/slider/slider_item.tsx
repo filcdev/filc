@@ -5,7 +5,7 @@ import {SliderElementType} from "@/ui/components/slider/types/slider_types";
 const SliderItem = (props: SliderElementType) => {
   return (
     <View>
-      <Text>My Component</Text>
+      <Text>{props.item.title}</Text>
     </View>
   );
 };
