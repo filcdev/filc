@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { TRPCClientError } from '@trpc/client'
+import { toast } from 'sonner'
+
 import BlobBackground from '@/components/ui/blob-background'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { TRPCClientError } from '@trpc/client'
-import { toast } from 'sonner'
 
 interface VerifyEmailProps {
   email?: string

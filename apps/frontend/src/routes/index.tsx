@@ -1,8 +1,9 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { Loader } from 'lucide-react'
+
 import { Navbar } from '@/components/navbar'
 import BlobBackground from '@/components/ui/blob-background'
 import { useAuth } from '@/lib/auth'
-import { createFileRoute } from '@tanstack/react-router'
-import { Loader } from 'lucide-react'
 
 const Index = () => {
   const { user, logout, isRefreshing } = useAuth()

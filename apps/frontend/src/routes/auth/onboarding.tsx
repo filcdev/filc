@@ -1,4 +1,9 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { TRPCClientError } from '@trpc/client'
+import { toast } from 'sonner'
+
 import BlobBackground from '@/components/ui/blob-background'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,10 +19,6 @@ import {
 } from '@/components/ui/select'
 import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { TRPCClientError } from '@trpc/client'
-import { toast } from 'sonner'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/
 
