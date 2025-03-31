@@ -5,6 +5,8 @@ import { Stack } from 'expo-router'
 
 import { useSignIn, useSignOut, useUser } from '@/utils/auth'
 
+import BackgroundGradient from '@/ui/core/BackgroundGradient';
+
 const LogInScreen = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

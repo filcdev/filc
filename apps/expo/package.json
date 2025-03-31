@@ -24,6 +24,7 @@
     "expo": "53.0.0-canary-20250304-f08e984",
     "expo-constants": "18.0.0-canary-20250304-f08e984",
     "expo-dev-client": "5.0.13-canary-20250304-f08e984",
+    "expo-linear-gradient": "14.0.3-canary-20250304-f08e984",
     "expo-linking": "7.1.0-canary-20250304-f08e984",
     "expo-router": "4.0.18-canary-20250304-f08e984",
     "expo-secure-store": "14.0.2-canary-20250304-f08e984",
