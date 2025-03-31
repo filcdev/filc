@@ -39,6 +39,6 @@
     }
   },
   "database": {
-    "url": "file:///home/nya/Documents/dev/filc/packages/db/prisma/local.sqlite3"
+    "url": "file:///home/benike/dev/filc/packages/db/prisma/local.sqlite3"
   }
 }

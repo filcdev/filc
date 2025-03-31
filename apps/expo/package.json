@@ -5,6 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "dev:android": "expo run:android",
+    "dev": "expo run:android",
     "dev:ios": "expo start --ios",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
