@@ -12,7 +12,9 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
+import { Route as HomeIndexImport } from './routes/home/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
+import { Route as AuthVerifyImport } from './routes/auth/verify'
 import { Route as AuthVerifyImport } from './routes/auth/verify'
 import { Route as AuthOnboardingImport } from './routes/auth/onboarding'
 
@@ -24,9 +26,16 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const HomeIndexRoute = HomeIndexImport.update({
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AuthIndexRoute = AuthIndexImport.update({
   id: '/auth/',
   path: '/auth/',
+  getParentRoute: () => rootRoute,
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -34,11 +43,13 @@ const AuthVerifyRoute = AuthVerifyImport.update({
   id: '/auth/verify',
   path: '/auth/verify',
   getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRoute,
 } as any)
 
 const AuthOnboardingRoute = AuthOnboardingImport.update({
   id: '/auth/onboarding',
   path: '/auth/onboarding',
+  getParentRoute: () => rootRoute,
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -74,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexImport
       parentRoute: typeof rootRoute
     }
+    '/home/': {
+      id: '/home/'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -84,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/auth/onboarding': typeof AuthOnboardingRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth': typeof AuthIndexRoute
+  '/home': typeof HomeIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -91,6 +110,7 @@ export interface FileRoutesByTo {
   '/auth/onboarding': typeof AuthOnboardingRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth': typeof AuthIndexRoute
+  '/home': typeof HomeIndexRoute
 }
 
 export interface FileRoutesById {
@@ -99,14 +119,21 @@ export interface FileRoutesById {
   '/auth/onboarding': typeof AuthOnboardingRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/': typeof AuthIndexRoute
+  '/home/': typeof HomeIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/onboarding' | '/auth/verify' | '/auth'
+  fullPaths: '/' | '/auth/onboarding' | '/auth/verify' | '/auth' | '/home'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/onboarding' | '/auth/verify' | '/auth'
-  id: '__root__' | '/' | '/auth/onboarding' | '/auth/verify' | '/auth/'
+  to: '/' | '/auth/onboarding' | '/auth/verify' | '/auth' | '/home'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth/onboarding'
+    | '/auth/verify'
+    | '/auth/'
+    | '/home/'
   fileRoutesById: FileRoutesById
 }
 
@@ -115,6 +142,7 @@ export interface RootRouteChildren {
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  HomeIndexRoute: typeof HomeIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -122,6 +150,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   AuthIndexRoute: AuthIndexRoute,
+  HomeIndexRoute: HomeIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -137,7 +166,8 @@ export const routeTree = rootRoute
         "/",
         "/auth/onboarding",
         "/auth/verify",
-        "/auth/"
+        "/auth/",
+        "/home/"
       ]
     },
     "/": {
@@ -151,6 +181,9 @@ export const routeTree = rootRoute
     },
     "/auth/": {
       "filePath": "auth/index.tsx"
+    },
+    "/home/": {
+      "filePath": "home/index.tsx"
     }
   }
 }

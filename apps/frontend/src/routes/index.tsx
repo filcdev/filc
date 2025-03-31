@@ -1,12 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { Loader } from 'lucide-react'
 
 import { Navbar } from '@/components/navbar'
 import BlobBackground from '@/components/ui/blob-background'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/lib/auth'
+import { TabsContent } from '@radix-ui/react-tabs'
+import Substitutions from '@/components/views/public/substitutions'
+import News from '@/components/views/public/news'
 
 const Index = () => {
-  const { user, logout, isRefreshing } = useAuth()
+  const { isRefreshing, user } = useAuth()
+  const router = useRouter()
+
+  if (user) {
+    void router.navigate({ to: '/home' })
+  }
 
   if (isRefreshing)
     return (
@@ -24,17 +33,24 @@ const Index = () => {
       <div className="-z-10">
         <BlobBackground />
       </div>
-      <Navbar />
-      <main>
-        {user ? JSON.stringify(user) : <p>Not logged in</p>}
-        <button
-          onClick={() => {
-            logout()
-          }}
-        >
-          Goobye
-        </button>
-      </main>
+      <Tabs defaultValue="substitutions">
+        <Navbar>
+          <TabsList className='bg-transparent flex gap-4'>
+            <TabsTrigger value="substitutions">
+              Helyettesítések
+            </TabsTrigger>
+            <TabsTrigger value="news">Hírek</TabsTrigger>
+          </TabsList>
+        </Navbar>
+        <main className='grow flex-1'>
+          <TabsContent value="substitutions">
+            <Substitutions />
+          </TabsContent>
+          <TabsContent value="news">
+            <News />
+          </TabsContent>
+        </main>
+      </Tabs>
     </>
   )
 }
