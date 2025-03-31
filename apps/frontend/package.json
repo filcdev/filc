@@ -7,7 +7,7 @@
     "build": "vite build && tsc",
     "start": "vite",
     "lint": "eslint",
-    "format": "prettier --write .",
+    "format": "prettier --write . --ignore-path .prettierignore",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "clean": "git clean -xdf .cache .turbo dist node_modules"
   },

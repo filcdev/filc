@@ -1,13 +1,13 @@
+import { TabsContent } from '@radix-ui/react-tabs'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { Loader } from 'lucide-react'
 
 import { Navbar } from '@/components/navbar'
 import BlobBackground from '@/components/ui/blob-background'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAuth } from '@/lib/auth'
-import { TabsContent } from '@radix-ui/react-tabs'
-import Substitutions from '@/components/views/public/substitutions'
 import News from '@/components/views/public/news'
+import Substitutions from '@/components/views/public/substitutions'
+import { useAuth } from '@/lib/auth'
 
 const Index = () => {
   const { isRefreshing, user } = useAuth()
@@ -35,14 +35,12 @@ const Index = () => {
       </div>
       <Tabs defaultValue="substitutions">
         <Navbar>
-          <TabsList className='bg-transparent flex gap-4'>
-            <TabsTrigger value="substitutions">
-              Helyettesítések
-            </TabsTrigger>
+          <TabsList className="flex gap-4 bg-transparent">
+            <TabsTrigger value="substitutions">Helyettesítések</TabsTrigger>
             <TabsTrigger value="news">Hírek</TabsTrigger>
           </TabsList>
         </Navbar>
-        <main className='grow flex-1'>
+        <main className="flex-1 grow">
           <TabsContent value="substitutions">
             <Substitutions />
           </TabsContent>
