@@ -3,7 +3,9 @@
   "ui": "tui",
   "tasks": {
     "dev": {
-      "dependsOn": ["^dev"],
+      "dependsOn": [
+        "^dev"
+      ],
       "cache": false,
       "persistent": false
     },
@@ -30,7 +32,15 @@
       "persistent": true
     },
     "@filc/backend#dev": {
-      "persistent": true
+      "persistent": true,
+      "interruptible": true,
+      "dependsOn": [
+        "@filc/api#dev",
+        "@filc/auth#dev",
+        "@filc/config#dev",
+        "@filc/db#dev",
+        "@filc/rbac#dev"
+      ]
     },
     "db:push": {
       "cache": false,
@@ -44,13 +54,6 @@
       "cache": false
     }
   },
-  "globalEnv": [
-    "MODE"
-  ],
-  "globalPassThroughEnv": [
-    "NODE_ENV",
-    "MODE",
-    "CI",
-    "npm_lifecycle_event"
-  ]
+  "globalEnv": ["MODE"],
+  "globalPassThroughEnv": ["NODE_ENV", "MODE", "CI", "npm_lifecycle_event"]
 }
