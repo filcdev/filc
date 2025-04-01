@@ -54,3 +54,5 @@ dist/
 # prisma
 packages/db/generated
 packages/db/prisma/*.sqlite3
+
+filc.config.json

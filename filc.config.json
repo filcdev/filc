@@ -39,6 +39,6 @@
     }
   },
   "database": {
-    "url": "file:///home/benike/dev/filc/packages/db/prisma/local.sqlite3"
+    "url": "FILL ME IN"
   }
 }
