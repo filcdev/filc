@@ -4,7 +4,10 @@
   "tasks": {
     "dev": {
       "persistent": true,
-      "interactive": true
+      "interactive": true,
+      "passThroughEnv": [
+        "ANDROID_HOME"
+      ]
     }
   }
 }
