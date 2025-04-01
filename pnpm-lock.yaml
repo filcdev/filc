@@ -493,6 +493,9 @@ importers:
         specifier: ^6.5.0
         version: 6.5.0(prisma@6.5.0(typescript@5.8.2))(typescript@5.8.2)
     devDependencies:
+      '@faker-js/faker':
+        specifier: ^9.6.0
+        version: 9.6.0
       '@filc/eslint-config':
         specifier: workspace:*
         version: file:tooling/eslint(eslint@9.23.0(jiti@2.4.2))(turbo@2.4.4)(typescript@5.8.2)
@@ -1821,6 +1824,10 @@ packages:
   '@expo/xcpretty@4.3.2':
     resolution: {integrity: sha512-ReZxZ8pdnoI3tP/dNnJdnmAk7uLT4FjsKDGW7YeDdvdOMz2XCQSmSCM9IWlrXuWtMF9zeSB6WJtEhCQ41gQOfw==}
     hasBin: true
+
+  '@faker-js/faker@9.6.0':
+    resolution: {integrity: sha512-3vm4by+B5lvsFPSyep3ELWmZfE3kicDtmemVpuwl1yH7tqtnHdsA6hG8fbXedMVdkzgtvzWoRgjSB4Q+FHnZiw==}
+    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
   '@filc/api@file:packages/api':
     resolution: {directory: packages/api, type: directory}
@@ -8839,6 +8846,8 @@ snapshots:
       chalk: 4.1.2
       find-up: 5.0.0
       js-yaml: 4.1.0
+
+  '@faker-js/faker@9.6.0': {}
 
   '@filc/api@file:packages/api(prisma@6.5.0(typescript@5.8.2))(typescript@5.8.2)':
     dependencies:

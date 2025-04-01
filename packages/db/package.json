@@ -20,6 +20,7 @@
     "db:push": "prisma db push"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
     "@filc/eslint-config": "workspace:*",
     "@filc/prettier-config": "workspace:*",
     "@filc/tsconfig": "workspace:*",

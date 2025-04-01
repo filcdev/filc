@@ -1,6 +1,7 @@
 export { prisma } from './client'
 
 export { migrate } from './migrate'
+export { seed } from './seed'
 
 export type { PrismaPromise } from '../generated/client'
 export {

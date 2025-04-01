@@ -112,4 +112,7 @@ model Substitution {
 
     class   Class  @relation(fields: [classId], references: [id])
     classId String
+
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
 }
