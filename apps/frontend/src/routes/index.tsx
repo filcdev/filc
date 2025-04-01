@@ -33,18 +33,18 @@ const Index = () => {
       <div className="-z-10">
         <BlobBackground />
       </div>
-      <Tabs defaultValue="substitutions">
+      <Tabs defaultValue="substitutions" className="flex-1 grow flex flex-col">
         <Navbar>
           <TabsList className="flex gap-4 bg-transparent">
             <TabsTrigger value="substitutions">Helyettesítések</TabsTrigger>
             <TabsTrigger value="news">Hírek</TabsTrigger>
           </TabsList>
         </Navbar>
-        <main className="flex-1 grow">
-          <TabsContent value="substitutions">
+        <main className="flex-1 grow flex">
+          <TabsContent value="substitutions" asChild>
             <Substitutions />
           </TabsContent>
-          <TabsContent value="news">
+          <TabsContent value="news" asChild>
             <News />
           </TabsContent>
         </main>
