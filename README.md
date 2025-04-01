@@ -37,7 +37,7 @@ For example:
 # Linux
 DATABASE_URL="file:///home/username/Documents/dev/filc/packages/db/dev.db"
 # Windows
-DATABASE_URL="file:///C:/Users/username/Documents/dev/filc/packages/db/dev.db"
+DATABASE_URL="file:C:/Users/username/Documents/dev/filc/packages/db/dev.db"
 # Mac
 DATABASE_URL="file:///Users/username/Documents/dev/filc/packages/db/dev.db"
 ```
