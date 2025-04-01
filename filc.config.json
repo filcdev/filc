@@ -39,6 +39,6 @@
     }
   },
   "database": {
-    "url": "FILL ME IN"
+    "url": "file:///home/nya/Documents/dev/filc/packages/db/prisma/local.sqlite3"
   }
 }
