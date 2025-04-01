@@ -13,11 +13,12 @@
     "prebuild": "pnpm run db:generate",
     "predev": "pnpm run db:generate",
     "prelint": "pnpm run db:generate",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev --skip-generate",
-    "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio",
-    "db:push": "prisma db push"
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev --skip-generate",
+    "deploy": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "push": "prisma db push",
+    "reset": "prisma migrate reset --force && prisma db push --skip-generate"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.6.0",

@@ -58,7 +58,7 @@ In the root directory, run:
 
 ```bash
 pnpm install
-pnpm db:push
+pnpm db:reset
 pnpm dev
 ```
 

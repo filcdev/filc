@@ -42,15 +42,18 @@
         "@filc/rbac#dev"
       ]
     },
-    "db:push": {
+    "@filc/db#push": {
       "cache": false,
       "interactive": true
     },
-    "db:studio": {
+    "@filc/db#studio": {
       "cache": false,
       "persistent": true
     },
-    "db:generate": {
+    "@filc/db#generate": {
+      "cache": false
+    },
+    "@filc/db#reset": {
       "cache": false
     }
   },
