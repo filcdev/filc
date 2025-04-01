@@ -63,10 +63,11 @@ export const seed = async () => {
 
   await prisma.teacher.createMany({
     data: Array.from({ length: 10 }, () => {
+      const firstName = faker.person.firstName()
       return {
         email: faker.internet.email(),
-        name: faker.person.fullName(),
-        short: faker.person.firstName(),
+        name: faker.person.fullName({ firstName }),
+        short: firstName,
         createdAt: faker.date.past(),
         updatedAt: faker.date.past()
       }
