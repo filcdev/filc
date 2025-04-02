@@ -5,9 +5,7 @@
     "dev": {
       "persistent": true,
       "interactive": true,
-      "passThroughEnv": [
-        "ANDROID_HOME"
-      ]
+      "passThroughEnv": ["ANDROID_HOME"]
     }
   }
 }

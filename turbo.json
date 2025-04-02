@@ -22,7 +22,7 @@
       "outputs": [".cache/.eslintcache"]
     },
     "typecheck": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build", "@filc/db#generate"],
       "outputs": [".cache/tsbuildinfo.json"]
     },
     "clean": {
@@ -33,7 +33,6 @@
     },
     "@filc/backend#dev": {
       "persistent": true,
-      "interruptible": true,
       "dependsOn": [
         "@filc/api#dev",
         "@filc/auth#dev",
