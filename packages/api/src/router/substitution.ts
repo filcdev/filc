@@ -11,7 +11,16 @@ import {
 
 export const substitutionRouter = createTRPCRouter({
   getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.substitution.findMany()
+    return ctx.prisma.substitution.findMany({
+      include: {
+        class: true,
+        teacher: true,
+        subject: true,
+        lesson: true,
+        missingTeacher: true,
+        room: true
+      }
+    })
   }),
 
   getOwn: permissionProtectedProcedureFactory([Permission.VIEW_SUBSTITUTIONS], {

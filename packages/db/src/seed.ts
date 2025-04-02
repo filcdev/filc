@@ -2,7 +2,7 @@ import { fakerHU as faker } from '@faker-js/faker'
 
 import config, { databaseConfig } from '@filc/config'
 
-import { WeekType, Day } from '../generated/client'
+import { Day, WeekType } from '../generated/client'
 import { prisma } from './client'
 
 export const seed = async () => {
@@ -101,9 +101,7 @@ export const seed = async () => {
       const groupNumber = faker.number.int({ min: 1, max: 10 })
       const groupSuffix = faker.helpers.arrayElement(['A', 'B', 'C', 'D', 'E'])
       return {
-        day: faker.helpers.arrayElement(
-          Object.values(Day)
-        ) as Day,
+        day: faker.helpers.arrayElement(Object.values(Day)) as Day,
         weekType: faker.helpers.arrayElement(
           Object.values(WeekType)
         ) as WeekType,
@@ -115,7 +113,7 @@ export const seed = async () => {
         classId: faker.helpers.arrayElement(classes).id,
         subjectId: faker.helpers.arrayElement(subjects).id,
         teacherId: faker.helpers.arrayElement(teachers).id,
-        roomId: faker.helpers.arrayElement(rooms).id,
+        roomId: faker.helpers.arrayElement(rooms).id
       }
     })
   })
