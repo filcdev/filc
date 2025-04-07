@@ -131,6 +131,7 @@ export interface AuthConfig {
  */
 export interface DatabaseConfig {
   url: string
+  enableSeeding: boolean
 }
 
 /**

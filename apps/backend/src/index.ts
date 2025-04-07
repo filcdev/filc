@@ -5,7 +5,7 @@ import express from 'express'
 
 import { appRouter, createTRPCContext } from '@filc/api'
 import { appConfig, backendConfig } from '@filc/config'
-import { migrate } from '@filc/db'
+import { migrate, seed } from '@filc/db'
 import { seedRolesAndPermissions } from '@filc/rbac'
 
 async function main() {
@@ -14,6 +14,7 @@ async function main() {
   try {
     await migrate()
     await seedRolesAndPermissions()
+    await seed()
   } catch (error) {
     console.error('Failed to seed roles and permissions:', error)
   }

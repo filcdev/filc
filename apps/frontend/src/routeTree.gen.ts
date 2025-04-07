@@ -11,117 +11,170 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthIndexImport } from './routes/auth/index'
-import { Route as AuthOnboardingImport } from './routes/auth/onboarding'
-import { Route as AuthVerifyImport } from './routes/auth/verify'
-import { Route as IndexImport } from './routes/index'
+import { Route as ClientRouteImport } from './routes/_client/route'
+import { Route as HomeIndexImport } from './routes/home/index'
+import { Route as ClientIndexImport } from './routes/_client/index'
+import { Route as ClientAuthIndexImport } from './routes/_client/auth/index'
+import { Route as ClientAuthVerifyImport } from './routes/_client/auth/verify'
+import { Route as ClientAuthOnboardingImport } from './routes/_client/auth/onboarding'
 
 // Create/Update Routes
 
-const IndexRoute = IndexImport.update({
+const ClientRouteRoute = ClientRouteImport.update({
+  id: '/_client',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const HomeIndexRoute = HomeIndexImport.update({
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ClientIndexRoute = ClientIndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => ClientRouteRoute,
 } as any)
 
-const AuthIndexRoute = AuthIndexImport.update({
+const ClientAuthIndexRoute = ClientAuthIndexImport.update({
   id: '/auth/',
   path: '/auth/',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => ClientRouteRoute,
 } as any)
 
-const AuthVerifyRoute = AuthVerifyImport.update({
+const ClientAuthVerifyRoute = ClientAuthVerifyImport.update({
   id: '/auth/verify',
   path: '/auth/verify',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => ClientRouteRoute,
 } as any)
 
-const AuthOnboardingRoute = AuthOnboardingImport.update({
+const ClientAuthOnboardingRoute = ClientAuthOnboardingImport.update({
   id: '/auth/onboarding',
   path: '/auth/onboarding',
-  getParentRoute: () => rootRoute
+  getParentRoute: () => ClientRouteRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_client': {
+      id: '/_client'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ClientRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/_client/': {
+      id: '/_client/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexImport
+      preLoaderRoute: typeof ClientIndexImport
+      parentRoute: typeof ClientRouteImport
+    }
+    '/home/': {
+      id: '/home/'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeIndexImport
       parentRoute: typeof rootRoute
     }
-    '/auth/onboarding': {
-      id: '/auth/onboarding'
+    '/_client/auth/onboarding': {
+      id: '/_client/auth/onboarding'
       path: '/auth/onboarding'
       fullPath: '/auth/onboarding'
-      preLoaderRoute: typeof AuthOnboardingImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ClientAuthOnboardingImport
+      parentRoute: typeof ClientRouteImport
     }
-    '/auth/verify': {
-      id: '/auth/verify'
+    '/_client/auth/verify': {
+      id: '/_client/auth/verify'
       path: '/auth/verify'
       fullPath: '/auth/verify'
-      preLoaderRoute: typeof AuthVerifyImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ClientAuthVerifyImport
+      parentRoute: typeof ClientRouteImport
     }
-    '/auth/': {
-      id: '/auth/'
+    '/_client/auth/': {
+      id: '/_client/auth/'
       path: '/auth'
       fullPath: '/auth'
-      preLoaderRoute: typeof AuthIndexImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ClientAuthIndexImport
+      parentRoute: typeof ClientRouteImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface ClientRouteRouteChildren {
+  ClientIndexRoute: typeof ClientIndexRoute
+  ClientAuthOnboardingRoute: typeof ClientAuthOnboardingRoute
+  ClientAuthVerifyRoute: typeof ClientAuthVerifyRoute
+  ClientAuthIndexRoute: typeof ClientAuthIndexRoute
+}
+
+const ClientRouteRouteChildren: ClientRouteRouteChildren = {
+  ClientIndexRoute: ClientIndexRoute,
+  ClientAuthOnboardingRoute: ClientAuthOnboardingRoute,
+  ClientAuthVerifyRoute: ClientAuthVerifyRoute,
+  ClientAuthIndexRoute: ClientAuthIndexRoute,
+}
+
+const ClientRouteRouteWithChildren = ClientRouteRoute._addFileChildren(
+  ClientRouteRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/auth/onboarding': typeof AuthOnboardingRoute
-  '/auth/verify': typeof AuthVerifyRoute
-  '/auth': typeof AuthIndexRoute
+  '': typeof ClientRouteRouteWithChildren
+  '/': typeof ClientIndexRoute
+  '/home': typeof HomeIndexRoute
+  '/auth/onboarding': typeof ClientAuthOnboardingRoute
+  '/auth/verify': typeof ClientAuthVerifyRoute
+  '/auth': typeof ClientAuthIndexRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/auth/onboarding': typeof AuthOnboardingRoute
-  '/auth/verify': typeof AuthVerifyRoute
-  '/auth': typeof AuthIndexRoute
+  '/': typeof ClientIndexRoute
+  '/home': typeof HomeIndexRoute
+  '/auth/onboarding': typeof ClientAuthOnboardingRoute
+  '/auth/verify': typeof ClientAuthVerifyRoute
+  '/auth': typeof ClientAuthIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/auth/onboarding': typeof AuthOnboardingRoute
-  '/auth/verify': typeof AuthVerifyRoute
-  '/auth/': typeof AuthIndexRoute
+  '/_client': typeof ClientRouteRouteWithChildren
+  '/_client/': typeof ClientIndexRoute
+  '/home/': typeof HomeIndexRoute
+  '/_client/auth/onboarding': typeof ClientAuthOnboardingRoute
+  '/_client/auth/verify': typeof ClientAuthVerifyRoute
+  '/_client/auth/': typeof ClientAuthIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/onboarding' | '/auth/verify' | '/auth'
+  fullPaths: '' | '/' | '/home' | '/auth/onboarding' | '/auth/verify' | '/auth'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/onboarding' | '/auth/verify' | '/auth'
-  id: '__root__' | '/' | '/auth/onboarding' | '/auth/verify' | '/auth/'
+  to: '/' | '/home' | '/auth/onboarding' | '/auth/verify' | '/auth'
+  id:
+    | '__root__'
+    | '/_client'
+    | '/_client/'
+    | '/home/'
+    | '/_client/auth/onboarding'
+    | '/_client/auth/verify'
+    | '/_client/auth/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthOnboardingRoute: typeof AuthOnboardingRoute
-  AuthVerifyRoute: typeof AuthVerifyRoute
-  AuthIndexRoute: typeof AuthIndexRoute
+  ClientRouteRoute: typeof ClientRouteRouteWithChildren
+  HomeIndexRoute: typeof HomeIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AuthOnboardingRoute: AuthOnboardingRoute,
-  AuthVerifyRoute: AuthVerifyRoute,
-  AuthIndexRoute: AuthIndexRoute
+  ClientRouteRoute: ClientRouteRouteWithChildren,
+  HomeIndexRoute: HomeIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -134,23 +187,37 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/",
-        "/auth/onboarding",
-        "/auth/verify",
-        "/auth/"
+        "/_client",
+        "/home/"
       ]
     },
-    "/": {
-      "filePath": "index.tsx"
+    "/_client": {
+      "filePath": "_client/route.tsx",
+      "children": [
+        "/_client/",
+        "/_client/auth/onboarding",
+        "/_client/auth/verify",
+        "/_client/auth/"
+      ]
     },
-    "/auth/onboarding": {
-      "filePath": "auth/onboarding.tsx"
+    "/_client/": {
+      "filePath": "_client/index.tsx",
+      "parent": "/_client"
     },
-    "/auth/verify": {
-      "filePath": "auth/verify.tsx"
+    "/home/": {
+      "filePath": "home/index.tsx"
     },
-    "/auth/": {
-      "filePath": "auth/index.tsx"
+    "/_client/auth/onboarding": {
+      "filePath": "_client/auth/onboarding.tsx",
+      "parent": "/_client"
+    },
+    "/_client/auth/verify": {
+      "filePath": "_client/auth/verify.tsx",
+      "parent": "/_client"
+    },
+    "/_client/auth/": {
+      "filePath": "_client/auth/index.tsx",
+      "parent": "/_client"
     }
   }
 }

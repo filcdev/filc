@@ -140,7 +140,10 @@ export const protectedPublicMutation = publicProcedure.use(csrfMiddleware)
 
 export const permissionProtectedProcedureFactory = (
   permissions: PermissionType[],
-  mustBeVerified = true
+  additionalChecks?: {
+    verified?: boolean
+    onboarded?: boolean
+  }
 ) => {
   return t.procedure
     .use(timingMiddleware)
@@ -148,7 +151,8 @@ export const permissionProtectedProcedureFactory = (
       if (
         !ctx.session ||
         !ctx.user ||
-        (mustBeVerified && !ctx.user.isEmailVerified)
+        (additionalChecks?.verified && !ctx.user.isEmailVerified) ||
+        (additionalChecks?.onboarded && !ctx.user.isOnboarded)
       ) {
         throw new TRPCError({ code: 'UNAUTHORIZED' })
       }
@@ -166,6 +170,13 @@ export const permissionProtectedProcedureFactory = (
       if (!authorized) {
         throw new TRPCError({ code: 'FORBIDDEN' })
       }
-      return next()
+      return next({
+        ctx: {
+          session: ctx.session,
+          user: ctx.user,
+          prisma: ctx.prisma,
+          authorize: ctx.authorize
+        }
+      })
     })
 }

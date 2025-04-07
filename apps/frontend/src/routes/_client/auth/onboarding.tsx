@@ -4,7 +4,6 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { TRPCClientError } from '@trpc/client'
 import { toast } from 'sonner'
 
-import BlobBackground from '@/components/ui/blob-background'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -97,8 +96,7 @@ const Onboarding = () => {
   // If there's an error loading classes, show an error
   if (classesQuery.isError) {
     return (
-      <main className="flex grow items-center justify-center">
-        <BlobBackground />
+      <div className="flex flex-1 grow items-center justify-center">
         <Card className="bg-background/80 z-3 min-w-md">
           <CardContent className="p-6">
             <p className="text-center text-red-500">
@@ -106,13 +104,12 @@ const Onboarding = () => {
             </p>
           </CardContent>
         </Card>
-      </main>
+      </div>
     )
   }
 
   return (
-    <main className="flex grow items-center justify-center">
-      <BlobBackground />
+    <div className="flex flex-1 grow items-center justify-center">
       <Card className="bg-background/80 z-3 min-w-md">
         <CardHeader>
           <CardTitle>Profil beállítása</CardTitle>
@@ -186,10 +183,10 @@ const Onboarding = () => {
           </form>
         </CardContent>
       </Card>
-    </main>
+    </div>
   )
 }
 
-export const Route = createFileRoute('/auth/onboarding')({
+export const Route = createFileRoute('/_client/auth/onboarding')({
   component: Onboarding
 })

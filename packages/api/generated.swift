@@ -659,6 +659,95 @@ class AppRouter {
         
         
     }
+    lazy var substitution = SubstitutionRouter(url: url.appendingPathComponent("substitution"), middlewares: middlewares, responseMiddlewares: responseMiddlewares)
+    
+    class SubstitutionRouter {
+        fileprivate var url: URL
+        fileprivate var middlewares: [TRPCMiddleware]
+        fileprivate var responseMiddlewares: [TRPCResponseMiddleware]
+        
+        init(url: URL, middlewares: [TRPCMiddleware] = [], responseMiddlewares: [TRPCResponseMiddleware] = []) {
+            self.url = url
+            self.middlewares = middlewares
+            self.responseMiddlewares = responseMiddlewares
+        }
+        
+        func getAll() async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendQuery(url: url.appendingPathExtension("getAll"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: TRPCClient.EmptyObject())
+        }
+        
+        func getOwn() async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendQuery(url: url.appendingPathExtension("getOwn"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: TRPCClient.EmptyObject())
+        }
+        
+        struct CreateInput: Codable, Equatable, Hashable {
+            var consolidated: Bool
+            var date: Date
+            var classId: String
+            var teacherId: String
+            var subjectId: String
+            var lessonId: String
+            var missingTeacherId: String
+            var roomId: String
+            
+            init(consolidated: Bool, date: Date, classId: String, teacherId: String, subjectId: String, lessonId: String, missingTeacherId: String, roomId: String) {
+                self.consolidated = consolidated
+                self.date = date
+                self.classId = classId
+                self.teacherId = teacherId
+                self.subjectId = subjectId
+                self.lessonId = lessonId
+                self.missingTeacherId = missingTeacherId
+                self.roomId = roomId
+            }
+        }
+        
+        func create(input: CreateInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("create"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        struct UpdateInput: Codable, Equatable, Hashable {
+            var id: String
+            var consolidated: Bool
+            var date: Date
+            var classId: String
+            var teacherId: String
+            var subjectId: String
+            var lessonId: String
+            var missingTeacherId: String
+            var roomId: String
+            
+            init(id: String, consolidated: Bool, date: Date, classId: String, teacherId: String, subjectId: String, lessonId: String, missingTeacherId: String, roomId: String) {
+                self.id = id
+                self.consolidated = consolidated
+                self.date = date
+                self.classId = classId
+                self.teacherId = teacherId
+                self.subjectId = subjectId
+                self.lessonId = lessonId
+                self.missingTeacherId = missingTeacherId
+                self.roomId = roomId
+            }
+        }
+        
+        func update(input: UpdateInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("update"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        struct DeleteInput: Codable, Equatable, Hashable {
+            var id: String
+            
+            init(id: String) {
+                self.id = id
+            }
+        }
+        
+        func delete(input: DeleteInput) async throws -> Void {
+            let _: TRPCClient.EmptyObject = try await TRPCClient.sendMutation(url: url.appendingPathExtension("delete"), middlewares: middlewares, responseMiddlewares: responseMiddlewares, input: input)
+        }
+        
+        
+    }
     
 }
 

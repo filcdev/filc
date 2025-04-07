@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useRouter } from '@tanstack/react-router'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -45,7 +46,7 @@ const AuthenticatedUserSection = () => {
   )
 }
 
-export const Navbar = () => {
+export const Navbar = ({ children }: { children?: ReactNode }) => {
   const { user } = useAuth()
   const router = useRouter()
 
@@ -54,10 +55,11 @@ export const Navbar = () => {
   }
 
   return (
-    <header className="bg-background/30 m-4 flex h-12 items-center justify-between rounded-lg border px-4 py-1.5">
+    <header className="bg-background/50 m-4 flex h-12 items-center justify-between rounded-lg border px-4 py-1.5">
       <div>
         <span className="text-lg font-semibold">Filc</span>
       </div>
+      {children}
       <div className="flex gap-3">
         {user ? (
           <AuthenticatedUserSection />
