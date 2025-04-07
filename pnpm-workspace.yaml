@@ -7,28 +7,24 @@ catalog:
   prettier: ^3.5.3
   tailwindcss: ^4.0.17
   typescript: ^5.8.2
-
   '@types/node': ^22.13.14
-
   zod: ^3.24.2
-
   '@tanstack/react-query': ^5.70.0
   '@trpc/client': ^11.0.1
   '@trpc/tanstack-react-query': ^11.0.1
   '@trpc/server': ^11.0.1
   superjson: 2.2.2
-
 catalogs:
   react19:
     react: 19.0.0
     react-dom: 19.0.0
     '@types/react': ^19.0.12
     '@types/react-dom': ^19.0.4
-
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - '@swc/core'
+  - core-js
   - core-js-pure
   - esbuild
   - prisma

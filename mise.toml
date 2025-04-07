@@ -2,3 +2,4 @@
 # this is needed for trpc swift
 bun = "latest"
 node = "23.10.0"
+rust = "latest"
