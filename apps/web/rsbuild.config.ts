@@ -7,7 +7,6 @@ export default defineConfig({
   plugins: [pluginReact()],
   server: {
     port: 4000,
-    open: true,
   },
   tools: {
     postcss: {
