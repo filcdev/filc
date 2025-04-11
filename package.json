@@ -1,0 +1,16 @@
+{
+  "name": "filc",
+  "private": true,
+  "packageManager": "bun@1.2.8",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "check:ro": "turbo run check:ro"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.5.0"
+  }
+}
