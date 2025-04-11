@@ -7,7 +7,7 @@
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true,
-    "root": "../"
+    "root": "../../"
   },
   "formatter": {
     "enabled": true,
