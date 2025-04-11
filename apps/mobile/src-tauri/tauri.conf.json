@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "mobile",
+  "productName": "Filc",
   "version": "0.1.0",
   "identifier": "space.filc.mobile",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "mobile",
+        "title": "Filc",
         "width": 800,
         "height": 600
       }
