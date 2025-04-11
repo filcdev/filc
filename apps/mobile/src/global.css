@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import '@skeletonlabs/skeleton';
+@import '@skeletonlabs/skeleton/optional/presets';
+@import '@skeletonlabs/skeleton/themes/catppuccin';
+@import '@fontsource-variable/sora';
+@plugin '@tailwindcss/forms';
+
+[data-theme='catppuccin'] {
+  --heading-font-family: 'Sora', sans-serif;
+  --base-font-family: 'Sora', sans-serif;
+  --anchor-font-family: 'inherit';
+}

@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "space.filc.mobile",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun run web-dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run build",
+    "beforeBuildCommand": "bun run web-build",
     "frontendDist": "../dist"
   },
   "app": {
