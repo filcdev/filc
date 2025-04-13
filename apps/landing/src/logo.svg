@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+<path d="m30 20q35-10 70 0v110c-20-10-50-10-70 0z" fill="oklch(90.5% 0.093 164.15)"/>
+<path d="m100 20q35-10 70 0v110c-20-10-50-10-70 0z" fill="oklch(90.1% 0.058 230.902)"/>
+<path d="m100 20v110" fill="none" stroke="#555"/>
+</svg>
