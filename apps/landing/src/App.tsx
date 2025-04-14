@@ -3,7 +3,7 @@ import logo from './logo.svg'
 
 const App = () => {
   return (
-    <div className='min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-slate-100'>
+    <div className='min-h-dvh flex flex-col bg-gradient-to-b from-slate-50 to-slate-100'>
       <header className='container mx-auto py-6 px-4 flex items-center justify-between'>
         <div className='flex items-center gap-2'>
           <img src={logo} alt='Logo' className='h-8 w-8 scale-150' />
