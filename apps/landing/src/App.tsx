@@ -22,7 +22,7 @@ const App = () => {
           </h1>
 
           <p className='text-xl text-slate-600 mb-12 max-w-2xl mx-auto'>
-            ...to roll out the first update by Q3. Stay tuned for our launch!
+            Stay tuned for our launch!
           </p>
         </div>
       </main>
