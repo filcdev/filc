@@ -16,6 +16,10 @@ export const user = schema.table(
     email: text().unique().notNull(),
     emailVerified: boolean(),
     image: text(),
+    role: text(),
+    banned: boolean(),
+    banReason: text(),
+    banExpires: timestamp(),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
@@ -36,6 +40,8 @@ export const session = schema.table(
     expiresAt: timestamp().notNull(),
     ipAddress: text(),
     userAgent: text(),
+    impersonatedBy: text(),
+    activeOrganizationId: text(),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
@@ -85,6 +91,66 @@ export const verification = schema.table(
   },
   t => [uniqueIndex().on(t.identifier)]
 )
+
+export const organization = schema.table('organization', {
+  id: text().primaryKey().notNull(),
+  name: text().notNull(),
+  slug: text().notNull(),
+  logo: text(),
+  metadata: text(),
+  createdAt: timestamp().notNull().defaultNow(),
+})
+
+export const member = schema.table('member', {
+  id: text().primaryKey().notNull(),
+  userId: text()
+    .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
+    .notNull(),
+  organizationId: text()
+    .references(() => organization.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+    })
+    .notNull(),
+  role: text().notNull(),
+  teamId: text(),
+  createdAt: timestamp().notNull().defaultNow(),
+})
+
+export const invitation = schema.table('invitation', {
+  id: text().primaryKey().notNull(),
+  email: text().notNull(),
+  inviterId: text()
+    .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
+    .notNull(),
+  organizationId: text()
+    .references(() => organization.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+    })
+    .notNull(),
+  role: text().notNull(),
+  status: text().notNull(),
+  teamId: text(),
+  expiresAt: timestamp().notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+})
+
+export const team = schema.table('team', {
+  id: text().primaryKey().notNull(),
+  name: text().notNull(),
+  organizationId: text()
+    .references(() => organization.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+    })
+    .notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp()
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+})
 
 export const authSchema = {
   user,
