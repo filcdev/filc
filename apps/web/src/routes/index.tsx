@@ -20,6 +20,7 @@ function Index() {
     <div className='p-2'>
       <img src={logo} alt='' />
       <h3>Hello from tsr</h3>
+      <h1 className='text-background'>asd</h1>
       <Button
         onClick={() => {
           ping.refetch()

@@ -1,7 +1,7 @@
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import reactDom from 'react-dom/client'
-
+import './global.css'
 import { routeTree } from './routeTree.gen'
 
 const router = createRouter({ routeTree })
