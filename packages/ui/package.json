@@ -1,0 +1,16 @@
+{
+	"name": "@filc/ui",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"packageManager": "bun@1.2.8",
+	"exports": {
+		".": {
+			"import": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"check": "biome check --write",
+		"check:ro": "biome check"
+	}
+}
