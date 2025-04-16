@@ -99,7 +99,9 @@ export const organization = schema.table('organization', {
   logo: text(),
   metadata: text(),
   createdAt: timestamp().notNull().defaultNow(),
-})
+}, t => [
+  uniqueIndex().on(t.slug),
+])
 
 export const member = schema.table('member', {
   id: text().primaryKey().notNull(),
@@ -134,7 +136,10 @@ export const invitation = schema.table('invitation', {
   teamId: text(),
   expiresAt: timestamp().notNull(),
   createdAt: timestamp().notNull().defaultNow(),
-})
+}, t => [
+  uniqueIndex().on(t.email),
+  uniqueIndex().on(t.organizationId), 
+])
 
 export const team = schema.table('team', {
   id: text().primaryKey().notNull(),
