@@ -1,6 +1,8 @@
 import { initTRPC } from '@trpc/server'
 import { sleep } from 'bun'
 
+export { auth } from './auth'
+
 const t = initTRPC.create()
 
 export const router = t.router({

@@ -5,9 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.2.8",
   "exports": {
-    ".": {
-      "import": "./src/index.ts"
-    }
+    ".": "./src/index.ts"
   },
   "scripts": {
     "check": "biome check --write",

@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/bun-sql";
 import { config } from "../constants";
 import { SQL } from 'bun';
-export * as schema from './schema'
+export { schema } from './schema'
 
 const c = config.postgres
 const databaseUrl = `postgresql://${c.user}:${c.password}@${c.host}:${c.port}/${c.database}`

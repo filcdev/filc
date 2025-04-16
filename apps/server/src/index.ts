@@ -1,4 +1,4 @@
-import { router } from '@filc/api'
+import { router, auth } from '@filc/api'
 import { createBunServeHandler } from 'trpc-bun-adapter'
 
 Bun.serve(
@@ -18,7 +18,11 @@ Bun.serve(
       },
     },
     {
-      fetch(_req) {
+      fetch(req) {
+        if (req.url.startsWith('/api/auth')) {
+          return auth.handler(req)
+        }
+
         return new Response('Not found', { status: 404 })
       },
     }
