@@ -9,14 +9,14 @@
 :root {
   /* Light mode */
   --background: var(--color-emerald-50);
-  --foreground: var(--color-neutral-950);
+  --foreground: var(--color-neutral-800);
   --card: var(--color-emerald-50);
   --card-foreground: var(--color-neutral-900);
   --popover: var(--color-emerald-50);
   --popover-foreground: var(--color-neutral-900);
-  --primary: var(--color-emerald-600);
-  --primary-foreground: var(--color-neutral-50);
-  --secondary: var(--color-sky-200);
+  --primary: var(--color-emerald-300);
+  --primary-foreground: var(--color-neutral-950);
+  --secondary: var(--color-sky-300);
   --secondary-foreground: var(--color-neutral-900);
   --muted: var(--color-emerald-200);
   --muted-foreground: var(--color-neutral-700);
