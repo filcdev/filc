@@ -1,8 +1,13 @@
 {
-	"compilerOptions": {
-		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true
-	},
-	"include": ["src"]
+  "compilerOptions": {
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@filc/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
 }
