@@ -23,6 +23,7 @@ const Protected = () => {
     <div className='p-2'>
       <h3>Hello from tsr, {authData.data?.user.name}</h3>
       <h4>{ping.data}</h4>
+      <Button variant='outline' onClick={() => auth.signOut()}>Sign out</Button>
     </div>
   )
 }
@@ -30,7 +31,8 @@ const Protected = () => {
 const Public = () => {
   const onLogin = async () => {
     const result = await auth.signIn.social({
-      provider: 'microsoft'
+      provider: 'microsoft',
+      callbackURL: `${window.location.origin}`,
     })
 
     if (result.error) {

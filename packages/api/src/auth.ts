@@ -9,6 +9,10 @@ export const auth = betterAuth({
   secret: config.auth.secret,
   baseURL: config.auth.url,
   secondaryStorage,
+  trustedOrigins: [
+    config.auth.url,
+    "http://localhost:4000",
+  ],
   plugin: [admin(), organization(), haveIBeenPwned()],
   socialProviders: {
     microsoft: {
