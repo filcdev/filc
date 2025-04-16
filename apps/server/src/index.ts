@@ -1,4 +1,4 @@
-import { router, auth } from '@filc/api'
+import { auth, router } from '@filc/api'
 import { createBunServeHandler } from 'trpc-bun-adapter'
 
 Bun.serve(

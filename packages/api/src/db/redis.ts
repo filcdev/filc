@@ -1,5 +1,5 @@
-import { RedisClient } from "bun";
-import { config } from "../constants";
+import { RedisClient } from 'bun'
+import { config } from '../constants'
 
 const c = config.redis
 
@@ -16,5 +16,5 @@ export const secondaryStorage = {
   },
   set: async (key: string, value: string) => {
     await redisClient.set(key, value)
-  }
+  },
 }

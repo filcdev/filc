@@ -34,9 +34,7 @@ const App = () => {
             <span className='text-lg font-semibold'>Filc</span>
           </div>
 
-          <p className='text-sm'>
-            &copy; {new Date().getFullYear()} filcdev
-          </p>
+          <p className='text-sm'>&copy; {new Date().getFullYear()} filcdev</p>
         </div>
       </footer>
     </div>
