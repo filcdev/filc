@@ -1,4 +1,4 @@
-import { text, boolean, integer, timestamp, pgSchema } from 'drizzle-orm/pg-core'
+import { text, boolean, integer, timestamp, pgSchema, uniqueIndex } from 'drizzle-orm/pg-core'
 
 export const schema = pgSchema('filc')
 
@@ -10,7 +10,9 @@ export const user = schema.table('user', {
   image: text(),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow().$onUpdate(() => new Date())
-})
+}, t => [
+  uniqueIndex().on(t.email),
+])
 
 export const session = schema.table('session', {
   id: text().primaryKey().notNull(),
@@ -21,7 +23,10 @@ export const session = schema.table('session', {
   userAgent: text(),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow().$onUpdate(() => new Date())
-})
+}, t => [
+  uniqueIndex().on(t.token),
+  uniqueIndex().on(t.userId),
+])
 
 export const account = schema.table('account', {
   id: text().primaryKey().notNull(),
@@ -37,7 +42,9 @@ export const account = schema.table('account', {
   password: text(),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow().$onUpdate(() => new Date())
-})
+}, t => [
+  uniqueIndex().on(t.userId), 
+])
 
 export const verification = schema.table('verification', {
   id: text().primaryKey().notNull(),
@@ -46,4 +53,6 @@ export const verification = schema.table('verification', {
   expiresAt: timestamp().notNull(),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow().$onUpdate(() => new Date())
-})
+}, t => [
+  uniqueIndex().on(t.identifier),
+])
