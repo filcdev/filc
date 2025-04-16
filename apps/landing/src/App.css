@@ -1,7 +1,2 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/sora';
 @import '@filc/ui/globals.css';
-
-@theme inline {
-  --font-sans: 'Sora Variable', 'serif';
-}
