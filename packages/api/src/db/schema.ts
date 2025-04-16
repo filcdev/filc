@@ -85,3 +85,10 @@ export const verification = schema.table(
   },
   t => [uniqueIndex().on(t.identifier)]
 )
+
+export const authSchema = {
+  user,
+  session,
+  account,
+  verification,
+}

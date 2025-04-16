@@ -1,6 +1,13 @@
 import { auth, router } from '@filc/api'
 import { createBunServeHandler } from 'trpc-bun-adapter'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+}
+
 Bun.serve(
   createBunServeHandler(
     {
@@ -9,21 +16,31 @@ Bun.serve(
       responseMeta(_opts) {
         return {
           status: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          },
+          headers: corsHeaders
         }
       },
     },
     {
-      fetch(req) {
-        if (req.url.startsWith('/api/auth')) {
-          return auth.handler(req)
+      async fetch(req) {
+        let res = new Response('Not found', { status: 404 })
+
+        if (new URL(req.url).pathname.startsWith('/api/auth')) {
+          res = await auth.handler(req)
         }
 
-        return new Response('Not found', { status: 404 })
+        if (req.method === 'OPTIONS') {
+          res = new Response(null, { status: 204 })
+        }
+
+        res.headers.set('Access-Control-Allow-Origin', req.headers.get('origin') || '*')
+        res.headers.set('Access-Control-Allow-Credentials', 'true')
+        res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        res.headers.set
+
+        
+
+        return res
       },
     }
   )
