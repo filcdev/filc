@@ -92,16 +92,18 @@ export const verification = schema.table(
   t => [uniqueIndex().on(t.identifier)]
 )
 
-export const organization = schema.table('organization', {
-  id: text().primaryKey().notNull(),
-  name: text().notNull(),
-  slug: text().notNull(),
-  logo: text(),
-  metadata: text(),
-  createdAt: timestamp().notNull().defaultNow(),
-}, t => [
-  uniqueIndex().on(t.slug),
-])
+export const organization = schema.table(
+  'organization',
+  {
+    id: text().primaryKey().notNull(),
+    name: text().notNull(),
+    slug: text().notNull(),
+    logo: text(),
+    metadata: text(),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  t => [uniqueIndex().on(t.slug)]
+)
 
 export const member = schema.table('member', {
   id: text().primaryKey().notNull(),
@@ -119,27 +121,28 @@ export const member = schema.table('member', {
   createdAt: timestamp().notNull().defaultNow(),
 })
 
-export const invitation = schema.table('invitation', {
-  id: text().primaryKey().notNull(),
-  email: text().notNull(),
-  inviterId: text()
-    .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
-    .notNull(),
-  organizationId: text()
-    .references(() => organization.id, {
-      onDelete: 'cascade',
-      onUpdate: 'cascade',
-    })
-    .notNull(),
-  role: text().notNull(),
-  status: text().notNull(),
-  teamId: text(),
-  expiresAt: timestamp().notNull(),
-  createdAt: timestamp().notNull().defaultNow(),
-}, t => [
-  uniqueIndex().on(t.email),
-  uniqueIndex().on(t.organizationId), 
-])
+export const invitation = schema.table(
+  'invitation',
+  {
+    id: text().primaryKey().notNull(),
+    email: text().notNull(),
+    inviterId: text()
+      .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
+      .notNull(),
+    organizationId: text()
+      .references(() => organization.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      })
+      .notNull(),
+    role: text().notNull(),
+    status: text().notNull(),
+    teamId: text(),
+    expiresAt: timestamp().notNull(),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  t => [uniqueIndex().on(t.email), uniqueIndex().on(t.organizationId)]
+)
 
 export const team = schema.table('team', {
   id: text().primaryKey().notNull(),

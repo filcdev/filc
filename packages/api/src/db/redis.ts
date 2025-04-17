@@ -1,7 +1,7 @@
+import { appConfig } from '@filc/config'
 import { RedisClient } from 'bun'
-import { config } from '../constants'
 
-const c = config.redis
+const c = appConfig.redis
 
 const redisUrl = `redis://${c.user}:${c.password}@${c.host}:${c.port}`
 

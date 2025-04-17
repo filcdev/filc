@@ -1,24 +1,21 @@
+import { appConfig } from '@filc/config'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, haveIBeenPwned, organization } from 'better-auth/plugins'
-import { config } from './constants'
 import { authSchema, db } from './db'
 import { secondaryStorage } from './db/redis'
 
 export const auth = betterAuth({
-  secret: config.auth.secret,
-  baseURL: config.auth.url,
+  secret: appConfig.auth.secret,
+  baseURL: appConfig.auth.url,
   secondaryStorage,
-  trustedOrigins: [
-    config.auth.url,
-    "http://localhost:4000",
-  ],
+  trustedOrigins: [appConfig.auth.url, 'http://localhost:4000'],
   plugin: [admin(), organization(), haveIBeenPwned()],
   socialProviders: {
     microsoft: {
-      clientId: config.entra.clientId,
-      clientSecret: config.entra.clientSecret,
-      tenantId: config.entra.tenantId,
+      clientId: appConfig.entra.clientId,
+      clientSecret: appConfig.entra.clientSecret,
+      tenantId: appConfig.entra.tenantId,
     },
   },
   database: drizzleAdapter(db, {

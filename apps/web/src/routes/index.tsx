@@ -23,7 +23,9 @@ const Protected = () => {
     <div className='p-2'>
       <h3>Hello from tsr, {authData.data?.user.name}</h3>
       <h4>{ping.data}</h4>
-      <Button variant='outline' onClick={() => auth.signOut()}>Sign out</Button>
+      <Button variant='outline' onClick={() => auth.signOut()}>
+        Sign out
+      </Button>
     </div>
   )
 }

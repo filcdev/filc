@@ -1,9 +1,9 @@
+import { appConfig } from '@filc/config'
 import { SQL } from 'bun'
 import { drizzle } from 'drizzle-orm/bun-sql'
-import { config } from '../constants'
 export * from './schema'
 
-const c = config.postgres
+const c = appConfig.postgres
 const databaseUrl = `postgresql://${c.user}:${c.password}@${c.host}:${c.port}/${c.database}`
 const client = new SQL(databaseUrl)
 
