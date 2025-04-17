@@ -24,13 +24,27 @@ Bun.serve(
     {
       async fetch(req) {
         let res = new Response('Not found', { status: 404 })
-
-        if (new URL(req.url).pathname.startsWith('/api/auth')) {
-          res = await auth.handler(req)
-        }
+        const path = new URL(req.url).pathname
 
         if (req.method === 'OPTIONS') {
           res = new Response(null, { status: 204 })
+        } else if (path.startsWith('/api/auth')) {
+          res = await auth.handler(req)
+        } else if (path.startsWith('/test') && appConfig.env === 'local') {
+          const { renderTrpcPanel } = await import('trpc-ui')
+            res = new Response(
+            new TextEncoder().encode(
+              renderTrpcPanel(appRouter, {
+              url: 'http://localhost:3000/trpc',
+              meta: { title: 'Filc TRPC Test' }
+              })
+            ),
+            {
+              headers: {
+              'Content-Type': 'text/html',
+              },
+            }
+            )
         }
 
         res.headers.set(

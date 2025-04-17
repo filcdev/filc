@@ -158,11 +158,14 @@ export const team = schema.table('team', {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-})
+},
+  t => [uniqueIndex().on(t.name)]
+)
 
 export const authSchema = {
   user,
   session,
   account,
   verification,
+  team,
 }

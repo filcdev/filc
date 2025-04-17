@@ -10,7 +10,7 @@
   "scripts": {
     "check": "biome check --write",
     "check:ro": "biome check",
-    "generate": "drizzle-kit generate --dialect postgresql --schema ./src/db/schema/timetable.ts",
+    "generate": "drizzle-kit generate --dialect postgresql --schema ./src/db/schema",
     "migrate": "bun run src/db/migrate.ts"
   },
   "dependencies": {
