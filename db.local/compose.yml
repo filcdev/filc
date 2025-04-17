@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: filc
+      POSTGRES_PASSWORD: f1lcp4ss
+      POSTGRES_DB: filc
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+
+  cache:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass f1lcp4ss
+    volumes: 
+      - ./redis_data:/data
