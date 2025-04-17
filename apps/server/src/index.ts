@@ -1,5 +1,6 @@
 import { auth, router } from '@filc/api'
 import { createBunServeHandler } from 'trpc-bun-adapter'
+import { appConfig } from '@filc/config'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,4 +51,5 @@ Bun.serve(
   )
 )
 
+console.info(`Running in ${appConfig.env} mode`)
 console.info('Listening on http://localhost:3000')

@@ -10,13 +10,14 @@
     "check": "biome check --write",
     "check:ro": "biome check"
   },
-  "devDependencies": {
-    "@types/bun": "^1.2.9"
-  },
   "dependencies": {
     "@filc/api": "workspace:*",
+    "@filc/config": "workspace:*",
     "@trpc/server": "^11.0.4",
     "better-auth": "^1.2.7",
     "trpc-bun-adapter": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.9"
   }
 }

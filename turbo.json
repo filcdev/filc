@@ -15,6 +15,7 @@
       "persistent": true,
       "cache": false,
       "passThroughEnv": [
+        "APP_ENV",
         "ANDROID_HOME",
         "NDK_HOME",
         "PATH"
