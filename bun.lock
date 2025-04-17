@@ -127,6 +127,7 @@
     },
   },
   "trustedDependencies": [
+    "esbuild",
     "core-js",
     "@biomejs/biome",
     "core-js-pure",
