@@ -203,8 +203,10 @@ export const substitution = schema.table('substitution', {
   lesson: text()
     .notNull()
     .references(() => lesson.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-  teacher: text()
-    .references(() => teacher.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  teacher: text().references(() => teacher.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade',
+  }),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp()
     .notNull()
