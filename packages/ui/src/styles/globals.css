@@ -8,8 +8,8 @@
 
 :root {
   /* Light mode */
-  --background: var(--color-emerald-50);
-  --foreground: var(--color-neutral-800);
+  --background: var(--color-neutral-50);
+  --foreground: var(--color-emerald-950);
   --card: var(--color-emerald-50);
   --card-foreground: var(--color-neutral-900);
   --popover: var(--color-emerald-50);
