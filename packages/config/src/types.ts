@@ -24,5 +24,6 @@ export type FilcConfig = {
   }
   frontend: {
     url: string
+    dsn?: string
   }
 }

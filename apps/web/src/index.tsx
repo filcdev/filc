@@ -3,6 +3,8 @@ import { StrictMode } from 'react'
 import reactDom from 'react-dom/client'
 import './global.css'
 import { routeTree } from './routeTree.gen'
+import * as Sentry from "@sentry/browser";
+import { appConfig } from '@filc/config'
 
 const router = createRouter({ routeTree })
 
@@ -10,6 +12,12 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+}
+
+if (import.meta.env.MODE === 'production' && appConfig.frontend.dsn) {
+  Sentry.init({
+    dsn: appConfig.frontend.dsn
+  })
 }
 
 const rootEl = document.getElementById('root')

@@ -19,6 +19,10 @@ const Protected = () => {
     return <div>Loading...</div>
   }
 
+  if (ping.isError) {
+    return <div>Error: {ping.error.message}</div>
+  }
+
   return (
     <div className='p-2'>
       <h3>Hello from tsr, {authData.data?.user.name}</h3>
