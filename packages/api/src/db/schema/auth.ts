@@ -6,7 +6,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
-export const schema = pgSchema('filc')
+export const schema = pgSchema('auth')
 
 export const user = schema.table(
   'user',

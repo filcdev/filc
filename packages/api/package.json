@@ -9,7 +9,9 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check"
+    "check:ro": "biome check",
+    "generate": "drizzle-kit generate --dialect postgresql --schema ./src/db/schema/timetable.ts",
+    "migrate": "bun run src/db/migrate.ts"
   },
   "dependencies": {
     "@filc/config": "workspace:*",

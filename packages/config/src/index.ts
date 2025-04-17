@@ -11,7 +11,9 @@ const getConfig = () => {
     case 'local':
       return createLocalConfig()
     default:
-      throw new Error(`Invalid APP_ENV "${process.env.APP_ENV}". If you are running locally, please set APP_ENV=local, like so: "APP_ENV=local bun dev"`)
+      throw new Error(
+        `Invalid APP_ENV "${process.env.APP_ENV}". If you are running locally, please set APP_ENV=local, like so: "APP_ENV=local bun dev"`
+      )
   }
 }
 

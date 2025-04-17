@@ -1,9 +1,10 @@
+import { db } from '@/db'
+import { secondaryStorage } from '@/db/redis'
+import { authSchema } from '@/db/schema/auth'
 import { appConfig } from '@filc/config'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, haveIBeenPwned, organization } from 'better-auth/plugins'
-import { authSchema, db } from './db'
-import { secondaryStorage } from './db/redis'
 
 export const auth = betterAuth({
   secret: appConfig.auth.secret,

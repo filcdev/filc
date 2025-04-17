@@ -1,6 +1,6 @@
 import { auth, router } from '@filc/api'
-import { createBunServeHandler } from 'trpc-bun-adapter'
 import { appConfig } from '@filc/config'
+import { createBunServeHandler } from 'trpc-bun-adapter'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
