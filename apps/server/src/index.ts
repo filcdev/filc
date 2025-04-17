@@ -1,9 +1,9 @@
-import { auth, appRouter } from '@filc/api'
+import { auth, appRouter, createTRPCContext } from '@filc/api'
 import { appConfig } from '@filc/config'
 import { createBunServeHandler } from 'trpc-bun-adapter'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': appConfig.frontend.url,
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Credentials': 'true',
@@ -14,6 +14,7 @@ Bun.serve(
     {
       endpoint: '/trpc',
       router: appRouter,
+      createContext: createTRPCContext,
       responseMeta(_opts) {
         return {
           status: 200,

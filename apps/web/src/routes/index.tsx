@@ -12,7 +12,7 @@ const Index = () => {
 
 const Protected = () => {
   const t = useTRPC()
-  const ping = useQuery(t.ping.queryOptions())
+  const ping = useQuery(t.ping.private.queryOptions())
   const authData = auth.useSession()
 
   if (ping.isLoading || authData.isPending) {
@@ -22,7 +22,7 @@ const Protected = () => {
   return (
     <div className='p-2'>
       <h3>Hello from tsr, {authData.data?.user.name}</h3>
-      <h4>{ping.data}</h4>
+      <h4>{ping.data.message}</h4>
       <Button variant='outline' onClick={() => auth.signOut()}>
         Sign out
       </Button>

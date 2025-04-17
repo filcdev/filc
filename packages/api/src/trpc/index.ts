@@ -1,18 +1,16 @@
 import { TRPCError, initTRPC } from '@trpc/server'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
-
-import type { Session } from 'better-auth'
-import { auth } from './auth'
-import { db } from './db'
+import { auth } from '../auth'
+import { db } from '../db'
 
 // @see https://trpc.io/docs/server/context
 export const createTRPCContext = async (opts: {
-  headers: Headers
-  session: Session | null
+  req: Request;
+  resHeaders: Headers;
 }) => {
   const session = await auth.api.getSession({
-    headers: opts.headers,
+    headers: opts.req.headers,
   })
 
   return {
@@ -36,7 +34,7 @@ export const createCallerFactory = t.createCallerFactory
 
 export const createTRPCRouter = t.router
 
-const timingMiddleware = t.middleware(async ({ next, path }) => {
+const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const start = Date.now()
 
   if (t._config.isDev) {
@@ -47,7 +45,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next()
 
   const end = Date.now()
-  console.log(`[${path}] OK: ${result.ok}, took ${end - start}ms`)
+  console.log(`(${ctx.session?.user ? ctx.session?.user.name : 'Anon' })[${path}]: ${result.ok ? 'OK' : 'ERR'}, took ${end - start}ms`)
 
   return result
 })

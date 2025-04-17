@@ -40,6 +40,12 @@ const TrpcProvider = ({ children }: { children: ReactNode }) => {
           // TODO: make this dynamic
           url: 'http://localhost:3000/trpc',
           transformer: superjson,
+          fetch: (input, init) => {
+            return fetch(input, {
+              ...init,
+              credentials: 'include',
+            })
+          }
         }),
       ],
     })
