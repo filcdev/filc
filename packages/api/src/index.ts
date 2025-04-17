@@ -1,19 +1,15 @@
-import { initTRPC } from '@trpc/server'
-import { sleep } from 'bun'
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server'
 
-export { auth } from './auth'
+import type { AppRouter } from '@/trpc/root'
+import { appRouter } from '@/trpc/root'
+import { createCallerFactory, createTRPCContext } from './trpc'
 
-const t = initTRPC.create()
+const createCaller = createCallerFactory(appRouter)
 
-export const router = t.router({
-  ping: t.procedure.query(() => {
-    return 'pong'
-  }),
+type RouterInputs = inferRouterInputs<AppRouter>
+type RouterOutputs = inferRouterOutputs<AppRouter>
 
-  subscribe: t.procedure.subscription(async function* () {
-    await sleep(1000)
-    yield Math.random()
-  }),
-})
+export { createTRPCContext, appRouter, createCaller }
+export type { AppRouter, RouterInputs, RouterOutputs }
 
-export type AppRouter = typeof router
+export * from './auth'

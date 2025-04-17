@@ -1,4 +1,4 @@
-import { auth, router } from '@filc/api'
+import { auth, appRouter } from '@filc/api'
 import { appConfig } from '@filc/config'
 import { createBunServeHandler } from 'trpc-bun-adapter'
 
@@ -13,7 +13,7 @@ Bun.serve(
   createBunServeHandler(
     {
       endpoint: '/trpc',
-      router,
+      router: appRouter,
       responseMeta(_opts) {
         return {
           status: 200,

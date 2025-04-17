@@ -17,7 +17,8 @@
     "@filc/config": "workspace:*",
     "@trpc/server": "^11.0.4",
     "better-auth": "^1.2.7",
-    "drizzle-orm": "^0.42.0"
+    "drizzle-orm": "^0.42.0",
+    "superjson": "^2.2.2"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.0"

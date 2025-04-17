@@ -4,6 +4,7 @@ import type { ReactNode } from '@tanstack/react-router'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { createTRPCContext } from '@trpc/tanstack-react-query'
 import { useState } from 'react'
+import superjson from 'superjson'
 
 const { TRPCProvider: TrpcBaseProvider, useTRPC } =
   createTRPCContext<AppRouter>()
@@ -38,6 +39,7 @@ const TrpcProvider = ({ children }: { children: ReactNode }) => {
         httpBatchLink({
           // TODO: make this dynamic
           url: 'http://localhost:3000/trpc',
+          transformer: superjson,
         }),
       ],
     })
