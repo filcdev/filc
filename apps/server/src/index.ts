@@ -31,7 +31,7 @@ Bun.serve(
           res = new Response(null, { status: 204 })
         } else if (path.startsWith('/api/auth')) {
           res = await auth.handler(req)
-        } else if (path.startsWith('/test') && appConfig.env === 'local') {
+        } else if (path.startsWith('/test') && appConfig.env === 'development') {
           const { renderTrpcPanel } = await import('trpc-ui')
             res = new Response(
             new TextEncoder().encode(
