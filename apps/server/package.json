@@ -6,7 +6,7 @@
   "packageManager": "bun@1.2.9",
   "scripts": {
     "dev": "bun --watch src/index.ts | pino-pretty",
-    "build": "bun build src/index.ts --outdir=dist",
+    "build": "bun build src/index.ts --outdir=dist --target=bun",
     "check": "biome check --write",
     "check:ro": "biome check"
   },

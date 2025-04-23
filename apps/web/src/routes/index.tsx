@@ -12,8 +12,12 @@ const Index = () => {
 
 const Protected = () => {
   const t = useTRPC()
-  const ping = useQuery(t.ping.private.queryOptions())
   const authData = auth.useSession()
+  const ping = useQuery(
+    t.ping.private.queryOptions({
+      enabled: !authData.isPending,
+    })
+  )
 
   if (ping.isLoading || authData.isPending) {
     return <div>Loading...</div>

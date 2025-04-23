@@ -5,7 +5,10 @@
   "type": "module",
   "packageManager": "bun@1.2.9",
   "exports": {
-    ".": "./src/index.ts"
+    "./trpc/root": "./src/trpc/root.ts",
+    "./trpc": "./src/trpc/index.ts",
+    "./auth": "./src/auth.ts",
+    "./db": "./src/db/index.ts"
   },
   "scripts": {
     "check": "biome check --write",

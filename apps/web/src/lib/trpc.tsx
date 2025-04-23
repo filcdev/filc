@@ -1,4 +1,4 @@
-import type { AppRouter } from '@filc/api'
+import type { AppRouter } from '@filc/api/trpc/root'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from '@tanstack/react-router'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
