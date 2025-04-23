@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.8",
+  "packageManager": "bun@1.2.9",
   "scripts": {
     "dev": "rsbuild dev",
     "build": "rsbuild build",

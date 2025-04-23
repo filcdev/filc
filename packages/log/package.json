@@ -1,5 +1,5 @@
 {
-  "name": "@filc/api",
+  "name": "@filc/log",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,18 +9,15 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check",
-    "generate": "drizzle-kit generate --dialect postgresql --schema ./src/db/schema",
-    "migrate": "bun run src/db/migrate.ts"
+    "check:ro": "biome check"
   },
   "dependencies": {
-    "@filc/config": "workspace:*",
     "@trpc/server": "^11.0.4",
     "better-auth": "^1.2.7",
-    "drizzle-orm": "^0.42.0",
-    "superjson": "^2.2.2"
+    "drizzle-orm": "^0.42.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.10",
     "drizzle-kit": "^0.31.0"
   }
 }
