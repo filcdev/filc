@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.2.9",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun --watch src/index.ts | pino-pretty",
     "build": "bun build src/index.ts --outdir=dist",
     "check": "biome check --write",
     "check:ro": "biome check"
@@ -21,6 +21,7 @@
     "hono-pino": "^0.8.0"
   },
   "devDependencies": {
+    "pino-pretty": "^13.0.0",
     "trpc-ui": "^1.0.15"
   }
 }
