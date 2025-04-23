@@ -2,7 +2,11 @@ import { defineConfig } from '../defineConfig'
 
 export const createLocalConfig = () => {
   return defineConfig({
-    env: 'local',
+    env: 'development',
+    app: {
+      name: 'filc',
+      version: 'indev',
+    },
     auth: {
       secret: 'bD1gfhJZjzHbhCOCPMaPfTLAq2JM9LPF',
       url: 'http://localhost:3000',
