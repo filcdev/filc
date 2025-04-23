@@ -1,4 +1,4 @@
-import { appRouter, auth, createTRPCContext } from '@filc/api'
+import { appRouter, auth, createContext } from '@filc/api'
 import { appConfig } from '@filc/config'
 import { createLogger } from '@filc/log'
 import { trpcServer } from '@hono/trpc-server'
@@ -35,7 +35,13 @@ app.use('*', async (c, next) => {
   return next()
 })
 
-app.use('*', pinoLogger({ pino: createLogger('server') }))
+app.use(
+  '*',
+  pinoLogger({
+    pino: createLogger('server'),
+    http: { onReqLevel: _ => 'debug' },
+  })
+)
 
 app.get('/panel', async c => {
   if (appConfig.env !== 'development') {
@@ -53,14 +59,17 @@ app.get('/panel', async c => {
 })
 
 app.get('/', c => {
-  return c.text('Hello from Filc Server!')
+  return c.json({
+    message: 'Hello from Filc API',
+  })
 })
 
 app.use(
   '/api/trpc/*',
   trpcServer({
+    endpoint: '/api/trpc',
     router: appRouter,
-    createContext: createTRPCContext,
+    createContext,
   })
 )
 

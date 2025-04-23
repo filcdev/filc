@@ -9,7 +9,7 @@ const createCaller = createCallerFactory(appRouter)
 type RouterInputs = inferRouterInputs<AppRouter>
 type RouterOutputs = inferRouterOutputs<AppRouter>
 
-export { createContext as createTRPCContext, appRouter, createCaller }
+export { createContext, appRouter, createCaller }
 export type { AppRouter, RouterInputs, RouterOutputs }
 
 export { auth } from './auth'
