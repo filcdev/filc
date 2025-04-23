@@ -1,5 +1,9 @@
 export type FilcConfig = {
   env: string
+  app: {
+    name: string
+    version: string
+  }
   auth: {
     secret: string
     url: string

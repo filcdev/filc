@@ -1,19 +1,22 @@
 import { TRPCError, initTRPC } from '@trpc/server'
+import type { Context } from 'hono'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
-import { auth } from '../auth'
 import { db } from '../db'
 
 // @see https://trpc.io/docs/server/context
-export const createTRPCContext = async (opts: {
-  req: Request;
-  resHeaders: Headers;
-}) => {
-  const session = await auth.api.getSession({
-    headers: opts.req.headers,
-  })
+export const createTRPCContext = async (
+  _opts: {
+    req: Request
+    resHeaders: Headers
+  },
+  honoCtx: Context
+) => {
+  const session = honoCtx.get('session')
+  const user = honoCtx.get('user')
 
   return {
+    user,
     session,
     db,
   }
@@ -45,7 +48,9 @@ const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const result = await next()
 
   const end = Date.now()
-  console.log(`(${ctx.session?.user ? ctx.session?.user.name : 'Anon' })[${path}]: ${result.ok ? 'OK' : 'ERR'}, took ${end - start}ms`)
+  console.log(
+    `(${ctx.session?.user ? ctx.session?.user.name : 'Anon'})[${path}]: ${result.ok ? 'OK' : 'ERR'}, took ${end - start}ms`
+  )
 
   return result
 })

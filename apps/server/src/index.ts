@@ -1,70 +1,71 @@
-import { auth, appRouter, createTRPCContext } from '@filc/api'
+import { appRouter, auth, createTRPCContext } from '@filc/api'
 import { appConfig } from '@filc/config'
-import { createBunServeHandler } from 'trpc-bun-adapter'
+import { createLogger } from '@filc/log'
+import { trpcServer } from '@hono/trpc-server'
+import { Hono } from 'hono'
+import { pinoLogger } from 'hono-pino'
+import { cors } from 'hono/cors'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': appConfig.frontend.url,
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Credentials': 'true',
-}
+const app = new Hono<{
+  Variables: {
+    user: typeof auth.$Infer.Session.user | null
+    session: typeof auth.$Infer.Session.session | null
+  }
+}>()
 
-Bun.serve(
-  createBunServeHandler(
-    {
-      endpoint: '/trpc',
-      router: appRouter,
-      createContext: createTRPCContext,
-      responseMeta(_opts) {
-        return {
-          status: 200,
-          headers: corsHeaders,
-        }
-      },
-    },
-    {
-      async fetch(req) {
-        let res = new Response('Not found', { status: 404 })
-        const path = new URL(req.url).pathname
-
-        if (req.method === 'OPTIONS') {
-          res = new Response(null, { status: 204 })
-        } else if (path.startsWith('/api/auth')) {
-          res = await auth.handler(req)
-        } else if (path.startsWith('/test') && appConfig.env === 'development') {
-          const { renderTrpcPanel } = await import('trpc-ui')
-            res = new Response(
-            new TextEncoder().encode(
-              renderTrpcPanel(appRouter, {
-              url: 'http://localhost:3000/trpc',
-              meta: { title: 'Filc TRPC Test' }
-              })
-            ),
-            {
-              headers: {
-              'Content-Type': 'text/html',
-              },
-            }
-            )
-        }
-
-        res.headers.set(
-          'Access-Control-Allow-Origin',
-          req.headers.get('origin') || '*'
-        )
-        res.headers.set('Access-Control-Allow-Credentials', 'true')
-        res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        res.headers.set(
-          'Access-Control-Allow-Headers',
-          'Content-Type, Authorization'
-        )
-        res.headers.set
-
-        return res
-      },
-    }
-  )
+app.use(
+  '*',
+  cors({
+    origin: appConfig.frontend.url,
+    credentials: true,
+  })
 )
 
-console.info(`Running in ${appConfig.env} mode`)
-console.info('Listening on http://localhost:3000')
+app.use('*', async (c, next) => {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers })
+
+  if (!session) {
+    c.set('user', null)
+    c.set('session', null)
+    return next()
+  }
+
+  c.set('user', session.user)
+  c.set('session', session.session)
+  return next()
+})
+
+app.use('*', pinoLogger({ pino: createLogger('server') }))
+
+app.get('/panel', async c => {
+  if (appConfig.env !== 'development') {
+    return
+  }
+
+  const { renderTrpcPanel } = await import('trpc-ui')
+
+  return c.html(
+    renderTrpcPanel(appRouter, {
+      url: 'http://localhost:3000/api/trpc',
+      transformer: 'superjson',
+    })
+  )
+})
+
+app.get('/', c => {
+  return c.text('Hello from Filc Server!')
+})
+
+app.use(
+  '/api/trpc/*',
+  trpcServer({
+    router: appRouter,
+    createContext: createTRPCContext,
+  })
+)
+
+app.on(['POST', 'GET'], '/api/auth/*', c => {
+  return auth.handler(c.req.raw)
+})
+
+export default app

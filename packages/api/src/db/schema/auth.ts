@@ -144,21 +144,23 @@ export const invitation = schema.table(
   t => [uniqueIndex().on(t.email), uniqueIndex().on(t.organizationId)]
 )
 
-export const team = schema.table('team', {
-  id: text().primaryKey().notNull(),
-  name: text().notNull(),
-  organizationId: text()
-    .references(() => organization.id, {
-      onDelete: 'cascade',
-      onUpdate: 'cascade',
-    })
-    .notNull(),
-  createdAt: timestamp().notNull().defaultNow(),
-  updatedAt: timestamp()
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-},
+export const team = schema.table(
+  'team',
+  {
+    id: text().primaryKey().notNull(),
+    name: text().notNull(),
+    organizationId: text()
+      .references(() => organization.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      })
+      .notNull(),
+    createdAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp()
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
   t => [uniqueIndex().on(t.name)]
 )
 

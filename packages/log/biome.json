@@ -23,8 +23,7 @@
         "useImportExtensions": "off"
       },
       "style": {
-        "noDefaultExport": "off",
-        "useNamingConvention": "off"
+        "noDefaultExport": "off"
       },
       "complexity": {
         "useArrowFunction": "error"

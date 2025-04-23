@@ -2,9 +2,9 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import reactDom from 'react-dom/client'
 import './global.css'
-import { routeTree } from './routeTree.gen'
-import * as Sentry from "@sentry/browser";
 import { appConfig } from '@filc/config'
+import * as Sentry from '@sentry/browser'
+import { routeTree } from './routeTree.gen'
 
 const router = createRouter({ routeTree })
 
@@ -16,7 +16,7 @@ declare module '@tanstack/react-router' {
 
 if (import.meta.env.MODE === 'production' && appConfig.frontend.dsn) {
   Sentry.init({
-    dsn: appConfig.frontend.dsn
+    dsn: appConfig.frontend.dsn,
   })
 }
 

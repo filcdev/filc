@@ -38,14 +38,14 @@ const TrpcProvider = ({ children }: { children: ReactNode }) => {
       links: [
         httpBatchLink({
           // TODO: make this dynamic
-          url: 'http://localhost:3000/trpc',
+          url: 'http://localhost:3000/api/trpc',
           transformer: superjson,
           fetch: (input, init) => {
             return fetch(input, {
               ...init,
               credentials: 'include',
             })
-          }
+          },
         }),
       ],
     })

@@ -3,11 +3,12 @@ import { createProdConfig } from './envs/prod'
 import { createStagingConfig } from './envs/staging'
 
 const getConfig = () => {
-  let env: string | undefined;
+  let env: string | undefined
   try {
     env = process.env.NODE_ENV
     if (!env) {
-      process && console.warn("NODE_ENV is not set, defaulting to 'development'")
+      process &&
+        console.warn("NODE_ENV is not set, defaulting to 'development'")
       env = 'development'
     }
   } catch (e) {
