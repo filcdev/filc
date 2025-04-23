@@ -25,7 +25,8 @@
         "useImportExtensions": "off"
       },
       "style": {
-        "noDefaultExport": "off"
+        "noDefaultExport": "off",
+        "useNamingConvention": "off"
       },
       "complexity": {
         "useArrowFunction": "error"

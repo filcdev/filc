@@ -12,7 +12,6 @@
     "check:ro": "biome check"
   },
   "dependencies": {
-    "@filc/config": "workspace:*",
     "pino": "^9.6.0"
   }
 }

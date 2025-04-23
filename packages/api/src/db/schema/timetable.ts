@@ -114,20 +114,20 @@ export const group = schema.table(
 export enum WeekType {
   A = 'a',
   B = 'b',
-  ALL = 'all',
-  NONE = 'none',
+  All = 'all',
+  None = 'none',
 }
 
 export const weekType = pgEnum('week_type', enumToPgEnum(WeekType))
 
 export enum Day {
-  MONDAY = 'monday',
-  TUESDAY = 'tuesday',
-  WEDNESDAY = 'wednesday',
-  THURSDAY = 'thursday',
-  FRIDAY = 'friday',
-  SATURDAY = 'saturday',
-  SUNDAY = 'sunday',
+  Monday = 'monday',
+  Tuesday = 'tuesday',
+  Wednesday = 'wednesday',
+  Thursday = 'thursday',
+  Friday = 'friday',
+  Saturday = 'saturday',
+  Sunday = 'sunday',
 }
 
 export const day = pgEnum('day', enumToPgEnum(Day))

@@ -12,6 +12,7 @@
     "check:ro": "biome check"
   },
   "dependencies": {
+    "@filc/log": "workspace:*",
     "@trpc/server": "^11.0.4",
     "better-auth": "^1.2.7",
     "drizzle-orm": "^0.42.0"

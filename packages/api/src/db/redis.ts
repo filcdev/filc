@@ -1,7 +1,9 @@
 import { appConfig } from '@filc/config'
+import { createLogger } from '@filc/log'
 import { RedisClient } from 'bun'
 
 const c = appConfig.redis
+const logger = createLogger('redis')
 
 const redisUrl = `redis://${c.user}:${c.password}@${c.host}:${c.port}`
 
@@ -17,14 +19,14 @@ export const secondaryStorage = {
     try {
       await redisClient.del(key)
     } catch (e) {
-      console.error('Error deleting key from Redis:', e)
+      logger.error('Error deleting key from Redis:', e)
     }
   },
   get: async (key: string) => {
     try {
       return await redisClient.get(key)
     } catch (e) {
-      console.error('Error getting key from Redis:', e)
+      logger.error('Error getting key from Redis:', e)
       return null
     }
   },
@@ -32,7 +34,7 @@ export const secondaryStorage = {
     try {
       await redisClient.set(key, value)
     } catch (e) {
-      console.error('Error setting key in Redis:', e)
+      logger.error('Error setting key in Redis:', e)
     }
   },
 }

@@ -1,17 +1,19 @@
+import { createLogger } from '@filc/log'
 import { createLocalConfig } from './envs/local'
 import { createProdConfig } from './envs/prod'
 import { createStagingConfig } from './envs/staging'
+
+const logger = createLogger('config')
 
 const getConfig = () => {
   let env: string | undefined
   try {
     env = process.env.NODE_ENV
     if (!env) {
-      process &&
-        console.warn("NODE_ENV is not set, defaulting to 'development'")
+      process && logger.warn("NODE_ENV is not set, defaulting to 'development'")
       env = 'development'
     }
-  } catch (e) {
+  } catch (_e) {
     env = import.meta.env.MODE
   }
 
@@ -22,10 +24,10 @@ const getConfig = () => {
       return createStagingConfig()
     case 'development':
       return createLocalConfig()
-    default:
-      throw new Error(
-        `Invalid APP_ENV "${env}". If you are running locally, please set APP_ENV=local, like so: "APP_ENV=local bun dev"`
-      )
+    default: {
+      logger.warn(`Unknown environment: ${env}, defaulting to 'development'`)
+      return createLocalConfig()
+    }
   }
 }
 

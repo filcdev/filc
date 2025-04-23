@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@filc/api": "workspace:*",
+    "@filc/config": "workspace:*",
     "@filc/ui": "workspace:*",
     "@fontsource-variable/sora": "^5.2.5",
     "@sentry/browser": "^9.13.0",

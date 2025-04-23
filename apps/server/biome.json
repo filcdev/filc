@@ -28,9 +28,6 @@
       },
       "complexity": {
         "useArrowFunction": "error"
-      },
-      "suspicious": {
-        "noConsole": "off"
       }
     }
   },

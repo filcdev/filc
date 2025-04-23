@@ -42,7 +42,6 @@ const Public = () => {
     })
 
     if (result.error) {
-      console.error(result.error)
       return
     }
   }

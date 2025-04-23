@@ -1,11 +1,14 @@
+import { createLogger } from '@filc/log'
 import { TRPCError, initTRPC } from '@trpc/server'
 import type { Context } from 'hono'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
 import { db } from '../db'
 
+const logger = createLogger('trpc')
+
 // @see https://trpc.io/docs/server/context
-export const createTRPCContext = async (
+export const createContext = (
   _opts: {
     req: Request
     resHeaders: Headers
@@ -22,7 +25,7 @@ export const createTRPCContext = async (
   }
 }
 
-const t = initTRPC.context<typeof createTRPCContext>().create({
+const t = initTRPC.context<typeof createContext>().create({
   transformer: superjson,
   errorFormatter: ({ shape, error }) => ({
     ...shape,
@@ -48,7 +51,7 @@ const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const result = await next()
 
   const end = Date.now()
-  console.log(
+  logger.debug(
     `(${ctx.session?.user ? ctx.session?.user.name : 'Anon'})[${path}]: ${result.ok ? 'OK' : 'ERR'}, took ${end - start}ms`
   )
 

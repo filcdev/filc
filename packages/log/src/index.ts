@@ -1,8 +1,7 @@
-import { appConfig } from '@filc/config'
 import { pino } from 'pino'
 
 const rootLogger = pino({
-  name: appConfig.app.name,
+  name: 'filc',
 })
 
 export const createLogger = (name: string) => {
