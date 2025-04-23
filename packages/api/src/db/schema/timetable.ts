@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
 import {
+  boolean,
   char,
   integer,
   pgEnum,
@@ -153,12 +154,6 @@ export const lesson = schema.table(
     id: text().primaryKey().notNull(),
     weekType: weekType().notNull(),
     day: day().notNull(),
-    period: text()
-      .notNull()
-      .references(() => period.id, {
-        onDelete: 'cascade',
-        onUpdate: 'cascade',
-      }),
     subject: text()
       .notNull()
       .references(() => subject.id, {
@@ -190,12 +185,37 @@ export const lesson = schema.table(
     uniqueIndex().on(
       t.weekType,
       t.day,
-      t.period,
       t.subject,
       t.teacher,
       t.cohort
     ),
   ]
+)
+
+export const lessonPeriod = schema.table(
+  'lesson_period',
+  {
+    id: text().primaryKey().notNull(),
+    lessonId: text()
+      .notNull()
+      .references(() => lesson.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    periodId: text()
+      .notNull()
+      .references(() => period.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    isStart: boolean().notNull().default(false),
+    createdAt: timestamp().notNull().defaultNow(),
+    updatedAt: timestamp()
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  t => [uniqueIndex().on(t.lessonId, t.periodId)]
 )
 
 export const substitution = schema.table('substitution', {
@@ -245,6 +265,22 @@ export const timetableRelations = relations(timetable, ({ many }) => ({
 
 export const lessonRelations = relations(lesson, ({ many }) => ({
   groups: many(group),
+  periods: many(lessonPeriod),
+}))
+
+export const periodRelations = relations(period, ({ many }) => ({
+  lessons: many(lessonPeriod)
+}))
+
+export const lessonPeriodRelations = relations(lessonPeriod, ({ one }) => ({
+  lesson: one(lesson, {
+    fields: [lessonPeriod.lessonId],
+    references: [lesson.id]
+  }),
+  period: one(period, {
+    fields: [lessonPeriod.periodId],
+    references: [period.id]
+  })
 }))
 
 export const cohortRelations = relations(cohort, ({ many }) => ({
