@@ -181,15 +181,7 @@ export const lesson = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  t => [
-    uniqueIndex().on(
-      t.weekType,
-      t.day,
-      t.subject,
-      t.teacher,
-      t.cohort
-    ),
-  ]
+  t => [uniqueIndex().on(t.weekType, t.day, t.subject, t.teacher, t.cohort)]
 )
 
 export const lessonPeriod = schema.table(
@@ -269,18 +261,18 @@ export const lessonRelations = relations(lesson, ({ many }) => ({
 }))
 
 export const periodRelations = relations(period, ({ many }) => ({
-  lessons: many(lessonPeriod)
+  lessons: many(lessonPeriod),
 }))
 
 export const lessonPeriodRelations = relations(lessonPeriod, ({ one }) => ({
   lesson: one(lesson, {
     fields: [lessonPeriod.lessonId],
-    references: [lesson.id]
+    references: [lesson.id],
   }),
   period: one(period, {
     fields: [lessonPeriod.periodId],
-    references: [period.id]
-  })
+    references: [period.id],
+  }),
 }))
 
 export const cohortRelations = relations(cohort, ({ many }) => ({

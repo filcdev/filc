@@ -112,12 +112,8 @@
           "tableFrom": "account",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -226,12 +222,8 @@
           "tableFrom": "invitation",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "inviterId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["inviterId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -240,12 +232,8 @@
           "tableFrom": "invitation",
           "tableTo": "organization",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "organizationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -305,12 +293,8 @@
           "tableFrom": "member",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -319,12 +303,8 @@
           "tableFrom": "member",
           "tableTo": "organization",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "organizationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -506,12 +486,8 @@
           "tableFrom": "session",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -582,12 +558,8 @@
           "tableFrom": "team",
           "tableTo": "organization",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "organizationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organizationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -694,9 +666,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -854,12 +824,8 @@
           "tableFrom": "cohort",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "classMaster"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["classMaster"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -868,12 +834,8 @@
           "tableFrom": "cohort",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "secondaryClassMaster"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["secondaryClassMaster"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -882,12 +844,8 @@
           "tableFrom": "cohort",
           "tableTo": "room",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "headquarters"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["headquarters"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -958,12 +916,8 @@
           "tableFrom": "group",
           "tableTo": "cohort",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "cohort"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cohort"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1084,12 +1038,8 @@
           "tableFrom": "lesson",
           "tableTo": "subject",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "subject"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subject"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1098,12 +1048,8 @@
           "tableFrom": "lesson",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "teacher"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["teacher"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1112,12 +1058,8 @@
           "tableFrom": "lesson",
           "tableTo": "cohort",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "cohort"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cohort"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1126,12 +1068,8 @@
           "tableFrom": "lesson",
           "tableTo": "room",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "room"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["room"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1215,12 +1153,8 @@
           "tableFrom": "lesson_period",
           "tableTo": "lesson",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "lessonId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lessonId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1229,12 +1163,8 @@
           "tableFrom": "lesson_period",
           "tableTo": "period",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "periodId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["periodId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1505,12 +1435,8 @@
           "tableFrom": "substitution",
           "tableTo": "lesson",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "lesson"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lesson"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1519,12 +1445,8 @@
           "tableFrom": "substitution",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": [
-            "teacher"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["teacher"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1728,12 +1650,7 @@
     "public.week_type": {
       "name": "week_type",
       "schema": "public",
-      "values": [
-        "a",
-        "b",
-        "all",
-        "none"
-      ]
+      "values": ["a", "b", "all", "none"]
     }
   },
   "schemas": {

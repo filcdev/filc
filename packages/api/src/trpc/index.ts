@@ -3,7 +3,6 @@ import { TRPCError, initTRPC } from '@trpc/server'
 import type { Context } from 'hono'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
-import { db } from '../db'
 
 const logger = createLogger('trpc')
 
@@ -21,7 +20,6 @@ export const createContext = (
   return {
     user,
     session,
-    db,
   }
 }
 
