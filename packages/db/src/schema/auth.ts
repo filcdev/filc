@@ -4,6 +4,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core'
 
 export const schema = pgSchema('auth')
@@ -11,7 +12,7 @@ export const schema = pgSchema('auth')
 export const user = schema.table(
   'user',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     email: text().unique().notNull(),
     emailVerified: boolean(),
@@ -32,7 +33,7 @@ export const user = schema.table(
 export const session = schema.table(
   'session',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     userId: text()
       .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
       .notNull(),
@@ -54,7 +55,7 @@ export const session = schema.table(
 export const account = schema.table(
   'account',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     userId: text()
       .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
       .notNull(),
@@ -79,7 +80,7 @@ export const account = schema.table(
 export const verification = schema.table(
   'verification',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     identifier: text().notNull(),
     value: text().notNull(),
     expiresAt: timestamp().notNull(),
@@ -95,7 +96,7 @@ export const verification = schema.table(
 export const organization = schema.table(
   'organization',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     slug: text().notNull(),
     logo: text(),
@@ -106,7 +107,7 @@ export const organization = schema.table(
 )
 
 export const member = schema.table('member', {
-  id: text().primaryKey().notNull(),
+  id: uuid().defaultRandom().primaryKey().notNull(),
   userId: text()
     .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
     .notNull(),
@@ -124,7 +125,7 @@ export const member = schema.table('member', {
 export const invitation = schema.table(
   'invitation',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     email: text().notNull(),
     inviterId: text()
       .references(() => user.id, { onDelete: 'cascade', onUpdate: 'cascade' })
@@ -147,7 +148,7 @@ export const invitation = schema.table(
 export const team = schema.table(
   'team',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     organizationId: text()
       .references(() => organization.id, {

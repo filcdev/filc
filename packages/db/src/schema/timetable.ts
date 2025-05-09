@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core'
 
 export const schema = pgSchema('timetable')
@@ -17,7 +18,7 @@ export const schema = pgSchema('timetable')
 export const room = schema.table(
   'room',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     shortName: text().notNull(),
     capacity: text().notNull(),
@@ -33,7 +34,7 @@ export const room = schema.table(
 export const subject = schema.table(
   'subject',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     shortName: text().notNull(),
     icon: text().notNull(),
@@ -49,7 +50,7 @@ export const subject = schema.table(
 export const teacher = schema.table(
   'teacher',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     shortName: text().notNull(),
     email: text().notNull(),
@@ -65,7 +66,7 @@ export const teacher = schema.table(
 export const cohort = schema.table(
   'cohort',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     year: integer().notNull(),
     designation: char().notNull(),
     classMaster: text()
@@ -95,7 +96,7 @@ export const cohort = schema.table(
 export const group = schema.table(
   'group',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     cohort: text()
       .notNull()
@@ -136,7 +137,7 @@ export const day = pgEnum('day', enumToPgEnum(Day))
 export const period = schema.table(
   'period',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     startTime: timestamp().notNull(),
     endTime: timestamp().notNull(),
     createdAt: timestamp().notNull().defaultNow(),
@@ -151,7 +152,7 @@ export const period = schema.table(
 export const lesson = schema.table(
   'lesson',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     weekType: weekType().notNull(),
     day: day().notNull(),
     subject: text()
@@ -187,7 +188,7 @@ export const lesson = schema.table(
 export const lessonPeriod = schema.table(
   'lesson_period',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     lessonId: text()
       .notNull()
       .references(() => lesson.id, {
@@ -211,7 +212,7 @@ export const lessonPeriod = schema.table(
 )
 
 export const substitution = schema.table('substitution', {
-  id: text().primaryKey().notNull(),
+  id: uuid().defaultRandom().primaryKey().notNull(),
   lesson: text()
     .notNull()
     .references(() => lesson.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
@@ -229,7 +230,7 @@ export const substitution = schema.table('substitution', {
 export const timetable = schema.table(
   'timetable',
   {
-    id: text().primaryKey().notNull(),
+    id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     validFrom: timestamp().notNull(),
     validTo: timestamp().notNull(),
@@ -243,7 +244,7 @@ export const timetable = schema.table(
 )
 
 export const timetableDay = schema.table('timetable_day', {
-  id: text().primaryKey().notNull(),
+  id: uuid().defaultRandom().primaryKey().notNull(),
   day: day().notNull(),
 })
 
