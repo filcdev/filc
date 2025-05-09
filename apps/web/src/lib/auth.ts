@@ -1,6 +1,16 @@
+import { ac, root } from '@filc/auth/permissions'
+import { adminClient, organizationClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 
 export const auth = createAuthClient({
-  // TODO: make this dynamic
   baseURL: 'http://localhost:3000',
+  plugins: [
+    adminClient(),
+    organizationClient({
+      ac,
+      roles: {
+        root,
+      },
+    }),
+  ],
 })

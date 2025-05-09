@@ -1,0 +1,26 @@
+{
+  "name": "@filc/db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.9",
+  "exports": {
+    ".": "./src/index.ts",
+    "./redis": "./src/redis.ts",
+    "./schema/*": "./src/schema/*"
+  },
+  "scripts": {
+    "check": "biome check --write",
+    "check:ro": "biome check",
+    "generate": "drizzle-kit generate --dialect postgresql --schema ./src/db/schema",
+    "migrate": "bun run src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@filc/config": "workspace:*",
+    "@filc/log": "workspace:*",
+    "drizzle-orm": "^0.42.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.0"
+  }
+}

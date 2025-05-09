@@ -1,0 +1,21 @@
+{
+  "name": "@filc/auth",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.9",
+  "exports": {
+    ".": "./src/index.ts",
+    "./permissions": "./src/permissions.ts"
+  },
+  "scripts": {
+    "check": "biome check --write",
+    "check:ro": "biome check"
+  },
+  "dependencies": {
+    "@filc/db": "workspace:*",
+    "@filc/config": "workspace:*",
+    "@filc/log": "workspace:*",
+    "better-auth": "^1.2.7"
+  }
+}

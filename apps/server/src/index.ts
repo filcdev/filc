@@ -1,6 +1,6 @@
-import { auth } from '@filc/api/auth'
 import { createContext } from '@filc/api/trpc'
 import { appRouter } from '@filc/api/trpc/root'
+import { auth } from '@filc/auth'
 import { appConfig } from '@filc/config'
 import { createLogger } from '@filc/log'
 import { trpcServer } from '@hono/trpc-server'

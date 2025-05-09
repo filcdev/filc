@@ -1,6 +1,6 @@
+import { db } from '@/index'
 import { createLogger } from '@filc/log'
 import { migrate } from 'drizzle-orm/bun-sql/migrator'
-import { db } from '.'
 
 const logger = createLogger('migrate')
 

@@ -31,6 +31,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@filc/api": "workspace:*",
+        "@filc/auth": "workspace:*",
         "@filc/config": "workspace:*",
         "@filc/log": "workspace:*",
         "@hono/trpc-server": "^0.3.4",
@@ -49,6 +50,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@filc/api": "workspace:*",
+        "@filc/auth": "workspace:*",
         "@filc/config": "workspace:*",
         "@filc/ui": "workspace:*",
         "@fontsource-variable/sora": "^5.2.5",
@@ -80,7 +82,9 @@
       "name": "@filc/api",
       "version": "1.0.0",
       "dependencies": {
+        "@filc/auth": "workspace:*",
         "@filc/config": "workspace:*",
+        "@filc/db": "workspace:*",
         "@filc/log": "workspace:*",
         "@trpc/server": "^11.0.4",
         "better-auth": "^1.2.7",
@@ -91,6 +95,16 @@
       },
       "devDependencies": {
         "drizzle-kit": "^0.31.0",
+      },
+    },
+    "packages/auth": {
+      "name": "@filc/auth",
+      "version": "1.0.0",
+      "dependencies": {
+        "@filc/config": "workspace:*",
+        "@filc/db": "workspace:*",
+        "@filc/log": "workspace:*",
+        "better-auth": "^1.2.7",
       },
     },
     "packages/config": {
@@ -104,6 +118,18 @@
       },
       "devDependencies": {
         "@types/bun": "^1.2.10",
+        "drizzle-kit": "^0.31.0",
+      },
+    },
+    "packages/db": {
+      "name": "@filc/db",
+      "version": "1.0.0",
+      "dependencies": {
+        "@filc/config": "workspace:*",
+        "@filc/log": "workspace:*",
+        "drizzle-orm": "^0.42.0",
+      },
+      "devDependencies": {
         "drizzle-kit": "^0.31.0",
       },
     },
@@ -300,7 +326,11 @@
 
     "@filc/api": ["@filc/api@workspace:packages/api"],
 
+    "@filc/auth": ["@filc/auth@workspace:packages/auth"],
+
     "@filc/config": ["@filc/config@workspace:packages/config"],
+
+    "@filc/db": ["@filc/db@workspace:packages/db"],
 
     "@filc/landing": ["@filc/landing@workspace:apps/landing"],
 

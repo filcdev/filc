@@ -1,17 +1,17 @@
-import { db } from '@/db'
-import { secondaryStorage } from '@/db/redis'
-import { authSchema } from '@/db/schema/auth'
+import { ac, root } from '@/permissions'
 import { appConfig } from '@filc/config'
+import { db } from '@filc/db'
+import { secondaryStorage } from '@filc/db/redis'
+import { authSchema } from '@filc/db/schema/auth.ts'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { admin, haveIBeenPwned, organization } from 'better-auth/plugins'
+import { admin, organization } from 'better-auth/plugins'
 
 export const auth = betterAuth({
   secret: appConfig.auth.secret,
   baseURL: appConfig.auth.url,
   secondaryStorage,
   trustedOrigins: [appConfig.auth.url, 'http://localhost:4000'],
-  plugin: [admin(), organization(), haveIBeenPwned()],
   socialProviders: {
     microsoft: {
       clientId: appConfig.entra.clientId,
@@ -23,4 +23,13 @@ export const auth = betterAuth({
     provider: 'pg',
     schema: authSchema,
   }),
+  plugin: [
+    admin(),
+    organization({
+      ac,
+      roles: {
+        root,
+      },
+    }),
+  ],
 })

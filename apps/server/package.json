@@ -11,6 +11,7 @@
     "check:ro": "biome check"
   },
   "dependencies": {
+    "@filc/auth": "workspace:*",
     "@filc/api": "workspace:*",
     "@filc/config": "workspace:*",
     "@filc/log": "workspace:*",
