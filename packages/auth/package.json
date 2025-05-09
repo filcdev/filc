@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.9",
+  "packageManager": "bun@1.2.10",
   "exports": {
     ".": "./src/index.ts",
     "./permissions": "./src/permissions.ts"
@@ -13,8 +13,8 @@
     "check:ro": "biome check"
   },
   "dependencies": {
-    "@filc/db": "workspace:*",
     "@filc/config": "workspace:*",
+    "@filc/db": "workspace:*",
     "@filc/log": "workspace:*",
     "better-auth": "^1.2.7"
   }

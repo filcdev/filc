@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.9",
+  "packageManager": "bun@1.2.10",
   "exports": {
     "./trpc/root": "./src/trpc/root.ts",
     "./trpc": "./src/trpc/index.ts"
@@ -15,16 +15,16 @@
   "dependencies": {
     "@filc/auth": "workspace:*",
     "@filc/config": "workspace:*",
-    "@filc/log": "workspace:*",
     "@filc/db": "workspace:*",
-    "@trpc/server": "^11.0.4",
+    "@filc/log": "workspace:*",
+    "@trpc/server": "^11.1.2",
     "better-auth": "^1.2.7",
-    "drizzle-orm": "^0.42.0",
-    "hono": "^4.7.7",
+    "drizzle-orm": "^0.43.1",
+    "hono": "^4.7.9",
     "superjson": "^2.2.2",
-    "zod": "^3.24.3"
+    "zod": "^3.24.4"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.0"
+    "drizzle-kit": "^0.31.1"
   }
 }

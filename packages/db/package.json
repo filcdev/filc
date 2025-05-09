@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.9",
+  "packageManager": "bun@1.2.10",
   "exports": {
     ".": "./src/index.ts",
     "./redis": "./src/redis.ts",
@@ -18,9 +18,9 @@
   "dependencies": {
     "@filc/config": "workspace:*",
     "@filc/log": "workspace:*",
-    "drizzle-orm": "^0.42.0"
+    "drizzle-orm": "^0.43.1"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.0"
+    "drizzle-kit": "^0.31.1"
   }
 }
