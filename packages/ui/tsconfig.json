@@ -6,7 +6,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@filc/ui/*": ["./src/*"]
+      "@filc/ui/*": ["./src/*"],
+      "@/*": ["./*"]
     }
   },
   "include": ["src"]

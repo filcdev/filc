@@ -1,12 +1,12 @@
 import './App.css'
-import { logo } from '@filc/ui'
+import { Logo } from '@filc/ui/components/logo'
 
 const App = () => {
   return (
     <div className='min-h-dvh flex flex-col'>
       <header className='container mx-auto py-6 px-4 flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <img src={logo} alt='Logo' className='h-8 w-8 scale-150' />
+          <Logo className='h-8 w-8 scale-150' />
           <span className='text-2xl font-bold'>Filc</span>
         </div>
       </header>
@@ -30,7 +30,7 @@ const App = () => {
       <footer className='container mx-auto py-8 px-4 border-t'>
         <div className='flex flex-col md:flex-row justify-between items-center'>
           <div className='flex items-center gap-2 mb-4 md:mb-0'>
-            <img src={logo} alt='Logo' className='h-8 w-8 scale-150' />
+            <Logo className='h-8 w-8 scale-150' />
             <span className='text-lg font-semibold'>Filc</span>
           </div>
 
