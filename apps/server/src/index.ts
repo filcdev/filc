@@ -15,6 +15,8 @@ const app = new Hono<{
   }
 }>()
 
+const logger = createLogger('server')
+
 app.use(
   '*',
   cors({
@@ -40,7 +42,7 @@ app.use('*', async (c, next) => {
 app.use(
   '*',
   pinoLogger({
-    pino: createLogger('server'),
+    pino: logger,
     http: { onReqLevel: _ => 'debug' },
   })
 )
@@ -79,4 +81,18 @@ app.on(['POST', 'GET'], '/api/auth/*', c => {
   return auth.handler(c.req.raw)
 })
 
-export default app
+app.onError((err, c) => {
+  logger.error(err)
+  return c.json(
+    {
+      message: 'Internal Server Error',
+    },
+    500
+  )
+})
+
+logger.info('Starting server on port')
+
+export default {
+  fetch: app.fetch,
+}

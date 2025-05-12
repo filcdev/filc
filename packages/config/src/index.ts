@@ -6,8 +6,13 @@ const logger = createLogger('config')
 const validateConfig = (config: unknown) => {
   const parsedConfig = configSchema.safeParse(config)
   if (!parsedConfig.success) {
-    logger.error('Invalid config schema', parsedConfig.error.format())
-    throw new Error('Invalid config schema')
+    const errorMessage = `Invalid config schema: ${JSON.stringify(
+      parsedConfig.error.format(),
+      null,
+      2
+    )}`
+    logger.error(errorMessage)
+    throw new Error(errorMessage)
   }
   logger.debug('Config schema is valid')
 }
@@ -20,7 +25,7 @@ const loadFromFile = async (filePath: string) => {
     return config
   } catch (e) {
     logger.error(`Failed to load config from ${filePath}`, e)
-    throw new Error(`Failed to load config from ${filePath}`)
+    throw new Error(`Failed to load config from ${filePath}: ${e}`)
   }
 }
 
