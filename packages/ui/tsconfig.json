@@ -5,8 +5,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@filc/ui/*": ["./src/*"],
-      "@/*": ["./*"]
+      "@filc/ui/*": ["./src/*"]
     }
   }
 }
