@@ -17,6 +17,7 @@ import {
 export const auth = betterAuth({
   secret: appConfig.auth.secret,
   baseURL: appConfig.auth.url,
+  basePath: '/auth',
   secondaryStorage,
   trustedOrigins: [appConfig.auth.url, 'http://localhost:4000'],
   socialProviders: {

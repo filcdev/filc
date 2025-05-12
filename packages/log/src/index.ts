@@ -2,7 +2,7 @@ import { pino } from 'pino'
 
 const rootLogger = pino({
   name: 'filc',
-  level: 'debug'
+  level: 'debug',
 })
 
 export const createLogger = (name: string) => {

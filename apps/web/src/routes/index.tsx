@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { Button } from '@filc/ui/components/button'
 import { Logo } from '@filc/ui/components/logo'
@@ -6,12 +6,13 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 const Index = () => {
-  const authData = auth.useSession()
+  const authData = useAuth().useSession()
   return authData.data ? <Protected /> : <Public />
 }
 
 const Protected = () => {
   const t = useTRPC()
+  const auth = useAuth()
   const authData = auth.useSession()
   const ping = useQuery(
     t.ping.private.queryOptions(undefined, {
@@ -39,6 +40,8 @@ const Protected = () => {
 }
 
 const Public = () => {
+  const auth = useAuth()
+
   const onLogin = async () => {
     const result = await auth.signIn.social({
       provider: 'microsoft',

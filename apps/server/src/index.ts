@@ -68,11 +68,13 @@ app.get('/', c => {
   })
 })
 
-app.get('/config', c => c.json({
-  env: appConfig.env,
-  app: appConfig.app,
-  frontend: appConfig.frontend
-}))
+app.get('/config', c =>
+  c.json({
+    env: appConfig.env,
+    app: appConfig.app,
+    frontend: appConfig.frontend,
+  })
+)
 
 app.use(
   '/trpc/*',
@@ -83,7 +85,7 @@ app.use(
   })
 )
 
-app.on(['POST', 'GET'], '/api/auth/*', c => {
+app.on(['POST', 'GET'], '/auth/*', c => {
   return auth.handler(c.req.raw)
 })
 
@@ -96,8 +98,6 @@ app.onError((err, c) => {
     500
   )
 })
-
-logger.info('Starting server on port')
 
 export default {
   fetch: app.fetch,
