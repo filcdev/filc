@@ -11,7 +11,6 @@
   "scripts": {
     "check": "biome check --write",
     "check:ro": "biome check",
-    "build": "tsc",
     "generate": "drizzle-kit generate --dialect postgresql --schema ./src/db/schema",
     "migrate": "bun run src/migrate.ts"
   },

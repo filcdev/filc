@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts | pino-pretty",
-    "build": "bun build src/index.ts --outdir=dist --target=bun",
+    "dev": "FILC_ENV=dev bun --watch src/index.ts | pino-pretty",
+    "build": "FILC_ENV=prod bun build src/index.ts --outdir=dist --target=bun",
     "check": "biome check --write",
     "check:ro": "biome check"
   },

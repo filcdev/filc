@@ -31,25 +31,15 @@ const loadFromFile = async (filePath: string) => {
 
 const getConfig = async (): Promise<FilcConfig> => {
   logger.debug('Loading config...')
-  let env: string | undefined
-  try {
-    env = process.env.NODE_ENV
-    if (!env) {
-      process && logger.warn("NODE_ENV is not set, defaulting to 'development'")
-      env = 'development'
-    }
-  } catch (_e) {
-    env = import.meta.env.MODE
-  }
 
-  switch (env) {
-    case 'production':
+  switch (Bun.env.FILC_ENV) {
+    case 'prod':
       return await loadFromFile('/etc/filc/config.json')
-    case 'development':
+    case 'dev':
       return await loadFromFile('../config.json')
     default: {
       logger.warn(
-        `Unknown environment: ${env}. Falling back to development config.`
+        `Unknown environment: ${Bun.env.FILC_ENV}. Falling back to development config.`
       )
       return await loadFromFile('../config.json')
     }

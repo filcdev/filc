@@ -9,8 +9,7 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check",
-    "build": "tsc"
+    "check:ro": "biome check"
   },
   "dependencies": {
     "@filc/auth": "workspace:*",

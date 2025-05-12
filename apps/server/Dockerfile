@@ -28,4 +28,4 @@ RUN adduser --system --uid 1001 filcserver
 USER filcserver
 COPY --from=installer /app/apps/server/dist .
 
-CMD bun run index.js
+CMD FILC_ENV=prod bun run index.js
