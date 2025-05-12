@@ -1,7 +1,6 @@
 {
   "name": "filc",
   "private": true,
-  "packageManager": "bun@1.2.12",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "turbo run dev",

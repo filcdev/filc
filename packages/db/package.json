@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.12",
   "exports": {
     ".": "./src/index.ts",
     "./redis": "./src/redis.ts",

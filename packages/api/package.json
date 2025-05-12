@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.12",
   "exports": {
     "./trpc/root": "./src/trpc/root.ts",
     "./trpc": "./src/trpc/index.ts"
