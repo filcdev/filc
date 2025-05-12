@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+# Dockerfiles are specified in compose.yml and not part of the app code being copied
+**/Dockerfile
+
+# Node.js / Bun
+# Root node_modules and any in subdirectories (apps, packages)
+node_modules/
+**/node_modules/
+
+# Bun lockfile (binary)
+bun.lockb
+
+# Log files
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Build artifacts & Caches
+.turbo/
+dist/
+build/
+out/
+coverage/
+
+# Local development specific files/folders
+mise.toml
+db.local/
+
+# OS-specific / Editor-specific
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
