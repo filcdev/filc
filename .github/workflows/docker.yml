@@ -34,7 +34,7 @@ jobs:
           context: .
           file: apps/server/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:server
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -44,7 +44,7 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:web
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -54,6 +54,6 @@ jobs:
           context: .
           file: apps/landing/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-landing:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:landing
           cache-from: type=gha
           cache-to: type=gha,mode=max
