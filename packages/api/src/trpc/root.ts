@@ -1,5 +1,5 @@
-import { pingRouter } from '@/route/ping'
-import { createTRPCRouter } from '@/trpc'
+import { pingRouter } from '../route/ping'
+import { createTRPCRouter } from './index.ts'
 
 export const appRouter = createTRPCRouter({
   ping: pingRouter,

@@ -14,8 +14,8 @@ const Protected = () => {
   const t = useTRPC()
   const authData = auth.useSession()
   const ping = useQuery(
-    t.ping.private.queryOptions({
-      enabled: !authData.isPending,
+    t.ping.private.queryOptions(undefined, {
+      enabled: !!authData.data,
     })
   )
 
@@ -30,7 +30,7 @@ const Protected = () => {
   return (
     <div className='p-2'>
       <h3>Hello from tsr, {authData.data?.user.name}</h3>
-      <h4>{ping.data.message}</h4>
+      <h4>{ping.data?.message}</h4>
       <Button variant='outline' onClick={() => auth.signOut()}>
         Sign out
       </Button>

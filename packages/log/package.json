@@ -12,5 +12,8 @@
   },
   "dependencies": {
     "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "@filc/tsconfig": "workspace:*"
   }
 }

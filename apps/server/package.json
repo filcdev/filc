@@ -21,6 +21,7 @@
     "hono-pino": "^0.8.0"
   },
   "devDependencies": {
+    "@filc/tsconfig": "workspace:*",
     "pino-pretty": "^13.0.0",
     "trpc-ui": "^1.0.15"
   }

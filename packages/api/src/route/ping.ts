@@ -1,5 +1,5 @@
-import { protectedProcedure, publicProcedure } from '@/trpc'
 import type { TRPCRouterRecord } from '@trpc/server'
+import { protectedProcedure, publicProcedure } from '../trpc/index.ts'
 
 export const pingRouter = {
   public: publicProcedure.query(() => {

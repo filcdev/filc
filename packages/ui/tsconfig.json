@@ -1,14 +1,12 @@
 {
+  "extends": "@filc/tsconfig/react.json",
+  "include": ["src"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@filc/ui/*": ["./src/*"],
       "@/*": ["./*"]
     }
-  },
-  "include": ["src"]
+  }
 }

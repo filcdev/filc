@@ -24,6 +24,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@filc/tsconfig": "workspace:*",
     "drizzle-kit": "^0.31.1"
   }
 }
