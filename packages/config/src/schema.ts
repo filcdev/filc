@@ -30,6 +30,7 @@ export const configSchema = z.object({
   }),
   frontend: z.object({
     url: z.string().url(),
+    apiUrl: z.string().url(),
     dsn: z.string().optional(),
   }),
 })

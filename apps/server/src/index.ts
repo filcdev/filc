@@ -68,10 +68,16 @@ app.get('/', c => {
   })
 })
 
+app.get('/config', c => c.json({
+  env: appConfig.env,
+  app: appConfig.app,
+  frontend: appConfig.frontend
+}))
+
 app.use(
-  '/api/trpc/*',
+  '/trpc/*',
   trpcServer({
-    endpoint: '/api/trpc',
+    endpoint: '/trpc',
     router: appRouter,
     createContext,
   })

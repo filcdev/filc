@@ -5,6 +5,7 @@ import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { createTRPCContext } from '@trpc/tanstack-react-query'
 import { useState } from 'react'
 import superjson from 'superjson'
+import { useConfig } from '@/lib/config'
 
 const { TRPCProvider: TrpcBaseProvider, useTRPC } =
   createTRPCContext<AppRouter>()
@@ -32,13 +33,13 @@ const getQueryClient = () => {
 }
 
 const TrpcProvider = ({ children }: { children: ReactNode }) => {
+  const config = useConfig()
   const queryClient = getQueryClient()
   const [trpcClient] = useState(() =>
     createTRPCClient<AppRouter>({
       links: [
         httpBatchLink({
-          // TODO: make this dynamic
-          url: 'http://localhost:3000/api/trpc',
+          url: config.frontend.apiUrl + '/trpc',
           transformer: superjson,
           fetch: (input, init) => {
             return fetch(input, {
