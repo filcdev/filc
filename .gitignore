@@ -2,6 +2,7 @@
 .DS_Store
 *.local
 *.log*
+.cache/
 
 # Dist
 node_modules/

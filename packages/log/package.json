@@ -8,7 +8,8 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check"
+    "check:ro": "biome check",
+    "build": "tsc"
   },
   "dependencies": {
     "pino": "^9.6.0"
