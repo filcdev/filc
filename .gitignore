@@ -17,3 +17,6 @@ dist/
 
 # local database docker
 db.local/
+
+# Config files
+packages/config/config.json

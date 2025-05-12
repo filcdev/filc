@@ -1,24 +1,24 @@
 import {
   ac,
-  root,
   admin as admin_role,
   editor,
-  teacher,
+  root,
   student,
-} from "@/permissions";
-import { appConfig } from "@filc/config";
-import { db } from "@filc/db";
-import { secondaryStorage } from "@filc/db/redis";
-import { authSchema } from "@filc/db/schema/auth.ts";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { admin, organization } from "better-auth/plugins";
+  teacher,
+} from '@/permissions'
+import { appConfig } from '@filc/config'
+import { db } from '@filc/db'
+import { secondaryStorage } from '@filc/db/redis'
+import { authSchema } from '@filc/db/schema/auth.ts'
+import { betterAuth } from 'better-auth'
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { admin, organization } from 'better-auth/plugins'
 
 export const auth = betterAuth({
   secret: appConfig.auth.secret,
   baseURL: appConfig.auth.url,
   secondaryStorage,
-  trustedOrigins: [appConfig.auth.url, "http://localhost:4000"],
+  trustedOrigins: [appConfig.auth.url, 'http://localhost:4000'],
   socialProviders: {
     microsoft: {
       clientId: appConfig.entra.clientId,
@@ -27,7 +27,7 @@ export const auth = betterAuth({
     },
   },
   database: drizzleAdapter(db, {
-    provider: "pg",
+    provider: 'pg',
     schema: authSchema,
   }),
   plugin: [
@@ -43,4 +43,4 @@ export const auth = betterAuth({
       },
     }),
   ],
-});
+})

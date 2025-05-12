@@ -1,11 +1,31 @@
 import { createLogger } from '@filc/log'
-import { createLocalConfig } from './envs/local'
-import { createProdConfig } from './envs/prod'
-import { createStagingConfig } from './envs/staging'
+import { type FilcConfig, configSchema } from './schema'
 
 const logger = createLogger('config')
 
-const getConfig = () => {
+const validateConfig = (config: unknown) => {
+  const parsedConfig = configSchema.safeParse(config)
+  if (!parsedConfig.success) {
+    logger.error('Invalid config schema', parsedConfig.error.format())
+    throw new Error('Invalid config schema')
+  }
+  logger.debug('Config schema is valid')
+}
+
+const loadFromFile = async (filePath: string) => {
+  try {
+    const config = await import(`${filePath}`)
+    logger.info(`Loaded config from ${filePath}`)
+    validateConfig(config)
+    return config
+  } catch (e) {
+    logger.error(`Failed to load config from ${filePath}`, e)
+    throw new Error(`Failed to load config from ${filePath}`)
+  }
+}
+
+const getConfig = async (): Promise<FilcConfig> => {
+  logger.debug('Loading config...')
   let env: string | undefined
   try {
     env = process.env.NODE_ENV
@@ -19,16 +39,16 @@ const getConfig = () => {
 
   switch (env) {
     case 'production':
-      return createProdConfig()
-    case 'staging':
-      return createStagingConfig()
+      return await loadFromFile('/etc/filc/config.json')
     case 'development':
-      return createLocalConfig()
+      return await loadFromFile('../config.json')
     default: {
-      logger.warn(`Unknown environment: ${env}, defaulting to 'development'`)
-      return createLocalConfig()
+      logger.warn(
+        `Unknown environment: ${env}. Falling back to development config.`
+      )
+      return await loadFromFile('../config.json')
     }
   }
 }
 
-export const appConfig = getConfig()
+export const appConfig = await getConfig()

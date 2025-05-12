@@ -6,6 +6,8 @@
 .dockerignore
 # Dockerfiles are specified in compose.yml and not part of the app code being copied
 **/Dockerfile
+compose.yml
+compose.prod.yml
 
 # Node.js / Bun
 # Root node_modules and any in subdirectories (apps, packages)
@@ -19,6 +21,7 @@ bun.lockb
 *.log
 npm-debug.log*
 yarn-error.log*
+logs/
 
 # Build artifacts & Caches
 .turbo/
