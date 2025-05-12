@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
-import { logo } from '@filc/ui'
 import { Button } from '@filc/ui/components/button'
+import { Logo } from '@filc/ui/components/logo'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -52,7 +52,7 @@ const Public = () => {
 
   return (
     <div className='p-2'>
-      <img src={logo} alt='Filc Logo' className='w-32 h-32' />
+      <Logo />
       <h3>Welcome to Filc</h3>
       <Button onClick={onLogin}>Login with Microsoft</Button>
     </div>

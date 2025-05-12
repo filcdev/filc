@@ -1,5 +1,6 @@
-import LogoImage from '@/assets/logo.svg'
-import React = require('react')
+import type * as React from 'react'
+
+import LogoImage from '../../assets/logo.svg'
 
 export const Logo = (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
   return (
