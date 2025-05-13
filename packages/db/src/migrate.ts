@@ -6,12 +6,12 @@ const logger = createLogger('migrate')
 
 export const run = () => {
   migrate(db, { migrationsFolder: './drizzle' })
-  .then(() => {
-    logger.info('Migrations completed successfully')
-  })
-  .catch(err => {
-    logger.fatal('Migrations failed', err)
-  })
+    .then(() => {
+      logger.info('Migrations completed successfully')
+    })
+    .catch(err => {
+      logger.fatal('Migrations failed', err)
+    })
 }
 
 if (require.main === module) {

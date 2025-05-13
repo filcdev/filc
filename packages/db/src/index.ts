@@ -3,7 +3,6 @@ import { SQL } from 'bun'
 import { drizzle } from 'drizzle-orm/bun-sql'
 import { run } from './migrate'
 
-
 const c = appConfig.postgres
 const databaseUrl = `postgresql://${c.user}:${c.password}@${c.host}:${c.port}/${c.database}`
 const client = new SQL(databaseUrl)
