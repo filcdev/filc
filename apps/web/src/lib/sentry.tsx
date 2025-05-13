@@ -1,16 +1,16 @@
-import { init as sentryInit } from "@sentry/browser";
-import { useConfig } from "./config";
+import { init as sentryInit } from '@sentry/browser'
+import { useConfig } from './config'
 
 export const Sentry = () => {
-    const config = useConfig()
+  const config = useConfig()
 
-    if (!config.frontend.dsn) {
-        return null;
-    }
+  if (!config.frontend.dsn) {
+    return null
+  }
 
-    sentryInit({
-        dsn: config.frontend.dsn
-    });
+  sentryInit({
+    dsn: config.frontend.dsn,
+  })
 
-    return null;
+  return null
 }
