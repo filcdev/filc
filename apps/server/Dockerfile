@@ -27,5 +27,7 @@ RUN addgroup --system --gid 1001 filcserver
 RUN adduser --system --uid 1001 filcserver
 USER filcserver
 COPY --from=installer /app/apps/server/dist .
+# Also copy the drizzle migrations for runtime DB migration support
+COPY --from=installer /app/packages/db/drizzle ./drizzle
 
 CMD FILC_ENV=prod bun run index.js
