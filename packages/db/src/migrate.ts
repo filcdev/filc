@@ -10,7 +10,8 @@ export const run = () => {
       logger.info('Migrations completed successfully')
     })
     .catch(err => {
-      logger.fatal('Migrations failed', err)
+      logger.fatal(`Migrations failed: ${err}`)
+      process.exit(1)
     })
 }
 
