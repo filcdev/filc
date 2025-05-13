@@ -19,7 +19,7 @@ export const auth = betterAuth({
   baseURL: appConfig.auth.url,
   basePath: '/auth',
   secondaryStorage,
-  trustedOrigins: [appConfig.auth.url, 'http://localhost:4000'],
+  trustedOrigins: [appConfig.auth.url, appConfig.frontend.url, 'http://localhost:4000'],
   socialProviders: {
     microsoft: {
       clientId: appConfig.entra.clientId,
