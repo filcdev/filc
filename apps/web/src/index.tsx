@@ -12,13 +12,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// FIXME: new config
-// if (import.meta.env.MODE === 'production' && appConfig.frontend.dsn) {
-//   sentryInit({
-//     dsn: appConfig.frontend.dsn,
-//   })
-// }
-
 const rootEl = document.getElementById('root')
 if (rootEl) {
   const root = reactDom.createRoot(rootEl)
