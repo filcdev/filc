@@ -1,3 +1,4 @@
+import { Button } from '@filc/ui/components/button'
 import './App.css'
 import { Logo } from '@filc/ui/components/logo'
 
@@ -12,18 +13,20 @@ const App = () => {
       </header>
 
       <main className='flex-1 container mx-auto px-4 py-12 flex flex-col items-center justify-center text-center'>
-        <div className='max-w-3xl mx-auto'>
-          <div className='mb-8 inline-flex items-center justify-center px-4 py-2 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground text-sm font-medium'>
-            Coming Soon
-          </div>
-
-          <h1 className='text-4xl md:text-6xl font-bold tracking-tight mb-6'>
-            We promise...
+        <div className='max-w-4xl mx-auto'>
+          <h1 className='text-3xl md:text-6xl font-bold tracking-tight mb-6 md:mb-2'>
+            A világ <span className="text-primary">legjobb</span> applikációja
           </h1>
 
-          <p className='text-xl mb-12 max-w-2xl mx-auto'>
-            Stay tuned for our launch!
-          </p>
+          <h2 className='text-xl md:text-2xl font-semibold mb-8'>
+            Petrikesektől, petrikeseknek
+          </h2>
+
+          <Button variant='default' size='lg' asChild>
+              <a href="https://app.filc.space" className='bg-gradient-to-r from-primary to-secondary text-xl text-white hover:scale-105 hover:shadow-xl transition-all'>
+                Megnyitás
+              </a>  
+            </Button>
         </div>
       </main>
 
