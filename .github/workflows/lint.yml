@@ -2,9 +2,7 @@ name: Lint
 
 on:
   push:
-    branches: ['main']
-  pull_request:
-    branches: ['main']
+    branches: ['main', 'development']
 
 jobs:
   lint:
@@ -21,4 +19,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Biome Check
-        run: bun check:ro
+        run: bun run check:ro
+
+      - name: Run sherif
+        run: bun x sherif
