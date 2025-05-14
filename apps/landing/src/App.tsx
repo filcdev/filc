@@ -6,7 +6,7 @@ import { content } from './content'
 
 const App = () => {
   const [language, setLanguage] = useState<'hu' | 'en'>('hu')
-  const get = (key: keyof typeof content['en']) => {
+  const get = (key: keyof (typeof content)['en']) => {
     return content[language][key]
   }
 
@@ -17,18 +17,16 @@ const App = () => {
           <Logo className='h-8 w-8 scale-150' />
           <span className='text-2xl font-bold'>Filc</span>
         </div>
-        <div className=''>
-          <Button
-            variant='outline'
-            size='icon'
-            onClick={() => {
-              setLanguage(prev => (prev === 'hu' ? 'en' : 'hu'))
-            }}
-            className='text-sm'
-          >
-            {language === 'hu' ? '🇭🇺' : '🇬🇧'}
-          </Button>
-        </div>
+        <Button
+          variant='outline'
+          size='icon'
+          onClick={() => {
+            setLanguage(prev => (prev === 'hu' ? 'en' : 'hu'))
+          }}
+          className='text-sm'
+        >
+          {language === 'hu' ? '🇭🇺' : '🇬🇧'}
+        </Button>
       </header>
 
       <main className='flex-1 container mx-auto px-4 py-12 flex flex-col items-center justify-center text-center'>
