@@ -1,5 +1,11 @@
 import type React from 'react'
-import { createContext, useContext, useEffect, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 
 export type AppConfig = {
   env: string
@@ -14,6 +20,8 @@ export type AppConfig = {
   }
 }
 
+const CONFIG_CACHE_KEY = 'filc_config_cache'
+
 const ConfigContext = createContext<AppConfig | undefined>(undefined)
 
 export const useConfig = () => {
@@ -24,27 +32,44 @@ export const useConfig = () => {
   return ctx
 }
 
+const isConfigEqual = (a: AppConfig, b: AppConfig) => {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
 export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [config, setConfig] = useState<AppConfig | null>(null)
+  const [config, setConfig] = useState<AppConfig | null>(() => {
+    const cached = localStorage.getItem(CONFIG_CACHE_KEY)
+    return cached ? (JSON.parse(cached) as AppConfig) : null
+  })
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetch(
-      import.meta.env.MODE === 'development'
-        ? 'http://localhost:3000/config'
-        : 'https://api.filc.space/config'
-    )
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('Failed to fetch config')
-        }
-        return res.json()
-      })
-      .then(setConfig)
-      .catch(e => setError(e.message))
+  const fetchConfig = useCallback(async () => {
+    try {
+      const res = await fetch(
+        import.meta.env.MODE === 'development'
+          ? 'http://localhost:3000/config'
+          : 'https://api.filc.space/config'
+      )
+      if (!res.ok) {
+        throw new Error('Failed to fetch config')
+      }
+      const freshConfig: AppConfig = await res.json()
+      const cached = localStorage.getItem(CONFIG_CACHE_KEY)
+      const cachedConfig = cached ? (JSON.parse(cached) as AppConfig) : null
+      if (!(cachedConfig && isConfigEqual(freshConfig, cachedConfig))) {
+        localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(freshConfig))
+        setConfig(freshConfig)
+      }
+    } catch (e: unknown) {
+      setError((e as Error).message)
+    }
   }, [])
+
+  useEffect(() => {
+    fetchConfig()
+  }, [fetchConfig])
 
   if (error) {
     return <div>Failed to load config: {error}</div>

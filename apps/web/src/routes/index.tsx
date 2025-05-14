@@ -1,13 +1,21 @@
 import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { Button } from '@filc/ui/components/button'
-import { Logo } from '@filc/ui/components/logo'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { Navigate, createFileRoute } from '@tanstack/react-router'
 
 const Index = () => {
   const authData = useAuth().useSession()
-  return authData.data ? <Protected /> : <Public />
+
+  if (authData.isPending) {
+    return <div>Loading...</div>
+  }
+
+  if (!authData.data) {
+    return <Navigate to='/auth' />
+  }
+
+  return <Protected />
 }
 
 const Protected = () => {
@@ -35,29 +43,6 @@ const Protected = () => {
       <Button variant='outline' onClick={() => auth.signOut()}>
         Sign out
       </Button>
-    </div>
-  )
-}
-
-const Public = () => {
-  const auth = useAuth()
-
-  const onLogin = async () => {
-    const result = await auth.signIn.social({
-      provider: 'microsoft',
-      callbackURL: `${window.location.origin}`,
-    })
-
-    if (result.error) {
-      return
-    }
-  }
-
-  return (
-    <div className='p-2'>
-      <Logo />
-      <h3>Welcome to Filc</h3>
-      <Button onClick={onLogin}>Login with Microsoft</Button>
     </div>
   )
 }
