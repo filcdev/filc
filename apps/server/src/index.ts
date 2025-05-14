@@ -3,7 +3,6 @@ import { appRouter } from '@filc/api/trpc/root'
 import { auth } from '@filc/auth'
 import { appConfig } from '@filc/config'
 import { createLogger } from '@filc/log'
-import { run } from '@filc/db/migrate'
 import { trpcServer } from '@hono/trpc-server'
 import { Hono } from 'hono'
 import { pinoLogger } from 'hono-pino'
@@ -99,7 +98,6 @@ app.onError((err, c) => {
     500
   )
 })
-
 
 Bun.serve({
   fetch: app.fetch,

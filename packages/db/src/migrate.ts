@@ -1,13 +1,19 @@
+// biome-ignore lint/correctness/noNodejsModules: this will not see the light of a browser
+import path from 'node:path'
+import { appConfig } from '@filc/config'
 import { createLogger } from '@filc/log'
 import { migrate } from 'drizzle-orm/bun-sql/migrator'
-import path from 'path'
 import { db } from '.'
-import { appConfig } from '@filc/config'
 
 const logger = createLogger('migrate')
 
 export const run = () => {
-  migrate(db, { migrationsFolder: appConfig.env === 'production' ? './drizzle' : path.join(__dirname, '../drizzle') })
+  migrate(db, {
+    migrationsFolder:
+      appConfig.env === 'production'
+        ? './drizzle'
+        : path.join(__dirname, '../drizzle'),
+  })
     .then(() => {
       logger.info('Migrations completed successfully')
     })
