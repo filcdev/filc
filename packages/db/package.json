@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./redis": "./src/redis.ts",
-    "./schema/*": "./src/schema/*"
+    "./schema/*": "./src/schema/*",
+    "./migrate": "./src/migrate.ts"
   },
   "scripts": {
     "check": "biome check --write",
