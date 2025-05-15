@@ -16,7 +16,7 @@
     "@filc/config": "workspace:*",
     "@filc/ui": "workspace:*",
     "@fontsource-variable/sora": "^5.2.5",
-    "@sentry/browser": "^9.18.0",
+    "@sentry/browser": "^9.19.0",
     "@tanstack/react-query": "^5.76.1",
     "@tanstack/react-router": "^1.120.3",
     "@trpc/client": "^11.1.2",
