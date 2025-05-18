@@ -3,7 +3,7 @@ import {
   pgSchema,
   text,
   timestamp,
-  uniqueIndex
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
 export const schema = pgSchema('auth')
@@ -117,11 +117,10 @@ export const member = schema.table('member', {
     })
     .notNull(),
   role: text().notNull(),
-  teamId: text()
-    .references(() => team.id, {
-      onDelete: 'cascade',
-      onUpdate: 'cascade',
-    }),
+  teamId: text().references(() => team.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade',
+  }),
   createdAt: timestamp().notNull().defaultNow(),
 })
 
@@ -141,11 +140,10 @@ export const invitation = schema.table(
       .notNull(),
     role: text().notNull(),
     status: text().notNull(),
-    teamId: text()
-      .references(() => team.id, {
-        onDelete: 'cascade',
-        onUpdate: 'cascade',
-      }),
+    teamId: text().references(() => team.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+    }),
     expiresAt: timestamp().notNull(),
     createdAt: timestamp().notNull().defaultNow(),
   },

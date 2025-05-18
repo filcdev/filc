@@ -182,7 +182,9 @@ export const lesson = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  t => [uniqueIndex().on(t.weekType, t.day, t.subjectId, t.teacherId, t.cohortId)]
+  t => [
+    uniqueIndex().on(t.weekType, t.day, t.subjectId, t.teacherId, t.cohortId),
+  ]
 )
 
 export const lessonPeriod = schema.table(
