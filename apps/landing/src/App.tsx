@@ -1,14 +1,13 @@
-import { Button } from '@filc/ui/components/button'
 import './App.css'
-import { Logo } from '@filc/ui/components/logo'
-import { useState } from 'preact/hooks'
-import { content } from './content'
 
-const App = () => {
-  const [language, setLanguage] = useState<'hu' | 'en'>('hu')
-  const get = (key: keyof (typeof content)['en']) => {
-    return content[language][key]
-  }
+import { Button } from '@filc/ui/components/button'
+import { Logo } from '@filc/ui/components/logo'
+import LanguageSwitcher from './LanguageSwitcher'
+import GithubTicker from './components/github'
+import { LanguageProvider, useLanguage } from './lib/language'
+
+const AppContent = () => {
+  const { get } = useLanguage()
 
   return (
     <div className='min-h-dvh flex flex-col'>
@@ -17,16 +16,7 @@ const App = () => {
           <Logo className='h-8 w-8 scale-150' />
           <span className='text-2xl font-bold'>Filc</span>
         </div>
-        <Button
-          variant='outline'
-          size='icon'
-          onClick={() => {
-            setLanguage(prev => (prev === 'hu' ? 'en' : 'hu'))
-          }}
-          className='text-sm'
-        >
-          {language === 'hu' ? '🇭🇺' : '🇬🇧'}
-        </Button>
+        <LanguageSwitcher />
       </header>
 
       <main className='flex-1 container mx-auto px-4 py-12 flex flex-col items-center justify-center text-center'>
@@ -38,13 +28,14 @@ const App = () => {
           {get('subtitle')}
         </h2>
 
-        <Button variant='default' size='lg' asChild={true}>
-          <a
-            href='https://app.filc.space'
-            className='bg-gradient-to-r from-primary to-secondary text-xl text-white hover:scale-105 hover:shadow-xl transition-all'
-          >
-            {get('button')}
-          </a>
+        <GithubTicker />
+
+        <Button
+          variant='default'
+          size='lg'
+          onClick={() => document.location.replace('https://app.filc.space')}
+        >
+          {get('button')}
         </Button>
       </main>
 
@@ -61,5 +52,11 @@ const App = () => {
     </div>
   )
 }
+
+const App = () => (
+  <LanguageProvider>
+    <AppContent />
+  </LanguageProvider>
+)
 
 export default App

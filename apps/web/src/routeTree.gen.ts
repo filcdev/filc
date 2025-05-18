@@ -10,10 +10,10 @@
 
 // Import Routes
 
+import { Route as appIndexImport } from './routes/(app)/index'
+import { Route as appRouteImport } from './routes/(app)/route'
 import { Route as rootRoute } from './routes/__root'
 import { Route as AuthImport } from './routes/auth'
-import { Route as appRouteImport } from './routes/(app)/route'
-import { Route as appIndexImport } from './routes/(app)/index'
 
 // Create/Update Routes
 

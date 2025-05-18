@@ -2,10 +2,13 @@
   "extends": "@filc/tsconfig/react.json",
   "include": ["src"],
   "exclude": ["node_modules"],
+  "baseUrl": ".",
   "compilerOptions": {
+    "jsxImportSource": "preact",
     "paths": {
       "react": ["./node_modules/preact/compat/"],
-      "react-dom": ["./node_modules/preact/compat/"]
+      "react-dom": ["./node_modules/preact/compat/"],
+      "@/*": ["./src/*"]
     }
   }
 }

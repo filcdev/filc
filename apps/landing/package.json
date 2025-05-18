@@ -13,6 +13,7 @@
   "dependencies": {
     "@filc/ui": "workspace:*",
     "@fontsource-variable/sora": "^5.2.5",
+    "dayjs": "^1.11.13",
     "preact": "^10.26.6",
     "react-icons": "^5.5.0"
   },

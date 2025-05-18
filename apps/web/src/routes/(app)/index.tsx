@@ -15,7 +15,12 @@ const Index = () => {
     return <div>bro is not logged in</div>
   }
 
-  return <div>bro is so logged in</div>
+  return (
+    <div>
+      <span>bro is so logged in</span>
+      <Protected />
+    </div>
+  )
 }
 
 const Protected = () => {
