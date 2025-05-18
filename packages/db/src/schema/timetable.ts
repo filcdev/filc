@@ -69,19 +69,19 @@ export const cohort = schema.table(
     id: uuid().defaultRandom().primaryKey().notNull(),
     year: integer().notNull(),
     designation: char().notNull(),
-    classMaster: text()
+    classMasterId: uuid()
       .notNull()
       .references(() => teacher.id, {
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    secondaryClassMaster: text()
+    secondaryClassMasterId: uuid()
       .notNull()
       .references(() => teacher.id, {
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    headquarters: text()
+    headquartersRoomId: uuid()
       .notNull()
       .references(() => room.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     createdAt: timestamp().notNull().defaultNow(),
@@ -98,7 +98,7 @@ export const group = schema.table(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
-    cohort: text()
+    cohortId: uuid()
       .notNull()
       .references(() => cohort.id, {
         onDelete: 'cascade',
@@ -155,25 +155,25 @@ export const lesson = schema.table(
     id: uuid().defaultRandom().primaryKey().notNull(),
     weekType: weekType().notNull(),
     day: day().notNull(),
-    subject: text()
+    subjectId: uuid()
       .notNull()
       .references(() => subject.id, {
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    teacher: text()
+    teacherId: uuid()
       .notNull()
       .references(() => teacher.id, {
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    cohort: text()
+    cohortId: uuid()
       .notNull()
       .references(() => cohort.id, {
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    room: text()
+    roomId: uuid()
       .notNull()
       .references(() => room.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     createdAt: timestamp().notNull().defaultNow(),
@@ -182,20 +182,22 @@ export const lesson = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  t => [uniqueIndex().on(t.weekType, t.day, t.subject, t.teacher, t.cohort)]
+  t => [
+    uniqueIndex().on(t.weekType, t.day, t.subjectId, t.teacherId, t.cohortId),
+  ]
 )
 
 export const lessonPeriod = schema.table(
   'lesson_period',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    lessonId: text()
+    lessonId: uuid()
       .notNull()
       .references(() => lesson.id, {
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    periodId: text()
+    periodId: uuid()
       .notNull()
       .references(() => period.id, {
         onDelete: 'cascade',
@@ -213,10 +215,10 @@ export const lessonPeriod = schema.table(
 
 export const substitution = schema.table('substitution', {
   id: uuid().defaultRandom().primaryKey().notNull(),
-  lesson: text()
+  lessonId: uuid()
     .notNull()
     .references(() => lesson.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-  teacher: text().references(() => teacher.id, {
+  teacherId: uuid().references(() => teacher.id, {
     onDelete: 'cascade',
     onUpdate: 'cascade',
   }),

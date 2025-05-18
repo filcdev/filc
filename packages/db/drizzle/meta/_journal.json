@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1744795537819,
-      "tag": "0000_faulty_ogun",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1744795582959,
-      "tag": "0001_abandoned_jubilee",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1744796618316,
-      "tag": "0002_shiny_ben_parker",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1744802399411,
-      "tag": "0003_yielding_justice",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1744803196959,
-      "tag": "0004_shocking_mephisto",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1744805125916,
-      "tag": "0005_oval_tomas",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1744892341507,
-      "tag": "0006_flimsy_scream",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1744896442850,
-      "tag": "0007_tense_morlun",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1744896542959,
-      "tag": "0008_uneven_morph",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1745405878898,
-      "tag": "0009_natural_vampiro",
+      "when": 1747608368554,
+      "tag": "0000_fair_absorbing_man",
       "breakpoints": true
     }
   ]

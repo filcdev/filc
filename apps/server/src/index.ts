@@ -2,6 +2,7 @@ import { createContext } from '@filc/api/trpc'
 import { appRouter } from '@filc/api/trpc/root'
 import { auth } from '@filc/auth'
 import { appConfig } from '@filc/config'
+import { run as migrateDatabase } from '@filc/db/migrate'
 import { createLogger } from '@filc/log'
 import { trpcServer } from '@hono/trpc-server'
 import { Hono } from 'hono'
@@ -98,6 +99,8 @@ app.onError((err, c) => {
     500
   )
 })
+
+migrateDatabase()
 
 Bun.serve({
   fetch: app.fetch,

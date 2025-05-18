@@ -2,7 +2,7 @@ import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { Button } from '@filc/ui/components/button'
 import { useQuery } from '@tanstack/react-query'
-import { Navigate, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 
 const Index = () => {
   const authData = useAuth().useSession()
@@ -12,10 +12,15 @@ const Index = () => {
   }
 
   if (!authData.data) {
-    return <Navigate to='/auth' />
+    return <div>bro is not logged in</div>
   }
 
-  return <Protected />
+  return (
+    <div>
+      <span>bro is so logged in</span>
+      <Protected />
+    </div>
+  )
 }
 
 const Protected = () => {
@@ -47,6 +52,6 @@ const Protected = () => {
   )
 }
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/(app)/')({
   component: Index,
 })
