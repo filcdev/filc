@@ -8,16 +8,17 @@ import {
   CardTitle,
 } from '@filc/ui/components/card'
 import { Logo } from '@filc/ui/components/logo'
-import { createFileRoute } from '@tanstack/react-router'
-import { FaMicrosoft } from 'react-icons/fa6'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
-const Auth = () => {
+const Page = () => {
   const auth = useAuth()
+  const navigate = useNavigate()
 
   const onLogin = async () => {
     const result = await auth.signIn.social({
       provider: 'microsoft',
       callbackURL: `${window.location.origin}`,
+      errorCallbackURL: `${window.location.origin}/auth/error`,
     })
 
     if (result.error) {
@@ -38,20 +39,19 @@ const Auth = () => {
           <div className='w-full max-w-xs'>
             <Card>
               <CardHeader>
-                <CardTitle>Log in to Filc</CardTitle>
+                <CardTitle>An error occured</CardTitle>
                 <CardDescription>
-                  This is a private app. Please log in with your Microsoft
-                  account.
+                  An unknown error occured while signing you in to Filc. Please
+                  try again in a few moments.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
                   variant='outline'
                   className='w-full cursor-pointer'
-                  onClick={onLogin}
+                  onClick={() => navigate({ to: '/auth', replace: true })}
                 >
-                  <FaMicrosoft />
-                  Login with Microsoft
+                  Try again
                 </Button>
               </CardContent>
             </Card>
@@ -65,6 +65,6 @@ const Auth = () => {
   )
 }
 
-export const Route = createFileRoute('/auth')({
-  component: Auth,
+export const Route = createFileRoute('/auth/error')({
+  component: Page,
 })

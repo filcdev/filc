@@ -5,7 +5,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
-  uuid
+  uuid,
 } from 'drizzle-orm/pg-core'
 import { cohort } from './timetable'
 
@@ -178,8 +178,8 @@ export const userRelations = relations(user, ({ one }) => ({
   cohort: one(cohort, {
     fields: [user.cohortId],
     references: [cohort.id],
-    relationName: 'timetable_cohort_students'
-  })
+    relationName: 'timetable_cohort_students',
+  }),
 }))
 
 export const authSchema = {

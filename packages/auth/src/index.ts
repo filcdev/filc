@@ -33,8 +33,8 @@ export const auth = betterAuth({
   },
   advanced: {
     database: {
-      generateId: false
-    }
+      generateId: false,
+    },
   },
   database: drizzleAdapter(db, {
     provider: 'pg',
