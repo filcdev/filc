@@ -8,10 +8,11 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check"
+    "check:ro": "biome check",
+    "tsc": "tsc"
   },
   "dependencies": {
-    "pino": "^9.6.0"
+    "pino": "^9.7.0"
   },
   "devDependencies": {
     "@filc/tsconfig": "workspace:*"

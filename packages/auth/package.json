@@ -9,13 +9,14 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check"
+    "check:ro": "biome check",
+    "tsc": "tsc"
   },
   "dependencies": {
     "@filc/config": "workspace:*",
     "@filc/db": "workspace:*",
     "@filc/log": "workspace:*",
-    "better-auth": "^1.2.7"
+    "better-auth": "^1.2.8"
   },
   "devDependencies": {
     "@filc/tsconfig": "workspace:*"

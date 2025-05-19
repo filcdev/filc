@@ -11,7 +11,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "check": "turbo run check",
-    "check:ro": "turbo run check:ro"
+    "check:ro": "turbo run check:ro",
+    "tsc": "turbo run tsc"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

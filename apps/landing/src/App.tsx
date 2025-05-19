@@ -34,6 +34,7 @@ const AppContent = () => {
           variant='default'
           size='lg'
           onClick={() => document.location.replace('https://app.filc.space')}
+          className='cursor-pointer'
         >
           {get('button')}
         </Button>

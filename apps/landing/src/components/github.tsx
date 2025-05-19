@@ -65,7 +65,7 @@ const GithubTicker = () => {
   }
 
   return (
-    <div className='flex items-center gap-2 mb-4'>
+    <div className='flex flex-col px-4 md:px-0 md:flex-row items-center gap-2 mb-4'>
       <FaGithub className='text-xl text-gray-600' />
       <span className='text-sm text-gray-600'>
         {get('github', {

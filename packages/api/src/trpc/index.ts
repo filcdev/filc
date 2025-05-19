@@ -1,3 +1,5 @@
+import { auth } from '@filc/auth'
+import { appConfig } from '@filc/config'
 import { createLogger } from '@filc/log'
 import { TRPCError, initTRPC } from '@trpc/server'
 import type { Context } from 'hono'
@@ -6,13 +8,20 @@ import { ZodError } from 'zod'
 
 const logger = createLogger('trpc')
 
+export type Variables = {
+  user: typeof auth.$Infer.Session.user | null
+  session: typeof auth.$Infer.Session.session | null
+}
+
 // @see https://trpc.io/docs/server/context
 export const createContext = (
   _opts: {
     req: Request
     resHeaders: Headers
   },
-  honoCtx: Context
+  honoCtx: Context<{
+    Variables: Variables
+  }>
 ) => {
   const session = honoCtx.get('session')
   const user = honoCtx.get('user')
@@ -20,6 +29,9 @@ export const createContext = (
   return {
     user,
     session,
+    logger,
+    auth,
+    req: _opts.req,
   }
 }
 
@@ -38,10 +50,10 @@ export const createCallerFactory = t.createCallerFactory
 
 export const createTRPCRouter = t.router
 
-const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
+const timingMiddleware = t.middleware(async ({ next, path }) => {
   const start = Date.now()
 
-  if (t._config.isDev) {
+  if (appConfig.env === 'development') {
     const delay = Math.floor(Math.random() * 1000) + 200
     await new Promise(resolve => setTimeout(resolve, delay))
   }
@@ -49,8 +61,13 @@ const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const result = await next()
 
   const end = Date.now()
-  logger.debug(
-    `(${ctx.session?.user ? ctx.session?.user.name : 'Anon'})[${path}]: ${result.ok ? 'OK' : 'ERR'}, took ${end - start}ms`
+  logger.info(
+    {
+      path,
+      duration: end - start,
+      ok: result.ok,
+    },
+    'trpc.request'
   )
 
   return result

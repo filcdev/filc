@@ -5,8 +5,8 @@ CREATE SCHEMA "timetable";
 CREATE TYPE "public"."day" AS ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday');--> statement-breakpoint
 CREATE TYPE "public"."week_type" AS ENUM('a', 'b', 'all', 'none');--> statement-breakpoint
 CREATE TABLE "auth"."account" (
-	"id" text PRIMARY KEY NOT NULL,
-	"userId" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"userId" uuid NOT NULL,
 	"accountId" text NOT NULL,
 	"providerId" text NOT NULL,
 	"accessToken" text,
@@ -21,28 +21,28 @@ CREATE TABLE "auth"."account" (
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."invitation" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"email" text NOT NULL,
-	"inviterId" text NOT NULL,
-	"organizationId" text NOT NULL,
+	"inviterId" uuid NOT NULL,
+	"organizationId" uuid NOT NULL,
 	"role" text NOT NULL,
 	"status" text NOT NULL,
-	"teamId" text,
+	"teamId" uuid,
 	"expiresAt" timestamp NOT NULL,
 	"createdAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."member" (
-	"id" text PRIMARY KEY NOT NULL,
-	"userId" text NOT NULL,
-	"organizationId" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"userId" uuid NOT NULL,
+	"organizationId" uuid NOT NULL,
 	"role" text NOT NULL,
-	"teamId" text,
+	"teamId" uuid,
 	"createdAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."organization" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
 	"logo" text,
@@ -51,28 +51,28 @@ CREATE TABLE "auth"."organization" (
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."session" (
-	"id" text PRIMARY KEY NOT NULL,
-	"userId" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"userId" uuid NOT NULL,
 	"token" text NOT NULL,
 	"expiresAt" timestamp NOT NULL,
 	"ipAddress" text,
 	"userAgent" text,
-	"impersonatedBy" text,
-	"activeOrganizationId" text,
+	"impersonatedBy" uuid,
+	"activeOrganizationId" uuid,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."team" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
-	"organizationId" text NOT NULL,
+	"organizationId" uuid NOT NULL,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."user" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
 	"emailVerified" boolean,
@@ -87,7 +87,7 @@ CREATE TABLE "auth"."user" (
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."verification" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
 	"expiresAt" timestamp NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE "auth"."verification" (
 CREATE TABLE "timetable"."cohort" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"year" integer NOT NULL,
-	"designation" char NOT NULL,
+	"designation" char(3) NOT NULL,
 	"classMasterId" uuid NOT NULL,
 	"secondaryClassMasterId" uuid NOT NULL,
 	"headquartersRoomId" uuid NOT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE "timetable"."room" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"shortName" text NOT NULL,
-	"capacity" text NOT NULL,
+	"capacity" integer NOT NULL,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );

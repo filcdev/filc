@@ -1,4 +1,4 @@
-import { createContext } from '@filc/api/trpc'
+import { type Variables, createContext } from '@filc/api/trpc'
 import { appRouter } from '@filc/api/trpc/root'
 import { auth } from '@filc/auth'
 import { appConfig } from '@filc/config'
@@ -10,10 +10,7 @@ import { pinoLogger } from 'hono-pino'
 import { cors } from 'hono/cors'
 
 const app = new Hono<{
-  Variables: {
-    user: typeof auth.$Infer.Session.user | null
-    session: typeof auth.$Infer.Session.session | null
-  }
+  Variables: Variables
 }>()
 
 const logger = createLogger('server')
@@ -44,7 +41,9 @@ app.use(
   '*',
   pinoLogger({
     pino: logger,
-    http: { onReqLevel: _ => 'debug' },
+    http: {
+      onResLevel: c => (c.error ? 'error' : 'trace'),
+    },
   })
 )
 

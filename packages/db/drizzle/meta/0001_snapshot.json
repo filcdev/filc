@@ -1,6 +1,6 @@
 {
-  "id": "ab1c95e2-9080-45dd-95dd-071c29900f50",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "cd8f6d3b-44b4-4c4a-a87a-919dddbe4e50",
+  "prevId": "ab1c95e2-9080-45dd-95dd-071c29900f50",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -652,6 +652,12 @@
         "banExpires": {
           "name": "banExpires",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cohortId": {
+          "name": "cohortId",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },

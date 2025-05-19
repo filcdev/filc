@@ -17,7 +17,7 @@ dist/
 .turbo
 
 # local database docker
-db.local/
+deploy/dev/*_data
 
 # Config files
 packages/config/config.json

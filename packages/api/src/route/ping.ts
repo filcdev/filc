@@ -11,7 +11,7 @@ export const pingRouter = {
   private: protectedProcedure.query(({ ctx }) => {
     return {
       message: 'pong',
-      user: ctx.session?.user,
+      user: ctx.user,
     }
   }),
 } satisfies TRPCRouterRecord

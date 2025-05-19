@@ -8,12 +8,15 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./logs:/var/log/nginx
+
   landing:
     image: ghcr.io/filcdev/filc:landing
     restart: unless-stopped
+
   web:
     image: ghcr.io/filcdev/filc:web
     restart: unless-stopped
+
   server:
     image: ghcr.io/filcdev/filc:server
     restart: unless-stopped

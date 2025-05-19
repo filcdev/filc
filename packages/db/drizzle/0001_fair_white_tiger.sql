@@ -1,0 +1,1 @@
+ALTER TABLE "auth"."user" ADD COLUMN "cohortId" uuid;

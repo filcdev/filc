@@ -8,12 +8,13 @@
   },
   "scripts": {
     "check": "biome check --write",
-    "check:ro": "biome check"
+    "check:ro": "biome check",
+    "tsc": "tsc"
   },
   "dependencies": {
     "@filc/log": "workspace:*",
     "@trpc/server": "^11.1.2",
-    "better-auth": "^1.2.7",
+    "better-auth": "^1.2.8",
     "drizzle-orm": "^0.43.1",
     "zod": "^3.24.4"
   },

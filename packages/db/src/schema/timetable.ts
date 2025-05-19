@@ -21,7 +21,7 @@ export const room = schema.table(
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     shortName: text().notNull(),
-    capacity: text().notNull(),
+    capacity: integer().notNull(),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
@@ -68,7 +68,7 @@ export const cohort = schema.table(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     year: integer().notNull(),
-    designation: char().notNull(),
+    designation: char({ length: 3 }).notNull(),
     classMasterId: uuid()
       .notNull()
       .references(() => teacher.id, {
@@ -98,6 +98,7 @@ export const group = schema.table(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
+    lessonId: uuid(),
     cohortId: uuid()
       .notNull()
       .references(() => cohort.id, {
@@ -154,7 +155,8 @@ export const lesson = schema.table(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     weekType: weekType().notNull(),
-    day: day().notNull(),
+    day: day().notNull(), // TODO: Ask Vince if we really need this if we have the timetableDayId :3
+    timetableDayId: uuid(),
     subjectId: uuid()
       .notNull()
       .references(() => subject.id, {
@@ -248,19 +250,41 @@ export const timetable = schema.table(
 export const timetableDay = schema.table('timetable_day', {
   id: uuid().defaultRandom().primaryKey().notNull(),
   day: day().notNull(),
+  timetableId: uuid(),
 })
 
-export const timetableDayRelations = relations(timetableDay, ({ many }) => ({
-  lessons: many(lesson),
-}))
+export const timetableDayRelations = relations(
+  timetableDay,
+  ({ many, one }) => ({
+    lessons: many(lesson, { relationName: 'timetable_day_lessons' }),
+    timetable: one(timetable, {
+      fields: [timetableDay.timetableId],
+      references: [timetable.id],
+      relationName: 'timetable_timetable_days',
+    }),
+  })
+)
 
 export const timetableRelations = relations(timetable, ({ many }) => ({
-  days: many(timetableDay),
+  days: many(timetableDay, { relationName: 'timetable_timetable_days' }), // This might look weird, but love is love.
 }))
 
-export const lessonRelations = relations(lesson, ({ many }) => ({
-  groups: many(group),
+export const lessonRelations = relations(lesson, ({ many, one }) => ({
+  groups: many(group, { relationName: 'timetable_lesson_groups' }),
   periods: many(lessonPeriod),
+  day: one(timetableDay, {
+    fields: [lesson.timetableDayId],
+    references: [timetableDay.id],
+    relationName: 'timetable_day_lessons',
+  }),
+}))
+
+export const groupRelations = relations(group, ({ one }) => ({
+  lesson: one(lesson, {
+    fields: [group.lessonId],
+    references: [lesson.id],
+    relationName: 'timetable_lesson_groups',
+  }),
 }))
 
 export const periodRelations = relations(period, ({ many }) => ({
@@ -279,5 +303,5 @@ export const lessonPeriodRelations = relations(lessonPeriod, ({ one }) => ({
 }))
 
 export const cohortRelations = relations(cohort, ({ many }) => ({
-  students: many(user),
+  students: many(user, { relationName: 'timetable_cohort_students' }),
 }))
