@@ -20,7 +20,7 @@ export const createContext = (
   },
   honoCtx: Context<{
     Variables: Variables
-  }>,
+  }>
 ) => {
   const session = honoCtx.get('session')
   const user = honoCtx.get('user')
