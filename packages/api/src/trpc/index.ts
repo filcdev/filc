@@ -1,3 +1,4 @@
+import type { auth } from "@filc/auth";
 import { createLogger } from "@filc/log";
 import { TRPCError, initTRPC } from "@trpc/server";
 import type { Context } from "hono";
@@ -8,13 +9,20 @@ const logger = createLogger("trpc");
 
 type Logger = typeof logger;
 
+export type Variables = {
+  user: typeof auth.$Infer.Session.user | null;
+  session: typeof auth.$Infer.Session.session | null;
+};
+
 // @see https://trpc.io/docs/server/context
 export const createContext = (
   _opts: {
     req: Request;
     resHeaders: Headers;
   },
-  honoCtx: Context,
+  honoCtx: Context<{
+    Variables: Variables;
+  }>,
   logger: Logger,
 ) => {
   const session = honoCtx.get("session");
