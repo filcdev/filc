@@ -41,7 +41,9 @@ app.use(
   '*',
   pinoLogger({
     pino: logger,
-    http: { onReqLevel: _ => 'debug' },
+    http: {
+      onResLevel: c => (c.error ? 'error' : 'trace'),
+    },
   })
 )
 

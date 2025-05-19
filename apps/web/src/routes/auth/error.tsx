@@ -1,4 +1,3 @@
-import { useAuth } from '@/lib/auth'
 import { Button } from '@filc/ui/components/button'
 import {
   Card,
