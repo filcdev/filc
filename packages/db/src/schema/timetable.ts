@@ -21,7 +21,7 @@ export const room = schema.table(
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
     shortName: text().notNull(),
-    capacity: text().notNull(),
+    capacity: integer().notNull(),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
@@ -68,7 +68,7 @@ export const cohort = schema.table(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     year: integer().notNull(),
-    designation: char().notNull(),
+    designation: char({ length: 3 }).notNull(),
     classMasterId: uuid()
       .notNull()
       .references(() => teacher.id, {

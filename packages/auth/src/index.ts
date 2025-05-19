@@ -31,9 +31,15 @@ export const auth = betterAuth({
       tenantId: appConfig.entra.tenantId,
     },
   },
+  advanced: {
+    database: {
+      generateId: false
+    }
+  },
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: authSchema,
+    debugLogs: appConfig.env === 'development',
   }),
   plugin: [
     admin(),

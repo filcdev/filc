@@ -1,5 +1,5 @@
 {
-  "id": "0d4a182b-a67b-422a-9a93-89590801c675",
+  "id": "ab1c95e2-9080-45dd-95dd-071c29900f50",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -10,13 +10,14 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "userId": {
           "name": "userId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -112,8 +113,12 @@
           "tableFrom": "account",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -130,9 +135,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "email": {
           "name": "email",
@@ -142,13 +148,13 @@
         },
         "inviterId": {
           "name": "inviterId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "organizationId": {
           "name": "organizationId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -166,7 +172,7 @@
         },
         "teamId": {
           "name": "teamId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -222,8 +228,12 @@
           "tableFrom": "invitation",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": ["inviterId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "inviterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -232,8 +242,12 @@
           "tableFrom": "invitation",
           "tableTo": "organization",
           "schemaTo": "auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -242,8 +256,12 @@
           "tableFrom": "invitation",
           "tableTo": "team",
           "schemaTo": "auth",
-          "columnsFrom": ["teamId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "teamId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -260,19 +278,20 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "userId": {
           "name": "userId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "organizationId": {
           "name": "organizationId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -284,7 +303,7 @@
         },
         "teamId": {
           "name": "teamId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -303,8 +322,12 @@
           "tableFrom": "member",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -313,8 +336,12 @@
           "tableFrom": "member",
           "tableTo": "organization",
           "schemaTo": "auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -323,8 +350,12 @@
           "tableFrom": "member",
           "tableTo": "team",
           "schemaTo": "auth",
-          "columnsFrom": ["teamId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "teamId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -341,9 +372,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "name": {
           "name": "name",
@@ -407,13 +439,14 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "userId": {
           "name": "userId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -443,13 +476,13 @@
         },
         "impersonatedBy": {
           "name": "impersonatedBy",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "activeOrganizationId": {
           "name": "activeOrganizationId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -506,8 +539,12 @@
           "tableFrom": "session",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -524,9 +561,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "name": {
           "name": "name",
@@ -536,7 +574,7 @@
         },
         "organizationId": {
           "name": "organizationId",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -578,8 +616,12 @@
           "tableFrom": "team",
           "tableTo": "organization",
           "schemaTo": "auth",
-          "columnsFrom": ["organizationId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organizationId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -596,9 +638,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "name": {
           "name": "name",
@@ -686,7 +729,9 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -699,9 +744,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "identifier": {
           "name": "identifier",
@@ -779,7 +825,7 @@
         },
         "designation": {
           "name": "designation",
-          "type": "char",
+          "type": "char(3)",
           "primaryKey": false,
           "notNull": true
         },
@@ -845,8 +891,12 @@
           "tableFrom": "cohort",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": ["classMasterId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "classMasterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -855,8 +905,12 @@
           "tableFrom": "cohort",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": ["secondaryClassMasterId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "secondaryClassMasterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -865,8 +919,12 @@
           "tableFrom": "cohort",
           "tableTo": "room",
           "schemaTo": "timetable",
-          "columnsFrom": ["headquartersRoomId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "headquartersRoomId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -938,8 +996,12 @@
           "tableFrom": "group",
           "tableTo": "cohort",
           "schemaTo": "timetable",
-          "columnsFrom": ["cohortId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "cohortId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1061,8 +1123,12 @@
           "tableFrom": "lesson",
           "tableTo": "subject",
           "schemaTo": "timetable",
-          "columnsFrom": ["subjectId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "subjectId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1071,8 +1137,12 @@
           "tableFrom": "lesson",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": ["teacherId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "teacherId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1081,8 +1151,12 @@
           "tableFrom": "lesson",
           "tableTo": "cohort",
           "schemaTo": "timetable",
-          "columnsFrom": ["cohortId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "cohortId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1091,8 +1165,12 @@
           "tableFrom": "lesson",
           "tableTo": "room",
           "schemaTo": "timetable",
-          "columnsFrom": ["roomId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "roomId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1177,8 +1255,12 @@
           "tableFrom": "lesson_period",
           "tableTo": "lesson",
           "schemaTo": "timetable",
-          "columnsFrom": ["lessonId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "lessonId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1187,8 +1269,12 @@
           "tableFrom": "lesson_period",
           "tableTo": "period",
           "schemaTo": "timetable",
-          "columnsFrom": ["periodId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "periodId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1292,7 +1378,7 @@
         },
         "capacity": {
           "name": "capacity",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -1463,8 +1549,12 @@
           "tableFrom": "substitution",
           "tableTo": "lesson",
           "schemaTo": "timetable",
-          "columnsFrom": ["lessonId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "lessonId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1473,8 +1563,12 @@
           "tableFrom": "substitution",
           "tableTo": "teacher",
           "schemaTo": "timetable",
-          "columnsFrom": ["teacherId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "teacherId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1681,7 +1775,12 @@
     "public.week_type": {
       "name": "week_type",
       "schema": "public",
-      "values": ["a", "b", "all", "none"]
+      "values": [
+        "a",
+        "b",
+        "all",
+        "none"
+      ]
     }
   },
   "schemas": {
