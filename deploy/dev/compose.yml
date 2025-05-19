@@ -1,0 +1,29 @@
+include:
+  - db.compose.yml
+
+services:
+  landing:
+    build:
+      context: ../..
+      dockerfile: apps/landing/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 4001:80
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 4000:80
+
+  server:
+    build:
+      context: ../..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    volumes:
+      - ../../packages/config/config.json:/etc/filc/config.json

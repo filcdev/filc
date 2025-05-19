@@ -1,3 +1,6 @@
 [tools]
-bun = "1.2.13"
-node = "latest"
+bun = '1.2.13'
+node = 'latest'
+
+[env]
+COMPOSE_BAKE = 'true'
