@@ -41,8 +41,17 @@ export const auth = betterAuth({
     schema: authSchema,
     debugLogs: appConfig.env === 'development',
   }),
-  plugin: [
-    admin(),
+  plugins: [
+    admin({
+      adminRoles: ['root'],
+      roles: {
+        root,
+        admin_role,
+        editor,
+        teacher,
+        student,
+      },
+    }),
     organization({
       ac,
       roles: {

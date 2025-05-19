@@ -15,7 +15,8 @@
     "dev": "npm exec drizzle-kit studio",
     "generate": "drizzle-kit generate --dialect postgresql --schema ./src/schema",
     "migrate": "bun run src/migrate.ts",
-    "studio": "npm exec drizzle-kit studio"
+    "studio": "npm exec drizzle-kit studio",
+    "tsc": "tsc"
   },
   "dependencies": {
     "@filc/config": "workspace:*",

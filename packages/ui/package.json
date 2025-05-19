@@ -39,6 +39,7 @@
   "scripts": {
     "check": "biome check --write",
     "check:ro": "biome check",
-    "add": "bun x shadcn@latest add"
+    "add": "bun x shadcn@latest add",
+    "tsc": "tsc"
   }
 }

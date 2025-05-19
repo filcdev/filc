@@ -1,4 +1,4 @@
-import type { auth } from '@filc/auth'
+import { auth } from '@filc/auth'
 import { createLogger } from '@filc/log'
 import { TRPCError, initTRPC } from '@trpc/server'
 import type { Context } from 'hono'
@@ -29,6 +29,7 @@ export const createContext = (
     user,
     session,
     logger,
+    auth,
   }
 }
 

@@ -11,7 +11,6 @@ import { Logo } from '@filc/ui/components/logo'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 const Page = () => {
-  const auth = useAuth()
   const navigate = useNavigate()
 
   return (
