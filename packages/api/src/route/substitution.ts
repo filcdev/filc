@@ -13,12 +13,16 @@ export const substitutionRouter = createTRPCRouter({
         teacherId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         await db.insert(substitution).values(input);
-      } catch (_error) {
+      } catch (error) {
+        const msg = "Failed to create substitution";
+
+        ctx.logger.error(`${msg}: ${error}`);
+
         throw new TRPCError({
-          message: "Failed to create substitution.",
+          message: msg,
           code: "INTERNAL_SERVER_ERROR",
         });
       }
@@ -30,34 +34,44 @@ export const substitutionRouter = createTRPCRouter({
         teacherId: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         await db.update(substitution).set(input);
-      } catch (_error) {
+      } catch (error) {
+        const msg = "Failed to update substitute teacher.";
+
+        ctx.logger.error(`${msg}: ${error}`);
+
         throw new TRPCError({
-          message: "Failed to update substitute teacher.",
+          message: msg,
           code: "INTERNAL_SERVER_ERROR",
         });
       }
     }),
 
-  delete: protectedProcedure.input(z.string()).mutation(async ({ input }) => {
-    try {
-      await db
-        .delete(substitution)
-        .where(eq(substitution.id, input))
-        .returning();
-    } catch (_error) {
-      throw new TRPCError({
-        message: "Failed to delete substitution.",
-        code: "INTERNAL_SERVER_ERROR",
-      });
-    }
-  }),
+  delete: protectedProcedure
+    .input(z.string())
+    .mutation(async ({ input, ctx }) => {
+      try {
+        await db
+          .delete(substitution)
+          .where(eq(substitution.id, input))
+          .returning();
+      } catch (error) {
+        const msg = "Failed to delete substitution.";
+
+        ctx.logger.error(`${msg}: ${error}`);
+
+        throw new TRPCError({
+          message: msg,
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
+    }),
 
   getByLesson: protectedProcedure
     .input(z.string())
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         await db
           .select()
@@ -66,9 +80,13 @@ export const substitutionRouter = createTRPCRouter({
           .limit(1);
 
         // TODO: Maybe join this later?
-      } catch (_error) {
+      } catch (error) {
+        const msg = "Failed to get substitution for lesson.";
+
+        ctx.logger.error(`${msg}: ${error}`);
+
         throw new TRPCError({
-          message: "Failed to get substitution for lesson.",
+          message: msg,
           code: "INTERNAL_SERVER_ERROR",
         });
       }
@@ -76,7 +94,7 @@ export const substitutionRouter = createTRPCRouter({
 
   getByTeacher: protectedProcedure
     .input(z.string())
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         await db
           .select()
@@ -84,7 +102,11 @@ export const substitutionRouter = createTRPCRouter({
           .where(eq(substitution.teacherId, input));
 
         // TODO: Maybe join this later?
-      } catch (_error) {
+      } catch (error) {
+        const msg = "Failed to get substitutions for teacher.";
+
+        ctx.logger.error(`${msg}: ${error}`);
+
         throw new TRPCError({
           message: "Failed to get substitutions for teacher.",
           code: "INTERNAL_SERVER_ERROR",
