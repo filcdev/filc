@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm'
 import {
   boolean,
   pgSchema,
@@ -6,6 +7,7 @@ import {
   uniqueIndex,
   uuid
 } from 'drizzle-orm/pg-core'
+import { cohort } from './timetable'
 
 export const schema = pgSchema('auth')
 
@@ -21,6 +23,7 @@ export const user = schema.table(
     banned: boolean(),
     banReason: text(),
     banExpires: timestamp(),
+    cohortId: uuid(),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
@@ -170,6 +173,14 @@ export const team = schema.table(
   },
   t => [uniqueIndex().on(t.name)]
 )
+
+export const userRelations = relations(user, ({ one }) => ({
+  cohort: one(cohort, {
+    fields: [user.cohortId],
+    references: [cohort.id],
+    relationName: 'timetable_cohort_students'
+  })
+}))
 
 export const authSchema = {
   user,

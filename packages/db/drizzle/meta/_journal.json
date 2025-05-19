@@ -8,6 +8,13 @@
       "when": 1747638016291,
       "tag": "0000_shocking_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1747638584796,
+      "tag": "0001_fair_white_tiger",
+      "breakpoints": true
     }
   ]
 }

@@ -279,5 +279,5 @@ export const lessonPeriodRelations = relations(lessonPeriod, ({ one }) => ({
 }))
 
 export const cohortRelations = relations(cohort, ({ many }) => ({
-  students: many(user),
+  students: many(user, { relationName: 'timetable_cohort_students' }),
 }))
