@@ -1,3 +1,4 @@
+import { Loader } from '@/components/loader'
 import { useAuth } from '@/lib/auth'
 import { useTRPC } from '@/lib/trpc'
 import { Button } from '@filc/ui/components/button'
@@ -8,7 +9,7 @@ const Index = () => {
   const authData = useAuth().useSession()
 
   if (authData.isPending) {
-    return <div>Loading...</div>
+    return <Loader />
   }
 
   if (!authData.data) {
@@ -34,7 +35,8 @@ const Protected = () => {
   )
 
   if (ping.isLoading || authData.isPending) {
-    return <div>Loading...</div>
+    // TODO: skeleton loader here
+    return null
   }
 
   if (ping.isError) {
