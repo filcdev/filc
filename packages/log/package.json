@@ -11,7 +11,7 @@
     "check:ro": "biome check"
   },
   "dependencies": {
-    "pino": "^9.6.0"
+    "pino": "^9.7.0"
   },
   "devDependencies": {
     "@filc/tsconfig": "workspace:*"

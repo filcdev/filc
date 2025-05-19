@@ -15,7 +15,7 @@
     "@filc/config": "workspace:*",
     "@filc/db": "workspace:*",
     "@filc/log": "workspace:*",
-    "better-auth": "^1.2.7"
+    "better-auth": "^1.2.8"
   },
   "devDependencies": {
     "@filc/tsconfig": "workspace:*"
