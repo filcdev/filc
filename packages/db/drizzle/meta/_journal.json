@@ -15,27 +15,6 @@
       "when": 1747638584796,
       "tag": "0001_fair_white_tiger",
       "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1747641317985,
-      "tag": "0002_loose_caretaker",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1747641655855,
-      "tag": "0003_organic_frog_thor",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1747641947552,
-      "tag": "0004_hot_adam_warlock",
-      "breakpoints": true
     }
   ]
 }
