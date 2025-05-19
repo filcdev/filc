@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations } from 'drizzle-orm'
 import {
   boolean,
   char,
@@ -9,14 +9,14 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from "drizzle-orm/pg-core";
-import { enumToPgEnum } from "../utils";
-import { user } from "./auth";
+} from 'drizzle-orm/pg-core'
+import { enumToPgEnum } from '../utils'
+import { user } from './auth'
 
-export const schema = pgSchema("timetable");
+export const schema = pgSchema('timetable')
 
 export const room = schema.table(
-  "room",
+  'room',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
@@ -28,11 +28,11 @@ export const room = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.name), uniqueIndex().on(t.shortName)],
-);
+  t => [uniqueIndex().on(t.name), uniqueIndex().on(t.shortName)]
+)
 
 export const subject = schema.table(
-  "subject",
+  'subject',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
@@ -44,11 +44,11 @@ export const subject = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.name)],
-);
+  t => [uniqueIndex().on(t.name)]
+)
 
 export const teacher = schema.table(
-  "teacher",
+  'teacher',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
@@ -60,11 +60,11 @@ export const teacher = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.name), uniqueIndex().on(t.email)],
-);
+  t => [uniqueIndex().on(t.name), uniqueIndex().on(t.email)]
+)
 
 export const cohort = schema.table(
-  "cohort",
+  'cohort',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     year: integer().notNull(),
@@ -72,29 +72,29 @@ export const cohort = schema.table(
     classMasterId: uuid()
       .notNull()
       .references(() => teacher.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     secondaryClassMasterId: uuid()
       .notNull()
       .references(() => teacher.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     headquartersRoomId: uuid()
       .notNull()
-      .references(() => room.id, { onDelete: "cascade", onUpdate: "cascade" }),
+      .references(() => room.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.year, t.designation)],
-);
+  t => [uniqueIndex().on(t.year, t.designation)]
+)
 
 export const group = schema.table(
-  "group",
+  'group',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
@@ -102,8 +102,8 @@ export const group = schema.table(
     cohortId: uuid()
       .notNull()
       .references(() => cohort.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
@@ -111,32 +111,32 @@ export const group = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.name)],
-);
+  t => [uniqueIndex().on(t.name)]
+)
 
 export enum WeekType {
-  A = "a",
-  B = "b",
-  All = "all",
-  None = "none",
+  A = 'a',
+  B = 'b',
+  All = 'all',
+  None = 'none',
 }
 
-export const weekType = pgEnum("week_type", enumToPgEnum(WeekType));
+export const weekType = pgEnum('week_type', enumToPgEnum(WeekType))
 
 export enum Day {
-  Monday = "monday",
-  Tuesday = "tuesday",
-  Wednesday = "wednesday",
-  Thursday = "thursday",
-  Friday = "friday",
-  Saturday = "saturday",
-  Sunday = "sunday",
+  Monday = 'monday',
+  Tuesday = 'tuesday',
+  Wednesday = 'wednesday',
+  Thursday = 'thursday',
+  Friday = 'friday',
+  Saturday = 'saturday',
+  Sunday = 'sunday',
 }
 
-export const day = pgEnum("day", enumToPgEnum(Day));
+export const day = pgEnum('day', enumToPgEnum(Day))
 
 export const period = schema.table(
-  "period",
+  'period',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     startTime: timestamp().notNull(),
@@ -147,11 +147,11 @@ export const period = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.startTime, t.endTime)],
-);
+  t => [uniqueIndex().on(t.startTime, t.endTime)]
+)
 
 export const lesson = schema.table(
-  "lesson",
+  'lesson',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     weekType: weekType().notNull(),
@@ -160,50 +160,50 @@ export const lesson = schema.table(
     subjectId: uuid()
       .notNull()
       .references(() => subject.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     teacherId: uuid()
       .notNull()
       .references(() => teacher.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     cohortId: uuid()
       .notNull()
       .references(() => cohort.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     roomId: uuid()
       .notNull()
-      .references(() => room.id, { onDelete: "cascade", onUpdate: "cascade" }),
+      .references(() => room.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     createdAt: timestamp().notNull().defaultNow(),
     updatedAt: timestamp()
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [
+  t => [
     uniqueIndex().on(t.weekType, t.day, t.subjectId, t.teacherId, t.cohortId),
-  ],
-);
+  ]
+)
 
 export const lessonPeriod = schema.table(
-  "lesson_period",
+  'lesson_period',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     lessonId: uuid()
       .notNull()
       .references(() => lesson.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     periodId: uuid()
       .notNull()
       .references(() => period.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
       }),
     isStart: boolean().notNull().default(false),
     createdAt: timestamp().notNull().defaultNow(),
@@ -212,27 +212,27 @@ export const lessonPeriod = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.lessonId, t.periodId)],
-);
+  t => [uniqueIndex().on(t.lessonId, t.periodId)]
+)
 
-export const substitution = schema.table("substitution", {
+export const substitution = schema.table('substitution', {
   id: uuid().defaultRandom().primaryKey().notNull(),
   lessonId: uuid()
     .notNull()
-    .references(() => lesson.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    .references(() => lesson.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   teacherId: uuid().references(() => teacher.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
+    onDelete: 'cascade',
+    onUpdate: 'cascade',
   }),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp()
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+})
 
 export const timetable = schema.table(
-  "timetable",
+  'timetable',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     name: text().notNull(),
@@ -244,52 +244,52 @@ export const timetable = schema.table(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [uniqueIndex().on(t.name)],
-);
+  t => [uniqueIndex().on(t.name)]
+)
 
-export const timetableDay = schema.table("timetable_day", {
+export const timetableDay = schema.table('timetable_day', {
   id: uuid().defaultRandom().primaryKey().notNull(),
   day: day().notNull(),
   timetableId: uuid(),
-});
+})
 
 export const timetableDayRelations = relations(
   timetableDay,
   ({ many, one }) => ({
-    lessons: many(lesson, { relationName: "timetable_day_lessons" }),
+    lessons: many(lesson, { relationName: 'timetable_day_lessons' }),
     timetable: one(timetable, {
       fields: [timetableDay.timetableId],
       references: [timetable.id],
-      relationName: "timetable_timetable_days",
+      relationName: 'timetable_timetable_days',
     }),
-  }),
-);
+  })
+)
 
 export const timetableRelations = relations(timetable, ({ many }) => ({
-  days: many(timetableDay, { relationName: "timetable_timetable_days" }), // This might look weird, but love is love.
-}));
+  days: many(timetableDay, { relationName: 'timetable_timetable_days' }), // This might look weird, but love is love.
+}))
 
 export const lessonRelations = relations(lesson, ({ many, one }) => ({
-  groups: many(group, { relationName: "timetable_lesson_groups" }),
+  groups: many(group, { relationName: 'timetable_lesson_groups' }),
   periods: many(lessonPeriod),
   day: one(timetableDay, {
     fields: [lesson.timetableDayId],
     references: [timetableDay.id],
-    relationName: "timetable_day_lessons",
+    relationName: 'timetable_day_lessons',
   }),
-}));
+}))
 
 export const groupRelations = relations(group, ({ one }) => ({
   lesson: one(lesson, {
     fields: [group.lessonId],
     references: [lesson.id],
-    relationName: "timetable_lesson_groups",
+    relationName: 'timetable_lesson_groups',
   }),
-}));
+}))
 
 export const periodRelations = relations(period, ({ many }) => ({
   lessons: many(lessonPeriod),
-}));
+}))
 
 export const lessonPeriodRelations = relations(lessonPeriod, ({ one }) => ({
   lesson: one(lesson, {
@@ -300,8 +300,8 @@ export const lessonPeriodRelations = relations(lessonPeriod, ({ one }) => ({
     fields: [lessonPeriod.periodId],
     references: [period.id],
   }),
-}));
+}))
 
 export const cohortRelations = relations(cohort, ({ many }) => ({
-  students: many(user, { relationName: "timetable_cohort_students" }),
-}));
+  students: many(user, { relationName: 'timetable_cohort_students' }),
+}))
