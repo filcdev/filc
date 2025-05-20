@@ -24,10 +24,12 @@ import {
 } from '@filc/ui/components/select'
 import { AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import type { lesson as Lesson } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 
 interface LessonFormProps {
-  lesson: any
-  onSave: (lesson: any) => void
+  lesson: Insert<typeof Lesson>
+  onSave: (lesson: Insert<typeof Lesson>) => void
   onCancel: () => void
   viewMode?: 'cohort' | 'teacher' | 'room'
 }
@@ -229,8 +231,8 @@ export function LessonForm({
           <AlertTitle>Potential Conflicts</AlertTitle>
           <AlertDescription>
             <ul className='list-disc pl-5 space-y-1'>
-              {conflicts.map((conflict, index) => (
-                <li key={index}>{conflict.message}</li>
+              {conflicts.map((conflict) => (
+                <li key={conflict}>{conflict.message}</li>
               ))}
             </ul>
           </AlertDescription>

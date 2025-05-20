@@ -1,7 +1,7 @@
 import { appConfig } from '@filc/config'
 import { db } from '@filc/db'
 import { secondaryStorage } from '@filc/db/redis'
-import { authSchema } from '@filc/db/schema/auth.ts'
+import { authSchema } from '@filc/db/schema/auth'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, organization } from 'better-auth/plugins'

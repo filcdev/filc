@@ -14,6 +14,7 @@
     "@filc/api": "workspace:*",
     "@filc/auth": "workspace:*",
     "@filc/config": "workspace:*",
+    "@filc/db": "workspace:*",
     "@filc/ui": "workspace:*",
     "@fontsource-variable/sora": "^5.2.5",
     "@sentry/browser": "^9.19.0",

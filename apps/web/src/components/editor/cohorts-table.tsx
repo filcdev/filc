@@ -1,7 +1,3 @@
-'use client'
-
-import type React from 'react'
-
 import { mockCohorts, mockRooms, mockTeachers } from '@/lib/editor/mock'
 import { Button } from '@filc/ui/components/button'
 import {
@@ -29,11 +25,13 @@ import {
 } from '@filc/ui/components/table'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import type { cohort as Cohort } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 
 export function CohortsTable() {
-  const [cohorts, setCohorts] = useState(mockCohorts)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCohort, setEditingCohort] = useState<any | null>(null)
+  const [cohorts, setCohorts] = useState<Insert<typeof Cohort>[]>(mockCohorts)
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [editingCohort, setEditingCohort] = useState<Insert<typeof Cohort> | null>(null)
 
   const handleAddCohort = () => {
     setEditingCohort({
@@ -47,7 +45,7 @@ export function CohortsTable() {
     setIsDialogOpen(true)
   }
 
-  const handleEditCohort = (cohort: any) => {
+  const handleEditCohort = (cohort: Insert<typeof Cohort>) => {
     setEditingCohort(cohort)
     setIsDialogOpen(true)
   }
@@ -59,23 +57,16 @@ export function CohortsTable() {
   const handleSaveCohort = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingCohort.id) {
-      // Update existing cohort
+    if (editingCohort?.id) {
       setCohorts(
         cohorts.map(cohort =>
           cohort.id === editingCohort.id ? editingCohort : cohort
         )
       )
-    } else {
-      // Add new cohort
+    } else if (editingCohort) {
       setCohorts([
         ...cohorts,
-        {
-          ...editingCohort,
-          id: Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        editingCohort,
       ])
     }
 
@@ -135,7 +126,7 @@ export function CohortsTable() {
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => handleDeleteCohort(cohort.id)}
+                  onClick={() => handleDeleteCohort(cohort.id ?? '')}
                 >
                   <Trash2 className='h-4 w-4' />
                 </Button>
@@ -162,10 +153,10 @@ export function CohortsTable() {
                   type='number'
                   value={editingCohort?.year || new Date().getFullYear()}
                   onChange={e =>
-                    setEditingCohort({
-                      ...editingCohort,
+                    setEditingCohort(prev => prev ? {
+                      ...prev,
                       year: Number.parseInt(e.target.value),
-                    })
+                    } : null)
                   }
                   required={true}
                 />
@@ -177,10 +168,10 @@ export function CohortsTable() {
                   id='designation'
                   value={editingCohort?.designation || ''}
                   onChange={e =>
-                    setEditingCohort({
-                      ...editingCohort,
+                    setEditingCohort(prev => prev ? {
+                      ...prev,
                       designation: e.target.value,
-                    })
+                    } : null)
                   }
                   maxLength={3}
                   required={true}
@@ -193,7 +184,7 @@ export function CohortsTable() {
               <Select
                 value={editingCohort?.classMasterId || ''}
                 onValueChange={value =>
-                  setEditingCohort({ ...editingCohort, classMasterId: value })
+                  setEditingCohort(prev => prev ? { ...prev, classMasterId: value } : null)
                 }
                 required={true}
               >
@@ -217,10 +208,10 @@ export function CohortsTable() {
               <Select
                 value={editingCohort?.secondaryClassMasterId || ''}
                 onValueChange={value =>
-                  setEditingCohort({
-                    ...editingCohort,
+                  setEditingCohort(prev => prev ? {
+                    ...prev,
                     secondaryClassMasterId: value,
-                  })
+                  } : null)
                 }
                 required={true}
               >
@@ -242,10 +233,10 @@ export function CohortsTable() {
               <Select
                 value={editingCohort?.headquartersRoomId || ''}
                 onValueChange={value =>
-                  setEditingCohort({
-                    ...editingCohort,
+                  setEditingCohort(prev => prev ? {
+                    ...prev,
                     headquartersRoomId: value,
-                  })
+                  } : null)
                 }
                 required={true}
               >
