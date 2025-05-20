@@ -10,11 +10,12 @@
 
 // Import Routes
 
-import { Route as appIndexImport } from './routes/(app)/index'
-import { Route as appRouteImport } from './routes/(app)/route'
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthErrorImport } from './routes/auth/error'
+import { Route as appRouteImport } from './routes/(app)/route'
 import { Route as AuthIndexImport } from './routes/auth/index'
+import { Route as appIndexImport } from './routes/(app)/index'
+import { Route as AuthErrorImport } from './routes/auth/error'
+import { Route as appTimetablePageImport } from './routes/(app)/timetable/page'
 
 // Create/Update Routes
 
@@ -39,6 +40,12 @@ const AuthErrorRoute = AuthErrorImport.update({
   id: '/auth/error',
   path: '/auth/error',
   getParentRoute: () => rootRoute,
+} as any)
+
+const appTimetablePageRoute = appTimetablePageImport.update({
+  id: '/timetable/page',
+  path: '/timetable/page',
+  getParentRoute: () => appRouteRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -73,6 +80,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexImport
       parentRoute: typeof rootRoute
     }
+    '/(app)/timetable/page': {
+      id: '/(app)/timetable/page'
+      path: '/timetable/page'
+      fullPath: '/timetable/page'
+      preLoaderRoute: typeof appTimetablePageImport
+      parentRoute: typeof appRouteImport
+    }
   }
 }
 
@@ -80,10 +94,12 @@ declare module '@tanstack/react-router' {
 
 interface appRouteRouteChildren {
   appIndexRoute: typeof appIndexRoute
+  appTimetablePageRoute: typeof appTimetablePageRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
   appIndexRoute: appIndexRoute,
+  appTimetablePageRoute: appTimetablePageRoute,
 }
 
 const appRouteRouteWithChildren = appRouteRoute._addFileChildren(
@@ -94,12 +110,14 @@ export interface FileRoutesByFullPath {
   '/': typeof appIndexRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth': typeof AuthIndexRoute
+  '/timetable/page': typeof appTimetablePageRoute
 }
 
 export interface FileRoutesByTo {
   '/auth/error': typeof AuthErrorRoute
   '/': typeof appIndexRoute
   '/auth': typeof AuthIndexRoute
+  '/timetable/page': typeof appTimetablePageRoute
 }
 
 export interface FileRoutesById {
@@ -108,14 +126,21 @@ export interface FileRoutesById {
   '/auth/error': typeof AuthErrorRoute
   '/(app)/': typeof appIndexRoute
   '/auth/': typeof AuthIndexRoute
+  '/(app)/timetable/page': typeof appTimetablePageRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/error' | '/auth'
+  fullPaths: '/' | '/auth/error' | '/auth' | '/timetable/page'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth/error' | '/' | '/auth'
-  id: '__root__' | '/(app)' | '/auth/error' | '/(app)/' | '/auth/'
+  to: '/auth/error' | '/' | '/auth' | '/timetable/page'
+  id:
+    | '__root__'
+    | '/(app)'
+    | '/auth/error'
+    | '/(app)/'
+    | '/auth/'
+    | '/(app)/timetable/page'
   fileRoutesById: FileRoutesById
 }
 
@@ -149,7 +174,8 @@ export const routeTree = rootRoute
     "/(app)": {
       "filePath": "(app)/route.tsx",
       "children": [
-        "/(app)/"
+        "/(app)/",
+        "/(app)/timetable/page"
       ]
     },
     "/auth/error": {
@@ -161,6 +187,10 @@ export const routeTree = rootRoute
     },
     "/auth/": {
       "filePath": "auth/index.tsx"
+    },
+    "/(app)/timetable/page": {
+      "filePath": "(app)/timetable/page.tsx",
+      "parent": "/(app)"
     }
   }
 }

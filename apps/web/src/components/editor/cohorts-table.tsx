@@ -1,0 +1,282 @@
+'use client'
+
+import type React from 'react'
+
+import { mockCohorts, mockRooms, mockTeachers } from '@/lib/editor/mock'
+import { Button } from '@filc/ui/components/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@filc/ui/components/dialog'
+import { Input } from '@filc/ui/components/input'
+import { Label } from '@filc/ui/components/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@filc/ui/components/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@filc/ui/components/table'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+
+export function CohortsTable() {
+  const [cohorts, setCohorts] = useState(mockCohorts)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingCohort, setEditingCohort] = useState<any | null>(null)
+
+  const handleAddCohort = () => {
+    setEditingCohort({
+      id: '',
+      year: new Date().getFullYear(),
+      designation: '',
+      classMasterId: '',
+      secondaryClassMasterId: '',
+      headquartersRoomId: '',
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleEditCohort = (cohort: any) => {
+    setEditingCohort(cohort)
+    setIsDialogOpen(true)
+  }
+
+  const handleDeleteCohort = (id: string) => {
+    setCohorts(cohorts.filter(cohort => cohort.id !== id))
+  }
+
+  const handleSaveCohort = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (editingCohort.id) {
+      // Update existing cohort
+      setCohorts(
+        cohorts.map(cohort =>
+          cohort.id === editingCohort.id ? editingCohort : cohort
+        )
+      )
+    } else {
+      // Add new cohort
+      setCohorts([
+        ...cohorts,
+        {
+          ...editingCohort,
+          id: Math.random().toString(36).substring(2, 9),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ])
+    }
+
+    setIsDialogOpen(false)
+  }
+
+  // Helper function to get teacher name by ID
+  const getTeacherName = (id: string) => {
+    const teacher = mockTeachers.find(t => t.id === id)
+    return teacher ? teacher.name : 'Unknown'
+  }
+
+  // Helper function to get room name by ID
+  const getRoomName = (id: string) => {
+    const room = mockRooms.find(r => r.id === id)
+    return room ? room.name : 'Unknown'
+  }
+
+  return (
+    <div className='space-y-4'>
+      <div className='flex justify-between items-center'>
+        <h2 className='text-xl font-bold'>Cohorts</h2>
+        <Button onClick={handleAddCohort}>
+          <Plus className='mr-2 h-4 w-4' /> Add Cohort
+        </Button>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Year</TableHead>
+            <TableHead>Designation</TableHead>
+            <TableHead>Class Master</TableHead>
+            <TableHead>Secondary Class Master</TableHead>
+            <TableHead>Headquarters Room</TableHead>
+            <TableHead className='text-right'>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {cohorts.map(cohort => (
+            <TableRow key={cohort.id}>
+              <TableCell>{cohort.year}</TableCell>
+              <TableCell>{cohort.designation}</TableCell>
+              <TableCell>{getTeacherName(cohort.classMasterId)}</TableCell>
+              <TableCell>
+                {getTeacherName(cohort.secondaryClassMasterId)}
+              </TableCell>
+              <TableCell>{getRoomName(cohort.headquartersRoomId)}</TableCell>
+              <TableCell className='text-right'>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => handleEditCohort(cohort)}
+                >
+                  <Pencil className='h-4 w-4' />
+                </Button>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => handleDeleteCohort(cohort.id)}
+                >
+                  <Trash2 className='h-4 w-4' />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingCohort?.id ? 'Edit Cohort' : 'Add New Cohort'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveCohort} className='space-y-4'>
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='year'>Year</Label>
+                <Input
+                  id='year'
+                  type='number'
+                  value={editingCohort?.year || new Date().getFullYear()}
+                  onChange={e =>
+                    setEditingCohort({
+                      ...editingCohort,
+                      year: Number.parseInt(e.target.value),
+                    })
+                  }
+                  required={true}
+                />
+              </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='designation'>Designation</Label>
+                <Input
+                  id='designation'
+                  value={editingCohort?.designation || ''}
+                  onChange={e =>
+                    setEditingCohort({
+                      ...editingCohort,
+                      designation: e.target.value,
+                    })
+                  }
+                  maxLength={3}
+                  required={true}
+                />
+              </div>
+            </div>
+
+            <div className='space-y-2'>
+              <Label htmlFor='classMaster'>Class Master</Label>
+              <Select
+                value={editingCohort?.classMasterId || ''}
+                onValueChange={value =>
+                  setEditingCohort({ ...editingCohort, classMasterId: value })
+                }
+                required={true}
+              >
+                <SelectTrigger id='classMaster'>
+                  <SelectValue placeholder='Select class master' />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockTeachers.map(teacher => (
+                    <SelectItem key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-2'>
+              <Label htmlFor='secondaryClassMaster'>
+                Secondary Class Master
+              </Label>
+              <Select
+                value={editingCohort?.secondaryClassMasterId || ''}
+                onValueChange={value =>
+                  setEditingCohort({
+                    ...editingCohort,
+                    secondaryClassMasterId: value,
+                  })
+                }
+                required={true}
+              >
+                <SelectTrigger id='secondaryClassMaster'>
+                  <SelectValue placeholder='Select secondary class master' />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockTeachers.map(teacher => (
+                    <SelectItem key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-2'>
+              <Label htmlFor='headquartersRoom'>Headquarters Room</Label>
+              <Select
+                value={editingCohort?.headquartersRoomId || ''}
+                onValueChange={value =>
+                  setEditingCohort({
+                    ...editingCohort,
+                    headquartersRoomId: value,
+                  })
+                }
+                required={true}
+              >
+                <SelectTrigger id='headquartersRoom'>
+                  <SelectValue placeholder='Select headquarters room' />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockRooms.map(room => (
+                    <SelectItem key={room.id} value={room.id}>
+                      {room.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='flex justify-end space-x-2 pt-4'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type='submit'>
+                {editingCohort?.id ? 'Update' : 'Create'} Cohort
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
