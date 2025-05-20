@@ -1,6 +1,9 @@
 'use client'
 
-import type React from 'react'
+import { useEffect, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 
 import { mockTimetables } from '@/lib/editor/mock'
 import type { timetable as Timetable } from '@filc/db/schema/timetable'
@@ -12,8 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filc/ui/components/dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@filc/ui/components/form'
 import { Input } from '@filc/ui/components/input'
-import { Label } from '@filc/ui/components/label'
 import {
   Table,
   TableBody,
@@ -23,7 +33,33 @@ import {
   TableRow,
 } from '@filc/ui/components/table'
 import { Copy, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+
+// Define the form schema for validation
+const formSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Name is required'),
+  validFrom: z.date({
+    required_error: 'Valid from date is required',
+    invalid_type_error: 'Invalid date format',
+  }),
+  validTo: z.date({
+    required_error: 'Valid to date is required',
+    invalid_type_error: 'Invalid date format',
+  }),
+})
+
+// Type for our form values
+type FormValues = z.infer<typeof formSchema>
+
+// Helper function to format date for display
+const formatDateForDisplay = (date: Date) => {
+  return new Date(date).toLocaleDateString()
+}
+
+// Helper function to format date for input
+const formatDateForInput = (date: Date) => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 
 export function TimetablesTable() {
   const [timetables, setTimetables] = useState<Insert<typeof Timetable>[]>(() =>
@@ -37,6 +73,27 @@ export function TimetablesTable() {
   const [editingTimetable, setEditingTimetable] = useState<Insert<
     typeof Timetable
   > | null>(null)
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      id: '',
+      name: '',
+      validFrom: new Date(),
+      validTo: new Date(),
+    },
+  })
+
+  useEffect(() => {
+    if (editingTimetable) {
+      form.reset({
+        id: editingTimetable.id,
+        name: editingTimetable.name,
+        validFrom: editingTimetable.validFrom,
+        validTo: editingTimetable.validTo,
+      })
+    }
+  }, [editingTimetable, form])
 
   const handleAddTimetable = () => {
     setEditingTimetable({
@@ -71,22 +128,18 @@ export function TimetablesTable() {
     setTimetables([...timetables, newTimetable])
   }
 
-  const handleSaveTimetable = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!editingTimetable) return
-
-    if (editingTimetable.id) {
+  const onSubmit = (data: FormValues) => {
+    if (data.id) {
       // Update existing timetable
       setTimetables(
         timetables.map(timetable =>
-          timetable.id === editingTimetable.id ? editingTimetable : timetable
+          timetable.id === data.id ? { ...data } : timetable
         )
       )
     } else {
       // Add new timetable
       const newTimetable: Insert<typeof Timetable> = {
-        ...editingTimetable,
+        ...data,
         id: Math.random().toString(36).substring(2, 9),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -97,14 +150,10 @@ export function TimetablesTable() {
     setIsDialogOpen(false)
   }
 
-  // Helper function to format date for display
-  const formatDateForDisplay = (date: Date) => {
-    return new Date(date).toLocaleDateString()
-  }
-
-  // Helper function to format date for input
-  const formatDateForInput = (date: Date) => {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  // Update the handle save function to use the form
+  const handleSaveTimetable = (e: React.FormEvent) => {
+    e.preventDefault()
+    form.handleSubmit(onSubmit)()
   }
 
   return (
@@ -167,87 +216,78 @@ export function TimetablesTable() {
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSaveTimetable} className='space-y-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='name'>Name</Label>
-              <Input
-                id='name'
-                value={editingTimetable?.name || ''}
-                onChange={e =>
-                  setEditingTimetable(prev =>
-                    prev
-                      ? {
-                          ...prev,
-                          name: e.target.value,
-                        }
-                      : null
-                  )
-                }
-                required={true}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel htmlFor='name'>Name</FormLabel>
+                    <FormControl>
+                      <Input id='name' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='validFrom'>Valid From</Label>
-              <Input
-                id='validFrom'
-                type='date'
-                value={
-                  editingTimetable?.validFrom
-                    ? formatDateForInput(editingTimetable.validFrom)
-                    : ''
-                }
-                onChange={e =>
-                  setEditingTimetable(prev =>
-                    prev
-                      ? {
-                          ...prev,
-                          validFrom: new Date(e.target.value),
-                        }
-                      : null
-                  )
-                }
-                required={true}
+              <FormField
+                control={form.control}
+                name='validFrom'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel htmlFor='validFrom'>Valid From</FormLabel>
+                    <FormControl>
+                      <Input
+                        id='validFrom'
+                        type='date'
+                        value={formatDateForInput(field.value)}
+                        onChange={(e) => {
+                          field.onChange(new Date(e.target.value));
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='validTo'>Valid To</Label>
-              <Input
-                id='validTo'
-                type='date'
-                value={
-                  editingTimetable?.validTo
-                    ? formatDateForInput(editingTimetable.validTo)
-                    : ''
-                }
-                onChange={e =>
-                  setEditingTimetable(prev =>
-                    prev
-                      ? {
-                          ...prev,
-                          validTo: new Date(e.target.value),
-                        }
-                      : null
-                  )
-                }
-                required={true}
+              <FormField
+                control={form.control}
+                name='validTo'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel htmlFor='validTo'>Valid To</FormLabel>
+                    <FormControl>
+                      <Input
+                        id='validTo'
+                        type='date'
+                        value={formatDateForInput(field.value)}
+                        onChange={(e) => {
+                          field.onChange(new Date(e.target.value));
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='flex justify-end space-x-2 pt-4'>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => setIsDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type='submit'>
-                {editingTimetable?.id ? 'Update' : 'Create'} Timetable
-              </Button>
-            </div>
-          </form>
+              <div className='flex justify-end space-x-2 pt-4'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type='submit'>
+                  {editingTimetable?.id ? 'Update' : 'Create'} Timetable
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>

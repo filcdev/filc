@@ -1,8 +1,11 @@
 'use client'
 
 import type React from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 
-import { WeekType } from '@/lib/editor/conflict'
+import { Day, WeekType } from '@/lib/editor/conflict'
 import { detectLessonConflicts } from '@/lib/editor/conflict'
 import {
   mockCohorts,
@@ -16,7 +19,15 @@ import type { Insert } from '@filc/db/types'
 import { Alert, AlertDescription, AlertTitle } from '@filc/ui/components/alert'
 import { Button } from '@filc/ui/components/button'
 import { Checkbox } from '@filc/ui/components/checkbox'
-import { Label } from '@filc/ui/components/label'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@filc/ui/components/form'
 import {
   Select,
   SelectContent,
@@ -27,11 +38,139 @@ import {
 import { AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+// Interface to bridge the DB schema and the form UI
+interface LessonFormData {
+  id?: string
+  subject: string
+  teacher: string
+  room: string
+  cohort: string
+  weekType: WeekType
+  day: Day
+  periods: { periodId: string }[]
+}
+
+// Interface for conflicts
+interface Conflict {
+  message: string
+}
+
+// Define the form schema for validation
+const formSchema = z.object({
+  id: z.string().optional(),
+  subject: z.string().min(1, 'Subject is required'),
+  teacher: z.string().min(1, 'Teacher is required'),
+  room: z.string().min(1, 'Room is required'),
+  cohort: z.string().min(1, 'Cohort is required'),
+  weekType: z.nativeEnum(WeekType),
+  day: z.nativeEnum(Day),
+  periods: z
+    .array(z.object({ periodId: z.string() }))
+    .min(1, 'You must select at least one period'),
+})
+
+// Define the type for our form
+type FormValues = z.infer<typeof formSchema>
+
 interface LessonFormProps {
   lesson: Insert<typeof Lesson>
   onSave: (lesson: Insert<typeof Lesson>) => void
   onCancel: () => void
   viewMode?: 'cohort' | 'teacher' | 'room'
+  currentCohortId?: string  // Add a prop for the current cohort ID
+  currentTeacherId?: string // Add a prop for the current teacher ID
+  currentRoomId?: string    // Add a prop for the current room ID
+}
+
+// Convert DB model to Form model
+const mapLessonToFormData = (lesson: Insert<typeof Lesson>): LessonFormData => {
+  // Find the actual entities based on IDs
+  const subjectName = mockSubjects.find(s => s.id === lesson.subjectId)?.name || ''
+  const teacherName = mockTeachers.find(t => t.id === lesson.teacherId)?.name || ''
+  const roomName = mockRooms.find(r => r.id === lesson.roomId)?.name || ''
+  const cohortDesignation = mockCohorts.find(c => c.id === lesson.cohortId)?.designation || ''
+
+  // Get periods from mock data or empty array
+  const periods = lesson.id
+    ? mockPeriods.filter(p => p.id.startsWith(lesson.id || '')).map(p => ({ periodId: p.id }))
+    : []
+
+  return {
+    id: lesson.id,
+    subject: subjectName,
+    teacher: teacherName,
+    room: roomName,
+    cohort: cohortDesignation,
+    weekType: lesson.weekType,
+    day: lesson.day,
+    periods: periods,
+  }
+}
+
+// Convert Form model back to DB model
+const mapFormDataToLesson = (formData: FormValues): Insert<typeof Lesson> => {
+  // Find IDs based on names
+  const subjectId = mockSubjects.find(s => s.name === formData.subject)?.id || ''
+  const teacherId = mockTeachers.find(t => t.name === formData.teacher)?.id || ''
+  const roomId = mockRooms.find(r => r.name === formData.room)?.id || ''
+  const cohortId = mockCohorts.find(c => c.designation === formData.cohort)?.id || ''
+
+  return {
+    id: formData.id,
+    subjectId,
+    teacherId,
+    roomId,
+    cohortId,
+    weekType: formData.weekType,
+    day: formData.day,
+  }
+}
+
+// Get default value based on viewMode
+const getDefaultValueForViewMode = (
+  viewMode: 'cohort' | 'teacher' | 'room',
+  lesson: Insert<typeof Lesson>,
+  currentCohortId?: string,
+  currentTeacherId?: string,
+  currentRoomId?: string
+): Partial<LessonFormData> => {
+  // For existing lessons, don't apply defaults
+  if (lesson.id) return {}
+
+  switch (viewMode) {
+    case 'cohort': {
+      // Use the currentCohortId if provided, otherwise use the first cohort
+      let cohortDesignation = ''
+      if (currentCohortId) {
+        cohortDesignation = mockCohorts.find(c => c.id === currentCohortId)?.designation || ''
+      } else {
+        cohortDesignation = mockCohorts[0]?.designation || ''
+      }
+      return { cohort: cohortDesignation }
+    }
+    case 'teacher': {
+      // Use the currentTeacherId if provided, otherwise use the first teacher
+      let teacherName = ''
+      if (currentTeacherId) {
+        teacherName = mockTeachers.find(t => t.id === currentTeacherId)?.name || ''
+      } else {
+        teacherName = mockTeachers[0]?.name || ''
+      }
+      return { teacher: teacherName }
+    }
+    case 'room': {
+      // Use the currentRoomId if provided, otherwise use the first room
+      let roomName = ''
+      if (currentRoomId) {
+        roomName = mockRooms.find(r => r.id === currentRoomId)?.name || ''
+      } else {
+        roomName = mockRooms[0]?.name || ''
+      }
+      return { room: roomName }
+    }
+    default:
+      return {}
+  }
 }
 
 export function LessonForm({
@@ -39,222 +178,331 @@ export function LessonForm({
   onSave,
   onCancel,
   viewMode = 'cohort',
+  currentCohortId,
+  currentTeacherId,
+  currentRoomId,
 }: LessonFormProps) {
-  const [formData, setFormData] = useState(lesson)
-  const [conflicts, setConflicts] = useState<any[]>([])
+  const [conflicts, setConflicts] = useState<Conflict[]>([])
   const [isValidating, setIsValidating] = useState(false)
 
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  // Map the DB model to our form data model
+  let initialFormData = mapLessonToFormData(lesson)
+
+  // If we're in viewMode and creating a new lesson (no id), 
+  // we should lock the corresponding field to the current view
+  if (!lesson.id) {
+    const defaultValues = getDefaultValueForViewMode(
+      viewMode, 
+      lesson, 
+      currentCohortId,
+      currentTeacherId,
+      currentRoomId
+    )
+    initialFormData = { ...initialFormData, ...defaultValues }
   }
 
+  // Initialize form with react-hook-form and zod validation
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialFormData,
+  })
+
+  // Get form values to use for conflict detection
+  const formValues = form.watch()
+
+  // Handle period checkbox toggle
   const handlePeriodToggle = (periodId: string) => {
-    const periodExists = formData.periods.some(
-      (p: any) => p.periodId === periodId
-    )
+    const currentPeriods = form.getValues('periods')
+    const periodExists = currentPeriods.some(p => p.periodId === periodId)
 
     if (periodExists) {
-      setFormData(prev => ({
-        ...prev,
-        periods: prev.periods.filter((p: any) => p.periodId !== periodId),
-      }))
+      form.setValue('periods', currentPeriods.filter(p => p.periodId !== periodId), {
+        shouldValidate: true,
+      })
     } else {
-      setFormData(prev => ({
-        ...prev,
-        periods: [...prev.periods, { periodId }],
-      }))
+      form.setValue('periods', [...currentPeriods, { periodId }], {
+        shouldValidate: true,
+      })
     }
   }
 
+  // Check for conflicts when form values change
   useEffect(() => {
-    // Validate form when critical fields change
     if (
-      formData.subject &&
-      formData.teacher &&
-      formData.room &&
-      formData.cohort &&
-      formData.periods.length > 0
+      formValues.subject &&
+      formValues.teacher &&
+      formValues.room &&
+      formValues.cohort &&
+      formValues.periods.length > 0
     ) {
       setIsValidating(true)
       // Simulate API call to check for conflicts
       setTimeout(() => {
-        const potentialConflicts = detectLessonConflicts(formData)
+        const potentialConflicts = detectLessonConflicts(formValues)
         setConflicts(potentialConflicts)
         setIsValidating(false)
       }, 300)
     }
-  }, [formData]) // Updated to use formData as a whole dependency
+  }, [formValues])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Final validation
-    if (formData.periods.length === 0) {
-      setConflicts([{ message: 'You must select at least one period' }])
+  // Form submission handler
+  function onSubmit(data: FormValues) {
+    // Check for conflicts before submitting
+    if (conflicts.length > 0 && !data.id) {
       return
     }
 
-    onSave(formData)
+    // Convert form data back to the DB model and save
+    const lessonData = mapFormDataToLesson(data)
+    onSave(lessonData)
   }
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-4'>
-      <div className='grid grid-cols-2 gap-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='subject'>Subject</Label>
-          <Select
-            value={formData.subject}
-            onValueChange={value => handleChange('subject', value)}
-            required={true}
-          >
-            <SelectTrigger id='subject'>
-              <SelectValue placeholder='Select subject' />
-            </SelectTrigger>
-            <SelectContent>
-              {mockSubjects.map(subject => (
-                <SelectItem key={subject.id} value={subject.name}>
-                  {subject.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+        <div className='grid grid-cols-2 gap-4'>
+          {/* Subject Field */}
+          <FormField
+            control={form.control}
+            name='subject'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor='subject'>Subject</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger id='subject'>
+                      <SelectValue placeholder='Select subject' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {mockSubjects.map(subject => (
+                      <SelectItem key={subject.id} value={subject.name}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Teacher Field */}
+          <FormField
+            control={form.control}
+            name='teacher'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor='teacher'>Teacher</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={viewMode === 'teacher'}
+                >
+                  <FormControl>
+                    <SelectTrigger id='teacher'>
+                      <SelectValue placeholder='Select teacher' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {mockTeachers.map(teacher => (
+                      <SelectItem key={teacher.id} value={teacher.name}>
+                        {teacher.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Room Field */}
+          <FormField
+            control={form.control}
+            name='room'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor='room'>Room</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={viewMode === 'room'}
+                >
+                  <FormControl>
+                    <SelectTrigger id='room'>
+                      <SelectValue placeholder='Select room' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {mockRooms.map(room => (
+                      <SelectItem key={room.id} value={room.name}>
+                        {room.name} ({room.capacity})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Cohort Field */}
+          <FormField
+            control={form.control}
+            name='cohort'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor='cohort'>Cohort</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={viewMode === 'cohort'}
+                >
+                  <FormControl>
+                    <SelectTrigger id='cohort'>
+                      <SelectValue placeholder='Select cohort' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {mockCohorts.map(cohort => (
+                      <SelectItem key={cohort.id} value={cohort.designation}>
+                        {cohort.designation}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Week Type Field */}
+          <FormField
+            control={form.control}
+            name='weekType'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor='weekType'>Week Type</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger id='weekType'>
+                      <SelectValue placeholder='Select week type' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={WeekType.A}>Week A</SelectItem>
+                    <SelectItem value={WeekType.B}>Week B</SelectItem>
+                    <SelectItem value={WeekType.All}>All Weeks</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Day Field */}
+          <FormField
+            control={form.control}
+            name='day'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor='day'>Day</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger id='day'>
+                      <SelectValue placeholder='Select day' />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={Day.Monday}>Monday</SelectItem>
+                    <SelectItem value={Day.Tuesday}>Tuesday</SelectItem>
+                    <SelectItem value={Day.Wednesday}>Wednesday</SelectItem>
+                    <SelectItem value={Day.Thursday}>Thursday</SelectItem>
+                    <SelectItem value={Day.Friday}>Friday</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <div className='space-y-2'>
-          <Label htmlFor='teacher'>Teacher</Label>
-          <Select
-            value={formData.teacher}
-            onValueChange={value => handleChange('teacher', value)}
-            required={true}
-            disabled={viewMode === 'teacher'}
-          >
-            <SelectTrigger id='teacher'>
-              <SelectValue placeholder='Select teacher' />
-            </SelectTrigger>
-            <SelectContent>
-              {mockTeachers.map(teacher => (
-                <SelectItem key={teacher.id} value={teacher.name}>
-                  {teacher.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className='space-y-2'>
-          <Label htmlFor='room'>Room</Label>
-          <Select
-            value={formData.room}
-            onValueChange={value => handleChange('room', value)}
-            required={true}
-            disabled={viewMode === 'room'}
-          >
-            <SelectTrigger id='room'>
-              <SelectValue placeholder='Select room' />
-            </SelectTrigger>
-            <SelectContent>
-              {mockRooms.map(room => (
-                <SelectItem key={room.id} value={room.name}>
-                  {room.name} ({room.capacity})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className='space-y-2'>
-          <Label htmlFor='cohort'>Cohort</Label>
-          <Select
-            value={formData.cohort}
-            onValueChange={value => handleChange('cohort', value)}
-            required={true}
-            disabled={viewMode === 'cohort'}
-          >
-            <SelectTrigger id='cohort'>
-              <SelectValue placeholder='Select cohort' />
-            </SelectTrigger>
-            <SelectContent>
-              {mockCohorts.map(cohort => (
-                <SelectItem key={cohort.id} value={cohort.designation}>
-                  {cohort.designation}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className='space-y-2'>
-          <Label htmlFor='weekType'>Week Type</Label>
-          <Select
-            value={formData.weekType}
-            onValueChange={value => handleChange('weekType', value as WeekType)}
-            required={true}
-          >
-            <SelectTrigger id='weekType'>
-              <SelectValue placeholder='Select week type' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={WeekType.A}>Week A</SelectItem>
-              <SelectItem value={WeekType.B}>Week B</SelectItem>
-              <SelectItem value={WeekType.All}>All Weeks</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className='space-y-2'>
-        <Label>Periods</Label>
-        <div className='grid grid-cols-5 gap-2'>
-          {mockPeriods.map(period => {
-            const isSelected = formData.periods.some(
-              (p: any) => p.periodId === period.id
-            )
-            return (
-              <div key={period.id} className='flex items-center space-x-2'>
-                <Checkbox
-                  id={`period-${period.id}`}
-                  checked={isSelected}
-                  onCheckedChange={() => handlePeriodToggle(period.id)}
-                />
-                <Label htmlFor={`period-${period.id}`} className='text-sm'>
-                  {period.name}
-                </Label>
+        {/* Periods Field */}
+        <FormField
+          control={form.control}
+          name='periods'
+          render={() => (
+            <FormItem>
+              <div className='flex flex-col gap-2'>
+                <FormLabel>Periods</FormLabel>
+                <div className='grid grid-cols-5 gap-2'>
+                  {mockPeriods.map(period => {
+                    const isSelected = form.getValues('periods').some(
+                      p => p.periodId === period.id
+                    )
+                    return (
+                      <div key={period.id} className='flex items-center space-x-2'>
+                        <Checkbox
+                          id={`period-${period.id}`}
+                          checked={isSelected}
+                          onCheckedChange={() => handlePeriodToggle(period.id)}
+                        />
+                        <FormLabel htmlFor={`period-${period.id}`} className='text-sm'>
+                          {period.name}
+                        </FormLabel>
+                      </div>
+                    )
+                  })}
+                </div>
+                <FormMessage />
               </div>
-            )
-          })}
+            </FormItem>
+          )}
+        />
+
+        {/* Conflict Alerts */}
+        {conflicts.length > 0 && (
+          <Alert variant='destructive'>
+            <AlertCircle className='h-4 w-4' />
+            <AlertTitle>Potential Conflicts</AlertTitle>
+            <AlertDescription>
+              <ul className='list-disc pl-5 space-y-1'>
+                {conflicts.map((conflict, index) => (
+                  <li key={`${conflict.message}-${index}`}>{conflict.message}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Form Actions */}
+        <div className='flex justify-end space-x-2 pt-4'>
+          <Button type='button' variant='outline' onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type='submit'
+            disabled={isValidating || (conflicts.length > 0 && !form.getValues().id)}
+          >
+            {isValidating
+              ? 'Checking conflicts...'
+              : form.getValues().id
+                ? 'Update'
+                : 'Create'}{' '}
+            Lesson
+          </Button>
         </div>
-      </div>
-
-      {conflicts.length > 0 && (
-        <Alert variant='destructive'>
-          <AlertCircle className='h-4 w-4' />
-          <AlertTitle>Potential Conflicts</AlertTitle>
-          <AlertDescription>
-            <ul className='list-disc pl-5 space-y-1'>
-              {conflicts.map(conflict => (
-                <li key={conflict}>{conflict.message}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className='flex justify-end space-x-2 pt-4'>
-        <Button type='button' variant='outline' onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          type='submit'
-          disabled={isValidating || (conflicts.length > 0 && !formData.id)}
-        >
-          {isValidating
-            ? 'Checking conflicts...'
-            : formData.id
-              ? 'Update'
-              : 'Create'}{' '}
-          Lesson
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Form>
   )
 }
