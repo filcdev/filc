@@ -1,6 +1,6 @@
+import type { cohort } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
 import { Day, WeekType } from './conflict'
-import type { cohort } from '@filc/db/schema/timetable'
 
 // Mock data for rooms
 export const mockRooms = [

@@ -3,6 +3,8 @@
 import type React from 'react'
 
 import { mockRooms } from '@/lib/editor/mock'
+import type { room as Room } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
 import {
   Dialog,
@@ -24,9 +26,11 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 export function RoomsTable() {
-  const [rooms, setRooms] = useState(mockRooms)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingRoom, setEditingRoom] = useState<any | null>(null)
+  const [rooms, setRooms] = useState<Insert<typeof Room>[]>(mockRooms)
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [editingRoom, setEditingRoom] = useState<Insert<typeof Room> | null>(
+    null
+  )
 
   const handleAddRoom = () => {
     setEditingRoom({
@@ -38,7 +42,7 @@ export function RoomsTable() {
     setIsDialogOpen(true)
   }
 
-  const handleEditRoom = (room: any) => {
+  const handleEditRoom = (room: Insert<typeof Room>) => {
     setEditingRoom(room)
     setIsDialogOpen(true)
   }
@@ -50,22 +54,22 @@ export function RoomsTable() {
   const handleSaveRoom = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingRoom.id) {
+    if (editingRoom?.id) {
       // Update existing room
       setRooms(
         rooms.map(room => (room.id === editingRoom.id ? editingRoom : room))
       )
-    } else {
-      // Add new room
-      setRooms([
-        ...rooms,
-        {
-          ...editingRoom,
-          id: Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ])
+    } else if (editingRoom) {
+      // Add new room with required fields
+      const newRoom: Insert<typeof Room> = {
+        name: editingRoom.name,
+        shortName: editingRoom.shortName,
+        capacity: editingRoom.capacity,
+        id: Math.random().toString(36).substring(2, 9),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      setRooms([...rooms, newRoom])
     }
 
     setIsDialogOpen(false)
@@ -106,7 +110,7 @@ export function RoomsTable() {
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => handleDeleteRoom(room.id)}
+                  onClick={() => handleDeleteRoom(room.id ?? '')}
                 >
                   <Trash2 className='h-4 w-4' />
                 </Button>
@@ -131,7 +135,9 @@ export function RoomsTable() {
                 id='name'
                 value={editingRoom?.name || ''}
                 onChange={e =>
-                  setEditingRoom({ ...editingRoom, name: e.target.value })
+                  setEditingRoom(prev =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
                 }
                 required={true}
               />
@@ -143,7 +149,9 @@ export function RoomsTable() {
                 id='shortName'
                 value={editingRoom?.shortName || ''}
                 onChange={e =>
-                  setEditingRoom({ ...editingRoom, shortName: e.target.value })
+                  setEditingRoom(prev =>
+                    prev ? { ...prev, shortName: e.target.value } : null
+                  )
                 }
                 required={true}
               />
@@ -156,10 +164,14 @@ export function RoomsTable() {
                 type='number'
                 value={editingRoom?.capacity || 0}
                 onChange={e =>
-                  setEditingRoom({
-                    ...editingRoom,
-                    capacity: Number.parseInt(e.target.value),
-                  })
+                  setEditingRoom(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          capacity: Number.parseInt(e.target.value),
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />

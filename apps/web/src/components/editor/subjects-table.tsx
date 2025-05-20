@@ -3,6 +3,8 @@
 import type React from 'react'
 
 import { mockSubjects } from '@/lib/editor/mock'
+import type { subject as Subject } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
 import {
   Dialog,
@@ -24,9 +26,12 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 export function SubjectsTable() {
-  const [subjects, setSubjects] = useState(mockSubjects)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingSubject, setEditingSubject] = useState<any | null>(null)
+  const [subjects, setSubjects] =
+    useState<Insert<typeof Subject>[]>(mockSubjects)
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [editingSubject, setEditingSubject] = useState<Insert<
+    typeof Subject
+  > | null>(null)
 
   const handleAddSubject = () => {
     setEditingSubject({
@@ -38,7 +43,7 @@ export function SubjectsTable() {
     setIsDialogOpen(true)
   }
 
-  const handleEditSubject = (subject: any) => {
+  const handleEditSubject = (subject: Insert<typeof Subject>) => {
     setEditingSubject(subject)
     setIsDialogOpen(true)
   }
@@ -50,24 +55,24 @@ export function SubjectsTable() {
   const handleSaveSubject = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingSubject.id) {
+    if (editingSubject?.id) {
       // Update existing subject
       setSubjects(
         subjects.map(subject =>
           subject.id === editingSubject.id ? editingSubject : subject
         )
       )
-    } else {
-      // Add new subject
-      setSubjects([
-        ...subjects,
-        {
-          ...editingSubject,
-          id: Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ])
+    } else if (editingSubject) {
+      // Add new subject with required fields
+      const newSubject: Insert<typeof Subject> = {
+        name: editingSubject.name,
+        shortName: editingSubject.shortName,
+        icon: editingSubject.icon,
+        id: Math.random().toString(36).substring(2, 9),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      setSubjects([...subjects, newSubject])
     }
 
     setIsDialogOpen(false)
@@ -108,7 +113,7 @@ export function SubjectsTable() {
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => handleDeleteSubject(subject.id)}
+                  onClick={() => handleDeleteSubject(subject.id ?? '')}
                 >
                   <Trash2 className='h-4 w-4' />
                 </Button>
@@ -133,7 +138,9 @@ export function SubjectsTable() {
                 id='name'
                 value={editingSubject?.name || ''}
                 onChange={e =>
-                  setEditingSubject({ ...editingSubject, name: e.target.value })
+                  setEditingSubject(prev =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
                 }
                 required={true}
               />
@@ -145,10 +152,14 @@ export function SubjectsTable() {
                 id='shortName'
                 value={editingSubject?.shortName || ''}
                 onChange={e =>
-                  setEditingSubject({
-                    ...editingSubject,
-                    shortName: e.target.value,
-                  })
+                  setEditingSubject(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          shortName: e.target.value,
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />
@@ -160,7 +171,9 @@ export function SubjectsTable() {
                 id='icon'
                 value={editingSubject?.icon || ''}
                 onChange={e =>
-                  setEditingSubject({ ...editingSubject, icon: e.target.value })
+                  setEditingSubject(prev =>
+                    prev ? { ...prev, icon: e.target.value } : null
+                  )
                 }
                 required={true}
               />

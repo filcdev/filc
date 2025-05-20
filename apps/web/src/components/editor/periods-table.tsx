@@ -3,6 +3,8 @@
 import type React from 'react'
 
 import { mockPeriods } from '@/lib/editor/mock'
+import type { period as Period } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
 import {
   Dialog,
@@ -23,26 +25,38 @@ import {
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+// Define a type that extends the DB schema to include the name property needed in the UI
+interface PeriodWithName extends Insert<typeof Period> {
+  name: string
+}
+
 export function PeriodsTable() {
-  const [periods, setPeriods] = useState(mockPeriods)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingPeriod, setEditingPeriod] = useState<any | null>(null)
+  const [periods, setPeriods] = useState<PeriodWithName[]>(
+    () =>
+      mockPeriods.map(period => ({
+        ...period,
+        startTime: new Date(period.startTime),
+        endTime: new Date(period.endTime),
+      })) as PeriodWithName[]
+  )
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [editingPeriod, setEditingPeriod] = useState<PeriodWithName | null>(
+    null
+  )
 
   const handleAddPeriod = () => {
     setEditingPeriod({
       id: '',
       name: '',
-      startTime: '',
-      endTime: '',
+      startTime: new Date(),
+      endTime: new Date(),
     })
     setIsDialogOpen(true)
   }
 
-  const handleEditPeriod = (period: any) => {
+  const handleEditPeriod = (period: PeriodWithName) => {
     setEditingPeriod({
       ...period,
-      startTime: formatTimeForInput(period.startTime),
-      endTime: formatTimeForInput(period.endTime),
     })
     setIsDialogOpen(true)
   }
@@ -54,47 +68,41 @@ export function PeriodsTable() {
   const handleSavePeriod = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const formattedPeriod = {
-      ...editingPeriod,
-      startTime: new Date(editingPeriod.startTime).toISOString(),
-      endTime: new Date(editingPeriod.endTime).toISOString(),
-    }
+    if (!editingPeriod) return
 
     if (editingPeriod.id) {
       // Update existing period
       setPeriods(
         periods.map(period =>
-          period.id === editingPeriod.id ? formattedPeriod : period
+          period.id === editingPeriod.id ? editingPeriod : period
         )
       )
     } else {
-      // Add new period
-      setPeriods([
-        ...periods,
-        {
-          ...formattedPeriod,
-          id: Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ])
+      // Add new period with required fields
+      const newPeriod: PeriodWithName = {
+        ...editingPeriod,
+        id: Math.random().toString(36).substring(2, 9),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      setPeriods([...periods, newPeriod])
     }
 
     setIsDialogOpen(false)
   }
 
   // Helper function to format time for display
-  const formatTimeForDisplay = (timeString: string) => {
+  const formatTimeForDisplay = (timeString: Date) => {
     return new Date(timeString).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     })
   }
 
-  // Helper function to format time for input
-  const formatTimeForInput = (timeString: string) => {
-    const date = new Date(timeString)
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  // Helper function to format datetime for input fields
+  const formatDateTimeForInput = (date: Date): string => {
+    const d = new Date(date)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
   return (
@@ -141,7 +149,7 @@ export function PeriodsTable() {
                   <Button
                     variant='ghost'
                     size='icon'
-                    onClick={() => handleDeletePeriod(period.id)}
+                    onClick={() => handleDeletePeriod(period.id ?? '')}
                   >
                     <Trash2 className='h-4 w-4' />
                   </Button>
@@ -167,7 +175,9 @@ export function PeriodsTable() {
                 id='name'
                 value={editingPeriod?.name || ''}
                 onChange={e =>
-                  setEditingPeriod({ ...editingPeriod, name: e.target.value })
+                  setEditingPeriod(prev =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
                 }
                 required={true}
               />
@@ -178,12 +188,20 @@ export function PeriodsTable() {
               <Input
                 id='startTime'
                 type='datetime-local'
-                value={editingPeriod?.startTime || ''}
+                value={
+                  editingPeriod?.startTime
+                    ? formatDateTimeForInput(editingPeriod.startTime)
+                    : ''
+                }
                 onChange={e =>
-                  setEditingPeriod({
-                    ...editingPeriod,
-                    startTime: e.target.value,
-                  })
+                  setEditingPeriod(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          startTime: new Date(e.target.value),
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />
@@ -194,12 +212,20 @@ export function PeriodsTable() {
               <Input
                 id='endTime'
                 type='datetime-local'
-                value={editingPeriod?.endTime || ''}
+                value={
+                  editingPeriod?.endTime
+                    ? formatDateTimeForInput(editingPeriod.endTime)
+                    : ''
+                }
                 onChange={e =>
-                  setEditingPeriod({
-                    ...editingPeriod,
-                    endTime: e.target.value,
-                  })
+                  setEditingPeriod(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          endTime: new Date(e.target.value),
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />

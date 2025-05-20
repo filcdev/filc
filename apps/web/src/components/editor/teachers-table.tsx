@@ -3,6 +3,8 @@
 import type React from 'react'
 
 import { mockTeachers } from '@/lib/editor/mock'
+import type { teacher as Teacher } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
 import {
   Dialog,
@@ -24,9 +26,12 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 export function TeachersTable() {
-  const [teachers, setTeachers] = useState(mockTeachers)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingTeacher, setEditingTeacher] = useState<any | null>(null)
+  const [teachers, setTeachers] =
+    useState<Insert<typeof Teacher>[]>(mockTeachers)
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [editingTeacher, setEditingTeacher] = useState<Insert<
+    typeof Teacher
+  > | null>(null)
 
   const handleAddTeacher = () => {
     setEditingTeacher({
@@ -38,7 +43,7 @@ export function TeachersTable() {
     setIsDialogOpen(true)
   }
 
-  const handleEditTeacher = (teacher: any) => {
+  const handleEditTeacher = (teacher: Insert<typeof Teacher>) => {
     setEditingTeacher(teacher)
     setIsDialogOpen(true)
   }
@@ -50,24 +55,24 @@ export function TeachersTable() {
   const handleSaveTeacher = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingTeacher.id) {
+    if (editingTeacher?.id) {
       // Update existing teacher
       setTeachers(
         teachers.map(teacher =>
           teacher.id === editingTeacher.id ? editingTeacher : teacher
         )
       )
-    } else {
-      // Add new teacher
-      setTeachers([
-        ...teachers,
-        {
-          ...editingTeacher,
-          id: Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ])
+    } else if (editingTeacher) {
+      // Add new teacher with required fields
+      const newTeacher: Insert<typeof Teacher> = {
+        name: editingTeacher.name,
+        shortName: editingTeacher.shortName,
+        email: editingTeacher.email,
+        id: Math.random().toString(36).substring(2, 9),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      setTeachers([...teachers, newTeacher])
     }
 
     setIsDialogOpen(false)
@@ -108,7 +113,7 @@ export function TeachersTable() {
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => handleDeleteTeacher(teacher.id)}
+                  onClick={() => handleDeleteTeacher(teacher.id ?? '')}
                 >
                   <Trash2 className='h-4 w-4' />
                 </Button>
@@ -133,7 +138,9 @@ export function TeachersTable() {
                 id='name'
                 value={editingTeacher?.name || ''}
                 onChange={e =>
-                  setEditingTeacher({ ...editingTeacher, name: e.target.value })
+                  setEditingTeacher(prev =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
                 }
                 required={true}
               />
@@ -145,10 +152,14 @@ export function TeachersTable() {
                 id='shortName'
                 value={editingTeacher?.shortName || ''}
                 onChange={e =>
-                  setEditingTeacher({
-                    ...editingTeacher,
-                    shortName: e.target.value,
-                  })
+                  setEditingTeacher(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          shortName: e.target.value,
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />
@@ -161,10 +172,14 @@ export function TeachersTable() {
                 type='email'
                 value={editingTeacher?.email || ''}
                 onChange={e =>
-                  setEditingTeacher({
-                    ...editingTeacher,
-                    email: e.target.value,
-                  })
+                  setEditingTeacher(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          email: e.target.value,
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />

@@ -3,6 +3,8 @@
 import type React from 'react'
 
 import { mockTimetables } from '@/lib/editor/mock'
+import type { timetable as Timetable } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
 import {
   Dialog,
@@ -24,25 +26,31 @@ import { Copy, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 export function TimetablesTable() {
-  const [timetables, setTimetables] = useState(mockTimetables)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingTimetable, setEditingTimetable] = useState<any | null>(null)
+  const [timetables, setTimetables] = useState<Insert<typeof Timetable>[]>(() =>
+    mockTimetables.map(timetable => ({
+      ...timetable,
+      validFrom: new Date(timetable.validFrom),
+      validTo: new Date(timetable.validTo),
+    }))
+  )
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [editingTimetable, setEditingTimetable] = useState<Insert<
+    typeof Timetable
+  > | null>(null)
 
   const handleAddTimetable = () => {
     setEditingTimetable({
       id: '',
       name: '',
-      validFrom: '',
-      validTo: '',
+      validFrom: new Date(),
+      validTo: new Date(),
     })
     setIsDialogOpen(true)
   }
 
-  const handleEditTimetable = (timetable: any) => {
+  const handleEditTimetable = (timetable: Insert<typeof Timetable>) => {
     setEditingTimetable({
       ...timetable,
-      validFrom: formatDateForInput(timetable.validFrom),
-      validTo: formatDateForInput(timetable.validTo),
     })
     setIsDialogOpen(true)
   }
@@ -51,13 +59,13 @@ export function TimetablesTable() {
     setTimetables(timetables.filter(timetable => timetable.id !== id))
   }
 
-  const handleDuplicateTimetable = (timetable: any) => {
-    const newTimetable = {
+  const handleDuplicateTimetable = (timetable: Insert<typeof Timetable>) => {
+    const newTimetable: Insert<typeof Timetable> = {
       ...timetable,
       id: Math.random().toString(36).substring(2, 9),
       name: `${timetable.name} (Copy)`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
 
     setTimetables([...timetables, newTimetable])
@@ -66,43 +74,36 @@ export function TimetablesTable() {
   const handleSaveTimetable = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const formattedTimetable = {
-      ...editingTimetable,
-      validFrom: new Date(editingTimetable.validFrom).toISOString(),
-      validTo: new Date(editingTimetable.validTo).toISOString(),
-    }
+    if (!editingTimetable) return
 
     if (editingTimetable.id) {
       // Update existing timetable
       setTimetables(
         timetables.map(timetable =>
-          timetable.id === editingTimetable.id ? formattedTimetable : timetable
+          timetable.id === editingTimetable.id ? editingTimetable : timetable
         )
       )
     } else {
       // Add new timetable
-      setTimetables([
-        ...timetables,
-        {
-          ...formattedTimetable,
-          id: Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ])
+      const newTimetable: Insert<typeof Timetable> = {
+        ...editingTimetable,
+        id: Math.random().toString(36).substring(2, 9),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      setTimetables([...timetables, newTimetable])
     }
 
     setIsDialogOpen(false)
   }
 
   // Helper function to format date for display
-  const formatDateForDisplay = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
+  const formatDateForDisplay = (date: Date) => {
+    return new Date(date).toLocaleDateString()
   }
 
   // Helper function to format date for input
-  const formatDateForInput = (dateString: string) => {
-    const date = new Date(dateString)
+  const formatDateForInput = (date: Date) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   }
 
@@ -148,7 +149,7 @@ export function TimetablesTable() {
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => handleDeleteTimetable(timetable.id)}
+                  onClick={() => handleDeleteTimetable(timetable.id ?? '')}
                 >
                   <Trash2 className='h-4 w-4' />
                 </Button>
@@ -173,10 +174,14 @@ export function TimetablesTable() {
                 id='name'
                 value={editingTimetable?.name || ''}
                 onChange={e =>
-                  setEditingTimetable({
-                    ...editingTimetable,
-                    name: e.target.value,
-                  })
+                  setEditingTimetable(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          name: e.target.value,
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />
@@ -187,12 +192,20 @@ export function TimetablesTable() {
               <Input
                 id='validFrom'
                 type='date'
-                value={editingTimetable?.validFrom || ''}
+                value={
+                  editingTimetable?.validFrom
+                    ? formatDateForInput(editingTimetable.validFrom)
+                    : ''
+                }
                 onChange={e =>
-                  setEditingTimetable({
-                    ...editingTimetable,
-                    validFrom: e.target.value,
-                  })
+                  setEditingTimetable(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          validFrom: new Date(e.target.value),
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />
@@ -203,12 +216,20 @@ export function TimetablesTable() {
               <Input
                 id='validTo'
                 type='date'
-                value={editingTimetable?.validTo || ''}
+                value={
+                  editingTimetable?.validTo
+                    ? formatDateForInput(editingTimetable.validTo)
+                    : ''
+                }
                 onChange={e =>
-                  setEditingTimetable({
-                    ...editingTimetable,
-                    validTo: e.target.value,
-                  })
+                  setEditingTimetable(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          validTo: new Date(e.target.value),
+                        }
+                      : null
+                  )
                 }
                 required={true}
               />

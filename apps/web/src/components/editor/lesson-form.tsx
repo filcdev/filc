@@ -11,6 +11,8 @@ import {
   mockSubjects,
   mockTeachers,
 } from '@/lib/editor/mock'
+import type { lesson as Lesson } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Alert, AlertDescription, AlertTitle } from '@filc/ui/components/alert'
 import { Button } from '@filc/ui/components/button'
 import { Checkbox } from '@filc/ui/components/checkbox'
@@ -24,8 +26,6 @@ import {
 } from '@filc/ui/components/select'
 import { AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { lesson as Lesson } from '@filc/db/schema/timetable'
-import type { Insert } from '@filc/db/types'
 
 interface LessonFormProps {
   lesson: Insert<typeof Lesson>
@@ -231,7 +231,7 @@ export function LessonForm({
           <AlertTitle>Potential Conflicts</AlertTitle>
           <AlertDescription>
             <ul className='list-disc pl-5 space-y-1'>
-              {conflicts.map((conflict) => (
+              {conflicts.map(conflict => (
                 <li key={conflict}>{conflict.message}</li>
               ))}
             </ul>

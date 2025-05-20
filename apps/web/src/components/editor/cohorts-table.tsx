@@ -1,4 +1,6 @@
 import { mockCohorts, mockRooms, mockTeachers } from '@/lib/editor/mock'
+import type { cohort as Cohort } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
 import {
   Dialog,
@@ -25,13 +27,13 @@ import {
 } from '@filc/ui/components/table'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import type { cohort as Cohort } from '@filc/db/schema/timetable'
-import type { Insert } from '@filc/db/types'
 
 export function CohortsTable() {
   const [cohorts, setCohorts] = useState<Insert<typeof Cohort>[]>(mockCohorts)
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
-  const [editingCohort, setEditingCohort] = useState<Insert<typeof Cohort> | null>(null)
+  const [editingCohort, setEditingCohort] = useState<Insert<
+    typeof Cohort
+  > | null>(null)
 
   const handleAddCohort = () => {
     setEditingCohort({
@@ -64,10 +66,7 @@ export function CohortsTable() {
         )
       )
     } else if (editingCohort) {
-      setCohorts([
-        ...cohorts,
-        editingCohort,
-      ])
+      setCohorts([...cohorts, editingCohort])
     }
 
     setIsDialogOpen(false)
@@ -153,10 +152,14 @@ export function CohortsTable() {
                   type='number'
                   value={editingCohort?.year || new Date().getFullYear()}
                   onChange={e =>
-                    setEditingCohort(prev => prev ? {
-                      ...prev,
-                      year: Number.parseInt(e.target.value),
-                    } : null)
+                    setEditingCohort(prev =>
+                      prev
+                        ? {
+                            ...prev,
+                            year: Number.parseInt(e.target.value),
+                          }
+                        : null
+                    )
                   }
                   required={true}
                 />
@@ -168,10 +171,14 @@ export function CohortsTable() {
                   id='designation'
                   value={editingCohort?.designation || ''}
                   onChange={e =>
-                    setEditingCohort(prev => prev ? {
-                      ...prev,
-                      designation: e.target.value,
-                    } : null)
+                    setEditingCohort(prev =>
+                      prev
+                        ? {
+                            ...prev,
+                            designation: e.target.value,
+                          }
+                        : null
+                    )
                   }
                   maxLength={3}
                   required={true}
@@ -184,7 +191,9 @@ export function CohortsTable() {
               <Select
                 value={editingCohort?.classMasterId || ''}
                 onValueChange={value =>
-                  setEditingCohort(prev => prev ? { ...prev, classMasterId: value } : null)
+                  setEditingCohort(prev =>
+                    prev ? { ...prev, classMasterId: value } : null
+                  )
                 }
                 required={true}
               >
@@ -208,10 +217,14 @@ export function CohortsTable() {
               <Select
                 value={editingCohort?.secondaryClassMasterId || ''}
                 onValueChange={value =>
-                  setEditingCohort(prev => prev ? {
-                    ...prev,
-                    secondaryClassMasterId: value,
-                  } : null)
+                  setEditingCohort(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          secondaryClassMasterId: value,
+                        }
+                      : null
+                  )
                 }
                 required={true}
               >
@@ -233,10 +246,14 @@ export function CohortsTable() {
               <Select
                 value={editingCohort?.headquartersRoomId || ''}
                 onValueChange={value =>
-                  setEditingCohort(prev => prev ? {
-                    ...prev,
-                    headquartersRoomId: value,
-                  } : null)
+                  setEditingCohort(prev =>
+                    prev
+                      ? {
+                          ...prev,
+                          headquartersRoomId: value,
+                        }
+                      : null
+                  )
                 }
                 required={true}
               >

@@ -1,3 +1,7 @@
+import type {
+  Day as DayType,
+  WeekType as WeekTypeValue,
+} from '@filc/db/schema/timetable'
 import { mockPeriods } from './mock'
 
 export enum WeekType {
@@ -17,17 +21,45 @@ export enum Day {
   Sunday = 'sunday',
 }
 
+interface Period {
+  periodId: string
+}
+
+interface Lesson {
+  id: string
+  day: DayType
+  weekType: WeekTypeValue
+  subject: string
+  teacher: string
+  room: string
+  cohort: string
+  periods: Period[]
+}
+
+interface Conflict {
+  type?: 'Teacher' | 'Room' | 'Cohort'
+  day?: DayType
+  periodName?: string
+  weekType?: WeekTypeValue
+  lesson1?: Lesson
+  lesson2?: Lesson
+  message: string
+}
+
 // Function to detect conflicts in the timetable
-export function detectConflicts(timetableData: any[]) {
-  const conflicts: any[] = []
+export function detectConflicts(timetableData: Lesson[]): Conflict[] {
+  const conflicts: Conflict[] = []
 
   // Helper function to check if two lessons overlap in time
-  const doPeriodsOverlap = (periods1: any[], periods2: any[]) => {
+  const doPeriodsOverlap = (periods1: Period[], periods2: Period[]) => {
     return periods1.some(p1 => periods2.some(p2 => p1.periodId === p2.periodId))
   }
 
   // Helper function to check if week types overlap
-  const doWeekTypesOverlap = (weekType1: WeekType, weekType2: WeekType) => {
+  const doWeekTypesOverlap = (
+    weekType1: WeekTypeValue,
+    weekType2: WeekTypeValue
+  ) => {
     if (weekType1 === WeekType.All || weekType2 === WeekType.All) {
       return true
     }
@@ -38,8 +70,12 @@ export function detectConflicts(timetableData: any[]) {
   for (let i = 0; i < timetableData.length; i++) {
     const lesson1 = timetableData[i]
 
+    if (!lesson1) continue
+
     for (let j = i + 1; j < timetableData.length; j++) {
       const lesson2 = timetableData[j]
+
+      if (!lesson2) continue
 
       // Skip if lessons are on different days
       if (lesson1.day !== lesson2.day) {
@@ -58,7 +94,9 @@ export function detectConflicts(timetableData: any[]) {
 
       // Check for teacher conflicts
       if (lesson1.teacher === lesson2.teacher) {
-        const periodName = getPeriodName(lesson1.periods[0].periodId)
+        const periodName = lesson1.periods[0]
+          ? getPeriodName(lesson1.periods[0].periodId)
+          : 'Unknown'
         conflicts.push({
           type: 'Teacher',
           day: lesson1.day,
@@ -72,7 +110,9 @@ export function detectConflicts(timetableData: any[]) {
 
       // Check for room conflicts
       if (lesson1.room === lesson2.room) {
-        const periodName = getPeriodName(lesson1.periods[0].periodId)
+        const periodName = lesson1.periods[0]
+          ? getPeriodName(lesson1.periods[0].periodId)
+          : 'Unknown'
         conflicts.push({
           type: 'Room',
           day: lesson1.day,
@@ -86,7 +126,9 @@ export function detectConflicts(timetableData: any[]) {
 
       // Check for cohort conflicts
       if (lesson1.cohort === lesson2.cohort) {
-        const periodName = getPeriodName(lesson1.periods[0].periodId)
+        const periodName = lesson1.periods[0]
+          ? getPeriodName(lesson1.periods[0].periodId)
+          : 'Unknown'
         conflicts.push({
           type: 'Cohort',
           day: lesson1.day,
@@ -104,11 +146,11 @@ export function detectConflicts(timetableData: any[]) {
 }
 
 // Function to detect conflicts for a specific lesson
-export function detectLessonConflicts(lesson: any) {
-  const conflicts: any[] = []
+export function detectLessonConflicts(lesson: Partial<Lesson>): Conflict[] {
+  const conflicts: Conflict[] = []
 
   // Validate periods
-  if (lesson.periods.length === 0) {
+  if (!lesson.periods || lesson.periods.length === 0) {
     conflicts.push({
       message: 'You must select at least one period',
     })
@@ -143,13 +185,16 @@ export function detectLessonConflicts(lesson: any) {
 }
 
 // Helper function to get period name from period ID
-function getPeriodName(periodId: string) {
+function getPeriodName(periodId: string): string {
   const period = mockPeriods.find(p => p.id === periodId)
   return period ? period.name : 'Unknown Period'
 }
 
 // Helper function to get the overlapping week type
-function getOverlappingWeekType(weekType1: WeekType, weekType2: WeekType) {
+function getOverlappingWeekType(
+  weekType1: WeekTypeValue,
+  weekType2: WeekTypeValue
+): WeekTypeValue {
   if (weekType1 === WeekType.All) {
     return weekType2
   }
