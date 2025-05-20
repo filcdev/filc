@@ -65,7 +65,7 @@ export function PrintDialog({
   const printRef = useRef<HTMLDivElement>(null)
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: 'School Timetable',
     onAfterPrint: () => onOpenChange(false),
   })
@@ -141,7 +141,7 @@ export function PrintDialog({
                 <RadioGroup
                   value={printView}
                   onValueChange={value => {
-                    setPrintView(value as any)
+                    setPrintView(value as "school" | "cohort" | "teacher" | "room")
                     setSelectedItems([])
                   }}
                   className='flex flex-col space-y-2 mt-2'
@@ -205,8 +205,7 @@ export function PrintDialog({
                 </Label>
                 <Select
                   value={weekType}
-                  onValueChange={setWeekType as any}
-                  className='mt-1'
+                  onValueChange={(v: WeekType) => setWeekType(v)}
                 >
                   <SelectTrigger id='weekType'>
                     <SelectValue placeholder='Select week type' />
