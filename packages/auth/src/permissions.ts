@@ -1,8 +1,8 @@
-import { createAccessControl } from 'better-auth/plugins/access'
+import { createAccessControl } from "better-auth/plugins/access";
 import {
   adminAc,
   defaultStatements,
-} from 'better-auth/plugins/organization/access'
+} from "better-auth/plugins/organization/access";
 
 const statements = {
   ...defaultStatements,
@@ -21,7 +21,7 @@ const statements = {
   timetableDay: ['create', 'read', 'update', 'delete'],
 }
 
-export const ac = createAccessControl(statements)
+export const ac = createAccessControl(statements);
 
 // grant all permissions to the root role
 export const root = ac.newRole({
@@ -54,7 +54,7 @@ export const admin = ac.newRole({
   timetable: ['create', 'read', 'update', 'delete'],
   timetableDay: ['create', 'read', 'update', 'delete'],
   ...adminAc.statements,
-})
+});
 
 export const editor = ac.newRole({
   organization: ['read'],
