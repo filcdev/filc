@@ -1,7 +1,3 @@
-'use client'
-
-import type React from 'react'
-
 import { mockSubjects } from '@/lib/editor/mock'
 import type { subject as Subject } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'

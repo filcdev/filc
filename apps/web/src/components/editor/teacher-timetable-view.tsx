@@ -1,7 +1,14 @@
-'use client'
-
 import { Day, WeekType } from '@/lib/editor/conflict'
-import { mockPeriods, mockTeachers, mockTimetableData } from '@/lib/editor/mock'
+import { 
+  mockCohorts,
+  mockPeriods, 
+  mockRooms,
+  mockSubjects,
+  mockTeachers, 
+  mockTimetableData 
+} from '@/lib/editor/mock'
+import type { lesson as Lesson } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Badge } from '@filc/ui/components/badge'
 import { Button } from '@filc/ui/components/button'
 import { Card, CardContent } from '@filc/ui/components/card'
@@ -23,16 +30,51 @@ import { useState } from 'react'
 import { LessonForm } from './lesson-form'
 import { PrintDialog } from './print-dialog'
 
+// Define the structure of the lesson data as used in the timetable view
+interface TimetableLesson {
+  id: string
+  day: Day
+  weekType: WeekType
+  subject: string
+  teacher: string
+  room: string
+  cohort: string
+  periods: { periodId: string }[]
+}
+
+// Map TimetableLesson to Insert<typeof Lesson> for database operations
+const mapToDbLesson = (lesson: TimetableLesson): Insert<typeof Lesson> => {
+  // Find IDs based on display names
+  const subjectId = mockSubjects.find(s => s.name === lesson.subject)?.id || ''
+  const teacherId = mockTeachers.find(t => t.name === lesson.teacher)?.id || ''
+  const cohortId =
+    mockCohorts.find(c => `${c.year} ${c.designation}`.trim() === lesson.cohort)
+      ?.id || ''
+  const roomId = mockRooms.find(r => r.name === lesson.room)?.id || ''
+
+  return {
+    id: lesson.id,
+    day: lesson.day,
+    weekType: lesson.weekType,
+    subjectId,
+    teacherId,
+    cohortId,
+    roomId,
+    // Optional fields can be null/undefined
+    timetableDayId: null,
+  }
+}
+
 export function TeacherTimetableView() {
   const [selectedTeacher, setSelectedTeacher] = useState<string>(
-    mockTeachers[0].name
+    mockTeachers[0]?.name || 'No Teacher Selected'
   )
   const [selectedWeekType, setSelectedWeekType] = useState<WeekType>(
     WeekType.All
   )
   const [selectedTimetable, setSelectedTimetable] =
     useState<string>('Summer 2024')
-  const [editingLesson, setEditingLesson] = useState<any | null>(null)
+  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
 
@@ -50,7 +92,7 @@ export function TeacherTimetableView() {
         (lesson.weekType === selectedWeekType ||
           lesson.weekType === WeekType.All ||
           selectedWeekType === WeekType.All)
-    )
+    ) as TimetableLesson | undefined
 
     if (existingLesson) {
       setEditingLesson(existingLesson)
@@ -110,7 +152,7 @@ export function TeacherTimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={setSelectedWeekType as any}
+            onValueChange={(value) => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -172,38 +214,49 @@ export function TeacherTimetableView() {
                   return (
                     <td
                       key={`${day}-${period.id}`}
-                      className='border p-0 h-24 align-top cursor-pointer hover:bg-muted/50 transition-colors'
-                      onClick={() => handleCellClick(day, period.id)}
+                      className='border p-0 h-24 align-top'
                     >
-                      {lessons.length > 0 ? (
-                        <div className='p-2 h-full'>
-                          {lessons.map(lesson => (
-                            <Card
-                              key={lesson.id}
-                              className='mb-1 overflow-hidden h-full'
-                            >
-                              <CardContent className='p-2 space-y-1'>
-                                <div className='font-medium'>
-                                  {lesson.subject}
-                                </div>
-                                <div className='text-xs flex justify-between'>
-                                  <span>{lesson.cohort}</span>
-                                  <span>{lesson.room}</span>
-                                </div>
-                                {lesson.weekType !== WeekType.All && (
-                                  <Badge variant='outline' className='text-xs'>
-                                    Week {lesson.weekType.toUpperCase()}
-                                  </Badge>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className='h-full w-full p-2 text-center flex items-center justify-center text-muted-foreground'>
-                          <span className='text-xs'>Click to add</span>
-                        </div>
-                      )}
+                      <button
+                        type="button" 
+                        className='w-full h-full text-left block cursor-pointer hover:bg-muted/50 transition-colors bg-transparent border-0'
+                        onClick={() => handleCellClick(day, period.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleCellClick(day, period.id)
+                          }
+                        }}
+                        aria-label={`Add or edit lesson for ${day} at period ${period.name} for ${selectedTeacher}`}
+                      >
+                        {lessons.length > 0 ? (
+                          <div className='p-2 h-full'>
+                            {lessons.map(lesson => (
+                              <Card
+                                key={lesson.id}
+                                className='mb-1 overflow-hidden h-full'
+                              >
+                                <CardContent className='p-2 space-y-1'>
+                                  <div className='font-medium'>
+                                    {lesson.subject}
+                                  </div>
+                                  <div className='text-xs flex justify-between'>
+                                    <span>{lesson.cohort}</span>
+                                    <span>{lesson.room}</span>
+                                  </div>
+                                  {lesson.weekType !== WeekType.All && (
+                                    <Badge variant='outline' className='text-xs'>
+                                      Week {lesson.weekType.toUpperCase()}
+                                    </Badge>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className='h-full w-full p-2 text-center flex items-center justify-center text-muted-foreground'>
+                            <span className='text-xs'>Click to add</span>
+                          </div>
+                        )}
+                      </button>
                     </td>
                   )
                 })}
@@ -222,8 +275,29 @@ export function TeacherTimetableView() {
           </DialogHeader>
           {editingLesson && (
             <LessonForm
-              lesson={editingLesson}
-              onSave={() => setEditDialogOpen(false)}
+              lesson={mapToDbLesson(editingLesson)}
+              onSave={(savedLesson) => {
+                // Convert back from DB format to timetable format before saving
+                const updatedLesson: TimetableLesson = {
+                  ...editingLesson,
+                  id: savedLesson.id || editingLesson.id,
+                  subject: mockSubjects.find(s => s.id === savedLesson.subjectId)?.name || '',
+                  teacher: mockTeachers.find(t => t.id === savedLesson.teacherId)?.name || '',
+                  room: mockRooms.find(r => r.id === savedLesson.roomId)?.name || '',
+                  cohort: mockCohorts.find(c => c.id === savedLesson.cohortId)?.designation || '',
+                  day: savedLesson.day,
+                  weekType: savedLesson.weekType,
+                }
+                // Update the lesson in the state
+                if (editingLesson.id) {
+                  // This would normally update in a database
+                  console.log('Updated lesson:', updatedLesson);
+                } else {
+                  // This would normally create in a database
+                  console.log('Created new lesson:', updatedLesson);
+                }
+                setEditDialogOpen(false);
+              }}
               onCancel={() => setEditDialogOpen(false)}
               viewMode='teacher'
             />

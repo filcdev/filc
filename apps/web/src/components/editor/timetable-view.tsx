@@ -1,5 +1,3 @@
-'use client'
-
 import { Day, WeekType } from '@/lib/editor/conflict'
 import { detectConflicts } from '@/lib/editor/conflict'
 import { mockPeriods, mockTimetableData } from '@/lib/editor/mock'

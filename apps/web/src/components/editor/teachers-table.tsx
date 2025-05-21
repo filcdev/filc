@@ -1,7 +1,3 @@
-'use client'
-
-import type React from 'react'
-
 import { mockTeachers } from '@/lib/editor/mock'
 import type { teacher as Teacher } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
