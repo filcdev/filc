@@ -1,6 +1,8 @@
 import { Day, WeekType } from '@/lib/editor/conflict'
 import { detectConflicts } from '@/lib/editor/conflict'
-import { mockPeriods, mockTimetableData } from '@/lib/editor/mock'
+import { mockCohorts, mockPeriods, mockRooms, mockSubjects, mockTeachers, mockTimetableData } from '@/lib/editor/mock'
+import type { lesson as Lesson } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Alert, AlertDescription, AlertTitle } from '@filc/ui/components/alert'
 import { Badge } from '@filc/ui/components/badge'
 import { Button } from '@filc/ui/components/button'
@@ -23,6 +25,50 @@ import { useEffect, useState } from 'react'
 import { LessonForm } from './lesson-form'
 import { PrintDialog } from './print-dialog'
 
+// Define the types for timetable data based on other components
+interface Period {
+  periodId: string
+}
+
+interface TimetableLesson {
+  id: string
+  day: Day
+  weekType: WeekType
+  subject: string
+  teacher: string
+  room: string
+  cohort: string
+  periods: Period[]
+}
+
+// Get the type of the conflict array returned by detectConflicts 
+// for proper type checking
+type Conflicts = ReturnType<typeof detectConflicts>
+type Conflict = Conflicts extends Array<infer T> ? T : never
+
+// Map TimetableLesson to Insert<typeof Lesson> for database operations
+const mapToDbLesson = (lesson: TimetableLesson): Insert<typeof Lesson> => {
+  // Find IDs based on display names
+  const subjectId = mockSubjects.find(s => s.name === lesson.subject)?.id || ''
+  const teacherId = mockTeachers.find(t => t.name === lesson.teacher)?.id || ''
+  const cohortId =
+    mockCohorts.find(c => `${c.year} ${c.designation}`.trim() === lesson.cohort)
+      ?.id || ''
+  const roomId = mockRooms.find(r => r.name === lesson.room)?.id || ''
+
+  return {
+    id: lesson.id,
+    day: lesson.day,
+    weekType: lesson.weekType,
+    subjectId,
+    teacherId,
+    cohortId,
+    roomId,
+    // Optional fields can be null/undefined
+    timetableDayId: null,
+  }
+}
+
 export function TimetableView() {
   const [selectedCohort, setSelectedCohort] = useState<string>('1A')
   const [selectedWeekType, setSelectedWeekType] = useState<WeekType>(
@@ -30,12 +76,12 @@ export function TimetableView() {
   )
   const [selectedTimetable, setSelectedTimetable] =
     useState<string>('Summer 2024')
-  const [editingLesson, setEditingLesson] = useState<any | null>(null)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [printDialogOpen, setPrintDialogOpen] = useState(false)
-  const [timetableData, setTimetableData] = useState(mockTimetableData)
-  const [conflicts, setConflicts] = useState<any[]>([])
-  const [showConflicts, setShowConflicts] = useState(false)
+  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false)
+  const [printDialogOpen, setPrintDialogOpen] = useState<boolean>(false)
+  const [timetableData, setTimetableData] = useState<TimetableLesson[]>(mockTimetableData)
+  const [conflicts, setConflicts] = useState<Conflict[]>([])
+  const [showConflicts, setShowConflicts] = useState<boolean>(false)
 
   const days = Object.values(Day).filter(
     day => day !== Day.Saturday && day !== Day.Sunday
@@ -47,13 +93,13 @@ export function TimetableView() {
     setConflicts(
       detectedConflicts.filter(
         conflict =>
-          conflict.lesson1.cohort === selectedCohort ||
+          conflict.lesson1?.cohort === selectedCohort ||
           (conflict.lesson2 && conflict.lesson2.cohort === selectedCohort)
       )
     )
   }, [timetableData, selectedCohort])
 
-  const handleCellClick = (day: Day, periodId: string) => {
+  const handleCellClick = (day: Day, periodId: string): void => {
     // Find if there's a lesson at this slot
     const existingLesson = timetableData.find(
       lesson =>
@@ -84,7 +130,7 @@ export function TimetableView() {
     setEditDialogOpen(true)
   }
 
-  const handleSaveLesson = (lesson: any) => {
+  const handleSaveLesson = (lesson: TimetableLesson): void => {
     // Check for conflicts before saving
     const potentialConflicts = detectConflicts([
       ...timetableData.filter(l => l.id !== lesson.id),
@@ -94,7 +140,7 @@ export function TimetableView() {
     // Filter conflicts related to this specific lesson
     const newLessonConflicts = potentialConflicts.filter(
       conflict =>
-        conflict.lesson1.id === lesson.id ||
+        conflict.lesson1?.id === lesson.id ||
         (conflict.lesson2 && conflict.lesson2.id === lesson.id)
     )
 
@@ -109,7 +155,7 @@ export function TimetableView() {
     saveLesson(lesson)
   }
 
-  const saveLesson = (lesson: any) => {
+  const saveLesson = (lesson: TimetableLesson): void => {
     const updatedLesson = {
       ...lesson,
       id: lesson.id || Math.random().toString(36).substring(2, 9),
@@ -128,7 +174,7 @@ export function TimetableView() {
     setEditDialogOpen(false)
   }
 
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString: string): string => {
     return new Date(timeString).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -166,7 +212,7 @@ export function TimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={setSelectedWeekType as any}
+            onValueChange={(value) => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -247,11 +293,11 @@ export function TimetableView() {
                   // Check if this cell has conflicts
                   const hasConflict = conflicts.some(
                     conflict =>
-                      (conflict.lesson1.day === day &&
-                        conflict.lesson1.periods.some(
+                      (conflict.lesson1?.day === day &&
+                        conflict.lesson1?.periods.some(
                           p => p.periodId === period.id
                         ) &&
-                        conflict.lesson1.cohort === selectedCohort) ||
+                        conflict.lesson1?.cohort === selectedCohort) ||
                       (conflict.lesson2 &&
                         conflict.lesson2.day === day &&
                         conflict.lesson2.periods.some(
@@ -263,42 +309,48 @@ export function TimetableView() {
                   return (
                     <td
                       key={`${day}-${period.id}`}
-                      className={`border p-0 h-24 align-top cursor-pointer hover:bg-muted/50 transition-colors ${
+                      className={`border p-0 h-24 align-top ${
                         hasConflict ? 'border-red-500 border-2' : ''
                       }`}
-                      onClick={() => handleCellClick(day, period.id)}
                     >
-                      {lessons.length > 0 ? (
-                        <div className='p-2 h-full'>
-                          {lessons.map(lesson => (
-                            <Card
-                              key={lesson.id}
-                              className='mb-1 overflow-hidden h-full'
-                            >
-                              <CardContent className='p-2 space-y-1'>
-                                <div className='font-medium'>
-                                  {lesson.subject}
-                                </div>
-                                <div className='text-xs flex justify-between'>
-                                  <span>{lesson.teacher}</span>
-                                  <span>{lesson.room}</span>
-                                </div>
-                                {lesson.weekType !== WeekType.All && (
-                                  <Badge variant='outline' className='text-xs'>
-                                    Week {lesson.weekType.toUpperCase()}
-                                  </Badge>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className='h-full w-full p-2 text-center flex items-center justify-center text-muted-foreground'>
-                          <span className='text-xs'>Click to add</span>
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        className="w-full h-full text-left bg-transparent border-0 cursor-pointer hover:bg-muted/50 transition-colors p-0"
+                        onClick={() => handleCellClick(day, period.id)}
+                        aria-label={`Edit timetable for ${day} at period ${period.name ?? period.id}`}
+                      >
+                        {lessons.length > 0 ? (
+                          <div className='p-2 h-full'>
+                            {lessons.map(lesson => (
+                              <Card
+                                key={lesson.id}
+                                className='mb-1 overflow-hidden h-full'
+                              >
+                                <CardContent className='p-2 space-y-1'>
+                                  <div className='font-medium'>
+                                    {lesson.subject}
+                                  </div>
+                                  <div className='text-xs flex justify-between'>
+                                    <span>{lesson.teacher}</span>
+                                    <span>{lesson.room}</span>
+                                  </div>
+                                  {lesson.weekType !== WeekType.All && (
+                                    <Badge variant='outline' className='text-xs'>
+                                      Week {lesson.weekType.toUpperCase()}
+                                    </Badge>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className='h-full w-full p-2 text-center flex items-center justify-center text-muted-foreground'>
+                            <span className='text-xs'>Click to add</span>
+                          </div>
+                        )}
+                      </button>
                     </td>
-                  )
+                  );
                 })}
               </tr>
             ))}
@@ -315,8 +367,21 @@ export function TimetableView() {
           </DialogHeader>
           {editingLesson && (
             <LessonForm
-              lesson={editingLesson}
-              onSave={handleSaveLesson}
+              lesson={mapToDbLesson(editingLesson)}
+              onSave={(savedLesson) => {
+                // Convert back from DB format to timetable format before saving
+                const updatedLesson: TimetableLesson = {
+                  ...editingLesson,
+                  id: savedLesson.id || editingLesson.id,
+                  subject: mockSubjects.find(s => s.id === savedLesson.subjectId)?.name || '',
+                  teacher: mockTeachers.find(t => t.id === savedLesson.teacherId)?.name || '',
+                  room: mockRooms.find(r => r.id === savedLesson.roomId)?.name || '',
+                  cohort: mockCohorts.find(c => c.id === savedLesson.cohortId)?.designation || '',
+                  day: savedLesson.day,
+                  weekType: savedLesson.weekType
+                }
+                handleSaveLesson(updatedLesson)
+              }}
               onCancel={() => setEditDialogOpen(false)}
               viewMode='cohort'
             />
@@ -338,30 +403,38 @@ export function TimetableView() {
                 </AlertDescription>
               </Alert>
             ) : (
-              conflicts.map((conflict, index) => (
-                <Alert key={index} variant='destructive'>
+              conflicts.map((conflict) => (
+                <Alert key={`${conflict.type}-${conflict.day}-${conflict.periodName}`} variant='destructive'>
                   <AlertCircle className='h-4 w-4' />
                   <AlertTitle>{conflict.type} Conflict</AlertTitle>
                   <AlertDescription className='space-y-2'>
-                    <p>
-                      <strong>Day:</strong>{' '}
-                      {conflict.day.charAt(0).toUpperCase() +
-                        conflict.day.slice(1)}
-                    </p>
-                    <p>
-                      <strong>Period:</strong> {conflict.periodName}
-                    </p>
-                    <p>
-                      <strong>Week:</strong> {conflict.weekType.toUpperCase()}
-                    </p>
+                    {conflict.day && (
+                      <p>
+                        <strong>Day:</strong>{' '}
+                        {conflict.day.charAt(0).toUpperCase() +
+                          conflict.day.slice(1)}
+                      </p>
+                    )}
+                    {conflict.periodName && (
+                      <p>
+                        <strong>Period:</strong> {conflict.periodName}
+                      </p>
+                    )}
+                    {conflict.weekType && (
+                      <p>
+                        <strong>Week:</strong> {conflict.weekType.toUpperCase()}
+                      </p>
+                    )}
                     <div className='grid grid-cols-2 gap-4 mt-2'>
-                      <div>
-                        <p className='font-semibold'>Lesson 1:</p>
-                        <p>Subject: {conflict.lesson1.subject}</p>
-                        <p>Teacher: {conflict.lesson1.teacher}</p>
-                        <p>Room: {conflict.lesson1.room}</p>
-                        <p>Cohort: {conflict.lesson1.cohort}</p>
-                      </div>
+                      {conflict.lesson1 && (
+                        <div>
+                          <p className='font-semibold'>Lesson 1:</p>
+                          <p>Subject: {conflict.lesson1.subject}</p>
+                          <p>Teacher: {conflict.lesson1.teacher}</p>
+                          <p>Room: {conflict.lesson1.room}</p>
+                          <p>Cohort: {conflict.lesson1.cohort}</p>
+                        </div>
+                      )}
                       {conflict.lesson2 && (
                         <div>
                           <p className='font-semibold'>Lesson 2:</p>
