@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { FaPencil, FaPlus, FaTrash } from 'react-icons/fa6'
 import { useState } from 'react'
 
 export function TeachersTable() {
@@ -79,7 +79,7 @@ export function TeachersTable() {
       <div className='flex justify-between items-center'>
         <h2 className='text-xl font-bold'>Teachers</h2>
         <Button onClick={handleAddTeacher}>
-          <Plus className='mr-2 h-4 w-4' /> Add Teacher
+          <FaPlus className='mr-2 h-4 w-4' /> Add Teacher
         </Button>
       </div>
 
@@ -104,14 +104,14 @@ export function TeachersTable() {
                   size='icon'
                   onClick={() => handleEditTeacher(teacher)}
                 >
-                  <Pencil className='h-4 w-4' />
+                  <FaPencil className='h-4 w-4' />
                 </Button>
                 <Button
                   variant='ghost'
                   size='icon'
                   onClick={() => handleDeleteTeacher(teacher.id ?? '')}
                 >
-                  <Trash2 className='h-4 w-4' />
+                  <FaTrash className='h-4 w-4' />
                 </Button>
               </TableCell>
             </TableRow>

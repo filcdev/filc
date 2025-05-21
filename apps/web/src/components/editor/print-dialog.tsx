@@ -25,7 +25,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@filc/ui/components/tabs'
-import { FileIcon, PrinterIcon, Settings2Icon } from 'lucide-react'
+import { FaRegFile, FaPrint, FaSliders } from 'react-icons/fa6'
 import { useRef, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { PrintableTimetable } from './printable-timetable'
@@ -113,7 +113,7 @@ export function PrintDialog({
       <DialogContent className='max-w-3xl max-h-[90vh] overflow-auto'>
         <DialogHeader>
           <DialogTitle className='flex items-center'>
-            <PrinterIcon className='mr-2 h-5 w-5' />
+            <FaPrint className='mr-2 h-5 w-5' />
             Print Timetable
           </DialogTitle>
         </DialogHeader>
@@ -121,11 +121,11 @@ export function PrintDialog({
         <Tabs value={printTab} onValueChange={setPrintTab} className='mt-4'>
           <TabsList className='grid grid-cols-2'>
             <TabsTrigger value='content' className='flex items-center'>
-              <FileIcon className='mr-2 h-4 w-4' />
+              <FaRegFile className='mr-2 h-4 w-4' />
               Content
             </TabsTrigger>
             <TabsTrigger value='settings' className='flex items-center'>
-              <Settings2Icon className='mr-2 h-4 w-4' />
+              <FaSliders className='mr-2 h-4 w-4' />
               Settings
             </TabsTrigger>
           </TabsList>
@@ -320,7 +320,7 @@ export function PrintDialog({
               onClick={handlePrint}
               disabled={printView !== 'school' && selectedItems.length === 0}
             >
-              <PrinterIcon className='mr-2 h-4 w-4' />
+              <FaPrint className='mr-2 h-4 w-4' />
               Print
             </Button>
           </div>

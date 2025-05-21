@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
 
 const roomFormSchema = z.object({
@@ -149,7 +149,7 @@ export function RoomsTable() {
       <div className='flex justify-between items-center'>
         <h2 className='text-xl font-bold'>Rooms</h2>
         <Button onClick={handleAddRoom}>
-          <Plus className='mr-2 h-4 w-4' /> Add Room
+          <FaPlus className='mr-2 h-4 w-4' /> Add Room
         </Button>
       </div>
 
@@ -193,7 +193,7 @@ export function RoomsTable() {
                       onClick={() => handleEditRoom(room)}
                       aria-label={`Edit ${room.name}`}
                     >
-                      <Pencil className='h-4 w-4' />
+                      <FaRegPenToSquare className='h-4 w-4' />
                     </Button>
                     <Button
                       variant='ghost'
@@ -201,7 +201,7 @@ export function RoomsTable() {
                       onClick={() => handleDeletePrompt(room.id ?? '')}
                       aria-label={`Delete ${room.name}`}
                     >
-                      <Trash2 className='h-4 w-4' />
+                      <FaRegTrashCan className='h-4 w-4' />
                     </Button>
                   </TableCell>
                 </TableRow>

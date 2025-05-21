@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { Copy, Pencil, Plus, Trash2 } from 'lucide-react'
+import { FaRegCopy, FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 
 // Define the form schema for validation
 const formSchema = z.object({
@@ -159,7 +159,7 @@ export function TimetablesTable() {
       <div className='flex justify-between items-center'>
         <h2 className='text-xl font-bold'>Timetables</h2>
         <Button onClick={handleAddTimetable}>
-          <Plus className='mr-2 h-4 w-4' /> Add Timetable
+          <FaPlus className='mr-2 h-4 w-4' /> Add Timetable
         </Button>
       </div>
 
@@ -184,21 +184,21 @@ export function TimetablesTable() {
                   size='icon'
                   onClick={() => handleEditTimetable(timetable)}
                 >
-                  <Pencil className='h-4 w-4' />
+                  <FaRegPenToSquare className='h-4 w-4' />
                 </Button>
                 <Button
                   variant='ghost'
                   size='icon'
                   onClick={() => handleDuplicateTimetable(timetable)}
                 >
-                  <Copy className='h-4 w-4' />
+                  <FaRegCopy className='h-4 w-4' />
                 </Button>
                 <Button
                   variant='ghost'
                   size='icon'
                   onClick={() => handleDeleteTimetable(timetable.id ?? '')}
                 >
-                  <Trash2 className='h-4 w-4' />
+                  <FaRegTrashCan className='h-4 w-4' />
                 </Button>
               </TableCell>
             </TableRow>

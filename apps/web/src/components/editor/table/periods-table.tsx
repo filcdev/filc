@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
 
 interface PeriodWithName extends Insert<typeof Period> {
@@ -105,7 +105,7 @@ export function PeriodsTable() {
       <div className='flex justify-between items-center'>
         <h2 className='text-xl font-bold'>Periods</h2>
         <Button onClick={handleAddPeriod}>
-          <Plus className='mr-2 h-4 w-4' /> Add Period
+          <FaPlus className='mr-2 h-4 w-4' /> Add Period
         </Button>
       </div>
 
@@ -134,20 +134,20 @@ export function PeriodsTable() {
                 <TableCell>{formatTimeForDisplay(period.endTime)}</TableCell>
                 <TableCell>{durationMinutes} minutes</TableCell>
                 <TableCell className='text-right'>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    onClick={() => handleEditPeriod(period)}
-                  >
-                    <Pencil className='h-4 w-4' />
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    onClick={() => handleDeletePeriod(period.id ?? '')}
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => handleEditPeriod(period)}
+                    >
+                      <FaRegPenToSquare className='h-4 w-4' />
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => handleDeletePeriod(period.id ?? '')}
+                    >
+                      <FaRegTrashCan className='h-4 w-4' />
+                    </Button>
                 </TableCell>
               </TableRow>
             )

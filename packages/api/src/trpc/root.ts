@@ -6,7 +6,7 @@ import { createTRPCRouter } from './index.ts'
 export const appRouter = createTRPCRouter({
   ping: pingRouter,
   substitution: substitutionRouter,
-  cohort: cohortRouter
+  cohort: cohortRouter,
 })
 
 export type AppRouter = typeof appRouter

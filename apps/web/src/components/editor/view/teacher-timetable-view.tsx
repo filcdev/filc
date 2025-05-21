@@ -1,11 +1,11 @@
 import { Day, WeekType } from '@/lib/editor/conflict'
-import { 
+import {
   mockCohorts,
-  mockPeriods, 
+  mockPeriods,
   mockRooms,
   mockSubjects,
-  mockTeachers, 
-  mockTimetableData 
+  mockTeachers,
+  mockTimetableData,
 } from '@/lib/editor/mock'
 import type { lesson as Lesson } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filc/ui/components/select'
-import { Printer } from 'lucide-react'
+import { FaPrint } from 'react-icons/fa6'
 import { useState } from 'react'
 import { LessonForm } from '../lesson-form'
 import { PrintDialog } from '../print-dialog'
@@ -74,7 +74,9 @@ export function TeacherTimetableView() {
   )
   const [selectedTimetable, setSelectedTimetable] =
     useState<string>('Summer 2024')
-  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(null)
+  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(
+    null
+  )
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
 
@@ -152,7 +154,7 @@ export function TeacherTimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={(value) => setSelectedWeekType(value as WeekType)}
+            onValueChange={value => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -167,7 +169,7 @@ export function TeacherTimetableView() {
 
         <div className='flex gap-2'>
           <Button variant='outline' onClick={() => setPrintDialogOpen(true)}>
-            <Printer className='mr-2 h-4 w-4' />
+            <FaPrint className='mr-2 h-4 w-4' />
             Print
           </Button>
           <Button>Save Changes</Button>
@@ -217,10 +219,10 @@ export function TeacherTimetableView() {
                       className='border p-0 h-24 align-top'
                     >
                       <button
-                        type="button" 
+                        type='button'
                         className='w-full h-full text-left block cursor-pointer hover:bg-muted/50 transition-colors bg-transparent border-0'
                         onClick={() => handleCellClick(day, period.id)}
-                        onKeyDown={(e) => {
+                        onKeyDown={e => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             handleCellClick(day, period.id)
                           }
@@ -243,7 +245,10 @@ export function TeacherTimetableView() {
                                     <span>{lesson.room}</span>
                                   </div>
                                   {lesson.weekType !== WeekType.All && (
-                                    <Badge variant='outline' className='text-xs'>
+                                    <Badge
+                                      variant='outline'
+                                      className='text-xs'
+                                    >
                                       Week {lesson.weekType.toUpperCase()}
                                     </Badge>
                                   )}
@@ -276,27 +281,35 @@ export function TeacherTimetableView() {
           {editingLesson && (
             <LessonForm
               lesson={mapToDbLesson(editingLesson)}
-              onSave={(savedLesson) => {
+              onSave={savedLesson => {
                 // Convert back from DB format to timetable format before saving
                 const updatedLesson: TimetableLesson = {
                   ...editingLesson,
                   id: savedLesson.id || editingLesson.id,
-                  subject: mockSubjects.find(s => s.id === savedLesson.subjectId)?.name || '',
-                  teacher: mockTeachers.find(t => t.id === savedLesson.teacherId)?.name || '',
-                  room: mockRooms.find(r => r.id === savedLesson.roomId)?.name || '',
-                  cohort: mockCohorts.find(c => c.id === savedLesson.cohortId)?.designation || '',
+                  subject:
+                    mockSubjects.find(s => s.id === savedLesson.subjectId)
+                      ?.name || '',
+                  teacher:
+                    mockTeachers.find(t => t.id === savedLesson.teacherId)
+                      ?.name || '',
+                  room:
+                    mockRooms.find(r => r.id === savedLesson.roomId)?.name ||
+                    '',
+                  cohort:
+                    mockCohorts.find(c => c.id === savedLesson.cohortId)
+                      ?.designation || '',
                   day: savedLesson.day,
                   weekType: savedLesson.weekType,
                 }
                 // Update the lesson in the state
                 if (editingLesson.id) {
                   // This would normally update in a database
-                  console.log('Updated lesson:', updatedLesson);
+                  console.log('Updated lesson:', updatedLesson)
                 } else {
                   // This would normally create in a database
-                  console.log('Created new lesson:', updatedLesson);
+                  console.log('Created new lesson:', updatedLesson)
                 }
-                setEditDialogOpen(false);
+                setEditDialogOpen(false)
               }}
               onCancel={() => setEditDialogOpen(false)}
               viewMode='teacher'

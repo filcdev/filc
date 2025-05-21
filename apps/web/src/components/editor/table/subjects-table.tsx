@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
 
 export function SubjectsTable() {
@@ -79,7 +79,7 @@ export function SubjectsTable() {
       <div className='flex justify-between items-center'>
         <h2 className='text-xl font-bold'>Subjects</h2>
         <Button onClick={handleAddSubject}>
-          <Plus className='mr-2 h-4 w-4' /> Add Subject
+          <FaPlus className='mr-2 h-4 w-4' /> Add Subject
         </Button>
       </div>
 
@@ -99,20 +99,20 @@ export function SubjectsTable() {
               <TableCell>{subject.name}</TableCell>
               <TableCell>{subject.shortName}</TableCell>
               <TableCell className='text-right'>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleEditSubject(subject)}
-                >
-                  <Pencil className='h-4 w-4' />
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleDeleteSubject(subject.id ?? '')}
-                >
-                  <Trash2 className='h-4 w-4' />
-                </Button>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => handleEditSubject(subject)}
+                  >
+                    <FaRegPenToSquare className='h-4 w-4' />
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => handleDeleteSubject(subject.id ?? '')}
+                  >
+                    <FaRegTrashCan className='h-4 w-4' />
+                  </Button>
               </TableCell>
             </TableRow>
           ))}

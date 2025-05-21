@@ -28,12 +28,12 @@ import {
   SelectValue,
 } from '@filc/ui/components/select'
 import { Tabs, TabsList, TabsTrigger } from '@filc/ui/components/tabs'
-import { AlertCircle, AlertTriangle, CheckCircle2, Printer } from 'lucide-react'
+import { FaCircleExclamation, FaTriangleExclamation, FaCircleCheck, FaPrint } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
 import { LessonForm } from '../lesson-form'
 import { PrintDialog } from '../print-dialog'
 
-// Get the type of the conflict array returned by detectConflicts 
+// Get the type of the conflict array returned by detectConflicts
 // for proper type checking
 type Conflicts = ReturnType<typeof detectConflicts>
 type Conflict = Conflicts extends Array<infer T> ? T : never
@@ -87,7 +87,7 @@ export function SchoolTimetableView() {
   const [viewMode, setViewMode] = useState<'cohort' | 'teacher' | 'room'>(
     'cohort'
   )
-  const [timetableData, setTimetableData] = 
+  const [timetableData, setTimetableData] =
     useState<TimetableLesson[]>(mockTimetableData)
   const [conflicts, setConflicts] = useState<Conflict[]>([])
   const [showConflicts, setShowConflicts] = useState(false)
@@ -112,10 +112,10 @@ export function SchoolTimetableView() {
   ) => {
     // Find if there's a lesson at this slot
     let existingLesson: TimetableLesson | undefined
-    
+
     if (viewMode === 'cohort' && cohortId) {
       existingLesson = timetableData.find(
-        (lesson) =>
+        lesson =>
           lesson.day === day &&
           lesson.periods.some(p => p.periodId === periodId) &&
           lesson.cohort === cohortId &&
@@ -125,7 +125,7 @@ export function SchoolTimetableView() {
       )
     } else if (viewMode === 'teacher' && teacherId) {
       existingLesson = timetableData.find(
-        (lesson) =>
+        lesson =>
           lesson.day === day &&
           lesson.periods.some(p => p.periodId === periodId) &&
           lesson.teacher === teacherId &&
@@ -135,7 +135,7 @@ export function SchoolTimetableView() {
       )
     } else if (viewMode === 'room' && roomId) {
       existingLesson = timetableData.find(
-        (lesson) =>
+        lesson =>
           lesson.day === day &&
           lesson.periods.some(p => p.periodId === periodId) &&
           lesson.room === roomId &&
@@ -250,11 +250,14 @@ export function SchoolTimetableView() {
                   >
                     <div className='grid grid-cols-2 gap-1 p-1'>
                       {mockCohorts.map(cohort => {
-                        const cohortName = `${cohort.year} ${cohort.designation}`.trim();
+                        const cohortName =
+                          `${cohort.year} ${cohort.designation}`.trim()
                         const lessons = timetableData.filter(
                           lesson =>
                             lesson.day === day &&
-                            lesson.periods.some(p => p.periodId === period.id) &&
+                            lesson.periods.some(
+                              p => p.periodId === period.id
+                            ) &&
                             lesson.cohort === cohort.designation &&
                             (lesson.weekType === selectedWeekType ||
                               lesson.weekType === WeekType.All ||
@@ -265,18 +268,23 @@ export function SchoolTimetableView() {
                         const hasConflict = conflicts.some(
                           conflict =>
                             (conflict.lesson1?.day === day &&
-                              conflict.lesson1?.periods?.some(p => p.periodId === period.id) &&
-                              conflict.lesson1?.cohort === cohort.designation) ||
+                              conflict.lesson1?.periods?.some(
+                                p => p.periodId === period.id
+                              ) &&
+                              conflict.lesson1?.cohort ===
+                                cohort.designation) ||
                             (conflict.lesson2 &&
                               conflict.lesson2.day === day &&
-                              conflict.lesson2.periods.some(p => p.periodId === period.id) &&
+                              conflict.lesson2.periods.some(
+                                p => p.periodId === period.id
+                              ) &&
                               conflict.lesson2.cohort === cohort.designation)
                         )
 
                         return (
                           <button
                             key={cohort.id}
-                            type="button"
+                            type='button'
                             className={`h-24 w-full text-left cursor-pointer hover:bg-muted/50 transition-colors border rounded-sm ${
                               hasConflict ? 'border-red-500' : ''
                             }`}
@@ -376,7 +384,9 @@ export function SchoolTimetableView() {
                         const lessons = timetableData.filter(
                           lesson =>
                             lesson.day === day &&
-                            lesson.periods.some(p => p.periodId === period.id) &&
+                            lesson.periods.some(
+                              p => p.periodId === period.id
+                            ) &&
                             lesson.teacher === teacher.name &&
                             (lesson.weekType === selectedWeekType ||
                               lesson.weekType === WeekType.All ||
@@ -387,18 +397,22 @@ export function SchoolTimetableView() {
                         const hasConflict = conflicts.some(
                           conflict =>
                             (conflict.lesson1?.day === day &&
-                              conflict.lesson1?.periods?.some(p => p.periodId === period.id) &&
+                              conflict.lesson1?.periods?.some(
+                                p => p.periodId === period.id
+                              ) &&
                               conflict.lesson1?.teacher === teacher.name) ||
                             (conflict.lesson2 &&
                               conflict.lesson2.day === day &&
-                              conflict.lesson2.periods.some(p => p.periodId === period.id) &&
+                              conflict.lesson2.periods.some(
+                                p => p.periodId === period.id
+                              ) &&
                               conflict.lesson2.teacher === teacher.name)
                         )
 
                         return (
                           <button
                             key={teacher.id}
-                            type="button"
+                            type='button'
                             className={`h-24 w-full text-left cursor-pointer hover:bg-muted/50 transition-colors border rounded-sm ${
                               hasConflict ? 'border-red-500' : ''
                             }`}
@@ -499,7 +513,9 @@ export function SchoolTimetableView() {
                         const lessons = timetableData.filter(
                           lesson =>
                             lesson.day === day &&
-                            lesson.periods.some(p => p.periodId === period.id) &&
+                            lesson.periods.some(
+                              p => p.periodId === period.id
+                            ) &&
                             lesson.room === room.name &&
                             (lesson.weekType === selectedWeekType ||
                               lesson.weekType === WeekType.All ||
@@ -510,18 +526,22 @@ export function SchoolTimetableView() {
                         const hasConflict = conflicts.some(
                           conflict =>
                             (conflict.lesson1?.day === day &&
-                              conflict.lesson1?.periods?.some(p => p.periodId === period.id) &&
+                              conflict.lesson1?.periods?.some(
+                                p => p.periodId === period.id
+                              ) &&
                               conflict.lesson1?.room === room.name) ||
                             (conflict.lesson2 &&
                               conflict.lesson2.day === day &&
-                              conflict.lesson2.periods.some(p => p.periodId === period.id) &&
+                              conflict.lesson2.periods.some(
+                                p => p.periodId === period.id
+                              ) &&
                               conflict.lesson2.room === room.name)
                         )
 
                         return (
                           <button
                             key={room.id}
-                            type="button"
+                            type='button'
                             className={`h-24 w-full text-left cursor-pointer hover:bg-muted/50 transition-colors border rounded-sm ${
                               hasConflict ? 'border-red-500' : ''
                             }`}
@@ -604,7 +624,7 @@ export function SchoolTimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={(value) => setSelectedWeekType(value as WeekType)}
+            onValueChange={value => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -618,7 +638,9 @@ export function SchoolTimetableView() {
 
           <Tabs
             value={viewMode}
-            onValueChange={(value) => setViewMode(value as 'cohort' | 'teacher' | 'room')}
+            onValueChange={value =>
+              setViewMode(value as 'cohort' | 'teacher' | 'room')
+            }
             className='w-[400px]'
           >
             <TabsList className='grid grid-cols-3'>
@@ -635,11 +657,11 @@ export function SchoolTimetableView() {
             onClick={() => setShowConflicts(true)}
             disabled={conflicts.length === 0}
           >
-            <AlertTriangle className='mr-2 h-4 w-4' />
+            <FaTriangleExclamation className='mr-2 h-4 w-4' />
             Conflicts ({conflicts.length})
           </Button>
           <Button variant='outline' onClick={() => setPrintDialogOpen(true)}>
-            <Printer className='mr-2 h-4 w-4' />
+            <FaPrint className='mr-2 h-4 w-4' />
             Print
           </Button>
           <Button>Save Changes</Button>
@@ -648,7 +670,7 @@ export function SchoolTimetableView() {
 
       {conflicts.length > 0 && (
         <Alert variant='destructive'>
-          <AlertCircle className='h-4 w-4' />
+          <FaCircleExclamation className='h-4 w-4' />
           <AlertTitle>Warning</AlertTitle>
           <AlertDescription>
             There are {conflicts.length} scheduling conflicts in the timetable.
@@ -671,15 +693,23 @@ export function SchoolTimetableView() {
           {editingLesson && (
             <LessonForm
               lesson={mapToDbLesson(editingLesson)}
-              onSave={(savedLesson) => {
+              onSave={savedLesson => {
                 // Convert back from DB format to timetable format before saving
                 const updatedLesson: TimetableLesson = {
                   ...editingLesson,
                   id: savedLesson.id || editingLesson.id,
-                  subject: mockSubjects.find(s => s.id === savedLesson.subjectId)?.name || '',
-                  teacher: mockTeachers.find(t => t.id === savedLesson.teacherId)?.name || '',
-                  room: mockRooms.find(r => r.id === savedLesson.roomId)?.name || '',
-                  cohort: mockCohorts.find(c => c.id === savedLesson.cohortId)?.designation || '',
+                  subject:
+                    mockSubjects.find(s => s.id === savedLesson.subjectId)
+                      ?.name || '',
+                  teacher:
+                    mockTeachers.find(t => t.id === savedLesson.teacherId)
+                      ?.name || '',
+                  room:
+                    mockRooms.find(r => r.id === savedLesson.roomId)?.name ||
+                    '',
+                  cohort:
+                    mockCohorts.find(c => c.id === savedLesson.cohortId)
+                      ?.designation || '',
                   day: savedLesson.day,
                   weekType: savedLesson.weekType,
                 }
@@ -700,26 +730,26 @@ export function SchoolTimetableView() {
           <div className='space-y-4'>
             {conflicts.length === 0 ? (
               <Alert>
-                <CheckCircle2 className='h-4 w-4' />
+                <FaCircleCheck className='h-4 w-4' />
                 <AlertTitle>No Conflicts</AlertTitle>
                 <AlertDescription>
                   No scheduling conflicts found in the timetable.
                 </AlertDescription>
               </Alert>
             ) : (
-              conflicts.map((conflict) => (
-                <Alert 
-                  key={`${conflict.type}-${conflict.message?.substring(0, 20)}`} 
+              conflicts.map(conflict => (
+                <Alert
+                  key={`${conflict.type}-${conflict.message?.substring(0, 20)}`}
                   variant='destructive'
                 >
-                  <AlertCircle className='h-4 w-4' />
+                  <FaCircleExclamation className='h-4 w-4' />
                   <AlertTitle>{conflict.type || 'Conflict'}</AlertTitle>
                   <AlertDescription>{conflict.message}</AlertDescription>
                 </Alert>
               ))
             )}
             <div className='flex justify-end space-x-2 pt-4'>
-              <Button 
+              <Button
                 variant='destructive'
                 onClick={() => setShowConflicts(false)}
               >

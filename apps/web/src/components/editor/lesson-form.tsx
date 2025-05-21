@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filc/ui/components/select'
-import { AlertCircle } from 'lucide-react'
+import { FaCircleExclamation } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
 
 interface LessonFormData {
@@ -473,7 +473,7 @@ export function LessonForm({
         {/* Conflict Alerts */}
         {conflicts.length > 0 && (
           <Alert variant='destructive'>
-            <AlertCircle className='h-4 w-4' />
+            <FaCircleExclamation className='h-4 w-4' />
             <AlertTitle>Potential Conflicts</AlertTitle>
             <AlertDescription>
               <ul className='list-disc pl-5 space-y-1'>

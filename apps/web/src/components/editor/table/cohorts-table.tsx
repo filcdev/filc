@@ -27,21 +27,27 @@ import {
   TableRow,
 } from '@filc/ui/components/table'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
 
 export function CohortsTable() {
   const t = useTRPC()
   const cohortQuery = useQuery(t.cohort.getAll.queryOptions())
-  const cohortCreator = useMutation(t.cohort.create.mutationOptions({
-    onSuccess: () => cohortQuery.refetch(),
-  }))
-  const cohortUpdater = useMutation(t.cohort.update.mutationOptions({
-    onSuccess: () => cohortQuery.refetch(),
-  }))
-  const cohortDeleter = useMutation(t.cohort.delete.mutationOptions({
-    onSuccess: () => cohortQuery.refetch(),
-  }))
+  const cohortCreator = useMutation(
+    t.cohort.create.mutationOptions({
+      onSuccess: () => cohortQuery.refetch(),
+    })
+  )
+  const cohortUpdater = useMutation(
+    t.cohort.update.mutationOptions({
+      onSuccess: () => cohortQuery.refetch(),
+    })
+  )
+  const cohortDeleter = useMutation(
+    t.cohort.delete.mutationOptions({
+      onSuccess: () => cohortQuery.refetch(),
+    })
+  )
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
   const [editingCohort, setEditingCohort] = useState<Insert<
     typeof Cohort
@@ -99,7 +105,7 @@ export function CohortsTable() {
       <div className='flex justify-between items-center'>
         <h2 className='text-xl font-bold'>Cohorts</h2>
         <Button onClick={handleAddCohort}>
-          <Plus className='mr-2 h-4 w-4' /> Add Cohort
+          <FaPlus className='mr-2 h-4 w-4' /> Add Cohort
         </Button>
       </div>
 
@@ -130,14 +136,14 @@ export function CohortsTable() {
                   size='icon'
                   onClick={() => handleEditCohort(cohort)}
                 >
-                  <Pencil className='h-4 w-4' />
+                  <FaRegPenToSquare className='h-4 w-4' />
                 </Button>
                 <Button
                   variant='ghost'
                   size='icon'
                   onClick={() => handleDeleteCohort(cohort.id ?? '')}
                 >
-                  <Trash2 className='h-4 w-4' />
+                  <FaRegTrashCan className='h-4 w-4' />
                 </Button>
               </TableCell>
             </TableRow>

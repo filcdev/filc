@@ -1,13 +1,13 @@
 import { CohortsTable } from '@/components/editor/table/cohorts-table'
 import { PeriodsTable } from '@/components/editor/table/periods-table'
-import { RoomTimetableView } from '@/components/editor/view/room-timetable-view'
 import { RoomsTable } from '@/components/editor/table/rooms-table'
-import { SchoolTimetableView } from '@/components/editor/view/school-timetable-view'
 import { SubjectsTable } from '@/components/editor/table/subjects-table'
-import { TeacherTimetableView } from '@/components/editor/view/teacher-timetable-view'
 import { TeachersTable } from '@/components/editor/table/teachers-table'
-import { TimetableView } from '@/components/editor/view/timetable-view'
 import { TimetablesTable } from '@/components/editor/table/timetables-table'
+import { RoomTimetableView } from '@/components/editor/view/room-timetable-view'
+import { SchoolTimetableView } from '@/components/editor/view/school-timetable-view'
+import { TeacherTimetableView } from '@/components/editor/view/teacher-timetable-view'
+import { TimetableView } from '@/components/editor/view/timetable-view'
 import {
   Tabs,
   TabsContent,

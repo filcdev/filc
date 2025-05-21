@@ -1,6 +1,13 @@
 import { Day, WeekType } from '@/lib/editor/conflict'
 import { detectConflicts } from '@/lib/editor/conflict'
-import { mockCohorts, mockPeriods, mockRooms, mockSubjects, mockTeachers, mockTimetableData } from '@/lib/editor/mock'
+import {
+  mockCohorts,
+  mockPeriods,
+  mockRooms,
+  mockSubjects,
+  mockTeachers,
+  mockTimetableData,
+} from '@/lib/editor/mock'
 import type { lesson as Lesson } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
 import { Alert, AlertDescription, AlertTitle } from '@filc/ui/components/alert'
@@ -20,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filc/ui/components/select'
-import { AlertCircle, AlertTriangle, Printer } from 'lucide-react'
+import { FaCircleExclamation, FaTriangleExclamation, FaPrint } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
 import { LessonForm } from '../lesson-form'
 import { PrintDialog } from '../print-dialog'
@@ -73,10 +80,13 @@ export function TimetableView() {
   )
   const [selectedTimetable, setSelectedTimetable] =
     useState<string>('Summer 2024')
-  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(null)
+  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(
+    null
+  )
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false)
   const [printDialogOpen, setPrintDialogOpen] = useState<boolean>(false)
-  const [timetableData, setTimetableData] = useState<TimetableLesson[]>(mockTimetableData)
+  const [timetableData, setTimetableData] =
+    useState<TimetableLesson[]>(mockTimetableData)
   const [conflicts, setConflicts] = useState<Conflict[]>([])
   const [showConflicts, setShowConflicts] = useState<boolean>(false)
 
@@ -209,7 +219,7 @@ export function TimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={(value) => setSelectedWeekType(value as WeekType)}
+            onValueChange={value => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -228,11 +238,11 @@ export function TimetableView() {
             onClick={() => setShowConflicts(true)}
             disabled={conflicts.length === 0}
           >
-            <AlertTriangle className='mr-2 h-4 w-4' />
+            <FaTriangleExclamation className='mr-2 h-4 w-4' />
             Conflicts ({conflicts.length})
           </Button>
           <Button variant='outline' onClick={() => setPrintDialogOpen(true)}>
-            <Printer className='mr-2 h-4 w-4' />
+            <FaPrint className='mr-2 h-4 w-4' />
             Print
           </Button>
           <Button>Save Changes</Button>
@@ -241,7 +251,7 @@ export function TimetableView() {
 
       {conflicts.length > 0 && (
         <Alert variant='destructive'>
-          <AlertCircle className='h-4 w-4' />
+          <FaCircleExclamation className='h-4 w-4' />
           <AlertTitle>Warning</AlertTitle>
           <AlertDescription>
             There are {conflicts.length} scheduling conflicts for this cohort.
@@ -311,8 +321,8 @@ export function TimetableView() {
                       }`}
                     >
                       <button
-                        type="button"
-                        className="w-full h-full text-left bg-transparent border-0 cursor-pointer hover:bg-muted/50 transition-colors p-0"
+                        type='button'
+                        className='w-full h-full text-left bg-transparent border-0 cursor-pointer hover:bg-muted/50 transition-colors p-0'
                         onClick={() => handleCellClick(day, period.id)}
                         aria-label={`Edit timetable for ${day} at period ${period.name ?? period.id}`}
                       >
@@ -332,7 +342,10 @@ export function TimetableView() {
                                     <span>{lesson.room}</span>
                                   </div>
                                   {lesson.weekType !== WeekType.All && (
-                                    <Badge variant='outline' className='text-xs'>
+                                    <Badge
+                                      variant='outline'
+                                      className='text-xs'
+                                    >
                                       Week {lesson.weekType.toUpperCase()}
                                     </Badge>
                                   )}
@@ -347,7 +360,7 @@ export function TimetableView() {
                         )}
                       </button>
                     </td>
-                  );
+                  )
                 })}
               </tr>
             ))}
@@ -365,17 +378,25 @@ export function TimetableView() {
           {editingLesson && (
             <LessonForm
               lesson={mapToDbLesson(editingLesson)}
-              onSave={(savedLesson) => {
+              onSave={savedLesson => {
                 // Convert back from DB format to timetable format before saving
                 const updatedLesson: TimetableLesson = {
                   ...editingLesson,
                   id: savedLesson.id || editingLesson.id,
-                  subject: mockSubjects.find(s => s.id === savedLesson.subjectId)?.name || '',
-                  teacher: mockTeachers.find(t => t.id === savedLesson.teacherId)?.name || '',
-                  room: mockRooms.find(r => r.id === savedLesson.roomId)?.name || '',
-                  cohort: mockCohorts.find(c => c.id === savedLesson.cohortId)?.designation || '',
+                  subject:
+                    mockSubjects.find(s => s.id === savedLesson.subjectId)
+                      ?.name || '',
+                  teacher:
+                    mockTeachers.find(t => t.id === savedLesson.teacherId)
+                      ?.name || '',
+                  room:
+                    mockRooms.find(r => r.id === savedLesson.roomId)?.name ||
+                    '',
+                  cohort:
+                    mockCohorts.find(c => c.id === savedLesson.cohortId)
+                      ?.designation || '',
                   day: savedLesson.day,
-                  weekType: savedLesson.weekType
+                  weekType: savedLesson.weekType,
                 }
                 handleSaveLesson(updatedLesson)
               }}
@@ -400,9 +421,12 @@ export function TimetableView() {
                 </AlertDescription>
               </Alert>
             ) : (
-              conflicts.map((conflict) => (
-                <Alert key={`${conflict.type}-${conflict.day}-${conflict.periodName}`} variant='destructive'>
-                  <AlertCircle className='h-4 w-4' />
+              conflicts.map(conflict => (
+                <Alert
+                  key={`${conflict.type}-${conflict.day}-${conflict.periodName}`}
+                  variant='destructive'
+                >
+                  <FaCircleExclamation className='h-4 w-4' />
                   <AlertTitle>{conflict.type} Conflict</AlertTitle>
                   <AlertDescription className='space-y-2'>
                     {conflict.day && (

@@ -1,9 +1,9 @@
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { TRPCError } from "@trpc/server";
-import { db } from "@filc/db";
-import { cohort } from "@filc/db/schema/timetable";
-import { eq } from "drizzle-orm";
+import { db } from '@filc/db'
+import { cohort } from '@filc/db/schema/timetable'
+import { TRPCError } from '@trpc/server'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
+import { createTRPCRouter, protectedProcedure } from '../trpc'
 
 export const cohortRouter = createTRPCRouter({
   create: protectedProcedure
@@ -14,7 +14,7 @@ export const cohortRouter = createTRPCRouter({
         classMasterId: z.string(),
         secondaryClassMasterId: z.string(),
         headquartersRoomId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       try {
@@ -22,37 +22,37 @@ export const cohortRouter = createTRPCRouter({
           headers: ctx.req.headers,
           body: {
             permissions: {
-              cohort: ["create"],
+              cohort: ['create'],
             },
           },
-        });
+        })
 
         if (!hasPermission.success) {
-          ctx.logger.error(`Failed to create cohort: ${hasPermission.error}`);
+          ctx.logger.error(`Failed to create cohort: ${hasPermission.error}`)
 
           throw new TRPCError({
-            message: "You do not have permission to create a cohort.",
-            code: "FORBIDDEN",
-          });
+            message: 'You do not have permission to create a cohort.',
+            code: 'FORBIDDEN',
+          })
         }
 
         if (input.designation.length !== 3) {
           throw new TRPCError({
-            message: "Designation length must be 3.",
-            code: "BAD_REQUEST",
-          });
+            message: 'Designation length must be 3.',
+            code: 'BAD_REQUEST',
+          })
         }
 
-        await db.insert(cohort).values(input);
+        await db.insert(cohort).values(input)
       } catch (error) {
-        const msg = "Failed to create cohort.";
+        const msg = 'Failed to create cohort.'
 
-        ctx.logger.error(`${msg}: ${error}`);
+        ctx.logger.error(`${msg}: ${error}`)
 
         throw new TRPCError({
           message: msg,
-          code: "INTERNAL_SERVER_ERROR",
-        });
+          code: 'INTERNAL_SERVER_ERROR',
+        })
       }
     }),
   get: protectedProcedure.input(z.string()).query(async ({ ctx, input }) => {
@@ -61,34 +61,30 @@ export const cohortRouter = createTRPCRouter({
         headers: ctx.req.headers,
         body: {
           permissions: {
-            cohort: ["read"],
+            cohort: ['read'],
           },
         },
-      });
+      })
 
       if (!hasPermission.success) {
-        ctx.logger.error(`Failed to get cohort: ${hasPermission.error}`);
+        ctx.logger.error(`Failed to get cohort: ${hasPermission.error}`)
 
         throw new TRPCError({
-          message: "You do not have permission to get a cohort.",
-          code: "FORBIDDEN",
-        });
+          message: 'You do not have permission to get a cohort.',
+          code: 'FORBIDDEN',
+        })
       }
 
-      return await db
-        .select()
-        .from(cohort)
-        .where(eq(cohort.id, input))
-        .limit(1);
+      return await db.select().from(cohort).where(eq(cohort.id, input)).limit(1)
     } catch (error) {
-      const msg = "Failed to create cohort.";
+      const msg = 'Failed to create cohort.'
 
-      ctx.logger.error(`${msg}: ${error}`);
+      ctx.logger.error(`${msg}: ${error}`)
 
       throw new TRPCError({
         message: msg,
-        code: "INTERNAL_SERVER_ERROR",
-      });
+        code: 'INTERNAL_SERVER_ERROR',
+      })
     }
   }),
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -97,33 +93,32 @@ export const cohortRouter = createTRPCRouter({
         headers: ctx.req.headers,
         body: {
           permissions: {
-            cohort: ["read"],
+            cohort: ['read'],
           },
         },
-      });
+      })
 
       if (!hasPermission.success) {
-        ctx.logger.error(`Failed to get all cohorts: ${hasPermission.error}`);
+        ctx.logger.error(`Failed to get all cohorts: ${hasPermission.error}`)
 
         throw new TRPCError({
-          message: "You do not have permission to get all cohorts.",
-          code: "FORBIDDEN",
-        });
+          message: 'You do not have permission to get all cohorts.',
+          code: 'FORBIDDEN',
+        })
       }
 
-      return await db.select().from(cohort);
+      return await db.select().from(cohort)
     } catch (error) {
-      const msg = "Failed to get all cohorts.";
+      const msg = 'Failed to get all cohorts.'
 
-      ctx.logger.error(`${msg}: ${error}`);
+      ctx.logger.error(`${msg}: ${error}`)
 
       throw new TRPCError({
         message: msg,
-        code: "INTERNAL_SERVER_ERROR",
-      });
+        code: 'INTERNAL_SERVER_ERROR',
+      })
     }
-  }
-  ),
+  }),
   delete: protectedProcedure
     .input(z.string())
     .mutation(async ({ ctx, input }) => {
@@ -132,33 +127,32 @@ export const cohortRouter = createTRPCRouter({
           headers: ctx.req.headers,
           body: {
             permissions: {
-              cohort: ["delete"],
+              cohort: ['delete'],
             },
           },
-        });
+        })
 
         if (!hasPermission.success) {
-          ctx.logger.error(`Failed to delete cohort: ${hasPermission.error}`);
+          ctx.logger.error(`Failed to delete cohort: ${hasPermission.error}`)
 
           throw new TRPCError({
-            message: "You do not have permission to delete a cohort.",
-            code: "FORBIDDEN",
-          });
+            message: 'You do not have permission to delete a cohort.',
+            code: 'FORBIDDEN',
+          })
         }
 
-        await db.delete(cohort).where(eq(cohort.id, input));
+        await db.delete(cohort).where(eq(cohort.id, input))
       } catch (error) {
-        const msg = "Failed to delete cohort.";
+        const msg = 'Failed to delete cohort.'
 
-        ctx.logger.error(`${msg}: ${error}`);
+        ctx.logger.error(`${msg}: ${error}`)
 
         throw new TRPCError({
           message: msg,
-          code: "INTERNAL_SERVER_ERROR",
-        });
+          code: 'INTERNAL_SERVER_ERROR',
+        })
       }
-    }
-  ),
+    }),
   update: protectedProcedure
     .input(
       z.object({
@@ -168,7 +162,7 @@ export const cohortRouter = createTRPCRouter({
         classMasterId: z.string(),
         secondaryClassMasterId: z.string(),
         headquartersRoomId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       try {
@@ -176,41 +170,37 @@ export const cohortRouter = createTRPCRouter({
           headers: ctx.req.headers,
           body: {
             permissions: {
-              cohort: ["update"],
+              cohort: ['update'],
             },
           },
-        });
+        })
 
         if (!hasPermission.success) {
-          ctx.logger.error(`Failed to update cohort: ${hasPermission.error}`);
+          ctx.logger.error(`Failed to update cohort: ${hasPermission.error}`)
 
           throw new TRPCError({
-            message: "You do not have permission to update a cohort.",
-            code: "FORBIDDEN",
-          });
+            message: 'You do not have permission to update a cohort.',
+            code: 'FORBIDDEN',
+          })
         }
 
         if (input.designation.length !== 3) {
           throw new TRPCError({
-            message: "Designation length must be 3.",
-            code: "BAD_REQUEST",
-          });
+            message: 'Designation length must be 3.',
+            code: 'BAD_REQUEST',
+          })
         }
 
-        await db
-          .update(cohort)
-          .set(input)
-          .where(eq(cohort.id, input.id));
+        await db.update(cohort).set(input).where(eq(cohort.id, input.id))
       } catch (error) {
-        const msg = "Failed to update cohort.";
+        const msg = 'Failed to update cohort.'
 
-        ctx.logger.error(`${msg}: ${error}`);
+        ctx.logger.error(`${msg}: ${error}`)
 
         throw new TRPCError({
           message: msg,
-          code: "INTERNAL_SERVER_ERROR",
-        });
+          code: 'INTERNAL_SERVER_ERROR',
+        })
       }
-    }
-  ),
-});
+    }),
+})

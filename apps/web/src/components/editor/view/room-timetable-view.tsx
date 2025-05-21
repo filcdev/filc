@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filc/ui/components/select'
-import { Printer } from 'lucide-react'
+import { FaPrint } from 'react-icons/fa6'
 import { useState } from 'react'
 import { LessonForm } from '../lesson-form'
 import { PrintDialog } from '../print-dialog'
@@ -189,7 +189,7 @@ export function RoomTimetableView() {
 
         <div className='flex gap-2'>
           <Button variant='outline' onClick={() => setPrintDialogOpen(true)}>
-            <Printer className='mr-2 h-4 w-4' />
+            <FaPrint className='mr-2 h-4 w-4' />
             Print
           </Button>
           <Button>Save Changes</Button>
