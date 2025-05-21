@@ -1,10 +1,12 @@
 import './App.css'
 
+import { GithubTicker } from '@/components/github'
+import { LanguageSwitcher } from '@/components/language-toggle'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { LanguageProvider, useLanguage } from '@/lib/language'
+import { ThemeProvider } from '@/lib/theme'
 import { Button } from '@filc/ui/components/button'
 import { Logo } from '@filc/ui/components/logo'
-import LanguageSwitcher from './LanguageSwitcher'
-import GithubTicker from './components/github'
-import { LanguageProvider, useLanguage } from './lib/language'
 
 const AppContent = () => {
   const { get } = useLanguage()
@@ -16,7 +18,10 @@ const AppContent = () => {
           <Logo className='h-8 w-8 scale-150' />
           <span className='text-2xl font-bold'>Filc</span>
         </div>
-        <LanguageSwitcher />
+        <div className='flex items-center gap-4'>
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <main className='flex-1 container mx-auto px-4 py-12 flex flex-col items-center justify-center text-center'>
@@ -55,9 +60,11 @@ const AppContent = () => {
 }
 
 const App = () => (
-  <LanguageProvider>
-    <AppContent />
-  </LanguageProvider>
+  <ThemeProvider defaultTheme='system'>
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  </ThemeProvider>
 )
 
 export default App

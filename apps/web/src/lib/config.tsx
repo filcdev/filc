@@ -1,3 +1,4 @@
+import { Loader } from '@/components/loader'
 import type React from 'react'
 import {
   createContext,
@@ -75,7 +76,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({
     return <div>Failed to load config: {error}</div>
   }
   if (!config) {
-    return <div>Loading configuration...</div>
+    return <Loader />
   }
   return (
     <ConfigContext.Provider value={config}>{children}</ConfigContext.Provider>

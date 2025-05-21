@@ -1,7 +1,7 @@
+import { useLanguage } from '@/lib/language'
 import { Button } from '@filc/ui/components/button'
-import { useLanguage } from './lib/language'
 
-const LanguageSwitcher = () => {
+export const LanguageSwitcher = () => {
   const { language, setLanguage } = useLanguage()
   return (
     <Button
@@ -14,5 +14,3 @@ const LanguageSwitcher = () => {
     </Button>
   )
 }
-
-export default LanguageSwitcher

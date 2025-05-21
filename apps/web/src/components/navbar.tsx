@@ -1,5 +1,3 @@
-'use client'
-
 import { useAuth } from '@/lib/auth'
 import { Button } from '@filc/ui/components/button'
 import { Logo } from '@filc/ui/components/logo'

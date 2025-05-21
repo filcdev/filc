@@ -1,5 +1,5 @@
 import { db } from '@filc/db'
-import { substitution } from '@filc/db/schema/timetable.ts'
+import { substitution } from '@filc/db/schema/timetable'
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -32,6 +32,19 @@ export const substitutionRouter = createTRPCRouter({
           throw new TRPCError({
             message: 'You do not have permission to create a substitution.',
             code: 'FORBIDDEN',
+          })
+        }
+
+        const existingSubstitution = await db
+          .select()
+          .from(substitution)
+          .where(eq(substitution.lessonId, input.lessonId))
+          .limit(1)
+
+        if (existingSubstitution) {
+          throw new TRPCError({
+            message: 'There is already a substitution for that lesson.',
+            code: 'INTERNAL_SERVER_ERROR',
           })
         }
 
@@ -91,7 +104,7 @@ export const substitutionRouter = createTRPCRouter({
 
   getByLesson: protectedProcedure
     .input(z.string())
-    .mutation(async ({ input, ctx }) => {
+    .query(async ({ input, ctx }) => {
       try {
         await db
           .select()
@@ -114,9 +127,9 @@ export const substitutionRouter = createTRPCRouter({
 
   getByTeacher: protectedProcedure
     .input(z.string())
-    .mutation(async ({ input, ctx }) => {
+    .query(async ({ input, ctx }) => {
       try {
-        await db
+        return await db
           .select()
           .from(substitution)
           .where(eq(substitution.teacherId, input))
