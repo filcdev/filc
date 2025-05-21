@@ -10,12 +10,12 @@
 
 // Import Routes
 
-import { Route as appIndexImport } from './routes/(app)/index'
-import { Route as appRouteImport } from './routes/(app)/route'
-import { Route as appTimetablePageImport } from './routes/(app)/timetable/page'
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthErrorImport } from './routes/auth/error'
+import { Route as appRouteImport } from './routes/(app)/route'
 import { Route as AuthIndexImport } from './routes/auth/index'
+import { Route as appIndexImport } from './routes/(app)/index'
+import { Route as AuthErrorImport } from './routes/auth/error'
+import { Route as appTimetablePageImport } from './routes/(app)/timetable/page'
 
 // Create/Update Routes
 

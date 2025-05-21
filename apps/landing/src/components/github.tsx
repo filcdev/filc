@@ -5,7 +5,7 @@ import { useEffect, useState } from 'preact/hooks'
 import { FaGithub } from 'react-icons/fa6'
 import { useLanguage } from '../lib/language'
 
-const GithubTicker = () => {
+export const GithubTicker = () => {
   const [lastCommit, setLastCommit] = useState<{
     date: dayjs.Dayjs
     user: string
@@ -35,7 +35,7 @@ const GithubTicker = () => {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: either I'm stupid or the linter is
   useEffect(() => {
     fetchLastCommit()
   }, [language])
@@ -66,8 +66,8 @@ const GithubTicker = () => {
 
   return (
     <div className='flex flex-col px-4 md:px-0 md:flex-row items-center gap-2 mb-4'>
-      <FaGithub className='text-xl text-gray-600' />
-      <span className='text-sm text-gray-600'>
+      <FaGithub className='text-xl text-muted-foreground' />
+      <span className='text-sm text-muted-foreground'>
         {get('github', {
           time: lastCommit.date.fromNow(),
           user: lastCommit.user,
@@ -76,5 +76,3 @@ const GithubTicker = () => {
     </div>
   )
 }
-
-export default GithubTicker
