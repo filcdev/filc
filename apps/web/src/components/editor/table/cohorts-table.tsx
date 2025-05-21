@@ -1,4 +1,5 @@
-import { mockCohorts, mockRooms, mockTeachers } from '@/lib/editor/mock'
+import { mockRooms, mockTeachers } from '@/lib/editor/mock'
+import { useTRPC } from '@/lib/trpc'
 import type { cohort as Cohort } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
 import { Button } from '@filc/ui/components/button'
@@ -25,11 +26,22 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 export function CohortsTable() {
-  const [cohorts, setCohorts] = useState<Insert<typeof Cohort>[]>(mockCohorts)
+  const t = useTRPC()
+  const cohortQuery = useQuery(t.cohort.getAll.queryOptions())
+  const cohortCreator = useMutation(t.cohort.create.mutationOptions({
+    onSuccess: () => cohortQuery.refetch(),
+  }))
+  const cohortUpdater = useMutation(t.cohort.update.mutationOptions({
+    onSuccess: () => cohortQuery.refetch(),
+  }))
+  const cohortDeleter = useMutation(t.cohort.delete.mutationOptions({
+    onSuccess: () => cohortQuery.refetch(),
+  }))
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
   const [editingCohort, setEditingCohort] = useState<Insert<
     typeof Cohort
@@ -53,32 +65,30 @@ export function CohortsTable() {
   }
 
   const handleDeleteCohort = (id: string) => {
-    setCohorts(cohorts.filter(cohort => cohort.id !== id))
+    if (!id) return
+    cohortDeleter.mutate(id)
   }
 
   const handleSaveCohort = (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (editingCohort?.id) {
-      setCohorts(
-        cohorts.map(cohort =>
-          cohort.id === editingCohort.id ? editingCohort : cohort
-        )
-      )
-    } else if (editingCohort) {
-      setCohorts([...cohorts, editingCohort])
+    if (!editingCohort) return
+    if (editingCohort.id) {
+      cohortUpdater.mutate({
+        // why do I have to make this type assertion?
+        id: editingCohort.id,
+        ...editingCohort,
+      })
+    } else {
+      cohortCreator.mutate(editingCohort)
     }
-
     setIsDialogOpen(false)
   }
 
-  // Helper function to get teacher name by ID
   const getTeacherName = (id: string) => {
     const teacher = mockTeachers.find(t => t.id === id)
     return teacher ? teacher.name : 'Unknown'
   }
 
-  // Helper function to get room name by ID
   const getRoomName = (id: string) => {
     const room = mockRooms.find(r => r.id === id)
     return room ? room.name : 'Unknown'
@@ -105,7 +115,7 @@ export function CohortsTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {cohorts.map(cohort => (
+          {cohortQuery.data?.map(cohort => (
             <TableRow key={cohort.id}>
               <TableCell>{cohort.year}</TableCell>
               <TableCell>{cohort.designation}</TableCell>
