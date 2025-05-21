@@ -4,6 +4,7 @@ import { Sentry } from '@/lib/sentry'
 import { TrpcProvider } from '@/lib/trpc'
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { Toaster } from '@filc/ui/components/sonner'
 
 const RootLayout = () => {
   return (
@@ -13,6 +14,7 @@ const RootLayout = () => {
           <Outlet />
           <TanStackRouterDevtools />
           <Sentry />
+          <Toaster richColors />
         </TrpcProvider>
       </AuthProvider>
     </ConfigProvider>

@@ -17,7 +17,7 @@ export const UserMenu = () => {
   const navigate = useNavigate()
 
   if (isPending) {
-    // todo: skeleton
+    // TODO: skeleton
     return null
   }
 
