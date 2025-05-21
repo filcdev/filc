@@ -22,10 +22,9 @@ import {
 } from '@filc/ui/components/select'
 import { AlertCircle, AlertTriangle, Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { LessonForm } from './lesson-form'
-import { PrintDialog } from './print-dialog'
+import { LessonForm } from '../lesson-form'
+import { PrintDialog } from '../print-dialog'
 
-// Define the types for timetable data based on other components
 interface Period {
   periodId: string
 }
@@ -41,8 +40,6 @@ interface TimetableLesson {
   periods: Period[]
 }
 
-// Get the type of the conflict array returned by detectConflicts 
-// for proper type checking
 type Conflicts = ReturnType<typeof detectConflicts>
 type Conflict = Conflicts extends Array<infer T> ? T : never
 

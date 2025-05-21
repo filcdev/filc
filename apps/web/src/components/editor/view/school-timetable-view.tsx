@@ -30,8 +30,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@filc/ui/components/tabs'
 import { AlertCircle, AlertTriangle, CheckCircle2, Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { LessonForm } from './lesson-form'
-import { PrintDialog } from './print-dialog'
+import { LessonForm } from '../lesson-form'
+import { PrintDialog } from '../print-dialog'
 
 // Get the type of the conflict array returned by detectConflicts 
 // for proper type checking

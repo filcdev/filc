@@ -1,11 +1,11 @@
 import { Day, WeekType } from '@/lib/editor/conflict'
-import {
+import { 
   mockCohorts,
-  mockPeriods,
+  mockPeriods, 
   mockRooms,
   mockSubjects,
-  mockTeachers,
-  mockTimetableData,
+  mockTeachers, 
+  mockTimetableData 
 } from '@/lib/editor/mock'
 import type { lesson as Lesson } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
@@ -27,8 +27,8 @@ import {
 } from '@filc/ui/components/select'
 import { Printer } from 'lucide-react'
 import { useState } from 'react'
-import { LessonForm } from './lesson-form'
-import { PrintDialog } from './print-dialog'
+import { LessonForm } from '../lesson-form'
+import { PrintDialog } from '../print-dialog'
 
 // Define the structure of the lesson data as used in the timetable view
 interface TimetableLesson {
@@ -42,15 +42,7 @@ interface TimetableLesson {
   periods: { periodId: string }[]
 }
 
-// Define the structure of the period data as shown in the UI
-interface UIPeriod {
-  id: string
-  name: string
-  startTime: string
-  endTime: string
-}
-
-// Map TimetableLesson to Insert<typeof Lesson>
+// Map TimetableLesson to Insert<typeof Lesson> for database operations
 const mapToDbLesson = (lesson: TimetableLesson): Insert<typeof Lesson> => {
   // Find IDs based on display names
   const subjectId = mockSubjects.find(s => s.name === lesson.subject)?.id || ''
@@ -73,33 +65,19 @@ const mapToDbLesson = (lesson: TimetableLesson): Insert<typeof Lesson> => {
   }
 }
 
-// Define the room type from the mock data
-type RoomType = {
-  id: string
-  name: string
-  shortName: string
-  capacity: number
-  createdAt: Date
-  updatedAt: Date
-}
-
-export function RoomTimetableView() {
-  // Make sure we have a default value even if the array is empty
-  // TypeScript non-null assertion is safe here as we know the mockRooms array is initialized with values
-  const defaultRoom = mockRooms[0]?.name ?? 'No Room'
-  const [selectedRoom, setSelectedRoom] = useState<string>(defaultRoom)
+export function TeacherTimetableView() {
+  const [selectedTeacher, setSelectedTeacher] = useState<string>(
+    mockTeachers[0]?.name || 'No Teacher Selected'
+  )
   const [selectedWeekType, setSelectedWeekType] = useState<WeekType>(
     WeekType.All
   )
   const [selectedTimetable, setSelectedTimetable] =
     useState<string>('Summer 2024')
-  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(
-    null
-  )
-  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false)
-  const [printDialogOpen, setPrintDialogOpen] = useState<boolean>(false)
+  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [printDialogOpen, setPrintDialogOpen] = useState(false)
 
-  // Filter out weekend days
   const days = Object.values(Day).filter(
     day => day !== Day.Saturday && day !== Day.Sunday
   )
@@ -107,14 +85,14 @@ export function RoomTimetableView() {
   const handleCellClick = (day: Day, periodId: string) => {
     // Find if there's a lesson at this slot
     const existingLesson = mockTimetableData.find(
-      (lesson: TimetableLesson) =>
+      lesson =>
         lesson.day === day &&
         lesson.periods.some(p => p.periodId === periodId) &&
-        lesson.room === selectedRoom &&
+        lesson.teacher === selectedTeacher &&
         (lesson.weekType === selectedWeekType ||
           lesson.weekType === WeekType.All ||
           selectedWeekType === WeekType.All)
-    )
+    ) as TimetableLesson | undefined
 
     if (existingLesson) {
       setEditingLesson(existingLesson)
@@ -125,8 +103,8 @@ export function RoomTimetableView() {
         day,
         weekType: selectedWeekType,
         subject: '',
-        teacher: '',
-        room: selectedRoom,
+        teacher: selectedTeacher,
+        room: '',
         cohort: '',
         periods: [{ periodId }],
       })
@@ -135,7 +113,7 @@ export function RoomTimetableView() {
     setEditDialogOpen(true)
   }
 
-  const formatTime = (timeString: string): string => {
+  const formatTime = (timeString: string) => {
     return new Date(timeString).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -159,14 +137,14 @@ export function RoomTimetableView() {
             </SelectContent>
           </Select>
 
-          <Select value={selectedRoom} onValueChange={setSelectedRoom}>
+          <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
             <SelectTrigger className='w-[180px]'>
-              <SelectValue placeholder='Select room' />
+              <SelectValue placeholder='Select teacher' />
             </SelectTrigger>
             <SelectContent>
-              {mockRooms.map(room => (
-                <SelectItem key={room.id} value={room.name}>
-                  {room.name}
+              {mockTeachers.map(teacher => (
+                <SelectItem key={teacher.id} value={teacher.name}>
+                  {teacher.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -174,7 +152,7 @@ export function RoomTimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={value => setSelectedWeekType(value as WeekType)}
+            onValueChange={(value) => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -227,7 +205,7 @@ export function RoomTimetableView() {
                     lesson =>
                       lesson.day === day &&
                       lesson.periods.some(p => p.periodId === period.id) &&
-                      lesson.room === selectedRoom &&
+                      lesson.teacher === selectedTeacher &&
                       (lesson.weekType === selectedWeekType ||
                         lesson.weekType === WeekType.All ||
                         selectedWeekType === WeekType.All)
@@ -239,10 +217,15 @@ export function RoomTimetableView() {
                       className='border p-0 h-24 align-top'
                     >
                       <button
-                        type='button'
+                        type="button" 
                         className='w-full h-full text-left block cursor-pointer hover:bg-muted/50 transition-colors bg-transparent border-0'
                         onClick={() => handleCellClick(day, period.id)}
-                        aria-label={`Add or edit lesson for ${day} at period ${period.name}`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleCellClick(day, period.id)
+                          }
+                        }}
+                        aria-label={`Add or edit lesson for ${day} at period ${period.name} for ${selectedTeacher}`}
                       >
                         {lessons.length > 0 ? (
                           <div className='p-2 h-full'>
@@ -257,13 +240,10 @@ export function RoomTimetableView() {
                                   </div>
                                   <div className='text-xs flex justify-between'>
                                     <span>{lesson.cohort}</span>
-                                    <span>{lesson.teacher}</span>
+                                    <span>{lesson.room}</span>
                                   </div>
                                   {lesson.weekType !== WeekType.All && (
-                                    <Badge
-                                      variant='outline'
-                                      className='text-xs'
-                                    >
+                                    <Badge variant='outline' className='text-xs'>
                                       Week {lesson.weekType.toUpperCase()}
                                     </Badge>
                                   )}
@@ -296,9 +276,30 @@ export function RoomTimetableView() {
           {editingLesson && (
             <LessonForm
               lesson={mapToDbLesson(editingLesson)}
-              onSave={() => setEditDialogOpen(false)}
+              onSave={(savedLesson) => {
+                // Convert back from DB format to timetable format before saving
+                const updatedLesson: TimetableLesson = {
+                  ...editingLesson,
+                  id: savedLesson.id || editingLesson.id,
+                  subject: mockSubjects.find(s => s.id === savedLesson.subjectId)?.name || '',
+                  teacher: mockTeachers.find(t => t.id === savedLesson.teacherId)?.name || '',
+                  room: mockRooms.find(r => r.id === savedLesson.roomId)?.name || '',
+                  cohort: mockCohorts.find(c => c.id === savedLesson.cohortId)?.designation || '',
+                  day: savedLesson.day,
+                  weekType: savedLesson.weekType,
+                }
+                // Update the lesson in the state
+                if (editingLesson.id) {
+                  // This would normally update in a database
+                  console.log('Updated lesson:', updatedLesson);
+                } else {
+                  // This would normally create in a database
+                  console.log('Created new lesson:', updatedLesson);
+                }
+                setEditDialogOpen(false);
+              }}
               onCancel={() => setEditDialogOpen(false)}
-              viewMode='room'
+              viewMode='teacher'
             />
           )}
         </DialogContent>
@@ -307,8 +308,8 @@ export function RoomTimetableView() {
       <PrintDialog
         open={printDialogOpen}
         onOpenChange={setPrintDialogOpen}
-        currentView='room'
-        currentSelection={selectedRoom}
+        currentView='teacher'
+        currentSelection={selectedTeacher}
       />
     </div>
   )
