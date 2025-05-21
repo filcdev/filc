@@ -30,8 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
+import { FaPlus, FaRegPenToSquare, FaRegTrashCan } from 'react-icons/fa6'
 
 const roomFormSchema = z.object({
   id: z.string().optional(),

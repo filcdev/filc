@@ -30,7 +30,12 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { FaRegCopy, FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
+import {
+  FaPlus,
+  FaRegCopy,
+  FaRegPenToSquare,
+  FaRegTrashCan,
+} from 'react-icons/fa6'
 
 // Define the form schema for validation
 const formSchema = z.object({

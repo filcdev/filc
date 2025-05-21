@@ -28,8 +28,13 @@ import {
   SelectValue,
 } from '@filc/ui/components/select'
 import { Tabs, TabsList, TabsTrigger } from '@filc/ui/components/tabs'
-import { FaCircleExclamation, FaTriangleExclamation, FaCircleCheck, FaPrint } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
+import {
+  FaCircleCheck,
+  FaCircleExclamation,
+  FaPrint,
+  FaTriangleExclamation,
+} from 'react-icons/fa6'
 import { LessonForm } from '../lesson-form'
 import { PrintDialog } from '../print-dialog'
 

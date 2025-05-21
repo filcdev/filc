@@ -25,8 +25,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@filc/ui/components/tabs'
-import { FaRegFile, FaPrint, FaSliders } from 'react-icons/fa6'
 import { useRef, useState } from 'react'
+import { FaPrint, FaRegFile, FaSliders } from 'react-icons/fa6'
 import { useReactToPrint } from 'react-to-print'
 import { PrintableTimetable } from './printable-timetable'
 

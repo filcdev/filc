@@ -27,8 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filc/ui/components/select'
-import { FaCircleExclamation, FaTriangleExclamation, FaPrint } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
+import {
+  FaCircleExclamation,
+  FaPrint,
+  FaTriangleExclamation,
+} from 'react-icons/fa6'
 import { LessonForm } from '../lesson-form'
 import { PrintDialog } from '../print-dialog'
 

@@ -18,8 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { FaPencil, FaPlus, FaTrash } from 'react-icons/fa6'
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { FaPencil, FaPlus, FaTrash } from 'react-icons/fa6'
 
 export function TeachersTable() {
   const [teachers, setTeachers] =
@@ -48,7 +49,7 @@ export function TeachersTable() {
     setTeachers(teachers.filter(teacher => teacher.id !== id))
   }
 
-  const handleSaveTeacher = (e: React.FormEvent) => {
+  const handleSaveTeacher = (e: FormEvent) => {
     e.preventDefault()
 
     if (editingTeacher?.id) {

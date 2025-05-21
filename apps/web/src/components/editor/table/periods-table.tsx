@@ -18,8 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@filc/ui/components/table'
-import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
+import { FaPlus, FaRegPenToSquare, FaRegTrashCan } from 'react-icons/fa6'
 
 interface PeriodWithName extends Insert<typeof Period> {
   name: string
@@ -134,20 +134,20 @@ export function PeriodsTable() {
                 <TableCell>{formatTimeForDisplay(period.endTime)}</TableCell>
                 <TableCell>{durationMinutes} minutes</TableCell>
                 <TableCell className='text-right'>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      onClick={() => handleEditPeriod(period)}
-                    >
-                      <FaRegPenToSquare className='h-4 w-4' />
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      onClick={() => handleDeletePeriod(period.id ?? '')}
-                    >
-                      <FaRegTrashCan className='h-4 w-4' />
-                    </Button>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => handleEditPeriod(period)}
+                  >
+                    <FaRegPenToSquare className='h-4 w-4' />
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => handleDeletePeriod(period.id ?? '')}
+                  >
+                    <FaRegTrashCan className='h-4 w-4' />
+                  </Button>
                 </TableCell>
               </TableRow>
             )

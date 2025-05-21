@@ -31,8 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filc/ui/components/select'
-import { FaCircleExclamation } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
+import { FaCircleExclamation } from 'react-icons/fa6'
 
 interface LessonFormData {
   id?: string

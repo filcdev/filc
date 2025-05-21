@@ -27,8 +27,8 @@ import {
   TableRow,
 } from '@filc/ui/components/table'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { FaRegPenToSquare, FaPlus, FaRegTrashCan } from 'react-icons/fa6'
 import { useState } from 'react'
+import { FaPlus, FaRegPenToSquare, FaRegTrashCan } from 'react-icons/fa6'
 
 export function CohortsTable() {
   const t = useTRPC()
