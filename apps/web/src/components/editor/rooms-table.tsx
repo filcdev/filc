@@ -1,6 +1,6 @@
-'use client'
-
-import type React from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 
 import { mockRooms } from '@/lib/editor/mock'
 import type { room as Room } from '@filc/db/schema/timetable'
@@ -12,8 +12,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filc/ui/components/dialog'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@filc/ui/components/form'
 import { Input } from '@filc/ui/components/input'
-import { Label } from '@filc/ui/components/label'
 import {
   Table,
   TableBody,
@@ -25,46 +33,100 @@ import {
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+const roomFormSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, 'Room name is required'),
+  shortName: z
+    .string()
+    .min(1, 'Short name is required')
+    .max(5, 'Short name must be 5 characters or less'),
+  capacity: z
+    .number()
+    .min(1, 'Capacity must be at least 1')
+    .max(500, 'Capacity must be 500 or less'),
+})
+
+type RoomFormValues = z.infer<typeof roomFormSchema>
+
 export function RoomsTable() {
   const [rooms, setRooms] = useState<Insert<typeof Room>[]>(mockRooms)
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
-  const [editingRoom, setEditingRoom] = useState<Insert<typeof Room> | null>(
-    null
-  )
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false)
+  const [roomToDelete, setRoomToDelete] = useState<string | null>(null)
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null)
+
+  // Setup the form with react-hook-form and zod validation
+  const form = useForm<RoomFormValues>({
+    resolver: zodResolver(roomFormSchema),
+    defaultValues: {
+      id: '',
+      name: '',
+      shortName: '',
+      capacity: 0,
+    },
+  })
 
   const handleAddRoom = () => {
-    setEditingRoom({
+    // Reset the form for a new room
+    form.reset({
       id: '',
       name: '',
       shortName: '',
       capacity: 0,
     })
+    setEditingRoomId(null)
     setIsDialogOpen(true)
   }
 
   const handleEditRoom = (room: Insert<typeof Room>) => {
-    setEditingRoom(room)
+    // Set form values to the room being edited
+    form.reset({
+      id: room.id,
+      name: room.name,
+      shortName: room.shortName,
+      capacity: room.capacity,
+    })
+    setEditingRoomId(room.id ?? null)
     setIsDialogOpen(true)
   }
 
-  const handleDeleteRoom = (id: string) => {
-    setRooms(rooms.filter(room => room.id !== id))
+  const handleDeletePrompt = (id: string) => {
+    setRoomToDelete(id)
+    setIsDeleteDialogOpen(true)
   }
 
-  const handleSaveRoom = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleConfirmDelete = () => {
+    if (roomToDelete) {
+      setRooms(rooms.filter(room => room.id !== roomToDelete))
+      setRoomToDelete(null)
+      setIsDeleteDialogOpen(false)
+    }
+    setIsDeleteDialogOpen(true)
+  }
 
-    if (editingRoom?.id) {
+  const confirmDeleteRoom = () => {
+    if (roomToDelete) {
+      setRooms(rooms.filter(room => room.id !== roomToDelete))
+      setRoomToDelete(null)
+    }
+    setIsDeleteDialogOpen(false)
+  }
+
+  const handleSaveRoom = (values: RoomFormValues) => {
+    if (editingRoomId) {
       // Update existing room
       setRooms(
-        rooms.map(room => (room.id === editingRoom.id ? editingRoom : room))
+        rooms.map(room =>
+          room.id === editingRoomId
+            ? { ...room, ...values, updatedAt: new Date() }
+            : room
+        )
       )
-    } else if (editingRoom) {
+    } else {
       // Add new room with required fields
       const newRoom: Insert<typeof Room> = {
-        name: editingRoom.name,
-        shortName: editingRoom.shortName,
-        capacity: editingRoom.capacity,
+        ...values,
         id: Math.random().toString(36).substring(2, 9),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -75,6 +137,13 @@ export function RoomsTable() {
     setIsDialogOpen(false)
   }
 
+  // Filter rooms based on search query
+  const filteredRooms = rooms.filter(
+    room =>
+      room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.shortName.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
     <div className='space-y-4'>
       <div className='flex justify-between items-center'>
@@ -84,112 +153,181 @@ export function RoomsTable() {
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Short Name</TableHead>
-            <TableHead>Capacity</TableHead>
-            <TableHead className='text-right'>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rooms.map(room => (
-            <TableRow key={room.id}>
-              <TableCell>{room.name}</TableCell>
-              <TableCell>{room.shortName}</TableCell>
-              <TableCell>{room.capacity}</TableCell>
-              <TableCell className='text-right'>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleEditRoom(room)}
-                >
-                  <Pencil className='h-4 w-4' />
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleDeleteRoom(room.id ?? '')}
-                >
-                  <Trash2 className='h-4 w-4' />
-                </Button>
-              </TableCell>
+      {/* Search bar */}
+      <div>
+        <Input
+          placeholder='Search rooms by name or short name'
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className='mb-4'
+        />
+      </div>
+
+      <div className='rounded-md border'>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Short Name</TableHead>
+              <TableHead>Capacity</TableHead>
+              <TableHead className='text-right'>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredRooms.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className='h-24 text-center'>
+                  No rooms found. Click "Add Room" to create one.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredRooms.map(room => (
+                <TableRow key={room.id}>
+                  <TableCell>{room.name}</TableCell>
+                  <TableCell>{room.shortName}</TableCell>
+                  <TableCell>{room.capacity}</TableCell>
+                  <TableCell className='text-right'>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => handleEditRoom(room)}
+                      aria-label={`Edit ${room.name}`}
+                    >
+                      <Pencil className='h-4 w-4' />
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => handleDeletePrompt(room.id ?? '')}
+                      aria-label={`Delete ${room.name}`}
+                    >
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingRoom?.id ? 'Edit Room' : 'Add New Room'}
+              {editingRoomId ? 'Edit Room' : 'Add New Room'}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSaveRoom} className='space-y-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='name'>Name</Label>
-              <Input
-                id='name'
-                value={editingRoom?.name || ''}
-                onChange={e =>
-                  setEditingRoom(prev =>
-                    prev ? { ...prev, name: e.target.value } : null
-                  )
-                }
-                required={true}
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleSaveRoom)}
+              className='space-y-4'
+            >
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder='Room name' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='shortName'>Short Name</Label>
-              <Input
-                id='shortName'
-                value={editingRoom?.shortName || ''}
-                onChange={e =>
-                  setEditingRoom(prev =>
-                    prev ? { ...prev, shortName: e.target.value } : null
-                  )
-                }
-                required={true}
+              <FormField
+                control={form.control}
+                name='shortName'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Short Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='Short name (max 5 chars)'
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A short abbreviation for the room (max 5 characters)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='capacity'>Capacity</Label>
-              <Input
-                id='capacity'
-                type='number'
-                value={editingRoom?.capacity || 0}
-                onChange={e =>
-                  setEditingRoom(prev =>
-                    prev
-                      ? {
-                          ...prev,
-                          capacity: Number.parseInt(e.target.value),
-                        }
-                      : null
-                  )
-                }
-                required={true}
+              <FormField
+                control={form.control}
+                name='capacity'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Capacity</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        placeholder='Room capacity'
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='flex justify-end space-x-2 pt-4'>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => setIsDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type='submit'>
-                {editingRoom?.id ? 'Update' : 'Create'} Room
-              </Button>
-            </div>
-          </form>
+              <div className='flex justify-end space-x-2 pt-4'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => {
+                    setIsDialogOpen(false)
+                    form.reset()
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type='submit'>
+                  {editingRoomId ? 'Update' : 'Create'} Room
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation dialog for deleting rooms */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <div className='py-4'>
+            <p>
+              Are you sure you want to delete this room? This action cannot be
+              undone.
+            </p>
+          </div>
+          <div className='flex justify-end space-x-2 pt-4'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setRoomToDelete(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type='button'
+              variant='destructive'
+              onClick={handleConfirmDelete}
+            >
+              Delete Room
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

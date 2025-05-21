@@ -1,7 +1,3 @@
-'use client'
-
-import type React from 'react'
-
 import { mockPeriods } from '@/lib/editor/mock'
 import type { period as Period } from '@filc/db/schema/timetable'
 import type { Insert } from '@filc/db/types'
@@ -25,7 +21,6 @@ import {
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-// Define a type that extends the DB schema to include the name property needed in the UI
 interface PeriodWithName extends Insert<typeof Period> {
   name: string
 }

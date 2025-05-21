@@ -1,7 +1,14 @@
-'use client'
-
 import { Day, WeekType } from '@/lib/editor/conflict'
-import { mockPeriods, mockRooms, mockTimetableData } from '@/lib/editor/mock'
+import {
+  mockCohorts,
+  mockPeriods,
+  mockRooms,
+  mockSubjects,
+  mockTeachers,
+  mockTimetableData,
+} from '@/lib/editor/mock'
+import type { lesson as Lesson } from '@filc/db/schema/timetable'
+import type { Insert } from '@filc/db/types'
 import { Badge } from '@filc/ui/components/badge'
 import { Button } from '@filc/ui/components/button'
 import { Card, CardContent } from '@filc/ui/components/card'
@@ -23,17 +30,76 @@ import { useState } from 'react'
 import { LessonForm } from './lesson-form'
 import { PrintDialog } from './print-dialog'
 
+// Define the structure of the lesson data as used in the timetable view
+interface TimetableLesson {
+  id: string
+  day: Day
+  weekType: WeekType
+  subject: string
+  teacher: string
+  room: string
+  cohort: string
+  periods: { periodId: string }[]
+}
+
+// Define the structure of the period data as shown in the UI
+interface UIPeriod {
+  id: string
+  name: string
+  startTime: string
+  endTime: string
+}
+
+// Map TimetableLesson to Insert<typeof Lesson>
+const mapToDbLesson = (lesson: TimetableLesson): Insert<typeof Lesson> => {
+  // Find IDs based on display names
+  const subjectId = mockSubjects.find(s => s.name === lesson.subject)?.id || ''
+  const teacherId = mockTeachers.find(t => t.name === lesson.teacher)?.id || ''
+  const cohortId =
+    mockCohorts.find(c => `${c.year} ${c.designation}`.trim() === lesson.cohort)
+      ?.id || ''
+  const roomId = mockRooms.find(r => r.name === lesson.room)?.id || ''
+
+  return {
+    id: lesson.id,
+    day: lesson.day,
+    weekType: lesson.weekType,
+    subjectId,
+    teacherId,
+    cohortId,
+    roomId,
+    // Optional fields can be null/undefined
+    timetableDayId: null,
+  }
+}
+
+// Define the room type from the mock data
+type RoomType = {
+  id: string
+  name: string
+  shortName: string
+  capacity: number
+  createdAt: Date
+  updatedAt: Date
+}
+
 export function RoomTimetableView() {
-  const [selectedRoom, setSelectedRoom] = useState<string>(mockRooms[0].name)
+  // Make sure we have a default value even if the array is empty
+  // TypeScript non-null assertion is safe here as we know the mockRooms array is initialized with values
+  const defaultRoom = mockRooms[0]?.name ?? 'No Room'
+  const [selectedRoom, setSelectedRoom] = useState<string>(defaultRoom)
   const [selectedWeekType, setSelectedWeekType] = useState<WeekType>(
     WeekType.All
   )
   const [selectedTimetable, setSelectedTimetable] =
     useState<string>('Summer 2024')
-  const [editingLesson, setEditingLesson] = useState<any | null>(null)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [printDialogOpen, setPrintDialogOpen] = useState(false)
+  const [editingLesson, setEditingLesson] = useState<TimetableLesson | null>(
+    null
+  )
+  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false)
+  const [printDialogOpen, setPrintDialogOpen] = useState<boolean>(false)
 
+  // Filter out weekend days
   const days = Object.values(Day).filter(
     day => day !== Day.Saturday && day !== Day.Sunday
   )
@@ -41,7 +107,7 @@ export function RoomTimetableView() {
   const handleCellClick = (day: Day, periodId: string) => {
     // Find if there's a lesson at this slot
     const existingLesson = mockTimetableData.find(
-      lesson =>
+      (lesson: TimetableLesson) =>
         lesson.day === day &&
         lesson.periods.some(p => p.periodId === periodId) &&
         lesson.room === selectedRoom &&
@@ -69,7 +135,7 @@ export function RoomTimetableView() {
     setEditDialogOpen(true)
   }
 
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString: string): string => {
     return new Date(timeString).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -108,7 +174,7 @@ export function RoomTimetableView() {
 
           <Select
             value={selectedWeekType}
-            onValueChange={setSelectedWeekType as any}
+            onValueChange={value => setSelectedWeekType(value as WeekType)}
           >
             <SelectTrigger className='w-[180px]'>
               <SelectValue placeholder='Select week type' />
@@ -170,38 +236,47 @@ export function RoomTimetableView() {
                   return (
                     <td
                       key={`${day}-${period.id}`}
-                      className='border p-0 h-24 align-top cursor-pointer hover:bg-muted/50 transition-colors'
-                      onClick={() => handleCellClick(day, period.id)}
+                      className='border p-0 h-24 align-top'
                     >
-                      {lessons.length > 0 ? (
-                        <div className='p-2 h-full'>
-                          {lessons.map(lesson => (
-                            <Card
-                              key={lesson.id}
-                              className='mb-1 overflow-hidden h-full'
-                            >
-                              <CardContent className='p-2 space-y-1'>
-                                <div className='font-medium'>
-                                  {lesson.subject}
-                                </div>
-                                <div className='text-xs flex justify-between'>
-                                  <span>{lesson.cohort}</span>
-                                  <span>{lesson.teacher}</span>
-                                </div>
-                                {lesson.weekType !== WeekType.All && (
-                                  <Badge variant='outline' className='text-xs'>
-                                    Week {lesson.weekType.toUpperCase()}
-                                  </Badge>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className='h-full w-full p-2 text-center flex items-center justify-center text-muted-foreground'>
-                          <span className='text-xs'>Click to add</span>
-                        </div>
-                      )}
+                      <button
+                        type='button'
+                        className='w-full h-full text-left block cursor-pointer hover:bg-muted/50 transition-colors bg-transparent border-0'
+                        onClick={() => handleCellClick(day, period.id)}
+                        aria-label={`Add or edit lesson for ${day} at period ${period.name}`}
+                      >
+                        {lessons.length > 0 ? (
+                          <div className='p-2 h-full'>
+                            {lessons.map(lesson => (
+                              <Card
+                                key={lesson.id}
+                                className='mb-1 overflow-hidden h-full'
+                              >
+                                <CardContent className='p-2 space-y-1'>
+                                  <div className='font-medium'>
+                                    {lesson.subject}
+                                  </div>
+                                  <div className='text-xs flex justify-between'>
+                                    <span>{lesson.cohort}</span>
+                                    <span>{lesson.teacher}</span>
+                                  </div>
+                                  {lesson.weekType !== WeekType.All && (
+                                    <Badge
+                                      variant='outline'
+                                      className='text-xs'
+                                    >
+                                      Week {lesson.weekType.toUpperCase()}
+                                    </Badge>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className='h-full w-full p-2 text-center flex items-center justify-center text-muted-foreground'>
+                            <span className='text-xs'>Click to add</span>
+                          </div>
+                        )}
+                      </button>
                     </td>
                   )
                 })}
@@ -220,7 +295,7 @@ export function RoomTimetableView() {
           </DialogHeader>
           {editingLesson && (
             <LessonForm
-              lesson={editingLesson}
+              lesson={mapToDbLesson(editingLesson)}
               onSave={() => setEditDialogOpen(false)}
               onCancel={() => setEditDialogOpen(false)}
               viewMode='room'

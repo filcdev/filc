@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -243,8 +243,8 @@ export function TimetablesTable() {
                         id='validFrom'
                         type='date'
                         value={formatDateForInput(field.value)}
-                        onChange={(e) => {
-                          field.onChange(new Date(e.target.value));
+                        onChange={e => {
+                          field.onChange(new Date(e.target.value))
                         }}
                       />
                     </FormControl>
@@ -264,8 +264,8 @@ export function TimetablesTable() {
                         id='validTo'
                         type='date'
                         value={formatDateForInput(field.value)}
-                        onChange={(e) => {
-                          field.onChange(new Date(e.target.value));
+                        onChange={e => {
+                          field.onChange(new Date(e.target.value))
                         }}
                       />
                     </FormControl>

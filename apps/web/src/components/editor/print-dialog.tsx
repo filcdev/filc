@@ -1,5 +1,3 @@
-'use client'
-
 import { WeekType } from '@/lib/editor/conflict'
 import { mockCohorts, mockRooms, mockTeachers } from '@/lib/editor/mock'
 import { Button } from '@filc/ui/components/button'
@@ -141,7 +139,9 @@ export function PrintDialog({
                 <RadioGroup
                   value={printView}
                   onValueChange={value => {
-                    setPrintView(value as "school" | "cohort" | "teacher" | "room")
+                    setPrintView(
+                      value as 'school' | 'cohort' | 'teacher' | 'room'
+                    )
                     setSelectedItems([])
                   }}
                   className='flex flex-col space-y-2 mt-2'

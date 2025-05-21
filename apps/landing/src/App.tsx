@@ -1,12 +1,12 @@
 import './App.css'
 
-import { Button } from '@filc/ui/components/button'
-import { Logo } from '@filc/ui/components/logo'
 import { GithubTicker } from '@/components/github'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitcher } from '@/components/language-toggle'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageProvider, useLanguage } from '@/lib/language'
 import { ThemeProvider } from '@/lib/theme'
+import { Button } from '@filc/ui/components/button'
+import { Logo } from '@filc/ui/components/logo'
 
 const AppContent = () => {
   const { get } = useLanguage()

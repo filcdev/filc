@@ -1,8 +1,10 @@
 'use client'
 
+import {
+  type ComponentChildren,
+  createContext as preactCreateContext,
+} from 'preact'
 import { useContext, useEffect, useState } from 'preact/hooks'
-import { createContext } from 'preact'
-import { type ComponentChildren, createContext as preactCreateContext } from 'preact'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -22,7 +24,8 @@ const initialState: ThemeProviderState = {
   setTheme: () => null,
 }
 
-const ThemeProviderContext = preactCreateContext<ThemeProviderState>(initialState)
+const ThemeProviderContext =
+  preactCreateContext<ThemeProviderState>(initialState)
 
 export function ThemeProvider({
   children,
@@ -39,7 +42,8 @@ export function ThemeProvider({
     root.classList.remove('light', 'dark')
 
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
+        .matches
         ? 'dark'
         : 'light'
       root.classList.add(systemTheme)

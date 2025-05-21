@@ -1,6 +1,3 @@
-'use client'
-
-import type React from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -22,7 +19,6 @@ import { Checkbox } from '@filc/ui/components/checkbox'
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -38,7 +34,6 @@ import {
 import { AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-// Interface to bridge the DB schema and the form UI
 interface LessonFormData {
   id?: string
   subject: string
@@ -50,12 +45,10 @@ interface LessonFormData {
   periods: { periodId: string }[]
 }
 
-// Interface for conflicts
 interface Conflict {
   message: string
 }
 
-// Define the form schema for validation
 const formSchema = z.object({
   id: z.string().optional(),
   subject: z.string().min(1, 'Subject is required'),
@@ -77,22 +70,25 @@ interface LessonFormProps {
   onSave: (lesson: Insert<typeof Lesson>) => void
   onCancel: () => void
   viewMode?: 'cohort' | 'teacher' | 'room'
-  currentCohortId?: string  // Add a prop for the current cohort ID
-  currentTeacherId?: string // Add a prop for the current teacher ID
-  currentRoomId?: string    // Add a prop for the current room ID
+  currentCohortId?: string
+  currentTeacherId?: string
+  currentRoomId?: string
 }
 
-// Convert DB model to Form model
 const mapLessonToFormData = (lesson: Insert<typeof Lesson>): LessonFormData => {
-  // Find the actual entities based on IDs
-  const subjectName = mockSubjects.find(s => s.id === lesson.subjectId)?.name || ''
-  const teacherName = mockTeachers.find(t => t.id === lesson.teacherId)?.name || ''
+  const subjectName =
+    mockSubjects.find(s => s.id === lesson.subjectId)?.name || ''
+  const teacherName =
+    mockTeachers.find(t => t.id === lesson.teacherId)?.name || ''
   const roomName = mockRooms.find(r => r.id === lesson.roomId)?.name || ''
-  const cohortDesignation = mockCohorts.find(c => c.id === lesson.cohortId)?.designation || ''
+  const cohortDesignation =
+    mockCohorts.find(c => c.id === lesson.cohortId)?.designation || ''
 
   // Get periods from mock data or empty array
   const periods = lesson.id
-    ? mockPeriods.filter(p => p.id.startsWith(lesson.id || '')).map(p => ({ periodId: p.id }))
+    ? mockPeriods
+        .filter(p => p.id.startsWith(lesson.id || ''))
+        .map(p => ({ periodId: p.id }))
     : []
 
   return {
@@ -107,13 +103,14 @@ const mapLessonToFormData = (lesson: Insert<typeof Lesson>): LessonFormData => {
   }
 }
 
-// Convert Form model back to DB model
 const mapFormDataToLesson = (formData: FormValues): Insert<typeof Lesson> => {
-  // Find IDs based on names
-  const subjectId = mockSubjects.find(s => s.name === formData.subject)?.id || ''
-  const teacherId = mockTeachers.find(t => t.name === formData.teacher)?.id || ''
+  const subjectId =
+    mockSubjects.find(s => s.name === formData.subject)?.id || ''
+  const teacherId =
+    mockTeachers.find(t => t.name === formData.teacher)?.id || ''
   const roomId = mockRooms.find(r => r.name === formData.room)?.id || ''
-  const cohortId = mockCohorts.find(c => c.designation === formData.cohort)?.id || ''
+  const cohortId =
+    mockCohorts.find(c => c.designation === formData.cohort)?.id || ''
 
   return {
     id: formData.id,
@@ -142,7 +139,8 @@ const getDefaultValueForViewMode = (
       // Use the currentCohortId if provided, otherwise use the first cohort
       let cohortDesignation = ''
       if (currentCohortId) {
-        cohortDesignation = mockCohorts.find(c => c.id === currentCohortId)?.designation || ''
+        cohortDesignation =
+          mockCohorts.find(c => c.id === currentCohortId)?.designation || ''
       } else {
         cohortDesignation = mockCohorts[0]?.designation || ''
       }
@@ -152,7 +150,8 @@ const getDefaultValueForViewMode = (
       // Use the currentTeacherId if provided, otherwise use the first teacher
       let teacherName = ''
       if (currentTeacherId) {
-        teacherName = mockTeachers.find(t => t.id === currentTeacherId)?.name || ''
+        teacherName =
+          mockTeachers.find(t => t.id === currentTeacherId)?.name || ''
       } else {
         teacherName = mockTeachers[0]?.name || ''
       }
@@ -188,12 +187,12 @@ export function LessonForm({
   // Map the DB model to our form data model
   let initialFormData = mapLessonToFormData(lesson)
 
-  // If we're in viewMode and creating a new lesson (no id), 
+  // If we're in viewMode and creating a new lesson (no id),
   // we should lock the corresponding field to the current view
   if (!lesson.id) {
     const defaultValues = getDefaultValueForViewMode(
-      viewMode, 
-      lesson, 
+      viewMode,
+      lesson,
       currentCohortId,
       currentTeacherId,
       currentRoomId
@@ -216,9 +215,13 @@ export function LessonForm({
     const periodExists = currentPeriods.some(p => p.periodId === periodId)
 
     if (periodExists) {
-      form.setValue('periods', currentPeriods.filter(p => p.periodId !== periodId), {
-        shouldValidate: true,
-      })
+      form.setValue(
+        'periods',
+        currentPeriods.filter(p => p.periodId !== periodId),
+        {
+          shouldValidate: true,
+        }
+      )
     } else {
       form.setValue('periods', [...currentPeriods, { periodId }], {
         shouldValidate: true,
@@ -268,10 +271,7 @@ export function LessonForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel htmlFor='subject'>Subject</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger id='subject'>
                       <SelectValue placeholder='Select subject' />
@@ -387,10 +387,7 @@ export function LessonForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel htmlFor='weekType'>Week Type</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger id='weekType'>
                       <SelectValue placeholder='Select week type' />
@@ -414,10 +411,7 @@ export function LessonForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel htmlFor='day'>Day</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger id='day'>
                       <SelectValue placeholder='Select day' />
@@ -447,17 +441,23 @@ export function LessonForm({
                 <FormLabel>Periods</FormLabel>
                 <div className='grid grid-cols-5 gap-2'>
                   {mockPeriods.map(period => {
-                    const isSelected = form.getValues('periods').some(
-                      p => p.periodId === period.id
-                    )
+                    const isSelected = form
+                      .getValues('periods')
+                      .some(p => p.periodId === period.id)
                     return (
-                      <div key={period.id} className='flex items-center space-x-2'>
+                      <div
+                        key={period.id}
+                        className='flex items-center space-x-2'
+                      >
                         <Checkbox
                           id={`period-${period.id}`}
                           checked={isSelected}
                           onCheckedChange={() => handlePeriodToggle(period.id)}
                         />
-                        <FormLabel htmlFor={`period-${period.id}`} className='text-sm'>
+                        <FormLabel
+                          htmlFor={`period-${period.id}`}
+                          className='text-sm'
+                        >
                           {period.name}
                         </FormLabel>
                       </div>
@@ -478,7 +478,9 @@ export function LessonForm({
             <AlertDescription>
               <ul className='list-disc pl-5 space-y-1'>
                 {conflicts.map((conflict, index) => (
-                  <li key={`${conflict.message}-${index}`}>{conflict.message}</li>
+                  <li key={`${conflict.message}-${index}`}>
+                    {conflict.message}
+                  </li>
                 ))}
               </ul>
             </AlertDescription>
@@ -492,7 +494,9 @@ export function LessonForm({
           </Button>
           <Button
             type='submit'
-            disabled={isValidating || (conflicts.length > 0 && !form.getValues().id)}
+            disabled={
+              isValidating || (conflicts.length > 0 && !form.getValues().id)
+            }
           >
             {isValidating
               ? 'Checking conflicts...'

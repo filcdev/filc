@@ -328,7 +328,7 @@ export function PrintableTimetable({
 
   return (
     <div className='print-container' style={getPageStyle()}>
-      <style jsx={true} global={true}>{`
+      <style>{`
         @media print {
           @page {
             size: ${paperSize} ${orientation};

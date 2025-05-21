@@ -38,7 +38,7 @@ export function SubjectsTable() {
       id: '',
       name: '',
       shortName: '',
-      icon: '📚', // Default icon
+      icon: '📚',
     })
     setIsDialogOpen(true)
   }
