@@ -8,7 +8,6 @@ await configureLogger();
 
 const logger = getLogger(['chronos', 'database']);
 const db = await PGlite.create({
-  database: 'chronos',
   dataDir: './db.local',
 });
 
@@ -21,9 +20,13 @@ const server = new PGLiteSocketServer({
 await server.start();
 logger.info('PGLite started on 127.0.0.1:5432');
 
-process.on('SIGTERM', async () => {
+const handleExit = async () => {
   await server.stop();
   await db.close();
   logger.info('PGLite stopped and database closed');
   process.exit(0);
-});
+};
+
+// handle exit both if the process is killed or interrupted
+process.on('SIGTERM', handleExit);
+process.on('SIGINT', handleExit);
