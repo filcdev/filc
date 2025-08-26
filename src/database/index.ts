@@ -8,7 +8,14 @@ const logger = getLogger(['chronos', 'drizzle']);
 
 const client = new SQL(env.databaseUrl);
 
-export const db = drizzle({ client });
+export const db = drizzle({
+  client,
+  logger: {
+    logQuery: (query) => {
+      logger.trace(`Executing query: ${query}`);
+    },
+  },
+});
 
 export const migrateDb = async () => {
   try {

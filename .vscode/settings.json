@@ -15,6 +15,7 @@
   ],
   "javascript.preferences.importModuleSpecifier": "non-relative",
   "typescript.preferences.importModuleSpecifier": "non-relative",
+  "explorer.compactFolders": false,
   "debug.javascript.defaultRuntimeExecutable": {
     "pwa-node": "/home/nya/.local/share/mise/shims/node"
   }

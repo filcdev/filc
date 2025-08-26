@@ -3,3 +3,7 @@ node_modules/
 
 # pglite local data
 db.local/
+
+# environment
+.env
+.env.local

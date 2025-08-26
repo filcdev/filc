@@ -20,7 +20,7 @@ export const configureLogger = async () => {
         sinks: ['console'],
         lowestLevel: 'warning',
       },
-      { category: 'chronos', lowestLevel: 'trace', sinks: ['console'] },
+      { category: 'chronos', lowestLevel: env.logLevel, sinks: ['console'] },
     ],
   });
 };
