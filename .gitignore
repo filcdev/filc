@@ -1,0 +1,5 @@
+# deps
+node_modules/
+
+# pglite local data
+db.local/

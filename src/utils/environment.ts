@@ -1,0 +1,20 @@
+import { camelKeys, replaceKeys } from 'string-ts';
+import z from 'zod';
+
+const MIN_SECRET_LENGTH = 32;
+
+const envSchema = z.object({
+  CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
+  CHRONOS_DATABASE_URL: z.url(),
+  CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
+  CHRONOS_BASE_URL: z.url(),
+});
+
+const makeTypedEnvironment = <T>(schema: (v: unknown) => T) => {
+  return (args: Record<string, unknown>) =>
+    camelKeys(replaceKeys(schema({ ...args }), 'CHRONOS_', ''));
+};
+
+const getEnv = makeTypedEnvironment((v) => envSchema.parse(v));
+
+export const env = getEnv(Bun.env);

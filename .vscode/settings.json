@@ -1,0 +1,21 @@
+{
+  "editor.tabSize": 2,
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit"
+  },
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    { "text": "Use conventional commit format: type(scope): description" },
+    { "text": "Use imperative mood: 'Add feature' not 'Added feature'" },
+    { "text": "Keep subject line under 50 characters" },
+    { "text": "Use types: feat, fix, docs, style, refactor, chore, ci" },
+    { "text": "Include scope when relevant (e.g., api, ui, auth)" },
+    { "text": "Reference issue numbers with # prefix" }
+  ],
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "debug.javascript.defaultRuntimeExecutable": {
+    "pwa-node": "/home/nya/.local/share/mise/shims/node"
+  }
+}

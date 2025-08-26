@@ -1,0 +1,5 @@
+[tools]
+bun = "latest"
+
+[env]
+BUN_OPTIONS='--bun'
