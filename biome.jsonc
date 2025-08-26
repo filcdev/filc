@@ -1,5 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": ["src/**/*", "!src/database/migrations/**/*"]
+  },
   "formatter": {
     "enabled": true,
     "formatWithErrors": true,
