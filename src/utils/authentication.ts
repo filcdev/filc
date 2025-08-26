@@ -3,6 +3,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink } from 'better-auth/plugins/magic-link';
 import { db } from '~/database';
+import { authSchema } from '~/database/schema/authentication';
 import { env } from '~/utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
@@ -10,6 +11,7 @@ const logger = getLogger(['chronos', 'auth']);
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
+    schema: authSchema,
     debugLogs: env.mode === 'development',
   }),
   baseURL: env.baseUrl,
