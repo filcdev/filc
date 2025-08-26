@@ -2,7 +2,8 @@ import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { showRoutes } from 'hono/dev';
-import { migrateDb } from '~/database';
+import { prepareDb } from '~/database';
+import { developmentRouter } from '~/routes/_dev/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { auth, authRouter } from '~/utils/authentication';
 import { env } from '~/utils/environment';
@@ -12,7 +13,7 @@ import { configureLogger } from '~/utils/logger';
 await configureLogger();
 const logger = getLogger(['chronos', 'server']);
 
-await migrateDb();
+await prepareDb();
 
 const app = new Hono<honoContext>();
 
@@ -40,6 +41,7 @@ app.use('*', async (c, next) => {
 });
 
 // routes
+env.mode === 'development' && app.route('/_dev', developmentRouter);
 app.route('/auth', authRouter);
 app.route('/ping', pingRouter);
 

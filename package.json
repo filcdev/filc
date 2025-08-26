@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@logtape/logtape": "^1.0.4",
+    "@rbac/rbac": "^2.1.0",
     "better-auth": "^1.3.7",
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.44.5",

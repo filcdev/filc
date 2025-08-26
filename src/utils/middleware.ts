@@ -1,11 +1,11 @@
 import { createMiddleware } from 'hono/factory';
 import { StatusCodes } from 'http-status-codes';
-import { auth } from '~/utils/authentication';
-import type { honoContext } from '~/utils/globals';
+import { userHasPermission } from '~/utils/authorization';
+import type { authenticatedContext } from '~/utils/globals';
 
-export const requireAuthentication = createMiddleware<honoContext>(
+export const requireAuthentication = createMiddleware<authenticatedContext>(
   async (c, next) => {
-    if (!c.get('session')) {
+    if (!c.var.session) {
       return c.json({ error: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
     }
 
@@ -13,21 +13,9 @@ export const requireAuthentication = createMiddleware<honoContext>(
   }
 );
 
-export const requireAuthorization = (permission: Record<string, string[]>) =>
-  createMiddleware<honoContext>(async (c, next) => {
-    const session = c.get('session');
-    if (!session) {
-      return c.json({ error: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
-    }
-
-    if (
-      !(await auth.api.userHasPermission({
-        body: {
-          userId: session.userId,
-          permission,
-        },
-      }))
-    ) {
+export const requireAuthorization = (permission: string) =>
+  createMiddleware<authenticatedContext>(async (c, next) => {
+    if (!(await userHasPermission(c.var.session.userId, permission))) {
       return c.json({ error: 'Forbidden' }, StatusCodes.FORBIDDEN);
     }
 

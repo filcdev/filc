@@ -11,6 +11,7 @@ const envSchema = z.object({
   CHRONOS_DATABASE_URL: z.url(),
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
   CHRONOS_BASE_URL: z.url(),
+  CHRONOS_ADMIN_EMAIL: z.email(),
 });
 
 const makeTypedEnvironment = <T>(schema: (v: unknown) => T) => {

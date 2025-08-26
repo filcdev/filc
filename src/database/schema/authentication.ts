@@ -1,4 +1,12 @@
-import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
+import { timestamps } from '~/database/helpers';
 
 export const user = pgTable('user', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -8,16 +16,8 @@ export const user = pgTable('user', {
     .$defaultFn(() => !1)
     .notNull(),
   image: text('image'),
-  role: text('role'),
-  banned: boolean('banned').default(false).notNull(),
-  banReason: text('ban_reason'),
-  banExpires: timestamp('ban_expires'),
-  createdAt: timestamp('created_at')
-    .$defaultFn(() => new Date())
-    .notNull(),
-  updatedAt: timestamp('updated_at')
-    .$defaultFn(() => new Date())
-    .notNull(),
+  roles: jsonb('roles').$type<string[]>().notNull().default(['user']),
+  ...timestamps,
 });
 
 export const session = pgTable('session', {
@@ -31,7 +31,6 @@ export const session = pgTable('session', {
   userId: uuid('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  impersonatedBy: uuid('impersonated_by'),
 });
 
 export const account = pgTable('account', {
@@ -48,8 +47,7 @@ export const account = pgTable('account', {
   refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
   scope: text('scope'),
   password: text('password'),
-  createdAt: timestamp('created_at').notNull(),
-  updatedAt: timestamp('updated_at').notNull(),
+  ...timestamps,
 });
 
 export const verification = pgTable('verification', {
@@ -57,8 +55,7 @@ export const verification = pgTable('verification', {
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
-  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+  ...timestamps,
 });
 
 export const authSchema = {

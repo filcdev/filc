@@ -1,14 +1,12 @@
 import { getLogger } from '@logtape/logtape';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { admin } from 'better-auth/plugins/admin';
 import { magicLink } from 'better-auth/plugins/magic-link';
 import { Hono } from 'hono';
 import { db } from '~/database';
 import { authSchema } from '~/database/schema/authentication';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
-import { ac, roles } from '~/utils/permissions';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -39,6 +37,22 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  databaseHooks: {
+    user: {
+      create: {
+        // biome-ignore lint/suspicious/useAwait: no need
+        before: async (user, _ctx) => {
+          return {
+            data: {
+              ...user,
+              roles:
+                user.email === env.adminEmail ? ['user', 'admin'] : ['user'],
+            },
+          };
+        },
+      },
+    },
+  },
   plugins: [
     magicLink({
       sendMagicLink: async ({ email, token, url }) => {
@@ -46,11 +60,16 @@ export const auth = betterAuth({
         logger.info(`Magic link requested for ${email}: ${url}?token=${token}`);
       },
     }),
-    admin({
-      ac,
-      roles,
-    }),
   ],
+  user: {
+    additionalFields: {
+      roles: {
+        type: 'string[]',
+        required: true,
+        input: false,
+      },
+    },
+  },
 });
 
 export const authRouter = new Hono<honoContext>();
