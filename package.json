@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "run-p dev:*",
     "dev:db": "bun run src/database/dev-server.ts",
-    "dev:server": "wait-on tcp:5432 && bun run --hot src/index.ts",
+    "dev:server": "wait-on tcp:5432 && bun run --watch src/index.ts",
     "db:generate": "drizzle-kit generate",
     "lint": "biome check --write ."
   },

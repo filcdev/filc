@@ -1,8 +1,11 @@
 import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { showRoutes } from 'hono/dev';
 import { getReasonPhrase, StatusCodes } from 'http-status-codes';
 import { migrateDb } from '~/database';
 import { auth } from '~/utils/authentication';
+import { env } from '~/utils/environment';
 import { configureLogger } from '~/utils/logger';
 
 await configureLogger();
@@ -16,6 +19,15 @@ const app = new Hono<{
     session: typeof auth.$Infer.Session.session | null;
   };
 }>();
+
+app.use(
+  '*',
+  cors({
+    origin: env.mode === 'development' ? '*' : env.baseUrl,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 app.use('*', async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -52,7 +64,7 @@ app.get('/session', (c) => {
   });
 });
 
-app.on(['POST', 'GET'], '/api/auth/*', (c) => {
+app.on(['POST', 'GET'], '/auth/*', (c) => {
   return auth.handler(c.req.raw);
 });
 
@@ -61,3 +73,5 @@ Bun.serve({
 });
 
 logger.info('Server started on http://localhost:3000');
+
+env.mode === 'development' && showRoutes(app, { verbose: true });
