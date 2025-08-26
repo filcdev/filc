@@ -8,11 +8,7 @@ import { configureLogger } from '~/utils/logger';
 await configureLogger();
 const logger = getLogger(['chronos', 'server']);
 
-try {
-  await migrateDb();
-} catch {
-  process.exit(1);
-}
+await migrateDb();
 
 const app = new Hono<{
   Variables: {

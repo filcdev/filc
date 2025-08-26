@@ -16,5 +16,6 @@ export const migrateDb = async () => {
     logger.info('Database migration completed successfully.');
   } catch (error) {
     logger.fatal(`Database migration failed: ${error}`);
+    throw error;
   }
 };
