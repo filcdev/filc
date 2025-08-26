@@ -1,12 +1,14 @@
 import { getLogger } from '@logtape/logtape';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { admin } from 'better-auth/plugins/admin';
 import { magicLink } from 'better-auth/plugins/magic-link';
 import { Hono } from 'hono';
 import { db } from '~/database';
 import { authSchema } from '~/database/schema/authentication';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
+import { ac, roles } from '~/utils/permissions';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -43,6 +45,10 @@ export const auth = betterAuth({
         await Promise.resolve(); // simulate async work
         logger.info(`Magic link requested for ${email}: ${url}?token=${token}`);
       },
+    }),
+    admin({
+      ac,
+      roles,
     }),
   ],
 });

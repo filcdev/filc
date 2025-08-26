@@ -6,9 +6,9 @@ export default defineConfig({
   dialect: 'postgresql',
   schema: './src/database/schema',
 
-  driver: 'pglite',
   dbCredentials: {
     url: env.databaseUrl,
+    ssl: false
   },
 
   strict: true,
