@@ -4,11 +4,11 @@ import { requireAuthentication } from '~/utils/middleware';
 
 export const introspect = pingFactory.createHandlers(
   requireAuthentication,
-  (c) => {
+  async (c) => {
     return c.json({
       user: {
         ...c.var.user,
-        permissions: getUserPermissions(c.var.session.userId),
+        permissions: await getUserPermissions(c.var.session.userId),
       },
       session: c.var.session,
     });

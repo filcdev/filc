@@ -17,6 +17,9 @@ export const rbac = RBAC({
   user: {
     can: [],
   },
+  admin: {
+    can: ['*'],
+  },
 });
 
 export const initializeRBAC = async () => {
@@ -27,7 +30,7 @@ export const initializeRBAC = async () => {
     })
     .from(dbRole);
 
-  logger.debug(`Initializing RBAC with roles: ${roles}`);
+  logger.debug(`Loaded ${roles.length} roles from the database`);
 
   const rolesObject = roles.reduce(
     (acc, role) => {
@@ -67,6 +70,11 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
     .from(dbUser)
     .where(eq(dbUser.id, userId))
     .limit(1);
+
+  if (!user) {
+    logger.warn(`User with ID ${userId} not found.`);
+    return [];
+  }
 
   const permissionsSet = new Set<string>();
 
