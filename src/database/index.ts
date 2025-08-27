@@ -17,10 +17,10 @@ export const db = drizzle({
   },
 });
 
-export const migrateDb = async () => {
+export const prepareDb = async () => {
   try {
     await migrate(db, { migrationsFolder: 'src/database/migrations' });
-    logger.info('Database migration completed successfully.');
+    logger.info('Database migration completed successfully');
   } catch (error) {
     logger.fatal(`Database migration failed: ${error}`);
     throw error;

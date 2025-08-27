@@ -6,3 +6,10 @@ export type honoContext = {
     session: typeof auth.$Infer.Session.session | null;
   };
 };
+
+export type authenticatedContext = {
+  Variables: {
+    user: NonNullable<typeof auth.$Infer.Session.user>;
+    session: NonNullable<typeof auth.$Infer.Session.session>;
+  };
+};

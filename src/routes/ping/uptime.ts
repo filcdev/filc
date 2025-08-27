@@ -1,9 +1,9 @@
 import dayjs from 'dayjs';
-import devHelper from 'dayjs/plugin/devHelper';
 import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { pingFactory } from '~/routes/ping/_factory';
 
-dayjs.extend(devHelper);
+dayjs.extend(relativeTime);
 dayjs.extend(duration);
 
 export const uptime = pingFactory.createHandlers((c) => {

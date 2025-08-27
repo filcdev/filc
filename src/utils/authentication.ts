@@ -37,6 +37,22 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  databaseHooks: {
+    user: {
+      create: {
+        // biome-ignore lint/suspicious/useAwait: no need
+        before: async (user, _ctx) => {
+          return {
+            data: {
+              ...user,
+              roles:
+                user.email === env.adminEmail ? ['user', 'admin'] : ['user'],
+            },
+          };
+        },
+      },
+    },
+  },
   plugins: [
     magicLink({
       sendMagicLink: async ({ email, token, url }) => {
@@ -45,6 +61,15 @@ export const auth = betterAuth({
       },
     }),
   ],
+  user: {
+    additionalFields: {
+      roles: {
+        type: 'string[]',
+        required: true,
+        input: false,
+      },
+    },
+  },
 });
 
 export const authRouter = new Hono<honoContext>();
