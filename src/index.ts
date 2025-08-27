@@ -14,6 +14,9 @@ import { initializeRBAC } from './utils/authorization';
 await configureLogger();
 const logger = getLogger(['chronos', 'server']);
 
+env.mode === 'development' &&
+  logger.warn('Running in development mode, do not use in production!');
+
 await prepareDb();
 await initializeRBAC();
 
