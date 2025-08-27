@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { showRoutes } from 'hono/dev';
 import { prepareDb } from '~/database';
+import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
 import { developmentRouter } from '~/routes/_dev/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { authRouter } from '~/utils/authentication';
@@ -18,9 +19,7 @@ const logger = getLogger(['chronos', 'server']);
 env.mode === 'development' &&
   logger.warn('Running in development mode, do not use in production!');
 
-await prepareDb();
-await initializeRBAC();
-
+let server: Bun.Server;
 const app = new Hono<honoContext>();
 
 app.use(
@@ -39,9 +38,26 @@ env.mode === 'development' && app.route('/_dev', developmentRouter);
 app.route('/auth', authRouter);
 app.route('/ping', pingRouter);
 
-Bun.serve({
-  fetch: app.fetch,
-});
+const handleStartup = async () => {
+  await prepareDb();
+  await initializeRBAC();
+  initializeMqttClient();
 
-logger.info('chronos started on http://localhost:3000');
-env.mode === 'development' && showRoutes(app, { verbose: true });
+  server = Bun.serve({
+    fetch: app.fetch,
+  });
+
+  logger.info('chronos started on http://localhost:3000');
+  env.logLevel === 'trace' && showRoutes(app, { verbose: true });
+}
+
+const handleShutdown = () => {
+  logger.info('Shutting down chronos...');
+  server.stop();
+  handleMqttShutdown();
+}
+
+process.on('SIGINT', handleShutdown);
+process.on('SIGTERM', handleShutdown);
+
+await handleStartup();

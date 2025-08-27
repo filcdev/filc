@@ -12,6 +12,7 @@ const envSchema = z.object({
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
   CHRONOS_BASE_URL: z.url(),
   CHRONOS_ADMIN_EMAIL: z.email(),
+  CHRONOS_MQTT_BROKER_URL: z.url(),
 });
 
 const makeTypedEnvironment = <T>(schema: (v: unknown) => T) => {
