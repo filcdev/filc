@@ -18,5 +18,6 @@
   "explorer.compactFolders": false,
   "debug.javascript.defaultRuntimeExecutable": {
     "pwa-node": "/home/nya/.local/share/mise/shims/node"
-  }
+  },
+  "python.defaultInterpreterPath": "/home/nya/.local/share/mise/installs/python/3.13.7/bin/python"
 }

@@ -3,3 +3,10 @@ bun = "latest"
 
 [env]
 BUN_OPTIONS='--bun'
+
+[hooks]
+postinstall = "bun -v > .bun-version"
+
+[settings]
+experimental = true
+idiomatic_version_file_enable_tools = []
