@@ -4,12 +4,13 @@ import { logger } from '~/routes/timetable/_logger';
 import { importFactory } from '~/routes/timetable/import/_factory';
 import { importTimetableXML } from '../../../utils/timetable-imports';
 // import type { TimetableExportRoot } from "~/utils/timetable/types";
+import { DOMParser } from 'xmldom';
 
 export const importRoute = importFactory.createHandlers(async (c) => {
   const body = await c.req.parseBody();
 
   // get file
-  const file = body.file as File;
+  const file = body['file'] as File;
 
   if (!file) {
     return c.json(
@@ -50,11 +51,11 @@ export const importRoute = importFactory.createHandlers(async (c) => {
   try {
     const xmlData = new DOMParser().parseFromString(text, 'application/xml');
 
-    importTimetableXML(xmlData);
+    await importTimetableXML(xmlData);
 
     logger.info('Imported timetable');
   } catch (e) {
-    logger.error('Failed to parse XML', { error: e });
+    logger.error(`Failed to parse XML: ${e} ${e.stack}`);
     return c.json(
       {
         status: 'error',
