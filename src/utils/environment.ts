@@ -2,8 +2,11 @@ import { camelKeys, replaceKeys } from 'string-ts';
 import z from 'zod';
 
 const MIN_SECRET_LENGTH = 32;
+const MIN_PORT = 1;
+const MAX_PORT = 65_535;
 
 const envSchema = z.object({
+  CHRONOS_PORT: z.coerce.number().min(1).max(MAX_PORT).default(MIN_PORT),
   CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])

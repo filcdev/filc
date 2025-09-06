@@ -1,15 +1,14 @@
-// import { XMLParser } from "fast-xml-parser";
+import { XMLParser } from 'fast-xml-parser';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '~/routes/timetable/_logger';
 import { importFactory } from '~/routes/timetable/import/_factory';
-import { importTimetableXML } from '../../../utils/timetable-imports';
-// import type { TimetableExportRoot } from "~/utils/timetable/types";
-import { DOMParser } from 'xmldom';
+import { importTimetableXML } from '~/utils/timetable/imports';
+import type { TimetableExportRoot } from '~/utils/timetable/types';
 
 export const importRoute = importFactory.createHandlers(async (c) => {
   const body = await c.req.parseBody();
 
-  // get file
+  // biome-ignore lint/complexity/useLiteralKeys: it is accessed from a signatured object
   const file = body['file'] as File;
 
   if (!file) {
@@ -38,24 +37,24 @@ export const importRoute = importFactory.createHandlers(async (c) => {
 
   // TODO: Rewrite the import function to use these
   // types so we are more typeish :3.
-  // const parser = new XMLParser({
-  //   ignoreAttributes: false,
-  //   attributeNamePrefix: "",
-  //   textNodeName: "text",
-  //   parseTagValue: true,
-  //   parseAttributeValue: true,
-  //   trimValues: true,
-  // });
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '',
+    textNodeName: 'text',
+    parseTagValue: true,
+    parseAttributeValue: true,
+    trimValues: true,
+  });
 
-  // let xmlData: TimetableExportRoot | null = null;
+  let xmlData: TimetableExportRoot | null = null;
   try {
-    const xmlData = new DOMParser().parseFromString(text, 'application/xml');
+    xmlData = parser.parse(text) as TimetableExportRoot;
 
     await importTimetableXML(xmlData);
 
     logger.info('Imported timetable');
   } catch (e) {
-    logger.error(`Failed to parse XML: ${e} ${e.stack}`);
+    logger.error('Failed to parse XML: {*}', { e });
     return c.json(
       {
         status: 'error',

@@ -17,7 +17,6 @@ export const auth = betterAuth({
   }),
   baseURL: env.baseUrl,
   secret: env.authSecret,
-  basePath: '/auth',
   trustedOrigins: [env.baseUrl],
   logger: {
     level: env.mode === 'development' ? 'debug' : 'info',
