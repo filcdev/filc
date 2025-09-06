@@ -1,7 +1,5 @@
-import fs from "node:fs/promises";
-import { DOMParser } from "@xmldom/xmldom";
 import { and, eq } from "drizzle-orm";
-import type { BunSQLDatabase } from "drizzle-orm/bun-sql";
+import { db } from "../database";
 import {
   building as buildingSchema,
   classroom as classroomSchema,
@@ -13,23 +11,29 @@ import {
   teacher as teacherSchema,
   weekDefinition as weekSchema,
 } from "../database/schema/timetable";
-import { db } from "~/database";
 
-export const importTimetableXML = async (
-  path: string,
-  _db: BunSQLDatabase<Record<string, never>>,
-) => {
-  try {
-    const parser = new DOMParser();
-    const xmlString = await fs.readFile(path, "utf8");
-
-    const xmlDoc = parser.parseFromString(xmlString, "application/xml");
-
-    // TODO: Run all the functions.
-  } catch (_error) {}
+export const importTimetableXML = async (xmlDoc: Document) => {
+  // We might just want this in lessons for mapping
+  // This will work, just not all IDish and such.
+  // It would be ideal to fix when we add all that
+  // separate timetable ID stuff and such doohickeys.
+  const _periodMap = await loadPeriods(xmlDoc);
+  const dayMap = await loadDays(xmlDoc);
+  const subjectMap = await loadSubjects(xmlDoc);
+  const teacherMap = await loadTeachers(xmlDoc);
+  const classroomMap = await loadClassrooms(xmlDoc);
+  const cohortMap = await loadCohort(xmlDoc, teacherMap);
+  const _lessons = await loadLessons(
+    xmlDoc,
+    subjectMap,
+    cohortMap,
+    teacherMap,
+    classroomMap,
+    dayMap,
+  );
 };
 
-const _loadPeriod = async (xmlDoc: Document) => {
+const loadPeriods = async (xmlDoc: Document) => {
   const result: Map<string, string> = new Map();
   const periods = xmlDoc.getElementsByTagName("period");
 
@@ -77,7 +81,7 @@ const _loadPeriod = async (xmlDoc: Document) => {
   return result;
 };
 
-const _loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
+const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const days = xmlDoc.getElementsByTagName("day");
 
@@ -124,9 +128,7 @@ const _loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
   return result;
 };
 
-const _loadSubjects = async (
-  xmlDoc: Document,
-): Promise<Map<string, string>> => {
+const loadSubjects = async (xmlDoc: Document): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const subjects = xmlDoc.getElementsByTagName("subjects");
 
@@ -173,9 +175,7 @@ const _loadSubjects = async (
   return result;
 };
 
-const _loadTeachers = async (
-  xmlDoc: Document,
-): Promise<Map<string, string>> => {
+const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const teachers = xmlDoc.getElementsByTagName("teacher");
 
@@ -250,7 +250,7 @@ const splitName = (
   return { firstName, restOfName };
 };
 
-const _loadClassrooms = async (
+const loadClassrooms = async (
   xmlDoc: Document,
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
@@ -321,7 +321,7 @@ const _loadClassrooms = async (
   return result;
 };
 
-const _loadCohort = async (
+const loadCohort = async (
   xmlDoc: Document,
   teacherMap: Map<string, string>,
 ): Promise<Map<string, string>> => {
@@ -375,7 +375,7 @@ const _loadCohort = async (
   return result;
 };
 
-const _loadLessons = async (
+const loadLessons = async (
   xmlDoc: Document,
   subjectMap: Map<string, string>,
   cohortMap: Map<string, string>,
