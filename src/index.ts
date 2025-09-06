@@ -5,6 +5,7 @@ import { showRoutes } from 'hono/dev';
 import { prepareDb } from '~/database';
 import { developmentRouter } from '~/routes/_dev/_router';
 import { pingRouter } from '~/routes/ping/_router';
+import { timetableRouter } from '~/routes/timetable/_router';
 import { auth, authRouter } from '~/utils/authentication';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
@@ -45,10 +46,26 @@ app.use('*', async (c, next) => {
   return next();
 });
 
+env.mode === 'development' &&
+  app.use('*', async (c, next) => {
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
+      method: c.req.method,
+      url: c.req.url,
+      duration: ms,
+      user: c.get('user')
+        ? { id: c.get('user')?.id, email: c.get('user')?.email }
+        : null,
+    });
+  });
+
 // routes
 env.mode === 'development' && app.route('/_dev', developmentRouter);
 app.route('/auth', authRouter);
 app.route('/ping', pingRouter);
+app.route('/timetable', timetableRouter);
 
 Bun.serve({
   fetch: app.fetch,
