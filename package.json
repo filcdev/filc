@@ -6,7 +6,8 @@
     "dev:db": "bun run src/database/dev-server.ts",
     "dev:server": "wait-on tcp:5432 && bun run --watch src/index.ts",
     "db:generate": "drizzle-kit generate",
-    "lint": "biome check --write ."
+    "lint": "biome check --write .",
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@logtape/logtape": "^1.0.4",
@@ -28,6 +29,7 @@
     "drizzle-kit": "^0.31.4",
     "npm-run-all2": "^8.0.4",
     "pg": "^8.16.3",
+    "typescript": "^5.9.2",
     "wait-on": "^8.0.4"
   }
 }

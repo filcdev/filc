@@ -55,6 +55,11 @@ export const userHasPermission = async (
     .where(eq(dbUser.id, userId))
     .limit(1);
 
+  if (!user) {
+    logger.warn(`User with ID ${userId} not found.`);
+    return false;
+  }
+
   const canPromises = user.roles.map((role) => rbac.can(role, permissionName));
 
   const canResults = await Promise.all(canPromises);
@@ -79,7 +84,7 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
   const permissionsSet = new Set<string>();
 
   for (const role of user.roles) {
-    const rolePermissions = await db
+    const [rolePermissions] = await db
       .select({
         can: dbRole.can,
       })
@@ -87,10 +92,13 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
       .where(eq(dbRole.name, role))
       .limit(1);
 
-    if (rolePermissions.length > 0) {
-      for (const perm of rolePermissions[0].can) {
-        permissionsSet.add(perm);
-      }
+    if (!rolePermissions) {
+      logger.warn(`Role ${role} not found in the database.`);
+      continue;
+    }
+
+    for (const perm of rolePermissions.can) {
+      permissionsSet.add(perm);
     }
   }
 
