@@ -2,7 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '~/routes/timetable/_logger';
 import { importFactory } from '~/routes/timetable/import/_factory';
-import { TimetableExportRoot } from '~/utils/timetable/types';
+import type { TimetableExportRoot } from '~/utils/timetable/types';
 
 export const importRoute = importFactory.createHandlers(async (c) => {
   const body = await c.req.parseBody();
@@ -67,8 +67,6 @@ export const importRoute = importFactory.createHandlers(async (c) => {
       StatusCodes.BAD_REQUEST
     );
   }
-
-
 
   logger.info('Imported timetable', { xmlData });
 
