@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { db } from "../database";
+import { db } from "~/database";
 import {
   building as buildingSchema,
   classroom as classroomSchema,
@@ -10,7 +10,7 @@ import {
   subject as subjectSchema,
   teacher as teacherSchema,
   weekDefinition as weekSchema,
-} from "../database/schema/timetable";
+} from "~/database/schema/timetable";
 
 export const importTimetableXML = async (xmlDoc: Document) => {
   // We might just want this in lessons for mapping
