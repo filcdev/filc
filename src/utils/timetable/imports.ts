@@ -1,5 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "~/database";
+import { and, eq } from 'drizzle-orm';
+import { db } from '~/database';
 import {
   building as buildingSchema,
   classroom as classroomSchema,
@@ -10,7 +10,7 @@ import {
   subject as subjectSchema,
   teacher as teacherSchema,
   weekDefinition as weekSchema,
-} from "~/database/schema/timetable";
+} from '~/database/schema/timetable';
 
 export const importTimetableXML = async (xmlDoc: Document) => {
   // We might just want this in lessons for mapping
@@ -29,13 +29,13 @@ export const importTimetableXML = async (xmlDoc: Document) => {
     cohortMap,
     teacherMap,
     classroomMap,
-    dayMap,
+    dayMap
   );
 };
 
 const loadPeriods = async (xmlDoc: Document) => {
   const result: Map<string, string> = new Map();
-  const periods = xmlDoc.getElementsByTagName("period");
+  const periods = xmlDoc.getElementsByTagName('period');
 
   for (let i = 0; i < periods.length; i++) {
     const period = periods.item(i);
@@ -43,13 +43,13 @@ const loadPeriods = async (xmlDoc: Document) => {
       return result;
     }
 
-    const predefinedId = period.getAttribute("period");
-    const end_time = period.getAttribute("endtime");
-    const start_time = period.getAttribute("starttime");
+    const predefinedId = period.getAttribute('period');
+    const end_time = period.getAttribute('endtime');
+    const start_time = period.getAttribute('starttime');
 
     if (!(predefinedId && start_time && end_time)) {
       throw new Error(
-        "Incomplete data for cohort, unable to get all attributes",
+        'Incomplete data for period, unable to get all attributes'
       );
     }
 
@@ -83,7 +83,7 @@ const loadPeriods = async (xmlDoc: Document) => {
 
 const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-  const days = xmlDoc.getElementsByTagName("day");
+  const days = xmlDoc.getElementsByTagName('day');
 
   for (let i = 0; i < days.length; i++) {
     const day = days.item(i);
@@ -91,14 +91,12 @@ const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
       return result;
     }
 
-    const predefinedId = day.getAttribute("id");
-    const name = day.getAttribute("name");
-    const short = day.getAttribute("short");
+    const predefinedId = day.getAttribute('day');
+    const name = day.getAttribute('name');
+    const short = day.getAttribute('short');
 
     if (!(name && predefinedId && short)) {
-      throw new Error(
-        "Incomplete data for cohort, unable to get all attributes",
-      );
+      throw new Error('Incomplete data for day, unable to get all attributes');
     }
 
     const [existingDay] = await db
@@ -130,7 +128,7 @@ const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
 
 const loadSubjects = async (xmlDoc: Document): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-  const subjects = xmlDoc.getElementsByTagName("subjects");
+  const subjects = xmlDoc.getElementsByTagName('subject');
 
   for (let i = 0; i < subjects.length; i++) {
     const subject = subjects.item(i);
@@ -138,13 +136,13 @@ const loadSubjects = async (xmlDoc: Document): Promise<Map<string, string>> => {
       throw new Error(`Failed to get subject at index: ${i}`);
     }
 
-    const predefinedId = subject.getAttribute("id");
-    const name = subject.getAttribute("name");
-    const short = subject.getAttribute("short");
+    const predefinedId = subject.getAttribute('id');
+    const name = subject.getAttribute('name');
+    const short = subject.getAttribute('short');
 
     if (!(name && predefinedId && short)) {
       throw new Error(
-        "Incomplete data for subject, unable to get all attributes",
+        `incomplete data for subject, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}`
       );
     }
 
@@ -177,7 +175,7 @@ const loadSubjects = async (xmlDoc: Document): Promise<Map<string, string>> => {
 
 const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-  const teachers = xmlDoc.getElementsByTagName("teacher");
+  const teachers = xmlDoc.getElementsByTagName('teacher');
 
   for (let i = 0; i < teachers.length; i++) {
     const teacher = teachers.item(i);
@@ -185,14 +183,20 @@ const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
       return result;
     }
 
-    const predefinedId = teacher.getAttribute("id");
-    const name = teacher.getAttribute("name");
-    const short = teacher.getAttribute("short");
-    const gender = teacher.getAttribute("gender");
-    const color = teacher.getAttribute("color");
+    //<teacher id="*1" name="Babusa TamĂˇs Gyula" short="Babusa" gender="F" color="#FF0000"/>
+    const predefinedId = teacher.getAttribute('id');
+    const name = teacher.getAttribute('name');
+    let short = teacher.getAttribute('short');
+    const gender = teacher.getAttribute('gender');
 
-    if (!(name && predefinedId && short && gender && color)) {
-      continue;
+    if (!short) {
+      short = '-';
+    }
+
+    if (!(name && predefinedId && gender)) {
+      throw new Error(
+        `incomplete data for teacher, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}, gender=${gender}`
+      );
     }
 
     const names = splitName(name);
@@ -202,8 +206,8 @@ const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
       .where(
         and(
           eq(teacherSchema.firstName, names.firstName),
-          eq(teacherSchema.lastName, names.restOfName),
-        ),
+          eq(teacherSchema.lastName, names.restOfName)
+        )
       )
       .limit(1);
 
@@ -217,7 +221,7 @@ const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
           firstName: names.firstName,
           lastName: names.restOfName,
           short,
-          gender,
+          // gender,
         })
         .returning({ insertedId: teacherSchema.id });
 
@@ -231,17 +235,17 @@ const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
 };
 
 const splitName = (
-  fullName: string,
+  fullName: string
 ): { firstName: string; restOfName: string } => {
-  if (!fullName || typeof fullName !== "string") {
-    return { firstName: "", restOfName: "" };
+  if (!fullName || typeof fullName !== 'string') {
+    return { firstName: '', restOfName: '' };
   }
 
   const trimmedName = fullName.trim();
-  const firstSpaceIndex = trimmedName.indexOf(" ");
+  const firstSpaceIndex = trimmedName.indexOf(' ');
 
   if (firstSpaceIndex === -1) {
-    return { firstName: trimmedName, restOfName: "" };
+    return { firstName: trimmedName, restOfName: '' };
   }
 
   const firstName = trimmedName.substring(0, firstSpaceIndex);
@@ -251,11 +255,11 @@ const splitName = (
 };
 
 const loadClassrooms = async (
-  xmlDoc: Document,
+  xmlDoc: Document
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
 
-  const buildingName = "A";
+  const buildingName = 'A';
   const [existingBuilding] = await db
     .select()
     .from(buildingSchema)
@@ -276,24 +280,24 @@ const loadClassrooms = async (
     buildingId = insertedBuilding.insertedId;
   }
 
-  const classrooms = xmlDoc.getElementsByTagName("classroom");
+  const classrooms = xmlDoc.getElementsByTagName('classroom');
   for (let i = 0; i < classrooms.length; i++) {
     const classroom = classrooms.item(i);
     if (!classroom) {
       return result;
     }
-    const predefinedId = classroom.getAttribute("id");
-    const name = classroom.getAttribute("name");
-    const short = classroom.getAttribute("short");
-    const capacityStr = classroom.getAttribute("capacity");
+    const predefinedId = classroom.getAttribute('id');
+    const name = classroom.getAttribute('name');
+    const short = classroom.getAttribute('short');
+    const capacityStr = classroom.getAttribute('capacity');
     if (!(name && predefinedId && short && capacityStr)) {
       throw new Error(
-        "Incomplete data for classroom, unable to get all attributes",
+        'Incomplete data for classroom, unable to get all attributes'
       );
     }
 
     const capacity =
-      capacityStr === "*" ? null : Number.parseInt(capacityStr, 10);
+      capacityStr === '*' ? null : Number.parseInt(capacityStr, 10);
 
     const [existingClassroom] = await db
       .select()
@@ -323,10 +327,10 @@ const loadClassrooms = async (
 
 const loadCohort = async (
   xmlDoc: Document,
-  teacherMap: Map<string, string>,
+  teacherMap: Map<string, string>
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-  const cohorts = xmlDoc.getElementsByTagName("class");
+  const cohorts = xmlDoc.getElementsByTagName('class');
 
   for (let i = 0; i < cohorts.length; i++) {
     const cohort = cohorts.item(i);
@@ -334,18 +338,23 @@ const loadCohort = async (
       return result;
     }
 
-    const predefinedId = cohort.getAttribute("id");
-    const name = cohort.getAttribute("name");
-    const short = cohort.getAttribute("short");
-    const predefinedTeacherId = cohort.getAttribute("teacherid");
+    const predefinedId = cohort.getAttribute('id');
+    const name = cohort.getAttribute('name');
+    const short = cohort.getAttribute('short');
+    const predefinedTeacherId = cohort.getAttribute('teacherid');
 
-    if (!(name && predefinedId && short && predefinedTeacherId)) {
+    if (!(name && predefinedId && short)) {
       throw new Error(
-        "Incomplete data for cohort, unable to get all attributes",
+        `Incomplete data for cohort, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}, teacherid=${predefinedTeacherId}`
       );
     }
 
-    const teacherId = teacherMap.get(predefinedTeacherId);
+    let teacherId: string | null = null;
+
+    if (predefinedTeacherId) {
+      const value = teacherMap.get(predefinedTeacherId);
+      teacherId = value === undefined ? null : value;
+    }
 
     const [existingCohort] = await db
       .select()
@@ -381,11 +390,11 @@ const loadLessons = async (
   cohortMap: Map<string, string>,
   teacherMap: Map<string, string>,
   classroomMap: Map<string, string>,
-  dayDefinitionMap: Map<string, string>,
+  dayDefinitionMap: Map<string, string>
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
 
-  const weekName = "A";
+  const weekName = 'A';
   const [existingWeek] = await db
     .select()
     .from(weekSchema)
@@ -401,7 +410,7 @@ const loadLessons = async (
       .values({
         id: crypto.randomUUID(),
         name: weekName,
-        short: "A",
+        short: 'A',
         weeks: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -410,7 +419,7 @@ const loadLessons = async (
     weekDefinitionId = insertedWeek.insertedId;
   }
 
-  const schedules = xmlDoc.getElementsByTagName("TimeTableSchedule");
+  const schedules = xmlDoc.getElementsByTagName('TimeTableSchedule');
   const lessonGroups = new Map<
     string,
     {
@@ -429,12 +438,12 @@ const loadLessons = async (
       continue;
     }
 
-    const dayId = schedule.getAttribute("DayID");
-    const subjectGradeId = schedule.getAttribute("SubjectGradeID");
-    const classId = schedule.getAttribute("ClassID");
-    const optionalClassId = schedule.getAttribute("OptionalClassID");
-    const teacherId = schedule.getAttribute("TeacherID");
-    const schoolRoomId = schedule.getAttribute("SchoolRoomID");
+    const dayId = schedule.getAttribute('DayID');
+    const subjectGradeId = schedule.getAttribute('SubjectGradeID');
+    const classId = schedule.getAttribute('ClassID');
+    const optionalClassId = schedule.getAttribute('OptionalClassID');
+    const teacherId = schedule.getAttribute('TeacherID');
+    const schoolRoomId = schedule.getAttribute('SchoolRoomID');
 
     if (!(dayId && subjectGradeId)) {
       continue;
@@ -455,7 +464,7 @@ const loadLessons = async (
 
     const group = lessonGroups.get(groupKey);
     if (!group) {
-      throw new Error("Group was null :[");
+      throw new Error('Group was null :[');
     }
 
     group.periodsCount++;

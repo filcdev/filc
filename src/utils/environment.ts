@@ -4,9 +4,14 @@ import z from 'zod';
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
 const MAX_PORT = 65_535;
+const DEFAULT_PORT = 3000;
 
 const envSchema = z.object({
-  CHRONOS_PORT: z.coerce.number().min(MIN_PORT).max(MAX_PORT).default(3000),
+  CHRONOS_PORT: z.coerce
+    .number()
+    .min(MIN_PORT)
+    .max(MAX_PORT)
+    .default(DEFAULT_PORT),
   CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
