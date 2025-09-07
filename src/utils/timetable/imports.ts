@@ -13,6 +13,9 @@ import {
 } from '~/database/schema/timetable';
 import { logger } from '~/routes/timetable/_logger';
 
+// Drizzle inferred row type helper
+type LessonRow = typeof lessonSchema.$inferSelect;
+
 export const importTimetableXML = async (xmlDoc: Document) => {
   // We might just want this in lessons for mapping
   // This will work, just not all IDish and such.
@@ -449,127 +452,179 @@ const ensureWeekDefinition = async (weekName: string): Promise<string> => {
   return inserted.insertedId;
 };
 
+const arraysEqualUnordered = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const aSorted = [...a].sort();
+  const bSorted = [...b].sort();
+  for (let i = 0; i < aSorted.length; i++) {
+    if (aSorted[i] !== bSorted[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const findExistingLesson = async (args: {
+  subjectId: string;
+  dayDefinitionId: string;
+  weekDefinitionId: string;
+  cohortIds: string[];
+  teacherIds: string[];
+  classroomIds: string[];
+}): Promise<LessonRow | null> => {
+  const {
+    subjectId,
+    dayDefinitionId,
+    weekDefinitionId,
+    cohortIds,
+    teacherIds,
+    classroomIds,
+  } = args;
+  const existingLessons: LessonRow[] = await db
+    .select()
+    .from(lessonSchema)
+    .where(
+      and(
+        eq(lessonSchema.subjectId, subjectId),
+        eq(lessonSchema.dayDefinitionId, dayDefinitionId),
+        eq(lessonSchema.weeksDefinitionId, weekDefinitionId)
+      )
+    );
+  for (const lesson of existingLessons) {
+    const existingCohorts = (lesson.cohortIds || []) as string[];
+    const existingTeachers = (lesson.teacherIds || []) as string[];
+    const existingClassrooms = (lesson.classroomIds || []) as string[];
+    if (
+      arraysEqualUnordered(existingCohorts, cohortIds) &&
+      arraysEqualUnordered(existingTeachers, teacherIds) &&
+      arraysEqualUnordered(existingClassrooms, classroomIds)
+    ) {
+      return lesson;
+    }
+  }
+  return null;
+};
+
+const mapMaybeId = (
+  sourceId: string | null,
+  map: Map<string, string>,
+  acc: string[]
+) => {
+  if (!sourceId) {
+    return;
+  }
+  const mapped = map.get(sourceId);
+  if (mapped) {
+    acc.push(mapped);
+  }
+};
+
+type LessonMaps = {
+  subjectMap: Map<string, string>;
+  cohortMap: Map<string, string>;
+  teacherMap: Map<string, string>;
+  classroomMap: Map<string, string>;
+  dayMap: Map<string, string>;
+  periodMap: Map<string, string>;
+};
+
+const processSchedule = async (
+  index: number,
+  schedule: Element,
+  maps: LessonMaps,
+  weekDefinitionId: string
+): Promise<[string, string] | null> => {
+  const dayId = schedule.getAttribute('DayID');
+  const subjectGradeId = schedule.getAttribute('SubjectGradeID');
+  const period = schedule.getAttribute('Period');
+  const classId = schedule.getAttribute('ClassID');
+  const optionalClassId = schedule.getAttribute('OptionalClassID');
+  const teacherId = schedule.getAttribute('TeacherID');
+  const schoolRoomId = schedule.getAttribute('SchoolRoomID');
+
+  if (!(dayId && subjectGradeId && period)) {
+    return null;
+  }
+
+  const actualPeriodId = maps.periodMap.get(period);
+  if (!actualPeriodId) {
+    logger.error(`Period: ${period} not found in periodMap.`);
+    return null;
+  }
+
+  const subjectId = maps.subjectMap.get(subjectGradeId);
+  const dayDefinitionId = maps.dayMap.get(dayId);
+  if (!(subjectId && dayDefinitionId)) {
+    return null;
+  }
+
+  const cohortIds: string[] = [];
+  mapMaybeId(classId, maps.cohortMap, cohortIds);
+  mapMaybeId(optionalClassId, maps.cohortMap, cohortIds);
+
+  const teacherIds: string[] = [];
+  mapMaybeId(teacherId, maps.teacherMap, teacherIds);
+
+  const classroomIds: string[] = [];
+  mapMaybeId(schoolRoomId, maps.classroomMap, classroomIds);
+
+  const existingLesson = await findExistingLesson({
+    subjectId,
+    dayDefinitionId,
+    weekDefinitionId,
+    cohortIds,
+    teacherIds,
+    classroomIds,
+  });
+  if (existingLesson) {
+    return [`${index}`, existingLesson.id];
+  }
+
+  const [insertedLesson] = await db
+    .insert(lessonSchema)
+    .values({
+      id: crypto.randomUUID(),
+      subjectId,
+      cohortIds,
+      teacherIds,
+      groupsIds: [],
+      classroomIds,
+      periodId: actualPeriodId,
+      periodsPerWeek: 1,
+      weeksDefinitionId: weekDefinitionId,
+      dayDefinitionId,
+    })
+    .returning({ insertedId: lessonSchema.id });
+  if (!insertedLesson) {
+    return null;
+  }
+  return [`${index}`, insertedLesson.insertedId];
+};
+
 const loadLessons = async (
   xmlDoc: Document,
-  maps: {
-    subjectMap: Map<string, string>;
-    cohortMap: Map<string, string>;
-    teacherMap: Map<string, string>;
-    classroomMap: Map<string, string>;
-    dayMap: Map<string, string>;
-    periodMap: Map<string, string>;
-  }
+  maps: LessonMaps
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const weekDefinitionId = await ensureWeekDefinition('A');
   const schedules = xmlDoc.getElementsByTagName('TimeTableSchedule');
-
   for (let i = 0; i < schedules.length; i++) {
     const schedule = schedules.item(i);
     if (!schedule) {
       continue;
     }
-
-    const dayId = schedule.getAttribute('DayID');
-    const subjectGradeId = schedule.getAttribute('SubjectGradeID');
-    const period = schedule.getAttribute('Period');
-    const classId = schedule.getAttribute('ClassID');
-    const optionalClassId = schedule.getAttribute('OptionalClassID');
-    const teacherId = schedule.getAttribute('TeacherID');
-    const schoolRoomId = schedule.getAttribute('SchoolRoomID');
-
-    const actualPeriodId = maps.periodMap.get(period!);
-    if (!actualPeriodId) {
-      logger.error(`Period: ${period} not found in periodMap.`);
-      continue;
-    }
-
-    if (!(dayId && subjectGradeId)) {
-      continue;
-    }
-
-    // Get mapped IDs
-    const subjectId = maps.subjectMap.get(subjectGradeId);
-    const dayDefinitionId = maps.dayMap.get(dayId);
-
-    if (!(subjectId && dayDefinitionId)) {
-      continue;
-    }
-
-    // Build arrays
-    const cohortIds: string[] = [];
-    if (classId && maps.cohortMap.has(classId)) {
-      cohortIds.push(maps.cohortMap.get(classId)!);
-    }
-    if (optionalClassId && maps.cohortMap.has(optionalClassId)) {
-      cohortIds.push(maps.cohortMap.get(optionalClassId)!);
-    }
-
-    const teacherIds: string[] = [];
-    if (teacherId && maps.teacherMap.has(teacherId)) {
-      teacherIds.push(maps.teacherMap.get(teacherId)!);
-    }
-
-    const classroomIds: string[] = [];
-    if (schoolRoomId && maps.classroomMap.has(schoolRoomId)) {
-      classroomIds.push(maps.classroomMap.get(schoolRoomId)!);
-    }
-
-    // Check if this exact lesson already exists - EXACTLY like your other loaders
-    const existingLessons = await db
-      .select()
-      .from(lessonSchema)
-      .where(
-        and(
-          eq(lessonSchema.subjectId, subjectId),
-          eq(lessonSchema.dayDefinitionId, dayDefinitionId),
-          eq(lessonSchema.weeksDefinitionId, weekDefinitionId)
-        )
-      );
-
-    // Find exact match by comparing arrays
-    let existingLesson = null;
-    for (const lesson of existingLessons) {
-      const existingCohorts = (lesson.cohortIds || []).sort();
-      const existingTeachers = (lesson.teacherIds || []).sort();
-      const existingClassrooms = (lesson.classroomIds || []).sort();
-
-      if (
-        JSON.stringify(existingCohorts) === JSON.stringify(cohortIds.sort()) &&
-        JSON.stringify(existingTeachers) ===
-          JSON.stringify(teacherIds.sort()) &&
-        JSON.stringify(existingClassrooms) ===
-          JSON.stringify(classroomIds.sort())
-      ) {
-        existingLesson = lesson;
-        break;
-      }
-    }
-
-    if (existingLesson) {
-      result.set(`${i}`, existingLesson.id);
-    } else {
-      const [insertedLesson] = await db
-        .insert(lessonSchema)
-        .values({
-          id: crypto.randomUUID(),
-          subjectId,
-          cohortIds,
-          teacherIds,
-          groupsIds: [],
-          classroomIds,
-          periodId: actualPeriodId,
-          periodsPerWeek: 1,
-          weeksDefinitionId: weekDefinitionId,
-          dayDefinitionId,
-        })
-        .returning({ insertedId: lessonSchema.id });
-
-      if (insertedLesson) {
-        result.set(`${i}`, insertedLesson.insertedId);
-      }
+    const processed = await processSchedule(
+      i,
+      schedule,
+      maps,
+      weekDefinitionId
+    );
+    if (processed) {
+      const [key, lessonId] = processed;
+      result.set(key, lessonId);
     }
   }
-
   return result;
 };
