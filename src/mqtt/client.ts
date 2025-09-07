@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
-import { eq } from 'drizzle-orm';
+import { and, eq, exists } from 'drizzle-orm';
 import { connect, type MqttClient } from 'mqtt';
 import { db } from '~/database';
-import { card } from '~/database/schema/doorlock';
+import { card, cardDevice, device } from '~/database/schema/doorlock';
 import { env } from '~/utils/environment';
 
 const logger = getLogger(['chronos', 'mqtt']);
@@ -95,7 +95,6 @@ const handleIncomingMessage = async (topic: string, payload: Buffer) => {
     return;
   }
 
-  logger.info(`Received message on topic ${topic}`, { topic, message });
   if (!topic.startsWith('filc/doorlock/')) {
     return;
   }
@@ -108,6 +107,12 @@ const handleIncomingMessage = async (topic: string, payload: Buffer) => {
     return;
   }
   const eventType = parts[4];
+
+  // heartbeat: filc/doorlock/<deviceId>/events/heartbeat
+  if (eventType === 'heartbeat') {
+    await upsertDeviceHeartbeat(deviceId);
+    return;
+  }
 
   if (eventType === 'rfid') {
     await handleRfidEvent(deviceId, message);
@@ -130,18 +135,36 @@ const handleRfidEvent = async (
     return;
   }
   try {
+    // Find card and simultaneously check restriction mapping
     const [found] = await db
       .select({
         id: card.id,
         frozen: card.frozen,
         disabled: card.disabled,
         label: card.label,
+        restricted: exists(
+          db
+            .select({ one: cardDevice.cardId })
+            .from(cardDevice)
+            .where(eq(cardDevice.cardId, card.id))
+        ).as('restricted'),
+        allowedForDevice: exists(
+          db
+            .select({ one: cardDevice.cardId })
+            .from(cardDevice)
+            .where(
+              and(
+                eq(cardDevice.cardId, card.id),
+                eq(cardDevice.deviceId, deviceId)
+              )
+            )
+        ).as('allowed_for_device'),
       })
       .from(card)
       .where(eq(card.tag, tag))
       .limit(1);
     if (!found) {
-      logger.info('Unknown card tag', { tag, deviceId });
+      logger.debug('Unknown card tag', { tag, deviceId });
       sendDoorlockCommand(deviceId, 'deny', 'Unknown card');
       return;
     }
@@ -153,9 +176,45 @@ const handleRfidEvent = async (
       sendDoorlockCommand(deviceId, 'deny', 'Card frozen');
       return;
     }
+    // If card is restricted (has mapping rows) but this device is not among them
+    // deny access.
+    if (found.restricted && !found.allowedForDevice) {
+      sendDoorlockCommand(deviceId, 'deny', 'Not allowed on this device');
+      return;
+    }
     sendDoorlockCommand(deviceId, 'open', found.label ?? 'Access granted');
   } catch (err) {
     logger.error('DB error while processing RFID event', { err });
     sendDoorlockCommand(deviceId, 'deny', 'System error');
+  }
+};
+
+// Upsert device heartbeat (create device row if missing, update lastSeenAt)
+const upsertDeviceHeartbeat = async (deviceId: string) => {
+  if (!deviceId) {
+    return;
+  }
+  try {
+    const now = new Date();
+    // Attempt update first
+    const result = await db
+      .update(device)
+      .set({ lastSeenAt: now, status: 'online', updatedAt: now })
+      .where(eq(device.id, deviceId))
+      .returning({ id: device.id });
+    if (result.length === 0) {
+      await db.insert(device).values({
+        id: deviceId,
+        name: deviceId,
+        lastSeenAt: now,
+        status: 'online',
+        ttlSeconds: 30,
+        createdAt: now,
+        updatedAt: now,
+      });
+      logger.info('Registered new device via heartbeat', { deviceId });
+    }
+  } catch (err) {
+    logger.error('Failed to upsert device heartbeat', { deviceId, err });
   }
 };
