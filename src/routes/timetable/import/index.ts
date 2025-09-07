@@ -7,10 +7,12 @@ import { importFactory } from '~/routes/timetable/import/_factory';
 import { importTimetableXML } from '~/utils/timetable/imports';
 
 export const importRoute = importFactory.createHandlers(async (c) => {
-  const body = await c.req.parseBody();
+  const body = (await c.req.parseBody()) as {
+    omanXml?: File;
+  };
 
   // get file
-  const file = body['file'] as File;
+  const file = body.omanXml as File;
 
   if (!file) {
     return c.json(
