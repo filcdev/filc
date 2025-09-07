@@ -23,14 +23,13 @@ export const importTimetableXML = async (xmlDoc: Document) => {
   const teacherMap = await loadTeachers(xmlDoc);
   const classroomMap = await loadClassrooms(xmlDoc);
   const cohortMap = await loadCohort(xmlDoc, teacherMap);
-  const _lessons = await loadLessons(
-    xmlDoc,
+  const _lessons = await loadLessons(xmlDoc, {
     subjectMap,
     cohortMap,
     teacherMap,
     classroomMap,
-    dayMap
-  );
+    dayMap,
+  });
 };
 
 const loadPeriods = async (xmlDoc: Document) => {
@@ -277,6 +276,11 @@ const loadClassrooms = async (
         name: buildingName,
       })
       .returning({ insertedId: buildingSchema.id });
+
+    if (!insertedBuilding) {
+      throw new Error('Failed to insert building');
+    }
+
     buildingId = insertedBuilding.insertedId;
   }
 
@@ -386,13 +390,16 @@ const loadCohort = async (
 
 const loadLessons = async (
   xmlDoc: Document,
-  subjectMap: Map<string, string>,
-  cohortMap: Map<string, string>,
-  teacherMap: Map<string, string>,
-  classroomMap: Map<string, string>,
-  dayDefinitionMap: Map<string, string>
+  maps: {
+    subjectMap: Map<string, string>;
+    cohortMap: Map<string, string>;
+    teacherMap: Map<string, string>;
+    classroomMap: Map<string, string>;
+    dayMap: Map<string, string>;
+  }
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
+  const { subjectMap, cohortMap, teacherMap, classroomMap, dayMap } = maps;
 
   const weekName = 'A';
   const [existingWeek] = await db
@@ -416,6 +423,11 @@ const loadLessons = async (
         updatedAt: new Date(),
       })
       .returning({ insertedId: weekSchema.id });
+
+    if (!insertedWeek) {
+      throw new Error('Failed to insert week definition');
+    }
+
     weekDefinitionId = insertedWeek.insertedId;
   }
 
@@ -457,7 +469,7 @@ const loadLessons = async (
         cohortIds: new Set(),
         teacherIds: new Set(),
         classroomIds: new Set(),
-        dayDefinitionId: dayDefinitionMap.get(dayId),
+        dayDefinitionId: dayMap.get(dayId),
         periodsCount: 0,
       });
     }
