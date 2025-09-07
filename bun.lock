@@ -14,6 +14,7 @@
         "hono": "^4.9.6",
         "http-status-codes": "^2.3.0",
         "string-ts": "^2.2.1",
+        "xmldom": "^0.6.0",
         "zod": "^4.1.5",
       },
       "devDependencies": {
@@ -339,6 +340,8 @@
     "wait-on": ["wait-on@8.0.4", "", { "dependencies": { "axios": "^1.11.0", "joi": "^17.13.3", "lodash": "^4.17.21", "minimist": "^1.2.8", "rxjs": "^7.8.2" }, "bin": { "wait-on": "bin/wait-on" } }, "sha512-8f9LugAGo4PSc0aLbpKVCVtzayd36sSCp4WLpVngkYq6PK87H79zt77/tlCU6eKCLqR46iFvcl0PU5f+DmtkwA=="],
 
     "which": ["which@5.0.0", "", { "dependencies": { "isexe": "^3.1.1" }, "bin": { "node-which": "bin/which.js" } }, "sha512-JEdGzHwwkrbWoGOlIHqQ5gtprKGOenpDHpxE9zVR1bWbOtYRyPPHMe9FaP6x61CmNaTThSkb0DAJte5jD+DmzQ=="],
+
+    "xmldom": ["xmldom@0.6.0", "", {}, "sha512-iAcin401y58LckRZ0TkI4k0VSM1Qg0KGSc3i8rU+xrxe19A/BN1zHyVSJY7uoutVlaTSzYyk/v5AmkewAP7jtg=="],
 
     "xtend": ["xtend@4.0.2", "", {}, "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="],
 
