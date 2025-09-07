@@ -253,80 +253,144 @@ const splitName = (
   return { firstName, restOfName };
 };
 
+// --- Classrooms -----------------------------------------------------------------
+
+const getOrCreateBuilding = async (name: string): Promise<string> => {
+  const [existing] = await db
+    .select()
+    .from(buildingSchema)
+    .where(eq(buildingSchema.name, name))
+    .limit(1);
+  if (existing) {
+    return existing.id;
+  }
+  const [inserted] = await db
+    .insert(buildingSchema)
+    .values({ id: crypto.randomUUID(), name })
+    .returning({ insertedId: buildingSchema.id });
+  if (!inserted) {
+    throw new Error('Failed to insert building');
+  }
+  return inserted.insertedId;
+};
+
+const upsertClassroom = async (
+  buildingId: string,
+  attrs: { id: string; name: string; short: string; capacityStr: string }
+): Promise<[predefinedId: string, dbId: string] | null> => {
+  const capacity =
+    attrs.capacityStr === '*' ? null : Number.parseInt(attrs.capacityStr, 10);
+  const [existing] = await db
+    .select()
+    .from(classroomSchema)
+    .where(eq(classroomSchema.name, attrs.name))
+    .limit(1);
+  if (existing) {
+    return [attrs.id, existing.id];
+  }
+  const [inserted] = await db
+    .insert(classroomSchema)
+    .values({
+      id: crypto.randomUUID(),
+      name: attrs.name,
+      short: attrs.short,
+      capacity,
+      buildingId,
+    })
+    .returning({ insertedId: classroomSchema.id });
+  if (!inserted) {
+    return null;
+  }
+  return [attrs.id, inserted.insertedId];
+};
+
 const loadClassrooms = async (
   xmlDoc: Document
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-
-  const buildingName = 'A';
-  const [existingBuilding] = await db
-    .select()
-    .from(buildingSchema)
-    .where(eq(buildingSchema.name, buildingName))
-    .limit(1);
-
-  let buildingId: string;
-  if (existingBuilding) {
-    buildingId = existingBuilding.id;
-  } else {
-    const [insertedBuilding] = await db
-      .insert(buildingSchema)
-      .values({
-        id: crypto.randomUUID(),
-        name: buildingName,
-      })
-      .returning({ insertedId: buildingSchema.id });
-
-    if (!insertedBuilding) {
-      throw new Error('Failed to insert building');
-    }
-
-    buildingId = insertedBuilding.insertedId;
-  }
-
+  const buildingId = await getOrCreateBuilding('A');
   const classrooms = xmlDoc.getElementsByTagName('classroom');
   for (let i = 0; i < classrooms.length; i++) {
-    const classroom = classrooms.item(i);
-    if (!classroom) {
-      return result;
+    const el = classrooms.item(i);
+    if (!el) {
+      continue;
     }
-    const predefinedId = classroom.getAttribute('id');
-    const name = classroom.getAttribute('name');
-    const short = classroom.getAttribute('short');
-    const capacityStr = classroom.getAttribute('capacity');
-    if (!(name && predefinedId && short && capacityStr)) {
+    const predefinedId = el.getAttribute('id');
+    const name = el.getAttribute('name');
+    const short = el.getAttribute('short');
+    const capacityStr = el.getAttribute('capacity');
+    if (!(predefinedId && name && short && capacityStr)) {
       throw new Error(
         'Incomplete data for classroom, unable to get all attributes'
       );
     }
-
-    const capacity =
-      capacityStr === '*' ? null : Number.parseInt(capacityStr, 10);
-
-    const [existingClassroom] = await db
-      .select()
-      .from(classroomSchema)
-      .where(eq(classroomSchema.name, name))
-      .limit(1);
-    if (existingClassroom) {
-      result.set(predefinedId, existingClassroom.id);
-    } else {
-      const [insertedClassroom] = await db
-        .insert(classroomSchema)
-        .values({
-          id: crypto.randomUUID(),
-          name,
-          short,
-          capacity,
-          buildingId,
-        })
-        .returning({ insertedId: classroomSchema.id });
-      if (insertedClassroom) {
-        result.set(predefinedId, insertedClassroom.insertedId);
-      }
+    const upserted = await upsertClassroom(buildingId, {
+      id: predefinedId,
+      name,
+      short,
+      capacityStr,
+    });
+    if (upserted) {
+      const [pre, dbId] = upserted;
+      result.set(pre, dbId);
     }
   }
   return result;
+};
+
+// --- Cohorts --------------------------------------------------------------------
+
+type CohortAttributes = {
+  predefinedId: string;
+  name: string;
+  short: string;
+  teacherId: string | null;
+};
+
+const parseCohortElement = (
+  el: Element,
+  teacherMap: Map<string, string>
+): CohortAttributes | null => {
+  const predefinedId = el.getAttribute('id');
+  const name = el.getAttribute('name');
+  const short = el.getAttribute('short');
+  const predefinedTeacherId = el.getAttribute('teacherid');
+  if (!(predefinedId && name && short)) {
+    return null;
+  }
+  const teacherId = predefinedTeacherId
+    ? (teacherMap.get(predefinedTeacherId) ?? null)
+    : null;
+  return { predefinedId, name, short, teacherId };
+};
+
+const upsertCohort = async (
+  attrs: CohortAttributes
+): Promise<[string, string] | null> => {
+  const [existing] = await db
+    .select()
+    .from(cohortSchema)
+    .where(eq(cohortSchema.name, attrs.name))
+    .limit(1);
+  if (existing) {
+    return [attrs.predefinedId, existing.id];
+  }
+  if (!attrs.teacherId) {
+    return null; // original behaviour only inserts when teacher present
+  }
+  const [inserted] = await db
+    .insert(cohortSchema)
+    .values({
+      id: crypto.randomUUID(),
+      name: attrs.name,
+      short: attrs.short,
+      teacherId: attrs.teacherId,
+    })
+    .returning({ insertedId: cohortSchema.id });
+  if (!inserted) {
+    return null;
+  }
+  return [attrs.predefinedId, inserted.insertedId];
 };
 
 const loadCohort = async (
@@ -335,56 +399,175 @@ const loadCohort = async (
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const cohorts = xmlDoc.getElementsByTagName('class');
-
   for (let i = 0; i < cohorts.length; i++) {
-    const cohort = cohorts.item(i);
-    if (!cohort) {
-      return result;
+    const el = cohorts.item(i);
+    if (!el) {
+      continue;
     }
-
-    const predefinedId = cohort.getAttribute('id');
-    const name = cohort.getAttribute('name');
-    const short = cohort.getAttribute('short');
-    const predefinedTeacherId = cohort.getAttribute('teacherid');
-
-    if (!(name && predefinedId && short)) {
-      throw new Error(
-        `Incomplete data for cohort, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}, teacherid=${predefinedTeacherId}`
-      );
+    const attrs = parseCohortElement(el, teacherMap);
+    if (!attrs) {
+      continue;
     }
-
-    let teacherId: string | null = null;
-
-    if (predefinedTeacherId) {
-      const value = teacherMap.get(predefinedTeacherId);
-      teacherId = value === undefined ? null : value;
-    }
-
-    const [existingCohort] = await db
-      .select()
-      .from(cohortSchema)
-      .where(eq(cohortSchema.name, name))
-      .limit(1);
-
-    if (existingCohort) {
-      result.set(predefinedId, existingCohort.id);
-    } else if (teacherId) {
-      const [insertedCohort] = await db
-        .insert(cohortSchema)
-        .values({
-          id: crypto.randomUUID(),
-          name,
-          short,
-          teacherId,
-        })
-        .returning({ insertedId: cohortSchema.id });
-
-      if (insertedCohort) {
-        result.set(predefinedId, insertedCohort.insertedId);
-      }
+    const upserted = await upsertCohort(attrs);
+    if (upserted) {
+      const [pre, dbId] = upserted;
+      result.set(pre, dbId);
     }
   }
+  return result;
+};
 
+// --- Lessons --------------------------------------------------------------------
+
+type LessonGroup = {
+  subjectId?: string;
+  cohortIds: Set<string>;
+  teacherIds: Set<string>;
+  classroomIds: Set<string>;
+  dayDefinitionId?: string;
+  periodsCount: number;
+};
+
+const ensureWeekDefinition = async (weekName: string): Promise<string> => {
+  const [existing] = await db
+    .select()
+    .from(weekSchema)
+    .where(eq(weekSchema.name, weekName))
+    .limit(1);
+  if (existing) {
+    return existing.id;
+  }
+  const [inserted] = await db
+    .insert(weekSchema)
+    .values({
+      id: crypto.randomUUID(),
+      name: weekName,
+      short: weekName,
+      weeks: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning({ insertedId: weekSchema.id });
+  if (!inserted) {
+    throw new Error('Failed to insert week definition');
+  }
+  return inserted.insertedId;
+};
+
+const getOrInitLessonGroup = (
+  map: Map<string, LessonGroup>,
+  key: string,
+  init: () => LessonGroup
+): LessonGroup => {
+  let g = map.get(key);
+  if (!g) {
+    g = init();
+    map.set(key, g);
+  }
+  return g;
+};
+
+const processScheduleElement = (
+  el: Element,
+  maps: {
+    subjectMap: Map<string, string>;
+    cohortMap: Map<string, string>;
+    teacherMap: Map<string, string>;
+    classroomMap: Map<string, string>;
+    dayMap: Map<string, string>;
+  },
+  groups: Map<string, LessonGroup>
+) => {
+  const dayId = el.getAttribute('DayID');
+  const subjectGradeId = el.getAttribute('SubjectGradeID');
+  if (!(dayId && subjectGradeId)) {
+    return; // skip incomplete rows
+  }
+  const classId = el.getAttribute('ClassID');
+  const optionalClassId = el.getAttribute('OptionalClassID');
+  const teacherId = el.getAttribute('TeacherID');
+  const schoolRoomId = el.getAttribute('SchoolRoomID');
+  const groupKey = `${subjectGradeId}-${dayId}`;
+  const group = getOrInitLessonGroup(groups, groupKey, () => ({
+    subjectId: maps.subjectMap.get(subjectGradeId),
+    cohortIds: new Set(),
+    teacherIds: new Set(),
+    classroomIds: new Set(),
+    dayDefinitionId: maps.dayMap.get(dayId),
+    periodsCount: 0,
+  }));
+  group.periodsCount++;
+  if (classId) {
+    const id = maps.cohortMap.get(classId);
+    if (id) {
+      group.cohortIds.add(id);
+    }
+  }
+  if (optionalClassId) {
+    const id = maps.cohortMap.get(optionalClassId);
+    if (id) {
+      group.cohortIds.add(id);
+    }
+  }
+  if (teacherId) {
+    const id = maps.teacherMap.get(teacherId);
+    if (id) {
+      group.teacherIds.add(id);
+    }
+  }
+  if (schoolRoomId) {
+    const id = maps.classroomMap.get(schoolRoomId);
+    if (id) {
+      group.classroomIds.add(id);
+    }
+  }
+};
+
+const buildLessonGroups = (
+  xmlDoc: Document,
+  maps: {
+    subjectMap: Map<string, string>;
+    cohortMap: Map<string, string>;
+    teacherMap: Map<string, string>;
+    classroomMap: Map<string, string>;
+    dayMap: Map<string, string>;
+  }
+): Map<string, LessonGroup> => {
+  const schedules = xmlDoc.getElementsByTagName('TimeTableSchedule');
+  const groups = new Map<string, LessonGroup>();
+  for (let i = 0; i < schedules.length; i++) {
+    const schedule = schedules.item(i);
+    if (!schedule) {
+      continue;
+    }
+    processScheduleElement(schedule, maps, groups);
+  }
+  return groups;
+};
+
+const persistLessonGroups = async (
+  groups: Map<string, LessonGroup>,
+  weekDefinitionId: string
+): Promise<Map<string, string>> => {
+  const result = new Map<string, string>();
+  for (const [key, group] of groups) {
+    if (!(group.subjectId && group.dayDefinitionId)) {
+      continue;
+    }
+    const lessonId = crypto.randomUUID();
+    await db.insert(lessonSchema).values({
+      id: lessonId,
+      subjectId: group.subjectId,
+      cohortIds: Array.from(group.cohortIds),
+      teacherIds: Array.from(group.teacherIds),
+      groupsIds: [],
+      classroomIds: Array.from(group.classroomIds),
+      periodsPerWeek: group.periodsCount,
+      weeksDefinitionId: weekDefinitionId,
+      dayDefinitionId: group.dayDefinitionId,
+    });
+    result.set(key, lessonId);
+  }
   return result;
 };
 
@@ -398,139 +581,7 @@ const loadLessons = async (
     dayMap: Map<string, string>;
   }
 ): Promise<Map<string, string>> => {
-  const result: Map<string, string> = new Map();
-  const { subjectMap, cohortMap, teacherMap, classroomMap, dayMap } = maps;
-
-  const weekName = 'A';
-  const [existingWeek] = await db
-    .select()
-    .from(weekSchema)
-    .where(eq(weekSchema.name, weekName))
-    .limit(1);
-
-  let weekDefinitionId: string;
-  if (existingWeek) {
-    weekDefinitionId = existingWeek.id;
-  } else {
-    const [insertedWeek] = await db
-      .insert(weekSchema)
-      .values({
-        id: crypto.randomUUID(),
-        name: weekName,
-        short: 'A',
-        weeks: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning({ insertedId: weekSchema.id });
-
-    if (!insertedWeek) {
-      throw new Error('Failed to insert week definition');
-    }
-
-    weekDefinitionId = insertedWeek.insertedId;
-  }
-
-  const schedules = xmlDoc.getElementsByTagName('TimeTableSchedule');
-  const lessonGroups = new Map<
-    string,
-    {
-      subjectId?: string;
-      cohortIds: Set<string>;
-      teacherIds: Set<string>;
-      classroomIds: Set<string>;
-      dayDefinitionId?: string;
-      periodsCount: number;
-    }
-  >();
-
-  for (let i = 0; i < schedules.length; i++) {
-    const schedule = schedules.item(i);
-    if (!schedule) {
-      continue;
-    }
-
-    const dayId = schedule.getAttribute('DayID');
-    const subjectGradeId = schedule.getAttribute('SubjectGradeID');
-    const classId = schedule.getAttribute('ClassID');
-    const optionalClassId = schedule.getAttribute('OptionalClassID');
-    const teacherId = schedule.getAttribute('TeacherID');
-    const schoolRoomId = schedule.getAttribute('SchoolRoomID');
-
-    if (!(dayId && subjectGradeId)) {
-      continue;
-    }
-
-    const groupKey = `${subjectGradeId}-${dayId}`;
-
-    if (!lessonGroups.has(groupKey)) {
-      lessonGroups.set(groupKey, {
-        subjectId: subjectMap.get(subjectGradeId),
-        cohortIds: new Set(),
-        teacherIds: new Set(),
-        classroomIds: new Set(),
-        dayDefinitionId: dayMap.get(dayId),
-        periodsCount: 0,
-      });
-    }
-
-    const group = lessonGroups.get(groupKey);
-    if (!group) {
-      throw new Error('Group was null :[');
-    }
-
-    group.periodsCount++;
-
-    if (classId) {
-      const cohortId = cohortMap.get(classId);
-      if (cohortId) {
-        group.cohortIds.add(cohortId);
-      }
-    }
-
-    if (optionalClassId) {
-      const cohortId = cohortMap.get(optionalClassId);
-      if (cohortId) {
-        group.cohortIds.add(cohortId);
-      }
-    }
-
-    if (teacherId) {
-      const dbTeacherId = teacherMap.get(teacherId);
-      if (dbTeacherId) {
-        group.teacherIds.add(dbTeacherId);
-      }
-    }
-
-    if (schoolRoomId) {
-      const classroomId = classroomMap.get(schoolRoomId);
-      if (classroomId) {
-        group.classroomIds.add(classroomId);
-      }
-    }
-  }
-
-  for (const [groupKey, group] of lessonGroups) {
-    if (!(group.subjectId && group.dayDefinitionId)) {
-      continue;
-    }
-
-    const lessonId = crypto.randomUUID();
-
-    await db.insert(lessonSchema).values({
-      id: lessonId,
-      subjectId: group.subjectId,
-      cohortIds: Array.from(group.cohortIds),
-      teacherIds: Array.from(group.teacherIds),
-      groupsIds: [],
-      classroomIds: Array.from(group.classroomIds),
-      periodsPerWeek: group.periodsCount,
-      weeksDefinitionId: weekDefinitionId,
-      dayDefinitionId: group.dayDefinitionId,
-    });
-
-    result.set(groupKey, lessonId);
-  }
-
-  return result;
+  const weekDefinitionId = await ensureWeekDefinition('A');
+  const groups = buildLessonGroups(xmlDoc, maps);
+  return persistLessonGroups(groups, weekDefinitionId);
 };
