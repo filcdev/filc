@@ -17,7 +17,8 @@ export const authenticationMiddleware = createMiddleware<honoContext>(
     c.set('user', session.user);
     c.set('session', session.session);
     return next();
-  });
+  }
+);
 
 export const requireAuthentication = createMiddleware<authenticatedContext>(
   async (c, next) => {

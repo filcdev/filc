@@ -5,7 +5,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false, // biome handles this
     "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": true,
 

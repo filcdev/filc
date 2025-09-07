@@ -3,7 +3,6 @@ import {
   getConsoleSink,
   jsonLinesFormatter,
 } from '@logtape/logtape';
-import { prettyFormatter } from '@logtape/pretty';
 import { env } from '~/utils/environment';
 
 export const configureLogger = async () => {
@@ -11,7 +10,7 @@ export const configureLogger = async () => {
     sinks: {
       console: getConsoleSink({
         formatter:
-          env.mode === 'development' ? prettyFormatter : jsonLinesFormatter,
+          env.mode === 'development' ? jsonLinesFormatter : jsonLinesFormatter,
       }),
     },
     loggers: [

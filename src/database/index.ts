@@ -6,7 +6,12 @@ import { env } from '~/utils/environment';
 
 const logger = getLogger(['chronos', 'drizzle']);
 
-const client = new SQL(env.databaseUrl);
+const client = new SQL({
+  connection: {
+    connectionString: env.databaseUrl,
+  },
+  prepare: env.mode === 'production',
+});
 
 export const db = drizzle({
   client,

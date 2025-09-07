@@ -6,6 +6,7 @@ import { prepareDb } from '~/database';
 import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
 import { developmentRouter } from '~/routes/_dev/_router';
 import { pingRouter } from '~/routes/ping/_router';
+import { timetableRouter } from '~/routes/timetable/_router';
 import { authRouter } from '~/utils/authentication';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
@@ -20,9 +21,12 @@ env.mode === 'development' &&
   logger.warn('Running in development mode, do not use in production!');
 
 let server: Bun.Server;
-const app = new Hono<honoContext>();
+const api = new Hono<honoContext>();
 
-app.use(
+await prepareDb();
+await initializeRBAC();
+
+api.use(
   '*',
   cors({
     origin: env.mode === 'development' ? '*' : env.baseUrl,
@@ -31,12 +35,31 @@ app.use(
   })
 );
 
-app.use('*', authenticationMiddleware);
+api.use('*', authenticationMiddleware);
+
+env.mode === 'development' &&
+  api.use('*', async (c, next) => {
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
+      method: c.req.method,
+      url: c.req.url,
+      duration: ms,
+      user: c.get('user')
+        ? { id: c.get('user')?.id, email: c.get('user')?.email }
+        : null,
+    });
+  });
 
 // routes
-env.mode === 'development' && app.route('/_dev', developmentRouter);
-app.route('/auth', authRouter);
-app.route('/ping', pingRouter);
+env.mode === 'development' && api.route('/_dev', developmentRouter);
+api.route('/auth', authRouter);
+api.route('/ping', pingRouter);
+api.route('/timetable', timetableRouter);
+
+const app = new Hono();
+app.route('/api', api);
 
 const handleStartup = async () => {
   await prepareDb();
