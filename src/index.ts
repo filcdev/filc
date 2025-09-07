@@ -64,5 +64,5 @@ Bun.serve({
   port: env.port,
 });
 
-logger.info('chronos started on http://localhost:3000');
+logger.info(`chronos started on http://localhost:${env.port}`);
 env.mode === 'development' && showRoutes(app, { verbose: true });
