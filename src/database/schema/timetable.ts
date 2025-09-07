@@ -129,3 +129,17 @@ export const lesson = pgTable('lesson', {
   // TODO: figure out if we need this
   // capacity: integer('capacity').notNull(),
 });
+
+export const timetableSchema = {
+  period,
+  dayDefinition,
+  weekDefinition,
+  termDefinition,
+  subject,
+  teacher,
+  building,
+  classroom,
+  cohort,
+  cohortGroup,
+  lesson,
+};

@@ -1,5 +1,5 @@
 import { db } from '~/database';
-import { lesson } from '~/database/schema/timetable';
+import { timetableSchema } from '~/database/schema/timetable';
 import { pingFactory } from '~/routes/ping/_factory';
 import { getUserPermissions } from '~/utils/authorization';
 import { requireAuthentication } from '~/utils/middleware';
@@ -7,10 +7,17 @@ import { requireAuthentication } from '~/utils/middleware';
 export const introspect = pingFactory.createHandlers(
   requireAuthentication,
   async (c) => {
-    const lessons = db.select().from(lesson);
+    const tables = Object.entries(timetableSchema);
+    const data = tables.map(([name, table]) =>
+      db
+        .select()
+        .from(table)
+        .then((rows) => ({ name, rows }))
+    );
+    const results = await Promise.all(data);
 
     return c.json({
-      lessons,
+      timetableData: results,
       user: {
         ...c.var.user,
         permissions: await getUserPermissions(c.var.session.userId),
