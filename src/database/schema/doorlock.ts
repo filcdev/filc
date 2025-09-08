@@ -10,6 +10,8 @@ import {
 import { timestamps } from '~/database/helpers';
 import { user } from '~/database/schema/authentication';
 
+const DEFAULT_TTL_SECONDS = 30;
+
 export const card = pgTable('card', {
   id: uuid('id').primaryKey().defaultRandom(),
   tag: text('tag').notNull().unique(),
@@ -31,7 +33,7 @@ export const device = pgTable('device', {
   // Last moment we received any event / heartbeat from the device
   lastSeenAt: timestamp('last_seen_at'),
   // How long (in seconds) the device considers itself online after lastSeenAt (a heartbeat TTL)
-  ttlSeconds: integer('ttl_seconds').notNull().default(30),
+  ttlSeconds: integer('ttl_seconds').notNull().default(DEFAULT_TTL_SECONDS),
   status: text('status'), // optional free-form status (e.g. 'online', 'offline', 'degraded')
   ...timestamps,
 });
