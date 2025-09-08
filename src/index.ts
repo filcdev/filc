@@ -3,10 +3,13 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { showRoutes } from 'hono/dev';
 import { prepareDb } from '~/database';
+import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
 import { developmentRouter } from '~/routes/_dev/_router';
+import { doorlockRouter } from '~/routes/doorlock/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { timetableRouter } from '~/routes/timetable/_router';
 import { authRouter } from '~/utils/authentication';
+import { startDeviceMonitor, stopDeviceMonitor } from '~/utils/device-monitor';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
 import { configureLogger } from '~/utils/logger';
@@ -19,10 +22,11 @@ const logger = getLogger(['chronos', 'server']);
 env.mode === 'development' &&
   logger.warn('Running in development mode, do not use in production!');
 
+let server: Bun.Server;
+const api = new Hono<honoContext>();
+
 await prepareDb();
 await initializeRBAC();
-
-const api = new Hono<honoContext>();
 
 api.use(
   '*',
@@ -55,14 +59,33 @@ env.mode === 'development' && api.route('/_dev', developmentRouter);
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/timetable', timetableRouter);
+api.route('/doorlock', doorlockRouter);
 
 const app = new Hono();
 app.route('/api', api);
 
-Bun.serve({
-  fetch: app.fetch,
-  port: env.port,
-});
+const handleStartup = async () => {
+  await prepareDb();
+  await initializeRBAC();
+  initializeMqttClient();
+  startDeviceMonitor();
 
-logger.info(`chronos started on http://localhost:${env.port}`);
-env.mode === 'development' && showRoutes(app, { verbose: true });
+  server = Bun.serve({
+    fetch: app.fetch,
+  });
+
+  logger.info('chronos started on http://localhost:3000');
+  env.logLevel === 'trace' && showRoutes(app, { verbose: true });
+};
+
+const handleShutdown = () => {
+  logger.info('Shutting down chronos...');
+  server.stop();
+  handleMqttShutdown();
+  stopDeviceMonitor();
+};
+
+process.on('SIGINT', handleShutdown);
+process.on('SIGTERM', handleShutdown);
+
+await handleStartup();

@@ -23,7 +23,6 @@ export const db = drizzle({
 });
 
 export const prepareDb = async () => {
-  logger.debug('Preparing database and running migrations');
   try {
     await migrate(db, { migrationsFolder: 'src/database/migrations' });
     logger.info('Database migration completed successfully');
