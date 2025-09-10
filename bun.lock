@@ -12,6 +12,7 @@
         "@tanstack/react-router-devtools": "^1.131.36",
         "@tanstack/router-plugin": "^1.131.36",
         "@types/xmldom": "^0.1.34",
+        "@ungap/compression-stream": "^0.2.0",
         "better-auth": "^1.3.8",
         "dayjs": "^1.11.18",
         "drizzle-orm": "^0.44.5",
@@ -384,6 +385,8 @@
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
     "@types/xmldom": ["@types/xmldom@0.1.34", "", {}, "sha512-7eZFfxI9XHYjJJuugddV6N5YNeXgQE1lArWOcd1eCOKWb/FGs5SIjacSYuEJuwhsGS3gy4RuZ5EUIcqYscuPDA=="],
+
+    "@ungap/compression-stream": ["@ungap/compression-stream@0.2.0", "", {}, "sha512-/f14F/pzsq5Dtrm+jA4hqKAawF8KTHvYPubQBry4aII34mQ34KXqDUV5cJDCCsL3bAudKT/IAtO5/oa0i/JAMw=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@5.0.2", "", { "dependencies": { "@babel/core": "^7.28.3", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.34", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-tmyFgixPZCx2+e6VO9TNITWcCQl8+Nl/E8YbAyPVv85QCc7/A3JrdfG2A8gIzvVhWuzMOVrFW1aReaNxrI6tbw=="],
 

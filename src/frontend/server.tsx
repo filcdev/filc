@@ -4,9 +4,32 @@ import {
   renderRouterToString,
 } from '@tanstack/react-router/ssr/server';
 import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
+import { compress } from 'hono/compress';
+import { env } from '~/utils/environment';
 import { createRouter } from '.';
+// TODO: remove when bun supports CompressionStream
+import '@ungap/compression-stream/poly';
 
 export const frontend = new Hono();
+
+if (env.mode === 'production') {
+  frontend.use(compress());
+
+  frontend.use(
+    '/assets/*',
+    serveStatic({
+      root: './dist/client/static',
+    })
+  );
+
+  frontend.use(
+    '*',
+    serveStatic({
+      root: './dist/client',
+    })
+  );
+}
 
 frontend.use('*', async (c) => {
   const handler = createRequestHandler({

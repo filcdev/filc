@@ -1,7 +1,11 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["src/**/*", "!src/database/migrations/**/*"]
+    "includes": [
+      "src/**/*",
+      "!src/database/migrations/**/*",
+      "!src/frontend/route-tree.gen.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

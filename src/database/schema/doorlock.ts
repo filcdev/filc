@@ -22,6 +22,8 @@ export const card = pgTable('card', {
   ...timestamps,
 });
 
+const DEVICE_DEFAULT_TTL_SECONDS = 30;
+
 // Physical door lock / access control device
 // The device id should match the identifier used in the MQTT topic: filc/doorlock/<deviceId>/...
 export const device = pgTable('device', {
@@ -31,7 +33,9 @@ export const device = pgTable('device', {
   // Last moment we received any event / heartbeat from the device
   lastSeenAt: timestamp('last_seen_at'),
   // How long (in seconds) the device considers itself online after lastSeenAt (a heartbeat TTL)
-  ttlSeconds: integer('ttl_seconds').notNull().default(30),
+  ttlSeconds: integer('ttl_seconds')
+    .notNull()
+    .default(DEVICE_DEFAULT_TTL_SECONDS),
   status: text('status'), // optional free-form status (e.g. 'online', 'offline', 'degraded')
   ...timestamps,
 });

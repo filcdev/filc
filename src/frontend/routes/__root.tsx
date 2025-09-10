@@ -6,14 +6,24 @@ import {
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import type { RouterContext } from '~/frontend/router-context';
-import '~/frontend/global.css';
+import css from '~/frontend/global.css?url';
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  notFoundComponent: () => <div>404</div>,
   head: () => ({
-    links: [{ rel: 'icon', href: '/favicon.ico' }],
+    links: [
+      {
+        rel: 'stylesheet',
+        href: css,
+      },
+      {
+        rel: 'icon',
+        href: 'data:image/x-icon;base64,',
+      },
+    ],
     meta: [
       {
-        title: 'TanStack Router SSR Basic File Based Streaming',
+        title: 'Filc',
       },
       {
         charSet: 'UTF-8',
@@ -24,32 +34,31 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
     ],
     scripts: [
-      // ...(!import.meta.env.PROD
-      // 	? [
-      // 			{
-      // 				type: "module",
-      // 				children: `import RefreshRuntime from "/@react-refresh"
-      // 					RefreshRuntime.injectIntoGlobalHook(window)
-      // 					window.$RefreshReg$ = () => {}
-      // 					window.$RefreshSig$ = () => (type) => type
-      // 					window.__vite_plugin_react_preamble_installed__ = true`,
-      // 			},
-      // 			{
-      // 				type: "module",
-      // 				src: "/@vite/client",
-      // 			},
-      // 			{
-      // 				type: "module",
-      // 				src: "/src/entry-client.tsx",
-      // 			},
-      // 		]
-      // 	: []),
+      ...(import.meta.env.PROD
+        ? []
+        : [
+            {
+              type: 'module',
+              children: `import RefreshRuntime from "/@react-refresh"
+      					RefreshRuntime.injectIntoGlobalHook(window)
+      					window.$RefreshReg$ = () => {}
+      					window.$RefreshSig$ = () => (type) => type
+      					window.__vite_plugin_react_preamble_installed__ = true`,
+            },
+            {
+              type: 'module',
+              src: '/@vite/client',
+            },
+            {
+              type: 'module',
+              src: '/src/frontend/index.tsx',
+            },
+          ]),
       {
-        // issue 4584 in the Tanstack Router library
-        // type: "module",
-        // src: import.meta.env.PROD
-        // 	? "/static/entry-client.js"
-        // 	: "/src/entry-client.tsx",
+        type: 'module',
+        src: import.meta.env.PROD
+          ? '/static/index.js'
+          : '/src/frontend/index.tsx',
       },
     ],
   }),
@@ -61,26 +70,6 @@ function RootComponent() {
     <html lang="en">
       <head>
         <HeadContent />
-        {/* TODO: remove this once issue 4585 is resolved */}
-        {import.meta.env.PROD ? (
-          <script src="/static/entry-client.js" type="module" />
-        ) : (
-          <>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-								import RefreshRuntime from "/@react-refresh"
-  								RefreshRuntime.injectIntoGlobalHook(window)
-  								window.$RefreshReg$ = () => {}
-  								window.$RefreshSig$ = () => (type) => type
-  								window.__vite_plugin_react_preamble_installed__ = true`,
-              }}
-              type="module"
-            />
-            <script src="/@vite/client" type="module" />
-            <script src="/src/frontend/index.tsx" type="module" />
-          </>
-        )}
       </head>
       <body>
         <Outlet />
