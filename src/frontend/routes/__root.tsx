@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createRootRouteWithContext,
   HeadContent,
@@ -7,6 +8,8 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
+
+const queryClient = new QueryClient();
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   notFoundComponent: () => <div>404</div>,
@@ -72,9 +75,11 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body>
-        <Outlet />
-        <TanStackRouterDevtools position="bottom-right" />
-        <Scripts />
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+          <TanStackRouterDevtools position="bottom-right" />
+          <Scripts />
+        </QueryClientProvider>
       </body>
     </html>
   );
