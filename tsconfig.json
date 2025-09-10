@@ -7,11 +7,12 @@
     "noImplicitOverride": true,
     "noUnusedLocals": false, // biome handles this
     "noUnusedParameters": true,
-    "noPropertyAccessFromIndexSignature": true,
-
-    "types": ["bun"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "allowSyntheticDefaultImports": true,
+    "types": ["bun", "vite/client"],
     "lib": ["ESNext"],
-    "target": "esnext",
+    "target": "es2022",
     "module": "preserve",
     "moduleResolution": "bundler",
     "moduleDetection": "force",

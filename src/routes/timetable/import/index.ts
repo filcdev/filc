@@ -1,10 +1,13 @@
 // import { XMLParser } from "fast-xml-parser";
-import { StatusCodes } from 'http-status-codes';
 // import type { TimetableExportRoot } from "~/utils/timetable/types";
+
+import { getLogger } from '@logtape/logtape';
+import { StatusCodes } from 'http-status-codes';
 import { DOMParser } from 'xmldom';
-import { logger } from '~/routes/timetable/_logger';
 import { importFactory } from '~/routes/timetable/import/_factory';
 import { importTimetableXML } from '~/utils/timetable/imports';
+
+const logger = getLogger(['chronos', 'timetable']);
 
 export const importRoute = importFactory.createHandlers(async (c) => {
   const body = (await c.req.parseBody()) as {
