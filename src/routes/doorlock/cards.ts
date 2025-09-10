@@ -1,10 +1,10 @@
+import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { db } from '~/database';
 import { card } from '~/database/schema/doorlock';
 import { userHasPermission } from '~/utils/authorization';
-import { zValidator } from '@hono/zod-validator'
 import {
   requireAuthentication,
   requireAuthorization,

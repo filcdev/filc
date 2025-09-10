@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { Button } from '~/frontend/components/ui/button';
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -11,6 +12,10 @@ function App() {
         <h1 className="mb-6 font-bold text-4xl">Welcome to TanStack + Hono</h1>
         <p className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed">
           Edit{' '}
+          <Button disabled size="sm" variant="secondary">
+            npm run dev
+          </Button>{' '}
+          and open{' '}
           <code className="rounded bg-gray-800 px-2 py-1">
             src/routes/index.tsx
           </code>{' '}

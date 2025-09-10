@@ -699,8 +699,8 @@
         "noImportantInKeyframe": "error",
         // Disallow shorthand properties that override related longhand properties.
         "noShorthandPropertyOverrides": "error",
-        // Disallow unknown at-rules.
-        "noUnknownAtRules": "error"
+        // Allow unknown at-rules, needed for Tailwind
+        "noUnknownAtRules": "off"
       }
     }
   },
