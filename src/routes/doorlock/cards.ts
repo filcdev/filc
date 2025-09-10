@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '~/database';
 import { card } from '~/database/schema/doorlock';
 import { userHasPermission } from '~/utils/authorization';
+import { zValidator } from '@hono/zod-validator'
 import {
   requireAuthentication,
   requireAuthorization,
@@ -64,24 +65,18 @@ export const getCard = doorlockFactory.createHandlers(
 export const createCard = doorlockFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('card:create'),
+  zValidator('json', createCardSchema),
   async (c) => {
-    const body = await c.req.json().catch(() => null);
-    const parsed = createCardSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json(
-        { error: 'Invalid body', details: parsed.error.flatten() },
-        StatusCodes.BAD_REQUEST
-      );
-    }
+    const data = c.req.valid('json');
     try {
       const [inserted] = await db
         .insert(card)
         .values({
-          tag: parsed.data.tag,
-          userId: parsed.data.userId,
-          label: parsed.data.label,
-          frozen: parsed.data.frozen ?? false,
-          disabled: parsed.data.disabled ?? false,
+          tag: data.tag,
+          userId: data.userId,
+          label: data.label,
+          frozen: data.frozen ?? false,
+          disabled: data.disabled ?? false,
         })
         .returning();
       return c.json(inserted, StatusCodes.CREATED);
@@ -96,19 +91,13 @@ export const createCard = doorlockFactory.createHandlers(
 
 export const updateCard = doorlockFactory.createHandlers(
   requireAuthentication,
+  zValidator('json', updateCardSchema),
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
       return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
     }
-    const body = await c.req.json().catch(() => null);
-    const parsed = updateCardSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json(
-        { error: 'Invalid body', details: parsed.error.flatten() },
-        StatusCodes.BAD_REQUEST
-      );
-    }
+    const data = c.req.valid('json');
     const [existing] = await db
       .select()
       .from(card)
@@ -124,8 +113,8 @@ export const updateCard = doorlockFactory.createHandlers(
       if (existing.userId !== currentUserId) {
         return c.json({ error: 'Forbidden' }, StatusCodes.FORBIDDEN);
       }
-      // Without card.update permission only label can change
-      const { label } = parsed.data;
+
+      const { label } = data;
       try {
         const [updated] = await db
           .update(card)
@@ -143,7 +132,7 @@ export const updateCard = doorlockFactory.createHandlers(
     try {
       const [updated] = await db
         .update(card)
-        .set(parsed.data)
+        .set(data)
         .where(eq(card.id, id as string))
         .returning();
       return c.json(updated);

@@ -88,4 +88,6 @@ process.on('SIGTERM', handleShutdown);
 
 await handleStartup();
 
+export type AppType = typeof app;
+
 export default app;

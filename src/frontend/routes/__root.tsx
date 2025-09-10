@@ -5,8 +5,8 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import type { RouterContext } from '~/frontend/router-context';
 import css from '~/frontend/global.css?url';
+import type { RouterContext } from '~/frontend/router-context';
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   notFoundComponent: () => <div>404</div>,
