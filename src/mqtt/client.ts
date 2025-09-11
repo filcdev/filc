@@ -4,12 +4,24 @@ import { connect, type MqttClient } from 'mqtt';
 import { db } from '~/database';
 import { card, cardDevice, device } from '~/database/schema/doorlock';
 import { env } from '~/utils/environment';
+import { handleFeatureFlag } from '~/utils/feature-flag';
 
 const logger = getLogger(['chronos', 'mqtt']);
 
 let client: MqttClient | null = null;
 
-export const initializeMqttClient = () => {
+export const initializeMqttClient = async () => {
+  const enabled = await handleFeatureFlag(
+    'doorlock:mqtt',
+    'Enable MQTT client for door lock integration',
+    false
+  );
+
+  if (!enabled) {
+    logger.info('MQTT client is disabled via feature flag');
+    return;
+  }
+
   if (client) {
     return client;
   }
@@ -82,7 +94,6 @@ export const sendDoorlockCommand = (
   pub(`filc/doorlock/${deviceId}/command`, JSON.stringify({ action, message }));
 };
 
-// ---------------- internal helpers ----------------
 type DoorlockEventBase = { api_key?: string; timestamp?: number };
 type DoorlockEvent = DoorlockEventBase & Partial<{ tag: string }>;
 

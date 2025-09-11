@@ -5,29 +5,25 @@ import { featureFlag } from '~/database/schema/feature-flag';
 
 const logger = getLogger(['chronos', 'feature-flag']);
 
-export const registerFeatureFlag = async (
+export const handleFeatureFlag = async (
   name: string,
-  description: string
+  description: string,
+  defaultEnabled: boolean
 ) => {
   const [existingFlag] = await db
     .select()
     .from(featureFlag)
     .where(eq(featureFlag.name, name));
   if (!existingFlag) {
-    db.insert(featureFlag).values({ name, description }).returning();
+    logger.info(
+      `Registering feature flag: ${name} - ${description} (default: ${defaultEnabled})`
+    );
+    await db
+      .insert(featureFlag)
+      .values({ name, description, isEnabled: defaultEnabled })
+      .returning();
+    return defaultEnabled;
   }
 
-  return true;
-};
-
-export const isFeatureEnabled = async (name: string) => {
-  const [flag] = await db
-    .select()
-    .from(featureFlag)
-    .where(eq(featureFlag.name, name));
-  if (!flag) {
-    logger.error(`Feature flag "${name}" not found, did you register it?`);
-    return false;
-  }
-  return flag.isEnabled;
+  return existingFlag.isEnabled;
 };

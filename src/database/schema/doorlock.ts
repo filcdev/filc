@@ -10,8 +10,6 @@ import {
 import { timestamps } from '~/database/helpers';
 import { user } from '~/database/schema/authentication';
 
-const DEFAULT_TTL_SECONDS = 30;
-
 export const card = pgTable('card', {
   id: uuid('id').primaryKey().defaultRandom(),
   tag: text('tag').notNull().unique(),
