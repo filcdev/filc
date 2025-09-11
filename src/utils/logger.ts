@@ -9,6 +9,7 @@ import { env } from '~/utils/environment';
 
 export const configureLogger = async () => {
   await configure({
+    reset: true,
     sinks: {
       console: getConsoleSink({
         formatter:

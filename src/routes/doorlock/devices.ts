@@ -1,3 +1,4 @@
+import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
@@ -57,21 +58,15 @@ export const getDevice = doorlockFactory.createHandlers(
 export const upsertDevice = doorlockFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('device:upsert'),
+  zValidator('json', upsertDeviceSchema),
   async (c) => {
     const id = c.req.param('id');
-    const body = await c.req.json().catch(() => null);
-    const parsed = upsertDeviceSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json(
-        { error: 'Invalid body', details: parsed.error.flatten() },
-        StatusCodes.BAD_REQUEST
-      );
+    if (!id) {
+      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
     }
+    const data = c.req.valid('json');
     const now = new Date();
     try {
-      if (!id) {
-        return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
-      }
       const [existing] = await db
         .select({ id: device.id })
         .from(device)
@@ -80,9 +75,9 @@ export const upsertDevice = doorlockFactory.createHandlers(
         const [updated] = await db
           .update(device)
           .set({
-            name: parsed.data.name,
-            location: parsed.data.location,
-            ttlSeconds: parsed.data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
+            name: data.name,
+            location: data.location,
+            ttlSeconds: data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
             updatedAt: now,
           })
           .where(eq(device.id, id))
@@ -93,9 +88,9 @@ export const upsertDevice = doorlockFactory.createHandlers(
         .insert(device)
         .values({
           id,
-          name: parsed.data.name,
-          location: parsed.data.location,
-          ttlSeconds: parsed.data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
+          name: data.name,
+          location: data.location,
+          ttlSeconds: data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
           createdAt: now,
           updatedAt: now,
         })
@@ -160,29 +155,21 @@ export const listDeviceCards = doorlockFactory.createHandlers(
 export const replaceDeviceCards = doorlockFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('device:assign_cards'),
+  zValidator('json', assignCardsSchema),
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
       return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
     }
-    const body = await c.req.json().catch(() => null);
-    const parsed = assignCardsSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json(
-        { error: 'Invalid body', details: parsed.error.flatten() },
-        StatusCodes.BAD_REQUEST
-      );
-    }
+    const data = c.req.valid('json');
     try {
       await db.delete(cardDevice).where(eq(cardDevice.deviceId, id));
-      if (parsed.data.cardIds.length) {
+      if (data.cardIds.length) {
         await db
           .insert(cardDevice)
-          .values(
-            parsed.data.cardIds.map((cid) => ({ cardId: cid, deviceId: id }))
-          );
+          .values(data.cardIds.map((cid) => ({ cardId: cid, deviceId: id })));
       }
-      return c.json({ status: 'ok', count: parsed.data.cardIds.length });
+      return c.json({ status: 'ok', count: data.cardIds.length });
     } catch (err) {
       return c.json(
         { error: 'Failed to assign cards', details: String(err) },

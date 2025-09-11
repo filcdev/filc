@@ -1,7 +1,11 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["src/**/*", "!src/database/migrations/**/*"]
+    "includes": [
+      "src/**/*",
+      "!src/database/migrations/**/*",
+      "!src/frontend/route-tree.gen.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -371,8 +375,6 @@
         "noEnum": "error",
         // Disallow exporting an imported variable.
         "noExportedImports": "error",
-        // Prevent usage of <head> element in a Next.js project.
-        "noHeadElement": "error",
         // Disallow type annotations for variables, parameters, and class properties initialized with a literal expression.
         "noInferrableTypes": "error",
         // Disallow the use of TypeScript's namespaces.
@@ -697,8 +699,8 @@
         "noImportantInKeyframe": "error",
         // Disallow shorthand properties that override related longhand properties.
         "noShorthandPropertyOverrides": "error",
-        // Disallow unknown at-rules.
-        "noUnknownAtRules": "error"
+        // Allow unknown at-rules, needed for Tailwind
+        "noUnknownAtRules": "off"
       }
     }
   },
