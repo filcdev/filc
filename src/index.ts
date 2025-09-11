@@ -62,7 +62,7 @@ api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/timetable', timetableRouter);
 api.route('/feature-flags', featureFlagRouter);
-(await handleFeatureFlag('doorlock:api', 'Enable doorlock API', true))
+(await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false))
   ? api.route('/doorlock', doorlockRouter)
   : logger.info('Doorlock API is disabled by feature flag');
 

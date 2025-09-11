@@ -8,3 +8,7 @@ export const role = pgTable('role', {
   can: jsonb('can').$type<string[]>().notNull().default([]),
   ...timestamps,
 });
+
+export const authorizationSchema = {
+  role,
+};

@@ -8,3 +8,7 @@ export const featureFlag = pgTable('feature_flag', {
   isEnabled: boolean().notNull().default(false),
   ...timestamps,
 });
+
+export const featureFlagSchema = {
+  featureFlag,
+};
