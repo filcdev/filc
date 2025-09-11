@@ -7,11 +7,13 @@ import { frontend } from '~/frontend/server';
 import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
 import { developmentRouter } from '~/routes/_dev/_router';
 import { doorlockRouter } from '~/routes/doorlock/_router';
+import { featureFlagRouter } from '~/routes/feature-flags/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { timetableRouter } from '~/routes/timetable/_router';
 import { authRouter } from '~/utils/authentication';
 import { startDeviceMonitor, stopDeviceMonitor } from '~/utils/device-monitor';
 import { env } from '~/utils/environment';
+import { handleFeatureFlag } from '~/utils/feature-flag';
 import type { honoContext } from '~/utils/globals';
 import { configureLogger } from '~/utils/logger';
 import { authenticationMiddleware } from '~/utils/middleware';
@@ -59,7 +61,10 @@ env.mode === 'development' && api.route('/_dev', developmentRouter);
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/timetable', timetableRouter);
-api.route('/doorlock', doorlockRouter);
+api.route('/feature-flags', featureFlagRouter);
+(await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false))
+  ? api.route('/doorlock', doorlockRouter)
+  : logger.info('Doorlock API is disabled by feature flag');
 
 const app = new Hono();
 app.route('/api', api);
@@ -68,8 +73,8 @@ app.route('/', frontend);
 const handleStartup = async () => {
   await prepareDb();
   await initializeRBAC();
-  initializeMqttClient();
-  startDeviceMonitor();
+  await initializeMqttClient();
+  await startDeviceMonitor();
 
   logger.info('chronos started on http://localhost:3000');
   env.logLevel === 'trace' && showRoutes(app, { verbose: true });

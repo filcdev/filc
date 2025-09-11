@@ -58,7 +58,7 @@ export const verification = pgTable('verification', {
   ...timestamps,
 });
 
-export const authSchema = {
+export const authenticationSchema = {
   user,
   session,
   account,

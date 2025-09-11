@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import { and, isNotNull, lt, ne, sql } from 'drizzle-orm';
 import { db } from '~/database';
 import { doorlockSchema } from '~/database/schema/doorlock';
+import { handleFeatureFlag } from '~/utils/feature-flag';
 
 const logger = getLogger(['chronos', 'device-monitor']);
 
@@ -10,7 +11,18 @@ const DEVICE_SWEEP_INTERVAL_MS = 15_000; // 15s
 
 let intervalHandle: Timer | null = null;
 
-export const startDeviceMonitor = () => {
+export const startDeviceMonitor = async () => {
+  const enabled = await handleFeatureFlag(
+    'doorlock:monitor',
+    'Enable device monitoring',
+    false
+  );
+
+  if (!enabled) {
+    logger.info('Device monitor is disabled via feature flag');
+    return;
+  }
+
   if (intervalHandle) {
     return; // already started
   }
