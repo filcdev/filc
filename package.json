@@ -17,6 +17,7 @@
     "@fontsource-variable/outfit": "^5.2.7",
     "@hono/zod-validator": "^0.7.2",
     "@logtape/logtape": "^1.0.5",
+    "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@rbac/rbac": "^2.1.0",
     "@tanstack/react-devtools": "^0.6.6",
@@ -43,6 +44,7 @@
     "string-ts": "^2.2.1",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.3.8",
+    "web-vitals": "^5.1.0",
     "xmldom": "^0.6.0",
     "zod": "^4.1.7"
   },

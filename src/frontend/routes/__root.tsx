@@ -55,14 +55,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
             },
             {
               type: 'module',
-              src: '/src/frontend/index.tsx',
+              src: '/src/frontend/client.tsx',
             },
           ]),
       {
         type: 'module',
         src: import.meta.env.PROD
-          ? '/static/index.js'
-          : '/src/frontend/index.tsx',
+          ? '/static/client.js'
+          : '/src/frontend/client.tsx',
       },
     ],
   }),

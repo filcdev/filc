@@ -29,7 +29,7 @@ const clientBuild = {
   copyPublicDir: true,
   emptyOutDir: true,
   rollupOptions: {
-    input: resolve(__dirname, 'src/frontend/index.tsx'),
+    input: resolve(__dirname, 'src/frontend/client.tsx'),
     output: {
       entryFileNames: 'static/[name].js',
       chunkFileNames: 'static/assets/[name]-[hash].js',

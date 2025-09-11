@@ -6,8 +6,8 @@ import {
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import { compress } from 'hono/compress';
+import { createRouter } from '~/frontend/router';
 import { env } from '~/utils/environment';
-import { createRouter } from '.';
 // TODO: remove when bun supports CompressionStream
 import '@ungap/compression-stream/poly';
 
