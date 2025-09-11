@@ -6,6 +6,7 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { Toaster } from '~/frontend/components/ui/sonner';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
 
@@ -70,15 +71,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   return (
-    <html lang="en">
+    <html
+      className="h-dvh scroll-smooth bg-background text-foreground"
+      lang="en"
+    >
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="flex h-full flex-col">
         <QueryClientProvider client={queryClient}>
           <Outlet />
           <TanStackRouterDevtools position="bottom-right" />
           <Scripts />
+          <Toaster richColors />
         </QueryClientProvider>
       </body>
     </html>
