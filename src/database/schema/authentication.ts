@@ -7,11 +7,13 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { timestamps } from '~/database/helpers';
+import { cohort } from '~/database/schema/timetable';
 
 export const user = pgTable('user', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
+  cohortId: text('cohort_id').references(() => cohort.id),
   emailVerified: boolean('email_verified')
     .$defaultFn(() => !1)
     .notNull(),

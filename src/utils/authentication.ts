@@ -98,54 +98,57 @@ export const auth = betterAuth({
         required: true,
         input: false,
       },
+      cohortId: {
+        type: 'string',
+        required: false,
+        input: true,
+      },
     },
   },
 });
 
-export const authRouter = new Hono<honoContext>();
+export const authRouter = new Hono<honoContext>()
+  .get('/sync-account', async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
-authRouter.get('/sync-account', async (c) => {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session?.user) {
+      return c.json({ message: 'Not authenticated' }, StatusCodes.UNAUTHORIZED);
+    }
 
-  if (!session?.user) {
-    return c.json({ message: 'Not authenticated' }, StatusCodes.UNAUTHORIZED);
-  }
+    const accounts = await auth.api.listUserAccounts({
+      headers: c.req.raw.headers,
+    });
 
-  const accounts = await auth.api.listUserAccounts({
-    headers: c.req.raw.headers,
+    const msAccount = accounts.find((a) => a.providerId === 'microsoft');
+
+    if (!msAccount || msAccount === undefined) {
+      return c.json(
+        { message: 'No Microsoft account linked' },
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    const msData = await auth.api.accountInfo({
+      body: { accountId: msAccount.accountId },
+      headers: c.req.raw.headers,
+    });
+
+    if (!msData?.data) {
+      return c.json(
+        { message: 'Failed to fetch Microsoft account info' },
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+
+    await auth.api.updateUser({
+      body: {
+        name: msData.data.name,
+      },
+      headers: c.req.raw.headers,
+    });
+
+    return c.json({ message: 'Account synced' });
+  })
+  .on(['POST', 'GET'], '*', (c) => {
+    return auth.handler(c.req.raw);
   });
-
-  const msAccount = accounts.find((a) => a.providerId === 'microsoft');
-
-  if (!msAccount || msAccount === undefined) {
-    return c.json(
-      { message: 'No Microsoft account linked' },
-      StatusCodes.BAD_REQUEST
-    );
-  }
-
-  const msData = await auth.api.accountInfo({
-    body: { accountId: msAccount.accountId },
-    headers: c.req.raw.headers,
-  });
-
-  if (!msData?.data) {
-    return c.json(
-      { message: 'Failed to fetch Microsoft account info' },
-      StatusCodes.INTERNAL_SERVER_ERROR
-    );
-  }
-
-  await auth.api.updateUser({
-    body: {
-      name: msData.data.name,
-    },
-    headers: c.req.raw.headers,
-  });
-
-  return c.json({ message: 'Account synced' });
-});
-
-authRouter.on(['POST', 'GET'], '*', (c) => {
-  return auth.handler(c.req.raw);
-});

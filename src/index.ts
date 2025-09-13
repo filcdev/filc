@@ -6,6 +6,7 @@ import { prepareDb } from '~/database';
 import { frontend } from '~/frontend/server';
 import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
 import { developmentRouter } from '~/routes/_dev/_router';
+import { cohortRouter } from '~/routes/cohort/_router';
 import { doorlockRouter } from '~/routes/doorlock/_router';
 import { featureFlagRouter } from '~/routes/feature-flags/_router';
 import { pingRouter } from '~/routes/ping/_router';
@@ -62,6 +63,7 @@ api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/timetable', timetableRouter);
 api.route('/feature-flags', featureFlagRouter);
+api.route('/cohort', cohortRouter);
 (await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false))
   ? api.route('/doorlock', doorlockRouter)
   : logger.info('Doorlock API is disabled by feature flag');

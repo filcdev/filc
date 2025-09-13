@@ -1,6 +1,13 @@
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import type { User as UserType } from 'better-auth';
-import { CheckCircle, Loader2, Mail, User } from 'lucide-react';
+import {
+  Check,
+  CheckCircle,
+  ChevronsUpDown,
+  Loader2,
+  Mail,
+  User,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FaMicrosoft } from 'react-icons/fa6';
 import { Button } from '~/frontend/components/ui/button';
@@ -10,7 +17,22 @@ import {
   CardHeader,
   CardTitle,
 } from '~/frontend/components/ui/card';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '~/frontend/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/frontend/components/ui/popover';
 import { Skeleton } from '~/frontend/components/ui/skeleton';
+import { cn } from '~/frontend/utils';
+import type { User as UserType } from '~/frontend/utils/authentication';
 import { authClient } from '~/frontend/utils/authentication';
 
 export const Route = createFileRoute('/auth/welcome')({
@@ -75,6 +97,93 @@ const InfoLine = (props: {
   );
 };
 
+const CohortSelector = (props: { user: UserType }) => {
+  const [updating, setIsUpdating] = useState(false);
+  const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
+    props.user.cohortId ?? null
+  );
+  const [open, setOpen] = useState(false);
+
+  const cohortQuery = useQuery({
+    queryKey: ['cohorts'],
+    queryFn: async () => {
+      const res = await fetch('/api/cohort');
+      return (await res.json()) as { id: string; name: string }[];
+    },
+  });
+
+  const updateCohort = async (cohortId: string) => {
+    setIsUpdating(true);
+    setOpen(false);
+    setSelectedCohortId(cohortId);
+    await authClient.updateUser({ cohortId });
+    setIsUpdating(false);
+  };
+
+  if (cohortQuery.isLoading) {
+    return <Skeleton className="h-9 w-full" />;
+  }
+
+  if (cohortQuery.error || !cohortQuery.data) {
+    return (
+      <div className="text-red-500">
+        Error loading cohorts: {`${cohortQuery.error ?? 'Unknown Error'}`}
+      </div>
+    );
+  }
+
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <Button
+          aria-expanded={open}
+          className="w-full justify-between"
+          disabled={updating}
+          role="combobox"
+          variant="outline"
+        >
+          {selectedCohortId
+            ? cohortQuery.data.find((cohort) => cohort.id === selectedCohortId)
+                ?.name
+            : 'Select class...'}
+          <ChevronsUpDown className="opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0">
+        <Command>
+          <CommandInput
+            className="h-9"
+            disabled={updating}
+            placeholder="Search framework..."
+          />
+          <CommandList>
+            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandGroup>
+              {cohortQuery.data.map((cohort) => (
+                <CommandItem
+                  key={cohort.id}
+                  onSelect={updateCohort}
+                  value={cohort.id}
+                >
+                  {cohort.name}
+                  <Check
+                    className={cn(
+                      'ml-auto',
+                      selectedCohortId === cohort.id
+                        ? 'opacity-100'
+                        : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const AccountDetails = (props: { user: UserType }) => {
   const { refetch } = authClient.useSession();
   const { user } = props;
@@ -108,7 +217,10 @@ const AccountDetails = (props: { user: UserType }) => {
             icon={<User className="h-4 w-4 text-muted-foreground" />}
             title="Name"
           />
+          <hr />
         </div>
+        <hr />
+        <CohortSelector user={user} />
       </CardContent>
     </Card>
   );
