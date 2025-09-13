@@ -15,7 +15,7 @@ export const handleFeatureFlag = async (
     .from(featureFlag)
     .where(eq(featureFlag.name, name));
   if (!existingFlag) {
-    logger.info(
+    logger.debug(
       `Registering feature flag: ${name} - ${description} (default: ${defaultEnabled})`
     );
     await db
