@@ -1,13 +1,16 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ArrowRight, CheckCircle, Mail, User } from 'lucide-react';
+import type { User as UserType } from 'better-auth';
+import { CheckCircle, Loader2, Mail, User } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { FaMicrosoft } from 'react-icons/fa6';
 import { Button } from '~/frontend/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '~/frontend/components/ui/card';
+import { Skeleton } from '~/frontend/components/ui/skeleton';
 import { authClient } from '~/frontend/utils/authentication';
 
 export const Route = createFileRoute('/auth/welcome')({
@@ -18,13 +21,14 @@ function RouteComponent() {
   const { data, error, isPending } = authClient.useSession();
   const navigate = useNavigate();
 
-  if (isPending) {
-    return (
-      <main className="grow items-center justify-center">
-        <p className="text-foreground">Loading...</p>
-      </main>
-    );
-  }
+  useEffect(() => {
+    if (isPending) {
+      return;
+    }
+    if (!(data?.session && data?.user)) {
+      navigate({ to: '/auth/login', replace: true });
+    }
+  }, [data, isPending, navigate]);
 
   if (error) {
     return (
@@ -34,97 +38,176 @@ function RouteComponent() {
     );
   }
 
-  if (!(data?.session && data?.user)) {
-    navigate({ to: '/auth/login' });
-    return null;
-  }
-
-  const { user } = data;
-
   return (
-    <div className="grid grow grid-cols-2 gap-12 p-12">
-      <div className="flex flex-col justify-center space-y-4">
-        <div className="space-y-4 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-            <CheckCircle className="h-10 w-10 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="font-bold text-4xl text-foreground">
-              Welcome, {user.name || user.email.split('@')[0]}!
-            </h1>
-            <p className="text-balance text-muted-foreground text-xl">
-              You've successfully signed in to your account
-            </p>
-          </div>
+    <div className="flex max-w-lg grow flex-col justify-center space-y-4 self-center">
+      <div className="flex gap-4">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle className="h-10 w-10 text-primary" />
         </div>
-
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="pb-4 text-center">
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <User className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-lg">Account Details</CardTitle>
-            <CardDescription>Your login information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-foreground text-sm">Email</p>
-                <p className="truncate text-muted-foreground text-sm">
-                  {user.email}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex flex-col justify-center">
-        <h2 className="mb-6 text-center font-bold text-2xl">
-          What would you like to do?
-        </h2>
-        <div className="flex flex-col items-center gap-4">
-          <Card className="group cursor-pointer border-border/50 shadow-sm transition-shadow hover:shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground">Dashboard</h3>
-                  <p className="text-muted-foreground text-sm">
-                    View your account overview and recent activity
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group cursor-pointer border-border/50 shadow-sm transition-shadow hover:shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground">Settings</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Manage your account preferences and security
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Button
-            className="bg-transparent text-sm shadow-lg"
-            onClick={() => {
-              authClient.signOut();
-              navigate({ to: '/auth/login' });
-            }}
-            variant="outline"
-          >
-            Sign out
-          </Button>
+        <div className="items-start space-y-2">
+          <h1 className="font-bold text-4xl text-foreground">Welcome!</h1>
+          <p className="text-balance text-muted-foreground text-xl">
+            Let us get to know you
+          </p>
         </div>
       </div>
+      {isPending && <AccountDetailsSkeleton />}
+      {!isPending && data?.user && <AccountDetails user={data.user} />}
     </div>
   );
 }
+
+const InfoLine = (props: {
+  icon: React.ReactNode;
+  title: string;
+  content: string;
+}) => {
+  return (
+    <div className="flex w-full items-center gap-3">
+      {props.icon}
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-foreground text-sm">{props.title}</p>
+        <p className="truncate text-muted-foreground text-sm">
+          {props.content}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const AccountDetails = (props: { user: UserType }) => {
+  const { refetch } = authClient.useSession();
+  const { user } = props;
+
+  useEffect(() => {
+    const syncUserDetails = async () => {
+      await fetch('/api/auth/sync-account');
+    };
+    if (!user.name) {
+      syncUserDetails().then(() => refetch());
+    }
+  }, [user.name, refetch]);
+
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex items-center justify-start space-y-1">
+        <User className="size-6 text-muted-foreground" />
+        <CardTitle className="text-lg">Account Details</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <MicrosoftLink />
+        <hr />
+        <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
+          <InfoLine
+            content={user.email}
+            icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+            title="Email"
+          />
+          <InfoLine
+            content={user.name ?? 'Unknown'}
+            icon={<User className="h-4 w-4 text-muted-foreground" />}
+            title="Name"
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const MicrosoftLink = () => {
+  const [isPending, setIsPending] = useState(true);
+  const [isAlreadyLinked, setIsAlreadyLinked] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
+  const { refetch } = authClient.useSession();
+
+  const getIsLinked = useCallback(async () => {
+    const res = await authClient.listAccounts();
+
+    if (res.error) {
+      setIsAlreadyLinked(false);
+    } else {
+      setIsAlreadyLinked(
+        res.data.some((acc) => acc.providerId === 'microsoft')
+      );
+    }
+    setIsPending(false);
+  }, []);
+
+  useEffect(() => {
+    getIsLinked();
+  }, [getIsLinked]);
+
+  const handleUnlink = async () => {
+    setIsUnlinking(true);
+    try {
+      await authClient.unlinkAccount({ providerId: 'microsoft' });
+      await getIsLinked();
+      refetch();
+    } finally {
+      setIsUnlinking(false);
+    }
+  };
+
+  if (isPending) {
+    return <Skeleton className="flex h-8 items-center justify-center" />;
+  }
+
+  if (isAlreadyLinked) {
+    return (
+      <div className="flex h-8 items-center justify-between text-primary text-sm">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="size-4" />
+          <span>Microsoft linked</span>
+        </div>
+        <Button
+          className="text-muted-foreground text-xs"
+          disabled={isUnlinking}
+          onClick={handleUnlink}
+          size="sm"
+          variant="ghost"
+        >
+          {isUnlinking ? <Loader2 className="size-4 animate-spin" /> : 'Unlink'}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      className="w-full justify-start"
+      onClick={() => {
+        authClient.linkSocial({
+          provider: 'microsoft',
+          callbackURL: '/auth/welcome',
+          errorCallbackURL: '/auth/error?from=link-microsoft',
+        });
+      }}
+      variant="outline"
+    >
+      <FaMicrosoft className="mr-2 size-5" />
+      <span>Link Microsoft Account</span>
+    </Button>
+  );
+};
+
+const AccountDetailsSkeleton = () => {
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="flex items-center justify-start space-y-1">
+        <User className="size-6 text-muted-foreground" />
+        <CardTitle className="text-lg">Account Details</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Skeleton className="h-9 w-full" />
+        <hr />
+        <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

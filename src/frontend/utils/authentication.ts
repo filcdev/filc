@@ -3,4 +3,5 @@ import { createAuthClient } from 'better-auth/react';
 
 export const authClient = createAuthClient({
   plugins: [magicLinkClient()],
+  baseURL: import.meta.env.BASE_URL,
 });

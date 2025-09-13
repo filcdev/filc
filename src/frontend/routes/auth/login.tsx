@@ -38,7 +38,11 @@ function RouteComponent() {
     try {
       const result = await authClient.signIn.magicLink({
         email: fullEmail,
-        callbackURL: '/auth/welcome',
+        callbackURL: new URL('/auth/welcome', window.location.origin).href,
+        errorCallbackURL: new URL(
+          '/auth/error?from=magic-link',
+          window.location.origin
+        ).href,
       });
 
       if (result.error) {

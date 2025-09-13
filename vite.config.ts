@@ -60,6 +60,9 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     build: mode === "client" ? clientBuild : ssrBuild,
+    define: {
+      'import.meta.env.BASE_URL': `'${env.baseUrl}'`,
+    },
     test: {
       globals: true,
       environment: 'jsdom',
