@@ -22,6 +22,34 @@
       "when": 1757255432475,
       "tag": "0002_jazzy_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1757266031111,
+      "tag": "0003_long_tag",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757266741044,
+      "tag": "0004_grey_master_mold",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757316999110,
+      "tag": "0005_previous_shadow_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1757779881358,
+      "tag": "0006_silly_scarecrow",
+      "breakpoints": true
     }
   ]
 }

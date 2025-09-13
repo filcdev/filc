@@ -60,6 +60,11 @@ export const userHasPermission = async (
     return false;
   }
 
+  if (user.roles.length === 0) {
+    logger.warn(`User with ID ${userId} has no roles assigned.`);
+    return false;
+  }
+
   const canPromises = user.roles.map((role) => rbac.can(role, permissionName));
 
   const canResults = await Promise.all(canPromises);
@@ -94,6 +99,12 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
 
     if (!rolePermissions) {
       logger.warn(`Role ${role} not found in the database.`);
+      // create it
+      await db
+        .insert(dbRole)
+        .values({ name: role, can: role === 'admin' ? ['*'] : [] })
+        .returning({ can: dbRole.can });
+      logger.info(`Created missing role ${role} in the database.`);
       continue;
     }
 

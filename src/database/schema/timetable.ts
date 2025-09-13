@@ -3,6 +3,7 @@ import {
   boolean,
   integer,
   jsonb,
+  type PgColumn,
   pgTable,
   text,
   time,
@@ -53,7 +54,7 @@ export const subject = pgTable('subject', {
 
 export const teacher = pgTable('teacher', {
   id: text('id').primaryKey(),
-  linkedUserId: uuid('linked_user_id').references(() => user.id),
+  userId: uuid('user_id').references((): PgColumn => user.id),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   short: text('short').notNull(),

@@ -2,19 +2,42 @@ import { getLogger } from '@logtape/logtape';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { magicLink } from 'better-auth/plugins/magic-link';
+import type { SocialProviders } from 'better-auth/social-providers';
 import { Hono } from 'hono';
+import { StatusCodes } from 'http-status-codes';
 import { db } from '~/database';
-import { authSchema } from '~/database/schema/authentication';
+import { authenticationSchema } from '~/database/schema/authentication';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
 
 const logger = getLogger(['chronos', 'auth']);
 
+export const getOauth = (): SocialProviders => {
+  if (!(env.entraClientId && env.entraClientSecret && env.entraTenantId)) {
+    logger.warn(
+      'Disabling Entra OAuth provider because of missing environment variables.'
+    );
+    return {};
+  }
+
+  return {
+    microsoft: {
+      enabled: true,
+      disableSignUp: true,
+      tenantId: env.entraTenantId,
+      clientId: env.entraClientId,
+      clientSecret: env.entraClientSecret,
+      prompt: 'select_account',
+    },
+  };
+};
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
-    schema: authSchema,
+    schema: authenticationSchema,
   }),
+
   baseURL: env.baseUrl,
   secret: env.authSecret,
   trustedOrigins: [env.baseUrl],
@@ -22,6 +45,14 @@ export const auth = betterAuth({
     level: env.mode === 'development' ? 'debug' : 'info',
     log: (level, message, ...args) => {
       logger[level]({ message, ...args });
+    },
+  },
+  socialProviders: getOauth(),
+  account: {
+    accountLinking: {
+      enabled: true,
+      allowUnlinkingAll: true,
+      updateUserInfoOnLink: true,
     },
   },
   advanced: {
@@ -67,12 +98,57 @@ export const auth = betterAuth({
         required: true,
         input: false,
       },
+      cohortId: {
+        type: 'string',
+        required: false,
+        input: true,
+      },
     },
   },
 });
 
-export const authRouter = new Hono<honoContext>();
+export const authRouter = new Hono<honoContext>()
+  .get('/sync-account', async (c) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
-authRouter.on(['POST', 'GET'], '*', (c) => {
-  return auth.handler(c.req.raw);
-});
+    if (!session?.user) {
+      return c.json({ message: 'Not authenticated' }, StatusCodes.UNAUTHORIZED);
+    }
+
+    const accounts = await auth.api.listUserAccounts({
+      headers: c.req.raw.headers,
+    });
+
+    const msAccount = accounts.find((a) => a.providerId === 'microsoft');
+
+    if (!msAccount || msAccount === undefined) {
+      return c.json(
+        { message: 'No Microsoft account linked' },
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    const msData = await auth.api.accountInfo({
+      body: { accountId: msAccount.accountId },
+      headers: c.req.raw.headers,
+    });
+
+    if (!msData?.data) {
+      return c.json(
+        { message: 'Failed to fetch Microsoft account info' },
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+
+    await auth.api.updateUser({
+      body: {
+        name: msData.data.name,
+      },
+      headers: c.req.raw.headers,
+    });
+
+    return c.json({ message: 'Account synced' });
+  })
+  .on(['POST', 'GET'], '*', (c) => {
+    return auth.handler(c.req.raw);
+  });

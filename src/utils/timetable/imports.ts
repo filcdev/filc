@@ -1,5 +1,6 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "~/database";
+import { getLogger } from '@logtape/logtape';
+import { and, eq } from 'drizzle-orm';
+import { db } from '~/database';
 import {
   building as buildingSchema,
   classroom as classroomSchema,
@@ -10,8 +11,8 @@ import {
   subject as subjectSchema,
   teacher as teacherSchema,
   weekDefinition as weekSchema,
-} from "~/database/schema/timetable";
-import { logger } from "~/routes/timetable/_logger";
+} from '~/database/schema/timetable';
+const logger = getLogger(['chronos', 'timetable']);
 
 // Drizzle inferred row type helper
 type LessonRow = typeof lessonSchema.$inferSelect;

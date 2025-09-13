@@ -10,7 +10,8 @@ const client = new SQL({
   connection: {
     connectionString: env.databaseUrl,
   },
-  prepare: env.mode === 'production',
+  prepare: false,
+  // prepare: env.mode === 'production',
 });
 
 export const db = drizzle({
@@ -23,8 +24,8 @@ export const db = drizzle({
 });
 
 export const prepareDb = async () => {
-  logger.debug('Preparing database and running migrations');
   try {
+    logger.debug('Starting database migration');
     await migrate(db, { migrationsFolder: 'src/database/migrations' });
     logger.info('Database migration completed successfully');
   } catch (error) {

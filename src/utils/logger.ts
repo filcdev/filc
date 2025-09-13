@@ -1,16 +1,19 @@
 import {
+  ansiColorFormatter,
   configure,
   getConsoleSink,
+  getLogger,
   jsonLinesFormatter,
 } from '@logtape/logtape';
 import { env } from '~/utils/environment';
 
 export const configureLogger = async () => {
   await configure({
+    reset: true,
     sinks: {
       console: getConsoleSink({
         formatter:
-          env.mode === 'development' ? jsonLinesFormatter : jsonLinesFormatter,
+          env.mode === 'development' ? ansiColorFormatter : jsonLinesFormatter,
       }),
     },
     loggers: [
@@ -22,4 +25,7 @@ export const configureLogger = async () => {
       { category: 'chronos', lowestLevel: env.logLevel, sinks: ['console'] },
     ],
   });
+
+  const logger = getLogger(['chronos', 'meta']);
+  logger.info(`Logger configured with level: ${env.logLevel}`);
 };

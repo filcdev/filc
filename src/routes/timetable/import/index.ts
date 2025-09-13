@@ -1,10 +1,13 @@
 // import { XMLParser } from "fast-xml-parser";
-import { StatusCodes } from 'http-status-codes';
 // import type { TimetableExportRoot } from "~/utils/timetable/types";
+
+import { getLogger } from '@logtape/logtape';
+import { StatusCodes } from 'http-status-codes';
 import { DOMParser } from 'xmldom';
-import { logger } from '~/routes/timetable/_logger';
 import { importFactory } from '~/routes/timetable/import/_factory';
 import { importTimetableXML } from '~/utils/timetable/imports';
+
+const logger = getLogger(['chronos', 'timetable']);
 
 export const importRoute = importFactory.createHandlers(async (c) => {
   const body = (await c.req.parseBody()) as {
@@ -51,11 +54,16 @@ export const importRoute = importFactory.createHandlers(async (c) => {
 
   // let xmlData: TimetableExportRoot | null = null;
   try {
+    logger.info('Starting timetable import');
     const xmlData = new DOMParser().parseFromString(text, 'application/xml');
 
     await importTimetableXML(xmlData);
 
     logger.info('Imported timetable');
+
+    return c.json({
+      status: 'ok',
+    });
   } catch (e) {
     logger.error(`Failed to parse XML: ${e}`);
     return c.json(
@@ -66,8 +74,4 @@ export const importRoute = importFactory.createHandlers(async (c) => {
       StatusCodes.BAD_REQUEST
     );
   }
-
-  return c.json({
-    status: 'ok',
-  });
 });
