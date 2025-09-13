@@ -78,6 +78,12 @@ const handleStartup = async () => {
   await initializeMqttClient();
   await startDeviceMonitor();
 
+  env.mode === 'production' &&
+    Bun.serve({
+      port: env.port,
+      fetch: app.fetch,
+    });
+
   logger.info('chronos started on http://localhost:3000');
   env.logLevel === 'trace' && showRoutes(app, { verbose: true });
 };
@@ -97,4 +103,4 @@ await handleStartup();
 
 export type AppType = typeof app;
 
-export default app;
+export default env.mode === 'development' ? app : null;
