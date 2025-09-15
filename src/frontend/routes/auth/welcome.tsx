@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Check,
   CheckCircle,
@@ -7,16 +7,16 @@ import {
   Loader2,
   Mail,
   User,
-} from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { FaMicrosoft } from 'react-icons/fa6';
-import { Button } from '~/frontend/components/ui/button';
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { FaMicrosoft } from "react-icons/fa6";
+import { Button } from "~/frontend/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '~/frontend/components/ui/card';
+} from "~/frontend/components/ui/card";
 import {
   Command,
   CommandEmpty,
@@ -24,18 +24,18 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '~/frontend/components/ui/command';
+} from "~/frontend/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '~/frontend/components/ui/popover';
-import { Skeleton } from '~/frontend/components/ui/skeleton';
-import { cn } from '~/frontend/utils';
-import type { User as UserType } from '~/frontend/utils/authentication';
-import { authClient } from '~/frontend/utils/authentication';
+} from "~/frontend/components/ui/popover";
+import { Skeleton } from "~/frontend/components/ui/skeleton";
+import { cn } from "~/frontend/utils";
+import type { User as UserType } from "~/frontend/utils/authentication";
+import { authClient } from "~/frontend/utils/authentication";
 
-export const Route = createFileRoute('/auth/welcome')({
+export const Route = createFileRoute("/auth/welcome")({
   component: RouteComponent,
 });
 
@@ -48,7 +48,7 @@ function RouteComponent() {
       return;
     }
     if (!(data?.session && data?.user)) {
-      navigate({ to: '/auth/login', replace: true });
+      navigate({ to: "/auth/login", replace: true });
     }
   }, [data, isPending, navigate]);
 
@@ -100,14 +100,14 @@ const InfoLine = (props: {
 const CohortSelector = (props: { user: UserType }) => {
   const [updating, setIsUpdating] = useState(false);
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
-    props.user.cohortId ?? null
+    props.user.cohortId ?? null,
   );
   const [open, setOpen] = useState(false);
 
   const cohortQuery = useQuery({
-    queryKey: ['cohorts'],
+    queryKey: ["cohorts"],
     queryFn: async () => {
-      const res = await fetch('/api/cohort');
+      const res = await fetch("/api/cohort");
       return (await res.json()) as { id: string; name: string }[];
     },
   });
@@ -127,7 +127,7 @@ const CohortSelector = (props: { user: UserType }) => {
   if (cohortQuery.error || !cohortQuery.data) {
     return (
       <div className="text-red-500">
-        Error loading cohorts: {`${cohortQuery.error ?? 'Unknown Error'}`}
+        Error loading cohorts: {`${cohortQuery.error ?? "Unknown Error"}`}
       </div>
     );
   }
@@ -145,7 +145,7 @@ const CohortSelector = (props: { user: UserType }) => {
           {selectedCohortId
             ? cohortQuery.data.find((cohort) => cohort.id === selectedCohortId)
                 ?.name
-            : 'Select class...'}
+            : "Select class..."}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -154,10 +154,10 @@ const CohortSelector = (props: { user: UserType }) => {
           <CommandInput
             className="h-9"
             disabled={updating}
-            placeholder="Search framework..."
+            placeholder="Search"
           />
           <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandEmpty>No cohorts found!</CommandEmpty>
             <CommandGroup>
               {cohortQuery.data.map((cohort) => (
                 <CommandItem
@@ -168,10 +168,10 @@ const CohortSelector = (props: { user: UserType }) => {
                   {cohort.name}
                   <Check
                     className={cn(
-                      'ml-auto',
+                      "ml-auto",
                       selectedCohortId === cohort.id
-                        ? 'opacity-100'
-                        : 'opacity-0'
+                        ? "opacity-100"
+                        : "opacity-0",
                     )}
                   />
                 </CommandItem>
@@ -190,7 +190,7 @@ const AccountDetails = (props: { user: UserType }) => {
 
   useEffect(() => {
     const syncUserDetails = async () => {
-      await fetch('/api/auth/sync-account');
+      await fetch("/api/auth/sync-account");
     };
     if (!user.name) {
       syncUserDetails().then(() => refetch());
@@ -213,7 +213,7 @@ const AccountDetails = (props: { user: UserType }) => {
             title="Email"
           />
           <InfoLine
-            content={user.name ?? 'Unknown'}
+            content={user.name ?? "Unknown"}
             icon={<User className="h-4 w-4 text-muted-foreground" />}
             title="Name"
           />
@@ -239,7 +239,7 @@ const MicrosoftLink = () => {
       setIsAlreadyLinked(false);
     } else {
       setIsAlreadyLinked(
-        res.data.some((acc) => acc.providerId === 'microsoft')
+        res.data.some((acc) => acc.providerId === "microsoft"),
       );
     }
     setIsPending(false);
@@ -252,7 +252,7 @@ const MicrosoftLink = () => {
   const handleUnlink = async () => {
     setIsUnlinking(true);
     try {
-      await authClient.unlinkAccount({ providerId: 'microsoft' });
+      await authClient.unlinkAccount({ providerId: "microsoft" });
       await getIsLinked();
       refetch();
     } finally {
@@ -278,7 +278,7 @@ const MicrosoftLink = () => {
           size="sm"
           variant="ghost"
         >
-          {isUnlinking ? <Loader2 className="size-4 animate-spin" /> : 'Unlink'}
+          {isUnlinking ? <Loader2 className="size-4 animate-spin" /> : "Unlink"}
         </Button>
       </div>
     );
@@ -289,9 +289,9 @@ const MicrosoftLink = () => {
       className="w-full justify-start"
       onClick={() => {
         authClient.linkSocial({
-          provider: 'microsoft',
-          callbackURL: '/auth/welcome',
-          errorCallbackURL: '/auth/error?from=link-microsoft',
+          provider: "microsoft",
+          callbackURL: "/auth/welcome",
+          errorCallbackURL: "/auth/error?from=link-microsoft",
         });
       }}
       variant="outline"
