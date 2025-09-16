@@ -9,10 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PrivateRouteRouteImport } from './routes/_private/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthErrorRouteImport } from './routes/auth/error'
+import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 
+const PrivateRouteRoute = PrivateRouteRouteImport.update({
+  id: '/_private',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -28,39 +35,72 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthErrorRoute = AuthErrorRouteImport.update({
+  id: '/auth/error',
+  path: '/auth/error',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivateProbaRoute = PrivateProbaRouteImport.update({
+  id: '/proba',
+  path: '/proba',
+  getParentRoute: () => PrivateRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/proba': typeof PrivateProbaRoute
+  '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/proba': typeof PrivateProbaRoute
+  '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_private': typeof PrivateRouteRouteWithChildren
+  '/_private/proba': typeof PrivateProbaRoute
+  '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/login' | '/auth/welcome'
+  fullPaths: '/' | '/proba' | '/auth/error' | '/auth/login' | '/auth/welcome'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/login' | '/auth/welcome'
-  id: '__root__' | '/' | '/auth/login' | '/auth/welcome'
+  to: '/' | '/proba' | '/auth/error' | '/auth/login' | '/auth/welcome'
+  id:
+    | '__root__'
+    | '/'
+    | '/_private'
+    | '/_private/proba'
+    | '/auth/error'
+    | '/auth/login'
+    | '/auth/welcome'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PrivateRouteRoute: typeof PrivateRouteRouteWithChildren
+  AuthErrorRoute: typeof AuthErrorRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthWelcomeRoute: typeof AuthWelcomeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_private': {
+      id: '/_private'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof PrivateRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -82,11 +122,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/error': {
+      id: '/auth/error'
+      path: '/auth/error'
+      fullPath: '/auth/error'
+      preLoaderRoute: typeof AuthErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_private/proba': {
+      id: '/_private/proba'
+      path: '/proba'
+      fullPath: '/proba'
+      preLoaderRoute: typeof PrivateProbaRouteImport
+      parentRoute: typeof PrivateRouteRoute
+    }
   }
 }
 
+interface PrivateRouteRouteChildren {
+  PrivateProbaRoute: typeof PrivateProbaRoute
+}
+
+const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
+  PrivateProbaRoute: PrivateProbaRoute,
+}
+
+const PrivateRouteRouteWithChildren = PrivateRouteRoute._addFileChildren(
+  PrivateRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PrivateRouteRoute: PrivateRouteRouteWithChildren,
+  AuthErrorRoute: AuthErrorRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthWelcomeRoute: AuthWelcomeRoute,
 }
