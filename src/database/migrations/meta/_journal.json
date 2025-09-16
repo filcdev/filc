@@ -50,6 +50,13 @@
       "when": 1757779881358,
       "tag": "0006_silly_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1758041298852,
+      "tag": "0007_last_unicorn",
+      "breakpoints": true
     }
   ]
 }

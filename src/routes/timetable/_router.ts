@@ -1,7 +1,28 @@
-import { Hono } from 'hono';
-import { importRoute } from '~/routes/timetable/import';
-import type { honoContext } from '~/utils/globals';
+import { Hono } from "hono";
+import { importRoute } from "~/routes/timetable/import";
+import {
+  getAllSubstitutions,
+  getRelevantSubstitutions,
+  getRelevantSubstitutionsForCohort,
+  createSubstitution,
+  updateSubstitution,
+  deleteSubstitution,
+} from "~/routes/timetable/substitution";
+import type { honoContext } from "~/utils/globals";
 
 export const timetableRouter = new Hono<honoContext>();
 
-timetableRouter.post('/import', ...importRoute);
+timetableRouter.post("/import", ...importRoute);
+
+timetableRouter.get("/substitutions", ...getAllSubstitutions);
+timetableRouter.get("/substitutions/relevant", ...getRelevantSubstitutions);
+timetableRouter.get(
+  "/substitutions/cohort/:cohortId",
+  ...getRelevantSubstitutionsForCohort,
+);
+
+timetableRouter.post("/substitutions", ...createSubstitution);
+
+timetableRouter.put("/substitutions/:id", ...updateSubstitution);
+
+timetableRouter.delete("/substitutions/:id", ...deleteSubstitution);
