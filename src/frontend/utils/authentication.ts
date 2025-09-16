@@ -7,7 +7,11 @@ import { createAuthClient } from 'better-auth/react';
 import type { auth } from '~/utils/authentication';
 
 export const authClient = createAuthClient({
-  plugins: [magicLinkClient(), inferAdditionalFields<typeof auth>(), customSessionClient<typeof auth>()],
+  plugins: [
+    magicLinkClient(),
+    inferAdditionalFields<typeof auth>(),
+    customSessionClient<typeof auth>(),
+  ],
   baseURL: import.meta.env.BASE_URL,
 });
 

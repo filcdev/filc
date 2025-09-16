@@ -1,16 +1,16 @@
 import { getLogger } from '@logtape/logtape';
-import { betterAuth, type BetterAuthOptions } from 'better-auth';
+import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { customSession } from 'better-auth/plugins';
 import { magicLink } from 'better-auth/plugins/magic-link';
 import type { SocialProviders } from 'better-auth/social-providers';
 import { Hono } from 'hono';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '~/database';
 import { authenticationSchema } from '~/database/schema/authentication';
+import { getUserPermissions } from '~/utils/authorization';
 import { env } from '~/utils/environment';
 import type { honoContext } from '~/utils/globals';
-import { customSession } from "better-auth/plugins";
-import { getUserPermissions } from '~/utils/authorization';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -113,13 +113,17 @@ export const auth = betterAuth({
   ...authOptions,
   plugins: [
     ...(authOptions.plugins ?? []),
-    customSession(async ({user, session}) => {
+    customSession(async ({ user, session }) => {
       const permissions = await getUserPermissions(user.id);
-      return { user: {
-        ...user, permissions
-      }, session };
-    }, authOptions)
-  ]
+      return {
+        user: {
+          ...user,
+          permissions,
+        },
+        session,
+      };
+    }, authOptions),
+  ],
 });
 
 export const authRouter = new Hono<honoContext>()

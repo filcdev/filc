@@ -6,7 +6,9 @@ export const Route = createFileRoute('/_private/proba')({
 });
 
 function RouteComponent() {
-  return <PermissionGuard permission="proba:view">
-    <div>Hello "/_private/proba"!</div>
-  </PermissionGuard>;
+  return (
+    <PermissionGuard permission="proba:view">
+      <div>Hello "/_private/proba"!</div>
+    </PermissionGuard>
+  );
 }
