@@ -6,6 +6,7 @@ import {
   jsonb,
   type PgColumn,
   pgTable,
+  primaryKey,
   text,
   time,
   uuid,
@@ -139,20 +140,41 @@ export const lesson = pgTable("lesson", {
 export const substitution = pgTable("substitution", {
   id: text("id").primaryKey(),
   date: date("date").notNull(),
-  lessonIds: jsonb("period_ids").$type<string[]>().notNull(),
   substituter: text("substituter").references(() => teacher.id), // If null, then cancelled.
 });
 
+export const substitutionLessonMTM = pgTable(
+  "substitution_lesson_mtm",
+  {
+    lessonId: text("lesson_id")
+      .references(() => lesson.id, { onDelete: "cascade" })
+      .notNull(),
+    substitutionId: text("substitution_id")
+      .references(() => substitution.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.lessonId, t.substitutionId] })],
+);
+
 export const movedLesson = pgTable("moved_lesson", {
   id: text("id").primaryKey(),
-  lessonIds: jsonb("lesson_ids").$type<string[]>().notNull(),
-  startingPeriod: text("starting_period")
-    .references(() => period.id)
-    .notNull(),
-  startingDay: text("starting_day")
-    .references(() => dayDefinition.id)
-    .notNull(),
+  startingPeriod: text("starting_period").references(() => period.id),
+  startingDay: text("starting_day").references(() => dayDefinition.id),
+  room: text("room").references(() => classroom.id),
 });
+
+export const movedLessonLessonMTM = pgTable(
+  "substitution_lesson_mtm",
+  {
+    lessonId: text("lesson_id")
+      .references(() => lesson.id, { onDelete: "cascade" })
+      .notNull(),
+    movedLessonId: text("moved_lesson_id")
+      .references(() => movedLesson.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.lessonId, t.movedLessonId] })],
+);
 
 export const timetableSchema = {
   period,

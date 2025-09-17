@@ -5,7 +5,12 @@ import {
 import { timetableFactory } from "../_factory";
 import { StatusCodes } from "http-status-codes";
 import { db } from "~/database";
-import { lesson, substitution, teacher } from "~/database/schema/timetable";
+import {
+  lesson,
+  substitution,
+  substitutionLessonMTM,
+  teacher,
+} from "~/database/schema/timetable";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 
 export const getAllSubstitutions = timetableFactory.createHandlers(
@@ -13,9 +18,21 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
   async (c) => {
     try {
       const substitutions = await db
-        .select()
+        .select({
+          substitution,
+          teacher,
+          lessons: sql<string[]>`COALESCE(
+            ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as("lessons"),
+        })
         .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id));
+        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+        .leftJoin(
+          substitutionLessonMTM,
+          eq(substitution.id, substitutionLessonMTM.substitutionId),
+        )
+        .groupBy(substitution.id, teacher.id);
 
       return c.json({
         status: "success",
@@ -40,10 +57,22 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
       const today = new Date().toISOString().split("T")[0];
 
       const substitutions = await db
-        .select()
+        .select({
+          substitution,
+          teacher,
+          lessons: sql<string[]>`COALESCE(
+            ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as("lessons"),
+        })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-        .where(gte(substitution.date, today as string));
+        .leftJoin(
+          substitutionLessonMTM,
+          eq(substitution.id, substitutionLessonMTM.substitutionId),
+        )
+        .where(gte(substitution.date, today as string))
+        .groupBy(substitution.id, teacher.id);
 
       return c.json({
         status: "success",
@@ -78,31 +107,34 @@ export const getRelevantSubstitutionsForCohort =
 
       const today = new Date().toISOString().split("T")[0];
 
+      // Get substitutions with their associated lessons that are relevant to the cohort
       const substitutions = await db
-        .select()
+        .select({
+          substitution,
+          teacher,
+          lessons: sql<string[]>`COALESCE(
+            ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as("lessons"),
+        })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-        .where(gte(substitution.date, today as string));
-
-      const relevantSubstitutions = [];
-
-      for (const sub of substitutions) {
-        const lessonCount = await db.$count(
-          lesson,
+        .leftJoin(
+          substitutionLessonMTM,
+          eq(substitution.id, substitutionLessonMTM.substitutionId),
+        )
+        .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+        .where(
           and(
-            inArray(lesson.id, sub.substitution.lessonIds),
-            sql`${cohortId} = ANY(cohort_ids)`,
+            gte(substitution.date, today as string),
+            sql`${cohortId} = ANY(${lesson.cohortIds})`,
           ),
-        );
-
-        if (lessonCount > 0) {
-          relevantSubstitutions.push(sub);
-        }
-      }
+        )
+        .groupBy(substitution.id, teacher.id);
 
       return c.json({
         status: "success",
-        data: relevantSubstitutions,
+        data: substitutions,
         cohortId,
       });
     } catch (error) {
@@ -123,7 +155,7 @@ export const createSubstitution = timetableFactory.createHandlers(
     const body = (await c.req.json()) as {
       date: string;
       lessonIds: string[];
-      substituter: string;
+      substituter?: string;
     };
 
     const { lessonIds, date, substituter } = body;
@@ -132,14 +164,14 @@ export const createSubstitution = timetableFactory.createHandlers(
       return c.json(
         {
           status: "error",
-          message: `missing data in ${body}`,
+          message: `missing data in ${JSON.stringify(body)}`,
         },
         StatusCodes.BAD_REQUEST,
       );
     }
 
-    const date_as_datetype = new Date(date);
-    if (isNaN(date_as_datetype.getDate())) {
+    const dateAsDateType = new Date(date);
+    if (isNaN(dateAsDateType.getTime())) {
       return c.json(
         {
           status: "error",
@@ -149,42 +181,48 @@ export const createSubstitution = timetableFactory.createHandlers(
       );
     }
 
-    const lesson_count = await db.$count(lesson, inArray(lesson.id, lessonIds));
+    const lessonCount = await db.$count(lesson, inArray(lesson.id, lessonIds));
 
-    if (lesson_count != lessonIds.length) {
+    if (lessonCount !== lessonIds.length) {
       return c.json(
         {
           status: "error",
-          message: `attempted to substitute non-existant lesson(s), wanted: ${lessonIds.length}, got: ${lesson_count}`,
+          message: `attempted to substitute non-existent lesson(s), wanted: ${lessonIds.length}, got: ${lessonCount}`,
         },
         StatusCodes.BAD_REQUEST,
       );
     }
 
-    const [insertedSubstitution] = await db
-      .insert(substitution)
-      .values({
-        id: crypto.randomUUID(),
-        date,
-        lessonIds,
-        substituter,
-      })
-      .returning();
+    // Use a transaction to create the substitution and the many-to-many relationships
+    const result = await db.transaction(async (tx) => {
+      const [insertedSubstitution] = await tx
+        .insert(substitution)
+        .values({
+          id: crypto.randomUUID(),
+          date,
+          substituter,
+        })
+        .returning();
 
-    if (!insertedSubstitution) {
-      return c.json(
-        {
-          status: "error",
-          message: `Failed to insert substitution: ${body}`,
-        },
-        StatusCodes.INTERNAL_SERVER_ERROR,
-      );
-    }
+      if (!insertedSubstitution) {
+        throw new Error("Failed to insert substitution");
+      }
+
+      // Insert the many-to-many relationships
+      const mtmValues = lessonIds.map((lessonId) => ({
+        substitutionId: insertedSubstitution.id,
+        lessonId,
+      }));
+
+      await tx.insert(substitutionLessonMTM).values(mtmValues);
+
+      return insertedSubstitution;
+    });
 
     return c.json(
       {
         status: "success",
-        message: insertedSubstitution,
+        message: result,
       },
       StatusCodes.OK,
     );
@@ -231,7 +269,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
       if (body.date) {
         const dateAsDate = new Date(body.date);
-        if (isNaN(dateAsDate.getDate())) {
+        if (isNaN(dateAsDate.getTime())) {
           return c.json(
             {
               status: "error",
@@ -258,11 +296,36 @@ export const updateSubstitution = timetableFactory.createHandlers(
         }
       }
 
-      const [updatedSubstitution] = await db
-        .update(substitution)
-        .set(body)
-        .where(eq(substitution.id, id))
-        .returning();
+      // Use a transaction to update the substitution and the many-to-many relationships
+      const updatedSubstitution = await db.transaction(async (tx) => {
+        // Update the substitution (excluding lessonIds)
+        const updateData = { ...body };
+        delete updateData.lessonIds;
+
+        const [updated] = await tx
+          .update(substitution)
+          .set(updateData)
+          .where(eq(substitution.id, id))
+          .returning();
+
+        // If lessonIds were provided, update the many-to-many relationships
+        if (body.lessonIds) {
+          // Delete existing relationships
+          await tx
+            .delete(substitutionLessonMTM)
+            .where(eq(substitutionLessonMTM.substitutionId, id));
+
+          // Insert new relationships
+          const mtmValues = body.lessonIds.map((lessonId) => ({
+            substitutionId: id,
+            lessonId,
+          }));
+
+          await tx.insert(substitutionLessonMTM).values(mtmValues);
+        }
+
+        return updated;
+      });
 
       return c.json({
         status: "success",
@@ -314,6 +377,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         );
       }
 
+      // The many-to-many relationships will be automatically deleted due to the CASCADE constraint
       const [deletedSubstitution] = await db
         .delete(substitution)
         .where(eq(substitution.id, id))

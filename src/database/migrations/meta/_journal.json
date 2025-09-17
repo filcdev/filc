@@ -57,6 +57,20 @@
       "when": 1758041298852,
       "tag": "0007_last_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1758091028944,
+      "tag": "0008_tan_joshua_kane",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1758092890486,
+      "tag": "0009_serious_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }
