@@ -71,6 +71,13 @@
       "when": 1758092890486,
       "tag": "0009_serious_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1758095075693,
+      "tag": "0010_charming_energizer",
+      "breakpoints": true
     }
   ]
 }
