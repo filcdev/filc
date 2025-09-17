@@ -1,12 +1,15 @@
+import { getLogger } from '@logtape/logtape';
+import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { StatusCodes } from 'http-status-codes';
+import { db } from '~/database';
+import { lesson, substitution, teacher } from '~/database/schema/timetable';
 import {
   requireAuthentication,
   requireAuthorization,
-} from "~/utils/middleware";
-import { timetableFactory } from "../_factory";
-import { StatusCodes } from "http-status-codes";
-import { db } from "~/database";
-import { lesson, substitution, teacher } from "~/database/schema/timetable";
-import { and, eq, gte, inArray, sql } from "drizzle-orm";
+} from '~/utils/middleware';
+import { timetableFactory } from '../_factory';
+
+const logger = getLogger(['chronos', 'timetable']);
 
 export const getAllSubstitutions = timetableFactory.createHandlers(
   requireAuthentication,
@@ -18,26 +21,27 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         .leftJoin(teacher, eq(substitution.substituter, teacher.id));
 
       return c.json({
-        status: "success",
+        status: 'success',
         data: substitutions,
       });
     } catch (error) {
+      logger.error('Error while fetching all substitutions', { error });
       return c.json(
         {
-          status: "error",
-          message: "Failed to fetch substitutions",
+          status: 'error',
+          message: 'Failed to fetch substitutions',
         },
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
-  },
+  }
 );
 
 export const getRelevantSubstitutions = timetableFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toISOString().split('T')[0];
 
       const substitutions = await db
         .select()
@@ -46,37 +50,38 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         .where(gte(substitution.date, today as string));
 
       return c.json({
-        status: "success",
+        status: 'success',
         data: substitutions,
       });
     } catch (error) {
+      logger.error('Error while fetching substitutions', { error });
       return c.json(
         {
-          status: "error",
-          message: "Failed to fetch relevant substitutions",
+          status: 'error',
+          message: 'Failed to fetch relevant substitutions',
         },
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
-  },
+  }
 );
 
 export const getRelevantSubstitutionsForCohort =
   timetableFactory.createHandlers(requireAuthentication, async (c) => {
     try {
-      const cohortId = c.req.param("cohortId");
+      const cohortId = c.req.param('cohortId');
 
       if (!cohortId) {
         return c.json(
           {
-            status: "error",
-            message: "Cohort ID is required",
+            status: 'error',
+            message: 'Cohort ID is required',
           },
-          StatusCodes.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST
         );
       }
 
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toISOString().split('T')[0];
 
       const substitutions = await db
         .select()
@@ -84,15 +89,15 @@ export const getRelevantSubstitutionsForCohort =
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
         .where(gte(substitution.date, today as string));
 
-      const relevantSubstitutions = [];
+      const relevantSubstitutions: typeof substitutions = [];
 
       for (const sub of substitutions) {
         const lessonCount = await db.$count(
           lesson,
           and(
             inArray(lesson.id, sub.substitution.lessonIds),
-            sql`${cohortId} = ANY(cohort_ids)`,
-          ),
+            sql`${cohortId} = ANY(cohort_ids)`
+          )
         );
 
         if (lessonCount > 0) {
@@ -101,24 +106,25 @@ export const getRelevantSubstitutionsForCohort =
       }
 
       return c.json({
-        status: "success",
+        status: 'success',
         data: relevantSubstitutions,
         cohortId,
       });
     } catch (error) {
+      logger.error('Error while fetching substitutions for cohort', { error });
       return c.json(
         {
-          status: "error",
-          message: "Failed to fetch substitutions for cohort",
+          status: 'error',
+          message: 'Failed to fetch substitutions for cohort',
         },
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
   });
 
 export const createSubstitution = timetableFactory.createHandlers(
   requireAuthentication,
-  requireAuthorization("substitution:create"),
+  requireAuthorization('substitution:create'),
   async (c) => {
     const body = (await c.req.json()) as {
       date: string;
@@ -128,36 +134,36 @@ export const createSubstitution = timetableFactory.createHandlers(
 
     const { lessonIds, date, substituter } = body;
 
-    if (!lessonIds || !date) {
+    if (!(lessonIds && date)) {
       return c.json(
         {
-          status: "error",
+          status: 'error',
           message: `missing data in ${body}`,
         },
-        StatusCodes.BAD_REQUEST,
+        StatusCodes.BAD_REQUEST
       );
     }
 
     const date_as_datetype = new Date(date);
-    if (isNaN(date_as_datetype.getDate())) {
+    if (Number.isNaN(date_as_datetype.getDate())) {
       return c.json(
         {
-          status: "error",
-          message: "Invalid date format.",
+          status: 'error',
+          message: 'Invalid date format.',
         },
-        StatusCodes.BAD_REQUEST,
+        StatusCodes.BAD_REQUEST
       );
     }
 
     const lesson_count = await db.$count(lesson, inArray(lesson.id, lessonIds));
 
-    if (lesson_count != lessonIds.length) {
+    if (lesson_count !== lessonIds.length) {
       return c.json(
         {
-          status: "error",
+          status: 'error',
           message: `attempted to substitute non-existant lesson(s), wanted: ${lessonIds.length}, got: ${lesson_count}`,
         },
-        StatusCodes.BAD_REQUEST,
+        StatusCodes.BAD_REQUEST
       );
     }
 
@@ -174,29 +180,29 @@ export const createSubstitution = timetableFactory.createHandlers(
     if (!insertedSubstitution) {
       return c.json(
         {
-          status: "error",
+          status: 'error',
           message: `Failed to insert substitution: ${body}`,
         },
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
 
     return c.json(
       {
-        status: "success",
+        status: 'success',
         message: insertedSubstitution,
       },
-      StatusCodes.OK,
+      StatusCodes.OK
     );
-  },
+  }
 );
 
 export const updateSubstitution = timetableFactory.createHandlers(
   requireAuthentication,
-  requireAuthorization("substitution:update"),
+  requireAuthorization('substitution:update'),
   async (c) => {
     try {
-      const id = c.req.param("id");
+      const id = c.req.param('id');
       const body = (await c.req.json()) as {
         date?: string;
         lessonIds?: string[];
@@ -206,10 +212,10 @@ export const updateSubstitution = timetableFactory.createHandlers(
       if (!id) {
         return c.json(
           {
-            status: "error",
-            message: "Substitution ID is required",
+            status: 'error',
+            message: 'Substitution ID is required',
           },
-          StatusCodes.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST
         );
       }
 
@@ -222,22 +228,22 @@ export const updateSubstitution = timetableFactory.createHandlers(
       if (existingSubstitution.length === 0) {
         return c.json(
           {
-            status: "error",
-            message: "Substitution not found",
+            status: 'error',
+            message: 'Substitution not found',
           },
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
       if (body.date) {
         const dateAsDate = new Date(body.date);
-        if (isNaN(dateAsDate.getDate())) {
+        if (Number.isNaN(dateAsDate.getDate())) {
           return c.json(
             {
-              status: "error",
-              message: "Invalid date format",
+              status: 'error',
+              message: 'Invalid date format',
             },
-            StatusCodes.BAD_REQUEST,
+            StatusCodes.BAD_REQUEST
           );
         }
       }
@@ -245,15 +251,15 @@ export const updateSubstitution = timetableFactory.createHandlers(
       if (body.lessonIds) {
         const lessonCount = await db.$count(
           lesson,
-          inArray(lesson.id, body.lessonIds),
+          inArray(lesson.id, body.lessonIds)
         );
         if (lessonCount !== body.lessonIds.length) {
           return c.json(
             {
-              status: "error",
+              status: 'error',
               message: `Some lessons don't exist, wanted: ${body.lessonIds.length}, found: ${lessonCount}`,
             },
-            StatusCodes.BAD_REQUEST,
+            StatusCodes.BAD_REQUEST
           );
         }
       }
@@ -265,36 +271,37 @@ export const updateSubstitution = timetableFactory.createHandlers(
         .returning();
 
       return c.json({
-        status: "success",
+        status: 'success',
         data: updatedSubstitution,
-        message: "Substitution updated successfully",
+        message: 'Substitution updated successfully',
       });
     } catch (error) {
+      logger.error('Error while updating substitution', { error });
       return c.json(
         {
-          status: "error",
-          message: "Failed to update substitution",
+          status: 'error',
+          message: 'Failed to update substitution',
         },
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
-  },
+  }
 );
 
 export const deleteSubstitution = timetableFactory.createHandlers(
   requireAuthentication,
-  requireAuthorization("substitution:delete"),
+  requireAuthorization('substitution:delete'),
   async (c) => {
     try {
-      const id = c.req.param("id");
+      const id = c.req.param('id');
 
       if (!id) {
         return c.json(
           {
-            status: "error",
-            message: "Substitution ID is required",
+            status: 'error',
+            message: 'Substitution ID is required',
           },
-          StatusCodes.BAD_REQUEST,
+          StatusCodes.BAD_REQUEST
         );
       }
 
@@ -307,10 +314,10 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       if (existingSubstitution.length === 0) {
         return c.json(
           {
-            status: "error",
-            message: "Substitution not found",
+            status: 'error',
+            message: 'Substitution not found',
           },
-          StatusCodes.NOT_FOUND,
+          StatusCodes.NOT_FOUND
         );
       }
 
@@ -320,18 +327,19 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         .returning();
 
       return c.json({
-        status: "success",
+        status: 'success',
         data: deletedSubstitution,
-        message: "Substitution deleted successfully",
+        message: 'Substitution deleted successfully',
       });
     } catch (error) {
+      logger.error('Error while deleting substitution', { error });
       return c.json(
         {
-          status: "error",
-          message: "Failed to delete substitution",
+          status: 'error',
+          message: 'Failed to delete substitution',
         },
-        StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
-  },
+  }
 );
