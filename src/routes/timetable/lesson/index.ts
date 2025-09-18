@@ -1,20 +1,19 @@
-import { requireAuthentication } from "~/utils/middleware";
-import { timetableFactory } from "../_factory";
-import { db } from "~/database";
-import { lesson, lessonCohortMTM } from "~/database/schema/timetable";
-import { eq } from "drizzle-orm";
-import { StatusCodes } from "http-status-codes";
+import { eq } from 'drizzle-orm';
+import { StatusCodes } from 'http-status-codes';
+import { db } from '~/database';
+import { lesson, lessonCohortMTM } from '~/database/schema/timetable';
+import { timetableFactory } from '../_factory';
 
 export const getLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
-    const cohortId = c.req.param("cohort_id");
+    const cohortId = c.req.param('cohort_id');
     if (!cohortId) {
       return c.json(
         {
-          status: "error",
-          message: "Param cohort_id not found",
+          status: 'error',
+          message: 'Param cohort_id not found',
         },
-        StatusCodes.BAD_REQUEST,
+        StatusCodes.BAD_REQUEST
       );
     }
 
@@ -26,10 +25,10 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
 
     return c.json(
       {
-        status: "success",
+        status: 'success',
         lessons,
       },
-      StatusCodes.OK,
+      StatusCodes.OK
     );
-  },
+  }
 );
