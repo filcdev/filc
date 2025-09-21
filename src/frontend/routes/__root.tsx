@@ -7,7 +7,6 @@ import {
   useRouteContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import { Suspense } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
 import { Navbar } from '~/frontend/components/navbar';
@@ -82,7 +81,7 @@ function RootComponent() {
   return (
     <html
       className="h-dvh scroll-smooth bg-background text-foreground"
-      lang="en"
+      lang={i18n.language}
     >
       <head>
         <HeadContent />
@@ -91,10 +90,8 @@ function RootComponent() {
         <QueryClientProvider client={queryClient}>
           <I18nextProvider i18n={i18n}>
             <CookiesProvider>
-              <Suspense fallback={<div>Loading...</div>}>
-                <Navbar />
-                <Outlet />
-              </Suspense>
+              <Navbar />
+              <Outlet />
               <TanStackRouterDevtools position="bottom-right" />
               <Scripts />
               <Toaster richColors />

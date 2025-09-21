@@ -5,5 +5,51 @@
   "sign_in": "Sign in",
   "profile": "Profile",
   "schedule": "Schedule",
-  "substitutions": "Substitutions"
+  "substitutions": "Substitutions",
+  "magicLink": {
+    "failed": "Failed to send magic link. Please try again.",
+    "checkYourEmail": "Check your email",
+    "emailSentTo": "We've sent a magic link to {{email}}.",
+    "clickTheLink": "Click the link in your email to sign in. The link will expire in 15 minutes.",
+    "sendToAnotherEmail": "Use a different email",
+    "welcomeBack": "Welcome back",
+    "signInSubtitle": "Enter your email to receive a secure magic link",
+    "signInWithMagicLink": "Sign in to your account",
+    "signInWithMagicLinkDescription": "We'll send you a secure link to sign in instantly",
+    "emailAddress": "Email address",
+    "willSendTo": "Magic link will be sent to {{email}}",
+    "sendMagicLink": "Send magic link",
+    "sending": "sending",
+    "byContinuing": "By continuing, you agree to our"
+  },
+  "termsOfService": "Terms of Service",
+  "privacyPolicy": "Privacy Policy",
+  "selectLanguage": "Select Language",
+  "and": "and",
+  "error": {
+    "generic": "Something went wrong: {{message}}"
+  },
+  "welcome": {
+    "title": "Welcome",
+    "subtitle": "Let us get to know you"
+  },
+  "cohort": {
+    "fetchFailed": "Fetching cohorts failed",
+    "errorLoading": "Error loading cohorts: {{message}}",
+    "selectPlaceholder": "Select cohort",
+    "noneFound": "No cohorts found"
+  },
+  "search": "Search",
+  "account": {
+    "details": "Account details",
+    "email": "E-mail address",
+    "name": "Name"
+  },
+  "unknown": "Unknown",
+  "continue": "Continue",
+  "microsoft": {
+    "linked": "Microsoft linked",
+    "linkAccount": "Link Microsoft"
+  },
+  "unlink": "Unlink"
 }
