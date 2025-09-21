@@ -4,10 +4,11 @@ import {
   HeadContent,
   Outlet,
   Scripts,
+  useRouteContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import { Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Suspense } from 'react';
+import { I18nextProvider } from 'react-i18next';
 import { Toaster } from '~/frontend/components/ui/sonner';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
@@ -72,7 +73,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
-  const { i18n } = useTranslation();
+  const { i18n } = useRouteContext({
+    from: '__root__',
+  });
 
   return (
     <html
@@ -84,16 +87,14 @@ function RootComponent() {
       </head>
       <body className="flex h-full flex-col">
         <QueryClientProvider client={queryClient}>
-          {i18n.isInitializing ? (
-            <div className="flex grow items-center justify-center gap-1 text-semibold">
-              <Loader2 className="animate-spin text-primary" />
-            </div>
-          ) : (
-            <Outlet />
-          )}
-          <TanStackRouterDevtools position="bottom-right" />
-          <Scripts />
-          <Toaster richColors />
+          <I18nextProvider i18n={i18n}>
+            <Suspense fallback={<div>Loading...</div>}>
+              <Outlet />
+            </Suspense>
+            <TanStackRouterDevtools position="bottom-right" />
+            <Scripts />
+            <Toaster richColors />
+          </I18nextProvider>
         </QueryClientProvider>
       </body>
     </html>

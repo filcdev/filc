@@ -16,7 +16,7 @@ base
       loadPath: '/locales/{{lng}}/{{ns}}.json',
     },
     react: {
-      useSuspense: true,
+      useSuspense: !(typeof window === 'undefined'),
     },
 
     interpolation: {
