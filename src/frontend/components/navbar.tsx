@@ -2,7 +2,6 @@
 
 import { useNavigate } from '@tanstack/react-router';
 import {
-  Bell,
   BookOpen,
   Calendar,
   ChevronDown,
@@ -11,7 +10,6 @@ import {
   Loader2,
   LogIn,
   LogOut,
-  Search,
   Settings,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -22,7 +20,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '~/frontend/components/ui/avatar';
-import { Badge } from '~/frontend/components/ui/badge';
 import { Button } from '~/frontend/components/ui/button';
 import {
   DropdownMenu,
@@ -60,7 +57,6 @@ export function Navbar() {
   return (
     <nav className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-6">
-        {/* Logo and Brand */}
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
@@ -68,53 +64,27 @@ export function Navbar() {
           <span className="font-semibold text-foreground text-xl">filc</span>
         </div>
 
-        {/* Navigation Links */}
         <div className="ml-8 hidden items-center gap-6 md:flex">
           <Button
             className="text-muted-foreground hover:text-foreground"
             size="sm"
             variant="ghost"
           >
-            <BookOpen className="mr-2 h-4 w-4" />
-            Courses
-          </Button>
-          <Button
-            className="text-muted-foreground hover:text-foreground"
-            size="sm"
-            variant="ghost"
-          >
             <Calendar className="mr-2 h-4 w-4" />
-            Schedule
+            {t('schedule')}
           </Button>
           <Button
             className="text-muted-foreground hover:text-foreground"
             size="sm"
             variant="ghost"
           >
-            Grades
-          </Button>
-          <Button
-            className="text-muted-foreground hover:text-foreground"
-            size="sm"
-            variant="ghost"
-          >
-            Messages
+            <BookOpen className="mr-2 h-4 w-4" />
+            {t('substitutions')}
           </Button>
         </div>
 
-        {/* Right Side Actions */}
         <div className="ml-auto flex items-center gap-3">
-          {/* Search */}
-          <Button
-            className="hidden text-muted-foreground hover:text-foreground sm:flex"
-            size="sm"
-            variant="ghost"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-
-          {/* Notifications */}
-          <Button
+          {/* <Button
             className="relative text-muted-foreground hover:text-foreground"
             size="sm"
             variant="ghost"
@@ -123,9 +93,8 @@ export function Navbar() {
             <Badge className="-top-1 -right-1 absolute h-5 w-5 rounded-full bg-primary p-0 text-primary-foreground text-xs">
               3
             </Badge>
-          </Button>
+          </Button> */}
 
-          {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -153,7 +122,6 @@ export function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Profile Dropdown */}
           {(() => {
             if (isPending) {
               return (

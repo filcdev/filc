@@ -3,5 +3,7 @@
   "logout": "Kijelentkezés",
   "profile": "Profil",
   "settings": "Beállítások",
-  "sign_in": "Bejelentkezés"
+  "sign_in": "Bejelentkezés",
+  "schedule": "Órarend",
+  "substitutions": "Helyettesítések"
 }

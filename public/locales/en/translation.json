@@ -3,5 +3,7 @@
   "settings": "Settings",
   "logout": "Log out",
   "sign_in": "Sign in",
-  "profile": "Profile"
+  "profile": "Profile",
+  "schedule": "Schedule",
+  "substitutions": "Substitutions"
 }
