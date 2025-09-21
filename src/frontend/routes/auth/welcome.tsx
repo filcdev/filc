@@ -191,6 +191,7 @@ const CohortSelector = (props: { user: UserType }) => {
 
 const AccountDetails = (props: { user: UserType }) => {
   const { refetch } = authClient.useSession();
+  const navigate = useNavigate();
   const { user } = props;
 
   useEffect(() => {
@@ -203,31 +204,43 @@ const AccountDetails = (props: { user: UserType }) => {
   }, [user.name, refetch]);
 
   return (
-    <Card className="border-border/50 shadow-sm">
-      <CardHeader className="flex items-center justify-start space-y-1">
-        <User className="size-6 text-muted-foreground" />
-        <CardTitle className="text-lg">Account Details</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <MicrosoftLink />
-        <hr />
-        <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
-          <InfoLine
-            content={user.email}
-            icon={<Mail className="h-4 w-4 text-muted-foreground" />}
-            title="Email"
-          />
-          <InfoLine
-            content={user.name ?? 'Unknown'}
-            icon={<User className="h-4 w-4 text-muted-foreground" />}
-            title="Name"
-          />
+    <>
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="flex items-center justify-start space-y-1">
+          <User className="size-6 text-muted-foreground" />
+          <CardTitle className="text-lg">Account Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <MicrosoftLink />
           <hr />
-        </div>
-        <hr />
-        <CohortSelector user={user} />
-      </CardContent>
-    </Card>
+          <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <InfoLine
+              content={user.email}
+              icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+              title="Email"
+            />
+            <InfoLine
+              content={user.name ?? 'Unknown'}
+              icon={<User className="h-4 w-4 text-muted-foreground" />}
+              title="Name"
+            />
+            <hr />
+          </div>
+          <hr />
+          <CohortSelector user={user} />
+        </CardContent>
+      </Card>
+      {user.cohortId && (
+        <Button
+          className="mx-auto"
+          onClick={() => {
+            navigate({ to: '/', replace: true });
+          }}
+        >
+          Continue
+        </Button>
+      )}
+    </>
   );
 };
 
