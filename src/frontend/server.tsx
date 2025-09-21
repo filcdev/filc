@@ -10,6 +10,7 @@ import { createRouter } from '~/frontend/router';
 import { env } from '~/utils/environment';
 // TODO: remove when bun supports CompressionStream
 import '@ungap/compression-stream/poly';
+import '~/frontend/utils/i18n';
 
 export const frontend = new Hono();
 
@@ -23,10 +24,28 @@ if (env.mode === 'production') {
     })
   );
 
+  // TODO:
+  // With this commented, the prod build sends a request for a file in here,
+  // but it 404s. Need to investigate why and fix it.
+  // This is likely related to Vite's handling of assets.
+  // frontend.use(
+  //   '/assets/*',
+  //   serveStatic({
+  //     root: './dist/server/',
+  //   })
+  // );
+
   frontend.use(
     '*',
     serveStatic({
       root: './dist/client',
+    })
+  );
+} else {
+  frontend.use(
+    '*',
+    serveStatic({
+      root: './public',
     })
   );
 }

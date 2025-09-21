@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type BuildOptions } from 'vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import devServer, { defaultOptions } from "@hono/vite-dev-server"
@@ -21,7 +21,7 @@ const ssrBuild = {
     },
   },
   ssr: true,
-}
+} satisfies BuildOptions
 
 const clientBuild = {
   outDir: 'dist/client',
@@ -37,7 +37,7 @@ const clientBuild = {
     },
   },
   manifest: true
-}
+} satisfies BuildOptions
 
 export default defineConfig(({ mode }) => {
   return {
