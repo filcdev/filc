@@ -11,7 +11,9 @@
     "build:server": "vite build --mode server",
     "build:client": "vite build --mode client",
     "build": "run-s build:server build:client",
-    "typecheck": "tsc"
+    "typecheck:tsc": "tsc --noEmit",
+    "typecheck:tsgo": "tsgo --noEmit",
+    "typecheck": "run-s typecheck:tsgo typecheck:tsc"
   },
   "dependencies": {
     "@fontsource-variable/outfit": "^5.2.7",
@@ -61,6 +63,7 @@
     "@types/bun": "^1.2.22",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "@typescript/native-preview": "^7.0.0-dev.20250921.1",
     "@vitejs/plugin-react": "^5.0.2",
     "drizzle-kit": "^0.31.4",
     "npm-run-all2": "^8.0.4",
