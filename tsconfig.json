@@ -19,6 +19,8 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // tsgo will fail with this set
+    "baseUrl": "./",
     "paths": {
       "*": ["./*"],
       "~/*": ["./src/*"]

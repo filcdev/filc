@@ -8,7 +8,9 @@ import {
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { Suspense } from 'react';
+import { CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
+import { Navbar } from '~/frontend/components/navbar';
 import { Toaster } from '~/frontend/components/ui/sonner';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
@@ -88,12 +90,15 @@ function RootComponent() {
       <body className="flex h-full flex-col">
         <QueryClientProvider client={queryClient}>
           <I18nextProvider i18n={i18n}>
-            <Suspense fallback={<div>Loading...</div>}>
-              <Outlet />
-            </Suspense>
-            <TanStackRouterDevtools position="bottom-right" />
-            <Scripts />
-            <Toaster richColors />
+            <CookiesProvider>
+              <Suspense fallback={<div>Loading...</div>}>
+                <Navbar />
+                <Outlet />
+              </Suspense>
+              <TanStackRouterDevtools position="bottom-right" />
+              <Scripts />
+              <Toaster richColors />
+            </CookiesProvider>
           </I18nextProvider>
         </QueryClientProvider>
       </body>

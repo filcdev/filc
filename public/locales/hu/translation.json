@@ -1,3 +1,7 @@
 {
-  "welcome_message": "Szia!"
+  "welcome_message": "Szia!",
+  "logout": "Kijelentkezés",
+  "profile": "Profil",
+  "settings": "Beállítások",
+  "sign_in": "Bejelentkezés"
 }
