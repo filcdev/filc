@@ -6,6 +6,7 @@ import { featureFlagSchema } from '~/database/schema/feature-flag';
 import { timetableSchema } from '~/database/schema/timetable';
 import { pingFactory } from '~/routes/ping/_factory';
 import { getUserPermissions } from '~/utils/authorization';
+import type { SuccessResponse } from '~/utils/globals';
 import { requireAuthentication } from '~/utils/middleware';
 
 export const introspect = pingFactory.createHandlers(
@@ -26,14 +27,17 @@ export const introspect = pingFactory.createHandlers(
     );
     const results = await Promise.all(data);
 
-    return c.json({
-      database: results,
-      auth: {
-        user: {
-          ...c.var.user,
-          permissions: await getUserPermissions(c.var.session.userId),
+    return c.json<SuccessResponse>({
+      success: true,
+      data: {
+        database: results,
+        auth: {
+          user: {
+            ...c.var.user,
+            permissions: await getUserPermissions(c.var.session.userId),
+          },
+          session: c.var.session,
         },
-        session: c.var.session,
       },
     });
   }

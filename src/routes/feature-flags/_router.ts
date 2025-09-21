@@ -1,15 +1,13 @@
 import { Hono } from 'hono';
 import {
-  disableFeatureFlag,
-  enableFeatureFlag,
   getFeatureFlag,
   listFeatureFlags,
+  toggleFeatureFlag,
 } from '~/routes/feature-flags';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 
-export const featureFlagRouter = new Hono<honoContext>();
+export const featureFlagRouter = new Hono<Context>();
 
 featureFlagRouter.get('/', ...listFeatureFlags);
 featureFlagRouter.get('/:name', ...getFeatureFlag);
-featureFlagRouter.post('/:name/enable', ...enableFeatureFlag);
-featureFlagRouter.post('/:name/disable', ...disableFeatureFlag);
+featureFlagRouter.post('/:name', ...toggleFeatureFlag);

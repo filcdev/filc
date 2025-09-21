@@ -1,4 +1,4 @@
 import { createFactory } from 'hono/factory';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 
-export const developmentFactory = createFactory<honoContext>();
+export const developmentFactory = createFactory<Context>();

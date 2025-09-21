@@ -1,10 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
+import { env } from 'bun';
 import { eq } from 'drizzle-orm';
+import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { db } from '~/database';
 import { card } from '~/database/schema/doorlock';
 import { userHasPermission } from '~/utils/authorization';
+import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
   requireAuthorization,
@@ -43,7 +46,9 @@ export const getCard = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const currentUserId = c.var.session.userId;
     const [row] = await db
@@ -52,13 +57,16 @@ export const getCard = doorlockFactory.createHandlers(
       .where(eq(card.id, id as string))
       .limit(1);
     if (!row) {
-      return c.json({ error: 'Not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
     const canReadAll = await userHasPermission(currentUserId, 'card:read');
     if (!canReadAll && row.userId !== currentUserId) {
-      return c.json({ error: 'Forbidden' }, StatusCodes.FORBIDDEN);
+      throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
     }
-    return c.json(row);
+    return c.json<SuccessResponse>({
+      success: true,
+      data: row,
+    });
   }
 );
 
@@ -79,12 +87,15 @@ export const createCard = doorlockFactory.createHandlers(
           disabled: data.disabled ?? false,
         })
         .returning();
-      return c.json(inserted, StatusCodes.CREATED);
+      return c.json<SuccessResponse>({
+        success: true,
+        data: inserted,
+      });
     } catch (err) {
-      return c.json(
-        { error: 'Failed to create card', details: String(err) },
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to create card',
+        cause: env.mode === 'development' ? String(err) : undefined,
+      });
     }
   }
 );
@@ -95,7 +106,9 @@ export const updateCard = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const data = c.req.valid('json');
     const [existing] = await db
@@ -104,14 +117,16 @@ export const updateCard = doorlockFactory.createHandlers(
       .where(eq(card.id, id as string))
       .limit(1);
     if (!existing) {
-      return c.json({ error: 'Not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
 
     const currentUserId = c.var.session.userId;
     const canUpdate = await userHasPermission(currentUserId, 'card:update');
     if (!canUpdate) {
       if (existing.userId !== currentUserId) {
-        return c.json({ error: 'Forbidden' }, StatusCodes.FORBIDDEN);
+        throw new HTTPException(StatusCodes.FORBIDDEN, {
+          message: 'Forbidden',
+        });
       }
 
       const { label } = data;
@@ -121,12 +136,15 @@ export const updateCard = doorlockFactory.createHandlers(
           .set({ label })
           .where(eq(card.id, id as string))
           .returning();
-        return c.json(updated);
+        return c.json<SuccessResponse>({
+          success: true,
+          data: updated,
+        });
       } catch (err) {
-        return c.json(
-          { error: 'Failed to update card', details: String(err) },
-          StatusCodes.INTERNAL_SERVER_ERROR
-        );
+        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+          message: 'Failed to update card',
+          cause: env.mode === 'development' ? String(err) : undefined,
+        });
       }
     }
     try {
@@ -135,12 +153,15 @@ export const updateCard = doorlockFactory.createHandlers(
         .set(data)
         .where(eq(card.id, id as string))
         .returning();
-      return c.json(updated);
+      return c.json<SuccessResponse>({
+        success: true,
+        data: updated,
+      });
     } catch (err) {
-      return c.json(
-        { error: 'Failed to update card', details: String(err) },
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to update card',
+        cause: env.mode === 'development' ? String(err) : undefined,
+      });
     }
   }
 );
@@ -150,7 +171,9 @@ export const deleteCard = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const [existing] = await db
       .select()
@@ -158,24 +181,27 @@ export const deleteCard = doorlockFactory.createHandlers(
       .where(eq(card.id, id as string))
       .limit(1);
     if (!existing) {
-      return c.json({ error: 'Not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
     const currentUserId = c.var.session.userId;
     const canDelete = await userHasPermission(currentUserId, 'card:delete');
     if (!canDelete && existing.userId !== currentUserId) {
-      return c.json({ error: 'Forbidden' }, StatusCodes.FORBIDDEN);
+      throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
     }
     try {
       const [deleted] = await db
         .delete(card)
         .where(eq(card.id, id as string))
         .returning();
-      return c.json(deleted);
+      return c.json<SuccessResponse>({
+        success: true,
+        data: deleted,
+      });
     } catch (err) {
-      return c.json(
-        { error: 'Failed to delete card', details: String(err) },
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to delete card',
+        cause: env.mode === 'development' ? String(err) : undefined,
+      });
     }
   }
 );

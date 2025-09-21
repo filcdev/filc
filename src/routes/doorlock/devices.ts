@@ -1,9 +1,12 @@
 import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
+import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { db } from '~/database';
 import { cardDevice, device } from '~/database/schema/doorlock';
+import { env } from '~/utils/environment';
+import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
   requireAuthorization,
@@ -25,22 +28,25 @@ const assignCardsSchema = z.object({
   cardIds: z.array(z.string().uuid()).min(1),
 });
 
-// Device list
 export const listDevices = doorlockFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     const rows = await db.select().from(device);
-    return c.json(rows);
+    return c.json<SuccessResponse>({
+      success: true,
+      data: rows,
+    });
   }
 );
 
-// Get single device (with optional card restrictions)
 export const getDevice = doorlockFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const [row] = await db
       .select()
@@ -48,9 +54,12 @@ export const getDevice = doorlockFactory.createHandlers(
       .where(eq(device.id, id))
       .limit(1);
     if (!row) {
-      return c.json({ error: 'Not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
-    return c.json(row);
+    return c.json<SuccessResponse>({
+      success: true,
+      data: row,
+    });
   }
 );
 
@@ -62,7 +71,9 @@ export const upsertDevice = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const data = c.req.valid('json');
     const now = new Date();
@@ -82,7 +93,10 @@ export const upsertDevice = doorlockFactory.createHandlers(
           })
           .where(eq(device.id, id))
           .returning();
-        return c.json(updated);
+        return c.json<SuccessResponse>({
+          success: true,
+          data: updated,
+        });
       }
       const [inserted] = await db
         .insert(device)
@@ -95,12 +109,18 @@ export const upsertDevice = doorlockFactory.createHandlers(
           updatedAt: now,
         })
         .returning();
-      return c.json(inserted, StatusCodes.CREATED);
-    } catch (err) {
-      return c.json(
-        { error: 'Failed to upsert device', details: String(err) },
-        StatusCodes.INTERNAL_SERVER_ERROR
+      return c.json<SuccessResponse>(
+        {
+          success: true,
+          data: inserted,
+        },
+        StatusCodes.CREATED
       );
+    } catch (err) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to upsert device',
+        cause: env.mode === 'development' ? String(err) : undefined,
+      });
     }
   }
 );
@@ -112,7 +132,9 @@ export const deleteDevice = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     try {
       const [deleted] = await db
@@ -120,14 +142,19 @@ export const deleteDevice = doorlockFactory.createHandlers(
         .where(eq(device.id, id))
         .returning();
       if (!deleted) {
-        return c.json({ error: 'Not found' }, StatusCodes.NOT_FOUND);
+        throw new HTTPException(StatusCodes.NOT_FOUND, {
+          message: 'Not found',
+        });
       }
-      return c.json(deleted);
+      return c.json<SuccessResponse>({
+        success: true,
+        data: deleted,
+      });
     } catch (err) {
-      return c.json(
-        { error: 'Failed to delete device', details: String(err) },
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to delete device',
+        cause: env.mode === 'development' ? String(err) : undefined,
+      });
     }
   }
 );
@@ -138,7 +165,9 @@ export const listDeviceCards = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const rows = await db
       .select({
@@ -147,7 +176,10 @@ export const listDeviceCards = doorlockFactory.createHandlers(
       })
       .from(cardDevice)
       .where(eq(cardDevice.deviceId, id));
-    return c.json(rows);
+    return c.json<SuccessResponse>({
+      success: true,
+      data: rows,
+    });
   }
 );
 
@@ -159,7 +191,9 @@ export const replaceDeviceCards = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const data = c.req.valid('json');
     try {
@@ -169,12 +203,15 @@ export const replaceDeviceCards = doorlockFactory.createHandlers(
           .insert(cardDevice)
           .values(data.cardIds.map((cid) => ({ cardId: cid, deviceId: id })));
       }
-      return c.json({ status: 'ok', count: data.cardIds.length });
+      return c.json<SuccessResponse>({
+        success: true,
+        data: { assignedCardIds: data.cardIds, deviceId: id },
+      });
     } catch (err) {
-      return c.json(
-        { error: 'Failed to assign cards', details: String(err) },
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to assign cards',
+        cause: env.mode === 'development' ? String(err) : undefined,
+      });
     }
   }
 );
@@ -185,7 +222,9 @@ export const getDeviceStatus = doorlockFactory.createHandlers(
   async (c) => {
     const id = c.req.param('id');
     if (!id) {
-      return c.json({ error: 'Missing id' }, StatusCodes.BAD_REQUEST);
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing id',
+      });
     }
     const [row] = await db
       .select()
@@ -193,17 +232,20 @@ export const getDeviceStatus = doorlockFactory.createHandlers(
       .where(eq(device.id, id))
       .limit(1);
     if (!row) {
-      return c.json({ error: 'Not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
     const now = Date.now();
     const last = row.lastSeenAt ? new Date(row.lastSeenAt).getTime() : 0;
     const ttl = (row.ttlSeconds ?? DEFAULT_TTL_SECONDS) * SECOND_IN_MS;
     const online = !!last && now - last <= ttl;
-    return c.json({
-      id: row.id,
-      online,
-      lastSeenAt: row.lastSeenAt,
-      ttlSeconds: row.ttlSeconds,
+    return c.json<SuccessResponse>({
+      success: true,
+      data: {
+        id: row.id,
+        online,
+        lastSeenAt: row.lastSeenAt,
+        ttlSeconds: row.ttlSeconds,
+      },
     });
   }
 );

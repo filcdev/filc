@@ -2,6 +2,8 @@ import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { showRoutes } from 'hono/dev';
+import { HTTPException } from 'hono/http-exception';
+import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '~/database';
 import { frontend } from '~/frontend/server';
 import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
@@ -12,13 +14,13 @@ import { featureFlagRouter } from '~/routes/feature-flags/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { timetableRouter } from '~/routes/timetable/_router';
 import { authRouter } from '~/utils/authentication';
+import { initializeRBAC } from '~/utils/authorization';
 import { startDeviceMonitor, stopDeviceMonitor } from '~/utils/device-monitor';
 import { env } from '~/utils/environment';
 import { handleFeatureFlag } from '~/utils/feature-flag';
-import type { honoContext } from '~/utils/globals';
+import type { Context, ErrorResponse } from '~/utils/globals';
 import { configureLogger } from '~/utils/logger';
 import { authenticationMiddleware } from '~/utils/middleware';
-import { initializeRBAC } from './utils/authorization';
 
 await configureLogger();
 const logger = getLogger(['chronos', 'server']);
@@ -26,7 +28,7 @@ const logger = getLogger(['chronos', 'server']);
 env.mode === 'development' &&
   logger.warn('Running in development mode, do not use in production!');
 
-const api = new Hono<honoContext>();
+const api = new Hono<Context>();
 
 await prepareDb();
 await initializeRBAC();
@@ -41,6 +43,32 @@ api.use(
 );
 
 api.use('*', authenticationMiddleware);
+
+api.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    const errResponse =
+      err.res ??
+      c.json<ErrorResponse>(
+        {
+          success: false,
+          error: err.message,
+        },
+        err.status
+      );
+    return errResponse;
+  }
+
+  return c.json<ErrorResponse>(
+    {
+      success: false,
+      error:
+        env.mode === 'production'
+          ? 'Internal Server Error'
+          : (err.stack ?? err.message),
+    },
+    StatusCodes.INTERNAL_SERVER_ERROR
+  );
+});
 
 env.mode === 'development' &&
   api.use('*', async (c, next) => {

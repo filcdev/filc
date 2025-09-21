@@ -2,9 +2,12 @@
 // import type { TimetableExportRoot } from "~/utils/timetable/types";
 
 import { getLogger } from '@logtape/logtape';
+import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { DOMParser } from 'xmldom';
 import { timetableFactory } from '~/routes/timetable/_factory';
+import { env } from '~/utils/environment';
+import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
   requireAuthorization,
@@ -25,24 +28,16 @@ export const importRoute = timetableFactory.createHandlers(
     const file = body.omanXml as File;
 
     if (!file) {
-      return c.json(
-        {
-          status: 'error',
-          message: 'No file provided',
-        },
-        StatusCodes.BAD_REQUEST
-      );
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No file provided',
+      });
     }
 
     // check that we got valid XML
     if (file.type !== 'text/xml' && file.type !== 'application/xml') {
-      return c.json(
-        {
-          status: 'error',
-          message: 'Invalid file type',
-        },
-        StatusCodes.BAD_REQUEST
-      );
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Invalid file type, must be XML',
+      });
     }
 
     // parse file
@@ -68,18 +63,15 @@ export const importRoute = timetableFactory.createHandlers(
 
       logger.info('Imported timetable');
 
-      return c.json({
-        status: 'ok',
+      return c.json<SuccessResponse>({
+        success: true,
       });
     } catch (e) {
       logger.error(`Failed to parse XML: ${e}`);
-      return c.json(
-        {
-          status: 'error',
-          message: 'Failed to parse XML',
-        },
-        StatusCodes.BAD_REQUEST
-      );
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Failed to parse XML',
+        cause: env.mode === 'development' ? String(e) : undefined,
+      });
     }
   }
 );

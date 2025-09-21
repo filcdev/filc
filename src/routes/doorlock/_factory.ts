@@ -1,4 +1,4 @@
 import { createFactory } from 'hono/factory';
-import type { authenticatedContext } from '~/utils/globals';
+import type { AuthenticatedContext } from '~/utils/globals';
 
-export const doorlockFactory = createFactory<authenticatedContext>();
+export const doorlockFactory = createFactory<AuthenticatedContext>();

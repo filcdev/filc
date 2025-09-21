@@ -1,10 +1,12 @@
 import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
+import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '~/database';
 import { featureFlag } from '~/database/schema/feature-flag';
 import { featureFlagFactory } from '~/routes/feature-flags/_factory';
+import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
   requireAuthorization,
@@ -25,7 +27,10 @@ export const listFeatureFlags = featureFlagFactory.createHandlers(
       })
       .from(featureFlag);
 
-    return c.json({ flags });
+    return c.json<SuccessResponse>({
+      success: true,
+      data: flags,
+    });
   }
 );
 
@@ -53,19 +58,29 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
       .limit(1);
 
     if (!flag) {
-      return c.json({ error: 'Feature flag not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Feature flag not found',
+      });
     }
 
-    return c.json({ flag });
+    return c.json<SuccessResponse>({
+      success: true,
+      data: flag,
+    });
   }
 );
 
-export const enableFeatureFlag = featureFlagFactory.createHandlers(
+const featureFlagToggleSchema = z.object({
+  name: z.string().min(1),
+  isEnabled: z.boolean(),
+});
+
+export const toggleFeatureFlag = featureFlagFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('feature-flags:write'),
-  zValidator('param', featureFlagQuerySchema),
+  zValidator('param', featureFlagToggleSchema),
   async (c) => {
-    const { name } = c.req.valid('param');
+    const { name, isEnabled } = c.req.valid('param');
     const [existing] = await db
       .select({ id: featureFlag.id })
       .from(featureFlag)
@@ -73,12 +88,14 @@ export const enableFeatureFlag = featureFlagFactory.createHandlers(
       .limit(1);
 
     if (!existing) {
-      return c.json({ error: 'Feature flag not found' }, StatusCodes.NOT_FOUND);
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Feature flag not found',
+      });
     }
 
     const [updated] = await db
       .update(featureFlag)
-      .set({ isEnabled: true })
+      .set({ isEnabled })
       .where(eq(featureFlag.name, name))
       .returning({
         id: featureFlag.id,
@@ -89,39 +106,9 @@ export const enableFeatureFlag = featureFlagFactory.createHandlers(
         updatedAt: featureFlag.updatedAt,
       });
 
-    return c.json({ flag: updated });
-  }
-);
-
-export const disableFeatureFlag = featureFlagFactory.createHandlers(
-  requireAuthentication,
-  requireAuthorization('feature-flags:write'),
-  zValidator('param', featureFlagQuerySchema),
-  async (c) => {
-    const { name } = c.req.valid('param');
-    const [existing] = await db
-      .select({ id: featureFlag.id })
-      .from(featureFlag)
-      .where(eq(featureFlag.name, name))
-      .limit(1);
-
-    if (!existing) {
-      return c.json({ error: 'Feature flag not found' }, StatusCodes.NOT_FOUND);
-    }
-
-    const [updated] = await db
-      .update(featureFlag)
-      .set({ isEnabled: false })
-      .where(eq(featureFlag.name, name))
-      .returning({
-        id: featureFlag.id,
-        name: featureFlag.name,
-        description: featureFlag.description,
-        isEnabled: featureFlag.isEnabled,
-        createdAt: featureFlag.createdAt,
-        updatedAt: featureFlag.updatedAt,
-      });
-
-    return c.json({ flag: updated });
+    return c.json<SuccessResponse>({
+      success: true,
+      data: updated,
+    });
   }
 );

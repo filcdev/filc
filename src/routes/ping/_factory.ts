@@ -1,4 +1,4 @@
 import { createFactory } from 'hono/factory';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 
-export const pingFactory = createFactory<honoContext>();
+export const pingFactory = createFactory<Context>();

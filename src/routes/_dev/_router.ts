@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { introspect } from '~/routes/_dev/introspect';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 
-export const developmentRouter = new Hono<honoContext>();
+export const developmentRouter = new Hono<Context>();
 
 developmentRouter.get('/introspect', ...introspect);

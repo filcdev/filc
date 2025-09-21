@@ -10,7 +10,7 @@ import { db } from '~/database';
 import { authenticationSchema } from '~/database/schema/authentication';
 import { getUserPermissions } from '~/utils/authorization';
 import { env } from '~/utils/environment';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -126,7 +126,7 @@ export const auth = betterAuth({
   ],
 });
 
-export const authRouter = new Hono<honoContext>()
+export const authRouter = new Hono<Context>()
   .get('/sync-account', async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
 

@@ -8,10 +8,10 @@ import {
   getRelevantSubstitutionsForCohort,
   updateSubstitution,
 } from '~/routes/timetable/substitution';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 import { getLessonsForCohort } from './lesson';
 
-export const timetableRouter = new Hono<honoContext>();
+export const timetableRouter = new Hono<Context>();
 
 timetableRouter.post('/import', ...importRoute);
 

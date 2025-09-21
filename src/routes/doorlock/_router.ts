@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { honoContext } from '~/utils/globals';
+import type { Context } from '~/utils/globals';
 import {
   createCard,
   deleteCard,
@@ -18,7 +18,7 @@ import {
 } from './devices';
 import { openDoor } from './open';
 
-export const doorlockRouter = new Hono<honoContext>();
+export const doorlockRouter = new Hono<Context>();
 
 doorlockRouter.get('/cards', ...listCards);
 doorlockRouter.get('/cards/:id', ...getCard);
