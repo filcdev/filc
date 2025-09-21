@@ -14,10 +14,10 @@ export type AuthenticatedContext = {
   };
 };
 
-export type SuccessResponse = {
-  success: true;
-  data?: unknown;
-};
+// biome-ignore lint/suspicious/noExplicitAny: TODO: improve any usage
+export type SuccessResponse<T = any> = T extends any
+  ? { success: true; data?: T }
+  : { success: true; data: T };
 
 export type ErrorResponse = {
   success: false;

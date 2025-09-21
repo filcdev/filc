@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import {
   Check,
   CheckCircle,
@@ -34,6 +35,7 @@ import { Skeleton } from '~/frontend/components/ui/skeleton';
 import { cn } from '~/frontend/utils';
 import type { User as UserType } from '~/frontend/utils/authentication';
 import { authClient } from '~/frontend/utils/authentication';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
@@ -107,8 +109,11 @@ const CohortSelector = (props: { user: UserType }) => {
   const cohortQuery = useQuery({
     queryKey: ['cohorts'],
     queryFn: async () => {
-      const res = await fetch('/api/cohort');
-      return (await res.json()) as { id: string; name: string }[];
+      const res = await parseResponse(apiClient.cohort.index.$get());
+      if (!res.success) {
+        throw new Error('Failed to fetch cohorts');
+      }
+      return res.data;
     },
   });
 

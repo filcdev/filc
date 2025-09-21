@@ -6,7 +6,7 @@ import type { SuccessResponse } from '~/utils/globals';
 export const listCohorts = pingFactory.createHandlers(async (c) => {
   const cohorts = await db.select().from(cohort);
 
-  return c.json<SuccessResponse>({
+  return c.json<SuccessResponse<typeof cohorts>>({
     success: true,
     data: cohorts,
   });
