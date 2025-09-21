@@ -1,5 +1,4 @@
 import { zValidator } from '@hono/zod-validator';
-import { env } from 'bun';
 import { eq } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
@@ -7,6 +6,7 @@ import { z } from 'zod';
 import { db } from '~/database';
 import { card } from '~/database/schema/doorlock';
 import { userHasPermission } from '~/utils/authorization';
+import { env } from '~/utils/environment';
 import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,

@@ -70,17 +70,22 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
   }
 );
 
-const featureFlagToggleSchema = z.object({
-  name: z.string().min(1),
+const featureFlagToggleBodySchema = z.object({
   isEnabled: z.boolean(),
 });
 
 export const toggleFeatureFlag = featureFlagFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('feature-flags:write'),
-  zValidator('param', featureFlagToggleSchema),
+  zValidator('json', featureFlagToggleBodySchema),
   async (c) => {
-    const { name, isEnabled } = c.req.valid('param');
+    const name = c.req.param('name');
+    if (!name) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Feature flag name is required',
+      });
+    }
+    const { isEnabled } = c.req.valid('json');
     const [existing] = await db
       .select({ id: featureFlag.id })
       .from(featureFlag)
