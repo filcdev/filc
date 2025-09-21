@@ -37,7 +37,10 @@ export const listCards = doorlockFactory.createHandlers(
     const rows = canReadAll
       ? await db.select().from(card)
       : await db.select().from(card).where(eq(card.userId, currentUserId));
-    return c.json(rows);
+    return c.json<SuccessResponse>({
+      success: true,
+      data: rows,
+    });
   }
 );
 

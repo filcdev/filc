@@ -5,12 +5,13 @@ import { customSession } from 'better-auth/plugins';
 import { magicLink } from 'better-auth/plugins/magic-link';
 import type { SocialProviders } from 'better-auth/social-providers';
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '~/database';
 import { authenticationSchema } from '~/database/schema/authentication';
 import { getUserPermissions } from '~/utils/authorization';
 import { env } from '~/utils/environment';
-import type { Context } from '~/utils/globals';
+import type { Context, SuccessResponse } from '~/utils/globals';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -131,7 +132,9 @@ export const authRouter = new Hono<Context>()
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
     if (!session?.user) {
-      return c.json({ message: 'Not authenticated' }, StatusCodes.UNAUTHORIZED);
+      throw new HTTPException(StatusCodes.UNAUTHORIZED, {
+        message: 'Not authenticated',
+      });
     }
 
     const accounts = await auth.api.listUserAccounts({
@@ -141,10 +144,9 @@ export const authRouter = new Hono<Context>()
     const msAccount = accounts.find((a) => a.providerId === 'microsoft');
 
     if (!msAccount || msAccount === undefined) {
-      return c.json(
-        { message: 'No Microsoft account linked' },
-        StatusCodes.BAD_REQUEST
-      );
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No Microsoft account linked',
+      });
     }
 
     const msData = await auth.api.accountInfo({
@@ -153,10 +155,9 @@ export const authRouter = new Hono<Context>()
     });
 
     if (!msData?.data) {
-      return c.json(
-        { message: 'Failed to fetch Microsoft account info' },
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to fetch Microsoft account data',
+      });
     }
 
     await auth.api.updateUser({
@@ -166,7 +167,12 @@ export const authRouter = new Hono<Context>()
       headers: c.req.raw.headers,
     });
 
-    return c.json({ message: 'Account synced' });
+    return c.json<SuccessResponse>({
+      success: true,
+      data: {
+        message: 'Account synced',
+      },
+    });
   })
   .on(['POST', 'GET'], '*', (c) => {
     return auth.handler(c.req.raw);

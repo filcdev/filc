@@ -1,4 +1,5 @@
 import { createMiddleware } from 'hono/factory';
+import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { auth } from '~/utils/authentication';
 import { userHasPermission } from '~/utils/authorization';
@@ -23,7 +24,9 @@ export const authenticationMiddleware = createMiddleware<Context>(
 export const requireAuthentication = createMiddleware<AuthenticatedContext>(
   async (c, next) => {
     if (!c.var.session) {
-      return c.json({ error: 'Unauthorized' }, StatusCodes.UNAUTHORIZED);
+      throw new HTTPException(StatusCodes.UNAUTHORIZED, {
+        message: 'Unauthorized',
+      });
     }
 
     await next();
@@ -33,7 +36,9 @@ export const requireAuthentication = createMiddleware<AuthenticatedContext>(
 export const requireAuthorization = (permission: string) =>
   createMiddleware<AuthenticatedContext>(async (c, next) => {
     if (!(await userHasPermission(c.var.session.userId, permission))) {
-      return c.json({ error: 'Forbidden' }, StatusCodes.FORBIDDEN);
+      throw new HTTPException(StatusCodes.FORBIDDEN, {
+        message: 'Forbidden',
+      });
     }
 
     await next();
