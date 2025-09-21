@@ -21,6 +21,7 @@ import { handleFeatureFlag } from '~/utils/feature-flag';
 import type { Context, ErrorResponse } from '~/utils/globals';
 import { configureLogger } from '~/utils/logger';
 import { authenticationMiddleware } from '~/utils/middleware';
+import { securityMiddleware } from '~/utils/security';
 
 await configureLogger();
 const logger = getLogger(['chronos', 'server']);
@@ -43,6 +44,8 @@ api.use(
 );
 
 api.use('*', authenticationMiddleware);
+
+env.mode === 'production' && api.use('*', securityMiddleware);
 
 api.onError((err, c) => {
   if (err instanceof HTTPException) {
@@ -99,6 +102,14 @@ api.route('/cohort', cohortRouter);
 const app = new Hono();
 app.route('/api', api);
 app.route('/', frontend);
+
+app.onError((err, c) => {
+  logger.error('Unhandled error occurred:', {
+    message: err.message,
+    stack: err.stack,
+  });
+  return c.redirect('/error');
+});
 
 const handleStartup = async () => {
   await prepareDb();
