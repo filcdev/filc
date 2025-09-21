@@ -15,6 +15,9 @@ base
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
     },
+    react: {
+      useSuspense: true,
+    },
 
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default

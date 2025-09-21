@@ -18,4 +18,8 @@
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "explorer.compactFolders": false,
   "mise.configureExtensionsAutomatically": false,
+  "i18n-ally.localesPaths": [
+    "public/locales"
+  ],
+  "i18n-ally.keystyle": "nested",
 }

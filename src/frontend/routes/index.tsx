@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import type { JSX } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '~/frontend/components/ui/button';
 import { authClient } from '~/frontend/utils/authentication';
 
@@ -9,6 +10,7 @@ export const Route = createFileRoute('/')({
 
 function App() {
   const { data, isPending } = authClient.useSession();
+  const { t } = useTranslation();
 
   let content: JSX.Element;
   if (data) {
@@ -27,7 +29,7 @@ function App() {
   return (
     <div className="flex grow flex-col items-center justify-center">
       {content}
-      <h1>Honey i rewrote the filc</h1>
+      <h1>{t('welcome_message')}</h1>
     </div>
   );
 }

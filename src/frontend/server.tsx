@@ -10,7 +10,6 @@ import { createRouter } from '~/frontend/router';
 import { env } from '~/utils/environment';
 // TODO: remove when bun supports CompressionStream
 import '@ungap/compression-stream/poly';
-import '~/frontend/utils/i18n';
 
 export const frontend = new Hono();
 

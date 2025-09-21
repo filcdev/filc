@@ -6,6 +6,8 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Toaster } from '~/frontend/components/ui/sonner';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
@@ -70,6 +72,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
+  const { i18n } = useTranslation();
+
   return (
     <html
       className="h-dvh scroll-smooth bg-background text-foreground"
@@ -80,7 +84,13 @@ function RootComponent() {
       </head>
       <body className="flex h-full flex-col">
         <QueryClientProvider client={queryClient}>
-          <Outlet />
+          {i18n.isInitializing ? (
+            <div className="flex grow items-center justify-center gap-1 text-semibold">
+              <Loader2 className="animate-spin text-primary" />
+            </div>
+          ) : (
+            <Outlet />
+          )}
           <TanStackRouterDevtools position="bottom-right" />
           <Scripts />
           <Toaster richColors />
