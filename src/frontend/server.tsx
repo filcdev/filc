@@ -10,6 +10,10 @@ import { createRouter } from '~/frontend/router';
 import { env } from '~/utils/environment';
 // TODO: remove when bun supports CompressionStream
 import '@ungap/compression-stream/poly';
+import { languageDetector } from 'hono/language';
+import i18next from 'i18next';
+import Backend from 'i18next-http-backend';
+import { I18nextProvider } from 'react-i18next';
 
 export const frontend = new Hono();
 
@@ -23,15 +27,66 @@ if (env.mode === 'production') {
     })
   );
 
+  // TODO:
+  // With this commented, the prod build sends a request for a file in here,
+  // but it 404s. Need to investigate why and fix it.
+  // This is likely related to Vite's handling of assets.
+  // frontend.use(
+  //   '/assets/*',
+  //   serveStatic({
+  //     root: './dist/server/',
+  //   })
+  // );
+
   frontend.use(
     '*',
     serveStatic({
       root: './dist/client',
     })
   );
+} else {
+  frontend.use(
+    '*',
+    serveStatic({
+      root: './public',
+    })
+  );
 }
 
+frontend.use(
+  languageDetector({
+    fallbackLanguage: 'hu',
+    supportedLanguages: ['en', 'hu'],
+    lookupCookie: 'filc-lang',
+  })
+);
+
 frontend.use('*', async (c) => {
+  const lang = c.get('language');
+  const origin = new URL(c.req.url).origin;
+
+  // Create an isolated i18n instance per request and ensure namespaces are loaded before render
+  const i18n = i18next.createInstance();
+  await i18n.use(Backend).init({
+    fallbackLng: 'hu',
+    supportedLngs: ['en', 'hu'],
+    ns: ['translation'],
+    defaultNS: 'translation',
+    interpolation: { escapeValue: false },
+    backend: {
+      loadPath: `${origin}/locales/{{lng}}/{{ns}}.json`,
+    },
+    react: { useSuspense: false },
+    initImmediate: false,
+  });
+
+  await i18n.changeLanguage(lang);
+  await new Promise<void>((resolve, reject) =>
+    i18n.loadNamespaces(['translation'], (err) =>
+      err ? reject(err) : resolve()
+    )
+  );
+
   const handler = createRequestHandler({
     request: c.req.raw,
     createRouter: () => {
@@ -39,6 +94,7 @@ frontend.use('*', async (c) => {
       router.update({
         context: {
           ...router.options.context,
+          i18n,
           head: c.res.headers.get('x-head') || '',
         },
       });
@@ -50,7 +106,11 @@ frontend.use('*', async (c) => {
     return renderRouterToString({
       responseHeaders,
       router,
-      children: <RouterServer router={router} />,
+      children: (
+        <I18nextProvider i18n={i18n}>
+          <RouterServer router={router} />
+        </I18nextProvider>
+      ),
     });
   });
 });

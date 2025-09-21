@@ -4,8 +4,12 @@ import {
   HeadContent,
   Outlet,
   Scripts,
+  useRouteContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { CookiesProvider } from 'react-cookie';
+import { I18nextProvider } from 'react-i18next';
+import { Navbar } from '~/frontend/components/navbar';
 import { Toaster } from '~/frontend/components/ui/sonner';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
@@ -70,20 +74,29 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
+  const { i18n } = useRouteContext({
+    from: '__root__',
+  });
+
   return (
     <html
       className="h-dvh scroll-smooth bg-background text-foreground"
-      lang="en"
+      lang={i18n.language}
     >
       <head>
         <HeadContent />
       </head>
       <body className="flex h-full flex-col">
         <QueryClientProvider client={queryClient}>
-          <Outlet />
-          <TanStackRouterDevtools position="bottom-right" />
-          <Scripts />
-          <Toaster richColors />
+          <I18nextProvider i18n={i18n}>
+            <CookiesProvider>
+              <Navbar />
+              <Outlet />
+              <TanStackRouterDevtools position="bottom-right" />
+              <Scripts />
+              <Toaster richColors />
+            </CookiesProvider>
+          </I18nextProvider>
         </QueryClientProvider>
       </body>
     </html>

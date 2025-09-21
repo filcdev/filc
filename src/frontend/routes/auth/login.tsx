@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { CheckCircle, Mail, Shield } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '~/frontend/components/ui/alert';
 import { Button } from '~/frontend/components/ui/button';
 import {
@@ -25,6 +26,7 @@ function RouteComponent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [error, setError] = useState('');
+  const { t } = useTranslation();
 
   const handleMagicLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +55,7 @@ function RouteComponent() {
 
       setIsEmailSent(true);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to send magic link. Please try again.'
-      );
+      setError(err instanceof Error ? err.message : t('magicLink.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -73,11 +71,10 @@ function RouteComponent() {
             </div>
             <div className="space-y-2">
               <h1 className="font-bold text-2xl text-foreground">
-                Check your email
+                {t('magicLink.checkYourEmail')}
               </h1>
               <p className="text-balance text-muted-foreground">
-                We've sent a magic link to{' '}
-                <span className="font-medium text-foreground">{fullEmail}</span>
+                {t('magicLink.emailSentTo', { email: fullEmail })}
               </p>
             </div>
           </div>
@@ -85,8 +82,7 @@ function RouteComponent() {
           <Alert className="border-primary/20 bg-primary/5">
             <CheckCircle className="h-4 w-4 text-primary" />
             <AlertDescription className="text-sm">
-              Click the link in your email to sign in. The link will expire in
-              15 minutes.
+              {t('magicLink.clickTheLink')}
             </AlertDescription>
           </Alert>
 
@@ -100,7 +96,7 @@ function RouteComponent() {
               }}
               variant="outline"
             >
-              Use a different email
+              {t('magicLink.sendToAnotherEmail')}
             </Button>
           </div>
         </div>
@@ -116,25 +112,29 @@ function RouteComponent() {
             <Shield className="h-8 w-8 text-primary" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-bold text-3xl text-foreground">Welcome back</h1>
+            <h1 className="font-bold text-3xl text-foreground">
+              {t('magicLink.welcomeBack')}
+            </h1>
             <p className="text-balance text-muted-foreground">
-              Enter your email to receive a secure magic link
+              {t('magicLink.signInSubtitle')}
             </p>
           </div>
         </div>
 
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl">Sign in to your account</CardTitle>
+            <CardTitle className="text-xl">
+              {t('magicLink.signInWithMagicLink')}
+            </CardTitle>
             <CardDescription>
-              We'll send you a secure link to sign in instantly
+              {t('magicLink.signInWithMagicLinkDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleMagicLinkSubmit}>
               <div className="space-y-2">
                 <Label className="font-medium text-sm" htmlFor="email">
-                  Email address
+                  {t('magicLink.emailAddress')}
                 </Label>
                 <EmailInput
                   className="h-11"
@@ -147,10 +147,7 @@ function RouteComponent() {
                 />
                 {fullEmail && (
                   <p className="text-muted-foreground text-xs">
-                    Magic link will be sent to:{' '}
-                    <span className="font-medium text-foreground">
-                      {fullEmail}
-                    </span>
+                    {t('magicLink.willSendTo', { email: fullEmail })}
                   </p>
                 )}
               </div>
@@ -166,7 +163,9 @@ function RouteComponent() {
                 disabled={!fullEmail || isLoading}
                 type="submit"
               >
-                {isLoading ? 'Sending magic link...' : 'Send magic link'}
+                {isLoading
+                  ? t('magicLink.sending')
+                  : t('magicLink.sendMagicLink')}
               </Button>
             </form>
           </CardContent>
@@ -174,19 +173,19 @@ function RouteComponent() {
 
         <div className="text-center text-muted-foreground text-xs">
           <p>
-            By continuing, you agree to our{' '}
+            {t('magicLink.byContinuing')}{' '}
             <a
               className="underline transition-colors hover:text-foreground"
               href="/legal/tos"
             >
-              Terms of Service
+              {t('termsOfService')}
             </a>{' '}
-            and{' '}
+            {t('and')}{' '}
             <a
               className="underline transition-colors hover:text-foreground"
               href="/legal/privacy"
             >
-              Privacy Policy
+              {t('privacyPolicy')}
             </a>
           </p>
         </div>
