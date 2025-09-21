@@ -140,6 +140,7 @@ process.on('SIGTERM', handleShutdown);
 
 await handleStartup();
 
+export type ApiType = typeof api;
 export type AppType = typeof app;
 
 export default env.mode === 'development' ? app : null;

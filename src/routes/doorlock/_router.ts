@@ -18,21 +18,18 @@ import {
 } from './devices';
 import { openDoor } from './open';
 
-export const doorlockRouter = new Hono<Context>();
-
-doorlockRouter.get('/cards', ...listCards);
-doorlockRouter.get('/cards/:id', ...getCard);
-doorlockRouter.post('/cards', ...createCard);
-doorlockRouter.patch('/cards/:id', ...updateCard);
-doorlockRouter.delete('/cards/:id', ...deleteCard);
-
-doorlockRouter.post('/:deviceId/open', ...openDoor);
-
-// Device management
-doorlockRouter.get('/devices', ...listDevices);
-doorlockRouter.get('/devices/:id', ...getDevice);
-doorlockRouter.put('/devices/:id', ...upsertDevice); // idempotent create/update
-doorlockRouter.delete('/devices/:id', ...deleteDevice);
-doorlockRouter.get('/devices/:id/cards', ...listDeviceCards);
-doorlockRouter.put('/devices/:id/cards', ...replaceDeviceCards); // replace restrictions
-doorlockRouter.get('/devices/:id/status', ...getDeviceStatus);
+export const doorlockRouter = new Hono<Context>()
+  .get('/cards', ...listCards)
+  .get('/cards/:id', ...getCard)
+  .post('/cards', ...createCard)
+  .patch('/cards/:id', ...updateCard)
+  .delete('/cards/:id', ...deleteCard)
+  .post('/:deviceId/open', ...openDoor)
+  // Device management
+  .get('/devices', ...listDevices)
+  .get('/devices/:id', ...getDevice)
+  .put('/devices/:id', ...upsertDevice) // idempotent create/update
+  .delete('/devices/:id', ...deleteDevice)
+  .get('/devices/:id/cards', ...listDeviceCards)
+  .put('/devices/:id/cards', ...replaceDeviceCards) // replace restrictions
+  .get('/devices/:id/status', ...getDeviceStatus);
