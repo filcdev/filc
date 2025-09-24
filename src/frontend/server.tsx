@@ -11,10 +11,13 @@ import { env } from '~/utils/environment';
 // TODO: remove when bun supports CompressionStream
 import '@ungap/compression-stream/poly';
 import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
 import { languageDetector } from 'hono/language';
 import i18next from 'i18next';
 import Backend from 'i18next-http-backend';
 import { I18nextProvider } from 'react-i18next';
+
+dayjs.extend(duration);
 
 export const frontend = new Hono();
 

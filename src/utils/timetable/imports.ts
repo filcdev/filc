@@ -123,6 +123,8 @@ const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
           id: crypto.randomUUID(),
           name,
           short,
+          // For now, we don't import specific days
+          days: [predefinedId],
         })
         .returning({ insertedId: daySchema.id });
 

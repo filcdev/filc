@@ -23,4 +23,5 @@ export type ErrorResponse = {
   success: false;
   data?: unknown;
   error: string;
+  cause?: unknown;
 };

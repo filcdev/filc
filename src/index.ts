@@ -68,6 +68,7 @@ api.onError((err, c) => {
         env.mode === 'production'
           ? 'Internal Server Error'
           : (err.stack ?? err.message),
+      cause: err instanceof Error ? err.cause : undefined,
     },
     StatusCodes.INTERNAL_SERVER_ERROR
   );

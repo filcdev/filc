@@ -4,6 +4,7 @@
 import { getLogger } from '@logtape/logtape';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
+import { decode, encode } from 'iconv-lite';
 import { DOMParser } from 'xmldom';
 import { timetableFactory } from '~/routes/timetable/_factory';
 import { env } from '~/utils/environment';
@@ -40,8 +41,10 @@ export const importRoute = timetableFactory.createHandlers(
       });
     }
 
-    // parse file
-    const text = await file.text();
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const decoded = decode(buffer, 'win1250');
+    // TODO: this is still broken
+    const utf8Text = encode(decoded, 'utf-8').toString();
 
     // TODO: Rewrite the import function to use these
     // types so we are more typeish :3.
@@ -57,7 +60,10 @@ export const importRoute = timetableFactory.createHandlers(
     // let xmlData: TimetableExportRoot | null = null;
     try {
       logger.info('Starting timetable import');
-      const xmlData = new DOMParser().parseFromString(text, 'application/xml');
+      const xmlData = new DOMParser().parseFromString(
+        utf8Text,
+        'application/xml'
+      );
 
       await importTimetableXML(xmlData);
 
