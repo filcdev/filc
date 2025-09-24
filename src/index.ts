@@ -92,8 +92,8 @@ env.mode === 'development' &&
 env.mode === 'development' && api.route('/_dev', developmentRouter);
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
-api.route('/timetable', timetableRouter);
 api.route('/feature-flags', featureFlagRouter);
+api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
 (await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false))
   ? api.route('/doorlock', doorlockRouter)

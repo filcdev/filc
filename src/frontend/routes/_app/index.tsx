@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '~/frontend/components/ui/button';
 import { authClient } from '~/frontend/utils/authentication';
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/_app/')({
   component: App,
 });
 

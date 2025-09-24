@@ -9,7 +9,6 @@ import {
 import { lazy, Suspense } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
-import { Navbar } from '~/frontend/components/navbar';
 import { Toaster } from '~/frontend/components/ui/sonner';
 import css from '~/frontend/global.css?url';
 import type { RouterContext } from '~/frontend/router-context';
@@ -90,7 +89,6 @@ function RootComponent() {
         <QueryClientProvider client={queryClient}>
           <I18nextProvider i18n={i18n}>
             <CookiesProvider>
-              <Navbar />
               <Outlet />
               {import.meta.env.DEV
                 ? // Lazy-load devtools only in development. This dynamic import
