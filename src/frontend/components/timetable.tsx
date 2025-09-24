@@ -1,0 +1,246 @@
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { Clock, MapPin, User } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '~/frontend/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/frontend/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '~/frontend/components/ui/tooltip';
+
+export type ClassSession = {
+  id: string;
+  subject: string;
+  teacher: string; // may contain multiple comma-separated names
+  room: string; // may contain multiple comma-separated rooms
+  startTime: string;
+  endTime: string;
+  description?: string;
+  color: string;
+};
+
+// Legacy structure support (day -> time -> single session)
+export type TimetableData = {
+  [day: string]: {
+    [timeSlot: string]: ClassSession | ClassSession[] | null;
+  };
+};
+
+type TimetableProps = {
+  data: TimetableData;
+  className?: string;
+  title?: string;
+};
+
+const getDaysFromData = (data: TimetableData): string[] => {
+  return Object.keys(data);
+};
+
+const getTimeSlotsFromData = (data: TimetableData): string[] => {
+  const set = new Set<string>();
+  for (const day of Object.keys(data)) {
+    const times = Object.keys(data[day] ?? {});
+    for (const t of times) {
+      set.add(t);
+    }
+  }
+  return Array.from(set).sort();
+};
+
+const ClassTooltip = ({ session }: { session: ClassSession }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className="h-full w-full cursor-pointer rounded-md border p-1 transition-all hover:scale-[1.02] hover:shadow-lg"
+          style={{
+            backgroundColor: `${session.color}20`,
+            borderColor: `${session.color}50`,
+          }}
+        >
+          <div className="flex h-full justify-between gap-1">
+            <div className="truncate font-medium text-foreground text-xs">
+              {session.subject}
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] text-muted-foreground">
+                {session.room}
+              </div>
+            </div>
+          </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs" side="top">
+        <div className="space-y-2">
+          <div className="font-semibold text-sm">{session.subject}</div>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              <span>
+                {session.startTime} - {session.endTime}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <User className="h-3 w-3" />
+              <span>{session.teacher}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3 w-3" />
+              <span>{session.room}</span>
+            </div>
+            {session.description && (
+              <div className="border-border border-t pt-1">
+                <p className="text-muted-foreground">{session.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+const ClassCell = ({
+  session,
+}: {
+  session: ClassSession | ClassSession[] | null;
+}) => {
+  if (!session) {
+    return <div className="h-16 w-full" />;
+  }
+  const sessions = Array.isArray(session) ? session : [session];
+  return (
+    <div className="flex h-16 w-full flex-col gap-1">
+      {sessions.map((s) => (
+        <ClassTooltip key={`${s.id}-${s.startTime}`} session={s} />
+      ))}
+    </div>
+  );
+};
+
+export function Timetable({
+  data,
+  className,
+  title = 'Class Schedule',
+}: TimetableProps) {
+  type Row = { time: string } & Record<
+    string,
+    ClassSession | ClassSession[] | null
+  >;
+
+  const days = getDaysFromData(data);
+  const timeSlots = getTimeSlotsFromData(data);
+
+  const columns: ColumnDef<Row, unknown>[] = [
+    {
+      accessorKey: 'time',
+      header: 'Time',
+      cell: (info: { getValue: () => unknown }) => (
+        <div className="font-medium font-mono text-muted-foreground text-sm">
+          {String(info.getValue())}
+        </div>
+      ),
+      size: 80,
+    },
+    ...days.map((day) => ({
+      accessorKey: day,
+      header: day,
+      cell: (info: { getValue: () => unknown }) => (
+        <ClassCell session={info.getValue() as Row[keyof Row]} />
+      ),
+      size: 200,
+    })),
+  ];
+
+  const tableData: Row[] = timeSlots.map((time) => {
+    const row: Row = { time } as Row;
+    for (const day of days) {
+      row[day] = data[day]?.[time] ?? null;
+    }
+    return row;
+  });
+
+  const table = useReactTable<Row>({
+    data: tableData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <Card className={`w-full ${className}`}>
+      <CardHeader>
+        <CardTitle className="text-balance font-bold text-2xl">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-hidden rounded-lg border bg-card">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow
+                  className="border-border hover:bg-transparent"
+                  key={headerGroup.id}
+                >
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      className="bg-muted/50 text-center font-semibold text-foreground"
+                      key={header.id}
+                      style={{ width: header.getSize() }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  className="border-border hover:bg-muted/30"
+                  key={row.id}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      className="p-1"
+                      key={cell.id}
+                      style={{ width: cell.column.getSize() }}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

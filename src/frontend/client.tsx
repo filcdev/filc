@@ -13,6 +13,9 @@ async function prepareI18n() {
       err ? reject(err) : resolve()
     )
   );
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = i18n.language;
+  }
 }
 
 await prepareI18n();

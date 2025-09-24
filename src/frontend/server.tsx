@@ -10,6 +10,7 @@ import { createRouter } from '~/frontend/router';
 import { env } from '~/utils/environment';
 // TODO: remove when bun supports CompressionStream
 import '@ungap/compression-stream/poly';
+import dayjs from 'dayjs';
 import { languageDetector } from 'hono/language';
 import i18next from 'i18next';
 import Backend from 'i18next-http-backend';
@@ -46,7 +47,14 @@ frontend.use(
   languageDetector({
     fallbackLanguage: 'hu',
     supportedLanguages: ['en', 'hu'],
+    caches: ['cookie'],
+    order: ['cookie'],
     lookupCookie: 'filc-lang',
+    cookieOptions: {
+      path: '/',
+      sameSite: 'Lax',
+      maxAge: dayjs.duration(1, 'year').asSeconds(),
+    },
   })
 );
 

@@ -4,17 +4,14 @@ import { useNavigate } from '@tanstack/react-router';
 import {
   BookOpen,
   Calendar,
-  ChevronDown,
-  Globe,
   GraduationCap,
   Loader2,
   LogIn,
   LogOut,
   Settings,
 } from 'lucide-react';
-import { useState } from 'react';
-import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
+import { LanguageSelector } from '~/frontend/components/language-selector';
 import {
   Avatar,
   AvatarFallback,
@@ -33,26 +30,8 @@ import { authClient } from '~/frontend/utils/authentication';
 
 export function Navbar() {
   const navigate = useNavigate();
-  const { i18n, t } = useTranslation();
-  const [selectedLanguage, setSelectedLanguage] = useState(
-    (i18n.language?.toUpperCase() || 'EN') as 'EN' | 'HU'
-  );
-  const [, setCookie] = useCookies(['filc-lang']);
+  const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
-
-  const languages = [
-    { code: 'EN', name: 'English' },
-    { code: 'HU', name: 'Magyar' },
-  ] as const;
-
-  const handleLanguageChange = async (
-    code: (typeof languages)[number]['code']
-  ) => {
-    setSelectedLanguage(code);
-    // Update i18n language and persist cookie for SSR detection
-    await i18n.changeLanguage(code.toLowerCase());
-    setCookie('filc-lang', code.toLowerCase(), { path: '/' });
-  };
 
   return (
     <nav className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -95,32 +74,7 @@ export function Navbar() {
             </Badge>
           </Button> */}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="text-muted-foreground hover:text-foreground"
-                size="sm"
-                variant="ghost"
-              >
-                <Globe className="mr-1 h-4 w-4" />
-                {selectedLanguage}
-                <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32">
-              <DropdownMenuLabel>{t('selectLanguage')}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {languages.map((lang) => (
-                <DropdownMenuItem
-                  className={selectedLanguage === lang.code ? 'bg-accent' : ''}
-                  key={lang.code}
-                  onClick={() => handleLanguageChange(lang.code)}
-                >
-                  {lang.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <LanguageSelector />
 
           {(() => {
             if (isPending) {
