@@ -36,11 +36,14 @@ const clientBuild = {
       assetFileNames: 'static/assets/[name]-[hash][extname]',
     },
   },
-  manifest: true
+  manifest: true,
 } satisfies BuildOptions
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
+  const isBuild = command === 'build';
+  const isClient = mode === 'client';
   return {
+    esbuild: isBuild && isClient ? { drop: ['console', 'debugger'] } : undefined,
     plugins: [
       tanstackRouter({
         autoCodeSplitting: true,

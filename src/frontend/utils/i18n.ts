@@ -11,7 +11,7 @@ base
   .init({
     fallbackLng: 'hu',
     supportedLngs: ['en', 'hu'],
-    debug: true,
+    debug: import.meta.env.DEV,
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
     },

@@ -6,7 +6,7 @@ import {
   Scripts,
   useRouteContext,
 } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { lazy, Suspense } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
 import { Navbar } from '~/frontend/components/navbar';
@@ -92,7 +92,22 @@ function RootComponent() {
             <CookiesProvider>
               <Navbar />
               <Outlet />
-              <TanStackRouterDevtools position="bottom-right" />
+              {import.meta.env.DEV
+                ? // Lazy-load devtools only in development. This dynamic import
+                  // is compile-time stripped from production by Vite.
+                  (() => {
+                    const RouterDevtools = lazy(() =>
+                      import('@tanstack/react-router-devtools').then((m) => ({
+                        default: m.TanStackRouterDevtools,
+                      }))
+                    );
+                    return (
+                      <Suspense>
+                        <RouterDevtools position="bottom-right" />
+                      </Suspense>
+                    );
+                  })()
+                : null}
               <Scripts />
               <Toaster richColors />
             </CookiesProvider>

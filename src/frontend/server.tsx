@@ -1,7 +1,7 @@
 import {
   createRequestHandler,
   RouterServer,
-  renderRouterToString,
+  renderRouterToStream,
 } from '@tanstack/react-router/ssr/server';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
@@ -23,20 +23,9 @@ if (env.mode === 'production') {
   frontend.use(
     '/assets/*',
     serveStatic({
-      root: './dist/client/static',
+      root: './dist/server',
     })
   );
-
-  // TODO:
-  // With this commented, the prod build sends a request for a file in here,
-  // but it 404s. Need to investigate why and fix it.
-  // This is likely related to Vite's handling of assets.
-  // frontend.use(
-  //   '/assets/*',
-  //   serveStatic({
-  //     root: './dist/server/',
-  //   })
-  // );
 
   frontend.use(
     '*',
@@ -103,7 +92,8 @@ frontend.use('*', async (c) => {
   });
 
   return await handler(({ responseHeaders, router }) => {
-    return renderRouterToString({
+    return renderRouterToStream({
+      request: c.req.raw,
       responseHeaders,
       router,
       children: (

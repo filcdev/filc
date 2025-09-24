@@ -32,6 +32,8 @@ hydrateRoot(
   </I18nextProvider>
 );
 
-// TODO: replace console
-// biome-ignore lint/suspicious/noConsole: see above
-reportWebVitals(console.log);
+if (import.meta.env.DEV) {
+  // TODO: replace console
+  // biome-ignore lint/suspicious/noConsole: see above
+  reportWebVitals(console.log);
+}
