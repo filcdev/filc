@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import {
-  Check,
-  CheckCircle,
-  ChevronsUpDown,
-  Loader2,
-  Mail,
-  User,
-} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaMicrosoft } from 'react-icons/fa6';
+import {
+  FaCheck,
+  FaChevronDown,
+  FaCircleCheck,
+  FaEnvelope,
+  FaMicrosoft,
+  FaSpinner,
+  FaUser,
+} from 'react-icons/fa6';
 import { Button } from '~/frontend/components/ui/button';
 import {
   Card,
@@ -70,7 +70,7 @@ function RouteComponent() {
     <div className="flex max-w-lg grow flex-col justify-center space-y-4 self-center">
       <div className="flex gap-4">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle className="h-10 w-10 text-primary" />
+          <FaCircleCheck className="h-10 w-10 text-primary" />
         </div>
         <div className="items-start space-y-2">
           <h1 className="font-bold text-4xl text-foreground">
@@ -158,7 +158,7 @@ const CohortSelector = (props: { user: UserType }) => {
             ? cohortQuery.data.find((cohort) => cohort.id === selectedCohortId)
                 ?.name
             : t('cohort.selectPlaceholder')}
-          <ChevronsUpDown className="opacity-50" />
+          <FaChevronDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
@@ -178,7 +178,7 @@ const CohortSelector = (props: { user: UserType }) => {
                   value={cohort.id}
                 >
                   {cohort.name}
-                  <Check
+                  <FaCheck
                     className={cn(
                       'ml-auto',
                       selectedCohortId === cohort.id
@@ -215,7 +215,7 @@ const AccountDetails = (props: { user: UserType }) => {
     <>
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="flex items-center justify-start space-y-1">
-          <User className="size-6 text-muted-foreground" />
+          <FaUser className="size-6 text-muted-foreground" />
           <CardTitle className="text-lg">{t('account.details')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -224,12 +224,12 @@ const AccountDetails = (props: { user: UserType }) => {
           <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
             <InfoLine
               content={user.email}
-              icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+              icon={<FaEnvelope className="h-4 w-4 text-muted-foreground" />}
               title={t('account.email')}
             />
             <InfoLine
               content={user.name ?? t('unknown')}
-              icon={<User className="h-4 w-4 text-muted-foreground" />}
+              icon={<FaUser className="h-4 w-4 text-muted-foreground" />}
               title={t('account.name')}
             />
             <hr />
@@ -295,7 +295,7 @@ const MicrosoftLink = () => {
     return (
       <div className="flex h-8 items-center justify-between text-primary text-sm">
         <div className="flex items-center gap-2">
-          <CheckCircle className="size-4" />
+          <FaCircleCheck className="size-4" />
           <span>{t('microsoft.linked')}</span>
         </div>
         <Button
@@ -306,7 +306,7 @@ const MicrosoftLink = () => {
           variant="ghost"
         >
           {isUnlinking ? (
-            <Loader2 className="size-4 animate-spin" />
+            <FaSpinner className="size-4 animate-spin" />
           ) : (
             t('unlink')
           )}
@@ -338,7 +338,7 @@ const AccountDetailsSkeleton = () => {
   return (
     <Card className="border-border/50 shadow-sm">
       <CardHeader className="flex items-center justify-start space-y-1">
-        <User className="size-6 text-muted-foreground" />
+        <FaUser className="size-6 text-muted-foreground" />
         <CardTitle className="text-lg">{t('account.details')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

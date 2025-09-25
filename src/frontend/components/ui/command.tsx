@@ -1,5 +1,5 @@
 import { Command as CommandPrimitive } from 'cmdk';
-import { SearchIcon } from 'lucide-react';
+import { FaMagnifyingGlass } from 'react-icons/fa6';
 import {
   Dialog,
   DialogContent,
@@ -65,7 +65,7 @@ function CommandInput({
       className="flex h-9 items-center gap-2 border-b px-3"
       data-slot="command-input-wrapper"
     >
-      <SearchIcon className="size-4 shrink-0 opacity-50" />
+      <FaMagnifyingGlass className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         className={cn(
           'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',

@@ -17,5 +17,5 @@
     "lib": "~/frontend/utils",
     "hooks": "~/frontend/hooks"
   },
-  "iconLibrary": "lucide"
+  "iconLibrary": "react-icons"
 }

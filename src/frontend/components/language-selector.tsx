@@ -1,6 +1,6 @@
-import { ChevronDown, Globe } from 'lucide-react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
+import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
 import { Button } from '~/frontend/components/ui/button';
 import {
   DropdownMenu,
@@ -41,9 +41,9 @@ export function LanguageSelector() {
           size="sm"
           variant="ghost"
         >
-          <Globe className="mr-1 h-4 w-4" />
+          <FaGlobe className="mr-1 h-4 w-4" />
           {current?.toUpperCase()}
-          <ChevronDown className="ml-1 h-3 w-3" />
+          <FaChevronDown className="ml-1 h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-32">

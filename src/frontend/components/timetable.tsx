@@ -4,7 +4,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Clock, MapPin, User } from 'lucide-react';
+import { FaClock, FaLocationDot, FaUser } from 'react-icons/fa6';
 import {
   Card,
   CardContent,
@@ -93,17 +93,17 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
           <div className="font-semibold text-sm">{session.subject}</div>
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
-              <Clock className="h-3 w-3" />
+              <FaClock className="h-3 w-3" />
               <span>
                 {session.startTime} - {session.endTime}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <User className="h-3 w-3" />
+              <FaUser className="h-3 w-3" />
               <span>{session.teacher}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="h-3 w-3" />
+              <FaLocationDot className="h-3 w-3" />
               <span>{session.room}</span>
             </div>
             {session.description && (

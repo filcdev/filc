@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CheckCircle, Mail, Shield } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FaCircleCheck, FaEnvelope, FaShield } from 'react-icons/fa6';
 import { Alert, AlertDescription } from '~/frontend/components/ui/alert';
 import { Button } from '~/frontend/components/ui/button';
 import {
@@ -67,7 +67,7 @@ function RouteComponent() {
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-4 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Mail className="h-8 w-8 text-primary" />
+              <FaEnvelope className="h-8 w-8 text-primary" />
             </div>
             <div className="space-y-2">
               <h1 className="font-bold text-2xl text-foreground">
@@ -80,7 +80,7 @@ function RouteComponent() {
           </div>
 
           <Alert className="border-primary/20 bg-primary/5">
-            <CheckCircle className="h-4 w-4 text-primary" />
+            <FaCircleCheck className="h-4 w-4 text-primary" />
             <AlertDescription className="text-sm">
               {t('magicLink.clickTheLink')}
             </AlertDescription>
@@ -109,7 +109,7 @@ function RouteComponent() {
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-4 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Shield className="h-8 w-8 text-primary" />
+            <FaShield className="h-8 w-8 text-primary" />
           </div>
           <div className="space-y-2">
             <h1 className="font-bold text-3xl text-foreground">

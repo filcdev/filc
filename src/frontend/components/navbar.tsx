@@ -1,16 +1,16 @@
 'use client';
 
 import { useNavigate } from '@tanstack/react-router';
-import {
-  BookOpen,
-  Calendar,
-  GraduationCap,
-  Loader2,
-  LogIn,
-  LogOut,
-  Settings,
-} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import {
+  FaBook,
+  FaCalendarDays,
+  FaGear,
+  FaGraduationCap,
+  FaRightFromBracket,
+  FaRightToBracket,
+  FaSpinner,
+} from 'react-icons/fa6';
 import { LanguageSelector } from '~/frontend/components/language-selector';
 import {
   Avatar,
@@ -38,7 +38,7 @@ export function Navbar() {
       <div className="flex h-16 items-center px-6">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+            <FaGraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-semibold text-foreground text-xl">filc</span>
         </div>
@@ -49,7 +49,7 @@ export function Navbar() {
             size="sm"
             variant="ghost"
           >
-            <Calendar className="mr-2 h-4 w-4" />
+            <FaCalendarDays className="mr-2 h-4 w-4" />
             {t('schedule')}
           </Button>
           <Button
@@ -57,7 +57,7 @@ export function Navbar() {
             size="sm"
             variant="ghost"
           >
-            <BookOpen className="mr-2 h-4 w-4" />
+            <FaBook className="mr-2 h-4 w-4" />
             {t('substitutions')}
           </Button>
         </div>
@@ -85,7 +85,7 @@ export function Navbar() {
                   size="sm"
                   variant="outline"
                 >
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
                 </Button>
               );
             }
@@ -128,7 +128,7 @@ export function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
+                      <FaGear className="mr-2 h-4 w-4" />
                       <span>{t('settings')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -138,7 +138,7 @@ export function Navbar() {
                         await authClient.signOut();
                       }}
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
+                      <FaRightFromBracket className="mr-2 h-4 w-4" />
                       <span>{t('logout')}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -153,7 +153,8 @@ export function Navbar() {
                 size="sm"
                 variant="default"
               >
-                <LogIn className="h-4 w-4" /> {t('sign_in') || 'Sign in'}
+                <FaRightToBracket className="h-4 w-4" />{' '}
+                {t('sign_in') || 'Sign in'}
               </Button>
             );
           })()}

@@ -15,8 +15,8 @@ import {
   SubTrigger,
   Trigger,
 } from '@radix-ui/react-dropdown-menu';
-import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react';
 import type { ComponentProps } from 'react';
+import { FaCheck, FaChevronRight, FaCircle } from 'react-icons/fa6';
 
 import { cn } from '~/frontend/utils';
 
@@ -97,7 +97,7 @@ function DropdownMenuCheckboxItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <ItemIndicator>
-          <CheckIcon className="size-4" />
+          <FaCheck className="size-4" />
         </ItemIndicator>
       </span>
       {children}
@@ -127,7 +127,7 @@ function DropdownMenuRadioItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <ItemIndicator>
-          <CircleIcon className="size-2 fill-current" />
+          <FaCircle className="size-2 fill-current" />
         </ItemIndicator>
       </span>
       {children}
@@ -204,7 +204,7 @@ function DropdownMenuSubTrigger({
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto size-4" />
+      <FaChevronRight className="ml-auto size-4" />
     </SubTrigger>
   );
 }
