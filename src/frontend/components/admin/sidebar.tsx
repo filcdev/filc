@@ -1,8 +1,14 @@
 import { Link } from '@tanstack/react-router';
-import { CreditCard, DoorOpen, Flag, Settings } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaGraduationCap } from 'react-icons/fa6';
+import {
+  FaCreditCard,
+  FaDoorOpen,
+  FaFlag,
+  FaGear,
+  FaGraduationCap,
+  FaListCheck,
+} from 'react-icons/fa6';
 import {
   Sidebar,
   SidebarContent,
@@ -20,57 +26,80 @@ import { authClient } from '~/frontend/utils/authentication';
 type MenuItem = {
   title: string;
   url: string;
-  icon: typeof DoorOpen;
+  icon: typeof FaDoorOpen;
   permission?: string;
+};
+
+type MenuCategory = {
+  label: string;
+  items: MenuItem[];
 };
 
 export function AdminSidebar() {
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
 
-  const items: MenuItem[] = useMemo(
+  const categories: MenuCategory[] = useMemo(
     () => [
       {
-        title: t('admin.doorAccess'),
-        url: '/admin/doors',
-        icon: DoorOpen,
+        label: t('admin.door'),
+        items: [
+          {
+            title: t('admin.doorAccess'),
+            url: '/admin/doors',
+            icon: FaDoorOpen,
+          },
+          {
+            title: t('doorlock.manageDevices'),
+            url: '/admin/doors/devices',
+            icon: FaGear,
+            permission: 'device:upsert',
+          },
+          {
+            title: t('doorlock.manageCards'),
+            url: '/admin/doors/cards',
+            icon: FaCreditCard,
+            permission: 'card:read',
+          },
+          {
+            title: t('doorlock.accessLogs'),
+            url: '/admin/doors/logs',
+            icon: FaListCheck,
+            permission: 'doorlock:logs:read',
+          },
+        ],
       },
       {
-        title: t('doorlock.manageDevices'),
-        url: '/admin/doors/devices',
-        icon: Settings,
-        permission: 'device:upsert',
-      },
-      {
-        title: t('doorlock.manageCards'),
-        url: '/admin/doors/cards',
-        icon: CreditCard,
-        permission: 'card:read',
-      },
-      {
-        title: t('featureFlags.manage'),
-        url: '/admin/feature-flags',
-        icon: Flag,
-        permission: 'feature-flags:read',
+        label: t('admin.server'),
+        items: [
+          {
+            title: t('featureFlags.manage'),
+            url: '/admin/feature-flags',
+            icon: FaFlag,
+            permission: 'feature-flags:read',
+          },
+        ],
       },
     ],
     [t]
   );
 
-  const visibleItems = useMemo(() => {
-    if (session?.user?.permissions.includes('*')) {
-      return items;
-    }
-    if (!session?.user?.permissions) {
-      return items.filter((item) => !item.permission);
-    }
-    return items.filter((item) => {
-      if (!item.permission) {
-        return true;
-      }
-      return session.user.permissions.includes(item.permission);
-    });
-  }, [items, session?.user?.permissions]);
+  const visibleCategories = useMemo(() => {
+    return categories
+      .map((category) => {
+        const visibleItems = category.items.filter((item) => {
+          if (session?.user?.permissions.includes('*')) {
+            return true;
+          }
+          if (!item.permission) {
+            return true;
+          }
+          return session?.user?.permissions?.includes(item.permission);
+        });
+        return { ...category, items: visibleItems };
+      })
+      .filter((category) => category.items.length > 0);
+  }, [categories, session?.user?.permissions]);
 
   return (
     <Sidebar>
@@ -83,23 +112,25 @@ export function AdminSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t('admin.title')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleCategories.map((category) => (
+          <SidebarGroup key={category.label}>
+            <SidebarGroupLabel>{category.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {category.items.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter className="border-border border-t p-4">
         <div className="text-muted-foreground text-sm">

@@ -19,6 +19,7 @@ import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateAdminFeatureFlagsRouteImport } from './routes/_private/admin/feature-flags'
 import { Route as PrivateAdminDoorsIndexRouteImport } from './routes/_private/admin/doors/index'
+import { Route as PrivateAdminDoorsLogsRouteImport } from './routes/_private/admin/doors/logs'
 import { Route as PrivateAdminDoorsDevicesRouteImport } from './routes/_private/admin/doors/devices'
 import { Route as PrivateAdminDoorsCardsRouteImport } from './routes/_private/admin/doors/cards'
 
@@ -71,6 +72,11 @@ const PrivateAdminDoorsIndexRoute = PrivateAdminDoorsIndexRouteImport.update({
   path: '/doors/',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PrivateAdminDoorsLogsRoute = PrivateAdminDoorsLogsRouteImport.update({
+  id: '/doors/logs',
+  path: '/doors/logs',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 const PrivateAdminDoorsDevicesRoute =
   PrivateAdminDoorsDevicesRouteImport.update({
     id: '/doors/devices',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/admin/feature-flags': typeof PrivateAdminFeatureFlagsRoute
   '/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
   '/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
+  '/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
   '/admin/doors': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/admin/feature-flags': typeof PrivateAdminFeatureFlagsRoute
   '/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
   '/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
+  '/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
   '/admin/doors': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRoutesById {
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_private/admin/feature-flags': typeof PrivateAdminFeatureFlagsRoute
   '/_private/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
   '/_private/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
+  '/_private/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
   '/_private/admin/doors/': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRouteTypes {
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/admin/feature-flags'
     | '/admin/doors/cards'
     | '/admin/doors/devices'
+    | '/admin/doors/logs'
     | '/admin/doors'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/admin/feature-flags'
     | '/admin/doors/cards'
     | '/admin/doors/devices'
+    | '/admin/doors/logs'
     | '/admin/doors'
   id:
     | '__root__'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_private/admin/feature-flags'
     | '/_private/admin/doors/cards'
     | '/_private/admin/doors/devices'
+    | '/_private/admin/doors/logs'
     | '/_private/admin/doors/'
   fileRoutesById: FileRoutesById
 }
@@ -243,6 +255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminDoorsIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/doors/logs': {
+      id: '/_private/admin/doors/logs'
+      path: '/doors/logs'
+      fullPath: '/admin/doors/logs'
+      preLoaderRoute: typeof PrivateAdminDoorsLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/doors/devices': {
       id: '/_private/admin/doors/devices'
       path: '/doors/devices'
@@ -264,6 +283,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminFeatureFlagsRoute: typeof PrivateAdminFeatureFlagsRoute
   PrivateAdminDoorsCardsRoute: typeof PrivateAdminDoorsCardsRoute
   PrivateAdminDoorsDevicesRoute: typeof PrivateAdminDoorsDevicesRoute
+  PrivateAdminDoorsLogsRoute: typeof PrivateAdminDoorsLogsRoute
   PrivateAdminDoorsIndexRoute: typeof PrivateAdminDoorsIndexRoute
 }
 
@@ -271,6 +291,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminFeatureFlagsRoute: PrivateAdminFeatureFlagsRoute,
   PrivateAdminDoorsCardsRoute: PrivateAdminDoorsCardsRoute,
   PrivateAdminDoorsDevicesRoute: PrivateAdminDoorsDevicesRoute,
+  PrivateAdminDoorsLogsRoute: PrivateAdminDoorsLogsRoute,
   PrivateAdminDoorsIndexRoute: PrivateAdminDoorsIndexRoute,
 }
 

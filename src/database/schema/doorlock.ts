@@ -59,8 +59,30 @@ export const cardDevice = pgTable(
   })
 );
 
+// Access log for all card scan attempts
+export const accessLog = pgTable('access_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  deviceId: text('device_id')
+    .notNull()
+    .references(() => device.id, { onDelete: 'cascade' }),
+  // Tag scanned (may not exist in card table if unknown)
+  tag: text('tag').notNull(),
+  // Card ID if the tag was found in the system
+  cardId: uuid('card_id').references(() => card.id, { onDelete: 'set null' }),
+  // User ID associated with the card at the time of scan
+  userId: uuid('user_id').references(() => user.id, { onDelete: 'set null' }),
+  // Result of the access attempt
+  result: text('result').notNull(), // 'granted', 'denied'
+  // Reason for denial (if denied)
+  reason: text('reason'),
+  // Timestamp of the access attempt
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
+  ...timestamps,
+});
+
 export const doorlockSchema = {
   card,
   device,
   cardDevice,
+  accessLog,
 };

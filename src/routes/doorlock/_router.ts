@@ -19,6 +19,13 @@ import {
   replaceDeviceCards,
   upsertDevice,
 } from './devices';
+import {
+  addUnknownCard,
+  getDeviceLogs,
+  getLog,
+  listLogs,
+  listUnknownTags,
+} from './logs';
 import { openDoor } from './open';
 
 export const doorlockRouter = new Hono<Context>()
@@ -45,4 +52,10 @@ export const doorlockRouter = new Hono<Context>()
   .delete('/devices/:id', ...deleteDevice)
   .get('/devices/:id/cards', ...listDeviceCards)
   .put('/devices/:id/cards', ...replaceDeviceCards) // replace restrictions
-  .get('/devices/:id/status', ...getDeviceStatus);
+  .get('/devices/:id/status', ...getDeviceStatus)
+  .get('/devices/:deviceId/logs', ...getDeviceLogs)
+  // Access logs
+  .get('/logs', ...listLogs)
+  .get('/logs/:id', ...getLog)
+  .get('/logs/unknown-tags', ...listUnknownTags)
+  .post('/logs/add-unknown-card', ...addUnknownCard);

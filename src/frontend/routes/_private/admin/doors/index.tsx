@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { FaDoorOpen, FaSpinner } from 'react-icons/fa6';
 import { toast } from 'sonner';
@@ -277,11 +277,18 @@ function RouteComponent() {
 
   return (
     <div className="container mx-auto space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="font-bold text-3xl tracking-tight">
-          {t('doorlock.myDoors')}
-        </h1>
-        <p className="text-muted-foreground">{t('doorlock.title')}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-bold text-3xl tracking-tight">
+            {t('doorlock.myDoors')}
+          </h1>
+          <p className="text-muted-foreground">{t('doorlock.title')}</p>
+        </div>
+        {session?.user?.permissions.includes('doorlock:logs:read') && (
+          <Link to="/admin/doors/logs">
+            <Button variant="outline">{t('doorlock.viewLogs')}</Button>
+          </Link>
+        )}
       </div>
 
       {!accessibleDevices || accessibleDevices.length === 0 ? (

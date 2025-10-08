@@ -1,7 +1,5 @@
 {
-  "welcome_message": "Szia!",
   "logout": "Kijelentkezés",
-  "profile": "Profil",
   "settings": "Beállítások",
   "sign_in": "Bejelentkezés",
   "schedule": "Órarend",
@@ -72,9 +70,7 @@
     "addDevice": "Eszköz hozzáadása",
     "addCard": "Kártya hozzáadása",
     "editDevice": "Eszköz szerkesztése",
-    "editCard": "Kártya szerkesztése",
     "deleteDevice": "Eszköz törlése",
-    "deleteCard": "Kártya törlése",
     "deviceId": "Eszköz azonosító",
     "ttlSeconds": "TTL (másodperc)",
     "cardTag": "Kártya címke",
@@ -89,16 +85,35 @@
     "deleteSuccess": "{{item}} sikeresen törölve",
     "saveSuccess": "{{item}} sikeresen mentve",
     "errorOpening": "Nem sikerült megnyitni az ajtót",
-    "errorLoading": "Hiba a(z) {{item}} betöltése közben",
     "errorSaving": "Hiba a(z) {{item}} mentése közben",
     "errorDeleting": "Hiba a(z) {{item}} törlése közben",
-    "restrictedDevices": "Korlátozott eszközök",
-    "allDevices": "Minden eszköz (nincs korlátozás)",
-    "assignDevices": "Eszközök hozzárendelése",
     "myCards": "Kártyáim",
     "allCards": "Minden kártya",
-    "createdAt": "Létrehozva",
-    "updatedAt": "Frissítve"
+    "viewLogs": "Naplók megtekintése",
+    "accessLogs": "Hozzáférési naplók",
+    "viewAccessLogs": "Összes eszköz hozzáférési kísérlet megtekintése",
+    "logs": "Naplók",
+    "allAccessAttempts": "Összes ajtónyitási kísérlet",
+    "timestamp": "Időpont",
+    "device": "Eszköz",
+    "tag": "Címke",
+    "user": "Felhasználó",
+    "result": "Eredmény",
+    "reason": "Indok",
+    "granted": "Engedélyezett",
+    "denied": "Megtagadva",
+    "noLogs": "Nem található napló",
+    "filterByResult": "Szűrés eredmény szerint",
+    "unknownTags": "Ismeretlen címkék",
+    "unknownTagsDescription": "Olyan címkék, amelyek beolvasásra kerültek, de nem találhatók a rendszerben",
+    "attempts": "Kísérletek",
+    "addUnknownCard": "Ismeretlen kártya hozzáadása",
+    "addUnknownCardDescription": "Regisztráld ezt a címkét új kártyaként",
+    "assignToUser": "Hozzárendelés felhasználóhoz",
+    "selectUser": "Válassz felhasználót",
+    "cardLabelPlaceholder": "Opcionális címke a kártyához",
+    "cardAdded": "Kártya sikeresen hozzáadva",
+    "unknownUser": "Ismeretlen"
   },
   "featureFlags": {
     "title": "Funkció kapcsolók",
@@ -115,10 +130,16 @@
     "toggleError": "Funkció kapcsoló frissítése sikertelen"
   },
   "admin": {
-    "title": "Adminisztráció",
-    "dashboard": "Műszerfal",
     "doorAccess": "Ajtónyitás",
-    "overview": "Áttekintés",
-    "system": "Rendszer"
+    "door": "Ajtó",
+    "server": "Szerver"
+  },
+  "common": {
+    "actions": "Műveletek",
+    "all": "Összes",
+    "back": "Vissza",
+    "cancel": "Mégsem",
+    "loading": "Betöltés...",
+    "saving": "Mentés..."
   }
 }

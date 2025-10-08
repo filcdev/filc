@@ -2,7 +2,6 @@
 
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { PanelLeftIcon } from 'lucide-react';
 import {
   type ComponentProps,
   type CSSProperties,
@@ -13,6 +12,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { FaBars } from 'react-icons/fa6';
 import { Button } from '~/frontend/components/ui/button';
 import { Input } from '~/frontend/components/ui/input';
 import { Separator } from '~/frontend/components/ui/separator';
@@ -281,7 +281,7 @@ function SidebarTrigger({
       variant="ghost"
       {...props}
     >
-      <PanelLeftIcon />
+      <FaBars />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

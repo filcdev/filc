@@ -1,11 +1,17 @@
 {
-  "welcome_message": "Welcome!",
   "settings": "Settings",
   "logout": "Log out",
   "sign_in": "Sign in",
-  "profile": "Profile",
   "schedule": "Schedule",
   "substitutions": "Substitutions",
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "back": "Back",
+    "actions": "Actions",
+    "all": "All",
+    "saving": "Saving..."
+  },
   "magicLink": {
     "failed": "Failed to send magic link. Please try again.",
     "checkYourEmail": "Check your email",
@@ -72,9 +78,7 @@
     "addDevice": "Add Device",
     "addCard": "Add Card",
     "editDevice": "Edit Device",
-    "editCard": "Edit Card",
     "deleteDevice": "Delete Device",
-    "deleteCard": "Delete Card",
     "deviceId": "Device ID",
     "ttlSeconds": "TTL (seconds)",
     "cardTag": "Card Tag",
@@ -89,16 +93,35 @@
     "deleteSuccess": "{{item}} deleted successfully",
     "saveSuccess": "{{item}} saved successfully",
     "errorOpening": "Failed to open door",
-    "errorLoading": "Error loading {{item}}",
     "errorSaving": "Error saving {{item}}",
     "errorDeleting": "Error deleting {{item}}",
-    "restrictedDevices": "Restricted Devices",
-    "allDevices": "All Devices (no restrictions)",
-    "assignDevices": "Assign Devices",
     "myCards": "My Cards",
     "allCards": "All Cards",
-    "createdAt": "Created",
-    "updatedAt": "Updated"
+    "viewLogs": "View Logs",
+    "accessLogs": "Access Logs",
+    "viewAccessLogs": "View all device access attempts",
+    "logs": "Logs",
+    "allAccessAttempts": "All access attempts to doors",
+    "timestamp": "Timestamp",
+    "device": "Device",
+    "tag": "Tag",
+    "user": "User",
+    "result": "Result",
+    "reason": "Reason",
+    "granted": "Granted",
+    "denied": "Denied",
+    "noLogs": "No logs found",
+    "filterByResult": "Filter by result",
+    "unknownTags": "Unknown Tags",
+    "unknownTagsDescription": "Tags that were scanned but not found in the system",
+    "attempts": "Attempts",
+    "addUnknownCard": "Add Unknown Card",
+    "addUnknownCardDescription": "Register this tag as a new card",
+    "assignToUser": "Assign to User",
+    "selectUser": "Select a user",
+    "cardLabelPlaceholder": "Optional label for this card",
+    "cardAdded": "Card added successfully",
+    "unknownUser": "Unknown"
   },
   "featureFlags": {
     "title": "Feature Flags",
@@ -115,10 +138,8 @@
     "toggleError": "Failed to update feature flag"
   },
   "admin": {
-    "title": "Administration",
-    "dashboard": "Dashboard",
     "doorAccess": "Door Access",
-    "overview": "Overview",
-    "system": "System"
+    "door": "Door",
+    "server": "Server"
   }
 }
