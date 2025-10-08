@@ -19,7 +19,9 @@ function AppLayoutComponent() {
           <SidebarTrigger />
         </Navbar>
 
-        <Outlet />
+        <div className="grow overflow-auto p-4">
+          <Outlet />
+        </div>
       </main>
     </SidebarProvider>
   );
