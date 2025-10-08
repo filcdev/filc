@@ -22,8 +22,8 @@
     // tsgo will fail with this set
     "baseUrl": "./",
     "paths": {
-      "*": ["./*"],
-      "~/*": ["./src/*"]
+      // "*": ["./*"],
+      "~/*": ["src/*"]
     }
   }
 }

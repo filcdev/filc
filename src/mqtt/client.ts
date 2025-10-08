@@ -10,20 +10,9 @@ const logger = getLogger(['chronos', 'mqtt']);
 
 let client: MqttClient | null = null;
 
-export const initializeMqttClient = async () => {
-  const enabled = await handleFeatureFlag(
-    'doorlock:mqtt',
-    'Enable MQTT client for door lock integration',
-    false
-  );
-
-  if (!enabled) {
-    logger.info('MQTT client is disabled via feature flag');
-    return;
-  }
-
+const connectMqtt = () => {
   if (client) {
-    return client;
+    return;
   }
 
   client = connect(env.mqttBrokerUrl);
@@ -54,6 +43,40 @@ export const initializeMqttClient = async () => {
   client.on('message', async (topic, payload) => {
     await handleIncomingMessage(topic, payload);
   });
+};
+
+const disconnectMqtt = () => {
+  if (client) {
+    client.end(() => {
+      logger.info('MQTT client disconnected due to feature flag');
+    });
+    client = null;
+  }
+};
+
+export const initializeMqttClient = async () => {
+  const enabled = await handleFeatureFlag(
+    'doorlock:mqtt',
+    'Enable MQTT client for door lock integration',
+    false,
+    {
+      onEnable: () => {
+        logger.info('MQTT feature flag enabled - connecting');
+        connectMqtt();
+      },
+      onDisable: () => {
+        logger.info('MQTT feature flag disabled - disconnecting');
+        disconnectMqtt();
+      },
+    }
+  );
+
+  if (!enabled) {
+    logger.info('MQTT client is disabled via feature flag');
+    return;
+  }
+
+  connectMqtt();
 };
 
 export const handleMqttShutdown = () => {

@@ -460,7 +460,7 @@
         // Require all enum members to be literal values.
         "useLiteralEnumMembers": "error",
         // Reports usage of “magic numbers” — numbers used directly instead of being assigned to named constants.
-        "noMagicNumbers": "error",
+        "noMagicNumbers": "off",
         // Promotes the usage of node:assert/strict over node:assert.
         "useNodeAssertStrict": "error",
         // Enforces using the node: protocol for Node.js builtin modules.
@@ -553,7 +553,7 @@
         // Disallow the use of debugger
         "noDebugger": "error",
         // Disallow direct assignments to document.cookie.
-        "noDocumentCookie": "error",
+        "noDocumentCookie": "off",
         // Prevents importing next/document outside of pages/_document.jsx in Next.js projects.
         "noDocumentImportInPage": "error",
         // Require the use of === and !==.

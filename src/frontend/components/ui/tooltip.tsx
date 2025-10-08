@@ -8,7 +8,7 @@ import {
 } from '@radix-ui/react-tooltip';
 import type { ComponentProps } from 'react';
 
-import { cn } from '~/frontend/utils';
+import { cn } from '~/frontend/utils/index';
 
 function TooltipProvider({
   delayDuration = 0,
