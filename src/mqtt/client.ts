@@ -2,7 +2,12 @@ import { getLogger } from '@logtape/logtape';
 import { and, eq, exists } from 'drizzle-orm';
 import { connect, type MqttClient } from 'mqtt';
 import { db } from '~/database';
-import { card, cardDevice, device } from '~/database/schema/doorlock';
+import {
+  accessLog,
+  card,
+  cardDevice,
+  device,
+} from '~/database/schema/doorlock';
 import { env } from '~/utils/environment';
 import { handleFeatureFlag } from '~/utils/feature-flag';
 
@@ -10,20 +15,9 @@ const logger = getLogger(['chronos', 'mqtt']);
 
 let client: MqttClient | null = null;
 
-export const initializeMqttClient = async () => {
-  const enabled = await handleFeatureFlag(
-    'doorlock:mqtt',
-    'Enable MQTT client for door lock integration',
-    false
-  );
-
-  if (!enabled) {
-    logger.info('MQTT client is disabled via feature flag');
-    return;
-  }
-
+const connectMqtt = () => {
   if (client) {
-    return client;
+    return;
   }
 
   client = connect(env.mqttBrokerUrl);
@@ -54,6 +48,40 @@ export const initializeMqttClient = async () => {
   client.on('message', async (topic, payload) => {
     await handleIncomingMessage(topic, payload);
   });
+};
+
+const disconnectMqtt = () => {
+  if (client) {
+    client.end(() => {
+      logger.info('MQTT client disconnected due to feature flag');
+    });
+    client = null;
+  }
+};
+
+export const initializeMqttClient = async () => {
+  const enabled = await handleFeatureFlag(
+    'doorlock:mqtt',
+    'Enable MQTT client for door lock integration',
+    false,
+    {
+      onEnable: () => {
+        logger.info('MQTT feature flag enabled - connecting');
+        connectMqtt();
+      },
+      onDisable: () => {
+        logger.info('MQTT feature flag disabled - disconnecting');
+        disconnectMqtt();
+      },
+    }
+  );
+
+  if (!enabled) {
+    logger.info('MQTT client is disabled via feature flag');
+    return;
+  }
+
+  connectMqtt();
 };
 
 export const handleMqttShutdown = () => {
@@ -150,6 +178,7 @@ const handleRfidEvent = async (
     const [found] = await db
       .select({
         id: card.id,
+        userId: card.userId,
         frozen: card.frozen,
         disabled: card.disabled,
         label: card.label,
@@ -176,27 +205,97 @@ const handleRfidEvent = async (
       .limit(1);
     if (!found) {
       logger.debug('Unknown card tag', { tag, deviceId });
+      // Log unknown tag attempt
+      await logAccessAttempt({
+        deviceId,
+        tag,
+        cardId: null,
+        userId: null,
+        result: 'denied',
+        reason: 'Unknown card',
+      });
       sendDoorlockCommand(deviceId, 'deny', 'Unknown card');
       return;
     }
     if (found.disabled) {
+      await logAccessAttempt({
+        deviceId,
+        tag,
+        cardId: found.id,
+        userId: found.userId,
+        result: 'denied',
+        reason: 'Card disabled',
+      });
       sendDoorlockCommand(deviceId, 'deny', 'Card disabled');
       return;
     }
     if (found.frozen) {
+      await logAccessAttempt({
+        deviceId,
+        tag,
+        cardId: found.id,
+        userId: found.userId,
+        result: 'denied',
+        reason: 'Card frozen',
+      });
       sendDoorlockCommand(deviceId, 'deny', 'Card frozen');
       return;
     }
     // If card is restricted (has mapping rows) but this device is not among them
     // deny access.
     if (found.restricted && !found.allowedForDevice) {
+      await logAccessAttempt({
+        deviceId,
+        tag,
+        cardId: found.id,
+        userId: found.userId,
+        result: 'denied',
+        reason: 'Not allowed on this device',
+      });
       sendDoorlockCommand(deviceId, 'deny', 'Not allowed on this device');
       return;
     }
+    // Access granted
+    await logAccessAttempt({
+      deviceId,
+      tag,
+      cardId: found.id,
+      userId: found.userId,
+      result: 'granted',
+      reason: null,
+    });
     sendDoorlockCommand(deviceId, 'open', found.label ?? 'Access granted');
   } catch (err) {
     logger.error('DB error while processing RFID event', { err });
     sendDoorlockCommand(deviceId, 'deny', 'System error');
+  }
+};
+
+// Log an access attempt to the database
+const logAccessAttempt = async (params: {
+  deviceId: string;
+  tag: string;
+  cardId: string | null;
+  userId: string | null;
+  result: 'granted' | 'denied';
+  reason: string | null;
+}) => {
+  try {
+    await db.insert(accessLog).values({
+      deviceId: params.deviceId,
+      tag: params.tag,
+      cardId: params.cardId,
+      userId: params.userId,
+      result: params.result,
+      reason: params.reason,
+      timestamp: new Date(),
+    });
+  } catch (err) {
+    logger.error('Failed to log access attempt', {
+      err,
+      deviceId: params.deviceId,
+      tag: params.tag,
+    });
   }
 };
 

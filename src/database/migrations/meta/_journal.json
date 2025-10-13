@@ -78,6 +78,13 @@
       "when": 1758095075693,
       "tag": "0010_charming_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1759943447450,
+      "tag": "0011_heavy_black_bolt",
+      "breakpoints": true
     }
   ]
 }

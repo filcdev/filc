@@ -9,26 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as PrivateRouteRouteImport } from './routes/_private/route'
-import { Route as AppRouteRouteImport } from './routes/_app/route'
-import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
+import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
+import { Route as PrivateAdminFeatureFlagsRouteImport } from './routes/_private/admin/feature-flags'
+import { Route as PrivateAdminDoorsIndexRouteImport } from './routes/_private/admin/doors/index'
+import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
+import { Route as PrivateAdminDoorsLogsRouteImport } from './routes/_private/admin/doors/logs'
+import { Route as PrivateAdminDoorsDevicesRouteImport } from './routes/_private/admin/doors/devices'
+import { Route as PrivateAdminDoorsCardsRouteImport } from './routes/_private/admin/doors/cards'
 
+const PublicRouteRoute = PublicRouteRouteImport.update({
+  id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivateRouteRoute = PrivateRouteRouteImport.update({
   id: '/_private',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRouteRoute = AppRouteRouteImport.update({
-  id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRouteRoute,
+  getParentRoute: () => PublicRouteRoute,
 } as any)
 const AuthWelcomeRoute = AuthWelcomeRouteImport.update({
   id: '/auth/welcome',
@@ -50,50 +57,140 @@ const PrivateProbaRoute = PrivateProbaRouteImport.update({
   path: '/proba',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
+const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => PrivateRouteRoute,
+} as any)
+const PrivateAdminFeatureFlagsRoute =
+  PrivateAdminFeatureFlagsRouteImport.update({
+    id: '/feature-flags',
+    path: '/feature-flags',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminDoorsIndexRoute = PrivateAdminDoorsIndexRouteImport.update({
+  id: '/doors/',
+  path: '/doors/',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateAdminTimetableImportRoute =
+  PrivateAdminTimetableImportRouteImport.update({
+    id: '/timetable/import',
+    path: '/timetable/import',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminDoorsLogsRoute = PrivateAdminDoorsLogsRouteImport.update({
+  id: '/doors/logs',
+  path: '/doors/logs',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateAdminDoorsDevicesRoute =
+  PrivateAdminDoorsDevicesRouteImport.update({
+    id: '/doors/devices',
+    path: '/doors/devices',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminDoorsCardsRoute = PrivateAdminDoorsCardsRouteImport.update({
+  id: '/doors/cards',
+  path: '/doors/cards',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/': typeof AppIndexRoute
+  '/': typeof PublicIndexRoute
+  '/admin/feature-flags': typeof PrivateAdminFeatureFlagsRoute
+  '/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
+  '/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
+  '/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
+  '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
+  '/admin/doors': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/': typeof AppIndexRoute
+  '/': typeof PublicIndexRoute
+  '/admin/feature-flags': typeof PrivateAdminFeatureFlagsRoute
+  '/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
+  '/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
+  '/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
+  '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
+  '/admin/doors': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_app': typeof AppRouteRouteWithChildren
   '/_private': typeof PrivateRouteRouteWithChildren
+  '/_public': typeof PublicRouteRouteWithChildren
+  '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
   '/_private/proba': typeof PrivateProbaRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/_app/': typeof AppIndexRoute
+  '/_public/': typeof PublicIndexRoute
+  '/_private/admin/feature-flags': typeof PrivateAdminFeatureFlagsRoute
+  '/_private/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
+  '/_private/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
+  '/_private/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
+  '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
+  '/_private/admin/doors/': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/proba' | '/auth/error' | '/auth/login' | '/auth/welcome' | '/'
+  fullPaths:
+    | '/admin'
+    | '/proba'
+    | '/auth/error'
+    | '/auth/login'
+    | '/auth/welcome'
+    | '/'
+    | '/admin/feature-flags'
+    | '/admin/doors/cards'
+    | '/admin/doors/devices'
+    | '/admin/doors/logs'
+    | '/admin/timetable/import'
+    | '/admin/doors'
   fileRoutesByTo: FileRoutesByTo
-  to: '/proba' | '/auth/error' | '/auth/login' | '/auth/welcome' | '/'
+  to:
+    | '/admin'
+    | '/proba'
+    | '/auth/error'
+    | '/auth/login'
+    | '/auth/welcome'
+    | '/'
+    | '/admin/feature-flags'
+    | '/admin/doors/cards'
+    | '/admin/doors/devices'
+    | '/admin/doors/logs'
+    | '/admin/timetable/import'
+    | '/admin/doors'
   id:
     | '__root__'
-    | '/_app'
     | '/_private'
+    | '/_public'
+    | '/_private/admin'
     | '/_private/proba'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
-    | '/_app/'
+    | '/_public/'
+    | '/_private/admin/feature-flags'
+    | '/_private/admin/doors/cards'
+    | '/_private/admin/doors/devices'
+    | '/_private/admin/doors/logs'
+    | '/_private/admin/timetable/import'
+    | '/_private/admin/doors/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AppRouteRoute: typeof AppRouteRouteWithChildren
   PrivateRouteRoute: typeof PrivateRouteRouteWithChildren
+  PublicRouteRoute: typeof PublicRouteRouteWithChildren
   AuthErrorRoute: typeof AuthErrorRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthWelcomeRoute: typeof AuthWelcomeRoute
@@ -101,6 +198,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof PublicRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_private': {
       id: '/_private'
       path: ''
@@ -108,19 +212,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AppRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_app/': {
-      id: '/_app/'
+    '/_public/': {
+      id: '/_public/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRouteRoute
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
     }
     '/auth/welcome': {
       id: '/auth/welcome'
@@ -150,26 +247,86 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateProbaRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
+    '/_private/admin': {
+      id: '/_private/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof PrivateAdminRouteRouteImport
+      parentRoute: typeof PrivateRouteRoute
+    }
+    '/_private/admin/feature-flags': {
+      id: '/_private/admin/feature-flags'
+      path: '/feature-flags'
+      fullPath: '/admin/feature-flags'
+      preLoaderRoute: typeof PrivateAdminFeatureFlagsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/doors/': {
+      id: '/_private/admin/doors/'
+      path: '/doors'
+      fullPath: '/admin/doors'
+      preLoaderRoute: typeof PrivateAdminDoorsIndexRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/timetable/import': {
+      id: '/_private/admin/timetable/import'
+      path: '/timetable/import'
+      fullPath: '/admin/timetable/import'
+      preLoaderRoute: typeof PrivateAdminTimetableImportRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/doors/logs': {
+      id: '/_private/admin/doors/logs'
+      path: '/doors/logs'
+      fullPath: '/admin/doors/logs'
+      preLoaderRoute: typeof PrivateAdminDoorsLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/doors/devices': {
+      id: '/_private/admin/doors/devices'
+      path: '/doors/devices'
+      fullPath: '/admin/doors/devices'
+      preLoaderRoute: typeof PrivateAdminDoorsDevicesRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/doors/cards': {
+      id: '/_private/admin/doors/cards'
+      path: '/doors/cards'
+      fullPath: '/admin/doors/cards'
+      preLoaderRoute: typeof PrivateAdminDoorsCardsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
   }
 }
 
-interface AppRouteRouteChildren {
-  AppIndexRoute: typeof AppIndexRoute
+interface PrivateAdminRouteRouteChildren {
+  PrivateAdminFeatureFlagsRoute: typeof PrivateAdminFeatureFlagsRoute
+  PrivateAdminDoorsCardsRoute: typeof PrivateAdminDoorsCardsRoute
+  PrivateAdminDoorsDevicesRoute: typeof PrivateAdminDoorsDevicesRoute
+  PrivateAdminDoorsLogsRoute: typeof PrivateAdminDoorsLogsRoute
+  PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
+  PrivateAdminDoorsIndexRoute: typeof PrivateAdminDoorsIndexRoute
 }
 
-const AppRouteRouteChildren: AppRouteRouteChildren = {
-  AppIndexRoute: AppIndexRoute,
+const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
+  PrivateAdminFeatureFlagsRoute: PrivateAdminFeatureFlagsRoute,
+  PrivateAdminDoorsCardsRoute: PrivateAdminDoorsCardsRoute,
+  PrivateAdminDoorsDevicesRoute: PrivateAdminDoorsDevicesRoute,
+  PrivateAdminDoorsLogsRoute: PrivateAdminDoorsLogsRoute,
+  PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
+  PrivateAdminDoorsIndexRoute: PrivateAdminDoorsIndexRoute,
 }
 
-const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
-  AppRouteRouteChildren,
-)
+const PrivateAdminRouteRouteWithChildren =
+  PrivateAdminRouteRoute._addFileChildren(PrivateAdminRouteRouteChildren)
 
 interface PrivateRouteRouteChildren {
+  PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
   PrivateProbaRoute: typeof PrivateProbaRoute
 }
 
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
+  PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
   PrivateProbaRoute: PrivateProbaRoute,
 }
 
@@ -177,9 +334,21 @@ const PrivateRouteRouteWithChildren = PrivateRouteRoute._addFileChildren(
   PrivateRouteRouteChildren,
 )
 
+interface PublicRouteRouteChildren {
+  PublicIndexRoute: typeof PublicIndexRoute
+}
+
+const PublicRouteRouteChildren: PublicRouteRouteChildren = {
+  PublicIndexRoute: PublicIndexRoute,
+}
+
+const PublicRouteRouteWithChildren = PublicRouteRoute._addFileChildren(
+  PublicRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  AppRouteRoute: AppRouteRouteWithChildren,
   PrivateRouteRoute: PrivateRouteRouteWithChildren,
+  PublicRouteRoute: PublicRouteRouteWithChildren,
   AuthErrorRoute: AuthErrorRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthWelcomeRoute: AuthWelcomeRoute,

@@ -1,4 +1,7 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
+import { StatusCodes } from 'http-status-codes';
+import { isFeatureEnabled } from '~/utils/feature-flag';
 import type { Context } from '~/utils/globals';
 import {
   createCard,
@@ -16,9 +19,26 @@ import {
   replaceDeviceCards,
   upsertDevice,
 } from './devices';
+import {
+  addUnknownCard,
+  getDeviceLogs,
+  getLog,
+  listLogs,
+  listUnknownTags,
+} from './logs';
 import { openDoor } from './open';
 
 export const doorlockRouter = new Hono<Context>()
+  .use('*', async (_c, next) => {
+    // Check feature flag on every request
+    const enabled = await isFeatureEnabled('doorlock:api');
+    if (!enabled) {
+      throw new HTTPException(StatusCodes.SERVICE_UNAVAILABLE, {
+        message: 'Doorlock API is currently disabled',
+      });
+    }
+    await next();
+  })
   .get('/cards', ...listCards)
   .get('/cards/:id', ...getCard)
   .post('/cards', ...createCard)
@@ -32,4 +52,10 @@ export const doorlockRouter = new Hono<Context>()
   .delete('/devices/:id', ...deleteDevice)
   .get('/devices/:id/cards', ...listDeviceCards)
   .put('/devices/:id/cards', ...replaceDeviceCards) // replace restrictions
-  .get('/devices/:id/status', ...getDeviceStatus);
+  .get('/devices/:id/status', ...getDeviceStatus)
+  .get('/devices/:deviceId/logs', ...getDeviceLogs)
+  // Access logs
+  .get('/logs', ...listLogs)
+  .get('/logs/:id', ...getLog)
+  .get('/logs/unknown-tags', ...listUnknownTags)
+  .post('/logs/add-unknown-card', ...addUnknownCard);

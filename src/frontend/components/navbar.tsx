@@ -28,7 +28,12 @@ import {
 } from '~/frontend/components/ui/dropdown-menu';
 import { authClient } from '~/frontend/utils/authentication';
 
-export function Navbar() {
+type NavbarProps = {
+  children?: React.ReactNode;
+  showLinks?: boolean;
+};
+
+export function Navbar({ children, showLinks = true }: NavbarProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
@@ -37,30 +42,14 @@ export function Navbar() {
     <nav className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center px-6">
         <div className="flex items-center gap-3">
+          {children}
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <FaGraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-semibold text-foreground text-xl">filc</span>
         </div>
 
-        <div className="ml-8 hidden items-center gap-6 md:flex">
-          <Button
-            className="text-muted-foreground hover:text-foreground"
-            size="sm"
-            variant="ghost"
-          >
-            <FaCalendarDays className="mr-2 h-4 w-4" />
-            {t('schedule')}
-          </Button>
-          <Button
-            className="text-muted-foreground hover:text-foreground"
-            size="sm"
-            variant="ghost"
-          >
-            <FaBook className="mr-2 h-4 w-4" />
-            {t('substitutions')}
-          </Button>
-        </div>
+        {showLinks && <NavLinks />}
 
         <div className="ml-auto flex items-center gap-3">
           {/* <Button
@@ -161,5 +150,33 @@ export function Navbar() {
         </div>
       </div>
     </nav>
+  );
+}
+
+function NavLinks() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  return (
+    <div className="ml-8 hidden items-center gap-6 md:flex">
+      <Button
+        className="text-muted-foreground hover:text-foreground"
+        onClick={() => navigate({ to: '/' })}
+        size="sm"
+        variant="ghost"
+      >
+        <FaCalendarDays className="mr-2 h-4 w-4" />
+        {t('schedule')}
+      </Button>
+      <Button
+        className="text-muted-foreground hover:text-foreground"
+        onClick={() => navigate({ to: '/' })}
+        size="sm"
+        variant="ghost"
+      >
+        <FaBook className="mr-2 h-4 w-4" />
+        {t('substitutions')}
+      </Button>
+    </div>
   );
 }

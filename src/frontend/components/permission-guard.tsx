@@ -13,7 +13,14 @@ export function PermissionGuard({
 }: PermissionGuardProps) {
   const { data } = authClient.useSession();
 
-  if (!data?.user.permissions.includes(permission)) {
+  const user = data?.user;
+  if (!user) {
+    return <Navigate to="/auth/error" />;
+  }
+
+  if (
+    !(user.permissions.includes(permission) || user.permissions.includes('*'))
+  ) {
     return <Navigate to="/auth/error" />;
   }
 
