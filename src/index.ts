@@ -96,9 +96,10 @@ api.route('/ping', pingRouter);
 api.route('/feature-flags', featureFlagRouter);
 api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
-(await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false))
-  ? api.route('/doorlock', doorlockRouter)
-  : logger.info('Doorlock API is disabled by feature flag');
+
+// Register feature flag for doorlock API with initial check
+await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false);
+api.route('/doorlock', doorlockRouter);
 
 const app = new Hono();
 app.route('/api', api);

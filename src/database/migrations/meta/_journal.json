@@ -82,15 +82,8 @@
     {
       "idx": 11,
       "version": "7",
-      "when": 1759748570816,
-      "tag": "0011_elite_lucky_pierre",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1760353095430,
-      "tag": "0012_smart_dragon_man",
+      "when": 1759943447450,
+      "tag": "0011_heavy_black_bolt",
       "breakpoints": true
     }
   ]

@@ -6,6 +6,10 @@ import z from 'zod';
 import { db } from '~/database';
 import { featureFlag } from '~/database/schema/feature-flag';
 import { featureFlagFactory } from '~/routes/feature-flags/_factory';
+import {
+  invalidateFeatureFlagCache,
+  notifyFeatureFlagChange,
+} from '~/utils/feature-flag';
 import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
@@ -110,6 +114,10 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
         createdAt: featureFlag.createdAt,
         updatedAt: featureFlag.updatedAt,
       });
+
+    // Invalidate cache and notify handlers
+    invalidateFeatureFlagCache(name);
+    await notifyFeatureFlagChange(name, isEnabled);
 
     return c.json<SuccessResponse>({
       success: true,

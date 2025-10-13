@@ -116,7 +116,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
           })),
         day: (() => {
           const d = dayMap.get(l.dayDefinitionId);
-          return d ? { id: d.id, name: d.name, short: d.short } : null;
+          return d;
         })(),
         period: (() => {
           const p = periodMap.get(l.periodId);

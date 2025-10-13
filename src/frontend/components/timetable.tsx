@@ -44,14 +44,41 @@ export type TimetableData = {
   };
 };
 
+// Metadata for sorting days correctly
+export type DayMetadata = {
+  [dayName: string]: {
+    sortOrder: number; // Day number from day.days array
+  };
+};
+
 type TimetableProps = {
   data: TimetableData;
+  dayMetadata?: DayMetadata;
   className?: string;
   title?: string;
 };
 
-const getDaysFromData = (data: TimetableData): string[] => {
-  return Object.keys(data);
+const getDaysFromData = (
+  data: TimetableData,
+  dayMetadata?: DayMetadata
+): string[] => {
+  const days = Object.keys(data);
+
+  if (!dayMetadata) {
+    return days;
+  }
+
+  return days.sort((a, b) => {
+    const orderA = dayMetadata[a]?.sortOrder ?? 999;
+    const orderB = dayMetadata[b]?.sortOrder ?? 999;
+
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+
+    // If both have the same order or are unknown, sort alphabetically
+    return a.localeCompare(b);
+  });
 };
 
 const getTimeSlotsFromData = (data: TimetableData): string[] => {
@@ -138,6 +165,7 @@ const ClassCell = ({
 
 export function Timetable({
   data,
+  dayMetadata,
   className,
   title = 'Class Schedule',
 }: TimetableProps) {
@@ -146,7 +174,7 @@ export function Timetable({
     ClassSession | ClassSession[] | null
   >;
 
-  const days = getDaysFromData(data);
+  const days = getDaysFromData(data, dayMetadata);
   const timeSlots = getTimeSlotsFromData(data);
 
   const columns: ColumnDef<Row, unknown>[] = [

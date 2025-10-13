@@ -3,6 +3,7 @@ import { parseResponse } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
 import {
   type ClassSession,
+  type DayMetadata,
   Timetable,
   type TimetableData,
 } from '~/frontend/components/timetable';
@@ -18,7 +19,12 @@ type EnrichedLesson = {
   subject: { id: string; name: string; short: string } | null;
   teachers: Array<{ id: string; name: string; short: string }>;
   classrooms: Array<{ id: string; name: string; short: string }>;
-  day: { id: string; name: string; short: string } | null;
+  day: {
+    id: string;
+    name: string;
+    short: string;
+    days?: string[];
+  } | null;
   period: {
     id: string;
     startTime: string;
@@ -54,6 +60,75 @@ const colorFromSubject = (name: string) => {
   }
   const idx = Math.abs(sum) % COLORS.length;
   return COLORS[idx] ?? COLORS[0];
+};
+
+// Extract helper to upsert class session into timetable data
+const upsertClassSession = (
+  data: TimetableData,
+  day: string,
+  time: string,
+  item: ClassSession
+) => {
+  data[day] ??= {};
+  const cell = data[day][time];
+  if (!cell) {
+    data[day][time] = [item];
+    return;
+  }
+  if (Array.isArray(cell)) {
+    cell.push(item);
+    return;
+  }
+  data[day][time] = [cell, item];
+};
+
+// Extract helper to create class session from lesson
+const createClassSession = (lesson: EnrichedLesson): ClassSession => {
+  const start = lesson.period ? toHHMM(lesson.period.startTime) : '00:00';
+  const end = lesson.period ? toHHMM(lesson.period.endTime) : '00:00';
+  const subject = lesson.subject?.name ?? '—';
+  const teacher = lesson.teachers.map((t) => t.name).join(', ');
+  const room = lesson.classrooms.map((r) => r.short || r.name).join(', ');
+
+  return {
+    id: lesson.id,
+    subject,
+    teacher,
+    room,
+    startTime: start,
+    endTime: end,
+    color: colorFromSubject(subject),
+  };
+};
+
+// Extract helper to update day metadata
+const updateDayMetadata = (
+  metadata: DayMetadata,
+  day: string,
+  lesson: EnrichedLesson
+) => {
+  if (lesson.day && !metadata[day]) {
+    const dayNumber = lesson.day.days?.[0]
+      ? Number.parseInt(lesson.day.days[0], 10)
+      : 999;
+    metadata[day] = { sortOrder: dayNumber };
+  }
+};
+
+// Main function to build timetable data from lessons
+const buildTimetableData = (lessons: EnrichedLesson[]) => {
+  const data: TimetableData = {};
+  const metadata: DayMetadata = {};
+
+  for (const lesson of lessons) {
+    const day = lesson.day?.name ?? 'Unknown';
+    const classSession = createClassSession(lesson);
+
+    upsertClassSession(data, day, classSession.startTime, classSession);
+    updateDayMetadata(metadata, day, lesson);
+  }
+
+  return { timetableData: data, dayMetadata: metadata };
 };
 
 export function TimetableView() {
@@ -102,46 +177,10 @@ export function TimetableView() {
     [cohortsQuery.data, selectedCohortId]
   );
 
-  const timetableData: TimetableData = useMemo(() => {
-    const data: TimetableData = {};
-    const lessons = lessonsQuery.data ?? [];
-
-    const upsertCell = (day: string, time: string, item: ClassSession) => {
-      data[day] ??= {};
-      const cell = data[day][time];
-      if (!cell) {
-        data[day][time] = [item];
-        return;
-      }
-      if (Array.isArray(cell)) {
-        cell.push(item);
-        return;
-      }
-      data[day][time] = [cell, item];
-    };
-
-    for (const l of lessons) {
-      const day = l.day?.name ?? 'Unknown';
-      const start = l.period ? toHHMM(l.period.startTime) : '00:00';
-      const end = l.period ? toHHMM(l.period.endTime) : '00:00';
-      const subject = l.subject?.name ?? '—';
-      const teacher = l.teachers.map((t) => t.name).join(', ');
-      const room = l.classrooms.map((r) => r.short || r.name).join(', ');
-
-      const item: ClassSession = {
-        id: l.id,
-        subject,
-        teacher,
-        room,
-        startTime: start,
-        endTime: end,
-        color: colorFromSubject(subject),
-      };
-
-      upsertCell(day, start, item);
-    }
-    return data;
-  }, [lessonsQuery.data]);
+  const { timetableData, dayMetadata } = useMemo(
+    () => buildTimetableData(lessonsQuery.data ?? []),
+    [lessonsQuery.data]
+  );
 
   const isLoading =
     cohortsQuery.isLoading || lessonsQuery.isLoading || !selectedCohortId;
@@ -196,6 +235,7 @@ export function TimetableView() {
           <Timetable
             className="shadow-2xl"
             data={timetableData}
+            dayMetadata={dayMetadata}
             title={`${selectedCohort?.name ?? 'Cohort'} - Week Schedule`}
           />
         </div>
