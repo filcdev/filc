@@ -7,9 +7,8 @@ import { env } from '~/utils/environment';
 const logger = getLogger(['chronos', 'drizzle']);
 
 const client = new SQL({
-  connection: {
-    connectionString: env.databaseUrl,
-  },
+  adapter: 'postgres',
+  url: env.databaseUrl,
   prepare: false,
   // prepare: env.mode === 'production',
 });
@@ -18,7 +17,7 @@ export const db = drizzle({
   client,
   logger: {
     logQuery: (query) => {
-      logger.trace(`Executing query: ${query}`);
+      logger.trace(env.mode === 'production' ? `Executing query: ${query}` : 'Executing query', { query });
     },
   },
 });
@@ -26,7 +25,9 @@ export const db = drizzle({
 export const prepareDb = async () => {
   try {
     logger.debug('Starting database migration');
-    await migrate(db, { migrationsFolder: 'src/database/migrations' });
+    await migrate(db, {
+      migrationsFolder: 'src/database/migrations'
+    });
     logger.info('Database migration completed successfully');
   } catch (error) {
     logger.fatal(`Database migration failed: ${error}`);
