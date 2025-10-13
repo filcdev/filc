@@ -140,6 +140,29 @@
   "admin": {
     "doorAccess": "Door Access",
     "door": "Door",
-    "server": "Server"
+    "server": "Server",
+    "timetable": "Timetable"
+  },
+  "timetable": {
+    "import": "Import Timetable",
+    "importDescription": "Upload and import timetable data from ÓMAN XML files",
+    "uploadFile": "Upload Timetable File",
+    "uploadFileDescription": "Select an XML file exported from ÓMAN to import timetable data",
+    "clickToUpload": "Click to upload or drag and drop",
+    "dragAndDrop": "Drag and drop your XML file here",
+    "supportedFormats": "Supported format: XML files from ÓMAN",
+    "invalidFileType": "Invalid file type. Please upload an XML file.",
+    "importing": "Importing...",
+    "importButton": "Import Timetable",
+    "importSuccess": "Timetable imported successfully",
+    "importError": "Failed to import timetable",
+    "importSuccessTitle": "Import Successful",
+    "importSuccessMessage": "The timetable has been imported and all related data has been updated.",
+    "importErrorTitle": "Import Failed",
+    "importInfo": "Important Information",
+    "importInfoPoint1": "Only XML files exported from ÓMAN are supported",
+    "importInfoPoint2": "The import process will update all timetable-related data including cohorts, subjects, teachers, and lessons",
+    "importInfoPoint3": "Existing data will be preserved and matched with new data where possible",
+    "importInfoPoint4": "The import process may take a few moments depending on the size of the file"
   }
 }

@@ -19,6 +19,7 @@ import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateAdminFeatureFlagsRouteImport } from './routes/_private/admin/feature-flags'
 import { Route as PrivateAdminDoorsIndexRouteImport } from './routes/_private/admin/doors/index'
+import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
 import { Route as PrivateAdminDoorsLogsRouteImport } from './routes/_private/admin/doors/logs'
 import { Route as PrivateAdminDoorsDevicesRouteImport } from './routes/_private/admin/doors/devices'
 import { Route as PrivateAdminDoorsCardsRouteImport } from './routes/_private/admin/doors/cards'
@@ -72,6 +73,12 @@ const PrivateAdminDoorsIndexRoute = PrivateAdminDoorsIndexRouteImport.update({
   path: '/doors/',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PrivateAdminTimetableImportRoute =
+  PrivateAdminTimetableImportRouteImport.update({
+    id: '/timetable/import',
+    path: '/timetable/import',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
 const PrivateAdminDoorsLogsRoute = PrivateAdminDoorsLogsRouteImport.update({
   id: '/doors/logs',
   path: '/doors/logs',
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
   '/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
   '/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
+  '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
   '/admin/doors': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
   '/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
   '/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
   '/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
+  '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
   '/admin/doors': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRoutesById {
@@ -129,6 +138,7 @@ export interface FileRoutesById {
   '/_private/admin/doors/cards': typeof PrivateAdminDoorsCardsRoute
   '/_private/admin/doors/devices': typeof PrivateAdminDoorsDevicesRoute
   '/_private/admin/doors/logs': typeof PrivateAdminDoorsLogsRoute
+  '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
   '/_private/admin/doors/': typeof PrivateAdminDoorsIndexRoute
 }
 export interface FileRouteTypes {
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/admin/doors/cards'
     | '/admin/doors/devices'
     | '/admin/doors/logs'
+    | '/admin/timetable/import'
     | '/admin/doors'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/admin/doors/cards'
     | '/admin/doors/devices'
     | '/admin/doors/logs'
+    | '/admin/timetable/import'
     | '/admin/doors'
   id:
     | '__root__'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
     | '/_private/admin/doors/cards'
     | '/_private/admin/doors/devices'
     | '/_private/admin/doors/logs'
+    | '/_private/admin/timetable/import'
     | '/_private/admin/doors/'
   fileRoutesById: FileRoutesById
 }
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminDoorsIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/timetable/import': {
+      id: '/_private/admin/timetable/import'
+      path: '/timetable/import'
+      fullPath: '/admin/timetable/import'
+      preLoaderRoute: typeof PrivateAdminTimetableImportRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/doors/logs': {
       id: '/_private/admin/doors/logs'
       path: '/doors/logs'
@@ -284,6 +304,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminDoorsCardsRoute: typeof PrivateAdminDoorsCardsRoute
   PrivateAdminDoorsDevicesRoute: typeof PrivateAdminDoorsDevicesRoute
   PrivateAdminDoorsLogsRoute: typeof PrivateAdminDoorsLogsRoute
+  PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
   PrivateAdminDoorsIndexRoute: typeof PrivateAdminDoorsIndexRoute
 }
 
@@ -292,6 +313,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminDoorsCardsRoute: PrivateAdminDoorsCardsRoute,
   PrivateAdminDoorsDevicesRoute: PrivateAdminDoorsDevicesRoute,
   PrivateAdminDoorsLogsRoute: PrivateAdminDoorsLogsRoute,
+  PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
   PrivateAdminDoorsIndexRoute: PrivateAdminDoorsIndexRoute,
 }
 

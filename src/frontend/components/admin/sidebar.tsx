@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  FaCalendarDays,
   FaCreditCard,
   FaDoorOpen,
   FaFlag,
@@ -66,6 +67,17 @@ export function AdminSidebar() {
             url: '/admin/doors/logs',
             icon: FaListCheck,
             permission: 'doorlock:logs:read',
+          },
+        ],
+      },
+      {
+        label: t('admin.timetable'),
+        items: [
+          {
+            title: t('timetable.import'),
+            url: '/admin/timetable/import',
+            icon: FaCalendarDays,
+            permission: 'import:timetable',
           },
         ],
       },

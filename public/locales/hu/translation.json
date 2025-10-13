@@ -132,7 +132,30 @@
   "admin": {
     "doorAccess": "Ajtónyitás",
     "door": "Ajtó",
-    "server": "Szerver"
+    "server": "Szerver",
+    "timetable": "Órarend"
+  },
+  "timetable": {
+    "import": "Órarend importálása",
+    "importDescription": "ÓMAN XML fájlok feltöltése és importálása",
+    "uploadFile": "Órarend fájl feltöltése",
+    "uploadFileDescription": "Válassz egy ÓMAN-ból exportált XML fájlt az órarend adatok importálásához",
+    "clickToUpload": "Kattints a feltöltéshez vagy húzd ide",
+    "dragAndDrop": "Húzd ide az XML fájlt",
+    "supportedFormats": "Támogatott formátum: ÓMAN XML fájlok",
+    "invalidFileType": "Érvénytelen fájltípus. Kérlek tölts fel XML fájlt.",
+    "importing": "Importálás...",
+    "importButton": "Órarend importálása",
+    "importSuccess": "Órarend sikeresen importálva",
+    "importError": "Az órarend importálása sikertelen",
+    "importSuccessTitle": "Sikeres importálás",
+    "importSuccessMessage": "Az órarend importálva lett, és minden kapcsolódó adat frissítve lett.",
+    "importErrorTitle": "Sikertelen importálás",
+    "importInfo": "Fontos információk",
+    "importInfoPoint1": "Csak ÓMAN-ból exportált XML fájlok támogatottak",
+    "importInfoPoint2": "Az importálási folyamat frissíti az összes órarenddel kapcsolatos adatot, beleértve a csoportokat, tárgyakat, tanárokat és órákat",
+    "importInfoPoint3": "A meglévő adatok megmaradnak és párosítva lesznek az új adatokkal, ahol lehetséges",
+    "importInfoPoint4": "Az importálási folyamat néhány percet vehet igénybe a fájl méretétől függően"
   },
   "common": {
     "actions": "Műveletek",
