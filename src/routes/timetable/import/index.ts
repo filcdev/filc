@@ -45,6 +45,7 @@ export const importRoute = timetableFactory.createHandlers(
     const decoded = decode(buffer, 'win1250');
     // TODO: this is still broken
     const utf8Text = encode(decoded, 'utf-8').toString();
+    const cleaned = utf8Text.replace('Period=""', '');
 
     // TODO: Rewrite the import function to use these
     // types so we are more typeish :3.
@@ -61,7 +62,7 @@ export const importRoute = timetableFactory.createHandlers(
     try {
       logger.info('Starting timetable import');
       const xmlData = new DOMParser().parseFromString(
-        utf8Text,
+        cleaned,
         'application/xml'
       );
 
