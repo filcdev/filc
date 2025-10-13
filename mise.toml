@@ -1,9 +1,6 @@
 [tools]
 bun = "1.3.0"
 
-[env]
-BUN_OPTIONS='--bun'
-
 [hooks]
 postinstall = "bun -v > .bun-version"
 
