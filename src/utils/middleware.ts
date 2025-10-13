@@ -35,6 +35,12 @@ export const requireAuthentication = createMiddleware<AuthenticatedContext>(
 
 export const requireAuthorization = (permission: string) =>
   createMiddleware<AuthenticatedContext>(async (c, next) => {
+    if (!c.var.session) {
+      throw new HTTPException(StatusCodes.UNAUTHORIZED, {
+        message: 'Unauthorized',
+      });
+    }
+
     if (!(await userHasPermission(c.var.session.userId, permission))) {
       throw new HTTPException(StatusCodes.FORBIDDEN, {
         message: 'Forbidden',
