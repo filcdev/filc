@@ -47,7 +47,7 @@ export const Route = createFileRoute('/_private/admin/doors/logs')({
 });
 
 const fetchLogs = async (result: 'granted' | 'denied' | 'all') => {
-  const query = result === 'all' ? undefined : { result };
+  const query = result === 'all' ? {} : { result };
   const res = await parseResponse(
     apiClient.doorlock.logs.$get({
       query,
@@ -92,7 +92,7 @@ function RouteComponent() {
   // Fetch logs
   const { data: logsData, isLoading: logsLoading } = useQuery<AccessLog[]>({
     queryKey: ['doorlock-logs', resultFilter],
-    queryFn: () => fetchLogs(resultFilter),
+    queryFn: () => fetchLogs(resultFilter as 'granted' | 'denied' | 'all'),
   });
 
   // Fetch unknown tags
@@ -136,6 +136,11 @@ function RouteComponent() {
       if (!res?.success) {
         throw new Error('Failed to add card');
       }
+
+      if (!res.data) {
+        throw new Error('No data returned from server');
+      }
+
       return res.data;
     },
     onSuccess: () => {

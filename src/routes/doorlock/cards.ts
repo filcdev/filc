@@ -37,7 +37,7 @@ export const listCards = doorlockFactory.createHandlers(
     const rows = canReadAll
       ? await db.select().from(card)
       : await db.select().from(card).where(eq(card.userId, currentUserId));
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof rows>>({
       success: true,
       data: rows,
     });
@@ -66,7 +66,7 @@ export const getCard = doorlockFactory.createHandlers(
     if (!canReadAll && row.userId !== currentUserId) {
       throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
     }
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof row>>({
       success: true,
       data: row,
     });
@@ -90,7 +90,7 @@ export const createCard = doorlockFactory.createHandlers(
           disabled: data.disabled ?? false,
         })
         .returning();
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof inserted>>({
         success: true,
         data: inserted,
       });
@@ -156,7 +156,7 @@ export const updateCard = doorlockFactory.createHandlers(
         .set(data)
         .where(eq(card.id, id as string))
         .returning();
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof updated>>({
         success: true,
         data: updated,
       });

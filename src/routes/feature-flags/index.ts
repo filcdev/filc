@@ -31,7 +31,7 @@ export const listFeatureFlags = featureFlagFactory.createHandlers(
       })
       .from(featureFlag);
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof flags>>({
       success: true,
       data: flags,
     });
@@ -67,7 +67,7 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof flag>>({
       success: true,
       data: flag,
     });
@@ -115,11 +115,17 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
         updatedAt: featureFlag.updatedAt,
       });
 
+    if (!updated) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to update feature flag',
+      });
+    }
+
     // Invalidate cache and notify handlers
     invalidateFeatureFlagCache(name);
     await notifyFeatureFlagChange(name, isEnabled);
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof updated>>({
       success: true,
       data: updated,
     });

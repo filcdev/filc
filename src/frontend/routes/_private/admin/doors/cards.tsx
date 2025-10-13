@@ -30,9 +30,6 @@ const USER_ID_DISPLAY_LENGTH = 8;
 
 const fetchDoorlockCards = async () => {
   const res = await parseResponse(apiClient.doorlock.cards.$get());
-  if (!res?.success) {
-    throw new Error('Failed to fetch cards');
-  }
   return res.data ?? [];
 };
 

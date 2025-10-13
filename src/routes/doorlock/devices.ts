@@ -32,7 +32,7 @@ export const listDevices = doorlockFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     const rows = await db.select().from(device);
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof rows>>({
       success: true,
       data: rows,
     });
@@ -56,7 +56,7 @@ export const getDevice = doorlockFactory.createHandlers(
     if (!row) {
       throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof row>>({
       success: true,
       data: row,
     });

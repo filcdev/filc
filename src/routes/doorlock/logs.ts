@@ -65,7 +65,7 @@ export const listLogs = doorlockFactory.createHandlers(
       .limit(limit)
       .offset(offset);
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof logs>>({
       success: true,
       data: logs,
     });
@@ -111,7 +111,7 @@ export const getLog = doorlockFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof log>>({
       success: true,
       data: log,
     });
@@ -138,7 +138,7 @@ export const listUnknownTags = doorlockFactory.createHandlers(
       .groupBy(accessLog.tag, accessLog.deviceId, device.name)
       .orderBy(desc(sql`MAX(${accessLog.timestamp})`));
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof unknownTags>>({
       success: true,
       data: unknownTags,
     });
@@ -177,7 +177,13 @@ export const addUnknownCard = doorlockFactory.createHandlers(
       })
       .returning();
 
-    return c.json<SuccessResponse>(
+    if (!newCard) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to create card',
+      });
+    }
+
+    return c.json<SuccessResponse<typeof newCard>>(
       {
         success: true,
         data: newCard,
@@ -230,7 +236,7 @@ export const getDeviceLogs = doorlockFactory.createHandlers(
       .limit(limit)
       .offset(offset);
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof logs>>({
       success: true,
       data: logs,
     });
