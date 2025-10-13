@@ -204,7 +204,11 @@ const AccountDetails = (props: { user: UserType }) => {
 
   useEffect(() => {
     const syncUserDetails = async () => {
-      await fetch('/api/auth/sync-account');
+      try {
+        await parseResponse(apiClient.auth['sync-account'].$get());
+      } catch {
+        // Swallow errors to mirror previous fire-and-forget behaviour
+      }
     };
     if (!user.name) {
       syncUserDetails().then(() => refetch());

@@ -12,7 +12,6 @@ export const authClient = createAuthClient({
     inferAdditionalFields<typeof auth>(),
     customSessionClient<typeof auth>(),
   ],
-  baseURL: import.meta.env.BASE_URL,
 });
 
 export type User = (typeof authClient.$Infer.Session)['user'];

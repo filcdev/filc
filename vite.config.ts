@@ -5,9 +5,6 @@ import devServer, { defaultOptions } from "@hono/vite-dev-server"
 import { bunAdapter } from '@hono/vite-dev-server/bun'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { resolve } from 'node:path'
-import { env } from '~/utils/environment'
-import { analyzer } from 'vite-bundle-analyzer'
-
 
 const ssrBuild = {
   outDir: 'dist/server',
@@ -37,7 +34,7 @@ const clientBuild = {
       chunkFileNames: 'static/assets/[name]-[hash].js',
       assetFileNames: 'static/assets/[name]-[hash][extname]',
     },
-    
+
   },
   manifest: true,
 } satisfies BuildOptions
@@ -48,7 +45,6 @@ export default defineConfig(({ mode, command }) => {
   return {
     esbuild: isBuild && isClient ? { drop: ['console', 'debugger'] } : undefined,
     plugins: [
-      isClient ? analyzer() : undefined,
       tanstackRouter({
         autoCodeSplitting: true,
         routesDirectory: 'src/frontend/routes',
@@ -67,9 +63,6 @@ export default defineConfig(({ mode, command }) => {
       }),
     ],
     build: mode === "client" ? clientBuild : ssrBuild,
-    define: {
-      'import.meta.env.BASE_URL': `'${env.baseUrl}'`,
-    },
     test: {
       globals: true,
       environment: 'jsdom',
@@ -80,7 +73,7 @@ export default defineConfig(({ mode, command }) => {
       },
     },
     server: {
-      port: env.port,
+      port: Number(Bun.env.CHRONOS_PORT) || 3000,
     },
     optimizeDeps: {
       include: ['react', 'react-dom', '@tanstack/react-router']

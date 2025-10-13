@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPen, FaPlus, FaSpinner, FaTrash } from 'react-icons/fa6';
@@ -32,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/frontend/components/ui/table';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/doors/devices')({
   component: RouteComponent,
@@ -40,23 +42,28 @@ export const Route = createFileRoute('/_private/admin/doors/devices')({
 const DEFAULT_TTL_SECONDS = 30;
 const STATUS_REFETCH_INTERVAL = 10_000;
 
-type Device = {
-  id: string;
-  name: string;
-  location: string | null;
-  lastSeenAt: Date | null;
-  ttlSeconds: number;
-  status: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+const fetchDevices = async () => {
+  const res = await parseResponse(apiClient.doorlock.devices.$get());
+  if (!res?.success) {
+    throw new Error('Failed to fetch devices');
+  }
+  return res.data ?? [];
 };
 
-type DeviceStatus = {
-  id: string;
-  online: boolean;
-  lastSeenAt: Date | null;
-  ttlSeconds: number;
+const fetchDeviceStatus = async (deviceId: string) => {
+  const res = await parseResponse(
+    apiClient.doorlock.devices[':id'].status.$get({
+      param: { id: deviceId },
+    })
+  );
+  if (!res?.success) {
+    throw new Error('Failed to fetch device status');
+  }
+  return res.data;
 };
+
+type Device = Awaited<ReturnType<typeof fetchDevices>>[number];
+type DeviceStatus = Awaited<ReturnType<typeof fetchDeviceStatus>>;
 
 type DeviceFormData = {
   id: string;
@@ -83,14 +90,7 @@ function DevicesPage() {
   // Fetch devices
   const { data: devicesData, isLoading } = useQuery({
     queryKey: ['devices'],
-    queryFn: async () => {
-      const res = await fetch('/api/doorlock/devices');
-      if (!res.ok) {
-        throw new Error('Failed to fetch devices');
-      }
-      const json = await res.json();
-      return json.data as Device[];
-    },
+    queryFn: fetchDevices,
   });
 
   // Fetch statuses
@@ -100,23 +100,21 @@ function DevicesPage() {
       if (!devicesData) {
         return {};
       }
-      const statuses: Record<string, DeviceStatus> = {};
-      await Promise.all(
+      const entries = await Promise.all(
         devicesData.map(async (device) => {
           try {
-            const res = await fetch(
-              `/api/doorlock/devices/${device.id}/status`
-            );
-            if (res.ok) {
-              const json = await res.json();
-              statuses[device.id] = json.data;
-            }
+            const status = await fetchDeviceStatus(device.id);
+            return [device.id, status] as const;
           } catch {
-            // Silently fail
+            return null;
           }
         })
       );
-      return statuses;
+      return Object.fromEntries(
+        entries.filter(
+          (entry): entry is [string, DeviceStatus] => entry !== null
+        )
+      );
     },
     enabled: !!devicesData && devicesData.length > 0,
     refetchInterval: STATUS_REFETCH_INTERVAL,
@@ -125,20 +123,20 @@ function DevicesPage() {
   // Upsert mutation
   const upsertMutation = useMutation({
     mutationFn: async (data: DeviceFormData) => {
-      const res = await fetch(`/api/doorlock/devices/${data.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          location: data.location || undefined,
-          ttlSeconds: data.ttlSeconds,
-        }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to save device');
+      const res = await parseResponse(
+        apiClient.doorlock.devices[':id'].$put({
+          param: { id: data.id },
+          json: {
+            name: data.name,
+            location: data.location || undefined,
+            ttlSeconds: data.ttlSeconds,
+          },
+        })
+      );
+      if (!res?.success) {
+        throw new Error('Failed to save device');
       }
-      return res.json();
+      return res.data;
     },
     onSuccess: () => {
       toast.success(
@@ -158,14 +156,15 @@ function DevicesPage() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/doorlock/devices/${id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to delete device');
+      const res = await parseResponse(
+        apiClient.doorlock.devices[':id'].$delete({
+          param: { id },
+        })
+      );
+      if (!res?.success) {
+        throw new Error('Failed to delete device');
       }
-      return res.json();
+      return res.data;
     },
     onSuccess: () => {
       toast.success(

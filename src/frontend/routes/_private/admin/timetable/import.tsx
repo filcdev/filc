@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,6 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/frontend/components/ui/card';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/timetable/import')({
   component: RouteComponent,
@@ -50,20 +52,17 @@ function TimetableImportPage() {
 
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('omanXml', file);
+      const res = await parseResponse(
+        apiClient.timetable.import.$post({
+          form: { omanXml: file },
+        })
+      );
 
-      const res = await fetch('/api/timetable/import', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to import timetable');
+      if (!res?.success) {
+        throw new Error('Failed to import timetable');
       }
 
-      return res.json();
+      return res;
     },
     onMutate: () => {
       setImportStatus('uploading');

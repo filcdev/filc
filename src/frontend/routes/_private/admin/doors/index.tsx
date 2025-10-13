@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { FaDoorOpen, FaSpinner } from 'react-icons/fa6';
 import { toast } from 'sonner';
@@ -13,10 +14,55 @@ import {
   CardTitle,
 } from '~/frontend/components/ui/card';
 import { authClient } from '~/frontend/utils/authentication';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/doors/')({
   component: RouteComponent,
 });
+
+const fetchDevices = async () => {
+  const res = await parseResponse(apiClient.doorlock.devices.$get());
+  if (!res?.success) {
+    throw new Error('Failed to fetch devices');
+  }
+  return res.data ?? [];
+};
+
+const fetchDeviceStatus = async (deviceId: string) => {
+  const res = await parseResponse(
+    apiClient.doorlock.devices[':id'].status.$get({
+      param: { id: deviceId },
+    })
+  );
+  if (!res?.success) {
+    throw new Error('Failed to fetch device status');
+  }
+  return res.data;
+};
+
+const fetchCards = async () => {
+  const res = await parseResponse(apiClient.doorlock.cards.$get());
+  if (!res?.success) {
+    throw new Error('Failed to fetch cards');
+  }
+  return res.data ?? [];
+};
+
+const fetchDeviceRestrictions = async (deviceId: string) => {
+  const res = await parseResponse(
+    apiClient.doorlock.devices[':id'].cards.$get({
+      param: { id: deviceId },
+    })
+  );
+  if (!res?.success) {
+    throw new Error('Failed to fetch device restrictions');
+  }
+  return res.data ?? [];
+};
+
+type Device = Awaited<ReturnType<typeof fetchDevices>>[number];
+type DeviceStatus = Awaited<ReturnType<typeof fetchDeviceStatus>>;
+type CardDevice = Awaited<ReturnType<typeof fetchDeviceRestrictions>>[number];
 
 type DeviceCardProps = {
   device: Device;
@@ -81,40 +127,6 @@ function DeviceCard({ device, status, isOpening, onOpen }: DeviceCardProps) {
   );
 }
 
-type Device = {
-  id: string;
-  name: string;
-  location: string | null;
-  lastSeenAt: Date | null;
-  ttlSeconds: number;
-  status: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type DeviceStatus = {
-  id: string;
-  online: boolean;
-  lastSeenAt: Date | null;
-  ttlSeconds: number;
-};
-
-type DoorlockCard = {
-  id: string;
-  tag: string;
-  userId: string;
-  frozen: boolean;
-  disabled: boolean;
-  label: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type CardDevice = {
-  cardId: string;
-  deviceId: string;
-};
-
 function RouteComponent() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -123,27 +135,13 @@ function RouteComponent() {
   // Fetch all devices
   const { data: devicesData, isLoading: devicesLoading } = useQuery({
     queryKey: ['devices'],
-    queryFn: async () => {
-      const res = await fetch('/api/doorlock/devices');
-      if (!res.ok) {
-        throw new Error('Failed to fetch devices');
-      }
-      const json = await res.json();
-      return json.data as Device[];
-    },
+    queryFn: fetchDevices,
   });
 
   // Fetch user's cards
   const { data: cardsData, isLoading: cardsLoading } = useQuery({
     queryKey: ['cards'],
-    queryFn: async () => {
-      const res = await fetch('/api/doorlock/cards');
-      if (!res.ok) {
-        throw new Error('Failed to fetch cards');
-      }
-      const json = await res.json();
-      return json.data as DoorlockCard[];
-    },
+    queryFn: fetchCards,
   });
 
   // Fetch device statuses
@@ -153,23 +151,21 @@ function RouteComponent() {
       if (!devicesData) {
         return {};
       }
-      const statuses: Record<string, DeviceStatus> = {};
-      await Promise.all(
+      const entries = await Promise.all(
         devicesData.map(async (device) => {
           try {
-            const res = await fetch(
-              `/api/doorlock/devices/${device.id}/status`
-            );
-            if (res.ok) {
-              const json = await res.json();
-              statuses[device.id] = json.data;
-            }
+            const status = await fetchDeviceStatus(device.id);
+            return [device.id, status] as const;
           } catch {
-            // Silently fail
+            return null;
           }
         })
       );
-      return statuses;
+      return Object.fromEntries(
+        entries.filter(
+          (entry): entry is [string, DeviceStatus] => entry !== null
+        )
+      );
     },
     enabled: !!devicesData && devicesData.length > 0,
     refetchInterval: 5000, // Refresh every 5 seconds
@@ -182,21 +178,21 @@ function RouteComponent() {
       if (!devicesData) {
         return {};
       }
-      const restrictions: Record<string, CardDevice[]> = {};
-      await Promise.all(
+      const entries = await Promise.all(
         devicesData.map(async (device) => {
           try {
-            const res = await fetch(`/api/doorlock/devices/${device.id}/cards`);
-            if (res.ok) {
-              const json = await res.json();
-              restrictions[device.id] = json.data;
-            }
+            const restriction = await fetchDeviceRestrictions(device.id);
+            return [device.id, restriction] as const;
           } catch {
-            // Silently fail
+            return null;
           }
         })
       );
-      return restrictions;
+      return Object.fromEntries(
+        entries.filter(
+          (entry): entry is [string, CardDevice[]] => entry !== null
+        )
+      );
     },
     enabled: !!devicesData && devicesData.length > 0,
   });
@@ -204,14 +200,15 @@ function RouteComponent() {
   // Open door mutation
   const openDoorMutation = useMutation({
     mutationFn: async (deviceId: string) => {
-      const res = await fetch(`/api/doorlock/${deviceId}/open`, {
-        method: 'POST',
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to open door');
+      const res = await parseResponse(
+        apiClient.doorlock[':deviceId'].open.$post({
+          param: { deviceId },
+        })
+      );
+      if (!res?.success) {
+        throw new Error('Failed to open door');
       }
-      return res.json();
+      return res.data;
     },
     onSuccess: (_, deviceId) => {
       const device = devicesData?.find((d) => d.id === deviceId);

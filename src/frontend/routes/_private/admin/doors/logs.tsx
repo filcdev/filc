@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaCircleCheck, FaCircleXmark, FaPlus } from 'react-icons/fa6';
@@ -39,32 +40,37 @@ import {
   TableRow,
 } from '~/frontend/components/ui/table';
 import { authClient } from '~/frontend/utils/authentication';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/doors/logs')({
   component: RouteComponent,
 });
 
-type AccessLog = {
-  id: string;
-  deviceId: string;
-  deviceName: string | null;
-  tag: string;
-  cardId: string | null;
-  cardLabel: string | null;
-  userId: string | null;
-  userName: string | null;
-  result: 'granted' | 'denied';
-  reason: string | null;
-  timestamp: string;
+const fetchLogs = async (result: 'granted' | 'denied' | 'all') => {
+  const query = result === 'all' ? undefined : { result };
+  const res = await parseResponse(
+    apiClient.doorlock.logs.$get({
+      query,
+    })
+  );
+  if (!res?.success) {
+    throw new Error('Failed to fetch logs');
+  }
+  return res.data ?? [];
 };
 
-type UnknownTag = {
-  tag: string;
-  lastSeen: string;
-  deviceId: string;
-  deviceName: string | null;
-  accessCount: number;
+const fetchUnknownTags = async () => {
+  const res = await parseResponse(
+    apiClient.doorlock.logs['unknown-tags'].$get()
+  );
+  if (!res?.success) {
+    throw new Error('Failed to fetch unknown tags');
+  }
+  return res.data ?? [];
 };
+
+type AccessLog = Awaited<ReturnType<typeof fetchLogs>>[number];
+type UnknownTag = Awaited<ReturnType<typeof fetchUnknownTags>>[number];
 
 type User = {
   id: string;
@@ -84,33 +90,15 @@ function RouteComponent() {
   const [newCardLabel, setNewCardLabel] = useState('');
 
   // Fetch logs
-  const { data: logsData, isLoading: logsLoading } = useQuery({
+  const { data: logsData, isLoading: logsLoading } = useQuery<AccessLog[]>({
     queryKey: ['doorlock-logs', resultFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (resultFilter !== 'all') {
-        params.append('result', resultFilter);
-      }
-      const res = await fetch(`/api/doorlock/logs?${params.toString()}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch logs');
-      }
-      const json = await res.json();
-      return json.data as AccessLog[];
-    },
+    queryFn: () => fetchLogs(resultFilter),
   });
 
   // Fetch unknown tags
-  const { data: unknownTagsData } = useQuery({
+  const { data: unknownTagsData } = useQuery<UnknownTag[]>({
     queryKey: ['doorlock-unknown-tags'],
-    queryFn: async () => {
-      const res = await fetch('/api/doorlock/logs/unknown-tags');
-      if (!res.ok) {
-        throw new Error('Failed to fetch unknown tags');
-      }
-      const json = await res.json();
-      return json.data as UnknownTag[];
-    },
+    queryFn: fetchUnknownTags,
   });
 
   // Fetch users for dropdown
@@ -140,16 +128,15 @@ function RouteComponent() {
       userId: string;
       label: string;
     }) => {
-      const res = await fetch('/api/doorlock/logs/add-unknown-card', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to add card');
+      const res = await parseResponse(
+        apiClient.doorlock.logs['add-unknown-card'].$post({
+          json: data,
+        })
+      );
+      if (!res?.success) {
+        throw new Error('Failed to add card');
       }
-      return res.json();
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doorlock-logs'] });

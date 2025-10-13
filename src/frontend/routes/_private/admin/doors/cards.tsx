@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { FaSpinner } from 'react-icons/fa6';
 import { Badge } from '~/frontend/components/ui/badge';
@@ -19,6 +20,7 @@ import {
   TableRow,
 } from '~/frontend/components/ui/table';
 import { authClient } from '~/frontend/utils/authentication';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/doors/cards')({
   component: RouteComponent,
@@ -26,14 +28,15 @@ export const Route = createFileRoute('/_private/admin/doors/cards')({
 
 const USER_ID_DISPLAY_LENGTH = 8;
 
-type DoorlockCard = {
-  id: string;
-  tag: string;
-  userId: string;
-  frozen: boolean;
-  disabled: boolean;
-  label: string | null;
+const fetchDoorlockCards = async () => {
+  const res = await parseResponse(apiClient.doorlock.cards.$get());
+  if (!res?.success) {
+    throw new Error('Failed to fetch cards');
+  }
+  return res.data ?? [];
 };
+
+type DoorlockCard = Awaited<ReturnType<typeof fetchDoorlockCards>>[number];
 
 function isCardActive(card: DoorlockCard): boolean {
   return !(card.frozen || card.disabled);
@@ -46,14 +49,7 @@ function RouteComponent() {
 
   const { data: cardsData, isLoading } = useQuery({
     queryKey: ['cards'],
-    queryFn: async () => {
-      const res = await fetch('/api/doorlock/cards');
-      if (!res.ok) {
-        throw new Error('Failed to fetch cards');
-      }
-      const json = await res.json();
-      return json.data as DoorlockCard[];
-    },
+    queryFn: fetchDoorlockCards,
   });
 
   if (isLoading) {

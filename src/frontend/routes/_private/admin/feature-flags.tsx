@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { FaSpinner, FaToggleOff, FaToggleOn } from 'react-icons/fa6';
 import { toast } from 'sonner';
@@ -21,18 +22,18 @@ import {
   TableHeader,
   TableRow,
 } from '~/frontend/components/ui/table';
+import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/feature-flags')({
   component: RouteComponent,
 });
 
-type FeatureFlag = {
-  id: string;
-  name: string;
-  description: string;
-  isEnabled: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+const fetchFeatureFlags = async () => {
+  const res = await parseResponse(apiClient.featureFlags.index.$get());
+  if (!res?.success) {
+    throw new Error('Failed to fetch feature flags');
+  }
+  return res.data ?? [];
 };
 
 function RouteComponent() {
@@ -49,14 +50,7 @@ function FeatureFlagsPage() {
 
   const { data: flagsData, isLoading } = useQuery({
     queryKey: ['feature-flags'],
-    queryFn: async () => {
-      const res = await fetch('/api/feature-flags');
-      if (!res.ok) {
-        throw new Error('Failed to fetch feature flags');
-      }
-      const json = await res.json();
-      return json.data as FeatureFlag[];
-    },
+    queryFn: fetchFeatureFlags,
   });
 
   const toggleMutation = useMutation({
@@ -67,16 +61,16 @@ function FeatureFlagsPage() {
       name: string;
       isEnabled: boolean;
     }) => {
-      const res = await fetch(`/api/feature-flags/${name}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isEnabled }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to toggle feature flag');
+      const res = await parseResponse(
+        apiClient.featureFlags[':name'].$post({
+          param: { name },
+          json: { isEnabled },
+        })
+      );
+      if (!res?.success) {
+        throw new Error('Failed to toggle feature flag');
       }
-      return res.json();
+      return res.data;
     },
     onSuccess: () => {
       toast.success(t('featureFlags.toggleSuccess'));

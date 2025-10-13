@@ -160,15 +160,18 @@ export function TimetableView() {
     queryKey: ['lessons', selectedCohortId],
     enabled: !!selectedCohortId,
     queryFn: async (): Promise<EnrichedLesson[]> => {
-      const res = await fetch(
-        `/api/timetable/lessons/get_for_cohort/${selectedCohortId}`,
-        { credentials: 'include' }
+      if (!selectedCohortId) {
+        return [];
+      }
+      const res = await parseResponse(
+        apiClient.timetable.lessons.get_for_cohort[':cohort_id'].$get({
+          param: { cohort_id: selectedCohortId },
+        })
       );
-      const json = (await res.json()) as { success: boolean; data?: unknown };
-      if (!json.success) {
+      if (!res?.success) {
         throw new Error('Failed to load lessons');
       }
-      return (json.data as EnrichedLesson[]) ?? [];
+      return (res.data as EnrichedLesson[]) ?? [];
     },
   });
 
