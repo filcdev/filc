@@ -1,5 +1,6 @@
 import { defineConfig } from 'drizzle-kit';
 import { env } from '~/utils/environment';
+import '@ungap/compression-stream/poly'
 
 export default defineConfig({
   out: './src/database/migrations',
