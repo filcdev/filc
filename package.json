@@ -7,6 +7,8 @@
     "dev:db": "bun run src/database/dev-server.ts",
     "dev:server": "wait-on tcp:5432 && vite dev",
     "db:generate": "drizzle-kit generate",
+    "db:studio:run": "drizzle-kit studio",
+    "db:studio": "run-p dev:db db:studio:run",
     "lint": "biome check --write .",
     "build:server": "vite build --mode server",
     "build:client": "vite build --mode client",

@@ -7,7 +7,7 @@ import {
 } from '@logtape/logtape';
 import { env } from '~/utils/environment';
 
-export const configureLogger = async () => {
+export const configureLogger = async (rootName: string) => {
   await configure({
     reset: true,
     sinks: {
@@ -22,10 +22,10 @@ export const configureLogger = async () => {
         sinks: ['console'],
         lowestLevel: 'warning',
       },
-      { category: 'chronos', lowestLevel: env.logLevel, sinks: ['console'] },
+      { category: rootName, lowestLevel: env.logLevel, sinks: ['console'] },
     ],
   });
 
-  const logger = getLogger(['chronos', 'meta']);
+  const logger = getLogger([rootName, 'meta']);
   logger.info(`Logger configured with level: ${env.logLevel}`);
 };

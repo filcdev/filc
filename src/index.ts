@@ -24,7 +24,7 @@ import { configureLogger } from '~/utils/logger';
 import { authenticationMiddleware } from '~/utils/middleware';
 import { securityMiddleware } from '~/utils/security';
 
-await configureLogger();
+await configureLogger('chronos');
 const logger = getLogger(['chronos', 'server']);
 
 env.mode === 'development' &&
@@ -77,34 +77,34 @@ api.onError((err, c) => {
 
 env.mode === 'development'
   ? api.use('*', async (c, next) => {
-    const start = Date.now();
-    await next();
-    const ms = Date.now() - start;
-    logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
-      method: c.req.method,
-      url: c.req.url,
-      duration: ms,
-      user: c.get('user')
-        ? { id: c.get('user')?.id, email: c.get('user')?.email }
-        : null,
-    });
-  })
+      const start = Date.now();
+      await next();
+      const ms = Date.now() - start;
+      logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
+        method: c.req.method,
+        url: c.req.url,
+        duration: ms,
+        user: c.get('user')
+          ? { id: c.get('user')?.id, email: c.get('user')?.email }
+          : null,
+      });
+    })
   : api.use('*', async (c, next) => {
-    const start = Date.now();
-    await next();
-    const ms = Date.now() - start;
-    const connInfo = getConnInfo(c);
-    logger.info('Received request', {
-      ua: c.req.header('user-agent') ?? 'unknown',
-      ip: connInfo?.remote.address ?? 'unknown',
-      method: c.req.method,
-      url: c.req.url,
-      duration: ms,
-      user: c.get('user')
-        ? { id: c.get('user')?.id, email: c.get('user')?.email }
-        : null,
+      const start = Date.now();
+      await next();
+      const ms = Date.now() - start;
+      const connInfo = getConnInfo(c);
+      logger.info('Received request', {
+        ua: c.req.header('user-agent') ?? 'unknown',
+        ip: connInfo?.remote.address ?? 'unknown',
+        method: c.req.method,
+        url: c.req.url,
+        duration: ms,
+        user: c.get('user')
+          ? { id: c.get('user')?.id, email: c.get('user')?.email }
+          : null,
+      });
     });
-  });
 
 // routes
 env.mode === 'development' && api.route('/_dev', developmentRouter);

@@ -4,7 +4,7 @@ import { getLogger } from '@logtape/logtape';
 import { configureLogger } from '~/utils/logger';
 
 // needs to be configured seperately as we are being run with run-p
-await configureLogger();
+await configureLogger('pglite');
 
 const logger = getLogger(['chronos', 'database']);
 const db = await PGlite.create({
