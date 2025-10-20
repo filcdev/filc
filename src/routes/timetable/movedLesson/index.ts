@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/logtape';
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '~/database';
@@ -20,6 +20,143 @@ import {
 import { timetableFactory } from '../_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
+
+const ensurePeriodExists = async (periodId: string) => {
+  const [existingPeriod] = await db
+    .select({ periodId: period.id })
+    .from(period)
+    .where(eq(period.id, periodId));
+
+  if (!existingPeriod) {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: 'Invalid starting period provided',
+    });
+  }
+};
+
+const ensureDayDefinitionExists = async (dayId: string) => {
+  const [existingDay] = await db
+    .select({ dayId: dayDefinition.id })
+    .from(dayDefinition)
+    .where(eq(dayDefinition.id, dayId));
+
+  if (!existingDay) {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: 'Invalid starting day provided',
+    });
+  }
+};
+
+const ensureClassroomExists = async (classroomId: string) => {
+  const [existingRoom] = await db
+    .select({ classroomId: classroom.id })
+    .from(classroom)
+    .where(eq(classroom.id, classroomId));
+
+  if (!existingRoom) {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: 'Invalid classroom provided',
+    });
+  }
+};
+
+const ensureLessonsExist = async (lessonIds: string[]) => {
+  const lessonRecords = await db
+    .select({ lessonId: lesson.id })
+    .from(lesson)
+    .where(inArray(lesson.id, lessonIds));
+
+  const foundLessonIds = new Set(lessonRecords.map(({ lessonId }) => lessonId));
+  const missingLessonIds = lessonIds.filter(
+    (lessonId) => !foundLessonIds.has(lessonId)
+  );
+
+  if (missingLessonIds.length > 0) {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: `Invalid lesson ids provided: ${missingLessonIds.join(', ')}`,
+    });
+  }
+};
+
+const normalizeOptionalString = (
+  value: unknown,
+  label: string
+): string | undefined => {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (typeof value !== 'string') {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: `${label} must be a string`,
+    });
+  }
+
+  return value;
+};
+
+const normalizeOptionalStringArray = (
+  value: unknown,
+  label: string
+): string[] | undefined => {
+  if (value === undefined || value === null) {
+    return;
+  }
+
+  if (!Array.isArray(value)) {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: `${label} must be an array`,
+    });
+  }
+
+  return value.map((entry) => {
+    if (typeof entry !== 'string') {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: `${label} must contain only strings`,
+      });
+    }
+
+    return entry;
+  });
+};
+
+const validateMovedLessonReferences = async (options: {
+  startingPeriod?: unknown;
+  startingDay?: unknown;
+  room?: unknown;
+  lessonIds?: unknown;
+}) => {
+  const { startingPeriod, startingDay, room, lessonIds } = options;
+
+  const normalizedStartingPeriod = normalizeOptionalString(
+    startingPeriod,
+    'Starting period'
+  );
+  if (normalizedStartingPeriod) {
+    await ensurePeriodExists(normalizedStartingPeriod);
+  }
+
+  const normalizedStartingDay = normalizeOptionalString(
+    startingDay,
+    'Starting day'
+  );
+  if (normalizedStartingDay) {
+    await ensureDayDefinitionExists(normalizedStartingDay);
+  }
+
+  const normalizedRoom = normalizeOptionalString(room, 'Classroom');
+  if (normalizedRoom) {
+    await ensureClassroomExists(normalizedRoom);
+  }
+
+  const normalizedLessonIds = normalizeOptionalStringArray(
+    lessonIds,
+    'Lesson ids'
+  );
+  if (normalizedLessonIds && normalizedLessonIds.length > 0) {
+    await ensureLessonsExist(normalizedLessonIds);
+  }
+};
 
 export const getAllMovedLessons = timetableFactory.createHandlers(async (c) => {
   try {
@@ -61,7 +198,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr: string = today.toISOString().split('T')[0]!;
+      const todayStr = today.toISOString().slice(0, 10);
 
       const movedLessons = await db
         .select({
@@ -159,7 +296,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr: string = today.toISOString().split('T')[0]!;
+      const todayStr = today.toISOString().slice(0, 10);
 
       const movedLessons = await db
         .select({
@@ -219,6 +356,13 @@ export const createMovedLesson = timetableFactory.createHandlers(
         });
       }
 
+      await validateMovedLessonReferences({
+        startingPeriod,
+        startingDay,
+        room,
+        lessonIds,
+      });
+
       const [newMovedLesson] = await db
         .insert(movedLesson)
         .values({
@@ -252,8 +396,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
         StatusCodes.CREATED
       );
     } catch (error) {
-      logger.error(`Error while creating moved lesson: ${error}`);
-      throw error;
+      logger.error(`Error while creating moved lesson: ${error}`, { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         message: 'Failed to create moved lesson',
       });
@@ -275,6 +418,13 @@ export const updateMovedLesson = timetableFactory.createHandlers(
           message: 'Moved lesson ID is required',
         });
       }
+
+      await validateMovedLessonReferences({
+        startingPeriod,
+        startingDay,
+        room,
+        lessonIds,
+      });
 
       const [updatedMovedLesson] = await db
         .update(movedLesson)

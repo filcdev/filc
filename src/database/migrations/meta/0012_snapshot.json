@@ -552,66 +552,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.moved_lesson_lesson_mtm": {
-      "name": "moved_lesson_lesson_mtm",
-      "schema": "",
-      "columns": {
-        "lesson_id": {
-          "name": "lesson_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "moved_lesson_id": {
-          "name": "moved_lesson_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "moved_lesson_lesson_mtm_lesson_id_lesson_id_fk": {
-          "name": "moved_lesson_lesson_mtm_lesson_id_lesson_id_fk",
-          "tableFrom": "moved_lesson_lesson_mtm",
-          "tableTo": "lesson",
-          "columnsFrom": [
-            "lesson_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "moved_lesson_lesson_mtm_moved_lesson_id_moved_lesson_id_fk": {
-          "name": "moved_lesson_lesson_mtm_moved_lesson_id_moved_lesson_id_fk",
-          "tableFrom": "moved_lesson_lesson_mtm",
-          "tableTo": "moved_lesson",
-          "columnsFrom": [
-            "moved_lesson_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "moved_lesson_lesson_mtm_lesson_id_moved_lesson_id_pk": {
-          "name": "moved_lesson_lesson_mtm_lesson_id_moved_lesson_id_pk",
-          "columns": [
-            "lesson_id",
-            "moved_lesson_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.period": {
       "name": "period",
       "schema": "",
