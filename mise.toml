@@ -1,5 +1,5 @@
 [tools]
-bun = "1.3.0"
+bun = "latest"
 
 [hooks]
 postinstall = "bun -v > .bun-version"
