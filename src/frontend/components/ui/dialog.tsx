@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Close,
   Content,
@@ -12,7 +10,7 @@ import {
 } from '@radix-ui/react-dialog';
 import { FaXmark } from 'react-icons/fa6';
 
-import { cn } from '~/frontend/utils';
+import { cn } from '~/frontend/utils/index';
 
 function Dialog({ ...props }: React.ComponentProps<typeof Root>) {
   return <Root data-slot="dialog" {...props} />;

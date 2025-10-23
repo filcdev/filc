@@ -1,5 +1,3 @@
-'use client';
-
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,7 +9,6 @@ import {
   FaRightToBracket,
   FaSpinner,
 } from 'react-icons/fa6';
-import { LanguageSelector } from '~/frontend/components/language-selector';
 import {
   Avatar,
   AvatarFallback,
@@ -26,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/frontend/components/ui/dropdown-menu';
+import { LanguageSelector } from '~/frontend/components/util/language-selector';
 import { authClient } from '~/frontend/utils/authentication';
 
 type NavbarProps = {

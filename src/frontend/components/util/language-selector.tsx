@@ -27,7 +27,7 @@ export function LanguageSelector() {
   const handleChange = async (code: LangCode) => {
     const lng = code.toLowerCase();
     await i18n.changeLanguage(lng);
-    setCookie('filc-lang', lng, { path: '/', sameSite: 'lax' });
+    setCookie('filc-lang', lng, { sameSite: 'lax' });
     if (typeof document !== 'undefined') {
       document.documentElement.lang = lng;
     }

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PermissionGuard } from '~/frontend/components/permission-guard';
+import { PermissionGuard } from '~/frontend/components/util/permission-guard';
 
 export const Route = createFileRoute('/_private/proba')({
   component: RouteComponent,

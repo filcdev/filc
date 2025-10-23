@@ -17,7 +17,12 @@ export const db = drizzle({
   client,
   logger: {
     logQuery: (query) => {
-      logger.trace(env.mode === 'production' ? `Executing query: ${query}` : 'Executing query', { query });
+      logger.trace(
+        env.mode === 'production'
+          ? `Executing query: ${query}`
+          : 'Executing query',
+        { query }
+      );
     },
   },
 });
@@ -26,7 +31,7 @@ export const prepareDb = async () => {
   try {
     logger.debug('Starting database migration');
     await migrate(db, {
-      migrationsFolder: 'src/database/migrations'
+      migrationsFolder: 'src/database/migrations',
     });
     logger.info('Database migration completed successfully');
   } catch (error) {

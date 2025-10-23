@@ -4,7 +4,6 @@ import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { FaSpinner, FaToggleOff, FaToggleOn } from 'react-icons/fa6';
 import { toast } from 'sonner';
-import { PermissionGuard } from '~/frontend/components/permission-guard';
 import { Badge } from '~/frontend/components/ui/badge';
 import { Button } from '~/frontend/components/ui/button';
 import {
@@ -22,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/frontend/components/ui/table';
+import { PermissionGuard } from '~/frontend/components/util/permission-guard';
 import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/feature-flags')({

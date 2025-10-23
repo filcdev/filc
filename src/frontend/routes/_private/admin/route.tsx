@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { AdminSidebar } from '~/frontend/components/admin/sidebar';
-import { Navbar } from '~/frontend/components/navbar';
+import { Navbar } from '~/frontend/components/ui/navbar';
 import {
   SidebarProvider,
   SidebarTrigger,

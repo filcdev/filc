@@ -12,7 +12,6 @@ import {
   FaXmark,
 } from 'react-icons/fa6';
 import { toast } from 'sonner';
-import { PermissionGuard } from '~/frontend/components/permission-guard';
 import {
   Alert,
   AlertDescription,
@@ -26,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/frontend/components/ui/card';
+import { PermissionGuard } from '~/frontend/components/util/permission-guard';
 import { apiClient } from '~/frontend/utils/hc';
 
 export const Route = createFileRoute('/_private/admin/timetable/import')({

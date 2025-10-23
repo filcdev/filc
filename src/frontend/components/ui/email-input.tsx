@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '~/frontend/utils';
 
 interface EmailInputProps
