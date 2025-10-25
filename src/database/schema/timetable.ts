@@ -14,7 +14,7 @@ import {
 import { timestamps } from "~/database/helpers";
 import { user } from "~/database/schema/authentication";
 
-const timetable = pgTable("timetable", {
+export const timetable = pgTable("timetable", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   validFrom: date("valid_from"),
@@ -99,9 +99,11 @@ export const cohort = pgTable("cohort", {
   teacherId: text("teacher_id").references(() => teacher.id),
   // TODO: review if we need to store multiple classrooms
   classroomIds: jsonb("classroom_ids").$type<string[]>(),
-  timetableId: text("timetable_id").references(() => timetable.id, {
-    onDelete: "cascade",
-  }),
+  timetableId: text("timetable_id")
+    .references(() => timetable.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
   // TODO: review if school uses this
   // grade: integer('grade').notNull();
 });
@@ -114,9 +116,11 @@ export const cohortGroup = pgTable("group", {
     .references(() => cohort.id),
   entireClass: boolean("entire_class").notNull(),
   teacherId: text("teacher_id").references(() => teacher.id),
-  timetableId: text("timetable_id").references(() => timetable.id, {
-    onDelete: "cascade",
-  }),
+  timetableId: text("timetable_id")
+    .references(() => timetable.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
   // TODO: figure out what this does
   // divisionTag: integer('division_tag'),
   // TODO: review if school uses this
@@ -144,9 +148,11 @@ export const lesson = pgTable("lesson", {
   dayDefinitionId: text("day_definition_id")
     .notNull()
     .references(() => dayDefinition.id),
-  timetableId: text("timetable_id").references(() => timetable.id, {
-    onDelete: "cascade",
-  }),
+  timetableId: text("timetable_id")
+    .references(() => timetable.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
   // TODO: figure out if we need this
   // TLDR: We don't need this.
   // capacity: integer('capacity').notNull(),
