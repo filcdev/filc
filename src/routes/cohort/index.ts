@@ -1,9 +1,9 @@
 import { db } from '~/database';
 import { cohort } from '~/database/schema/timetable';
-import { pingFactory } from '~/routes/ping/_factory';
+import { cohortFactory } from '~/routes/cohort/_factory';
 import type { SuccessResponse } from '~/utils/globals';
 
-export const listCohorts = pingFactory.createHandlers(async (c) => {
+export const listCohorts = cohortFactory.createHandlers(async (c) => {
   const cohorts = await db.select().from(cohort);
 
   return c.json<SuccessResponse<typeof cohorts>>({
