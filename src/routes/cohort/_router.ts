@@ -1,5 +1,4 @@
-import { Hono } from 'hono';
+import { cohortFactory } from '~/routes/cohort/_factory';
 import { listCohorts } from '~/routes/cohort/index';
-import type { Context } from '~/utils/globals';
 
-export const cohortRouter = new Hono<Context>().get('/', ...listCohorts);
+export const cohortRouter = cohortFactory.createApp().get('/', ...listCohorts);

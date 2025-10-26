@@ -1,4 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
+import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
@@ -16,25 +17,34 @@ import {
   requireAuthorization,
 } from '~/utils/middleware';
 
+const logger = getLogger(['chronos', 'feature-flags']);
+
 export const listFeatureFlags = featureFlagFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('feature-flags:read'),
   async (c) => {
-    const flags = await db
-      .select({
-        id: featureFlag.id,
-        name: featureFlag.name,
-        description: featureFlag.description,
-        isEnabled: featureFlag.isEnabled,
-        createdAt: featureFlag.createdAt,
-        updatedAt: featureFlag.updatedAt,
-      })
-      .from(featureFlag);
+    try {
+      const flags = await db
+        .select({
+          id: featureFlag.id,
+          name: featureFlag.name,
+          description: featureFlag.description,
+          isEnabled: featureFlag.isEnabled,
+          createdAt: featureFlag.createdAt,
+          updatedAt: featureFlag.updatedAt,
+        })
+        .from(featureFlag);
 
-    return c.json<SuccessResponse<typeof flags>>({
-      success: true,
-      data: flags,
-    });
+      return c.json<SuccessResponse<typeof flags>>({
+        success: true,
+        data: flags,
+      });
+    } catch (error) {
+      logger.error('Error fetching feature flags:', { error });
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to fetch feature flags',
+      });
+    }
   }
 );
 

@@ -1,8 +1,8 @@
-import { Hono } from 'hono';
+import { pingFactory } from '~/routes/ping/_factory';
 import { ping } from '~/routes/ping/index';
 import { uptime } from '~/routes/ping/uptime';
-import type { Context } from '~/utils/globals';
 
-export const pingRouter = new Hono<Context>()
+export const pingRouter = pingFactory
+  .createApp()
   .get('/', ...ping)
   .get('/uptime', ...uptime);

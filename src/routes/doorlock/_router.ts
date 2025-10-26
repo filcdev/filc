@@ -1,8 +1,7 @@
-import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
+import { doorlockFactory } from '~/routes/doorlock/_factory';
 import { isFeatureEnabled } from '~/utils/feature-flag';
-import type { Context } from '~/utils/globals';
 import {
   createCard,
   deleteCard,
@@ -28,7 +27,8 @@ import {
 } from './logs';
 import { openDoor } from './open';
 
-export const doorlockRouter = new Hono<Context>()
+export const doorlockRouter = doorlockFactory
+  .createApp()
   .use('*', async (_c, next) => {
     // Check feature flag on every request
     const enabled = await isFeatureEnabled('doorlock:api');

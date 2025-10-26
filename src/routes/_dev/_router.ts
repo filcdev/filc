@@ -1,7 +1,6 @@
-import { Hono } from 'hono';
+import { developmentFactory } from '~/routes/_dev/_factory';
 import { introspect } from '~/routes/_dev/introspect';
-import type { Context } from '~/utils/globals';
 
-export const developmentRouter = new Hono<Context>();
-
-developmentRouter.get('/introspect', ...introspect);
+export const developmentRouter = developmentFactory
+  .createApp()
+  .get('/introspect', ...introspect);

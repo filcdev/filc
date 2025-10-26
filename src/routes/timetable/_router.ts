@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { timetableFactory } from '~/routes/timetable/_factory';
 import { importRoute } from '~/routes/timetable/import';
 import {
   createMovedLesson,
@@ -17,7 +17,6 @@ import {
   getRelevantSubstitutionsForCohort,
   updateSubstitution,
 } from '~/routes/timetable/substitution';
-import type { Context } from '~/utils/globals';
 import {
   getAllTimetables,
   getAllValidTimetables,
@@ -26,7 +25,8 @@ import {
 import { getCohortsForTimetable } from './cohort';
 import { getLessonsForCohort } from './lesson';
 
-export const timetableRouter = new Hono<Context>()
+export const timetableRouter = timetableFactory
+  .createApp()
   // Timetable routes
   .get('/timetables', ...getAllTimetables)
   .get('/timetables/latest-valid', ...getLatestValidTimetable)
