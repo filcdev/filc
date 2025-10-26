@@ -1,14 +1,14 @@
-import { getLogger } from "@logtape/logtape";
-import { timetableFactory } from "./_factory";
-import { requireAuthentication } from "~/utils/middleware";
-import { db } from "~/database";
-import { timetable } from "~/database/schema/timetable";
-import { HTTPException } from "hono/http-exception";
-import { StatusCodes } from "http-status-codes";
-import type { SuccessResponse } from "~/utils/globals";
-import { desc, gte } from "drizzle-orm";
+import { getLogger } from '@logtape/logtape';
+import { desc, gte } from 'drizzle-orm';
+import { HTTPException } from 'hono/http-exception';
+import { StatusCodes } from 'http-status-codes';
+import { db } from '~/database';
+import { timetable } from '~/database/schema/timetable';
+import type { SuccessResponse } from '~/utils/globals';
+import { requireAuthentication } from '~/utils/middleware';
+import { timetableFactory } from './_factory';
 
-const logger = getLogger(["chronos", "timetable"]);
+const logger = getLogger(['chronos', 'timetable']);
 
 export const getAllTimetables = timetableFactory.createHandlers(
   requireAuthentication,
@@ -21,19 +21,19 @@ export const getAllTimetables = timetableFactory.createHandlers(
         data: timetables,
       });
     } catch (error) {
-      logger.error("Error while getting all timetables: ", { error });
+      logger.error('Error while getting all timetables: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: "Failed to fetch all timetables",
+        message: 'Failed to fetch all timetables',
       });
     }
-  },
+  }
 );
 
 const dateToYYYYMMDD = (date: Date): string =>
-  date.toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+  date.toLocaleDateString('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
 
 export const getLatestValidTimetable = timetableFactory.createHandlers(
@@ -51,7 +51,7 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
       if (!latestValidTimetable) {
         return c.json<SuccessResponse>({
           success: true,
-          data: "No valid timetable found.",
+          data: 'No valid timetable found.',
         });
       }
 
@@ -60,12 +60,12 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
         data: latestValidTimetable,
       });
     } catch (error) {
-      logger.error("Failed to get latest valid timetable: ", { error });
+      logger.error('Failed to get latest valid timetable: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: "Failed to get latest valid template.",
+        message: 'Failed to get latest valid template.',
       });
     }
-  },
+  }
 );
 
 export const getAllValidTimetables = timetableFactory.createHandlers(
@@ -84,10 +84,10 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
         data: timetables,
       });
     } catch (error) {
-      logger.error("Error while getting all timetables: ", { error });
+      logger.error('Error while getting all timetables: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: "Failed to fetch all timetables",
+        message: 'Failed to fetch all timetables',
       });
     }
-  },
+  }
 );
