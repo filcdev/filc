@@ -11,6 +11,7 @@ import {
   period as periodSchema,
   subject as subjectSchema,
   teacher as teacherSchema,
+  timetable,
   weekDefinition as weekSchema,
 } from '~/database/schema/timetable';
 
@@ -19,7 +20,23 @@ const logger = getLogger(['chronos', 'timetable']);
 // Drizzle inferred row type helper
 type LessonRow = typeof lessonSchema.$inferSelect;
 
-export const importTimetableXML = async (xmlDoc: Document) => {
+export const importTimetableXML = async (
+  xmlDoc: Document,
+  timetableForm: { name: string; validFrom: string }
+) => {
+  const [newTimetable] = await db
+    .insert(timetable)
+    .values({
+      id: crypto.randomUUID(),
+      ...timetableForm,
+    })
+    .returning({ timetableId: timetable.id });
+
+  if (!newTimetable) {
+    throw new Error('Failed to insert new timetable.');
+  }
+  const { timetableId } = newTimetable;
+
   // We might just want this in lessons for mapping
   // This will work, just not all IDish and such.
   // It would be ideal to fix when we add all that
@@ -29,15 +46,19 @@ export const importTimetableXML = async (xmlDoc: Document) => {
   const subjectMap = await loadSubjects(xmlDoc);
   const teacherMap = await loadTeachers(xmlDoc);
   const classroomMap = await loadClassrooms(xmlDoc);
-  const cohortMap = await loadCohort(xmlDoc, teacherMap);
-  const _lessons = await loadLessons(xmlDoc, {
-    subjectMap,
-    cohortMap,
-    teacherMap,
-    classroomMap,
-    dayMap,
-    periodMap,
-  });
+  const cohortMap = await loadCohort(xmlDoc, teacherMap, timetableId);
+  const _lessons = await loadLessons(
+    xmlDoc,
+    {
+      subjectMap,
+      cohortMap,
+      teacherMap,
+      classroomMap,
+      dayMap,
+      periodMap,
+    },
+    timetableId
+  );
 };
 
 const loadPeriods = async (xmlDoc: Document) => {
@@ -376,12 +397,18 @@ const parseCohortElement = (
 };
 
 const upsertCohort = async (
-  attrs: CohortAttributes
+  attrs: CohortAttributes,
+  timetableId: string
 ): Promise<[string, string] | null> => {
   const [existing] = await db
     .select()
     .from(cohortSchema)
-    .where(eq(cohortSchema.name, attrs.name))
+    .where(
+      and(
+        eq(cohortSchema.name, attrs.name),
+        eq(cohortSchema.timetableId, timetableId)
+      )
+    )
     .limit(1);
   if (existing) {
     return [attrs.predefinedId, existing.id];
@@ -396,6 +423,7 @@ const upsertCohort = async (
       name: attrs.name,
       short: attrs.short,
       teacherId: attrs.teacherId,
+      timetableId,
     })
     .returning({ insertedId: cohortSchema.id });
   if (!inserted) {
@@ -406,7 +434,8 @@ const upsertCohort = async (
 
 const loadCohort = async (
   xmlDoc: Document,
-  teacherMap: Map<string, string>
+  teacherMap: Map<string, string>,
+  timetableId: string
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const cohorts = xmlDoc.getElementsByTagName('class');
@@ -419,7 +448,7 @@ const loadCohort = async (
     if (!attrs) {
       continue;
     }
-    const upserted = await upsertCohort(attrs);
+    const upserted = await upsertCohort(attrs, timetableId);
     if (upserted) {
       const [pre, dbId] = upserted;
       result.set(pre, dbId);
@@ -478,6 +507,7 @@ const findExistingLesson = async (args: {
   teacherIds: string[];
   periodId: string;
   classroomIds: string[];
+  timetableId: string;
 }): Promise<LessonRow | null> => {
   const {
     subjectId,
@@ -487,6 +517,7 @@ const findExistingLesson = async (args: {
     teacherIds,
     periodId,
     classroomIds,
+    timetableId,
   } = args;
   const existingLessons = await db
     .select()
@@ -497,6 +528,7 @@ const findExistingLesson = async (args: {
         eq(lessonSchema.dayDefinitionId, dayDefinitionId),
         eq(lessonSchema.weeksDefinitionId, weekDefinitionId),
         eq(lessonSchema.periodId, periodId),
+        eq(lessonSchema.timetableId, timetableId),
         inArray(
           lessonSchema.id,
           db
@@ -547,12 +579,14 @@ type LessonMaps = {
   periodMap: Map<string, string>;
 };
 
-const processSchedule = async (
-  index: number,
-  schedule: Element,
-  maps: LessonMaps,
-  weekDefinitionId: string
-): Promise<[string, string] | null> => {
+const processSchedule = async (options: {
+  index: number;
+  schedule: Element;
+  maps: LessonMaps;
+  weekDefinitionId: string;
+  timetableId: string;
+}): Promise<[string, string] | null> => {
+  const { index, schedule, maps, weekDefinitionId, timetableId } = options;
   const dayId = schedule.getAttribute('DayID');
   const subjectGradeId = schedule.getAttribute('SubjectGradeID');
   const period = schedule.getAttribute('Period');
@@ -595,6 +629,7 @@ const processSchedule = async (
     teacherIds,
     periodId: actualPeriodId,
     classroomIds,
+    timetableId,
   });
   if (existingLesson) {
     return [`${index}`, existingLesson.id];
@@ -613,6 +648,7 @@ const processSchedule = async (
       periodsPerWeek: 1,
       weeksDefinitionId: weekDefinitionId,
       dayDefinitionId,
+      timetableId,
     })
     .returning({ insertedId: lessonSchema.id });
   if (!insertedLesson) {
@@ -632,7 +668,8 @@ const processSchedule = async (
 
 const loadLessons = async (
   xmlDoc: Document,
-  maps: LessonMaps
+  maps: LessonMaps,
+  timetableId: string
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const weekDefinitionId = await ensureWeekDefinition('A');
@@ -642,12 +679,13 @@ const loadLessons = async (
     if (!schedule) {
       continue;
     }
-    const processed = await processSchedule(
-      i,
+    const processed = await processSchedule({
+      index: i,
       schedule,
       maps,
-      weekDefinitionId
-    );
+      weekDefinitionId,
+      timetableId,
+    });
     if (processed) {
       const [key, lessonId] = processed;
       result.set(key, lessonId);

@@ -18,9 +18,19 @@ import {
   updateSubstitution,
 } from '~/routes/timetable/substitution';
 import type { Context } from '~/utils/globals';
+import {
+  getAllTimetables,
+  getAllValidTimetables,
+  getLatestValidTimetable,
+} from '.';
+import { getCohortsForTimetable } from './cohort';
 import { getLessonsForCohort } from './lesson';
 
 export const timetableRouter = new Hono<Context>()
+  // Timetable routes
+  .get('/timetables', ...getAllTimetables)
+  .get('/timetables/latest-valid', ...getLatestValidTimetable)
+  .get('/timetables/valid', ...getAllValidTimetables)
   .post('/import', ...importRoute)
   // Substitution routes
   .get('/substitutions', ...getAllSubstitutions)
@@ -41,4 +51,9 @@ export const timetableRouter = new Hono<Context>()
   .put('/moved-lessons/:id', ...updateMovedLesson)
   .delete('/moved-lessons/:id', ...deleteMovedLesson)
   // Lesson routes
-  .get('/lessons/get_for_cohort/:cohort_id', ...getLessonsForCohort);
+  .get('/lessons/get_for_cohort/:cohort_id', ...getLessonsForCohort)
+  // Cohort routes
+  .get(
+    '/cohorts/get-all-for-timetable/:timetable_id',
+    ...getCohortsForTimetable
+  );

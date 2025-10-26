@@ -23,14 +23,30 @@ export const importRoute = timetableFactory.createHandlers(
   async (c) => {
     const body = (await c.req.parseBody()) as {
       omanXml?: File;
+      name?: string;
+      validFrom?: Date;
     };
 
     // get file
     const file = body.omanXml as File;
+    const name = body.name;
+    const validFrom = body.validFrom;
 
     if (!file) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'No file provided',
+      });
+    }
+
+    if (!name) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No name provided',
+      });
+    }
+
+    if (!validFrom) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No validFrom provided',
       });
     }
 
@@ -66,7 +82,10 @@ export const importRoute = timetableFactory.createHandlers(
         'application/xml'
       );
 
-      await importTimetableXML(xmlData);
+      await importTimetableXML(xmlData, {
+        name,
+        validFrom: validFrom.toString(),
+      });
 
       logger.info('Imported timetable');
 
