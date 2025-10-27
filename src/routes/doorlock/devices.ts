@@ -25,7 +25,7 @@ const upsertDeviceSchema = z.object({
 });
 
 const assignCardsSchema = z.object({
-  cardIds: z.array(z.string().uuid()).min(1),
+  cardIds: z.array(z.uuid()).min(1),
 });
 
 export const listDevices = doorlockFactory.createHandlers(

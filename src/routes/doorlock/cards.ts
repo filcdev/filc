@@ -16,7 +16,7 @@ import { doorlockFactory } from './_factory';
 
 const createCardSchema = z.object({
   tag: z.string().min(1),
-  userId: z.string().uuid(),
+  userId: z.uuid(),
   label: z.string().optional(),
   frozen: z.boolean().optional(),
   disabled: z.boolean().optional(),
@@ -26,7 +26,7 @@ const updateCardSchema = z.object({
   label: z.string().optional(),
   frozen: z.boolean().optional(),
   disabled: z.boolean().optional(),
-  userId: z.string().uuid().optional(),
+  userId: z.uuid().optional(),
 });
 
 export const listCards = doorlockFactory.createHandlers(

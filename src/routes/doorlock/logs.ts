@@ -22,7 +22,7 @@ const listLogsSchema = z.object({
 
 const addUnknownCardSchema = z.object({
   tag: z.string().min(1),
-  userId: z.string().uuid(),
+  userId: z.uuid(),
   label: z.string().optional(),
 });
 
