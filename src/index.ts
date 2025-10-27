@@ -27,8 +27,9 @@ import { securityMiddleware } from '~/utils/security';
 await configureLogger('chronos');
 const logger = getLogger(['chronos', 'server']);
 
-env.mode === 'development' &&
+if (env.mode === 'development') {
   logger.warn('Running in development mode, do not use in production!');
+}
 
 const api = new Hono<Context>();
 
@@ -38,15 +39,17 @@ await initializeRBAC();
 api.use(
   '*',
   cors({
-    origin: env.mode === 'development' ? '*' : env.baseUrl,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: env.mode === 'development' ? '*' : env.baseUrl,
   })
 );
 
 api.use('*', authenticationMiddleware);
 
-env.mode === 'production' && api.use('*', securityMiddleware);
+if (env.mode === 'production') {
+  api.use('*', securityMiddleware);
+}
 
 api.onError((err, c) => {
   if (err instanceof HTTPException) {
@@ -54,8 +57,8 @@ api.onError((err, c) => {
       err.res ??
       c.json<ErrorResponse>(
         {
-          success: false,
           error: err.message,
+          success: false,
         },
         err.status
       );
@@ -64,50 +67,54 @@ api.onError((err, c) => {
 
   return c.json<ErrorResponse>(
     {
-      success: false,
+      cause: err instanceof Error ? err.cause : undefined,
       error:
         env.mode === 'production'
           ? 'Internal Server Error'
           : (err.stack ?? err.message),
-      cause: err instanceof Error ? err.cause : undefined,
+      success: false,
     },
     StatusCodes.INTERNAL_SERVER_ERROR
   );
 });
 
-env.mode === 'development'
-  ? api.use('*', async (c, next) => {
-      const start = Date.now();
-      await next();
-      const ms = Date.now() - start;
-      logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
-        method: c.req.method,
-        url: c.req.url,
-        duration: ms,
-        user: c.get('user')
-          ? { id: c.get('user')?.id, email: c.get('user')?.email }
-          : null,
-      });
-    })
-  : api.use('*', async (c, next) => {
-      const start = Date.now();
-      await next();
-      const ms = Date.now() - start;
-      const connInfo = getConnInfo(c);
-      logger.info('Received request', {
-        ua: c.req.header('user-agent') ?? 'unknown',
-        ip: connInfo?.remote.address ?? 'unknown',
-        method: c.req.method,
-        url: c.req.url,
-        duration: ms,
-        user: c.get('user')
-          ? { id: c.get('user')?.id, email: c.get('user')?.email }
-          : null,
-      });
+if (env.mode === 'development') {
+  api.use('*', async (c, next) => {
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
+      duration: ms,
+      method: c.req.method,
+      url: c.req.url,
+      user: c.get('user')
+        ? { email: c.get('user')?.email, id: c.get('user')?.id }
+        : null,
     });
+  });
+} else {
+  api.use('*', async (c, next) => {
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    const connInfo = getConnInfo(c);
+    logger.info('Received request', {
+      duration: ms,
+      ip: connInfo?.remote.address ?? 'unknown',
+      method: c.req.method,
+      ua: c.req.header('user-agent') ?? 'unknown',
+      url: c.req.url,
+      user: c.get('user')
+        ? { email: c.get('user')?.email, id: c.get('user')?.id }
+        : null,
+    });
+  });
+}
 
 // routes
-env.mode === 'development' && api.route('/_dev', developmentRouter);
+if (env.mode === 'development') {
+  api.route('/_dev', developmentRouter);
+}
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/feature-flags', featureFlagRouter);
@@ -136,14 +143,18 @@ const handleStartup = async () => {
   await initializeMqttClient();
   await startDeviceMonitor();
 
-  env.mode === 'production' &&
+  if (env.mode === 'production') {
     Bun.serve({
-      port: env.port,
       fetch: app.fetch,
+      port: env.port,
     });
+  }
 
   logger.info('chronos started on http://localhost:3000');
-  env.logLevel === 'trace' && showRoutes(app, { verbose: true });
+  if (env.logLevel === 'trace') {
+    logger.info('Log level set to TRACE, verbose route listing enabled');
+    showRoutes(app, { verbose: true });
+  }
 };
 
 const handleShutdown = () => {

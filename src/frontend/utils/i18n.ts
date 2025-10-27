@@ -13,30 +13,30 @@ base
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    fallbackLng: 'hu',
-    supportedLngs: ['en', 'hu'],
-    debug: import.meta.env.DEV,
-    detection: {
-      // Prefer cookie, then fall back to <html lang>
-      order: ['cookie', 'htmlTag'],
-      lookupCookie: 'filc-lang',
-      caches: ['cookie'],
-      lookupLocalStorage: '',
-      // i18next-browser-languagedetector expects minutes
-      cookieMinutes: dayjs.duration(1, 'year').asMinutes(),
-      cookieDomain: undefined,
-      cookieOptions: { path: '/', sameSite: 'lax' },
-    },
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
     },
-    react: {
-      useSuspense: !(typeof window === 'undefined'),
+    debug: import.meta.env.DEV,
+    detection: {
+      caches: ['cookie'],
+      cookieDomain: undefined,
+      // i18next-browser-languagedetector expects minutes
+      cookieMinutes: dayjs.duration(1, 'year').asMinutes(),
+      cookieOptions: { path: '/', sameSite: 'lax' },
+      lookupCookie: 'filc-lang',
+      lookupLocalStorage: '',
+      // Prefer cookie, then fall back to <html lang>
+      order: ['cookie', 'htmlTag'],
     },
+    fallbackLng: 'hu',
 
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     },
+    react: {
+      useSuspense: !(typeof window === 'undefined'),
+    },
+    supportedLngs: ['en', 'hu'],
   });
 
 export const i18n = base;

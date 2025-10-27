@@ -91,13 +91,13 @@ const createClassSession = (lesson: EnrichedLesson): ClassSession => {
   const room = lesson.classrooms.map((r) => r.short || r.name).join(', ');
 
   return {
+    color: colorFromSubject(subject),
+    endTime: end,
     id: lesson.id,
-    subject,
-    teacher,
     room,
     startTime: start,
-    endTime: end,
-    color: colorFromSubject(subject),
+    subject,
+    teacher,
   };
 };
 
@@ -128,14 +128,13 @@ const buildTimetableData = (lessons: EnrichedLesson[]) => {
     updateDayMetadata(metadata, day, lesson);
   }
 
-  return { timetableData: data, dayMetadata: metadata };
+  return { dayMetadata: metadata, timetableData: data };
 };
 
 export function TimetableView() {
   const { data: session, isPending } = authClient.useSession();
 
   const cohortsQuery = useQuery({
-    queryKey: ['cohorts'],
     queryFn: async () => {
       const res = await parseResponse(apiClient.cohort.index.$get());
       if (!res.success) {
@@ -143,6 +142,7 @@ export function TimetableView() {
       }
       return res.data as Cohort[];
     },
+    queryKey: ['cohorts'],
   });
 
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(null);
@@ -157,7 +157,6 @@ export function TimetableView() {
   }, [cohortsQuery.data, selectedCohortId, session, isPending]);
 
   const lessonsQuery = useQuery({
-    queryKey: ['lessons', selectedCohortId],
     enabled: !!selectedCohortId,
     queryFn: async (): Promise<EnrichedLesson[]> => {
       if (!selectedCohortId) {
@@ -173,6 +172,7 @@ export function TimetableView() {
       }
       return (res.data as EnrichedLesson[]) ?? [];
     },
+    queryKey: ['lessons', selectedCohortId],
   });
 
   const selectedCohort = useMemo(

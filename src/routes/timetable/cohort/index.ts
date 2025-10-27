@@ -29,8 +29,8 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
         .where(eq(timetable.id, timetableId));
 
       return c.json<SuccessResponse>({
-        success: true,
         data: cohorts,
+        success: true,
       });
     } catch (error) {
       logger.error('Error fetching cohorts for timetable', { error });

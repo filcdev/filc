@@ -43,75 +43,77 @@ export function AdminSidebar() {
   const categories: MenuCategory[] = useMemo(
     () => [
       {
-        label: t('admin.door'),
         items: [
           {
+            icon: FaDoorOpen,
             title: t('admin.doorAccess'),
             url: '/admin/doors',
-            icon: FaDoorOpen,
           },
           {
-            title: t('doorlock.manageDevices'),
-            url: '/admin/doors/devices',
             icon: FaGear,
             permission: 'device:upsert',
+            title: t('doorlock.manageDevices'),
+            url: '/admin/doors/devices',
           },
           {
-            title: t('doorlock.manageCards'),
-            url: '/admin/doors/cards',
             icon: FaCreditCard,
             permission: 'card:read',
+            title: t('doorlock.manageCards'),
+            url: '/admin/doors/cards',
           },
           {
-            title: t('doorlock.accessLogs'),
-            url: '/admin/doors/logs',
             icon: FaListCheck,
             permission: 'doorlock:logs:read',
+            title: t('doorlock.accessLogs'),
+            url: '/admin/doors/logs',
           },
         ],
+        label: t('admin.door'),
       },
       {
-        label: t('admin.timetable'),
         items: [
           {
-            title: t('timetable.import'),
-            url: '/admin/timetable/import',
             icon: FaCalendarDays,
             permission: 'import:timetable',
+            title: t('timetable.import'),
+            url: '/admin/timetable/import',
           },
         ],
+        label: t('admin.timetable'),
       },
       {
-        label: t('admin.server'),
         items: [
           {
-            title: t('featureFlags.manage'),
-            url: '/admin/feature-flags',
             icon: FaFlag,
             permission: 'feature-flags:read',
+            title: t('featureFlags.manage'),
+            url: '/admin/feature-flags',
           },
         ],
+        label: t('admin.server'),
       },
     ],
     [t]
   );
 
-  const visibleCategories = useMemo(() => {
-    return categories
-      .map((category) => {
-        const visibleItems = category.items.filter((item) => {
-          if (session?.user?.permissions.includes('*')) {
-            return true;
-          }
-          if (!item.permission) {
-            return true;
-          }
-          return session?.user?.permissions?.includes(item.permission);
-        });
-        return { ...category, items: visibleItems };
-      })
-      .filter((category) => category.items.length > 0);
-  }, [categories, session?.user?.permissions]);
+  const visibleCategories = useMemo(
+    () =>
+      categories
+        .map((category) => {
+          const visibleItems = category.items.filter((item) => {
+            if (session?.user?.permissions.includes('*')) {
+              return true;
+            }
+            if (!item.permission) {
+              return true;
+            }
+            return session?.user?.permissions?.includes(item.permission);
+          });
+          return { ...category, items: visibleItems };
+        })
+        .filter((category) => category.items.length > 0),
+    [categories, session?.user?.permissions]
+  );
 
   return (
     <Sidebar>

@@ -91,19 +91,18 @@ function RouteComponent() {
 
   // Fetch logs
   const { data: logsData, isLoading: logsLoading } = useQuery<AccessLog[]>({
-    queryKey: ['doorlock-logs', resultFilter],
     queryFn: () => fetchLogs(resultFilter as 'granted' | 'denied' | 'all'),
+    queryKey: ['doorlock-logs', resultFilter],
   });
 
   // Fetch unknown tags
   const { data: unknownTagsData } = useQuery<UnknownTag[]>({
-    queryKey: ['doorlock-unknown-tags'],
     queryFn: fetchUnknownTags,
+    queryKey: ['doorlock-unknown-tags'],
   });
 
   // Fetch users for dropdown
   const { data: usersData } = useQuery({
-    queryKey: ['users'],
     queryFn: async () => {
       const session = await authClient.getSession();
       if (session?.error || !session?.data) {
@@ -113,12 +112,13 @@ function RouteComponent() {
       // This might need adjustment based on your API
       return [
         {
+          email: session.data.user.email,
           id: session.data.user.id,
           name: session.data.user.name,
-          email: session.data.user.email,
         },
       ] as User[];
     },
+    queryKey: ['users'],
   });
 
   // Add unknown card mutation
@@ -143,6 +143,9 @@ function RouteComponent() {
 
       return res.data;
     },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doorlock-logs'] });
       queryClient.invalidateQueries({ queryKey: ['doorlock-unknown-tags'] });
@@ -152,9 +155,6 @@ function RouteComponent() {
       setSelectedUnknownTag(undefined);
       setNewCardUserId('');
       setNewCardLabel('');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
     },
   });
 
@@ -172,9 +172,9 @@ function RouteComponent() {
       return;
     }
     addCardMutation.mutate({
+      label: newCardLabel,
       tag: selectedUnknownTag.tag,
       userId: newCardUserId,
-      label: newCardLabel,
     });
   };
 

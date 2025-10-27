@@ -49,8 +49,8 @@ function FeatureFlagsPage() {
   const queryClient = useQueryClient();
 
   const { data: flagsData, isLoading } = useQuery({
-    queryKey: ['feature-flags'],
     queryFn: fetchFeatureFlags,
+    queryKey: ['feature-flags'],
   });
 
   const toggleMutation = useMutation({
@@ -63,8 +63,8 @@ function FeatureFlagsPage() {
     }) => {
       const res = await parseResponse(
         apiClient.featureFlags[':name'].$post({
-          param: { name },
           json: { isEnabled },
+          param: { name },
         })
       );
       if (!res?.success) {
@@ -72,12 +72,12 @@ function FeatureFlagsPage() {
       }
       return res.data;
     },
+    onError: () => {
+      toast.error(t('featureFlags.toggleError'));
+    },
     onSuccess: () => {
       toast.success(t('featureFlags.toggleSuccess'));
       queryClient.invalidateQueries({ queryKey: ['feature-flags'] });
-    },
-    onError: () => {
-      toast.error(t('featureFlags.toggleError'));
     },
   });
 
@@ -153,8 +153,8 @@ function FeatureFlagsPage() {
                           disabled={toggleMutation.isPending}
                           onClick={() =>
                             toggleMutation.mutate({
-                              name: flag.name,
                               isEnabled: !flag.isEnabled,
+                              name: flag.name,
                             })
                           }
                           size="sm"

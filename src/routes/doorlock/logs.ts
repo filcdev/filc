@@ -15,15 +15,15 @@ import { doorlockFactory } from './_factory';
 
 const listLogsSchema = z.object({
   deviceId: z.string().optional(),
-  result: z.enum(['granted', 'denied']).optional(),
   limit: z.coerce.number().int().positive().max(1000).optional().default(100),
   offset: z.coerce.number().int().nonnegative().optional().default(0),
+  result: z.enum(['granted', 'denied']).optional(),
 });
 
 const addUnknownCardSchema = z.object({
+  label: z.string().optional(),
   tag: z.string().min(1),
   userId: z.uuid(),
-  label: z.string().optional(),
 });
 
 // List access logs with filters
@@ -44,17 +44,17 @@ export const listLogs = doorlockFactory.createHandlers(
 
     const logs = await db
       .select({
-        id: accessLog.id,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        tag: accessLog.tag,
         cardId: accessLog.cardId,
         cardLabel: card.label,
+        deviceId: accessLog.deviceId,
+        deviceName: device.name,
+        id: accessLog.id,
+        reason: accessLog.reason,
+        result: accessLog.result,
+        tag: accessLog.tag,
+        timestamp: accessLog.timestamp,
         userId: accessLog.userId,
         userName: user.name,
-        result: accessLog.result,
-        reason: accessLog.reason,
-        timestamp: accessLog.timestamp,
       })
       .from(accessLog)
       .leftJoin(device, eq(accessLog.deviceId, device.id))
@@ -66,8 +66,8 @@ export const listLogs = doorlockFactory.createHandlers(
       .offset(offset);
 
     return c.json<SuccessResponse<typeof logs>>({
-      success: true,
       data: logs,
+      success: true,
     });
   }
 );
@@ -86,17 +86,17 @@ export const getLog = doorlockFactory.createHandlers(
 
     const [log] = await db
       .select({
-        id: accessLog.id,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        tag: accessLog.tag,
         cardId: accessLog.cardId,
         cardLabel: card.label,
+        deviceId: accessLog.deviceId,
+        deviceName: device.name,
+        id: accessLog.id,
+        reason: accessLog.reason,
+        result: accessLog.result,
+        tag: accessLog.tag,
+        timestamp: accessLog.timestamp,
         userId: accessLog.userId,
         userName: user.name,
-        result: accessLog.result,
-        reason: accessLog.reason,
-        timestamp: accessLog.timestamp,
       })
       .from(accessLog)
       .leftJoin(device, eq(accessLog.deviceId, device.id))
@@ -112,8 +112,8 @@ export const getLog = doorlockFactory.createHandlers(
     }
 
     return c.json<SuccessResponse<typeof log>>({
-      success: true,
       data: log,
+      success: true,
     });
   }
 );
@@ -126,11 +126,11 @@ export const listUnknownTags = doorlockFactory.createHandlers(
     // Get unique unknown tags from logs
     const unknownTags = await db
       .selectDistinct({
-        tag: accessLog.tag,
-        lastSeen: sql<Date>`MAX(${accessLog.timestamp})`,
+        accessCount: sql<number>`COUNT(*)`,
         deviceId: accessLog.deviceId,
         deviceName: device.name,
-        accessCount: sql<number>`COUNT(*)`,
+        lastSeen: sql<Date>`MAX(${accessLog.timestamp})`,
+        tag: accessLog.tag,
       })
       .from(accessLog)
       .leftJoin(device, eq(accessLog.deviceId, device.id))
@@ -139,8 +139,8 @@ export const listUnknownTags = doorlockFactory.createHandlers(
       .orderBy(desc(sql`MAX(${accessLog.timestamp})`));
 
     return c.json<SuccessResponse<typeof unknownTags>>({
-      success: true,
       data: unknownTags,
+      success: true,
     });
   }
 );
@@ -169,11 +169,11 @@ export const addUnknownCard = doorlockFactory.createHandlers(
     const [newCard] = await db
       .insert(card)
       .values({
+        disabled: false,
+        frozen: false,
+        label,
         tag,
         userId,
-        label,
-        frozen: false,
-        disabled: false,
       })
       .returning();
 
@@ -185,8 +185,8 @@ export const addUnknownCard = doorlockFactory.createHandlers(
 
     return c.json<SuccessResponse<typeof newCard>>(
       {
-        success: true,
         data: newCard,
+        success: true,
       },
       StatusCodes.CREATED
     );
@@ -215,17 +215,17 @@ export const getDeviceLogs = doorlockFactory.createHandlers(
 
     const logs = await db
       .select({
-        id: accessLog.id,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        tag: accessLog.tag,
         cardId: accessLog.cardId,
         cardLabel: card.label,
+        deviceId: accessLog.deviceId,
+        deviceName: device.name,
+        id: accessLog.id,
+        reason: accessLog.reason,
+        result: accessLog.result,
+        tag: accessLog.tag,
+        timestamp: accessLog.timestamp,
         userId: accessLog.userId,
         userName: user.name,
-        result: accessLog.result,
-        reason: accessLog.reason,
-        timestamp: accessLog.timestamp,
       })
       .from(accessLog)
       .leftJoin(device, eq(accessLog.deviceId, device.id))
@@ -237,8 +237,8 @@ export const getDeviceLogs = doorlockFactory.createHandlers(
       .offset(offset);
 
     return c.json<SuccessResponse<typeof logs>>({
-      success: true,
       data: logs,
+      success: true,
     });
   }
 );

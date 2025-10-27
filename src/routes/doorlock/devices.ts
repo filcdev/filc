@@ -19,8 +19,8 @@ const DEFAULT_TTL_SECONDS = 30;
 const SECOND_IN_MS = 1000;
 
 const upsertDeviceSchema = z.object({
-  name: z.string().min(1),
   location: z.string().optional(),
+  name: z.string().min(1),
   ttlSeconds: z.number().int().positive().max(MAX_TTL_SECONDS).optional(),
 });
 
@@ -33,8 +33,8 @@ export const listDevices = doorlockFactory.createHandlers(
   async (c) => {
     const rows = await db.select().from(device);
     return c.json<SuccessResponse<typeof rows>>({
-      success: true,
       data: rows,
+      success: true,
     });
   }
 );
@@ -57,8 +57,8 @@ export const getDevice = doorlockFactory.createHandlers(
       throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
     return c.json<SuccessResponse<typeof row>>({
-      success: true,
       data: row,
+      success: true,
     });
   }
 );
@@ -86,40 +86,40 @@ export const upsertDevice = doorlockFactory.createHandlers(
         const [updated] = await db
           .update(device)
           .set({
-            name: data.name,
             location: data.location,
+            name: data.name,
             ttlSeconds: data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
             updatedAt: now,
           })
           .where(eq(device.id, id))
           .returning();
         return c.json<SuccessResponse>({
-          success: true,
           data: updated,
+          success: true,
         });
       }
       const [inserted] = await db
         .insert(device)
         .values({
-          id,
-          name: data.name,
-          location: data.location,
-          ttlSeconds: data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
           createdAt: now,
+          id,
+          location: data.location,
+          name: data.name,
+          ttlSeconds: data.ttlSeconds ?? DEFAULT_TTL_SECONDS,
           updatedAt: now,
         })
         .returning();
       return c.json<SuccessResponse>(
         {
-          success: true,
           data: inserted,
+          success: true,
         },
         StatusCodes.CREATED
       );
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to upsert device',
         cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to upsert device',
       });
     }
   }
@@ -147,13 +147,13 @@ export const deleteDevice = doorlockFactory.createHandlers(
         });
       }
       return c.json<SuccessResponse>({
-        success: true,
         data: deleted,
+        success: true,
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to delete device',
         cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to delete device',
       });
     }
   }
@@ -177,8 +177,8 @@ export const listDeviceCards = doorlockFactory.createHandlers(
       .from(cardDevice)
       .where(eq(cardDevice.deviceId, id));
     return c.json<SuccessResponse>({
-      success: true,
       data: rows,
+      success: true,
     });
   }
 );
@@ -204,13 +204,13 @@ export const replaceDeviceCards = doorlockFactory.createHandlers(
           .values(data.cardIds.map((cid) => ({ cardId: cid, deviceId: id })));
       }
       return c.json<SuccessResponse>({
-        success: true,
         data: { assignedCardIds: data.cardIds, deviceId: id },
+        success: true,
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to assign cards',
         cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to assign cards',
       });
     }
   }
@@ -239,13 +239,13 @@ export const getDeviceStatus = doorlockFactory.createHandlers(
     const ttl = (row.ttlSeconds ?? DEFAULT_TTL_SECONDS) * SECOND_IN_MS;
     const online = !!last && now - last <= ttl;
     return c.json<SuccessResponse>({
-      success: true,
       data: {
         id: row.id,
-        online,
         lastSeenAt: row.lastSeenAt,
+        online,
         ttlSeconds: row.ttlSeconds,
       },
+      success: true,
     });
   }
 );

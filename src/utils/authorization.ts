@@ -14,19 +14,19 @@ export const rbac = RBAC({
     );
   },
 })({
-  user: {
-    can: [],
-  },
   admin: {
     can: ['*'],
+  },
+  user: {
+    can: [],
   },
 });
 
 export const initializeRBAC = async () => {
   const roles = await db
     .select({
-      name: dbRole.name,
       can: dbRole.can,
+      name: dbRole.name,
     })
     .from(dbRole);
 
@@ -102,7 +102,7 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
       // create it
       await db
         .insert(dbRole)
-        .values({ name: role, can: role === 'admin' ? ['*'] : [] })
+        .values({ can: role === 'admin' ? ['*'] : [], name: role })
         .returning({ can: dbRole.can });
       logger.info(`Created missing role ${role} in the database.`);
       continue;

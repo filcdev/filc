@@ -55,16 +55,16 @@ export const handleFeatureFlag = async (
     );
     await db
       .insert(featureFlag)
-      .values({ name, description, isEnabled: defaultEnabled })
+      .values({ description, isEnabled: defaultEnabled, name })
       .returning();
 
     // Cache the default value
-    flagCache.set(name, { value: defaultEnabled, lastFetched: now });
+    flagCache.set(name, { lastFetched: now, value: defaultEnabled });
     return defaultEnabled;
   }
 
   // Update cache
-  flagCache.set(name, { value: existingFlag.isEnabled, lastFetched: now });
+  flagCache.set(name, { lastFetched: now, value: existingFlag.isEnabled });
   return existingFlag.isEnabled;
 };
 
@@ -91,7 +91,7 @@ export const isFeatureEnabled = async (name: string): Promise<boolean> => {
     return false;
   }
 
-  flagCache.set(name, { value: flag.isEnabled, lastFetched: now });
+  flagCache.set(name, { lastFetched: now, value: flag.isEnabled });
   return flag.isEnabled;
 };
 

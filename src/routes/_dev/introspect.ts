@@ -28,17 +28,17 @@ export const introspect = pingFactory.createHandlers(
     const results = await Promise.all(data);
 
     return c.json<SuccessResponse>({
-      success: true,
       data: {
-        database: results,
         auth: {
+          session: c.var.session,
           user: {
             ...c.var.user,
             permissions: await getUserPermissions(c.var.session.userId),
           },
-          session: c.var.session,
         },
+        database: results,
       },
+      success: true,
     });
   }
 );

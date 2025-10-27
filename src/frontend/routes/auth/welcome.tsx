@@ -52,7 +52,7 @@ function RouteComponent() {
       return;
     }
     if (!(data?.session && data?.user)) {
-      navigate({ to: '/auth/login', replace: true });
+      navigate({ replace: true, to: '/auth/login' });
     }
   }, [data, isPending, navigate]);
 
@@ -91,19 +91,15 @@ const InfoLine = (props: {
   icon: React.ReactNode;
   title: string;
   content: string;
-}) => {
-  return (
-    <div className="flex w-full items-center gap-3">
-      {props.icon}
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-foreground text-sm">{props.title}</p>
-        <p className="truncate text-muted-foreground text-sm">
-          {props.content}
-        </p>
-      </div>
+}) => (
+  <div className="flex w-full items-center gap-3">
+    {props.icon}
+    <div className="min-w-0 flex-1">
+      <p className="font-medium text-foreground text-sm">{props.title}</p>
+      <p className="truncate text-muted-foreground text-sm">{props.content}</p>
     </div>
-  );
-};
+  </div>
+);
 
 const CohortSelector = (props: { user: UserType }) => {
   const { t } = useTranslation();
@@ -114,7 +110,6 @@ const CohortSelector = (props: { user: UserType }) => {
   const [open, setOpen] = useState(false);
 
   const cohortQuery = useQuery({
-    queryKey: ['cohorts'],
     queryFn: async () => {
       const res = await parseResponse(apiClient.cohort.index.$get());
       if (!res.success) {
@@ -122,6 +117,7 @@ const CohortSelector = (props: { user: UserType }) => {
       }
       return res.data;
     },
+    queryKey: ['cohorts'],
   });
 
   const updateCohort = async (cohortId: string) => {
@@ -246,7 +242,7 @@ const AccountDetails = (props: { user: UserType }) => {
         <Button
           className="mx-auto"
           onClick={() => {
-            navigate({ to: '/', replace: true });
+            navigate({ replace: true, to: '/' });
           }}
         >
           {t('continue')}
@@ -324,9 +320,9 @@ const MicrosoftLink = () => {
       className="w-full justify-start"
       onClick={() => {
         authClient.linkSocial({
-          provider: 'microsoft',
           callbackURL: '/auth/welcome',
           errorCallbackURL: '/auth/error?from=link-microsoft',
+          provider: 'microsoft',
         });
       }}
       variant="outline"

@@ -27,12 +27,12 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
     try {
       const substitutions = await db
         .select({
-          substitution,
-          teacher,
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+          substitution,
+          teacher,
         })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -43,8 +43,8 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         .groupBy(substitution.id, teacher.id);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: substitutions,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching all substitutions', { error });
@@ -63,12 +63,12 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
 
       const substitutions = await db
         .select({
-          substitution,
-          teacher,
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+          substitution,
+          teacher,
         })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -80,8 +80,8 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         .groupBy(substitution.id, teacher.id);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: substitutions,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching substitutions', { error });
@@ -107,12 +107,12 @@ export const getRelevantSubstitutionsForCohort =
     try {
       const substitutions = await db
         .select({
-          substitution,
-          teacher,
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+          substitution,
+          teacher,
         })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -129,11 +129,11 @@ export const getRelevantSubstitutionsForCohort =
         .groupBy(substitution.id, teacher.id);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: {
           cohortId,
           substitutions,
         },
+        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching substitutions for cohort', { error });
@@ -180,26 +180,26 @@ export const createSubstitution = timetableFactory.createHandlers(
       const [insertedSubstitution] = await tx
         .insert(substitution)
         .values({
-          id: crypto.randomUUID(),
           date,
+          id: crypto.randomUUID(),
           substituter,
         })
         .returning();
 
       if (!insertedSubstitution) {
         throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-          message: 'Failed to create substitution.',
           cause:
             env.mode === 'development'
               ? 'No substitution returned from insert query'
               : undefined,
+          message: 'Failed to create substitution.',
         });
       }
 
       // Insert the many-to-many relationships
       const mtmValues = lessonIds.map((lessonId) => ({
-        substitutionId: insertedSubstitution.id,
         lessonId,
+        substitutionId: insertedSubstitution.id,
       }));
 
       await tx.insert(substitutionLessonMTM).values(mtmValues);
@@ -208,8 +208,8 @@ export const createSubstitution = timetableFactory.createHandlers(
     });
 
     return c.json<SuccessResponse>({
-      success: true,
       data: result,
+      success: true,
     });
   }
 );
@@ -286,8 +286,8 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
           // Insert new relationships
           const mtmValues = body.lessonIds.map((lessonId) => ({
-            substitutionId: id,
             lessonId,
+            substitutionId: id,
           }));
 
           await tx.insert(substitutionLessonMTM).values(mtmValues);
@@ -297,15 +297,15 @@ export const updateSubstitution = timetableFactory.createHandlers(
       });
 
       return c.json<SuccessResponse>({
-        success: true,
         data: updatedSubstitution,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while updating substitution', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to update substitution',
         cause:
           env.mode === 'development' ? (error as Error).message : undefined,
+        message: 'Failed to update substitution',
       });
     }
   }
@@ -343,15 +343,15 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         .returning();
 
       return c.json<SuccessResponse>({
-        success: true,
         data: deletedSubstitution,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while deleting substitution', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to delete substitution',
         cause:
           env.mode === 'development' ? (error as Error).message : undefined,
+        message: 'Failed to delete substitution',
       });
     }
   }

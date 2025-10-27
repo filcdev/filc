@@ -23,8 +23,8 @@ await prepareI18n();
 router.update({
   context: {
     ...router.options.context,
-    i18n,
     head: '',
+    i18n,
   },
 });
 

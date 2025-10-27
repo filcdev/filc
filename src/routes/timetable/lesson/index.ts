@@ -45,7 +45,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const lessons = lessonRows.map((r) => r.lesson);
 
     if (lessons.length === 0) {
-      return c.json<SuccessResponse>({ success: true, data: [] });
+      return c.json<SuccessResponse>({ data: [], success: true });
     }
 
     const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
@@ -93,19 +93,6 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       ) as string[];
 
       return {
-        id: l.id,
-        subject: (() => {
-          const s = subjMap.get(l.subjectId);
-          return s ? { id: s.id, name: s.name, short: s.short } : null;
-        })(),
-        teachers: tIds
-          .map((id) => teacherMap.get(id))
-          .filter(Boolean)
-          .map((t) => ({
-            id: (t as (typeof teachers)[number]).id,
-            name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-            short: (t as (typeof teachers)[number]).short,
-          })),
         classrooms: cIds
           .map((id) => classroomMap.get(id))
           .filter(Boolean)
@@ -118,23 +105,36 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
           const d = dayMap.get(l.dayDefinitionId);
           return d;
         })(),
+        id: l.id,
         period: (() => {
           const p = periodMap.get(l.periodId);
           return p
             ? {
-                id: p.id,
-                startTime: String(p.startTime),
                 endTime: String(p.endTime),
+                id: p.id,
                 period: p.period,
+                startTime: String(p.startTime),
               }
             : null;
         })(),
-        weeksDefinitionId: l.weeksDefinitionId,
-        termDefinitionId: l.termDefinitionId,
         periodsPerWeek: l.periodsPerWeek,
+        subject: (() => {
+          const s = subjMap.get(l.subjectId);
+          return s ? { id: s.id, name: s.name, short: s.short } : null;
+        })(),
+        teachers: tIds
+          .map((id) => teacherMap.get(id))
+          .filter(Boolean)
+          .map((t) => ({
+            id: (t as (typeof teachers)[number]).id,
+            name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
+            short: (t as (typeof teachers)[number]).short,
+          })),
+        termDefinitionId: l.termDefinitionId,
+        weeksDefinitionId: l.weeksDefinitionId,
       };
     });
 
-    return c.json<SuccessResponse>({ success: true, data: enriched });
+    return c.json<SuccessResponse>({ data: enriched, success: true });
   }
 );

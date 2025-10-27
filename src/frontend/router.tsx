@@ -4,19 +4,19 @@ import type { RouterContext } from '~/frontend/router-context';
 
 export function createRouter() {
   return createTanstackRouter({
-    routeTree,
     context: {
       head: '',
     } as RouterContext,
     defaultPreload: 'intent',
-    scrollRestoration: true,
-    defaultStructuralSharing: true,
     defaultPreloadStaleTime: 0,
+    defaultStructuralSharing: true,
+    routeTree,
+    scrollRestoration: true,
   });
 }
 
 declare module '@tanstack/react-router' {
-  // biome-ignore lint/nursery/useConsistentTypeDefinitions: Needed for module augmentation
+  // biome-ignore lint/style/useConsistentTypeDefinitions: Needed for module augmentation
   interface Register {
     router: ReturnType<typeof createRouter>;
   }

@@ -180,20 +180,20 @@ export function Timetable({
   const columns: ColumnDef<Row, unknown>[] = [
     {
       accessorKey: 'time',
-      header: 'Time',
       cell: (info: { getValue: () => unknown }) => (
         <div className="font-medium font-mono text-muted-foreground text-sm">
           {String(info.getValue())}
         </div>
       ),
+      header: 'Time',
       size: 80,
     },
     ...days.map((day) => ({
       accessorKey: day,
-      header: day,
       cell: (info: { getValue: () => unknown }) => (
         <ClassCell session={info.getValue() as Row[keyof Row]} />
       ),
+      header: day,
       size: 200,
     })),
   ];
@@ -207,8 +207,8 @@ export function Timetable({
   });
 
   const table = useReactTable<Row>({
-    data: tableData,
     columns,
+    data: tableData,
     getCoreRowModel: getCoreRowModel(),
   });
 

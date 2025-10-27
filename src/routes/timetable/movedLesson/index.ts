@@ -162,14 +162,14 @@ export const getAllMovedLessons = timetableFactory.createHandlers(async (c) => {
   try {
     const movedLessons = await db
       .select({
-        movedLesson,
-        period,
-        dayDefinition,
         classroom,
+        dayDefinition,
         lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+        movedLesson,
+        period,
       })
       .from(movedLesson)
       .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
@@ -182,8 +182,8 @@ export const getAllMovedLessons = timetableFactory.createHandlers(async (c) => {
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
     return c.json<SuccessResponse>({
-      success: true,
       data: movedLessons,
+      success: true,
     });
   } catch (error) {
     logger.error('Error while fetching all moved lessons', { error });
@@ -202,14 +202,14 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
 
       const movedLessons = await db
         .select({
-          movedLesson,
-          period,
-          dayDefinition,
           classroom,
+          dayDefinition,
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+          movedLesson,
+          period,
         })
         .from(movedLesson)
         .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
@@ -223,8 +223,8 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: movedLessons,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching relevant moved lessons', { error });
@@ -248,14 +248,14 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
 
       const movedLessons = await db
         .select({
-          movedLesson,
-          period,
-          dayDefinition,
           classroom,
+          dayDefinition,
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+          movedLesson,
+          period,
         })
         .from(movedLesson)
         .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
@@ -271,8 +271,8 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: movedLessons,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching moved lessons for cohort', { error });
@@ -300,14 +300,14 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
 
       const movedLessons = await db
         .select({
-          movedLesson,
-          period,
-          dayDefinition,
           classroom,
+          dayDefinition,
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
+          movedLesson,
+          period,
         })
         .from(movedLesson)
         .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
@@ -328,8 +328,8 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: movedLessons,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching relevant moved lessons for cohort', {
@@ -357,20 +357,20 @@ export const createMovedLesson = timetableFactory.createHandlers(
       }
 
       await validateMovedLessonReferences({
-        startingPeriod,
-        startingDay,
-        room,
         lessonIds,
+        room,
+        startingDay,
+        startingPeriod,
       });
 
       const [newMovedLesson] = await db
         .insert(movedLesson)
         .values({
-          id: crypto.randomUUID(),
-          startingPeriod,
-          startingDay,
-          room,
           date,
+          id: crypto.randomUUID(),
+          room,
+          startingDay,
+          startingPeriod,
         })
         .returning();
 
@@ -382,16 +382,16 @@ export const createMovedLesson = timetableFactory.createHandlers(
       ) {
         await db.insert(movedLessonLessonMTM).values(
           lessonIds.map((lessonId: string) => ({
-            movedLessonId: newMovedLesson.id,
             lessonId,
+            movedLessonId: newMovedLesson.id,
           }))
         );
       }
 
       return c.json<SuccessResponse>(
         {
-          success: true,
           data: newMovedLesson,
+          success: true,
         },
         StatusCodes.CREATED
       );
@@ -420,20 +420,20 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       }
 
       await validateMovedLessonReferences({
-        startingPeriod,
-        startingDay,
-        room,
         lessonIds,
+        room,
+        startingDay,
+        startingPeriod,
       });
 
       const [updatedMovedLesson] = await db
         .update(movedLesson)
         .set({
+          date: date !== undefined ? date : undefined,
+          room: room !== undefined ? room : undefined,
+          startingDay: startingDay !== undefined ? startingDay : undefined,
           startingPeriod:
             startingPeriod !== undefined ? startingPeriod : undefined,
-          startingDay: startingDay !== undefined ? startingDay : undefined,
-          room: room !== undefined ? room : undefined,
-          date: date !== undefined ? date : undefined,
         })
         .where(eq(movedLesson.id, id))
         .returning();
@@ -452,16 +452,16 @@ export const updateMovedLesson = timetableFactory.createHandlers(
         if (lessonIds.length > 0) {
           await db.insert(movedLessonLessonMTM).values(
             lessonIds.map((lessonId: string) => ({
-              movedLessonId: id,
               lessonId,
+              movedLessonId: id,
             }))
           );
         }
       }
 
       return c.json<SuccessResponse>({
-        success: true,
         data: updatedMovedLesson,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while updating moved lesson', { error });
@@ -497,8 +497,8 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
       }
 
       return c.json<SuccessResponse>({
-        success: true,
         data: deletedMovedLesson,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while deleting moved lesson', { error });

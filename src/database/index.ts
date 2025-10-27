@@ -8,8 +8,8 @@ const logger = getLogger(['chronos', 'drizzle']);
 
 const client = new SQL({
   adapter: 'postgres',
-  url: env.databaseUrl,
   prepare: false,
+  url: env.databaseUrl,
   // prepare: env.mode === 'production',
 });
 

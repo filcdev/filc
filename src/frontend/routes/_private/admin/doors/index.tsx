@@ -134,19 +134,19 @@ function RouteComponent() {
 
   // Fetch all devices
   const { data: devicesData, isLoading: devicesLoading } = useQuery({
-    queryKey: ['devices'],
     queryFn: fetchDevices,
+    queryKey: ['devices'],
   });
 
   // Fetch user's cards
   const { data: cardsData, isLoading: cardsLoading } = useQuery({
-    queryKey: ['cards'],
     queryFn: fetchCards,
+    queryKey: ['cards'],
   });
 
   // Fetch device statuses
   const { data: statusesData } = useQuery({
-    queryKey: ['device-statuses'],
+    enabled: !!devicesData && devicesData.length > 0,
     queryFn: async () => {
       if (!devicesData) {
         return {};
@@ -167,13 +167,13 @@ function RouteComponent() {
         )
       );
     },
-    enabled: !!devicesData && devicesData.length > 0,
+    queryKey: ['device-statuses'],
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 
   // Fetch all card-device restrictions
   const { data: restrictionsData } = useQuery({
-    queryKey: ['card-restrictions'],
+    enabled: !!devicesData && devicesData.length > 0,
     queryFn: async () => {
       if (!devicesData) {
         return {};
@@ -194,7 +194,7 @@ function RouteComponent() {
         )
       );
     },
-    enabled: !!devicesData && devicesData.length > 0,
+    queryKey: ['card-restrictions'],
   });
 
   // Open door mutation
@@ -210,15 +210,15 @@ function RouteComponent() {
       }
       return res.data;
     },
+    onError: () => {
+      toast.error(t('doorlock.errorOpening'));
+    },
     onSuccess: (_, deviceId) => {
       const device = devicesData?.find((d) => d.id === deviceId);
       toast.success(
         t('doorlock.saveSuccess', { item: device?.name || deviceId })
       );
       queryClient.invalidateQueries({ queryKey: ['device-statuses'] });
-    },
-    onError: () => {
-      toast.error(t('doorlock.errorOpening'));
     },
   });
 

@@ -17,8 +17,8 @@ export const getAllTimetables = timetableFactory.createHandlers(
       const timetables = await db.select().from(timetable);
 
       return c.json<SuccessResponse>({
-        success: true,
         data: timetables,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while getting all timetables: ', { error });
@@ -31,9 +31,9 @@ export const getAllTimetables = timetableFactory.createHandlers(
 
 const dateToYYYYMMDD = (date: Date): string =>
   date.toLocaleDateString('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
     day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   });
 
 export const getLatestValidTimetable = timetableFactory.createHandlers(
@@ -50,14 +50,14 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
 
       if (!latestValidTimetable) {
         return c.json<SuccessResponse>({
-          success: true,
           data: 'No valid timetable found.',
+          success: true,
         });
       }
 
       return c.json<SuccessResponse>({
-        success: true,
         data: latestValidTimetable,
+        success: true,
       });
     } catch (error) {
       logger.error('Failed to get latest valid timetable: ', { error });
@@ -80,8 +80,8 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
         .where(gte(timetable.validFrom, today.toString()));
 
       return c.json<SuccessResponse>({
-        success: true,
         data: timetables,
+        success: true,
       });
     } catch (error) {
       logger.error('Error while getting all timetables: ', { error });

@@ -89,13 +89,13 @@ function DevicesPage() {
 
   // Fetch devices
   const { data: devicesData, isLoading } = useQuery({
-    queryKey: ['devices'],
     queryFn: fetchDevices,
+    queryKey: ['devices'],
   });
 
   // Fetch statuses
   const { data: statusesData } = useQuery({
-    queryKey: ['device-statuses'],
+    enabled: !!devicesData && devicesData.length > 0,
     queryFn: async () => {
       if (!devicesData) {
         return {};
@@ -116,7 +116,7 @@ function DevicesPage() {
         )
       );
     },
-    enabled: !!devicesData && devicesData.length > 0,
+    queryKey: ['device-statuses'],
     refetchInterval: STATUS_REFETCH_INTERVAL,
   });
 
@@ -125,18 +125,23 @@ function DevicesPage() {
     mutationFn: async (data: DeviceFormData) => {
       const res = await parseResponse(
         apiClient.doorlock.devices[':id'].$put({
-          param: { id: data.id },
           json: {
-            name: data.name,
             location: data.location || undefined,
+            name: data.name,
             ttlSeconds: data.ttlSeconds,
           },
+          param: { id: data.id },
         })
       );
       if (!res?.success) {
         throw new Error('Failed to save device');
       }
       return res.data;
+    },
+    onError: () => {
+      toast.error(
+        t('doorlock.errorSaving', { item: t('doorlock.deviceName') })
+      );
     },
     onSuccess: () => {
       toast.success(
@@ -145,11 +150,6 @@ function DevicesPage() {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
       setEditingDevice(null);
       setIsAddDialogOpen(false);
-    },
-    onError: () => {
-      toast.error(
-        t('doorlock.errorSaving', { item: t('doorlock.deviceName') })
-      );
     },
   });
 
@@ -166,17 +166,17 @@ function DevicesPage() {
       }
       return res.data;
     },
+    onError: () => {
+      toast.error(
+        t('doorlock.errorDeleting', { item: t('doorlock.deviceName') })
+      );
+    },
     onSuccess: () => {
       toast.success(
         t('doorlock.deleteSuccess', { item: t('doorlock.deviceName') })
       );
       queryClient.invalidateQueries({ queryKey: ['devices'] });
       setDeleteConfirm(null);
-    },
-    onError: () => {
-      toast.error(
-        t('doorlock.errorDeleting', { item: t('doorlock.deviceName') })
-      );
     },
   });
 
@@ -367,8 +367,8 @@ function DeviceFormDialog({
   const { t } = useTranslation();
   const [formData, setFormData] = useState<DeviceFormData>({
     id: device?.id || '',
-    name: device?.name || '',
     location: device?.location || '',
+    name: device?.name || '',
     ttlSeconds: device?.ttlSeconds || DEFAULT_TTL_SECONDS,
   });
 

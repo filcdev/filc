@@ -22,18 +22,18 @@ export const timetable = pgTable('timetable', {
 });
 
 export const period = pgTable('period', {
+  endTime: time('end_time').notNull(),
   id: text('id').primaryKey(),
   period: integer('period').notNull(),
   startTime: time('start_time').notNull(),
-  endTime: time('end_time').notNull(),
   ...timestamps,
 });
 
 export const dayDefinition = pgTable('day_definition', {
+  days: jsonb('days').$type<string[]>(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   short: text('short').notNull(),
-  days: jsonb('days').$type<string[]>(),
   ...timestamps,
 });
 
@@ -62,12 +62,12 @@ export const subject = pgTable('subject', {
 });
 
 export const teacher = pgTable('teacher', {
-  id: text('id').primaryKey(),
-  userId: uuid('user_id').references((): PgColumn => user.id),
   firstName: text('first_name').notNull(),
+  gender: bit({ dimensions: 1 }),
+  id: text('id').primaryKey(),
   lastName: text('last_name').notNull(),
   short: text('short').notNull(),
-  gender: bit({ dimensions: 1 }),
+  userId: uuid('user_id').references((): PgColumn => user.id),
 });
 
 export const building = pgTable('building', {
@@ -76,13 +76,13 @@ export const building = pgTable('building', {
 });
 
 export const classroom = pgTable('classroom', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  short: text('short').notNull(),
   buildingId: text('building_id')
     .notNull()
     .references(() => building.id),
   capacity: integer('capacity'),
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  short: text('short').notNull(),
 });
 
 // export const grade = pgTable('grade', {
@@ -93,12 +93,12 @@ export const classroom = pgTable('classroom', {
 // });
 
 export const cohort = pgTable('cohort', {
+  // TODO: review if we need to store multiple classrooms
+  classroomIds: jsonb('classroom_ids').$type<string[]>(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   short: text('short').notNull(),
   teacherId: text('teacher_id').references(() => teacher.id),
-  // TODO: review if we need to store multiple classrooms
-  classroomIds: jsonb('classroom_ids').$type<string[]>(),
   timetableId: text('timetable_id')
     .references(() => timetable.id, {
       onDelete: 'cascade',
@@ -109,50 +109,50 @@ export const cohort = pgTable('cohort', {
 });
 
 export const cohortGroup = pgTable('group', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
   cohortId: text('cohort_id')
     .notNull()
     .references(() => cohort.id),
   entireClass: boolean('entire_class').notNull(),
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  // TODO: figure out what this does
+  // divisionTag: integer('division_tag'),
+  // TODO: review if school uses this
+  studentCount: integer('student_count').notNull(),
   teacherId: text('teacher_id').references(() => teacher.id),
   timetableId: text('timetable_id')
     .references(() => timetable.id, {
       onDelete: 'cascade',
     })
     .notNull(),
-  // TODO: figure out what this does
-  // divisionTag: integer('division_tag'),
-  // TODO: review if school uses this
-  studentCount: integer('student_count').notNull(),
 });
 
 export const lesson = pgTable('lesson', {
-  id: text('id').primaryKey(),
-  subjectId: text('subject_id')
-    .notNull()
-    .references(() => subject.id),
-  teacherIds: jsonb('teacher_ids').$type<string[]>(),
-  groupsIds: jsonb('group_ids').$type<string[]>(),
   classroomIds: jsonb('classroom_ids').$type<string[]>(),
+  dayDefinitionId: text('day_definition_id')
+    .notNull()
+    .references(() => dayDefinition.id),
+  groupsIds: jsonb('group_ids').$type<string[]>(),
+  id: text('id').primaryKey(),
   periodId: text('period_id')
     .notNull()
     .references(() => period.id),
   periodsPerWeek: integer('periods_per_week').notNull(),
-  weeksDefinitionId: text('weeks_definition_id')
+  subjectId: text('subject_id')
     .notNull()
-    .references(() => weekDefinition.id),
+    .references(() => subject.id),
+  teacherIds: jsonb('teacher_ids').$type<string[]>(),
   termDefinitionId: text('term_definition_id')
     // .notNull()
     .references(() => termDefinition.id),
-  dayDefinitionId: text('day_definition_id')
-    .notNull()
-    .references(() => dayDefinition.id),
   timetableId: text('timetable_id')
     .references(() => timetable.id, {
       onDelete: 'cascade',
     })
     .notNull(),
+  weeksDefinitionId: text('weeks_definition_id')
+    .notNull()
+    .references(() => weekDefinition.id),
   // TODO: figure out if we need this
   // TLDR: We don't need this.
   // capacity: integer('capacity').notNull(),
@@ -161,19 +161,19 @@ export const lesson = pgTable('lesson', {
 export const lessonCohortMTM = pgTable(
   'lesson_cohort_mtm',
   {
-    lessonId: text('lesson_id')
-      .references(() => lesson.id, { onDelete: 'cascade' })
-      .notNull(),
     cohortId: text('cohort_id')
       .references(() => cohort.id, { onDelete: 'cascade' })
+      .notNull(),
+    lessonId: text('lesson_id')
+      .references(() => lesson.id, { onDelete: 'cascade' })
       .notNull(),
   },
   (t) => [primaryKey({ columns: [t.lessonId, t.cohortId] })]
 );
 
 export const substitution = pgTable('substitution', {
-  id: text('id').primaryKey(),
   date: date('date').notNull(),
+  id: text('id').primaryKey(),
   substituter: text('substituter').references(() => teacher.id), // If null, then cancelled.
 });
 
@@ -191,11 +191,11 @@ export const substitutionLessonMTM = pgTable(
 );
 
 export const movedLesson = pgTable('moved_lesson', {
-  id: text('id').primaryKey(),
-  startingPeriod: text('starting_period').references(() => period.id),
-  startingDay: text('starting_day').references(() => dayDefinition.id),
-  room: text('room').references(() => classroom.id),
   date: date('date').notNull(),
+  id: text('id').primaryKey(),
+  room: text('room').references(() => classroom.id),
+  startingDay: text('starting_day').references(() => dayDefinition.id),
+  startingPeriod: text('starting_period').references(() => period.id),
 });
 
 export const movedLessonLessonMTM = pgTable(
@@ -212,15 +212,15 @@ export const movedLessonLessonMTM = pgTable(
 );
 
 export const timetableSchema = {
-  period,
-  dayDefinition,
-  weekDefinition,
-  termDefinition,
-  subject,
-  teacher,
   building,
   classroom,
   cohort,
   cohortGroup,
+  dayDefinition,
   lesson,
+  period,
+  subject,
+  teacher,
+  termDefinition,
+  weekDefinition,
 };

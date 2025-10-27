@@ -15,17 +15,17 @@ import {
 import { doorlockFactory } from './_factory';
 
 const createCardSchema = z.object({
+  disabled: z.boolean().optional(),
+  frozen: z.boolean().optional(),
+  label: z.string().optional(),
   tag: z.string().min(1),
   userId: z.uuid(),
-  label: z.string().optional(),
-  frozen: z.boolean().optional(),
-  disabled: z.boolean().optional(),
 });
 
 const updateCardSchema = z.object({
-  label: z.string().optional(),
-  frozen: z.boolean().optional(),
   disabled: z.boolean().optional(),
+  frozen: z.boolean().optional(),
+  label: z.string().optional(),
   userId: z.uuid().optional(),
 });
 
@@ -38,8 +38,8 @@ export const listCards = doorlockFactory.createHandlers(
       ? await db.select().from(card)
       : await db.select().from(card).where(eq(card.userId, currentUserId));
     return c.json<SuccessResponse<typeof rows>>({
-      success: true,
       data: rows,
+      success: true,
     });
   }
 );
@@ -67,8 +67,8 @@ export const getCard = doorlockFactory.createHandlers(
       throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
     }
     return c.json<SuccessResponse<typeof row>>({
-      success: true,
       data: row,
+      success: true,
     });
   }
 );
@@ -83,21 +83,21 @@ export const createCard = doorlockFactory.createHandlers(
       const [inserted] = await db
         .insert(card)
         .values({
+          disabled: data.disabled ?? false,
+          frozen: data.frozen ?? false,
+          label: data.label,
           tag: data.tag,
           userId: data.userId,
-          label: data.label,
-          frozen: data.frozen ?? false,
-          disabled: data.disabled ?? false,
         })
         .returning();
       return c.json<SuccessResponse<typeof inserted>>({
-        success: true,
         data: inserted,
+        success: true,
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to create card',
         cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to create card',
       });
     }
   }
@@ -140,13 +140,13 @@ export const updateCard = doorlockFactory.createHandlers(
           .where(eq(card.id, id as string))
           .returning();
         return c.json<SuccessResponse>({
-          success: true,
           data: updated,
+          success: true,
         });
       } catch (err) {
         throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-          message: 'Failed to update card',
           cause: env.mode === 'development' ? String(err) : undefined,
+          message: 'Failed to update card',
         });
       }
     }
@@ -157,13 +157,13 @@ export const updateCard = doorlockFactory.createHandlers(
         .where(eq(card.id, id as string))
         .returning();
       return c.json<SuccessResponse<typeof updated>>({
-        success: true,
         data: updated,
+        success: true,
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to update card',
         cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to update card',
       });
     }
   }
@@ -197,13 +197,13 @@ export const deleteCard = doorlockFactory.createHandlers(
         .where(eq(card.id, id as string))
         .returning();
       return c.json<SuccessResponse>({
-        success: true,
         data: deleted,
+        success: true,
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to delete card',
         cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to delete card',
       });
     }
   }

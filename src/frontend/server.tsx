@@ -48,16 +48,16 @@ if (env.mode === 'production') {
 
 frontend.use(
   languageDetector({
-    fallbackLanguage: 'hu',
-    supportedLanguages: ['en', 'hu'],
     caches: ['cookie'],
-    order: ['cookie'],
-    lookupCookie: 'filc-lang',
     cookieOptions: {
+      maxAge: dayjs.duration(1, 'year').asSeconds(),
       path: '/',
       sameSite: 'Lax',
-      maxAge: dayjs.duration(1, 'year').asSeconds(),
     },
+    fallbackLanguage: 'hu',
+    lookupCookie: 'filc-lang',
+    order: ['cookie'],
+    supportedLanguages: ['en', 'hu'],
   })
 );
 
@@ -68,16 +68,16 @@ frontend.use('*', async (c) => {
   // Create an isolated i18n instance per request and ensure namespaces are loaded before render
   const i18n = i18next.createInstance();
   await i18n.use(Backend).init({
-    fallbackLng: 'hu',
-    supportedLngs: ['en', 'hu'],
-    ns: ['translation'],
-    defaultNS: 'translation',
-    interpolation: { escapeValue: false },
     backend: {
       loadPath: `${origin}/locales/{{lng}}/{{ns}}.json`,
     },
-    react: { useSuspense: false },
+    defaultNS: 'translation',
+    fallbackLng: 'hu',
     initImmediate: false,
+    interpolation: { escapeValue: false },
+    ns: ['translation'],
+    react: { useSuspense: false },
+    supportedLngs: ['en', 'hu'],
   });
 
   await i18n.changeLanguage(lang);
@@ -88,30 +88,30 @@ frontend.use('*', async (c) => {
   );
 
   const handler = createRequestHandler({
-    request: c.req.raw,
     createRouter: () => {
       const router = createRouter();
       router.update({
         context: {
           ...router.options.context,
-          i18n,
           head: c.res.headers.get('x-head') || '',
+          i18n,
         },
       });
       return router;
     },
+    request: c.req.raw,
   });
 
-  return await handler(({ responseHeaders, router }) => {
-    return renderRouterToStream({
-      request: c.req.raw,
-      responseHeaders,
-      router,
+  return await handler(({ responseHeaders, router }) =>
+    renderRouterToStream({
       children: (
         <I18nextProvider i18n={i18n}>
           <RouterServer router={router} />
         </I18nextProvider>
       ),
-    });
-  });
+      request: c.req.raw,
+      responseHeaders,
+      router,
+    })
+  );
 });

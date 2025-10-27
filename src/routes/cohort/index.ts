@@ -7,7 +7,7 @@ export const listCohorts = cohortFactory.createHandlers(async (c) => {
   const cohorts = await db.select().from(cohort);
 
   return c.json<SuccessResponse<typeof cohorts>>({
-    success: true,
     data: cohorts,
+    success: true,
   });
 });

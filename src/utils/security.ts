@@ -2,10 +2,10 @@ import { secureHeaders } from 'hono/secure-headers';
 
 export const securityMiddleware = secureHeaders({
   contentSecurityPolicy: {
-    defaultSrc: ["'self'"],
     baseUri: ["'self'"],
     childSrc: ["'self'"],
     connectSrc: ["'self'"],
+    defaultSrc: ["'self'"],
     fontSrc: ["'self'", 'https:', 'data:'],
     formAction: ["'self'"],
     frameAncestors: ["'self'"],

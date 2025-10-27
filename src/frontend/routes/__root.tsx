@@ -17,16 +17,16 @@ import type { RouterContext } from '~/frontend/router-context';
 const queryClient = new QueryClient();
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  notFoundComponent: () => <div>404</div>,
+  component: RootComponent,
   head: () => ({
     links: [
       {
-        rel: 'stylesheet',
         href: css,
+        rel: 'stylesheet',
       },
       {
-        rel: 'icon',
         href: 'data:image/x-icon;base64,',
+        rel: 'icon',
       },
     ],
     meta: [
@@ -37,8 +37,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         charSet: 'UTF-8',
       },
       {
-        name: 'viewport',
         content: 'width=device-width, initial-scale=1.0',
+        name: 'viewport',
       },
     ],
     scripts: [
@@ -46,31 +46,31 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         ? []
         : [
             {
-              type: 'module',
               children: `import RefreshRuntime from "/@react-refresh"
       					RefreshRuntime.injectIntoGlobalHook(window)
       					window.$RefreshReg$ = () => {}
       					window.$RefreshSig$ = () => (type) => type
       					window.__vite_plugin_react_preamble_installed__ = true`,
+              type: 'module',
             },
             {
-              type: 'module',
               src: '/@vite/client',
+              type: 'module',
             },
             {
-              type: 'module',
               src: '/src/frontend/client.tsx',
+              type: 'module',
             },
           ]),
       {
-        type: 'module',
         src: import.meta.env.PROD
           ? '/static/client.js'
           : '/src/frontend/client.tsx',
+        type: 'module',
       },
     ],
   }),
-  component: RootComponent,
+  notFoundComponent: () => <div>404</div>,
 });
 
 function RootComponent() {

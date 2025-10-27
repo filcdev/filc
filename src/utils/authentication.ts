@@ -25,36 +25,21 @@ export const getOauth = (): SocialProviders => {
 
   return {
     microsoft: {
-      enabled: true,
-      disableSignUp: true,
-      tenantId: env.entraTenantId,
       clientId: env.entraClientId,
       clientSecret: env.entraClientSecret,
+      disableSignUp: true,
+      enabled: true,
       prompt: 'select_account',
+      tenantId: env.entraTenantId,
     },
   };
 };
 
 const authOptions = {
-  database: drizzleAdapter(db, {
-    provider: 'pg',
-    schema: authenticationSchema,
-  }),
-
-  baseURL: env.baseUrl,
-  secret: env.authSecret,
-  trustedOrigins: [env.baseUrl],
-  logger: {
-    level: env.mode === 'development' ? 'debug' : 'info',
-    log: (level, message, ...args) => {
-      logger[level]({ message, ...args });
-    },
-  },
-  socialProviders: getOauth(),
   account: {
     accountLinking: {
-      enabled: true,
       allowUnlinkingAll: true,
+      enabled: true,
       updateUserInfoOnLink: true,
     },
   },
@@ -63,27 +48,32 @@ const authOptions = {
       generateId: false,
     },
   },
-  telemetry: {
-    enabled: false,
-  },
-  emailAndPassword: {
-    enabled: true,
-    disableSignUp: true,
-  },
+
+  baseURL: env.baseUrl,
+  database: drizzleAdapter(db, {
+    provider: 'pg',
+    schema: authenticationSchema,
+  }),
   databaseHooks: {
     user: {
       create: {
-        // biome-ignore lint/suspicious/useAwait: no need
-        before: async (user, _ctx) => {
-          return {
-            data: {
-              ...user,
-              roles:
-                user.email === env.adminEmail ? ['user', 'admin'] : ['user'],
-            },
-          };
-        },
+        before: async (user, _ctx) => ({
+          data: {
+            ...user,
+            roles: user.email === env.adminEmail ? ['user', 'admin'] : ['user'],
+          },
+        }),
       },
+    },
+  },
+  emailAndPassword: {
+    disableSignUp: true,
+    enabled: true,
+  },
+  logger: {
+    level: env.mode === 'development' ? 'debug' : 'info',
+    log: (level, message, ...args) => {
+      logger[level]({ message, ...args });
     },
   },
   plugins: [
@@ -94,17 +84,23 @@ const authOptions = {
       },
     }),
   ],
+  secret: env.authSecret,
+  socialProviders: getOauth(),
+  telemetry: {
+    enabled: false,
+  },
+  trustedOrigins: [env.baseUrl],
   user: {
     additionalFields: {
-      roles: {
-        type: 'string[]',
-        required: true,
-        input: false,
-      },
       cohortId: {
-        type: 'string',
-        required: false,
         input: true,
+        required: false,
+        type: 'string',
+      },
+      roles: {
+        input: false,
+        required: true,
+        type: 'string[]',
       },
     },
   },
@@ -117,11 +113,11 @@ export const auth = betterAuth({
     customSession(async ({ user, session }) => {
       const permissions = await getUserPermissions(user.id);
       return {
+        session,
         user: {
           ...user,
           permissions,
         },
-        session,
       };
     }, authOptions),
   ],
@@ -168,12 +164,10 @@ export const authRouter = new Hono<Context>()
     });
 
     return c.json<SuccessResponse>({
-      success: true,
       data: {
         message: 'Account synced',
       },
+      success: true,
     });
   })
-  .on(['POST', 'GET'], '*', (c) => {
-    return auth.handler(c.req.raw);
-  });
+  .on(['POST', 'GET'], '*', (c) => auth.handler(c.req.raw));

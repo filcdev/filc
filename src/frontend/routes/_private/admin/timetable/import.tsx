@@ -64,6 +64,11 @@ function TimetableImportPage() {
 
       return res;
     },
+    onError: (error: Error) => {
+      setImportStatus('error');
+      setErrorMessage(error.message);
+      toast.error(t('timetable.importError'));
+    },
     onMutate: () => {
       setImportStatus('uploading');
       setErrorMessage(null);
@@ -79,11 +84,6 @@ function TimetableImportPage() {
       queryClient.invalidateQueries({ queryKey: ['timetable'] });
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       queryClient.invalidateQueries({ queryKey: ['cohorts'] });
-    },
-    onError: (error: Error) => {
-      setImportStatus('error');
-      setErrorMessage(error.message);
-      toast.error(t('timetable.importError'));
     },
   });
 

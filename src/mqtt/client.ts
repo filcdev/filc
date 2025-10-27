@@ -65,13 +65,13 @@ export const initializeMqttClient = async () => {
     'Enable MQTT client for door lock integration',
     false,
     {
-      onEnable: () => {
-        logger.info('MQTT feature flag enabled - connecting');
-        connectMqtt();
-      },
       onDisable: () => {
         logger.info('MQTT feature flag disabled - disconnecting');
         disconnectMqtt();
+      },
+      onEnable: () => {
+        logger.info('MQTT feature flag enabled - connecting');
+        connectMqtt();
       },
     }
   );
@@ -138,7 +138,7 @@ const handleIncomingMessage = async (topic: string, payload: Buffer) => {
     return;
   }
 
-  logger.trace('Handling door lock message', { topic, message });
+  logger.trace('Handling door lock message', { message, topic });
   const parts = topic.split('/');
   const deviceId: string = parts[2] ?? '';
   const section = parts[3];
@@ -177,17 +177,6 @@ const handleRfidEvent = async (
     // Find card and simultaneously check restriction mapping
     const [found] = await db
       .select({
-        id: card.id,
-        userId: card.userId,
-        frozen: card.frozen,
-        disabled: card.disabled,
-        label: card.label,
-        restricted: exists(
-          db
-            .select({ one: cardDevice.cardId })
-            .from(cardDevice)
-            .where(eq(cardDevice.cardId, card.id))
-        ).as('restricted'),
         allowedForDevice: exists(
           db
             .select({ one: cardDevice.cardId })
@@ -199,44 +188,55 @@ const handleRfidEvent = async (
               )
             )
         ).as('allowed_for_device'),
+        disabled: card.disabled,
+        frozen: card.frozen,
+        id: card.id,
+        label: card.label,
+        restricted: exists(
+          db
+            .select({ one: cardDevice.cardId })
+            .from(cardDevice)
+            .where(eq(cardDevice.cardId, card.id))
+        ).as('restricted'),
+        userId: card.userId,
       })
       .from(card)
       .where(eq(card.tag, tag))
       .limit(1);
     if (!found) {
-      logger.debug('Unknown card tag', { tag, deviceId });
+      logger.debug('Unknown card tag', { deviceId, tag });
       // Log unknown tag attempt
       await logAccessAttempt({
-        deviceId,
-        tag,
         cardId: null,
-        userId: null,
-        result: 'denied',
+        deviceId,
         reason: 'Unknown card',
+        result: 'denied',
+        tag,
+        userId: null,
       });
       sendDoorlockCommand(deviceId, 'deny', 'Unknown card');
       return;
     }
     if (found.disabled) {
       await logAccessAttempt({
-        deviceId,
-        tag,
         cardId: found.id,
-        userId: found.userId,
-        result: 'denied',
+        deviceId,
         reason: 'Card disabled',
+        result: 'denied',
+        tag,
+        userId: found.userId,
       });
       sendDoorlockCommand(deviceId, 'deny', 'Card disabled');
       return;
     }
     if (found.frozen) {
       await logAccessAttempt({
-        deviceId,
-        tag,
         cardId: found.id,
-        userId: found.userId,
-        result: 'denied',
+        deviceId,
         reason: 'Card frozen',
+        result: 'denied',
+        tag,
+        userId: found.userId,
       });
       sendDoorlockCommand(deviceId, 'deny', 'Card frozen');
       return;
@@ -245,24 +245,24 @@ const handleRfidEvent = async (
     // deny access.
     if (found.restricted && !found.allowedForDevice) {
       await logAccessAttempt({
-        deviceId,
-        tag,
         cardId: found.id,
-        userId: found.userId,
-        result: 'denied',
+        deviceId,
         reason: 'Not allowed on this device',
+        result: 'denied',
+        tag,
+        userId: found.userId,
       });
       sendDoorlockCommand(deviceId, 'deny', 'Not allowed on this device');
       return;
     }
     // Access granted
     await logAccessAttempt({
-      deviceId,
-      tag,
       cardId: found.id,
-      userId: found.userId,
-      result: 'granted',
+      deviceId,
       reason: null,
+      result: 'granted',
+      tag,
+      userId: found.userId,
     });
     sendDoorlockCommand(deviceId, 'open', found.label ?? 'Access granted');
   } catch (err) {
@@ -282,18 +282,18 @@ const logAccessAttempt = async (params: {
 }) => {
   try {
     await db.insert(accessLog).values({
-      deviceId: params.deviceId,
-      tag: params.tag,
       cardId: params.cardId,
-      userId: params.userId,
-      result: params.result,
+      deviceId: params.deviceId,
       reason: params.reason,
+      result: params.result,
+      tag: params.tag,
       timestamp: new Date(),
+      userId: params.userId,
     });
   } catch (err) {
     logger.error('Failed to log access attempt', {
-      err,
       deviceId: params.deviceId,
+      err,
       tag: params.tag,
     });
   }
@@ -314,12 +314,12 @@ const upsertDeviceHeartbeat = async (deviceId: string) => {
       .returning({ id: device.id });
     if (result.length === 0) {
       await db.insert(device).values({
+        createdAt: now,
         id: deviceId,
-        name: deviceId,
         lastSeenAt: now,
+        name: deviceId,
         status: 'online',
         ttlSeconds: 30,
-        createdAt: now,
         updatedAt: now,
       });
       logger.info('Registered new device via heartbeat', { deviceId });

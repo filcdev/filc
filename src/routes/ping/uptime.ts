@@ -12,10 +12,10 @@ export const uptime = pingFactory.createHandlers((c) => {
   const uptime_ms = Bun.nanoseconds() / NANOSECONDS_IN_MILLISECOND;
 
   return c.json<SuccessResponse>({
-    success: true,
     data: {
-      uptime_ms,
       pretty: dayjs.duration(uptime_ms, 'millisecond').humanize(),
+      uptime_ms,
     },
+    success: true,
   });
 });

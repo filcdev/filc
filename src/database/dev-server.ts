@@ -13,8 +13,8 @@ const db = await PGlite.create({
 
 const server = new PGLiteSocketServer({
   db,
-  port: 5432,
   host: '127.0.0.1',
+  port: 5432,
 });
 
 await server.start();

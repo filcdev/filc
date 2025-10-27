@@ -24,8 +24,8 @@ export const openDoor = doorlockFactory.createHandlers(
     openDoorLock(deviceId, 'Opened via API');
 
     return c.json<SuccessResponse>({
+      data: { deviceId, status: 'queued' },
       success: true,
-      data: { status: 'queued', deviceId },
     });
   }
 );

@@ -45,8 +45,8 @@ function RouteComponent() {
   const isAdmin = session?.user.permissions.includes('card:read');
 
   const { data: cardsData, isLoading } = useQuery({
-    queryKey: ['cards'],
     queryFn: fetchDoorlockCards,
+    queryKey: ['cards'],
   });
 
   if (isLoading) {

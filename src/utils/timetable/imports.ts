@@ -50,12 +50,12 @@ export const importTimetableXML = async (
   const _lessons = await loadLessons(
     xmlDoc,
     {
-      subjectMap,
-      cohortMap,
-      teacherMap,
       classroomMap,
+      cohortMap,
       dayMap,
       periodMap,
+      subjectMap,
+      teacherMap,
     },
     timetableId
   );
@@ -94,10 +94,10 @@ const loadPeriods = async (xmlDoc: Document) => {
       const [insertedPeriod] = await db
         .insert(periodSchema)
         .values({
+          endTime: end_time,
           id: crypto.randomUUID(),
           period: Number(predefinedId),
           startTime: start_time,
-          endTime: end_time,
         })
         .returning({ insertedId: periodSchema.id });
 
@@ -141,11 +141,11 @@ const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
       const [insertedDay] = await db
         .insert(daySchema)
         .values({
+          // For now, we don't import specific days
+          days: [predefinedId],
           id: crypto.randomUUID(),
           name,
           short,
-          // For now, we don't import specific days
-          days: [predefinedId],
         })
         .returning({ insertedId: daySchema.id });
 
@@ -248,8 +248,8 @@ const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
       const [insertedTeacher] = await db
         .insert(teacherSchema)
         .values({
-          id: crypto.randomUUID(),
           firstName: names.firstName,
+          id: crypto.randomUUID(),
           lastName: names.restOfName,
           short,
           // gender,
@@ -323,11 +323,11 @@ const upsertClassroom = async (
   const [inserted] = await db
     .insert(classroomSchema)
     .values({
+      buildingId,
+      capacity,
       id: crypto.randomUUID(),
       name: attrs.name,
       short: attrs.short,
-      capacity,
-      buildingId,
     })
     .returning({ insertedId: classroomSchema.id });
   if (!inserted) {
@@ -357,10 +357,10 @@ const loadClassrooms = async (
       );
     }
     const upserted = await upsertClassroom(buildingId, {
+      capacityStr,
       id: predefinedId,
       name,
       short,
-      capacityStr,
     });
     if (upserted) {
       const [pre, dbId] = upserted;
@@ -393,7 +393,7 @@ const parseCohortElement = (
   const teacherId = predefinedTeacherId
     ? (teacherMap.get(predefinedTeacherId) ?? null)
     : null;
-  return { predefinedId, name, short, teacherId };
+  return { name, predefinedId, short, teacherId };
 };
 
 const upsertCohort = async (
@@ -471,12 +471,12 @@ const ensureWeekDefinition = async (weekName: string): Promise<string> => {
   const [inserted] = await db
     .insert(weekSchema)
     .values({
+      createdAt: new Date(),
       id: crypto.randomUUID(),
       name: weekName,
       short: weekName,
-      weeks: [],
-      createdAt: new Date(),
       updatedAt: new Date(),
+      weeks: [],
     })
     .returning({ insertedId: weekSchema.id });
   if (!inserted) {
@@ -622,14 +622,14 @@ const processSchedule = async (options: {
   mapMaybeId(schoolRoomId, maps.classroomMap, classroomIds);
 
   const existingLesson = await findExistingLesson({
-    subjectId,
-    dayDefinitionId,
-    weekDefinitionId,
-    cohortIds,
-    teacherIds,
-    periodId: actualPeriodId,
     classroomIds,
+    cohortIds,
+    dayDefinitionId,
+    periodId: actualPeriodId,
+    subjectId,
+    teacherIds,
     timetableId,
+    weekDefinitionId,
   });
   if (existingLesson) {
     return [`${index}`, existingLesson.id];
@@ -638,17 +638,17 @@ const processSchedule = async (options: {
   const [insertedLesson] = await db
     .insert(lessonSchema)
     .values({
+      classroomIds,
+      dayDefinitionId,
+      groupsIds: [],
       id: crypto.randomUUID(),
+      periodId: actualPeriodId,
+      periodsPerWeek: 1,
       subjectId,
       // cohortIds,
       teacherIds,
-      groupsIds: [],
-      classroomIds,
-      periodId: actualPeriodId,
-      periodsPerWeek: 1,
-      weeksDefinitionId: weekDefinitionId,
-      dayDefinitionId,
       timetableId,
+      weeksDefinitionId: weekDefinitionId,
     })
     .returning({ insertedId: lessonSchema.id });
   if (!insertedLesson) {
@@ -657,9 +657,10 @@ const processSchedule = async (options: {
 
   if (cohortIds.length !== 0) {
     await db.insert(lessonCohortMTM).values(
-      cohortIds.map((cohortId) => {
-        return { lessonId: insertedLesson.insertedId, cohortId };
-      })
+      cohortIds.map((cohortId) => ({
+        cohortId,
+        lessonId: insertedLesson.insertedId,
+      }))
     );
   }
 
@@ -681,10 +682,10 @@ const loadLessons = async (
     }
     const processed = await processSchedule({
       index: i,
-      schedule,
       maps,
-      weekDefinitionId,
+      schedule,
       timetableId,
+      weekDefinitionId,
     });
     if (processed) {
       const [key, lessonId] = processed;

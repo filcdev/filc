@@ -26,18 +26,18 @@ export const listFeatureFlags = featureFlagFactory.createHandlers(
     try {
       const flags = await db
         .select({
-          id: featureFlag.id,
-          name: featureFlag.name,
-          description: featureFlag.description,
-          isEnabled: featureFlag.isEnabled,
           createdAt: featureFlag.createdAt,
+          description: featureFlag.description,
+          id: featureFlag.id,
+          isEnabled: featureFlag.isEnabled,
+          name: featureFlag.name,
           updatedAt: featureFlag.updatedAt,
         })
         .from(featureFlag);
 
       return c.json<SuccessResponse<typeof flags>>({
-        success: true,
         data: flags,
+        success: true,
       });
     } catch (error) {
       logger.error('Error fetching feature flags:', { error });
@@ -60,11 +60,11 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
     const { name } = c.req.valid('param');
     const [flag] = await db
       .select({
-        id: featureFlag.id,
-        name: featureFlag.name,
-        description: featureFlag.description,
-        isEnabled: featureFlag.isEnabled,
         createdAt: featureFlag.createdAt,
+        description: featureFlag.description,
+        id: featureFlag.id,
+        isEnabled: featureFlag.isEnabled,
+        name: featureFlag.name,
         updatedAt: featureFlag.updatedAt,
       })
       .from(featureFlag)
@@ -78,8 +78,8 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
     }
 
     return c.json<SuccessResponse<typeof flag>>({
-      success: true,
       data: flag,
+      success: true,
     });
   }
 );
@@ -117,11 +117,11 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
       .set({ isEnabled })
       .where(eq(featureFlag.name, name))
       .returning({
-        id: featureFlag.id,
-        name: featureFlag.name,
-        description: featureFlag.description,
-        isEnabled: featureFlag.isEnabled,
         createdAt: featureFlag.createdAt,
+        description: featureFlag.description,
+        id: featureFlag.id,
+        isEnabled: featureFlag.isEnabled,
+        name: featureFlag.name,
         updatedAt: featureFlag.updatedAt,
       });
 
@@ -136,8 +136,8 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
     await notifyFeatureFlagChange(name, isEnabled);
 
     return c.json<SuccessResponse<typeof updated>>({
-      success: true,
       data: updated,
+      success: true,
     });
   }
 );

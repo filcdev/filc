@@ -9,6 +9,14 @@ import { env } from '~/utils/environment';
 
 export const configureLogger = async (rootName: string) => {
   await configure({
+    loggers: [
+      {
+        category: ['logtape', 'meta'],
+        lowestLevel: 'warning',
+        sinks: ['console'],
+      },
+      { category: rootName, lowestLevel: env.logLevel, sinks: ['console'] },
+    ],
     reset: true,
     sinks: {
       console: getConsoleSink({
@@ -16,14 +24,6 @@ export const configureLogger = async (rootName: string) => {
           env.mode === 'development' ? ansiColorFormatter : jsonLinesFormatter,
       }),
     },
-    loggers: [
-      {
-        category: ['logtape', 'meta'],
-        sinks: ['console'],
-        lowestLevel: 'warning',
-      },
-      { category: rootName, lowestLevel: env.logLevel, sinks: ['console'] },
-    ],
   });
 
   const logger = getLogger([rootName, 'meta']);
