@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_private/admin/doors/')({
 
 const fetchDevices = async () => {
   const res = await parseResponse(apiClient.doorlock.devices.$get());
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch devices');
   }
   return res.data ?? [];
@@ -34,7 +34,7 @@ const fetchDeviceStatus = async (deviceId: string) => {
       param: { id: deviceId },
     })
   );
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch device status');
   }
   return res.data;
@@ -42,7 +42,7 @@ const fetchDeviceStatus = async (deviceId: string) => {
 
 const fetchCards = async () => {
   const res = await parseResponse(apiClient.doorlock.cards.$get());
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch cards');
   }
   return res.data ?? [];
@@ -54,7 +54,7 @@ const fetchDeviceRestrictions = async (deviceId: string) => {
       param: { id: deviceId },
     })
   );
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch device restrictions');
   }
   return res.data ?? [];
@@ -205,7 +205,7 @@ function RouteComponent() {
           param: { deviceId },
         })
       );
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to open door');
       }
       return res.data;

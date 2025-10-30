@@ -58,7 +58,7 @@ function TimetableImportPage() {
         })
       );
 
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to import timetable');
       }
 

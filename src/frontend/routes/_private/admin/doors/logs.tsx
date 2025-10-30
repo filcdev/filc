@@ -53,7 +53,7 @@ const fetchLogs = async (result: 'granted' | 'denied' | 'all') => {
       query,
     })
   );
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch logs');
   }
   return res.data ?? [];
@@ -63,7 +63,7 @@ const fetchUnknownTags = async () => {
   const res = await parseResponse(
     apiClient.doorlock.logs['unknown-tags'].$get()
   );
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch unknown tags');
   }
   return res.data ?? [];
@@ -133,7 +133,7 @@ function RouteComponent() {
           json: data,
         })
       );
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to add card');
       }
 

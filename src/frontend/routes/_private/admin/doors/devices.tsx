@@ -44,7 +44,7 @@ const STATUS_REFETCH_INTERVAL = 10_000;
 
 const fetchDevices = async () => {
   const res = await parseResponse(apiClient.doorlock.devices.$get());
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch devices');
   }
   return res.data ?? [];
@@ -56,7 +56,7 @@ const fetchDeviceStatus = async (deviceId: string) => {
       param: { id: deviceId },
     })
   );
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch device status');
   }
   return res.data;
@@ -133,7 +133,7 @@ function DevicesPage() {
           param: { id: data.id },
         })
       );
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to save device');
       }
       return res.data;
@@ -161,7 +161,7 @@ function DevicesPage() {
           param: { id },
         })
       );
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to delete device');
       }
       return res.data;

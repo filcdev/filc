@@ -30,7 +30,7 @@ export const Route = createFileRoute('/_private/admin/feature-flags')({
 
 const fetchFeatureFlags = async () => {
   const res = await parseResponse(apiClient.featureFlags.index.$get());
-  if (!res?.success) {
+  if (!res.success) {
     throw new Error('Failed to fetch feature flags');
   }
   return res.data ?? [];
@@ -67,7 +67,7 @@ function FeatureFlagsPage() {
           param: { name },
         })
       );
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to toggle feature flag');
       }
       return res.data;

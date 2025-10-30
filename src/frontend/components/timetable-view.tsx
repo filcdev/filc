@@ -167,7 +167,7 @@ export function TimetableView() {
           param: { cohort_id: selectedCohortId },
         })
       );
-      if (!res?.success) {
+      if (!res.success) {
         throw new Error('Failed to load lessons');
       }
       return (res.data as EnrichedLesson[]) ?? [];
