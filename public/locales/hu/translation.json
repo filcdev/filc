@@ -163,6 +163,11 @@
     "back": "Vissza",
     "cancel": "Mégsem",
     "loading": "Betöltés...",
-    "saving": "Mentés..."
+    "saving": "Mentés...",
+    "accept": "Rendben"
+  },
+  "cookiePopup": {
+    "description": "Mi is sütiket használunk az oldalunkon, hogy jobb élményt adhassunk neked.",
+    "title": "Kérsz egy sütit?"
   }
 }

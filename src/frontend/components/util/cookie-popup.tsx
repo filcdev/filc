@@ -31,7 +31,7 @@ export function CookiePopup() {
       <AlertTitle>{t('cookiePopup.title')}</AlertTitle>
       <AlertDescription>
         {t('cookiePopup.description')}
-        <Button onClick={acceptCookies}>{t('cookiePopup.accept')}</Button>
+        <Button onClick={acceptCookies}>{t('common.accept')}</Button>
       </AlertDescription>
     </Alert>
   );

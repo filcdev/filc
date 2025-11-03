@@ -10,7 +10,8 @@
     "back": "Back",
     "actions": "Actions",
     "all": "All",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "accept": "Accept"
   },
   "magicLink": {
     "failed": "Failed to send magic link. Please try again.",
@@ -164,5 +165,9 @@
     "importInfoPoint2": "The import process will update all timetable-related data including cohorts, subjects, teachers, and lessons",
     "importInfoPoint3": "Existing data will be preserved and matched with new data where possible",
     "importInfoPoint4": "The import process may take a few moments depending on the size of the file"
+  },
+  "cookiePopup": {
+    "title": "We use cookies",
+    "description": "By using this site, you agree to our usage of cookie to enhance your experience."
   }
 }
