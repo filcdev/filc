@@ -15,7 +15,7 @@ function AppLayoutComponent() {
     <SidebarProvider>
       <AdminSidebar />
       <main className="flex grow flex-col">
-        <Navbar showLinks={false}>
+        <Navbar showLinks={false} showLogo={false}>
           <SidebarTrigger />
         </Navbar>
 

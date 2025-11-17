@@ -29,22 +29,33 @@ import { authClient } from '~/frontend/utils/authentication';
 type NavbarProps = {
   children?: React.ReactNode;
   showLinks?: boolean;
+  showLogo?: boolean;
 };
 
-export function Navbar({ children, showLinks = true }: NavbarProps) {
+export function Navbar({
+  children,
+  showLinks = true,
+  showLogo = false,
+}: NavbarProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
 
   return (
-    <nav className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="flex h-16 items-center px-6">
         <div className="flex items-center gap-3">
           {children}
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <FaGraduationCap className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-semibold text-foreground text-xl">filc</span>
+          {showLogo && (
+            <>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <FaGraduationCap className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <span className="font-semibold text-foreground text-xl">
+                filc
+              </span>
+            </>
+          )}
         </div>
 
         {showLinks && <NavLinks />}
