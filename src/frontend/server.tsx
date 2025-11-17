@@ -51,6 +51,7 @@ frontend.use(
   languageDetector({
     caches: ['cookie'],
     cookieOptions: {
+      httpOnly: false,
       maxAge: dayjs.duration(1, 'year').asSeconds(),
       path: '/',
       sameSite: 'Lax',
