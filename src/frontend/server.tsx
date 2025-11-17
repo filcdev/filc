@@ -15,6 +15,7 @@ import duration from 'dayjs/plugin/duration';
 import { languageDetector } from 'hono/language';
 import i18next from 'i18next';
 import Backend from 'i18next-http-backend';
+import { Cookies, CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
 
 dayjs.extend(duration);
@@ -102,11 +103,15 @@ frontend.use('*', async (c) => {
     request: c.req.raw,
   });
 
+  const cookies = new Cookies(c.req.raw.headers.get('cookie'));
+
   return await handler(({ responseHeaders, router }) =>
     renderRouterToStream({
       children: (
         <I18nextProvider i18n={i18n}>
-          <RouterServer router={router} />
+          <CookiesProvider cookies={cookies} defaultSetOptions={{ path: '/' }}>
+            <RouterServer router={router} />
+          </CookiesProvider>
         </I18nextProvider>
       ),
       request: c.req.raw,

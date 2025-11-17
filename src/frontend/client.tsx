@@ -1,4 +1,5 @@
 import { RouterClient } from '@tanstack/react-router/ssr/client';
+import { CookiesProvider } from 'react-cookie';
 import { hydrateRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { createRouter } from '~/frontend/router';
@@ -31,7 +32,9 @@ router.update({
 hydrateRoot(
   document,
   <I18nextProvider i18n={i18n}>
-    <RouterClient router={router} />
+    <CookiesProvider defaultSetOptions={{ path: '/' }}>
+      <RouterClient router={router} />
+    </CookiesProvider>
   </I18nextProvider>
 );
 

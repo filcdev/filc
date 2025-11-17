@@ -7,8 +7,6 @@ import {
   useRouteContext,
 } from '@tanstack/react-router';
 import { lazy, Suspense } from 'react';
-import { CookiesProvider } from 'react-cookie';
-import { I18nextProvider } from 'react-i18next';
 import { Toaster } from '~/frontend/components/ui/sonner';
 import { CookiePopup } from '~/frontend/components/util/cookie-popup';
 import css from '~/frontend/global.css?url';
@@ -87,32 +85,28 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="flex h-full flex-col">
-        <CookiesProvider defaultSetOptions={{ path: '/' }}>
-          <QueryClientProvider client={queryClient}>
-            <I18nextProvider i18n={i18n}>
-              <Outlet />
-              {import.meta.env.DEV
-                ? // Lazy-load devtools only in development. This dynamic import
-                  // is compile-time stripped from production by Vite.
-                  (() => {
-                    const RouterDevtools = lazy(() =>
-                      import('@tanstack/react-router-devtools').then((m) => ({
-                        default: m.TanStackRouterDevtools,
-                      }))
-                    );
-                    return (
-                      <Suspense>
-                        <RouterDevtools position="bottom-right" />
-                      </Suspense>
-                    );
-                  })()
-                : null}
-              <Scripts />
-              <Toaster richColors />
-              <CookiePopup />
-            </I18nextProvider>
-          </QueryClientProvider>
-        </CookiesProvider>
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+          {import.meta.env.DEV
+            ? // Lazy-load devtools only in development. This dynamic import
+              // is compile-time stripped from production by Vite.
+              (() => {
+                const RouterDevtools = lazy(() =>
+                  import('@tanstack/react-router-devtools').then((m) => ({
+                    default: m.TanStackRouterDevtools,
+                  }))
+                );
+                return (
+                  <Suspense>
+                    <RouterDevtools position="bottom-right" />
+                  </Suspense>
+                );
+              })()
+            : null}
+          <Scripts />
+          <Toaster richColors />
+          <CookiePopup />
+        </QueryClientProvider>
       </body>
     </html>
   );
