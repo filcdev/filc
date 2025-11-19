@@ -20,32 +20,22 @@
   "error": {
     "generic": "Valami hiba történt: {{message}}"
   },
-  "magicLink": {
-    "byContinuing": "A folytatással elfogadod a",
-    "checkYourEmail": "Ellenőrizd az e-mailedet",
-    "clickTheLink": "Kattints az e-mailben lévő linkre a bejelentkezéshez. A link 15 perc múlva lejár.",
-    "emailAddress": "E-mail cím",
-    "emailSentTo": "Elküldtük a mágikus linket erre: {{email}}.",
-    "failed": "A magic link küldése nem sikerült. Próbáld újra.",
-    "sendMagicLink": "Link küldése",
-    "sendToAnotherEmail": "Másik e-mail használata",
-    "sending": "küldés",
-    "signInSubtitle": "Add meg az e-mail címed, és küldünk egy biztonságos linket",
-    "signInWithMagicLink": "Jelentkezz be a fiókodba",
-    "signInWithMagicLinkDescription": "Azonnali bejelentkezéshez biztonságos linket küldünk",
-    "welcomeBack": "Üdv újra",
-    "willSendTo": "A magic linket ide küldjük: {{email}}"
+  "login": {
+    "byContinuing": "A folytatással elfogadod a"
   },
   "microsoft": {
-    "linkAccount": "Microsoft fiók összekapcsolása",
-    "linked": "Microsoft fiók összekapcsolva"
+    "signInTitle": "Üdv újra",
+    "signInSubtitle": "Jelentkezz be a Microsoft fiókoddal",
+    "cardTitle": "Bejelentkezés Microsofttal",
+    "cardSubtitle": "A Microsoft felületére irányítunk a biztonságos bejelentkezéshez",
+    "signInButton": "Folytatás Microsofttal",
+    "signInError": "Nem sikerült elindítani a Microsoft bejelentkezést. Próbáld újra."
   },
   "privacyPolicy": "Adatkezelési tájékoztató",
   "search": "Keresés",
   "selectLanguage": "Nyelv kiválasztása",
   "termsOfService": "Felhasználási feltételek",
   "unknown": "Ismeretlen",
-  "unlink": "Leválasztás",
   "welcome": {
     "subtitle": "Ismerkedjünk meg veled",
     "title": "Üdvözlünk"

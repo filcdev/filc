@@ -1,15 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaCheck,
   FaChevronDown,
   FaCircleCheck,
   FaEnvelope,
-  FaMicrosoft,
-  FaSpinner,
   FaUser,
 } from 'react-icons/fa6';
 import { Button } from '~/frontend/components/ui/button';
@@ -194,22 +192,8 @@ const CohortSelector = (props: { user: UserType }) => {
 
 const AccountDetails = (props: { user: UserType }) => {
   const { t } = useTranslation();
-  const { refetch } = authClient.useSession();
   const navigate = useNavigate();
   const { user } = props;
-
-  useEffect(() => {
-    const syncUserDetails = async () => {
-      try {
-        await parseResponse(apiClient.auth['sync-account'].$get());
-      } catch {
-        // Swallow errors to mirror previous fire-and-forget behaviour
-      }
-    };
-    if (!user.name) {
-      syncUserDetails().then(() => refetch());
-    }
-  }, [user.name, refetch]);
 
   return (
     <>
@@ -219,8 +203,6 @@ const AccountDetails = (props: { user: UserType }) => {
           <CardTitle className="text-lg">{t('account.details')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <MicrosoftLink />
-          <hr />
           <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
             <InfoLine
               content={user.email}
@@ -249,87 +231,6 @@ const AccountDetails = (props: { user: UserType }) => {
         </Button>
       )}
     </>
-  );
-};
-
-const MicrosoftLink = () => {
-  const { t } = useTranslation();
-  const [isPending, setIsPending] = useState(true);
-  const [isAlreadyLinked, setIsAlreadyLinked] = useState(false);
-  const [isUnlinking, setIsUnlinking] = useState(false);
-  const { refetch } = authClient.useSession();
-
-  const getIsLinked = useCallback(async () => {
-    const res = await authClient.listAccounts();
-
-    if (res.error) {
-      setIsAlreadyLinked(false);
-    } else {
-      setIsAlreadyLinked(
-        res.data.some((acc) => acc.providerId === 'microsoft')
-      );
-    }
-    setIsPending(false);
-  }, []);
-
-  useEffect(() => {
-    getIsLinked();
-  }, [getIsLinked]);
-
-  const handleUnlink = async () => {
-    setIsUnlinking(true);
-    try {
-      await authClient.unlinkAccount({ providerId: 'microsoft' });
-      await getIsLinked();
-      refetch();
-    } finally {
-      setIsUnlinking(false);
-    }
-  };
-
-  if (isPending) {
-    return <Skeleton className="flex h-8 items-center justify-center" />;
-  }
-
-  if (isAlreadyLinked) {
-    return (
-      <div className="flex h-8 items-center justify-between text-primary text-sm">
-        <div className="flex items-center gap-2">
-          <FaCircleCheck className="size-4" />
-          <span>{t('microsoft.linked')}</span>
-        </div>
-        <Button
-          className="text-muted-foreground text-xs"
-          disabled={isUnlinking}
-          onClick={handleUnlink}
-          size="sm"
-          variant="ghost"
-        >
-          {isUnlinking ? (
-            <FaSpinner className="size-4 animate-spin" />
-          ) : (
-            t('unlink')
-          )}
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <Button
-      className="w-full justify-start"
-      onClick={() => {
-        authClient.linkSocial({
-          callbackURL: '/auth/welcome',
-          errorCallbackURL: '/auth/error?from=link-microsoft',
-          provider: 'microsoft',
-        });
-      }}
-      variant="outline"
-    >
-      <FaMicrosoft className="mr-2 size-5" />
-      <span>{t('microsoft.linkAccount')}</span>
-    </Button>
   );
 };
 

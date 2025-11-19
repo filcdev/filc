@@ -13,20 +13,7 @@
     "saving": "Saving...",
     "accept": "Accept"
   },
-  "magicLink": {
-    "failed": "Failed to send magic link. Please try again.",
-    "checkYourEmail": "Check your email",
-    "emailSentTo": "We've sent a magic link to {{email}}.",
-    "clickTheLink": "Click the link in your email to sign in. The link will expire in 15 minutes.",
-    "sendToAnotherEmail": "Use a different email",
-    "welcomeBack": "Welcome back",
-    "signInSubtitle": "Enter your email to receive a secure magic link",
-    "signInWithMagicLink": "Sign in to your account",
-    "signInWithMagicLinkDescription": "We'll send you a secure link to sign in instantly",
-    "emailAddress": "Email address",
-    "willSendTo": "Magic link will be sent to {{email}}",
-    "sendMagicLink": "Send magic link",
-    "sending": "sending",
+  "login": {
     "byContinuing": "By continuing, you agree to our"
   },
   "termsOfService": "Terms of Service",
@@ -55,10 +42,13 @@
   "unknown": "Unknown",
   "continue": "Continue",
   "microsoft": {
-    "linked": "Microsoft linked",
-    "linkAccount": "Link Microsoft"
+    "signInTitle": "Welcome back",
+    "signInSubtitle": "Use your Microsoft account to continue",
+    "cardTitle": "Sign in with Microsoft",
+    "cardSubtitle": "You'll be redirected to Microsoft to sign in securely",
+    "signInButton": "Continue with Microsoft",
+    "signInError": "Unable to start Microsoft sign-in. Please try again."
   },
-  "unlink": "Unlink",
   "doorlock": {
     "title": "Door Access",
     "myDoors": "My Doors",
