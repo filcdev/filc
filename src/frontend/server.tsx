@@ -57,7 +57,7 @@ frontend.use(
       sameSite: 'Lax',
     },
     fallbackLanguage: 'hu',
-    lookupCookie: 'filc-lang',
+    lookupCookie: 'filc.language',
     order: ['cookie'],
     supportedLanguages: ['en', 'hu'],
   })

@@ -20,14 +20,14 @@ const LANGUAGES: ReadonlyArray<{ code: LangCode; name: string }> = [
 
 export function LanguageSelector() {
   const { i18n, t } = useTranslation();
-  const [, setCookie] = useCookies(['filc-lang']);
+  const [, setCookie] = useCookies(['filc.language']);
 
   const current: LangCode = i18n.language as LangCode;
 
   const handleChange = async (code: LangCode) => {
     const lng = code.toLowerCase();
     await i18n.changeLanguage(lng);
-    setCookie('filc-lang', lng, { sameSite: 'lax' });
+    setCookie('filc.language', lng, { sameSite: 'lax' });
     if (typeof document !== 'undefined') {
       document.documentElement.lang = lng;
     }

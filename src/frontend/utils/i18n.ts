@@ -23,7 +23,7 @@ base
       // i18next-browser-languagedetector expects minutes
       cookieMinutes: dayjs.duration(1, 'year').asMinutes(),
       cookieOptions: { path: '/', sameSite: 'lax' },
-      lookupCookie: 'filc-lang',
+      lookupCookie: 'filc.language',
       lookupLocalStorage: '',
       // Prefer cookie, then fall back to <html lang>
       order: ['cookie', 'htmlTag'],
