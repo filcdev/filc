@@ -44,6 +44,7 @@ const authOptions = {
     },
   },
   advanced: {
+    cookiePrefix: 'filc',
     database: {
       generateId: false,
     },
