@@ -39,16 +39,12 @@ function RouteComponent() {
           '/auth/error?from=microsoft-oauth',
           window.location.origin
         ).href,
-        newUserCallbackURL: new URL(
-          '/auth/welcome',
-          window.location.origin
-        ).href,
+        newUserCallbackURL: new URL('/auth/welcome', window.location.origin)
+          .href,
         provider: 'microsoft',
       });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t('microsoft.signInError')
-      );
+      setError(err instanceof Error ? err.message : t('microsoft.signInError'));
       setIsLoading(false);
     }
   };
@@ -75,9 +71,7 @@ function RouteComponent() {
             <CardTitle className="text-xl">
               {t('microsoft.cardTitle')}
             </CardTitle>
-            <CardDescription>
-              {t('microsoft.cardSubtitle')}
-            </CardDescription>
+            <CardDescription>{t('microsoft.cardSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleMicrosoftSignIn}>

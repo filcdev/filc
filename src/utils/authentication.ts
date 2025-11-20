@@ -114,5 +114,6 @@ export const auth = betterAuth({
   ],
 });
 
-export const authRouter = new Hono<Context>()
-  .on(['POST', 'GET'], '*', (c) => auth.handler(c.req.raw));
+export const authRouter = new Hono<Context>().on(['POST', 'GET'], '*', (c) =>
+  auth.handler(c.req.raw)
+);

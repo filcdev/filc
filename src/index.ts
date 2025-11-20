@@ -57,6 +57,7 @@ api.onError((err, c) => {
       err.res ??
       c.json<ErrorResponse>(
         {
+          cause: env.mode === 'production' ? undefined : err.cause,
           error: err.message,
           success: false,
         },
@@ -98,9 +99,10 @@ if (env.mode === 'development') {
     await next();
     const ms = Date.now() - start;
     const connInfo = getConnInfo(c);
+    const remoteAddr = env.realIpHeader ? c.req.header(env.realIpHeader) : connInfo?.remote.address;
     logger.info('Received request', {
       duration: ms,
-      ip: connInfo?.remote.address ?? 'unknown',
+      ip: remoteAddr ?? 'unknown',
       method: c.req.method,
       ua: c.req.header('user-agent') ?? 'unknown',
       url: c.req.url,

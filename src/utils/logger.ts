@@ -1,11 +1,17 @@
 import {
-  ansiColorFormatter,
   configure,
   getConsoleSink,
   getLogger,
   jsonLinesFormatter,
 } from '@logtape/logtape';
 import { env } from '~/utils/environment';
+import { getPrettyFormatter } from "@logtape/pretty";
+
+const prettyFormatter = getPrettyFormatter({
+  timestamp: "time",
+  colors: true,
+  properties: true,
+});
 
 export const configureLogger = async (rootName: string) => {
   await configure({
@@ -21,7 +27,7 @@ export const configureLogger = async (rootName: string) => {
     sinks: {
       console: getConsoleSink({
         formatter:
-          env.mode === 'development' ? ansiColorFormatter : jsonLinesFormatter,
+          env.mode === 'development' ? prettyFormatter : jsonLinesFormatter,
       }),
     },
   });
