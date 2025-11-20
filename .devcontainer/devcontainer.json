@@ -12,6 +12,8 @@
 	// "forwardPorts": [8080, 5432],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "bun install",
+	// Use 'postStartCommand' to run commands after the container is started.
+	"postStartCommand": "bun dev",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
