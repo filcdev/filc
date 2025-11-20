@@ -56,7 +56,7 @@ function TimetableImportPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importName, setImportName] = useState('');
-  const [validFrom, setValidFrom] = useState<Date | undefined>();
+  const [validStartDate, setValidStartDate] = useState<Date | undefined>();
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -88,7 +88,7 @@ function TimetableImportPage() {
       toast.success(t('timetable.importSuccess'));
       setSelectedFile(null);
       setImportName('');
-      setValidFrom(undefined);
+      setValidStartDate(undefined);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -127,14 +127,14 @@ function TimetableImportPage() {
       return;
     }
 
-    if (!validFrom) {
+    if (!validStartDate) {
       return;
     }
 
     importMutation.mutate({
       file: selectedFile,
       name: trimmedName,
-      validFrom,
+      validFrom: validStartDate,
     });
   };
 
@@ -142,7 +142,7 @@ function TimetableImportPage() {
     setSelectedFile(null);
     setImportStatus('idle');
     setErrorMessage(null);
-    setValidFrom(undefined);
+    setValidStartDate(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -193,8 +193,8 @@ function TimetableImportPage() {
               {t('timetable.validFromLabel')}
             </Label>
             <DatePicker
-              date={validFrom}
-              onDateChange={setValidFrom}
+              date={validStartDate}
+              onDateChange={setValidStartDate}
               placeholder={t('timetable.validFromPlaceholder')}
             />
             <p className="text-muted-foreground text-xs">
@@ -309,7 +309,7 @@ function TimetableImportPage() {
             <Button
               className="flex-1"
               disabled={
-                !(selectedFile && importName.trim() && validFrom) ||
+                !(selectedFile && importName.trim() && validStartDate) ||
                 importStatus === 'uploading'
               }
               onClick={handleImport}

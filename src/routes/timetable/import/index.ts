@@ -94,7 +94,7 @@ export const importRoute = timetableFactory.createHandlers(
         success: true,
       });
     } catch (e) {
-      logger.error(`Failed to parse XML`, { error: e });
+      logger.error('Failed to parse XML', { error: e });
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         cause: env.mode === 'development' ? e : undefined,
         message: 'Failed to parse XML',

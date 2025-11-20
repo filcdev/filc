@@ -99,7 +99,9 @@ if (env.mode === 'development') {
     await next();
     const ms = Date.now() - start;
     const connInfo = getConnInfo(c);
-    const remoteAddr = env.realIpHeader ? c.req.header(env.realIpHeader) : connInfo?.remote.address;
+    const remoteAddr = env.realIpHeader
+      ? c.req.header(env.realIpHeader)
+      : connInfo?.remote.address;
     logger.info('Received request', {
       duration: ms,
       ip: remoteAddr ?? 'unknown',

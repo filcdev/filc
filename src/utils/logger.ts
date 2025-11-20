@@ -4,13 +4,13 @@ import {
   getLogger,
   jsonLinesFormatter,
 } from '@logtape/logtape';
+import { getPrettyFormatter } from '@logtape/pretty';
 import { env } from '~/utils/environment';
-import { getPrettyFormatter } from "@logtape/pretty";
 
 const prettyFormatter = getPrettyFormatter({
-  timestamp: "time",
   colors: true,
   properties: true,
+  timestamp: 'time',
 });
 
 export const configureLogger = async (rootName: string) => {

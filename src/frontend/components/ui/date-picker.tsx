@@ -9,12 +9,12 @@ import {
 } from '~/frontend/components/ui/popover';
 import { cn } from '~/frontend/utils';
 
-interface DatePickerProps {
+type DatePickerProps = {
   date?: Date;
   onDateChange?: (date: Date | undefined) => void;
   placeholder?: string;
   disabled?: boolean;
-}
+};
 
 export function DatePicker({
   date,
