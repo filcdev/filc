@@ -1,8 +1,8 @@
 import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from 'lucide-react';
+  FaChevronDown,
+  FaChevronLeft,
+  FaChevronRight,
+} from 'react-icons/fa6';
 import { type ComponentProps, useEffect, useRef } from 'react';
 import {
   type DayButton,
@@ -18,14 +18,14 @@ function CalendarChevron({
   ...props
 }: ComponentProps<'svg'> & { orientation?: 'left' | 'right' | 'up' | 'down' }) {
   if (orientation === 'left') {
-    return <ChevronLeftIcon className={cn('size-4', className)} {...props} />;
+    return <FaChevronLeft className={cn('size-4', className)} {...props} />;
   }
 
   if (orientation === 'right') {
-    return <ChevronRightIcon className={cn('size-4', className)} {...props} />;
+    return <FaChevronRight className={cn('size-4', className)} {...props} />;
   }
 
-  return <ChevronDownIcon className={cn('size-4', className)} {...props} />;
+  return <FaChevronDown className={cn('size-4', className)} {...props} />;
 }
 
 function CalendarRoot({
