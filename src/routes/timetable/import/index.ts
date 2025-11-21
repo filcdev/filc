@@ -24,13 +24,14 @@ export const importRoute = timetableFactory.createHandlers(
     const body = (await c.req.parseBody()) as {
       omanXml?: File;
       name?: string;
-      validFrom?: Date;
+      validFrom?: string;
     };
 
     // get file
     const file = body.omanXml as File;
     const name = body.name;
-    const validFrom = body.validFrom;
+    const validFromString = body.validFrom;
+    const validFrom = validFromString ? new Date(validFromString) : undefined;
 
     if (!file) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -84,7 +85,7 @@ export const importRoute = timetableFactory.createHandlers(
 
       await importTimetableXML(xmlData, {
         name,
-        validFrom: validFrom.toString(),
+        validFrom: validFrom.toISOString(),
       });
 
       logger.info('Imported timetable');
@@ -93,9 +94,9 @@ export const importRoute = timetableFactory.createHandlers(
         success: true,
       });
     } catch (e) {
-      logger.error(`Failed to parse XML: ${e}`);
+      logger.error('Failed to parse XML', { error: e });
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        cause: env.mode === 'development' ? String(e) : undefined,
+        cause: env.mode === 'development' ? e : undefined,
         message: 'Failed to parse XML',
       });
     }

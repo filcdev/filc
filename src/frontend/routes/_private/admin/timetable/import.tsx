@@ -25,6 +25,9 @@ import {
   CardHeader,
   CardTitle,
 } from '~/frontend/components/ui/card';
+import { DatePicker } from '~/frontend/components/ui/date-picker';
+import { Input } from '~/frontend/components/ui/input';
+import { Label } from '~/frontend/components/ui/label';
 import { PermissionGuard } from '~/frontend/components/util/permission-guard';
 import { apiClient } from '~/frontend/utils/hc';
 
@@ -41,20 +44,27 @@ function RouteComponent() {
 }
 
 type ImportStatus = 'idle' | 'uploading' | 'success' | 'error';
+type ImportPayload = {
+  file: File;
+  name: string;
+  validFrom: Date;
+};
 
 function TimetableImportPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importName, setImportName] = useState('');
+  const [validStartDate, setValidStartDate] = useState<Date | undefined>();
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const importMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, name, validFrom }: ImportPayload) => {
       const res = await parseResponse(
         apiClient.timetable.import.$post({
-          form: { omanXml: file },
+          form: { name, omanXml: file, validFrom: validFrom.toISOString() },
         })
       );
 
@@ -77,6 +87,8 @@ function TimetableImportPage() {
       setImportStatus('success');
       toast.success(t('timetable.importSuccess'));
       setSelectedFile(null);
+      setImportName('');
+      setValidStartDate(undefined);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -106,15 +118,31 @@ function TimetableImportPage() {
   };
 
   const handleImport = () => {
-    if (selectedFile) {
-      importMutation.mutate(selectedFile);
+    if (!selectedFile) {
+      return;
     }
+
+    const trimmedName = importName.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    if (!validStartDate) {
+      return;
+    }
+
+    importMutation.mutate({
+      file: selectedFile,
+      name: trimmedName,
+      validFrom: validStartDate,
+    });
   };
 
   const handleClearFile = () => {
     setSelectedFile(null);
     setImportStatus('idle');
     setErrorMessage(null);
+    setValidStartDate(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -143,6 +171,37 @@ function TimetableImportPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="timetable-import-name">
+              {t('timetable.importNameLabel')}
+            </Label>
+            <Input
+              autoComplete="off"
+              id="timetable-import-name"
+              onChange={(event) => setImportName(event.target.value)}
+              placeholder={t('timetable.importNamePlaceholder')}
+              required
+              value={importName}
+            />
+            <p className="text-muted-foreground text-xs">
+              {t('timetable.importNameDescription')}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="timetable-import-validFrom">
+              {t('timetable.validFromLabel')}
+            </Label>
+            <DatePicker
+              date={validStartDate}
+              onDateChange={setValidStartDate}
+              placeholder={t('timetable.validFromPlaceholder')}
+            />
+            <p className="text-muted-foreground text-xs">
+              {t('timetable.validFromDescription')}
+            </p>
+          </div>
+
           {/* File Upload Area */}
           <button
             className="relative flex min-h-[200px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-muted-foreground/25 border-dashed bg-transparent p-8 text-center transition-colors hover:border-muted-foreground/50"
@@ -249,7 +308,10 @@ function TimetableImportPage() {
           <div className="flex gap-3">
             <Button
               className="flex-1"
-              disabled={!selectedFile || importStatus === 'uploading'}
+              disabled={
+                !(selectedFile && importName.trim() && validStartDate) ||
+                importStatus === 'uploading'
+              }
               onClick={handleImport}
               size="lg"
             >

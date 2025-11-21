@@ -1,4 +1,7 @@
-import { customSessionClient, inferAdditionalFields } from 'better-auth/client/plugins';
+import {
+  customSessionClient,
+  inferAdditionalFields,
+} from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 import type { auth } from '~/utils/authentication';
 

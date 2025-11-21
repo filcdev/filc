@@ -24,6 +24,7 @@ const envSchema = z.object({
     .min(MIN_PORT)
     .max(MAX_PORT)
     .default(DEFAULT_PORT),
+  CHRONOS_REAL_IP_HEADER: z.string().optional(),
 });
 
 const makeTypedEnvironment =
