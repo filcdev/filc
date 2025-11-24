@@ -163,7 +163,7 @@ export function TimetableView() {
         setSelectedCohortId(urlCohort);
         return;
       }
-    } catch (_err) {
+    } catch {
       // ignore URL parse errors
     }
 
@@ -187,7 +187,7 @@ export function TimetableView() {
       params.set('cohort', selectedCohortId);
       const to = `${url.pathname}?${params.toString()}`;
       navigate({ replace: true, to });
-    } catch (_err) {
+    } catch {
       // ignore URL/navigation errors
     }
   }, [selectedCohortId, navigate]);
