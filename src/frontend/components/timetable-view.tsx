@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import {
   type ClassSession,
   type DayMetadata,
@@ -151,7 +151,9 @@ export function TimetableView() {
 
   // Initialize selected cohort from URL (if present) or user default / first cohort.
   useEffect(() => {
-    if (!cohortsQuery.data || selectedCohortId || isPending) return;
+    if (!cohortsQuery.data || selectedCohortId || isPending) {
+      return;
+    }
 
     // Try cohort from URL query param first
     try {
@@ -161,8 +163,8 @@ export function TimetableView() {
         setSelectedCohortId(urlCohort);
         return;
       }
-    } catch (err) {
-      // ignore
+    } catch (_err) {
+      // ignore URL parse errors
     }
 
     const userDefault = session?.user?.cohortId as string | undefined;
@@ -172,16 +174,21 @@ export function TimetableView() {
 
   // Keep URL in sync with selected cohort
   useEffect(() => {
-    if (!selectedCohortId) return;
+    if (!selectedCohortId) {
+      return;
+    }
+
     try {
       const url = new URL(window.location.href);
       const params = new URLSearchParams(url.search);
-      if (params.get('cohort') === selectedCohortId) return;
+      if (params.get('cohort') === selectedCohortId) {
+        return;
+      }
       params.set('cohort', selectedCohortId);
       const to = `${url.pathname}?${params.toString()}`;
       navigate({ replace: true, to });
-    } catch (err) {
-      // ignore
+    } catch (_err) {
+      // ignore URL/navigation errors
     }
   }, [selectedCohortId, navigate]);
 

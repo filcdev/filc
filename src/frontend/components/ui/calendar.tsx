@@ -1,14 +1,10 @@
-import {
-  FaChevronDown,
-  FaChevronLeft,
-  FaChevronRight,
-} from 'react-icons/fa6';
 import { type ComponentProps, useEffect, useRef } from 'react';
 import {
   type DayButton,
   DayPicker,
   getDefaultClassNames,
 } from 'react-day-picker';
+import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import { Button, buttonVariants } from '~/frontend/components/ui/button';
 import { cn } from '~/frontend/utils';
 
