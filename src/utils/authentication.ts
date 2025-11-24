@@ -24,7 +24,6 @@ export const getOauth = (): SocialProviders => {
     microsoft: {
       clientId: env.entraClientId,
       clientSecret: env.entraClientSecret,
-      disableSignUp: true,
       enabled: true,
       prompt: 'select_account',
       tenantId: env.entraTenantId,
@@ -65,8 +64,7 @@ const authOptions = {
     },
   },
   emailAndPassword: {
-    disableSignUp: true,
-    enabled: true,
+    enabled: false,
   },
   logger: {
     level: env.mode === 'development' ? 'debug' : 'info',
