@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -133,6 +134,7 @@ const buildTimetableData = (lessons: EnrichedLesson[]) => {
 
 export function TimetableView() {
   const { data: session, isPending } = authClient.useSession();
+  const navigate = useNavigate();
 
   const cohortsQuery = useQuery({
     queryFn: async () => {
@@ -147,14 +149,48 @@ export function TimetableView() {
 
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(null);
 
+  // Initialize selected cohort from URL (if present) or user default / first cohort.
   useEffect(() => {
     if (!cohortsQuery.data || selectedCohortId || isPending) {
       return;
     }
+
+    // Try cohort from URL query param first
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlCohort = params.get('cohort');
+      if (urlCohort && cohortsQuery.data.some((c) => c.id === urlCohort)) {
+        setSelectedCohortId(urlCohort);
+        return;
+      }
+    } catch {
+      // ignore URL parse errors
+    }
+
     const userDefault = session?.user?.cohortId as string | undefined;
     const first = cohortsQuery.data[0]?.id;
     setSelectedCohortId(userDefault ?? first ?? null);
   }, [cohortsQuery.data, selectedCohortId, session, isPending]);
+
+  // Keep URL in sync with selected cohort
+  useEffect(() => {
+    if (!selectedCohortId) {
+      return;
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      const params = new URLSearchParams(url.search);
+      if (params.get('cohort') === selectedCohortId) {
+        return;
+      }
+      params.set('cohort', selectedCohortId);
+      const to = `${url.pathname}?${params.toString()}`;
+      navigate({ replace: true, to });
+    } catch {
+      // ignore URL/navigation errors
+    }
+  }, [selectedCohortId, navigate]);
 
   const lessonsQuery = useQuery({
     enabled: !!selectedCohortId,
