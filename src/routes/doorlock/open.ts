@@ -1,31 +1,67 @@
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
-import { openDoorLock } from '~/mqtt/client';
-import { userHasPermission } from '~/utils/authorization';
-import type { SuccessResponse } from '~/utils/globals';
-import { requireAuthentication } from '~/utils/middleware';
-import { doorlockFactory } from './_factory';
+import { HTTPException } from "hono/http-exception";
+import { StatusCodes } from "http-status-codes";
+import { openDoorLock } from "~/mqtt/client";
+import { userHasPermission } from "~/utils/authorization";
+import type { SuccessResponse } from "~/utils/globals";
+import { requireAuthentication } from "~/utils/middleware";
+import { doorlockFactory } from "./_factory";
+import { describeRoute, resolver } from "hono-openapi";
+import { ensureJsonSafeDates } from "~/utils/zod";
+import z from "zod";
+
+const OpenDoorResponseSchema = z.object({
+  data: z.object({
+    deviceId: z.string(),
+    status: z.string(),
+  }),
+  success: z.boolean(),
+});
 
 export const openDoor = doorlockFactory.createHandlers(
+  describeRoute({
+    description: "Open door via device ID.",
+    parameters: [
+      {
+        in: "path",
+        name: "deviceId",
+        required: true,
+        schema: {
+          description: "The device ID.",
+          type: "string",
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(OpenDoorResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Doorlock"],
+  }),
   requireAuthentication,
   async (c) => {
-    const deviceId = c.req.param('deviceId');
+    const deviceId = c.req.param("deviceId");
 
     if (!(await userHasPermission(c.var.user.id, `door:${deviceId}:open`))) {
-      throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
+      throw new HTTPException(StatusCodes.FORBIDDEN, { message: "Forbidden" });
     }
 
     if (!deviceId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing deviceId',
+        message: "Missing deviceId",
       });
     }
 
-    openDoorLock(deviceId, 'Opened via API');
+    openDoorLock(deviceId, "Opened via API");
 
     return c.json<SuccessResponse>({
-      data: { deviceId, status: 'queued' },
+      data: { deviceId, status: "queued" },
       success: true,
     });
-  }
+  },
 );

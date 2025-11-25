@@ -1,8 +1,8 @@
-import { getLogger } from '@logtape/logtape';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
-import { db } from '~/database';
+import { getLogger } from "@logtape/logtape";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
+import { StatusCodes } from "http-status-codes";
+import { db } from "~/database";
 import {
   cohort,
   lesson,
@@ -10,18 +10,43 @@ import {
   substitution,
   substitutionLessonMTM,
   teacher,
-} from '~/database/schema/timetable';
-import { env } from '~/utils/environment';
-import type { SuccessResponse } from '~/utils/globals';
+} from "~/database/schema/timetable";
+import { env } from "~/utils/environment";
+import type { SuccessResponse } from "~/utils/globals";
 import {
   requireAuthentication,
   requireAuthorization,
-} from '~/utils/middleware';
-import { timetableFactory } from '../_factory';
+} from "~/utils/middleware";
+import { timetableFactory } from "../_factory";
+import { createSelectSchema } from "drizzle-zod";
+import { describeRoute, resolver } from "hono-openapi";
+import { ensureJsonSafeDates } from "~/utils/zod";
+import z from "zod";
 
-const logger = getLogger(['chronos', 'substitutions']);
+const logger = getLogger(["chronos", "substitutions"]);
+
+const substitutionSchema = createSelectSchema(substitution);
+
+const AllResponseSchema = z.object({
+  data: z.array(substitutionSchema),
+  success: z.boolean(),
+});
 
 export const getAllSubstitutions = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Get all substitutions from the database.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(AllResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Substitution"],
+  }),
   requireAuthentication,
   async (c) => {
     try {
@@ -30,7 +55,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
-          )`.as('lessons'),
+          )`.as("lessons"),
           substitution,
           teacher,
         })
@@ -38,7 +63,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
         .leftJoin(
           substitutionLessonMTM,
-          eq(substitution.id, substitutionLessonMTM.substitutionId)
+          eq(substitution.id, substitutionLessonMTM.substitutionId),
         )
         .groupBy(substitution.id, teacher.id);
 
@@ -47,26 +72,40 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error while fetching all substitutions', { error });
+      logger.error("Error while fetching all substitutions", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all substitutions',
+        message: "Failed to fetch all substitutions",
       });
     }
-  }
+  },
 );
 
 export const getRelevantSubstitutions = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Get relevant substitutions from the database.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(AllResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Substitution"],
+  }),
   requireAuthentication,
   async (c) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
 
       const substitutions = await db
         .select({
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
-          )`.as('lessons'),
+          )`.as("lessons"),
           substitution,
           teacher,
         })
@@ -74,7 +113,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
         .leftJoin(
           substitutionLessonMTM,
-          eq(substitution.id, substitutionLessonMTM.substitutionId)
+          eq(substitution.id, substitutionLessonMTM.substitutionId),
         )
         .where(gte(substitution.date, today as string))
         .groupBy(substitution.id, teacher.id);
@@ -84,68 +123,141 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error while fetching substitutions', { error });
+      logger.error("Error while fetching substitutions", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch substitutions',
+        message: "Failed to fetch substitutions",
       });
     }
-  }
+  },
 );
 
 export const getRelevantSubstitutionsForCohort =
-  timetableFactory.createHandlers(requireAuthentication, async (c) => {
-    const cohortId = c.req.param('cohortId');
+  timetableFactory.createHandlers(
+    describeRoute({
+      description:
+        "Get relevant substitutions for a given cohort from the database.",
+      parameters: [
+        {
+          in: "path",
+          name: "cohortId",
+          required: true,
+          schema: {
+            description: "The unique identifier for the cohort.",
+            type: "string",
+          },
+        },
+      ],
+      responses: {
+        200: {
+          content: {
+            "application/json": {
+              schema: resolver(ensureJsonSafeDates(AllResponseSchema)),
+            },
+          },
+          description: "Successful Response",
+        },
+      },
+      tags: ["Substitution"],
+    }),
+    requireAuthentication,
+    async (c) => {
+      const cohortId = c.req.param("cohortId");
 
-    if (!cohortId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Cohort ID is required',
-      });
-    }
+      if (!cohortId) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: "Cohort ID is required",
+        });
+      }
 
-    const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
 
-    try {
-      const substitutions = await db
-        .select({
-          lessons: sql<string[]>`COALESCE(
+      try {
+        const substitutions = await db
+          .select({
+            lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
-          )`.as('lessons'),
-          substitution,
-          teacher,
-        })
-        .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-        .leftJoin(
-          substitutionLessonMTM,
-          eq(substitution.id, substitutionLessonMTM.substitutionId)
-        )
-        .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
-        .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-        .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-        .where(
-          and(gte(substitution.date, today as string), eq(cohort.id, cohortId))
-        )
-        .groupBy(substitution.id, teacher.id);
+          )`.as("lessons"),
+            substitution,
+            teacher,
+          })
+          .from(substitution)
+          .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+          .leftJoin(
+            substitutionLessonMTM,
+            eq(substitution.id, substitutionLessonMTM.substitutionId),
+          )
+          .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+          .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
+          .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+          .where(
+            and(
+              gte(substitution.date, today as string),
+              eq(cohort.id, cohortId),
+            ),
+          )
+          .groupBy(substitution.id, teacher.id);
 
-      return c.json<SuccessResponse>({
-        data: {
-          cohortId,
-          substitutions,
-        },
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Error while fetching substitutions for cohort', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch substitutions for cohort',
-      });
-    }
-  });
+        return c.json<SuccessResponse>({
+          data: {
+            cohortId,
+            substitutions,
+          },
+          success: true,
+        });
+      } catch (error) {
+        logger.error("Error while fetching substitutions for cohort", {
+          error,
+        });
+        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+          message: "Failed to fetch substitutions for cohort",
+        });
+      }
+    },
+  );
+
+const CreateSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        date: z.date(),
+        lessonIds: z.string().array(),
+        substituter: z.string().nullable(),
+      }),
+    ),
+  ).toOpenAPISchema()
+).schema;
+
+const CreateResponseSchema = z.object({
+  data: substitutionSchema,
+  success: z.boolean(),
+});
 
 export const createSubstitution = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Create a new substitution",
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          schema: CreateSchema,
+        },
+      },
+      description: "The data for the new timetable.",
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(CreateResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Substitution"],
+  }),
   requireAuthentication,
-  requireAuthorization('substitution:create'),
+  requireAuthorization("substitution:create"),
   async (c) => {
     const body = (await c.req.json()) as {
       date: string;
@@ -157,14 +269,14 @@ export const createSubstitution = timetableFactory.createHandlers(
 
     if (!(lessonIds && date)) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing required fields: lessonIds and date are required.',
+        message: "Missing required fields: lessonIds and date are required.",
       });
     }
 
     const dateAsDateType = new Date(date);
     if (Number.isNaN(dateAsDateType.getTime())) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid date format.',
+        message: "Invalid date format.",
       });
     }
 
@@ -189,10 +301,10 @@ export const createSubstitution = timetableFactory.createHandlers(
       if (!insertedSubstitution) {
         throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
           cause:
-            env.mode === 'development'
-              ? 'No substitution returned from insert query'
+            env.mode === "development"
+              ? "No substitution returned from insert query"
               : undefined,
-          message: 'Failed to create substitution.',
+          message: "Failed to create substitution.",
         });
       }
 
@@ -211,15 +323,60 @@ export const createSubstitution = timetableFactory.createHandlers(
       data: result,
       success: true,
     });
-  }
+  },
 );
 
+const UpdateSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        date: z.date().nullable(),
+        lessonIds: z.string().array().nullable(),
+        substituter: z.string().nullable(),
+      }),
+    ),
+  ).toOpenAPISchema()
+).schema;
+
 export const updateSubstitution = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Update a substitution",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        schema: {
+          description: "The unique identifier for the substitution to update.",
+          type: "string",
+        },
+      },
+    ],
+    requestBody: {
+      content: {
+        "application/json": {
+          schema: UpdateSchema,
+        },
+      },
+      description: "The data for the new timetable.",
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(CreateResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Substitution"],
+  }),
   requireAuthentication,
-  requireAuthorization('substitution:update'),
+  requireAuthorization("substitution:update"),
   async (c) => {
     try {
-      const id = c.req.param('id');
+      const id = c.req.param("id");
       const body = (await c.req.json()) as {
         date?: string;
         lessonIds?: string[];
@@ -228,7 +385,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
       if (!id) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Substitution ID is required',
+          message: "Substitution ID is required",
         });
       }
 
@@ -240,7 +397,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
       if (existingSubstitution.length === 0) {
         throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Substitution not found',
+          message: "Substitution not found",
         });
       }
 
@@ -248,7 +405,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         const dateAsDate = new Date(body.date);
         if (Number.isNaN(dateAsDate.getTime())) {
           throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message: 'Invalid date format',
+            message: "Invalid date format",
           });
         }
       }
@@ -256,7 +413,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
       if (body.lessonIds) {
         const lessonCount = await db.$count(
           lesson,
-          inArray(lesson.id, body.lessonIds)
+          inArray(lesson.id, body.lessonIds),
         );
         if (lessonCount !== body.lessonIds.length) {
           throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -301,26 +458,51 @@ export const updateSubstitution = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error while updating substitution', { error });
+      logger.error("Error while updating substitution", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         cause:
-          env.mode === 'development' ? (error as Error).message : undefined,
-        message: 'Failed to update substitution',
+          env.mode === "development" ? (error as Error).message : undefined,
+        message: "Failed to update substitution",
       });
     }
-  }
+  },
 );
 
 export const deleteSubstitution = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Delete a substitution",
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        schema: {
+          description: "The unique identifier for the substitution to delete.",
+          type: "string",
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(CreateResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Substitution"],
+  }),
   requireAuthentication,
-  requireAuthorization('substitution:delete'),
+  requireAuthorization("substitution:delete"),
   async (c) => {
     try {
-      const id = c.req.param('id');
+      const id = c.req.param("id");
 
       if (!id) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Substitution ID is required',
+          message: "Substitution ID is required",
         });
       }
 
@@ -332,7 +514,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
 
       if (existingSubstitution.length === 0) {
         throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Substitution not found',
+          message: "Substitution not found",
         });
       }
 
@@ -347,12 +529,12 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error while deleting substitution', { error });
+      logger.error("Error while deleting substitution", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         cause:
-          env.mode === 'development' ? (error as Error).message : undefined,
-        message: 'Failed to delete substitution',
+          env.mode === "development" ? (error as Error).message : undefined,
+        message: "Failed to delete substitution",
       });
     }
-  }
+  },
 );

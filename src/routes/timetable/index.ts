@@ -1,16 +1,46 @@
-import { getLogger } from '@logtape/logtape';
-import { desc, gte } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
-import { db } from '~/database';
-import { timetable } from '~/database/schema/timetable';
-import type { SuccessResponse } from '~/utils/globals';
-import { requireAuthentication } from '~/utils/middleware';
-import { timetableFactory } from './_factory';
+import { getLogger } from "@logtape/logtape";
+import { desc, gte } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
+import { StatusCodes } from "http-status-codes";
+import { db } from "~/database";
+import { timetable } from "~/database/schema/timetable";
+import type { SuccessResponse } from "~//utils/globals";
+import { requireAuthentication } from "~/utils/middleware";
+import { timetableFactory } from "./_factory";
+import { describeRoute, resolver } from "hono-openapi";
+import z from "zod";
+import { ensureJsonSafeDates } from "~/utils/zod";
+import { createSelectSchema } from "drizzle-zod";
 
-const logger = getLogger(['chronos', 'timetable']);
+const logger = getLogger(["chronos", "timetable"]);
+
+const timetableSelectSchema = createSelectSchema(timetable);
+
+const getAllResponseSchema = z.object({
+  data: z.array(timetableSelectSchema),
+  success: z.literal(true),
+});
+
+const getLastestValidReponseSchema = z.object({
+  data: timetableSelectSchema,
+  success: z.literal(true),
+});
 
 export const getAllTimetables = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Get all timetables from the database.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Timetable"],
+  }),
   requireAuthentication,
   async (c) => {
     try {
@@ -21,22 +51,36 @@ export const getAllTimetables = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error while getting all timetables: ', { error });
+      logger.error("Error while getting all timetables: ", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all timetables',
+        message: "Failed to fetch all timetables",
       });
     }
-  }
+  },
 );
 
 const dateToYYYYMMDD = (date: Date): string =>
-  date.toLocaleDateString('en-CA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  date.toLocaleDateString("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 
 export const getLatestValidTimetable = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Get the latest valid timetable.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(getLastestValidReponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Timetable"],
+  }),
   requireAuthentication,
   async (c) => {
     const today = dateToYYYYMMDD(new Date());
@@ -50,7 +94,7 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
 
       if (!latestValidTimetable) {
         return c.json<SuccessResponse>({
-          data: 'No valid timetable found.',
+          data: "No valid timetable found.",
           success: true,
         });
       }
@@ -60,15 +104,29 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Failed to get latest valid timetable: ', { error });
+      logger.error("Failed to get latest valid timetable: ", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to get latest valid template.',
+        message: "Failed to get latest valid template.",
       });
     }
-  }
+  },
 );
 
 export const getAllValidTimetables = timetableFactory.createHandlers(
+  describeRoute({
+    description: "Get all the latest valid timetables.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: "Successful Response",
+      },
+    },
+    tags: ["Timetable"],
+  }),
   requireAuthentication,
   async (c) => {
     try {
@@ -84,10 +142,10 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error while getting all timetables: ', { error });
+      logger.error("Error while getting all timetables: ", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all timetables',
+        message: "Failed to fetch all timetables",
       });
     }
-  }
+  },
 );
