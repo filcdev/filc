@@ -60,47 +60,6 @@ export const importRoute = timetableFactory.createHandlers(
     },
     tags: ["Timetable", "Import"],
   }),
-  // describeRoute({
-  //   description: "Get all the latest valid timetables.",
-  //   requestBody: {
-  //     content: {
-  //       "multipart/form-data": {
-  //         schema: {
-  //           properties: {
-  //             name: {
-  //               example: "2026-1st-sem",
-  //               type: "string",
-  //             },
-  //             omanXml: {
-  //               description: "Select your XML file",
-  //               format: "binary",
-  //               type: "string",
-  //             },
-  //             validFrom: {
-  //               example: "2026-09-01",
-  //               format: "date",
-  //               type: "string",
-  //             },
-  //           },
-  //           required: ["omanXml", "name", "validFrom"],
-  //           type: "object",
-  //         },
-  //       },
-  //     },
-  //     description: "The data for the new timetable.",
-  //   },
-  //   responses: {
-  //     200: {
-  //       content: {
-  //         "application/json": {
-  //           schema: resolver(ensureJsonSafeDates(importResponseSchema)),
-  //         },
-  //       },
-  //       description: "Successful Response",
-  //     },
-  //   },
-  //   tags: ["Timetable", "Import"],
-  // }),
   requireAuthentication,
   requireAuthorization("import:timetable"),
   async (c) => {
