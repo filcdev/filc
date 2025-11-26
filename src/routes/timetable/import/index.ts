@@ -28,7 +28,7 @@ const ImportSchema = (
   await resolver(
     ensureJsonSafeDates(
       z.object({
-        name: z.date(),
+        name: z.string(),
         omanXml: z.file(),
         validFrom: z.date(),
       })
@@ -38,7 +38,7 @@ const ImportSchema = (
 
 export const importRoute = timetableFactory.createHandlers(
   describeRoute({
-    description: 'Get all the latest valid timetables.',
+    description: 'Import a timetable from an Oman XML file.',
     requestBody: {
       content: {
         'multipart/form-data': {

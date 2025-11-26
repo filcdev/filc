@@ -242,7 +242,7 @@ export const createSubstitution = timetableFactory.createHandlers(
           schema: CreateSchema,
         },
       },
-      description: 'The data for the new timetable.',
+      description: 'The data for the new substitution.',
     },
     responses: {
       200: {
@@ -358,7 +358,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
           schema: UpdateSchema,
         },
       },
-      description: 'The data for the new timetable.',
+      description: 'The data for updating the substitution.',
     },
     responses: {
       200: {

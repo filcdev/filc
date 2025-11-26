@@ -78,7 +78,7 @@ export const getCard = doorlockFactory.createHandlers(
     parameters: [
       {
         in: 'path',
-        name: 'timetableId',
+        name: 'id',
         required: true,
         schema: {
           description:
@@ -97,7 +97,7 @@ export const getCard = doorlockFactory.createHandlers(
         description: 'Successful Response',
       },
     },
-    tags: ['Moved Lesson'],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
   async (c) => {
@@ -226,7 +226,7 @@ export const updateCard = doorlockFactory.createHandlers(
           schema: UpdateSchema,
         },
       },
-      description: 'The data for the upated card.',
+      description: 'The data for the updated card.',
     },
     responses: {
       200: {

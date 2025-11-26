@@ -382,7 +382,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         required: true,
         schema: {
           description:
-            'The unique identifier for the cohort to get the relevant moved lessons for..',
+            'The unique identifier for the cohort to get the relevant moved lessons for.',
           type: 'string',
         },
       },
@@ -477,7 +477,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
           schema: CreateSchema,
         },
       },
-      description: 'The data for the new timetable.',
+      description: 'The data for the moved lesson.',
     },
     responses: {
       200: {
@@ -586,7 +586,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
           schema: UpdateSchema,
         },
       },
-      description: 'The data for the new timetable.',
+      description: 'The data for updating the moved lesson.',
     },
     responses: {
       200: {

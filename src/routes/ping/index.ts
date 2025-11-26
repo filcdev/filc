@@ -13,7 +13,7 @@ const PingResponseSchema = z.object({
 
 export const ping = pingFactory.createHandlers(
   describeRoute({
-    description: 'Get the uptime.',
+    description: 'Health check endpoint that returns a pong response.',
     responses: {
       200: {
         content: {
