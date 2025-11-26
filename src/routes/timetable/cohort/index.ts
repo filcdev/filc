@@ -1,60 +1,60 @@
-import { getLogger } from '@logtape/logtape';
-import { eq } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
-import { db } from '~/database';
-import { cohort, timetable } from '~/database/schema/timetable';
-import type { SuccessResponse } from '~/utils/globals';
-import { requireAuthentication } from '~/utils/middleware';
-import { ensureJsonSafeDates } from '~/utils/zod';
-import { timetableFactory } from '../_factory';
+import { getLogger } from "@logtape/logtape";
+import { eq } from "drizzle-orm";
+import { createSelectSchema } from "drizzle-zod";
+import { HTTPException } from "hono/http-exception";
+import { describeRoute, resolver } from "hono-openapi";
+import { StatusCodes } from "http-status-codes";
+import z from "zod";
+import { db } from "~/database";
+import { cohort, timetable } from "~/database/schema/timetable";
+import type { SuccessResponse } from "~/utils/globals";
+import { requireAuthentication } from "~/utils/middleware";
+import { ensureJsonSafeDates } from "~/utils/zod";
+import { timetableFactory } from "../_factory";
 
-const logger = getLogger(['chronos', 'cohort']);
+const logger = getLogger(["chronos", "cohort"]);
 
-const GetForTimetableResponseSchema = z.object({
+const getForTimetableResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(cohort)).array(),
   success: z.boolean(),
 });
 
 export const getCohortsForTimetable = timetableFactory.createHandlers(
   describeRoute({
-    description: 'Get cohorts for a given timetable from the database.',
+    description: "Get cohorts for a given timetable from the database.",
     parameters: [
       {
-        in: 'path',
-        name: 'timetable_id',
+        in: "path",
+        name: "timetable_id",
         required: true,
         schema: {
-          description: 'The unique identifier for the timetable.',
-          type: 'string',
+          description: "The unique identifier for the timetable.",
+          type: "string",
         },
       },
     ],
     responses: {
       200: {
         content: {
-          'application/json': {
+          "application/json": {
             schema: resolver(
-              ensureJsonSafeDates(GetForTimetableResponseSchema)
+              ensureJsonSafeDates(getForTimetableResponseSchema),
             ),
           },
         },
-        description: 'Successful Response',
+        description: "Successful Response",
       },
     },
-    tags: ['Cohort'],
+    tags: ["Cohort"],
   }),
   requireAuthentication,
   async (c) => {
     try {
-      const timetableId = c.req.param('timetable_id');
+      const timetableId = c.req.param("timetable_id");
 
       if (!timetableId) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Missing timetable_id parameter.',
+          message: "Missing timetable_id parameter.",
         });
       }
 
@@ -69,10 +69,10 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error('Error fetching cohorts for timetable', { error });
+      logger.error("Error fetching cohorts for timetable", { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all cohorts for timetable.',
+        message: "Failed to fetch all cohorts for timetable.",
       });
     }
-  }
+  },
 );
