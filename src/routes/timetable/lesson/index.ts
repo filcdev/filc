@@ -1,7 +1,10 @@
-import { eq, inArray } from "drizzle-orm";
-import { HTTPException } from "hono/http-exception";
-import { StatusCodes } from "http-status-codes";
-import { db } from "~/database";
+import { eq, inArray } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
+import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
+import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
+import { db } from '~/database';
 import {
   classroom,
   cohort,
@@ -11,13 +14,10 @@ import {
   period,
   subject,
   teacher,
-} from "~/database/schema/timetable";
-import type { SuccessResponse } from "~/utils/globals";
-import { timetableFactory } from "../_factory";
-import { describeRoute, resolver } from "hono-openapi";
-import { ensureJsonSafeDates } from "~/utils/zod";
-import z from "zod";
-import { createSelectSchema } from "drizzle-zod";
+} from '~/database/schema/timetable';
+import type { SuccessResponse } from '~/utils/globals';
+import { ensureJsonSafeDates } from '~/utils/zod';
+import { timetableFactory } from '../_factory';
 
 const GetForCohortResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
@@ -26,35 +26,35 @@ const GetForCohortResponseSchema = z.object({
 
 export const getLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
-    description: "Get lessons for a given cohort from the database.",
+    description: 'Get lessons for a given cohort from the database.',
     parameters: [
       {
-        in: "path",
-        name: "cohort_id",
+        in: 'path',
+        name: 'cohort_id',
         required: true,
         schema: {
-          description: "The unique identifier for the cohort.",
-          type: "string",
+          description: 'The unique identifier for the cohort.',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(GetForCohortResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Lesson"],
+    tags: ['Lesson'],
   }),
   async (c) => {
-    const cohortId = c.req.param("cohort_id");
+    const cohortId = c.req.param('cohort_id');
     if (!cohortId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing cohort_id",
+        message: 'Missing cohort_id',
       });
     }
 
@@ -66,7 +66,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
 
     if (!existingCohort) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: "Cohort not found",
+        message: 'Cohort not found',
       });
     }
 
@@ -88,16 +88,16 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const teacherIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : [],
-        ),
-      ),
+          Array.isArray(l.teacherIds) ? l.teacherIds : []
+        )
+      )
     );
     const classroomIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : [],
-        ),
-      ),
+          Array.isArray(l.classroomIds) ? l.classroomIds : []
+        )
+      )
     );
 
     const [subjects, days, periods, teachers, classrooms] = await Promise.all([
@@ -170,5 +170,5 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     });
 
     return c.json<SuccessResponse>({ data: enriched, success: true });
-  },
+  }
 );

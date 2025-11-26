@@ -1,26 +1,26 @@
-import { zValidator } from "@hono/zod-validator";
-import { getLogger } from "@logtape/logtape";
-import { eq } from "drizzle-orm";
-import { createSelectSchema } from "drizzle-zod";
-import { describeRoute, resolver } from "hono-openapi";
-import { HTTPException } from "hono/http-exception";
-import { StatusCodes } from "http-status-codes";
-import z from "zod";
-import { db } from "~/database";
-import { featureFlag } from "~/database/schema/feature-flag";
-import { featureFlagFactory } from "~/routes/feature-flags/_factory";
+import { zValidator } from '@hono/zod-validator';
+import { getLogger } from '@logtape/logtape';
+import { eq } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
+import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
+import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
+import { db } from '~/database';
+import { featureFlag } from '~/database/schema/feature-flag';
+import { featureFlagFactory } from '~/routes/feature-flags/_factory';
 import {
   invalidateFeatureFlagCache,
   notifyFeatureFlagChange,
-} from "~/utils/feature-flag";
-import type { SuccessResponse } from "~/utils/globals";
+} from '~/utils/feature-flag';
+import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
   requireAuthorization,
-} from "~/utils/middleware";
-import { ensureJsonSafeDates } from "~/utils/zod";
+} from '~/utils/middleware';
+import { ensureJsonSafeDates } from '~/utils/zod';
 
-const logger = getLogger(["chronos", "feature-flags"]);
+const logger = getLogger(['chronos', 'feature-flags']);
 
 const GetAllResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(featureFlag)).array(),
@@ -29,21 +29,21 @@ const GetAllResponseSchema = z.object({
 
 export const listFeatureFlags = featureFlagFactory.createHandlers(
   describeRoute({
-    description: "Get all feature flags.",
+    description: 'Get all feature flags.',
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(GetAllResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Feature Flags"],
+    tags: ['Feature Flags'],
   }),
   requireAuthentication,
-  requireAuthorization("feature-flags:read"),
+  requireAuthorization('feature-flags:read'),
   async (c) => {
     try {
       const flags = await db
@@ -62,12 +62,12 @@ export const listFeatureFlags = featureFlagFactory.createHandlers(
         success: true,
       });
     } catch (error) {
-      logger.error("Error fetching feature flags:", { error });
+      logger.error('Error fetching feature flags:', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: "Failed to fetch feature flags",
+        message: 'Failed to fetch feature flags',
       });
     }
-  },
+  }
 );
 
 const featureFlagQuerySchema = z.object({
@@ -81,35 +81,35 @@ const GetResponseSchema = z.object({
 
 export const getFeatureFlag = featureFlagFactory.createHandlers(
   describeRoute({
-    description: "Get a feature flag by name.",
+    description: 'Get a feature flag by name.',
     parameters: [
       {
-        in: "path",
-        name: "name",
+        in: 'path',
+        name: 'name',
         required: true,
         schema: {
-          description: "The name of the feature flag to get.",
-          type: "string",
+          description: 'The name of the feature flag to get.',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(GetResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Feature Flags"],
+    tags: ['Feature Flags'],
   }),
   requireAuthentication,
-  requireAuthorization("feature-flags:read"),
-  zValidator("param", featureFlagQuerySchema),
+  requireAuthorization('feature-flags:read'),
+  zValidator('param', featureFlagQuerySchema),
   async (c) => {
-    const { name } = c.req.valid("param");
+    const { name } = c.req.valid('param');
     const [flag] = await db
       .select({
         createdAt: featureFlag.createdAt,
@@ -125,7 +125,7 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
 
     if (!flag) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: "Feature flag not found",
+        message: 'Feature flag not found',
       });
     }
 
@@ -133,7 +133,7 @@ export const getFeatureFlag = featureFlagFactory.createHandlers(
       data: flag,
       success: true,
     });
-  },
+  }
 );
 
 const featureFlagToggleBodySchema = z.object({
@@ -142,41 +142,41 @@ const featureFlagToggleBodySchema = z.object({
 
 export const toggleFeatureFlag = featureFlagFactory.createHandlers(
   describeRoute({
-    description: "Toggle a feature flag by name.",
+    description: 'Toggle a feature flag by name.',
     parameters: [
       {
-        in: "path",
-        name: "name",
+        in: 'path',
+        name: 'name',
         required: true,
         schema: {
-          description: "The name of the feature flag to toggle.",
-          type: "string",
+          description: 'The name of the feature flag to toggle.',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(GetResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Feature Flags"],
+    tags: ['Feature Flags'],
   }),
   requireAuthentication,
-  requireAuthorization("feature-flags:write"),
-  zValidator("json", featureFlagToggleBodySchema),
+  requireAuthorization('feature-flags:write'),
+  zValidator('json', featureFlagToggleBodySchema),
   async (c) => {
-    const name = c.req.param("name");
+    const name = c.req.param('name');
     if (!name) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Feature flag name is required",
+        message: 'Feature flag name is required',
       });
     }
-    const { isEnabled } = c.req.valid("json");
+    const { isEnabled } = c.req.valid('json');
     const [existing] = await db
       .select({ id: featureFlag.id })
       .from(featureFlag)
@@ -185,7 +185,7 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
 
     if (!existing) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: "Feature flag not found",
+        message: 'Feature flag not found',
       });
     }
 
@@ -204,7 +204,7 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
 
     if (!updated) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: "Failed to update feature flag",
+        message: 'Failed to update feature flag',
       });
     }
 
@@ -216,5 +216,5 @@ export const toggleFeatureFlag = featureFlagFactory.createHandlers(
       data: updated,
       success: true,
     });
-  },
+  }
 );

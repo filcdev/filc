@@ -1,3 +1,4 @@
+import { createSelectSchema } from 'drizzle-zod';
 import { describeRoute, resolver } from 'hono-openapi';
 import { z } from 'zod';
 import { db } from '~/database';
@@ -12,7 +13,6 @@ import { env } from '~/utils/environment';
 import type { SuccessResponse } from '~/utils/globals';
 import { requireAuthentication } from '~/utils/middleware';
 import { ensureJsonSafeDates } from '~/utils/zod';
-import { createSelectSchema } from 'drizzle-zod';
 
 const schemaEntries = [
   ...Object.entries(timetableSchema),

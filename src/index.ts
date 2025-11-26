@@ -144,7 +144,6 @@ api.get(
         { description: 'Local Server', url: 'http://localhost:3000/api' },
       ],
     },
-    
   })
 );
 
