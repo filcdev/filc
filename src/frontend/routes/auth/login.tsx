@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import type React from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaCircleCheck, FaEnvelope, FaShield } from 'react-icons/fa6';
+import { FaMicrosoft, FaShield } from 'react-icons/fa6';
 import { Alert, AlertDescription } from '~/frontend/components/ui/alert';
 import { Button } from '~/frontend/components/ui/button';
 import {
@@ -12,8 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from '~/frontend/components/ui/card';
-import { EmailInput } from '~/frontend/components/ui/email-input';
-import { Label } from '~/frontend/components/ui/label';
 import { authClient } from '~/frontend/utils/authentication';
 
 export const Route = createFileRoute('/auth/login')({
@@ -21,16 +19,13 @@ export const Route = createFileRoute('/auth/login')({
 });
 
 function RouteComponent() {
-  const [username, setUsername] = useState('');
-  const [fullEmail, setFullEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isEmailSent, setIsEmailSent] = useState(false);
   const [error, setError] = useState('');
   const { t } = useTranslation();
 
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
+  const handleMicrosoftSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullEmail) {
+    if (isLoading) {
       return;
     }
 
@@ -38,71 +33,21 @@ function RouteComponent() {
     setError('');
 
     try {
-      const result = await authClient.signIn.magicLink({
-        callbackURL: new URL('/', window.location.origin).href,
-        email: fullEmail,
+      await authClient.signIn.social({
+        callbackURL: new URL('/auth/welcome', window.location.origin).href,
         errorCallbackURL: new URL(
-          '/auth/error?from=magic-link',
+          '/auth/error?from=microsoft-oauth',
           window.location.origin
         ).href,
         newUserCallbackURL: new URL('/auth/welcome', window.location.origin)
           .href,
+        provider: 'microsoft',
       });
-
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-
-      setIsEmailSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('magicLink.failed'));
-    } finally {
+      setError(err instanceof Error ? err.message : t('microsoft.signInError'));
       setIsLoading(false);
     }
   };
-
-  if (isEmailSent) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md space-y-6">
-          <div className="space-y-4 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <FaEnvelope className="h-8 w-8 text-primary" />
-            </div>
-            <div className="space-y-2">
-              <h1 className="font-bold text-2xl text-foreground">
-                {t('magicLink.checkYourEmail')}
-              </h1>
-              <p className="text-balance text-muted-foreground">
-                {t('magicLink.emailSentTo', { email: fullEmail })}
-              </p>
-            </div>
-          </div>
-
-          <Alert className="border-primary/20 bg-primary/5">
-            <FaCircleCheck className="h-4 w-4 text-primary" />
-            <AlertDescription className="text-sm">
-              {t('magicLink.clickTheLink')}
-            </AlertDescription>
-          </Alert>
-
-          <div className="text-center">
-            <Button
-              className="text-sm"
-              onClick={() => {
-                setIsEmailSent(false);
-                setUsername('');
-                setFullEmail('');
-              }}
-              variant="outline"
-            >
-              {t('magicLink.sendToAnotherEmail')}
-            </Button>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -113,10 +58,10 @@ function RouteComponent() {
           </div>
           <div className="space-y-2">
             <h1 className="font-bold text-3xl text-foreground">
-              {t('magicLink.welcomeBack')}
+              {t('microsoft.signInTitle')}
             </h1>
             <p className="text-balance text-muted-foreground">
-              {t('magicLink.signInSubtitle')}
+              {t('microsoft.signInSubtitle')}
             </p>
           </div>
         </div>
@@ -124,34 +69,12 @@ function RouteComponent() {
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl">
-              {t('magicLink.signInWithMagicLink')}
+              {t('microsoft.cardTitle')}
             </CardTitle>
-            <CardDescription>
-              {t('magicLink.signInWithMagicLinkDescription')}
-            </CardDescription>
+            <CardDescription>{t('microsoft.cardSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleMagicLinkSubmit}>
-              <div className="space-y-2">
-                <Label className="font-medium text-sm" htmlFor="email">
-                  {t('magicLink.emailAddress')}
-                </Label>
-                <EmailInput
-                  className="h-11"
-                  domain="petrik.hu"
-                  id="email"
-                  onChange={setUsername}
-                  onFullEmailChange={setFullEmail}
-                  placeholder="your.name"
-                  value={username}
-                />
-                {fullEmail && (
-                  <p className="text-muted-foreground text-xs">
-                    {t('magicLink.willSendTo', { email: fullEmail })}
-                  </p>
-                )}
-              </div>
-
+            <form className="space-y-4" onSubmit={handleMicrosoftSignIn}>
               {error && (
                 <Alert className="text-sm" variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
@@ -160,12 +83,17 @@ function RouteComponent() {
 
               <Button
                 className="h-11 w-full font-medium"
-                disabled={!fullEmail || isLoading}
+                disabled={isLoading}
                 type="submit"
               >
-                {isLoading
-                  ? t('magicLink.sending')
-                  : t('magicLink.sendMagicLink')}
+                {isLoading ? (
+                  t('common.loading')
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <FaMicrosoft className="h-4 w-4" />
+                    {t('microsoft.signInButton')}
+                  </span>
+                )}
               </Button>
             </form>
           </CardContent>
@@ -173,7 +101,7 @@ function RouteComponent() {
 
         <div className="text-center text-muted-foreground text-xs">
           <p>
-            {t('magicLink.byContinuing')}{' '}
+            {t('login.byContinuing')}{' '}
             <a
               className="underline transition-colors hover:text-foreground"
               href="/legal/tos"
