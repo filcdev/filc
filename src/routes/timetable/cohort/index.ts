@@ -19,7 +19,7 @@ const GetForTimetableResponseSchema = z.object({
   success: z.boolean(),
 });
 
-export const GetCohortsForTimetable = timetableFactory.createHandlers(
+export const getCohortsForTimetable = timetableFactory.createHandlers(
   describeRoute({
     description: "Get cohorts for a given timetable from the database.",
     parameters: [
