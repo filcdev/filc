@@ -2,7 +2,6 @@
 // import type { TimetableExportRoot } from "~/utils/timetable/types";
 
 import { getLogger } from "@logtape/logtape";
-import { createSelectSchema } from "drizzle-zod";
 import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { StatusCodes } from "http-status-codes";
