@@ -3,7 +3,7 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
-      "src/**/*",
+      "**/*",
       "!src/database/migrations/**/*",
       "!src/frontend/route-tree.gen.ts"
     ]
@@ -498,7 +498,7 @@
       "trailingCommas": "none"
     },
     "parser": {
-      "allowComments": false,
+      "allowComments": true,
       "allowTrailingCommas": false
     }
   },

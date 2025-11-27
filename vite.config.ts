@@ -1,72 +1,70 @@
-import { defineConfig, type BuildOptions } from 'vite'
-import viteReact from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import devServer, { defaultOptions } from "@hono/vite-dev-server"
-import { bunAdapter } from '@hono/vite-dev-server/bun'
-import { tanstackRouter } from '@tanstack/router-plugin/vite'
-import { resolve } from 'node:path'
+import { resolve } from 'node:path';
+import devServer, { defaultOptions } from '@hono/vite-dev-server';
+import { bunAdapter } from '@hono/vite-dev-server/bun';
+import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import viteReact from '@vitejs/plugin-react';
+import { type BuildOptions, defineConfig } from 'vite';
+
+const SRC_REGEXP = /^\/src\/.+/;
 
 const ssrBuild = {
-  outDir: 'dist/server',
-  ssrEmitAssets: true,
   copyPublicDir: false,
   emptyOutDir: false,
+  outDir: 'dist/server',
   rollupOptions: {
     input: resolve(__dirname, 'src/index.ts'),
     output: {
-      entryFileNames: 'index.js',
-      chunkFileNames: 'assets/[name]-[hash].js',
       assetFileNames: 'assets/[name]-[hash][extname]',
+      chunkFileNames: 'assets/[name]-[hash].js',
+      entryFileNames: 'index.js',
     },
   },
   ssr: true,
-} satisfies BuildOptions
+  ssrEmitAssets: true,
+} satisfies BuildOptions;
 
 const clientBuild = {
-  outDir: 'dist/client',
-  emitAssets: true,
   copyPublicDir: true,
+  emitAssets: true,
   emptyOutDir: true,
+  manifest: true,
+  outDir: 'dist/client',
   rollupOptions: {
     input: resolve(__dirname, 'src/frontend/client.tsx'),
     output: {
-      entryFileNames: 'static/[name].js',
-      chunkFileNames: 'static/assets/[name]-[hash].js',
       assetFileNames: 'static/assets/[name]-[hash][extname]',
+      chunkFileNames: 'static/assets/[name]-[hash].js',
+      entryFileNames: 'static/[name].js',
     },
-
   },
-  manifest: true,
-} satisfies BuildOptions
+} satisfies BuildOptions;
 
 export default defineConfig(({ mode, command }) => {
   const isBuild = command === 'build';
   const isClient = mode === 'client';
   return {
-    esbuild: isBuild && isClient ? { drop: ['console', 'debugger'] } : undefined,
+    build: mode === 'client' ? clientBuild : ssrBuild,
+    esbuild:
+      isBuild && isClient ? { drop: ['console', 'debugger'] } : undefined,
+    optimizeDeps: {
+      include: ['react', 'react-dom', '@tanstack/react-router'],
+    },
     plugins: [
       tanstackRouter({
         autoCodeSplitting: true,
-        routesDirectory: 'src/frontend/routes',
         generatedRouteTree: 'src/frontend/route-tree.gen.ts',
+        routesDirectory: 'src/frontend/routes',
       }),
       viteReact(),
       tailwindcss(),
       devServer({
-        entry: 'src/index.ts',
-        injectClientScript: false,
         adapter: bunAdapter(),
-        exclude: [
-          /^\/src\/.+/,
-          ...defaultOptions.exclude
-        ],
+        entry: 'src/index.ts',
+        exclude: [SRC_REGEXP, ...defaultOptions.exclude],
+        injectClientScript: false,
       }),
     ],
-    build: mode === "client" ? clientBuild : ssrBuild,
-    test: {
-      globals: true,
-      environment: 'jsdom',
-    },
     resolve: {
       alias: {
         '~': resolve(__dirname, './src'),
@@ -75,8 +73,9 @@ export default defineConfig(({ mode, command }) => {
     server: {
       port: Number(Bun.env.CHRONOS_PORT) || 3000,
     },
-    optimizeDeps: {
-      include: ['react', 'react-dom', '@tanstack/react-router']
-    }
-  }
-})
+    test: {
+      environment: 'jsdom',
+      globals: true,
+    },
+  };
+});

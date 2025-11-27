@@ -1,33 +1,30 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/marcosgomesneto/bun-devcontainers/tree/main/src/bun-postgresql
 {
-	"name": "Bun & PostgreSQL",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	"features": {},
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// This can be used to network with other containers or with the host.
-	// "forwardPorts": [8080, 5432],
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "bun install",
-	// Use 'postStartCommand' to run commands after the container is started.
-	"postStartCommand": "bun dev",
-	// Configure tool-specific properties.
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"biomejs.biome",
-				"Lokalise.i18n-ally"
-			],
-			"settings": {
-				"editor.defaultFormatter": "biomejs.biome"
-			}
-		}
-	},
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
-	// Automatically update the remote user's UID to match your local UID (useful for file sharing)
-	"updateRemoteUserUID": true
+  "name": "Bun & PostgreSQL",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {},
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // This can be used to network with other containers or with the host.
+  // "forwardPorts": [8080, 5432],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "bun install",
+  // Use 'postStartCommand' to run commands after the container is started.
+  "postStartCommand": "bun dev",
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": ["biomejs.biome", "Lokalise.i18n-ally"],
+      "settings": {
+        "editor.defaultFormatter": "biomejs.biome"
+      }
+    }
+  },
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
+  // Automatically update the remote user's UID to match your local UID (useful for file sharing)
+  "updateRemoteUserUID": true
 }
