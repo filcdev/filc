@@ -1,7 +1,10 @@
 import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
 import { db } from '~/database';
 import {
   classroom,
@@ -17,6 +20,7 @@ import {
   requireAuthentication,
   requireAuthorization,
 } from '~/utils/middleware';
+import { ensureJsonSafeDates } from '~/utils/zod';
 import { timetableFactory } from '../_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
@@ -158,44 +162,97 @@ const validateMovedLessonReferences = async (options: {
   }
 };
 
-export const getAllMovedLessons = timetableFactory.createHandlers(async (c) => {
-  try {
-    const movedLessons = await db
-      .select({
-        classroom,
-        dayDefinition,
-        lessons: sql<string[]>`COALESCE(
+const getAllResponseSchema = z.object({
+  data: ensureJsonSafeDates(createSelectSchema(movedLesson)),
+  success: z.boolean(),
+});
+
+export const getAllMovedLessons = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get all moved lessons.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
+  async (c) => {
+    try {
+      const movedLessons = await db
+        .select({
+          classroom,
+          dayDefinition,
+          lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
           )`.as('lessons'),
-        movedLesson,
-        period,
-      })
-      .from(movedLesson)
-      .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-      .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
-      .leftJoin(classroom, eq(movedLesson.room, classroom.id))
-      .leftJoin(
-        movedLessonLessonMTM,
-        eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
-      )
-      .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
+          movedLesson,
+          period,
+        })
+        .from(movedLesson)
+        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
+        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+        .leftJoin(classroom, eq(movedLesson.room, classroom.id))
+        .leftJoin(
+          movedLessonLessonMTM,
+          eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+        )
+        .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return c.json<SuccessResponse>({
-      data: movedLessons,
-      success: true,
-    });
-  } catch (error) {
-    logger.error('Error while fetching all moved lessons', { error });
-    throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-      message: 'Failed to fetch all moved lessons',
-    });
+      return c.json<SuccessResponse>({
+        data: movedLessons,
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Error while fetching all moved lessons', { error });
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to fetch all moved lessons',
+      });
+    }
   }
-});
+);
 
 export const getRelevantMovedLessons = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get relevant moved lessons for a given timetable.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'timetableId',
+        required: true,
+        schema: {
+          description:
+            'The unique identifier for the timetable to get the relevant moved lessons from.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
   async (c) => {
     try {
+      const timetableId = c.req.param('timetableId');
+
+      if (!timetableId) {
+        throw new Error('timetableId resolved to undefined.');
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayStr = today.toISOString().slice(0, 10);
@@ -219,7 +276,13 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
           movedLessonLessonMTM,
           eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
         )
-        .where(gte(movedLesson.date, todayStr))
+        .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+        .where(
+          and(
+            gte(movedLesson.date, todayStr),
+            eq(lesson.timetableId, timetableId)
+          )
+        )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
       return c.json<SuccessResponse>({
@@ -236,6 +299,32 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
 );
 
 export const getMovedLessonsForCohort = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get all moved lessons for a cohort.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'cohortId',
+        required: true,
+        schema: {
+          description:
+            'The unique identifier for the cohort to get the moved lessons for.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
   async (c) => {
     try {
       const cohortId = c.req.param('cohortId');
@@ -284,6 +373,32 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
 );
 
 export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get all relevant moved lessons for a given cohort.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'cohortId',
+        required: true,
+        schema: {
+          description:
+            'The unique identifier for the cohort to get the relevant moved lessons for.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
   async (c) => {
     try {
       const cohortId = c.req.param('cohortId');
@@ -342,7 +457,40 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
+const createSchema = (
+  await resolver(
+    ensureJsonSafeDates(createInsertSchema(movedLesson))
+  ).toOpenAPISchema()
+).schema;
+
+const createResponseSchema = z.object({
+  data: createSelectSchema(movedLesson),
+  success: z.boolean(),
+});
+
 export const createMovedLesson = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Create a moved lesson.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: createSchema,
+        },
+      },
+      description: 'The data for the moved lesson.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
   requireAuthentication,
   requireAuthorization('movedLesson:create'),
   async (c) => {
@@ -404,7 +552,54 @@ export const createMovedLesson = timetableFactory.createHandlers(
   }
 );
 
+const updateSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        date: z.date(),
+        lessonIds: z.string().array(),
+        room: z.string(),
+        startingDay: z.string().uuid(),
+        startingPeriod: z.string().uuid(),
+      })
+    )
+  ).toOpenAPISchema()
+).schema;
+
 export const updateMovedLesson = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Update a moved lesson.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the moved lesson to update.',
+          type: 'string',
+        },
+      },
+    ],
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: updateSchema,
+        },
+      },
+      description: 'The data for updating the moved lesson.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
   requireAuthentication,
   requireAuthorization('movedLesson:update'),
   async (c) => {
@@ -473,6 +668,31 @@ export const updateMovedLesson = timetableFactory.createHandlers(
 );
 
 export const deleteMovedLesson = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Delete a moved lesson',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the moved lesson to delete.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
   requireAuthentication,
   requireAuthorization('movedLesson:delete'),
   async (c) => {

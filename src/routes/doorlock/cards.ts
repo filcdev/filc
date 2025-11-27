@@ -1,6 +1,8 @@
 import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { db } from '~/database';
@@ -12,6 +14,7 @@ import {
   requireAuthentication,
   requireAuthorization,
 } from '~/utils/middleware';
+import { ensureJsonSafeDates } from '~/utils/zod';
 import { doorlockFactory } from './_factory';
 
 const createCardSchema = z.object({
@@ -29,7 +32,27 @@ const updateCardSchema = z.object({
   userId: z.uuid().optional(),
 });
 
+const getAllResponseSchema = z.object({
+  data: ensureJsonSafeDates(createSelectSchema(card)).array(),
+  success: z.boolean(),
+});
+
 export const listCards = doorlockFactory.createHandlers(
+  describeRoute({
+    description:
+      "Get all cards if the user has permission to read all of them, otherwise only get the user's cards.",
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   async (c) => {
     const currentUserId = c.var.session.userId;
@@ -44,7 +67,38 @@ export const listCards = doorlockFactory.createHandlers(
   }
 );
 
+const getResponseSchema = z.object({
+  data: ensureJsonSafeDates(createSelectSchema(card)),
+  success: z.boolean(),
+});
+
 export const getCard = doorlockFactory.createHandlers(
+  describeRoute({
+    description: 'Get card via id.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description:
+            'The unique identifier for the card to get from the database.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   async (c) => {
     const id = c.req.param('id');
@@ -73,7 +127,43 @@ export const getCard = doorlockFactory.createHandlers(
   }
 );
 
+const createSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        disabled: z.boolean().nullable(),
+        frozen: z.boolean().nullable(),
+        label: z.string().nullable(),
+        tag: z.string(),
+        userId: z.string(),
+      })
+    )
+  ).toOpenAPISchema()
+).schema;
+
 export const createCard = doorlockFactory.createHandlers(
+  describeRoute({
+    description: 'Create a card.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: createSchema,
+        },
+      },
+      description: 'The data for the new card.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   requireAuthorization('card:create'),
   zValidator('json', createCardSchema),
@@ -103,7 +193,53 @@ export const createCard = doorlockFactory.createHandlers(
   }
 );
 
+const UpdateSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        disabled: z.boolean().nullable(),
+        frozen: z.boolean().nullable(),
+        label: z.string().nullable(),
+        userId: z.string().nullable(),
+      })
+    )
+  ).toOpenAPISchema()
+).schema;
+
 export const updateCard = doorlockFactory.createHandlers(
+  describeRoute({
+    description: "Update a card via it's ID.",
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the card to update.',
+          type: 'string',
+        },
+      },
+    ],
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: UpdateSchema,
+        },
+      },
+      description: 'The data for the updated card.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   zValidator('json', updateCardSchema),
   async (c) => {
@@ -170,6 +306,31 @@ export const updateCard = doorlockFactory.createHandlers(
 );
 
 export const deleteCard = doorlockFactory.createHandlers(
+  describeRoute({
+    description: 'Delete a card.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the card to delete.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   async (c) => {
     const id = c.req.param('id');

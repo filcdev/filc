@@ -1,9 +1,11 @@
+import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
 import { getConnInfo } from 'hono/bun';
 import { cors } from 'hono/cors';
 import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
+import { openAPIRouteHandler } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '~/database';
 import { frontend } from '~/frontend/server';
@@ -128,6 +130,24 @@ api.route('/cohort', cohortRouter);
 // Register feature flag for doorlock API with initial check
 await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false);
 api.route('/doorlock', doorlockRouter);
+
+api.get(
+  '/doc/openapi.json',
+  openAPIRouteHandler(api, {
+    documentation: {
+      info: {
+        description: 'API for consumption by the Filc app family.',
+        title: 'Chronos backend API',
+        version: '0.0.1',
+      },
+      servers: [
+        { description: 'Local Server', url: 'http://localhost:3000/api' },
+      ],
+    },
+  })
+);
+
+api.get('/doc/swagger', swaggerUI({ url: '/api/doc/openapi.json' }));
 
 const app = new Hono();
 app.route('/api', api);

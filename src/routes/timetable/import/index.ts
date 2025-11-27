@@ -3,9 +3,11 @@
 
 import { getLogger } from '@logtape/logtape';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { decode, encode } from 'iconv-lite';
 import { DOMParser } from 'xmldom';
+import z from 'zod';
 import { timetableFactory } from '~/routes/timetable/_factory';
 import { env } from '~/utils/environment';
 import type { SuccessResponse } from '~/utils/globals';
@@ -14,10 +16,49 @@ import {
   requireAuthorization,
 } from '~/utils/middleware';
 import { importTimetableXML } from '~/utils/timetable/imports';
+import { ensureJsonSafeDates } from '~/utils/zod';
 
 const logger = getLogger(['chronos', 'timetable']);
 
+const importResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+const importSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        name: z.string(),
+        omanXml: z.file(),
+        validFrom: z.date(),
+      })
+    )
+  ).toOpenAPISchema()
+).schema;
+
 export const importRoute = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Import a timetable from an Oman XML file.',
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          schema: importSchema,
+        },
+      },
+      description: 'The data for the new timetable.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(importResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Timetable', 'Import'],
+  }),
   requireAuthentication,
   requireAuthorization('import:timetable'),
   async (c) => {

@@ -1,6 +1,9 @@
 import { eq, inArray } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
 import { db } from '~/database';
 import {
   classroom,
@@ -13,9 +16,40 @@ import {
   teacher,
 } from '~/database/schema/timetable';
 import type { SuccessResponse } from '~/utils/globals';
+import { ensureJsonSafeDates } from '~/utils/zod';
 import { timetableFactory } from '../_factory';
 
+const getForCohortResponseSchema = z.object({
+  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
+  success: z.boolean(),
+});
+
 export const getLessonsForCohort = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get lessons for a given cohort from the database.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'cohort_id',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the cohort.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getForCohortResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Lesson'],
+  }),
   async (c) => {
     const cohortId = c.req.param('cohort_id');
     if (!cohortId) {
