@@ -2,7 +2,6 @@ import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession } from 'better-auth/plugins';
-import type { SocialProviders } from 'better-auth/social-providers';
 import { Hono } from 'hono';
 import { db } from '~/database';
 import { authenticationSchema } from '~/database/schema/authentication';

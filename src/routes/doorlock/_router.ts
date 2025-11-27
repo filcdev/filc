@@ -1,7 +1,7 @@
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import { doorlockFactory } from '~/routes/doorlock/_factory';
-import { isFeatureEnabled } from '~/utils/feature-flag';
+import { handleFeatureFlag, isFeatureEnabled } from '~/utils/feature-flag';
 import {
   createCard,
   deleteCard,
@@ -26,6 +26,8 @@ import {
   listUnknownTags,
 } from './logs';
 import { openDoor } from './open';
+
+await handleFeatureFlag('doorlock:api', 'Enable doorlock API', false);
 
 export const doorlockRouter = doorlockFactory
   .createApp()

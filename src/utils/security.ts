@@ -1,4 +1,6 @@
+import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
+import { env } from '~/utils/environment';
 
 export const securityMiddleware = secureHeaders({
   contentSecurityPolicy: {
@@ -25,4 +27,10 @@ export const securityMiddleware = secureHeaders({
     upgradeInsecureRequests: [],
     workerSrc: ["'self'"],
   },
+});
+
+export const corsMiddleware = cors({
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: env.mode === 'development' ? '*' : env.baseUrl,
 });
