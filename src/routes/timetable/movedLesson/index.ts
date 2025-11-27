@@ -300,7 +300,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
 
 export const getMovedLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
-    description: 'Get all moved lessions for a cohort.',
+    description: 'Get all moved lessons for a cohort.',
     parameters: [
       {
         in: 'path',
@@ -308,7 +308,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         required: true,
         schema: {
           description:
-            'The unique identifier for the cohort to get the moved lessions for.',
+            'The unique identifier for the cohort to get the moved lessons for.',
           type: 'string',
         },
       },

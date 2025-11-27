@@ -21,7 +21,7 @@ const getAllResponseSchema = z.object({
   success: z.literal(true),
 });
 
-const getLastestValidReponseSchema = z.object({
+const getLatestValidReponseSchema = z.object({
   data: timetableSelectSchema,
   success: z.literal(true),
 });
@@ -73,7 +73,7 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getLastestValidReponseSchema)),
+            schema: resolver(ensureJsonSafeDates(getLatestValidReponseSchema)),
           },
         },
         description: 'Successful Response',
