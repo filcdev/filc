@@ -1,6 +1,8 @@
 import { zValidator } from '@hono/zod-validator';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { z } from 'zod';
 import { db } from '~/database';
@@ -11,6 +13,7 @@ import {
   requireAuthentication,
   requireAuthorization,
 } from '~/utils/middleware';
+import { ensureJsonSafeDates } from '~/utils/zod';
 import { doorlockFactory } from './_factory';
 
 const listLogsSchema = z.object({
@@ -20,14 +23,91 @@ const listLogsSchema = z.object({
   result: z.enum(['granted', 'denied']).optional(),
 });
 
-const addUnknownCardSchema = z.object({
+const addUnknownCardSchemaJSON = z.object({
   label: z.string().optional(),
   tag: z.string().min(1),
   userId: z.uuid(),
 });
 
+const listLogsResponseSchema = z.object({
+  data: z.array(
+    ensureJsonSafeDates(
+      z.object({
+        cardId: z.string().uuid().nullable(),
+        cardLabel: z.string().nullable(),
+        deviceId: z.string().uuid(),
+        deviceName: z.string().nullable(),
+        id: z.string().uuid(),
+        reason: z.string().nullable(),
+        result: z.string(),
+        tag: z.string(),
+        timestamp: z.date(),
+        userId: z.string().uuid().nullable(),
+        userName: z.string().nullable(),
+      })
+    )
+  ),
+  success: z.boolean(),
+});
+
 // List access logs with filters
 export const listLogs = doorlockFactory.createHandlers(
+  describeRoute({
+    description:
+      'Get access logs with optional filtering by device and result.',
+    parameters: [
+      {
+        in: 'query',
+        name: 'deviceId',
+        required: false,
+        schema: {
+          description: 'Filter logs by device ID.',
+          format: 'uuid',
+          type: 'string',
+        },
+      },
+      {
+        in: 'query',
+        name: 'result',
+        required: false,
+        schema: {
+          description: 'Filter logs by access result.',
+          type: 'string',
+        },
+      },
+      {
+        in: 'query',
+        name: 'limit',
+        required: false,
+        schema: {
+          default: 50,
+          description: 'Maximum number of logs to return.',
+          type: 'integer',
+        },
+      },
+      {
+        in: 'query',
+        name: 'offset',
+        required: false,
+        schema: {
+          default: 0,
+          description: 'Number of logs to skip.',
+          type: 'integer',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(listLogsResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   requireAuthorization('doorlock:logs:read'),
   zValidator('query', listLogsSchema),
@@ -72,8 +152,53 @@ export const listLogs = doorlockFactory.createHandlers(
   }
 );
 
+const getLogResponseSchema = z.object({
+  data: ensureJsonSafeDates(
+    z.object({
+      cardId: z.string().uuid().nullable(),
+      cardLabel: z.string().nullable(),
+      deviceId: z.string().uuid(),
+      deviceName: z.string().nullable(),
+      id: z.string().uuid(),
+      reason: z.string().nullable(),
+      result: z.string(),
+      tag: z.string(),
+      timestamp: z.date(),
+      userId: z.string().uuid().nullable(),
+      userName: z.string().nullable(),
+    })
+  ),
+  success: z.boolean(),
+});
+
 // Get a single log entry
 export const getLog = doorlockFactory.createHandlers(
+  describeRoute({
+    description: 'Get a specific access log entry by ID.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the log entry.',
+          format: 'uuid',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(getLogResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   requireAuthorization('doorlock:logs:read'),
   async (c) => {
@@ -118,8 +243,38 @@ export const getLog = doorlockFactory.createHandlers(
   }
 );
 
+const listUnknownTagsResponseSchema = z.object({
+  data: z.array(
+    ensureJsonSafeDates(
+      z.object({
+        accessCount: z.number(),
+        deviceId: z.string().uuid(),
+        deviceName: z.string().nullable(),
+        lastSeen: z.date(),
+        tag: z.string(),
+      })
+    )
+  ),
+  success: z.boolean(),
+});
+
 // List unknown tags (logs where cardId is null)
 export const listUnknownTags = doorlockFactory.createHandlers(
+  describeRoute({
+    description:
+      'Get a list of unknown tags that have attempted access but are not associated with any card.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(listUnknownTagsResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   requireAuthorization('doorlock:logs:read'),
   async (c) => {
@@ -145,11 +300,51 @@ export const listUnknownTags = doorlockFactory.createHandlers(
   }
 );
 
+const addUnknownCardSchema = (
+  await resolver(
+    ensureJsonSafeDates(
+      z.object({
+        label: z.string().nullable(),
+        tag: z.string(),
+        userId: z.string(),
+      })
+    )
+  ).toOpenAPISchema()
+).schema;
+
+const addUnknownCardResponseSchema = z.object({
+  data: ensureJsonSafeDates(createSelectSchema(card)),
+  success: z.boolean(),
+});
+
 // Add an unknown tag as a new card
 export const addUnknownCard = doorlockFactory.createHandlers(
+  describeRoute({
+    description:
+      'Create a new card from an unknown tag that has attempted access.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: addUnknownCardSchema,
+        },
+      },
+      description: 'The data for the new card to create from an unknown tag.',
+    },
+    responses: {
+      201: {
+        content: {
+          'application/json': {
+            schema: resolver(addUnknownCardResponseSchema),
+          },
+        },
+        description: 'Card successfully created',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   requireAuthorization('card:create'),
-  zValidator('json', addUnknownCardSchema),
+  zValidator('json', addUnknownCardSchemaJSON),
   async (c) => {
     const { tag, userId, label } = c.req.valid('json');
 
@@ -193,8 +388,85 @@ export const addUnknownCard = doorlockFactory.createHandlers(
   }
 );
 
+const getDeviceLogsResponseSchema = z.object({
+  data: z.array(
+    ensureJsonSafeDates(
+      z.object({
+        cardId: z.string().uuid().nullable(),
+        cardLabel: z.string().nullable(),
+        deviceId: z.string().uuid(),
+        deviceName: z.string().nullable(),
+        id: z.string().uuid(),
+        reason: z.string().nullable(),
+        result: z.string(),
+        tag: z.string(),
+        timestamp: z.date(),
+        userId: z.string().uuid().nullable(),
+        userName: z.string().nullable(),
+      })
+    )
+  ),
+  success: z.boolean(),
+});
+
 // Get logs for a specific device
 export const getDeviceLogs = doorlockFactory.createHandlers(
+  describeRoute({
+    description:
+      'Get access logs for a specific device with optional filtering by result.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'deviceId',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the device.',
+          format: 'uuid',
+          type: 'string',
+        },
+      },
+      {
+        in: 'query',
+        name: 'result',
+        required: false,
+        schema: {
+          description: 'Filter logs by access result.',
+          type: 'string',
+        },
+      },
+      {
+        in: 'query',
+        name: 'limit',
+        required: false,
+        schema: {
+          default: 50,
+          description: 'Maximum number of logs to return.',
+          type: 'integer',
+        },
+      },
+      {
+        in: 'query',
+        name: 'offset',
+        required: false,
+        schema: {
+          default: 0,
+          description: 'Number of logs to skip.',
+          type: 'integer',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(getDeviceLogsResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   requireAuthentication,
   requireAuthorization('doorlock:logs:read'),
   zValidator('query', listLogsSchema.omit({ deviceId: true })),

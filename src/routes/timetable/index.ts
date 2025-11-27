@@ -1,16 +1,46 @@
 import { getLogger } from '@logtape/logtape';
 import { desc, gte } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
 import { db } from '~/database';
 import { timetable } from '~/database/schema/timetable';
 import type { SuccessResponse } from '~/utils/globals';
 import { requireAuthentication } from '~/utils/middleware';
+import { ensureJsonSafeDates } from '~/utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'timetable']);
 
+const timetableSelectSchema = createSelectSchema(timetable);
+
+const getAllResponseSchema = z.object({
+  data: z.array(timetableSelectSchema),
+  success: z.literal(true),
+});
+
+const getLatestValidReponseSchema = z.object({
+  data: timetableSelectSchema,
+  success: z.literal(true),
+});
+
 export const getAllTimetables = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get all timetables from the database.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Timetable'],
+  }),
   requireAuthentication,
   async (c) => {
     try {
@@ -37,6 +67,20 @@ const dateToYYYYMMDD = (date: Date): string =>
   });
 
 export const getLatestValidTimetable = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get the latest valid timetable.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getLatestValidReponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Timetable'],
+  }),
   requireAuthentication,
   async (c) => {
     const today = dateToYYYYMMDD(new Date());
@@ -69,6 +113,20 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
 );
 
 export const getAllValidTimetables = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get all the latest valid timetables.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Timetable'],
+  }),
   requireAuthentication,
   async (c) => {
     try {
