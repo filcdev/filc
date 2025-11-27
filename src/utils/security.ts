@@ -20,9 +20,10 @@ export const securityMiddleware = secureHeaders({
     sandbox: ['allow-same-origin', 'allow-scripts'],
     scriptSrc: ["'self'"],
     scriptSrcAttr: ["'none'"],
-    scriptSrcElem: ["'self'"],
+    // let swagger UI load its styles
+    scriptSrcElem: ["'self' ", 'https:', "'unsafe-inline'"],
     styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
-    styleSrcAttr: ['none'],
+    styleSrcAttr: ["'none'"],
     styleSrcElem: ["'self'", 'https:', "'unsafe-inline'"],
     upgradeInsecureRequests: [],
     workerSrc: ["'self'"],

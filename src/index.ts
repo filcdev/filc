@@ -1,14 +1,15 @@
+import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
 import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
+import { openAPIRouteHandler } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '~/database';
 import { frontend } from '~/frontend/server';
 import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
 import { developmentRouter } from '~/routes/_dev/_router';
 import { cohortRouter } from '~/routes/cohort/_router';
-import { docRouter } from '~/routes/doc/_router';
 import { doorlockRouter } from '~/routes/doorlock/_router';
 import { featureFlagRouter } from '~/routes/feature-flags/_router';
 import { pingRouter } from '~/routes/ping/_router';
@@ -35,15 +36,9 @@ export const api = new Hono<Context>();
 await prepareDb();
 await initializeRBAC();
 
-api.use('*', corsMiddleware);
-api.use('*', authenticationMiddleware);
-api.use('*', securityMiddleware);
-api.use('*', timingMiddleware);
-
 if (env.mode === 'development') {
   api.route('/_dev', developmentRouter);
 }
-api.route('/doc', docRouter);
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/feature-flags', featureFlagRouter);
@@ -52,6 +47,11 @@ api.route('/cohort', cohortRouter);
 api.route('/doorlock', doorlockRouter);
 
 api.onError((err, c) => {
+  logger.error('UNCAUGHT API error occurred:', {
+    message: err.message,
+    stack: err.stack,
+  });
+
   if (err instanceof HTTPException) {
     const errResponse =
       err.res ??
@@ -78,6 +78,28 @@ api.onError((err, c) => {
     StatusCodes.INTERNAL_SERVER_ERROR
   );
 });
+
+api.use('*', corsMiddleware);
+api.use('*', authenticationMiddleware);
+api.use('*', securityMiddleware);
+api.use('*', timingMiddleware);
+
+api.get(
+  '/doc/openapi.json',
+  openAPIRouteHandler(api, {
+    documentation: {
+      info: {
+        description: 'API for consumption by the Filc app family.',
+        title: 'Chronos backend API',
+        version: '0.0.1',
+      },
+      servers: [
+        { description: 'Local Server', url: 'http://localhost:3000/api' },
+      ],
+    },
+  })
+);
+api.get('/doc/swagger', swaggerUI({ url: '/api/doc/openapi.json' }));
 
 const app = new Hono();
 app.route('/api', api);
