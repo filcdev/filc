@@ -1,8 +1,8 @@
-import { describeRoute, resolver } from "hono-openapi";
-import z from "zod";
-import { pingFactory } from "~/routes/ping/_factory";
-import type { SuccessResponse } from "~/utils/globals";
-import { ensureJsonSafeDates } from "~/utils/zod";
+import { describeRoute, resolver } from 'hono-openapi';
+import z from 'zod';
+import { pingFactory } from '~/routes/ping/_factory';
+import type { SuccessResponse } from '~/utils/globals';
+import { ensureJsonSafeDates } from '~/utils/zod';
 
 const pingResponseSchema = z.object({
   data: z.object({
@@ -17,18 +17,18 @@ export const ping = pingFactory.createHandlers(
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(pingResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Ping"],
+    tags: ['Ping'],
   }),
   (c) =>
     c.json<SuccessResponse>({
-      data: { message: "pong" },
+      data: { message: 'pong' },
       success: true,
-    }),
+    })
 );

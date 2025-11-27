@@ -1,20 +1,20 @@
-import { zValidator } from "@hono/zod-validator";
-import { eq } from "drizzle-orm";
-import { createSelectSchema } from "drizzle-zod";
-import { HTTPException } from "hono/http-exception";
-import { describeRoute, resolver } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
-import { z } from "zod";
-import { db } from "~/database";
-import { cardDevice, device } from "~/database/schema/doorlock";
-import { env } from "~/utils/environment";
-import type { SuccessResponse } from "~/utils/globals";
+import { zValidator } from '@hono/zod-validator';
+import { eq } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
+import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
+import { StatusCodes } from 'http-status-codes';
+import { z } from 'zod';
+import { db } from '~/database';
+import { cardDevice, device } from '~/database/schema/doorlock';
+import { env } from '~/utils/environment';
+import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
   requireAuthorization,
-} from "~/utils/middleware";
-import { ensureJsonSafeDates } from "~/utils/zod";
-import { doorlockFactory } from "./_factory";
+} from '~/utils/middleware';
+import { ensureJsonSafeDates } from '~/utils/zod';
+import { doorlockFactory } from './_factory';
 
 // Schemas
 const MAX_TTL_SECONDS = 3600;
@@ -38,18 +38,18 @@ const listDevicesResponseSchema = z.object({
 
 export const listDevices = doorlockFactory.createHandlers(
   describeRoute({
-    description: "Get all doorlock devices.",
+    description: 'Get all doorlock devices.',
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(listDevicesResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
   async (c) => {
@@ -58,7 +58,7 @@ export const listDevices = doorlockFactory.createHandlers(
       data: rows,
       success: true,
     });
-  },
+  }
 );
 
 const getDeviceResponseSchema = z.object({
@@ -68,37 +68,37 @@ const getDeviceResponseSchema = z.object({
 
 export const getDevice = doorlockFactory.createHandlers(
   describeRoute({
-    description: "Get a specific device by ID.",
+    description: 'Get a specific device by ID.',
     parameters: [
       {
-        in: "path",
-        name: "id",
+        in: 'path',
+        name: 'id',
         required: true,
         schema: {
-          description: "The unique identifier for the device.",
-          format: "uuid",
-          type: "string",
+          description: 'The unique identifier for the device.',
+          format: 'uuid',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(getDeviceResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
   async (c) => {
-    const id = c.req.param("id");
+    const id = c.req.param('id');
     if (!id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing id",
+        message: 'Missing id',
       });
     }
     const [row] = await db
@@ -107,13 +107,13 @@ export const getDevice = doorlockFactory.createHandlers(
       .where(eq(device.id, id))
       .limit(1);
     if (!row) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, { message: "Not found" });
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
     return c.json<SuccessResponse<typeof row>>({
       data: row,
       success: true,
     });
-  },
+  }
 );
 
 const upsertDeviceSchema = (
@@ -123,8 +123,8 @@ const upsertDeviceSchema = (
         location: z.string().nullable(),
         name: z.string(),
         ttlSeconds: z.number().nullable(),
-      }),
-    ),
+      })
+    )
   ).toOpenAPISchema()
 ).schema;
 
@@ -136,50 +136,50 @@ const upsertDeviceResponseSchema = z.object({
 // Create / overwrite device
 export const upsertDevice = doorlockFactory.createHandlers(
   describeRoute({
-    description: "Create or update a device by ID.",
+    description: 'Create or update a device by ID.',
     parameters: [
       {
-        in: "path",
-        name: "id",
+        in: 'path',
+        name: 'id',
         required: true,
         schema: {
-          description: "The unique identifier for the device.",
-          format: "uuid",
-          type: "string",
+          description: 'The unique identifier for the device.',
+          format: 'uuid',
+          type: 'string',
         },
       },
     ],
     requestBody: {
       content: {
-        "application/json": {
+        'application/json': {
           schema: upsertDeviceSchema,
         },
       },
-      description: "The data for the device to create or update.",
+      description: 'The data for the device to create or update.',
     },
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(upsertDeviceResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
-  requireAuthorization("device:upsert"),
-  zValidator("json", upsertDeviceSchemaJSON),
+  requireAuthorization('device:upsert'),
+  zValidator('json', upsertDeviceSchemaJSON),
   async (c) => {
-    const id = c.req.param("id");
+    const id = c.req.param('id');
     if (!id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing id",
+        message: 'Missing id',
       });
     }
-    const data = c.req.valid("json");
+    const data = c.req.valid('json');
     const now = new Date();
     try {
       const [existing] = await db
@@ -218,15 +218,15 @@ export const upsertDevice = doorlockFactory.createHandlers(
           data: inserted,
           success: true,
         },
-        StatusCodes.CREATED,
+        StatusCodes.CREATED
       );
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause: env.mode === "development" ? String(err) : undefined,
-        message: "Failed to upsert device",
+        cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to upsert device',
       });
     }
-  },
+  }
 );
 
 const deleteDeviceResponseSchema = z.object({
@@ -237,38 +237,38 @@ const deleteDeviceResponseSchema = z.object({
 // Delete device
 export const deleteDevice = doorlockFactory.createHandlers(
   describeRoute({
-    description: "Delete a device by ID.",
+    description: 'Delete a device by ID.',
     parameters: [
       {
-        in: "path",
-        name: "id",
+        in: 'path',
+        name: 'id',
         required: true,
         schema: {
-          description: "The unique identifier for the device to delete.",
-          format: "uuid",
-          type: "string",
+          description: 'The unique identifier for the device to delete.',
+          format: 'uuid',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(deleteDeviceResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
-  requireAuthorization("device:delete"),
+  requireAuthorization('device:delete'),
   async (c) => {
-    const id = c.req.param("id");
+    const id = c.req.param('id');
     if (!id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing id",
+        message: 'Missing id',
       });
     }
     try {
@@ -278,7 +278,7 @@ export const deleteDevice = doorlockFactory.createHandlers(
         .returning();
       if (!deleted) {
         throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: "Not found",
+          message: 'Not found',
         });
       }
       return c.json<SuccessResponse>({
@@ -287,11 +287,11 @@ export const deleteDevice = doorlockFactory.createHandlers(
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause: env.mode === "development" ? String(err) : undefined,
-        message: "Failed to delete device",
+        cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to delete device',
       });
     }
-  },
+  }
 );
 
 const listDeviceCardsResponseSchema = z.object({
@@ -300,8 +300,8 @@ const listDeviceCardsResponseSchema = z.object({
       z.object({
         cardId: z.string().uuid(),
         deviceId: z.string().uuid(),
-      }),
-    ),
+      })
+    )
   ),
   success: z.boolean(),
 });
@@ -309,37 +309,37 @@ const listDeviceCardsResponseSchema = z.object({
 // List cards restrictions for a device
 export const listDeviceCards = doorlockFactory.createHandlers(
   describeRoute({
-    description: "Get all cards associated with a specific device.",
+    description: 'Get all cards associated with a specific device.',
     parameters: [
       {
-        in: "path",
-        name: "id",
+        in: 'path',
+        name: 'id',
         required: true,
         schema: {
-          description: "The unique identifier for the device.",
-          format: "uuid",
-          type: "string",
+          description: 'The unique identifier for the device.',
+          format: 'uuid',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(listDeviceCardsResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
   async (c) => {
-    const id = c.req.param("id");
+    const id = c.req.param('id');
     if (!id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing id",
+        message: 'Missing id',
       });
     }
     const rows = await db
@@ -353,7 +353,7 @@ export const listDeviceCards = doorlockFactory.createHandlers(
       data: rows,
       success: true,
     });
-  },
+  }
 );
 
 const assignCardsSchema = (
@@ -361,8 +361,8 @@ const assignCardsSchema = (
     ensureJsonSafeDates(
       z.object({
         cardIds: z.array(z.string()),
-      }),
-    ),
+      })
+    )
   ).toOpenAPISchema()
 ).schema;
 
@@ -371,7 +371,7 @@ const replaceDeviceCardsResponseSchema = z.object({
     z.object({
       assignedCardIds: z.array(z.string().uuid()),
       deviceId: z.string().uuid(),
-    }),
+    })
   ),
   success: z.boolean(),
 });
@@ -380,50 +380,50 @@ const replaceDeviceCardsResponseSchema = z.object({
 export const replaceDeviceCards = doorlockFactory.createHandlers(
   describeRoute({
     description:
-      "Replace all cards assigned to a device with a new set of cards.",
+      'Replace all cards assigned to a device with a new set of cards.',
     parameters: [
       {
-        in: "path",
-        name: "id",
+        in: 'path',
+        name: 'id',
         required: true,
         schema: {
-          description: "The unique identifier for the device.",
-          format: "uuid",
-          type: "string",
+          description: 'The unique identifier for the device.',
+          format: 'uuid',
+          type: 'string',
         },
       },
     ],
     requestBody: {
       content: {
-        "application/json": {
+        'application/json': {
           schema: assignCardsSchema,
         },
       },
-      description: "The list of card IDs to assign to the device.",
+      description: 'The list of card IDs to assign to the device.',
     },
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(replaceDeviceCardsResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
-  requireAuthorization("device:assign_cards"),
-  zValidator("json", assignCardsSchemaJSON),
+  requireAuthorization('device:assign_cards'),
+  zValidator('json', assignCardsSchemaJSON),
   async (c) => {
-    const id = c.req.param("id");
+    const id = c.req.param('id');
     if (!id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing id",
+        message: 'Missing id',
       });
     }
-    const data = c.req.valid("json");
+    const data = c.req.valid('json');
     try {
       await db.delete(cardDevice).where(eq(cardDevice.deviceId, id));
       if (data.cardIds.length) {
@@ -437,11 +437,11 @@ export const replaceDeviceCards = doorlockFactory.createHandlers(
       });
     } catch (err) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause: env.mode === "development" ? String(err) : undefined,
-        message: "Failed to assign cards",
+        cause: env.mode === 'development' ? String(err) : undefined,
+        message: 'Failed to assign cards',
       });
     }
-  },
+  }
 );
 
 const getDeviceStatusResponseSchema = z.object({
@@ -451,7 +451,7 @@ const getDeviceStatusResponseSchema = z.object({
       lastSeenAt: z.date().nullable(),
       online: z.boolean(),
       ttlSeconds: z.number().int().nullable(),
-    }),
+    })
   ),
   success: z.boolean(),
 });
@@ -460,37 +460,37 @@ const getDeviceStatusResponseSchema = z.object({
 export const getDeviceStatus = doorlockFactory.createHandlers(
   describeRoute({
     description:
-      "Get the online status of a device based on its last seen timestamp and TTL.",
+      'Get the online status of a device based on its last seen timestamp and TTL.',
     parameters: [
       {
-        in: "path",
-        name: "id",
+        in: 'path',
+        name: 'id',
         required: true,
         schema: {
-          description: "The unique identifier for the device.",
-          format: "uuid",
-          type: "string",
+          description: 'The unique identifier for the device.',
+          format: 'uuid',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(getDeviceStatusResponseSchema),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Doorlock"],
+    tags: ['Doorlock'],
   }),
   requireAuthentication,
   async (c) => {
-    const id = c.req.param("id");
+    const id = c.req.param('id');
     if (!id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing id",
+        message: 'Missing id',
       });
     }
     const [row] = await db
@@ -499,7 +499,7 @@ export const getDeviceStatus = doorlockFactory.createHandlers(
       .where(eq(device.id, id))
       .limit(1);
     if (!row) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, { message: "Not found" });
+      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
     }
     const now = Date.now();
     const last = row.lastSeenAt ? new Date(row.lastSeenAt).getTime() : 0;
@@ -514,5 +514,5 @@ export const getDeviceStatus = doorlockFactory.createHandlers(
       },
       success: true,
     });
-  },
+  }
 );
