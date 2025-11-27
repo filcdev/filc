@@ -12,25 +12,6 @@ import type { Context } from '~/utils/globals';
 
 const logger = getLogger(['chronos', 'auth']);
 
-export const getOauth = (): SocialProviders => {
-  if (!(env.entraClientId && env.entraClientSecret && env.entraTenantId)) {
-    logger.warn(
-      'Disabling Entra OAuth provider because of missing environment variables.'
-    );
-    return {};
-  }
-
-  return {
-    microsoft: {
-      clientId: env.entraClientId,
-      clientSecret: env.entraClientSecret,
-      enabled: true,
-      prompt: 'select_account',
-      tenantId: env.entraTenantId,
-    },
-  };
-};
-
 const authOptions = {
   account: {
     accountLinking: {
@@ -74,7 +55,15 @@ const authOptions = {
   },
   plugins: [],
   secret: env.authSecret,
-  socialProviders: getOauth(),
+  socialProviders: {
+    microsoft: {
+      clientId: env.entraClientId,
+      clientSecret: env.entraClientSecret,
+      enabled: true,
+      prompt: 'select_account',
+      tenantId: env.entraTenantId,
+    },
+  },
   telemetry: {
     enabled: false,
   },
