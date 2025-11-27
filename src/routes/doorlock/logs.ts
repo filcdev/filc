@@ -23,7 +23,7 @@ const listLogsSchema = z.object({
   result: z.enum(["granted", "denied"]).optional(),
 });
 
-const addUnknownCardSchema = z.object({
+const addUnknownCardSchemaJSON = z.object({
   label: z.string().optional(),
   tag: z.string().min(1),
   userId: z.uuid(),
@@ -344,7 +344,7 @@ export const addUnknownCard = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization("card:create"),
-  zValidator("json", addUnknownCardSchema),
+  zValidator("json", addUnknownCardSchemaJSON),
   async (c) => {
     const { tag, userId, label } = c.req.valid("json");
 
