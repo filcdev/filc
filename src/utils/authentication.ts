@@ -59,7 +59,7 @@ const authOptions = {
       clientId: env.entraClientId,
       clientSecret: env.entraClientSecret,
       enabled: true,
-      prompt: 'select_account',
+      prompt: 'consent',
       tenantId: env.entraTenantId,
     },
   },
