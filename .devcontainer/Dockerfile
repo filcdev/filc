@@ -7,6 +7,8 @@ RUN ln -s /usr/local/bin/bun /usr/local/bin/node
 
 # Update packages
 RUN apk update
-RUN apk add git
+
+# Add some useful packages
+RUN apk add git bash curl
 
 USER bun
