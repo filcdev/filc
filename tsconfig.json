@@ -20,10 +20,9 @@
     "noEmit": true,
 
     // tsgo will fail with this set
-    "baseUrl": "./",
+    // "baseUrl": "./",
     "paths": {
-      // "*": ["./*"],
-      "~/*": ["src/*"]
+      "~/*": ["./src/*"]
     }
   }
 }
