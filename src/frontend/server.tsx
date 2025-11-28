@@ -3,20 +3,18 @@ import {
   RouterServer,
   renderRouterToStream,
 } from '@tanstack/react-router/ssr/server';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import { compress } from 'hono/compress';
-import { createRouter } from '~/frontend/router';
-import { env } from '~/utils/environment';
-// TODO: remove when bun supports CompressionStream
-import '@ungap/compression-stream/poly';
-import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
 import { languageDetector } from 'hono/language';
 import i18next from 'i18next';
 import Backend from 'i18next-http-backend';
 import { Cookies, CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
+import { createRouter } from '~/frontend/router';
+import { env } from '~/utils/environment';
 
 dayjs.extend(duration);
 
