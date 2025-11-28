@@ -162,6 +162,15 @@
     "importInfoPoint3": "Existing data will be preserved and matched with new data where possible",
     "importInfoPoint4": "The import process may take a few moments depending on the size of the file"
   },
+  "auth": {
+    "error": {
+      "returnToHome": "Return to home",
+      "title": "Something went wrong",
+      "unauthorized": "You do not have permission to view the requested page.",
+      "consent_required": "User consent is required to proceed with authentication.",
+      "genericMessage": "An error occurred during authentication."
+    }
+  },
   "cookiePopup": {
     "title": "We use cookies",
     "description": "By using this site, you agree to our usage of cookie to enhance your experience."

@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_public')({
 function AppLayoutComponent() {
   return (
     <>
-      <Navbar />
+      <Navbar showLogo={true} />
       <Outlet />
     </>
   );

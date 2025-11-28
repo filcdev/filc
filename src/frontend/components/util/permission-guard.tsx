@@ -15,13 +15,13 @@ export function PermissionGuard({
 
   const user = data?.user;
   if (!user) {
-    return <Navigate to="/auth/error" />;
+    return <Navigate to="/auth/login" />;
   }
 
   if (
     !(user.permissions.includes(permission) || user.permissions.includes('*'))
   ) {
-    return <Navigate to="/auth/error" />;
+    return <Navigate search={{ error: 'unauthorized' }} to="/auth/error" />;
   }
 
   return <>{children}</>;

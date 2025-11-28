@@ -162,6 +162,15 @@
     "saving": "Mentés...",
     "accept": "Rendben"
   },
+  "auth": {
+    "error": {
+      "returnToHome": "Vissza a kezdőlapra",
+      "title": "Hiba történt",
+      "unauthorized": "Nincs jogosultságod a kért oldal megtekintéséhez.",
+      "consent_required": "A felhasználói hozzájárulás szükséges a hitelesítés folytatásához.",
+      "genericMessage": "Hiba történt a hitelesítés során."
+    }
+  },
   "cookiePopup": {
     "description": "Mi is sütiket használunk az oldalunkon, hogy jobb élményt adhassunk neked.",
     "title": "Kérsz egy sütit?"

@@ -35,10 +35,7 @@ function RouteComponent() {
     try {
       await authClient.signIn.social({
         callbackURL: new URL('/auth/welcome', window.location.origin).href,
-        errorCallbackURL: new URL(
-          '/auth/error?from=microsoft-oauth',
-          window.location.origin
-        ).href,
+        errorCallbackURL: new URL('/auth/error', window.location.origin).href,
         newUserCallbackURL: new URL('/auth/welcome', window.location.origin)
           .href,
         provider: 'microsoft',
