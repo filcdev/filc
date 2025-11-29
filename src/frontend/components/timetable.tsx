@@ -22,6 +22,7 @@ import {
 import {
   Tooltip,
   TooltipContent,
+  TooltipPositioner,
   TooltipProvider,
   TooltipTrigger,
 } from '~/frontend/components/ui/tooltip';
@@ -95,7 +96,7 @@ const getTimeSlotsFromData = (data: TimetableData): string[] => {
 const ClassTooltip = ({ session }: { session: ClassSession }) => (
   <TooltipProvider>
     <Tooltip>
-      <TooltipTrigger asChild>
+      <TooltipTrigger>
         <div
           className="h-full w-full cursor-pointer rounded-md border p-1 transition-all hover:scale-[1.02] hover:shadow-lg"
           style={{
@@ -115,32 +116,34 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
           </div>
         </div>
       </TooltipTrigger>
-      <TooltipContent className="max-w-xs" side="top">
-        <div className="space-y-2">
-          <div className="font-semibold text-sm">{session.subject}</div>
-          <div className="space-y-1 text-xs">
-            <div className="flex items-center gap-2">
-              <FaClock className="h-3 w-3" />
-              <span>
-                {session.startTime} - {session.endTime}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaUser className="h-3 w-3" />
-              <span>{session.teacher}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaLocationDot className="h-3 w-3" />
-              <span>{session.room}</span>
-            </div>
-            {session.description && (
-              <div className="border-border border-t pt-1">
-                <p className="text-muted-foreground">{session.description}</p>
+      <TooltipPositioner side="top">
+        <TooltipContent className="max-w-xs">
+          <div className="space-y-2">
+            <div className="font-semibold text-sm">{session.subject}</div>
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center gap-2">
+                <FaClock className="h-3 w-3" />
+                <span>
+                  {session.startTime} - {session.endTime}
+                </span>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <FaUser className="h-3 w-3" />
+                <span>{session.teacher}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaLocationDot className="h-3 w-3" />
+                <span>{session.room}</span>
+              </div>
+              {session.description && (
+                <div className="border-border border-t pt-1">
+                  <p className="text-muted-foreground">{session.description}</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </TooltipContent>
+        </TooltipContent>
+      </TooltipPositioner>
     </Tooltip>
   </TooltipProvider>
 );

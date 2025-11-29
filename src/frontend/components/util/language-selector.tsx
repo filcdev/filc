@@ -5,8 +5,10 @@ import { Button } from '~/frontend/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPositioner,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/frontend/components/ui/dropdown-menu';
@@ -35,30 +37,36 @@ export function LanguageSelector() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className="text-muted-foreground hover:text-foreground"
-          size="sm"
-          variant="ghost"
-        >
-          <FaGlobe className="mr-1 h-4 w-4" />
-          {current?.toUpperCase()}
-          <FaChevronDown className="ml-1 h-3 w-3" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-32">
-        <DropdownMenuLabel>{t('selectLanguage')}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {LANGUAGES.map((lang) => (
-          <DropdownMenuItem
-            className={current === lang.code ? 'bg-accent' : ''}
-            key={lang.code}
-            onClick={() => handleChange(lang.code)}
+      <DropdownMenuTrigger
+        render={
+          <Button
+            className="text-muted-foreground hover:text-foreground"
+            size="sm"
+            variant="ghost"
           >
-            {lang.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
+            <FaGlobe className="mr-1 h-4 w-4" />
+            {current?.toUpperCase()}
+            <FaChevronDown className="ml-1 h-3 w-3" />
+          </Button>
+        }
+      />
+      <DropdownMenuPositioner>
+        <DropdownMenuContent className="w-32">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>{t('selectLanguage')}</DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          {LANGUAGES.map((lang) => (
+            <DropdownMenuItem
+              className={current === lang.code ? 'bg-accent' : ''}
+              key={lang.code}
+              onClick={() => handleChange(lang.code)}
+            >
+              {lang.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenuPositioner>
     </DropdownMenu>
   );
 }

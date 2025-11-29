@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import type React from 'react';
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaMicrosoft, FaShield } from 'react-icons/fa6';
 import { Alert, AlertDescription } from '~/frontend/components/ui/alert';
@@ -23,7 +22,7 @@ function RouteComponent() {
   const [error, setError] = useState('');
   const { t } = useTranslation();
 
-  const handleMicrosoftSignIn = async (e: React.FormEvent) => {
+  const handleMicrosoftSignIn = async (e: FormEvent) => {
     e.preventDefault();
     if (isLoading) {
       return;

@@ -17,5 +17,8 @@
     "lib": "~/frontend/utils",
     "hooks": "~/frontend/hooks"
   },
-  "iconLibrary": "react-icons"
+  "iconLibrary": "react-icons",
+  "registries": {
+    "@basecn": "https://basecn.dev/r/{name}.json"
+  }
 }

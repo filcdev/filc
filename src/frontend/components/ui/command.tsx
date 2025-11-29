@@ -1,5 +1,6 @@
 import { Command as CommandPrimitive } from 'cmdk';
-import { FaMagnifyingGlass } from 'react-icons/fa6';
+import type { ComponentProps, ReactNode } from 'react';
+import { FaMagnifyingGlass as SearchIcon } from 'react-icons/fa6';
 import {
   Dialog,
   DialogContent,
@@ -7,12 +8,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/frontend/components/ui/dialog';
-import { cn } from '~/frontend/utils';
+import { cn } from '~/frontend/utils/index';
 
 function Command({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive>) {
+}: ComponentProps<typeof CommandPrimitive>) {
   return (
     <CommandPrimitive
       className={cn(
@@ -32,11 +33,12 @@ function CommandDialog({
   className,
   showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
+}: ComponentProps<typeof Dialog> & {
   title?: string;
   description?: string;
   className?: string;
   showCloseButton?: boolean;
+  children: ReactNode;
 }) {
   return (
     <Dialog {...props}>
@@ -59,13 +61,13 @@ function CommandDialog({
 function CommandInput({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: ComponentProps<typeof CommandPrimitive.Input>) {
   return (
     <div
       className="flex h-9 items-center gap-2 border-b px-3"
       data-slot="command-input-wrapper"
     >
-      <FaMagnifyingGlass className="size-4 shrink-0 opacity-50" />
+      <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         className={cn(
           'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
@@ -81,7 +83,7 @@ function CommandInput({
 function CommandList({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.List>) {
+}: ComponentProps<typeof CommandPrimitive.List>) {
   return (
     <CommandPrimitive.List
       className={cn(
@@ -96,7 +98,7 @@ function CommandList({
 
 function CommandEmpty({
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+}: ComponentProps<typeof CommandPrimitive.Empty>) {
   return (
     <CommandPrimitive.Empty
       className="py-6 text-center text-sm"
@@ -109,7 +111,7 @@ function CommandEmpty({
 function CommandGroup({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Group>) {
+}: ComponentProps<typeof CommandPrimitive.Group>) {
   return (
     <CommandPrimitive.Group
       className={cn(
@@ -125,7 +127,7 @@ function CommandGroup({
 function CommandSeparator({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Separator>) {
+}: ComponentProps<typeof CommandPrimitive.Separator>) {
   return (
     <CommandPrimitive.Separator
       className={cn('-mx-1 h-px bg-border', className)}
@@ -138,7 +140,7 @@ function CommandSeparator({
 function CommandItem({
   className,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Item>) {
+}: ComponentProps<typeof CommandPrimitive.Item>) {
   return (
     <CommandPrimitive.Item
       className={cn(
@@ -151,10 +153,7 @@ function CommandItem({
   );
 }
 
-function CommandShortcut({
-  className,
-  ...props
-}: React.ComponentProps<'span'>) {
+function CommandShortcut({ className, ...props }: ComponentProps<'span'>) {
   return (
     <span
       className={cn(

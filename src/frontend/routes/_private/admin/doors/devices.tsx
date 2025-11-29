@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPen, FaPlus, FaSpinner, FaTrash } from 'react-icons/fa6';
 import { toast } from 'sonner';
@@ -372,7 +372,7 @@ function DeviceFormDialog({
     ttlSeconds: device?.ttlSeconds || DEFAULT_TTL_SECONDS,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
   };

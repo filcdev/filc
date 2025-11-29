@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaCheck,
@@ -28,6 +28,7 @@ import {
 import {
   Popover,
   PopoverContent,
+  PopoverPositioner,
   PopoverTrigger,
 } from '~/frontend/components/ui/popover';
 import { Skeleton } from '~/frontend/components/ui/skeleton';
@@ -86,7 +87,7 @@ function RouteComponent() {
 }
 
 const InfoLine = (props: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   content: string;
 }) => (
@@ -140,52 +141,57 @@ const CohortSelector = (props: { user: UserType }) => {
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          aria-expanded={open}
-          className="w-full justify-between"
-          disabled={updating}
-          role="combobox"
-          variant="outline"
-        >
-          {selectedCohortId
-            ? cohortQuery.data.find((cohort) => cohort.id === selectedCohortId)
-                ?.name
-            : t('cohort.selectPlaceholder')}
-          <FaChevronDown className="opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
-        <Command>
-          <CommandInput
-            className="h-9"
+      <PopoverTrigger
+        render={
+          <Button
+            aria-expanded={open}
+            className="w-full justify-between"
             disabled={updating}
-            placeholder={t('search')}
-          />
-          <CommandList>
-            <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
-            <CommandGroup>
-              {cohortQuery.data.map((cohort) => (
-                <CommandItem
-                  key={cohort.id}
-                  onSelect={updateCohort}
-                  value={cohort.id}
-                >
-                  {cohort.name}
-                  <FaCheck
-                    className={cn(
-                      'ml-auto',
-                      selectedCohortId === cohort.id
-                        ? 'opacity-100'
-                        : 'opacity-0'
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
+            role="combobox"
+            variant="outline"
+          >
+            {selectedCohortId
+              ? cohortQuery.data.find(
+                  (cohort) => cohort.id === selectedCohortId
+                )?.name
+              : t('cohort.selectPlaceholder')}
+            <FaChevronDown className="opacity-50" />
+          </Button>
+        }
+      />
+      <PopoverPositioner>
+        <PopoverContent className="w-[200px] p-0">
+          <Command>
+            <CommandInput
+              className="h-9"
+              disabled={updating}
+              placeholder={t('search')}
+            />
+            <CommandList>
+              <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
+              <CommandGroup>
+                {cohortQuery.data.map((cohort) => (
+                  <CommandItem
+                    key={cohort.id}
+                    onSelect={updateCohort}
+                    value={cohort.id}
+                  >
+                    {cohort.name}
+                    <FaCheck
+                      className={cn(
+                        'ml-auto',
+                        selectedCohortId === cohort.id
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </PopoverPositioner>
     </Popover>
   );
 };

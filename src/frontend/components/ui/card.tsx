@@ -1,8 +1,7 @@
-import type * as React from 'react';
-
+import type { ComponentProps } from 'react';
 import { cn } from '~/frontend/utils';
 
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
+function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -15,7 +14,7 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function CardHeader({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -28,7 +27,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
+function CardTitle({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn('font-semibold leading-none', className)}
@@ -38,7 +37,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
+function CardDescription({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn('text-muted-foreground text-sm', className)}
@@ -48,7 +47,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
+function CardAction({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -61,7 +60,7 @@ function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
+function CardContent({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn('px-6', className)}
@@ -71,7 +70,7 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
+function CardFooter({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn('flex items-center px-6 [.border-t]:pt-6', className)}

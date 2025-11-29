@@ -28,6 +28,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectPositioner,
   SelectTrigger,
   SelectValue,
 } from '~/frontend/components/ui/select';
@@ -249,15 +250,22 @@ function RouteComponent() {
                 {t('doorlock.allAccessAttempts')}
               </CardDescription>
             </div>
-            <Select onValueChange={setResultFilter} value={resultFilter}>
+            <Select
+              onValueChange={(v, _) => setResultFilter(v ?? '')}
+              value={resultFilter}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder={t('doorlock.filterByResult')} />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('common.all')}</SelectItem>
-                <SelectItem value="granted">{t('doorlock.granted')}</SelectItem>
-                <SelectItem value="denied">{t('doorlock.denied')}</SelectItem>
-              </SelectContent>
+              <SelectPositioner>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="granted">
+                    {t('doorlock.granted')}
+                  </SelectItem>
+                  <SelectItem value="denied">{t('doorlock.denied')}</SelectItem>
+                </SelectContent>
+              </SelectPositioner>
             </Select>
           </div>
         </CardHeader>
@@ -346,17 +354,22 @@ function RouteComponent() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="userId">{t('doorlock.assignToUser')}</Label>
-              <Select onValueChange={setNewCardUserId} value={newCardUserId}>
+              <Select
+                onValueChange={(v, _) => setNewCardUserId(v ?? '')}
+                value={newCardUserId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={t('doorlock.selectUser')} />
                 </SelectTrigger>
-                <SelectContent>
-                  {usersData?.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectPositioner>
+                  <SelectContent>
+                    {usersData?.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name} ({user.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </SelectPositioner>
               </Select>
             </div>
             <div className="space-y-2">
