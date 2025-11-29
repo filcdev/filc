@@ -75,12 +75,12 @@ frontend.use('*', async (c) => {
     fallbackLng: 'hu',
     initImmediate: false,
     interpolation: { escapeValue: false },
+    lng: lang,
     ns: ['translation'],
     react: { useSuspense: false },
     supportedLngs: ['en', 'hu'],
   });
 
-  await i18n.changeLanguage(lang);
   await new Promise<void>((resolve, reject) =>
     i18n.loadNamespaces(['translation'], (err) =>
       err ? reject(err) : resolve()

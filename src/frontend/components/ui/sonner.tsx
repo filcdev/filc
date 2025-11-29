@@ -1,10 +1,8 @@
-import { useTheme } from 'next-themes';
 import type { CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme();
-
   return (
     <Sonner
       className="toaster group"
@@ -15,7 +13,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-text': 'var(--popover-foreground)',
         } as CSSProperties
       }
-      theme={theme as ToasterProps['theme']}
+      // TODO: add dark mode support when we implement it
+      theme="system"
       {...props}
     />
   );
