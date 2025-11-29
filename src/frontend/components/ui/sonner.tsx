@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
