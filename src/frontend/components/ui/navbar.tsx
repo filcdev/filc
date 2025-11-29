@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaBook,
@@ -18,8 +19,10 @@ import { Button } from '~/frontend/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPositioner,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/frontend/components/ui/dropdown-menu';
@@ -27,7 +30,7 @@ import { LanguageSelector } from '~/frontend/components/util/language-selector';
 import { authClient } from '~/frontend/utils/authentication';
 
 type NavbarProps = {
-  children?: React.ReactNode;
+  children?: ReactNode;
   showLinks?: boolean;
   showLogo?: boolean;
 };
@@ -91,55 +94,61 @@ export function Navbar({
             if (data?.user) {
               return (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      className="relative h-9 w-9 rounded-full"
-                      variant="ghost"
-                    >
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage
-                          alt="Profile"
-                          src={data.user.image ?? undefined}
-                        />
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {data.user.name
-                            ?.split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2) ||
-                            data.user.email?.slice(0, 2).toUpperCase() ||
-                            'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="font-medium text-sm leading-none">
-                          {data.user.name}
-                        </p>
-                        <p className="text-muted-foreground text-xs leading-none">
-                          {data.user.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <FaGear className="mr-2 h-4 w-4" />
-                      <span>{t('settings')}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={async () => {
-                        await authClient.signOut();
-                      }}
-                    >
-                      <FaRightFromBracket className="mr-2 h-4 w-4" />
-                      <span>{t('logout')}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        className="relative h-9 w-9 rounded-full"
+                        variant="ghost"
+                      >
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage
+                            alt="Profile"
+                            src={data.user.image ?? undefined}
+                          />
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {data.user.name
+                              ?.split(' ')
+                              .map((n) => n[0])
+                              .join('')
+                              .slice(0, 2) ||
+                              data.user.email?.slice(0, 2).toUpperCase() ||
+                              'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuPositioner>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="font-medium text-sm leading-none">
+                              {data.user.name}
+                            </p>
+                            <p className="text-muted-foreground text-xs leading-none">
+                              {data.user.email}
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <FaGear className="mr-2 h-4 w-4" />
+                        <span>{t('settings')}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={async () => {
+                          await authClient.signOut();
+                        }}
+                      >
+                        <FaRightFromBracket className="mr-2 h-4 w-4" />
+                        <span>{t('logout')}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenuPositioner>
                 </DropdownMenu>
               );
             }

@@ -5,6 +5,7 @@ import { Calendar } from '~/frontend/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
+  PopoverPositioner,
   PopoverTrigger,
 } from '~/frontend/components/ui/popover';
 import { cn } from '~/frontend/utils';
@@ -24,27 +25,31 @@ export function DatePicker({
 }: DatePickerProps) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            'w-full justify-start text-left font-normal',
-            !date && 'text-muted-foreground'
-          )}
-          disabled={disabled}
-          variant={'outline'}
-        >
-          <FaCalendar className="mr-2 h-4 w-4" />
-          {date ? format(date, 'PPP') : <span>{placeholder}</span>}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
-        <Calendar
-          initialFocus
-          mode="single"
-          onSelect={onDateChange}
-          selected={date}
-        />
-      </PopoverContent>
+      <PopoverTrigger
+        render={
+          <Button
+            className={cn(
+              'w-full justify-start text-left font-normal',
+              !date && 'text-muted-foreground'
+            )}
+            disabled={disabled}
+            variant={'outline'}
+          >
+            <FaCalendar className="mr-2 h-4 w-4" />
+            {date ? format(date, 'PPP') : <span>{placeholder}</span>}
+          </Button>
+        }
+      />
+      <PopoverPositioner align="start">
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            autoFocus
+            mode="single"
+            onSelect={onDateChange}
+            selected={date}
+          />
+        </PopoverContent>
+      </PopoverPositioner>
     </Popover>
   );
 }

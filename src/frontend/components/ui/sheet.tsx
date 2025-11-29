@@ -1,42 +1,29 @@
-import {
-  Close,
-  Content,
-  Description,
-  Overlay,
-  Portal,
-  Root,
-  Title,
-  Trigger,
-} from '@radix-ui/react-dialog';
-import type * as React from 'react';
-import { FaXmark } from 'react-icons/fa6';
+import { Dialog as SheetPrimitive } from '@base-ui-components/react/dialog';
+import type { ComponentProps } from 'react';
+import { FaXmark as XIcon } from 'react-icons/fa6';
+import { cn } from '~/frontend/utils/index';
 
-import { cn } from '~/frontend/utils';
-
-function Sheet({ ...props }: React.ComponentProps<typeof Root>) {
-  return <Root data-slot="sheet" {...props} />;
+function Sheet({ ...props }: SheetPrimitive.Root.Props) {
+  return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
 
-function SheetTrigger({ ...props }: React.ComponentProps<typeof Trigger>) {
-  return <Trigger data-slot="sheet-trigger" {...props} />;
+function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
 }
 
-function SheetClose({ ...props }: React.ComponentProps<typeof Close>) {
-  return <Close data-slot="sheet-close" {...props} />;
+function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
+  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
-function SheetPortal({ ...props }: React.ComponentProps<typeof Portal>) {
-  return <Portal data-slot="sheet-portal" {...props} />;
+function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
-function SheetOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof Overlay>) {
+function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
   return (
-    <Overlay
+    <SheetPrimitive.Backdrop
       className={cn(
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=open]:animate-in',
+        'data-[closed]:fade-out-0 data-[closed]:animation-duration-[300ms] data-[open]:fade-in-0 fixed inset-0 z-50 bg-black/50 data-[closed]:animate-out data-[open]:animate-in',
         className
       )}
       data-slot="sheet-overlay"
@@ -50,39 +37,39 @@ function SheetContent({
   children,
   side = 'right',
   ...props
-}: React.ComponentProps<typeof Content> & {
+}: SheetPrimitive.Popup.Props & {
   side?: 'top' | 'right' | 'bottom' | 'left';
 }) {
   return (
     <SheetPortal>
       <SheetOverlay />
-      <Content
+      <SheetPrimitive.Popup
         className={cn(
-          'fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:duration-300 data-[state=open]:duration-500',
+          'fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[closed]:animate-out data-[open]:animate-in data-[closed]:duration-300 data-[open]:duration-500',
           side === 'right' &&
-            'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
+            'data-[closed]:slide-out-to-right data-[open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
           side === 'left' &&
-            'data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm',
+            'data-[closed]:slide-out-to-left data-[open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm',
           side === 'top' &&
-            'data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b',
+            'data-[closed]:slide-out-to-top data-[open]:slide-in-from-top inset-x-0 top-0 h-auto border-b',
           side === 'bottom' &&
-            'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
+            'data-[closed]:slide-out-to-bottom data-[open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
           className
         )}
         data-slot="sheet-content"
         {...props}
       >
         {children}
-        <Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-          <FaXmark className="size-4" />
+        <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[open]:bg-secondary">
+          <XIcon className="size-4" />
           <span className="sr-only">Close</span>
-        </Close>
-      </Content>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Popup>
     </SheetPortal>
   );
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function SheetHeader({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn('flex flex-col gap-1.5 p-4', className)}
@@ -92,7 +79,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
+function SheetFooter({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn('mt-auto flex flex-col gap-2 p-4', className)}
@@ -102,12 +89,9 @@ function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function SheetTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof Title>) {
+function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   return (
-    <Title
+    <SheetPrimitive.Title
       className={cn('font-semibold text-foreground', className)}
       data-slot="sheet-title"
       {...props}
@@ -118,9 +102,9 @@ function SheetTitle({
 function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof Description>) {
+}: SheetPrimitive.Description.Props) {
   return (
-    <Description
+    <SheetPrimitive.Description
       className={cn('text-muted-foreground text-sm', className)}
       data-slot="sheet-description"
       {...props}

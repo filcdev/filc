@@ -133,12 +133,14 @@ export function AdminSidebar() {
               <SidebarMenu>
                 {category.items.map((item) => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                    <SidebarMenuButton
+                      render={
+                        <Link to={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      }
+                    />
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

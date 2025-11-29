@@ -36,6 +36,11 @@ export const api = new Hono<Context>();
 await prepareDb();
 await initializeRBAC();
 
+api.use('*', corsMiddleware);
+api.use('*', authenticationMiddleware);
+api.use('*', securityMiddleware);
+api.use('*', timingMiddleware);
+
 if (env.mode === 'development') {
   api.route('/_dev', developmentRouter);
 }
@@ -78,11 +83,6 @@ api.onError((err, c) => {
     StatusCodes.INTERNAL_SERVER_ERROR
   );
 });
-
-api.use('*', corsMiddleware);
-api.use('*', authenticationMiddleware);
-api.use('*', securityMiddleware);
-api.use('*', timingMiddleware);
 
 api.get(
   '/doc/openapi.json',

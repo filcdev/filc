@@ -1,53 +1,18 @@
+/** biome-ignore-all lint/correctness/noNestedComponentDefinitions: allows for much less complex typing here */
+
 import { type ComponentProps, useEffect, useRef } from 'react';
 import {
   type DayButton,
   DayPicker,
   getDefaultClassNames,
 } from 'react-day-picker';
-import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
+import {
+  FaChevronDown as ChevronDownIcon,
+  FaChevronLeft as ChevronLeftIcon,
+  FaChevronRight as ChevronRightIcon,
+} from 'react-icons/fa6';
 import { Button, buttonVariants } from '~/frontend/components/ui/button';
-import { cn } from '~/frontend/utils';
-
-function CalendarChevron({
-  className,
-  orientation,
-  ...props
-}: ComponentProps<'svg'> & { orientation?: 'left' | 'right' | 'up' | 'down' }) {
-  if (orientation === 'left') {
-    return <FaChevronLeft className={cn('size-4', className)} {...props} />;
-  }
-
-  if (orientation === 'right') {
-    return <FaChevronRight className={cn('size-4', className)} {...props} />;
-  }
-
-  return <FaChevronDown className={cn('size-4', className)} {...props} />;
-}
-
-function CalendarRoot({
-  className,
-  rootRef,
-  ...props
-}: ComponentProps<'div'> & { rootRef?: React.Ref<HTMLDivElement> }) {
-  return (
-    <div
-      className={cn(className)}
-      data-slot="calendar"
-      ref={rootRef}
-      {...props}
-    />
-  );
-}
-
-function CalendarWeekNumber({ children, ...props }: ComponentProps<'td'>) {
-  return (
-    <td {...props}>
-      <div className="flex size-(--cell-size) items-center justify-center text-center">
-        {children}
-      </div>
-    </td>
-  );
-}
+import { cn } from '~/frontend/utils/index';
 
 function Calendar({
   className,
@@ -67,7 +32,7 @@ function Calendar({
     <DayPicker
       captionLayout={captionLayout}
       className={cn(
-        'group/calendar bg-background in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent p-3 [--cell-size:--spacing(8)]',
+        'group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent',
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -91,10 +56,7 @@ function Calendar({
           defaultClassNames.caption_label
         ),
         day: cn(
-          'group/day relative aspect-square h-full w-full select-none p-0 text-center [&:last-child[data-selected=true]_button]:rounded-r-md',
-          props.showWeekNumber
-            ? '[&:nth-child(2)[data-selected=true]_button]:rounded-l-md'
-            : '[&:first-child[data-selected=true]_button]:rounded-l-md',
+          'group/day relative aspect-square h-full w-full select-none p-0 text-center [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md',
           defaultClassNames.day
         ),
         disabled: cn(
@@ -160,10 +122,28 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: CalendarChevron,
+        Chevron: ({ className: cne, orientation, ...p }) => {
+          if (orientation === 'left') {
+            return <ChevronLeftIcon className={cn('size-4', cne)} {...p} />;
+          }
+
+          if (orientation === 'right') {
+            return <ChevronRightIcon className={cn('size-4', cne)} {...p} />;
+          }
+
+          return <ChevronDownIcon className={cn('size-4', cne)} {...p} />;
+        },
         DayButton: CalendarDayButton,
-        Root: CalendarRoot,
-        WeekNumber: CalendarWeekNumber,
+        Root: ({ className: cne, rootRef, ...p }) => (
+          <div className={cn(cne)} data-slot="calendar" ref={rootRef} {...p} />
+        ),
+        WeekNumber: ({ children, ...p }) => (
+          <td {...p}>
+            <div className="flex size-(--cell-size) items-center justify-center text-center">
+              {children}
+            </div>
+          </td>
+        ),
         ...components,
       }}
       formatters={{
