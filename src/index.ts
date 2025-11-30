@@ -87,7 +87,7 @@ api.get(
         version: '0.0.1',
       },
       servers: [
-        env.mode === "development" ? { description: 'Local Server', url: 'http://localhost:3000/api' } : { description: 'chronos', url: 'https://dev.filc.space' },
+        env.mode === "development" ? { description: 'Local Server', url: 'http://localhost:3000/api' } : { description: 'chronos', url: 'https://dev.filc.space/api' },
       ],
     },
   })
