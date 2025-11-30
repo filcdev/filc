@@ -1,6 +1,6 @@
 {
   // Use tsgo for faster TypeScript type checking
-  "typescript.experimental.useTsgo": true,
+  // "typescript.experimental.useTsgo": true,
 
   // Linting / Style
   "editor.tabSize": 2,

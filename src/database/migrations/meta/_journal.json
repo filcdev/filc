@@ -113,6 +113,20 @@
       "when": 1764515107296,
       "tag": "0015_late_moondragon",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1764518660230,
+      "tag": "0016_red_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1764526888233,
+      "tag": "0017_slow_vision",
+      "breakpoints": true
     }
   ]
 }

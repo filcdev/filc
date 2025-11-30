@@ -1,6 +1,7 @@
 import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
+import { type BunWebSocketData, websocket } from 'hono/bun';
 import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
 import { openAPIRouteHandler } from 'hono-openapi';
@@ -8,6 +9,7 @@ import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '~/database';
 import { frontend } from '~/frontend/server';
 import { cohortRouter } from '~/routes/cohort/_router';
+import { doorlockRouter } from '~/routes/doorlock/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { timetableRouter } from '~/routes/timetable/_router';
 import { authRouter } from '~/utils/authentication';
@@ -40,6 +42,7 @@ api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
+api.route('/doorlock', doorlockRouter);
 
 api.onError((err, c) => {
   logger.error('UNCAUGHT API error occurred:', {
@@ -103,14 +106,17 @@ app.onError((err, c) => {
   return c.redirect('/error');
 });
 
+let server: Bun.Server<BunWebSocketData> | null = null;
+
 const handleStartup = async () => {
   await prepareDb();
   await initializeRBAC();
 
-  if (env.mode === 'production') {
-    Bun.serve({
+  if (env.mode !== 'development') {
+    server = Bun.serve({
       fetch: app.fetch,
       port: env.port,
+      websocket,
     });
   }
 
@@ -134,5 +140,7 @@ await handleStartup();
 
 export type ApiType = typeof api;
 export type AppType = typeof app;
+
+export { server };
 
 export default env.mode === 'development' ? app : null;
