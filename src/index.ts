@@ -143,4 +143,9 @@ export type AppType = typeof app;
 
 export { server };
 
-export default env.mode === 'development' ? app : null;
+export default env.mode === 'development'
+  ? {
+      fetch: app.fetch,
+      websocket,
+    }
+  : null;

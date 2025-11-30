@@ -17,6 +17,10 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
+import { Route as PrivateAdminIndexRouteImport } from './routes/_private/admin/index'
+import { Route as PrivateAdminLogsRouteImport } from './routes/_private/admin/logs'
+import { Route as PrivateAdminDevicesRouteImport } from './routes/_private/admin/devices'
+import { Route as PrivateAdminCardsRouteImport } from './routes/_private/admin/cards'
 import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
 
 const PublicRouteRoute = PublicRouteRouteImport.update({
@@ -57,6 +61,26 @@ const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
+const PrivateAdminIndexRoute = PrivateAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateAdminLogsRoute = PrivateAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateAdminDevicesRoute = PrivateAdminDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateAdminCardsRoute = PrivateAdminCardsRouteImport.update({
+  id: '/cards',
+  path: '/cards',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 const PrivateAdminTimetableImportRoute =
   PrivateAdminTimetableImportRouteImport.update({
     id: '/timetable/import',
@@ -71,15 +95,22 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/': typeof PublicIndexRoute
+  '/admin/cards': typeof PrivateAdminCardsRoute
+  '/admin/devices': typeof PrivateAdminDevicesRoute
+  '/admin/logs': typeof PrivateAdminLogsRoute
+  '/admin/': typeof PrivateAdminIndexRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
 }
 export interface FileRoutesByTo {
-  '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/': typeof PublicIndexRoute
+  '/admin/cards': typeof PrivateAdminCardsRoute
+  '/admin/devices': typeof PrivateAdminDevicesRoute
+  '/admin/logs': typeof PrivateAdminLogsRoute
+  '/admin': typeof PrivateAdminIndexRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
 }
 export interface FileRoutesById {
@@ -92,6 +123,10 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/_public/': typeof PublicIndexRoute
+  '/_private/admin/cards': typeof PrivateAdminCardsRoute
+  '/_private/admin/devices': typeof PrivateAdminDevicesRoute
+  '/_private/admin/logs': typeof PrivateAdminLogsRoute
+  '/_private/admin/': typeof PrivateAdminIndexRoute
   '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
 }
 export interface FileRouteTypes {
@@ -103,15 +138,22 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/'
+    | '/admin/cards'
+    | '/admin/devices'
+    | '/admin/logs'
+    | '/admin/'
     | '/admin/timetable/import'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/admin'
     | '/proba'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
     | '/'
+    | '/admin/cards'
+    | '/admin/devices'
+    | '/admin/logs'
+    | '/admin'
     | '/admin/timetable/import'
   id:
     | '__root__'
@@ -123,6 +165,10 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/_public/'
+    | '/_private/admin/cards'
+    | '/_private/admin/devices'
+    | '/_private/admin/logs'
+    | '/_private/admin/'
     | '/_private/admin/timetable/import'
   fileRoutesById: FileRoutesById
 }
@@ -192,6 +238,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminRouteRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
+    '/_private/admin/': {
+      id: '/_private/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof PrivateAdminIndexRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/logs': {
+      id: '/_private/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof PrivateAdminLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/devices': {
+      id: '/_private/admin/devices'
+      path: '/devices'
+      fullPath: '/admin/devices'
+      preLoaderRoute: typeof PrivateAdminDevicesRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/cards': {
+      id: '/_private/admin/cards'
+      path: '/cards'
+      fullPath: '/admin/cards'
+      preLoaderRoute: typeof PrivateAdminCardsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/timetable/import': {
       id: '/_private/admin/timetable/import'
       path: '/timetable/import'
@@ -203,10 +277,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface PrivateAdminRouteRouteChildren {
+  PrivateAdminCardsRoute: typeof PrivateAdminCardsRoute
+  PrivateAdminDevicesRoute: typeof PrivateAdminDevicesRoute
+  PrivateAdminLogsRoute: typeof PrivateAdminLogsRoute
+  PrivateAdminIndexRoute: typeof PrivateAdminIndexRoute
   PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
+  PrivateAdminCardsRoute: PrivateAdminCardsRoute,
+  PrivateAdminDevicesRoute: PrivateAdminDevicesRoute,
+  PrivateAdminLogsRoute: PrivateAdminLogsRoute,
+  PrivateAdminIndexRoute: PrivateAdminIndexRoute,
   PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
 }
 

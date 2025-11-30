@@ -3,8 +3,11 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaCalendarDays,
-  type FaDoorOpen,
+  FaDoorOpen,
   FaGraduationCap,
+  FaIdCard,
+  FaList,
+  FaMicrochip,
 } from 'react-icons/fa6';
 import {
   Sidebar,
@@ -20,10 +23,12 @@ import {
 } from '~/frontend/components/ui/sidebar';
 import { authClient } from '~/frontend/utils/authentication';
 
+type MenuIcon = typeof FaCalendarDays;
+
 type MenuItem = {
   title: string;
   url: string;
-  icon: typeof FaDoorOpen;
+  icon: MenuIcon;
   permission?: string;
 };
 
@@ -48,6 +53,37 @@ export function AdminSidebar() {
           },
         ],
         label: t('admin.timetable'),
+      },
+      {
+        items: [
+          {
+            icon: FaDoorOpen,
+            permission: 'doorlock:stats:read',
+            title: t('doorlock.dashboard', {
+              defaultValue: 'Doorlock dashboard',
+            }),
+            url: '/admin',
+          },
+          {
+            icon: FaMicrochip,
+            permission: 'doorlock:devices:read',
+            title: t('doorlock.devices', { defaultValue: 'Devices' }),
+            url: '/admin/devices',
+          },
+          {
+            icon: FaIdCard,
+            permission: 'doorlock:cards:read',
+            title: t('doorlock.cards', { defaultValue: 'Cards' }),
+            url: '/admin/cards',
+          },
+          {
+            icon: FaList,
+            permission: 'doorlock:logs:read',
+            title: t('doorlock.logs', { defaultValue: 'Logs' }),
+            url: '/admin/logs',
+          },
+        ],
+        label: t('admin.doorlock', { defaultValue: 'Doorlock' }),
       },
     ],
     [t]

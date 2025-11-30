@@ -1,24 +1,172 @@
 import { getLogger } from '@logtape/logtape';
 import type { ServerWebSocket } from 'bun';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { upgradeWebSocket } from 'hono/bun';
 import { db } from '~/database';
-import { device as lockDevice } from '~/database/schema/doorlock';
+import {
+  auditLog,
+  card,
+  cardDevice,
+  deviceHealth,
+  device as lockDevice,
+} from '~/database/schema/doorlock';
+import { server } from '~/index';
 import { doorlockFactory } from '~/routes/doorlock/_factory';
+import { env } from '~/utils/environment';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 
-const handleIncomingMessage = (message: string) => {
-  const command = message.trim().toLowerCase();
+type PingMessage = {
+  type: 'ping';
+  data: {
+    fwVersion: string;
+    uptime: bigint;
+    ramFree: bigint;
+    storage: {
+      total: bigint;
+      used: bigint;
+    };
+    debug: {
+      lastResetReason: string;
+      deviceState: number;
+      errors: {
+        nfc: boolean;
+        sd: boolean;
+        wifi: boolean;
+        db: boolean;
+        ota: boolean;
+      };
+    };
+  };
+};
 
-  switch (command) {
-    case 'unlock':
-      logger.info('Received unlock command via WebSocket');
-      // Here you would add the logic to unlock the door
-      break;
-    default:
-      logger.warn('Received unknown command via WebSocket', { command });
+type CardReadMessage = {
+  type: 'card-read';
+  uid: string;
+  authorized: boolean;
+  name: string;
+};
+
+type SyncDatabaseMessage = {
+  type: 'sync-database';
+  db: {
+    uid: string;
+    name: string;
+  }[];
+};
+
+type OpenDoorMessage = {
+  type: 'open-door';
+  name?: string; // optional, defaults to "WebUser" on device
+};
+
+type UpdateMessage = {
+  type: 'update';
+  url?: string; // optional, uses device config default if omitted
+};
+
+type IncomingMessage = PingMessage | CardReadMessage;
+
+type OutgoingMessage = SyncDatabaseMessage | OpenDoorMessage | UpdateMessage;
+
+const handleIncomingMessage = async (
+  message: string,
+  device: { id: string }
+) => {
+  try {
+    const deserialized = JSON.parse(message) as IncomingMessage;
+
+    switch (deserialized.type) {
+      case 'ping': {
+        const getDeviceState = () => {
+          switch (deserialized.data.debug.deviceState) {
+            case 0:
+              return 'booting';
+            case 1:
+              return 'idle';
+            case 2:
+              return 'error';
+            case 3:
+              return 'updating';
+            default:
+              logger.warn('Received unexpected device status', {
+                deserialized,
+                device,
+              });
+              return 'error';
+          }
+        };
+
+        await db.insert(deviceHealth).values({
+          deviceId: device.id,
+          deviceMeta: {
+            ...deserialized.data,
+            debug: {
+              ...deserialized.data.debug,
+              deviceState: getDeviceState(),
+            },
+          },
+        });
+        break;
+      }
+      case 'card-read':
+        await db.insert(auditLog).values({
+          buttonPressed: false,
+          cardData: deserialized.uid,
+          deviceId: device.id,
+          result: deserialized.authorized,
+        });
+        break;
+      default:
+        logger.warn('Received unknown command via WebSocket', {
+          command: deserialized,
+        });
+    }
+  } catch (e) {
+    logger.warn('JSON parsing failed', { error: e });
   }
+};
+
+export const sendMessage = (content: OutgoingMessage, deviceId: string) => {
+  if (!server) {
+    if (env.mode === 'development') {
+      logger.warn(
+        'Websockets are unavailable due to hono-vite-devserver not supporting them.'
+      );
+    } else {
+      logger.error("Can't access Bun server for publishing!");
+    }
+    return;
+  }
+
+  server.publish(`device-${deviceId}`, JSON.stringify(content));
+};
+
+export const syncDatabase = async (deviceId: string) => {
+  const cards = await db
+    .select()
+    .from(card)
+    .innerJoin(cardDevice, eq(card.id, cardDevice.cardId))
+    .where(
+      and(
+        eq(cardDevice.deviceId, deviceId),
+        eq(card.enabled, true),
+        eq(card.frozen, false)
+      )
+    );
+
+  const database = cards.map((c) => ({
+    name: c.card.name,
+    uid: c.card.cardData,
+  }));
+
+  sendMessage(
+    {
+      db: database,
+      type: 'sync-database',
+    },
+    deviceId
+  );
 };
 
 export const websocketHandler = doorlockFactory.createHandlers(
@@ -62,14 +210,15 @@ export const websocketHandler = doorlockFactory.createHandlers(
         const raw = ws.raw as ServerWebSocket;
         raw.unsubscribe(`device-${device.id}`);
       },
-      onMessage(event, _ws) {
+      async onMessage(event, _ws) {
         const message = typeof event.data === 'string' ? event.data : '';
-        handleIncomingMessage(message);
+        await handleIncomingMessage(message, device);
       },
-      onOpen: (_e, ws) => {
+      async onOpen(_e, ws) {
         logger.debug('WebSocket connection opened', { device });
         const raw = ws.raw as ServerWebSocket;
         raw.subscribe(`device-${device.id}`);
+        await syncDatabase(device.id);
       },
     };
   })

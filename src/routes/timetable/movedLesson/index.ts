@@ -559,8 +559,8 @@ const updateSchema = (
         date: z.date(),
         lessonIds: z.string().array(),
         room: z.string(),
-        startingDay: z.string().uuid(),
-        startingPeriod: z.string().uuid(),
+        startingDay: z.uuid(),
+        startingPeriod: z.uuid(),
       })
     )
   ).toOpenAPISchema()

@@ -64,7 +64,7 @@ export const deviceHealth = pgTable('device_health', {
       };
       debug: {
         lastResetReason: string;
-        deviceState: string;
+        deviceState: 'booting' | 'error' | 'idle' | 'updating';
         errors: {
           nfc: boolean;
           sd: boolean;
@@ -93,7 +93,9 @@ export const auditLog = pgTable('audit_log', {
 });
 
 export const doorlockSchema = {
+  auditLog,
   card,
   cardDevice,
   device,
+  deviceHealth,
 };
