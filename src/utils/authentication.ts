@@ -74,6 +74,11 @@ const authOptions = {
         required: false,
         type: 'string',
       },
+      nickname: {
+        input: true,
+        required: false,
+        type: 'string',
+      },
       roles: {
         input: false,
         required: true,
@@ -89,10 +94,15 @@ export const auth = betterAuth({
     ...(authOptions.plugins ?? []),
     customSession(async ({ user, session }) => {
       const permissions = await getUserPermissions(user.id);
+      const nickname = user.nickname?.trim();
+      const displayName = nickname?.length
+        ? nickname
+        : user.name?.trim() || user.email || 'Chronos user';
       return {
         session,
         user: {
           ...user,
+          displayName,
           permissions,
         },
       };

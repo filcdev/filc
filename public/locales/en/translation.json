@@ -21,7 +21,17 @@
   },
   "welcome": {
     "title": "Welcome",
-    "subtitle": "Let us get to know you"
+    "subtitle": "Let us get to know you",
+    "nicknameDescription": "This is the name we'll use across Chronos.",
+    "nicknamePlaceholder": "e.g. Alex",
+    "nicknameHelper": "Use {{min}}-{{max}} characters: letters, numbers, spaces, dashes or underscores.",
+    "nicknameSave": "Save nickname",
+    "nicknameSaved": "Nickname saved",
+    "nicknameError": "We couldn't save your nickname. Please try again.",
+    "nicknameValidation": "Please enter a nickname using the allowed characters.",
+    "nicknameRequired": "Add your nickname to continue.",
+    "cohortRequired": "Select a cohort to continue.",
+    "nicknameSaveFailed": "Failed to save nickname"
   },
   "cohort": {
     "fetchFailed": "Fetching cohorts failed",
@@ -33,7 +43,8 @@
   "account": {
     "details": "Account details",
     "email": "E-mail address",
-    "name": "Name"
+    "name": "Name",
+    "nickname": "Preferred name"
   },
   "unknown": "Unknown",
   "continue": "Continue",

@@ -272,7 +272,10 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
     try {
       sendMessage(
         {
-          name: cardRecord.owner?.name ?? cardRecord.name,
+          name:
+            cardRecord.owner?.nickname ??
+            cardRecord.owner?.name ??
+            cardRecord.name,
           type: 'open-door',
         },
         targetDevice.id

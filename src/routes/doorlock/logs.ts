@@ -27,11 +27,15 @@ const userSummarySchema = z.object({
   email: z.string().nullable(),
   id: z.uuid(),
   name: z.string().nullable(),
+  nickname: z.string().nullable(),
 });
 
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
 type CardSummary = Pick<typeof card.$inferSelect, 'id' | 'name'>;
-type UserSummary = Pick<typeof user.$inferSelect, 'id' | 'name' | 'email'>;
+type UserSummary = Pick<
+  typeof user.$inferSelect,
+  'id' | 'name' | 'email' | 'nickname'
+>;
 
 export type DoorlockLogEntry = typeof auditLog.$inferSelect & {
   device?: DeviceSummary | null;
@@ -101,6 +105,7 @@ const appendSearchFilters = (query: LogQuery) => {
     ilike(device.name, pattern),
     ilike(card.name, pattern),
     ilike(user.name, pattern),
+    ilike(user.nickname, pattern),
     ilike(auditLog.cardData, pattern)
   );
 };
@@ -136,6 +141,7 @@ const mapRowsToLogs = (
     ownerEmail: string | null;
     ownerId: string | null;
     ownerName: string | null;
+    ownerNickname: string | null;
     result: boolean;
     timestamp: Date;
     userId: string | null;
@@ -158,6 +164,7 @@ const mapRowsToLogs = (
           email: row.ownerEmail ?? 'unknown@example.com',
           id: row.ownerId,
           name: row.ownerName ?? 'Unknown user',
+          nickname: row.ownerNickname,
         }
       : null,
     result: row.result,
@@ -201,6 +208,7 @@ export const listLogsRoute = doorlockFactory.createHandlers(
         ownerEmail: user.email,
         ownerId: user.id,
         ownerName: user.name,
+        ownerNickname: user.nickname,
         result: auditLog.result,
         timestamp: auditLog.timestamp,
         userId: auditLog.userId,

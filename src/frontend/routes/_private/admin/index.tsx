@@ -110,7 +110,7 @@ function DoorlockDashboard() {
                     className="flex items-center justify-between text-sm"
                     key={user.id}
                   >
-                    <span>{user.name}</span>
+                    <span>{user.nickname ?? user.name ?? 'Unknown user'}</span>
                     <span className="font-semibold">{user.count}</span>
                   </li>
                 ))}

@@ -127,6 +127,13 @@
       "when": 1764526888233,
       "tag": "0017_slow_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1764537313528,
+      "tag": "0018_slimy_dragon_man",
+      "breakpoints": true
     }
   ]
 }

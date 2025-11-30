@@ -18,6 +18,7 @@ export const user = pgTable('user', {
   id: uuid('id').primaryKey().defaultRandom(),
   image: text('image'),
   name: text('name').notNull(),
+  nickname: text('nickname'),
   roles: jsonb('roles').$type<string[]>().notNull().default(['user']),
   ...timestamps,
 });

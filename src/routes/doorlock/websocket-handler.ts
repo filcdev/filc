@@ -139,7 +139,12 @@ export const sendMessage = (content: OutgoingMessage, deviceId: string) => {
     return;
   }
 
-  server.publish(`device-${deviceId}`, JSON.stringify(content));
+  const payload: OutgoingMessage =
+    content.type === 'open-door' && content.name
+      ? { ...content, name: content.name.trim() }
+      : content;
+
+  server.publish(`device-${deviceId}`, JSON.stringify(payload));
 };
 
 export const syncDatabase = async (deviceId: string) => {

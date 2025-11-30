@@ -6,7 +6,10 @@ import { card, cardDevice, device } from '~/database/schema/doorlock';
 
 type CardRecord = typeof card.$inferSelect;
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
-type OwnerSummary = Pick<typeof user.$inferSelect, 'id' | 'name' | 'email'>;
+type OwnerSummary = Pick<
+  typeof user.$inferSelect,
+  'id' | 'name' | 'email' | 'nickname'
+>;
 
 export type DoorlockCardWithRelations = CardRecord & {
   authorizedDevices: DeviceSummary[];
@@ -27,6 +30,7 @@ export type CardRow = {
   ownerEmail: string | null;
   ownerId: string | null;
   ownerName: string | null;
+  ownerNickname: string | null;
 };
 
 const sanitizeDeviceIds = (ids: string[]) => Array.from(new Set(ids));
@@ -45,6 +49,7 @@ export const cardRowSelection = {
   ownerEmail: user.email,
   ownerId: user.id,
   ownerName: user.name,
+  ownerNickname: user.nickname,
 };
 
 const buildCardRecord = (row: CardRow): DoorlockCardWithRelations => ({
@@ -60,6 +65,7 @@ const buildCardRecord = (row: CardRow): DoorlockCardWithRelations => ({
         email: row.ownerEmail ?? 'Unknown email',
         id: row.ownerId,
         name: row.ownerName ?? 'Unknown user',
+        nickname: row.ownerNickname,
       }
     : null,
   updatedAt: row.cardUpdatedAt,

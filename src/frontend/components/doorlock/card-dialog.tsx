@@ -30,7 +30,12 @@ type CardFormValues = {
 };
 
 type DeviceOption = { id: string; name: string };
-type UserOption = { id: string; name: string | null; email: string | null };
+type UserOption = {
+  email: string | null;
+  id: string;
+  name: string | null;
+  nickname?: string | null;
+};
 type CardLike = {
   authorizedDevices: DeviceOption[];
   enabled: boolean;
@@ -179,7 +184,7 @@ export function CardDialog<
                 <SelectContent>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name ?? user.email ?? 'Unknown'}
+                      {user.nickname ?? user.name ?? user.email ?? 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -166,10 +166,15 @@ function CardsPage() {
       return list;
     }
     return list.filter((card) => {
-      const ownerName = card.owner?.name ?? '';
+      const ownerLabel = (
+        card.owner?.nickname ||
+        card.owner?.name ||
+        card.owner?.email ||
+        ''
+      ).toLowerCase();
       return (
         card.name.toLowerCase().includes(term) ||
-        ownerName.toLowerCase().includes(term) ||
+        ownerLabel.includes(term) ||
         card.authorizedDevices.some((device) =>
           device.name.toLowerCase().includes(term)
         )
@@ -278,7 +283,10 @@ function CardsPage() {
               <TableRow key={card.id}>
                 <TableCell className="font-medium">{card.name}</TableCell>
                 <TableCell>
-                  {card.owner?.name || card.owner?.email || 'Unknown user'}
+                  {card.owner?.nickname ||
+                    card.owner?.name ||
+                    card.owner?.email ||
+                    'Unknown user'}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

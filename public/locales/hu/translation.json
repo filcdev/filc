@@ -7,7 +7,8 @@
   "account": {
     "details": "Fiók adatai",
     "email": "E-mail cím",
-    "name": "Név"
+    "name": "Név",
+    "nickname": "Becenév"
   },
   "and": "és",
   "cohort": {
@@ -38,7 +39,17 @@
   "unknown": "Ismeretlen",
   "welcome": {
     "subtitle": "Ismerkedjünk meg veled",
-    "title": "Üdvözlünk"
+    "title": "Üdvözlünk",
+    "nicknameDescription": "Ezzel a névvel fogunk szólítani a Chronosban.",
+    "nicknamePlaceholder": "pl.: Ádám",
+    "nicknameHelper": "Használj {{min}}-{{max}} karaktert: betűk, számok, szóköz, kötőjel vagy aláhúzás.",
+    "nicknameSave": "Becenév mentése",
+    "nicknameSaved": "Becenév mentve",
+    "nicknameError": "Nem sikerült elmenteni a becenevet. Próbáld újra.",
+    "nicknameValidation": "A becenév csak megengedett karaktereket tartalmazhat.",
+    "nicknameRequired": "A folytatáshoz add meg a beceneved.",
+    "cohortRequired": "A folytatáshoz válassz csoportot.",
+    "nicknameSaveFailed": "A becenevet nem sikerült elmenteni"
   },
   "doorlock": {},
   "featureFlags": {},

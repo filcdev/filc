@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/logtape';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -27,7 +27,7 @@ const logger = getLogger(['chronos', 'doorlock', 'cards']);
 
 type DoorlockUserSummary = Pick<
   typeof user.$inferSelect,
-  'id' | 'name' | 'email'
+  'id' | 'name' | 'email' | 'nickname'
 >;
 
 const cardSelectSchema = createSelectSchema(card);
@@ -39,6 +39,7 @@ const userSummarySchema = z.object({
   email: z.string().nullable(),
   id: z.uuid(),
   name: z.string().nullable(),
+  nickname: z.string().nullable(),
 });
 
 export const cardWithRelationsSchema = cardSelectSchema.extend({
@@ -146,9 +147,10 @@ export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
         email: user.email,
         id: user.id,
         name: user.name,
+        nickname: user.nickname,
       })
       .from(user)
-      .orderBy(user.name);
+      .orderBy(sql`coalesce(${user.nickname}, ${user.name})`);
 
     return c.json<SuccessResponse<{ users: DoorlockUserSummary[] }>>({
       data: { users: usersList },

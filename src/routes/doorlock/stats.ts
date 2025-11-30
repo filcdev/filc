@@ -31,6 +31,7 @@ const statsResponseSchema = z.object({
           count: z.number().int(),
           id: z.string(),
           name: z.string().nullable(),
+          nickname: z.string().nullable(),
         })
       ),
       totalCards: z.number().int(),
@@ -113,13 +114,14 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
           count: userSuccessCount,
           id: auditLog.userId,
           name: user.name,
+          nickname: user.nickname,
         })
         .from(auditLog)
         .leftJoin(user, eq(auditLog.userId, user.id))
         .where(
           and(eq(auditLog.result, true), sql`${auditLog.userId} IS NOT NULL`)
         )
-        .groupBy(auditLog.userId, user.name)
+        .groupBy(auditLog.userId, user.name, user.nickname)
         .orderBy(desc(userSuccessCount))
         .limit(3);
 
@@ -129,6 +131,7 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
           count: Number(row.count),
           id: row.id as string,
           name: row.name ?? 'Unknown user',
+          nickname: row.nickname,
         }));
 
       const stats: DoorlockStatsOverview = {

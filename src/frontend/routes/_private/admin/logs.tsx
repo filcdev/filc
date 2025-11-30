@@ -258,7 +258,10 @@ function LogsPage() {
     const seen = new Map<string, string>();
     for (const log of logsQuery.data ?? []) {
       if (log.owner?.id) {
-        seen.set(log.owner.id, log.owner.name ?? log.owner.email ?? 'User');
+        seen.set(
+          log.owner.id,
+          log.owner.nickname || log.owner.name || log.owner.email || 'User'
+        );
       }
     }
     return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
@@ -535,7 +538,10 @@ function LogTableRow({ log }: LogTableRowProps) {
       </TableCell>
       <TableCell>{log.device?.name ?? 'Unknown device'}</TableCell>
       <TableCell>
-        {log.owner?.name || log.owner?.email || 'Unknown user'}
+        {log.owner?.nickname ||
+          log.owner?.name ||
+          log.owner?.email ||
+          'Unknown user'}
       </TableCell>
       <TableCell>
         <div className="space-y-1">
@@ -580,13 +586,18 @@ function useHasPermission(permission: string, permissions?: string[] | null) {
 }
 
 function useOptions(
-  preferred?: Array<{ id: string; name?: string; label?: string }>,
+  preferred?: Array<{
+    id: string;
+    label?: string;
+    name?: string;
+    nickname?: string;
+  }>,
   fallback: FilterOption[] = []
 ): FilterOption[] {
   if (preferred?.length) {
     return preferred.map((item) => ({
       id: item.id,
-      label: item.name ?? item.label ?? 'Unknown',
+      label: item.nickname ?? item.name ?? item.label ?? 'Unknown',
     }));
   }
   const seen = new Map<string, string>();
