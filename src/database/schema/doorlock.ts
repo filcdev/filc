@@ -1,88 +1,101 @@
 import {
   boolean,
-  integer,
+  index,
+  jsonb,
   pgTable,
   primaryKey,
+  serial,
   text,
-  timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { timestamps } from '~/database/helpers';
-import { user } from '~/database/schema/authentication';
+import { user } from './authentication';
+
+export const device = pgTable('device', {
+  apiToken: text('api_token').notNull().unique(),
+  id: uuid('id').primaryKey().defaultRandom(),
+  lastResetReason: text('last_reset_reason'),
+  location: text('location'),
+  name: text('name').notNull(),
+  ...timestamps,
+});
 
 export const card = pgTable('card', {
-  disabled: boolean('disabled').notNull().default(false),
-  frozen: boolean('frozen').notNull().default(false),
+  cardData: text('card_uid').notNull().unique(),
+  enabled: boolean('enabled').default(true).notNull(),
+  frozen: boolean('frozen').default(false).notNull(),
   id: uuid('id').primaryKey().defaultRandom(),
-  label: text('label'),
-  tag: text('tag').notNull().unique(),
+  name: text('name').notNull(),
   userId: uuid('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   ...timestamps,
 });
 
-const DEVICE_DEFAULT_TTL_SECONDS = 30;
-
-// Physical door lock / access control device
-// The device id should match the identifier used in the MQTT topic: filc/doorlock/<deviceId>/...
-export const device = pgTable('device', {
-  id: text('id').primaryKey(),
-  // Last moment we received any event / heartbeat from the device
-  lastSeenAt: timestamp('last_seen_at'),
-  location: text('location'),
-  name: text('name').notNull(),
-  status: text('status'), // optional free-form status (e.g. 'online', 'offline', 'degraded')
-  // How long (in seconds) the device considers itself online after lastSeenAt (a heartbeat TTL)
-  ttlSeconds: integer('ttl_seconds')
-    .notNull()
-    .default(DEVICE_DEFAULT_TTL_SECONDS),
-  ...timestamps,
-});
-
-// Many-to-many restriction between cards and devices.
-// If a card has NO rows in this table, it is allowed on ALL devices.
-// If it has one or more rows, it is restricted to ONLY those listed devices.
 export const cardDevice = pgTable(
   'card_device',
   {
     cardId: uuid('card_id')
       .notNull()
       .references(() => card.id, { onDelete: 'cascade' }),
-    deviceId: text('device_id')
+    deviceId: uuid('device_id')
       .notNull()
       .references(() => device.id, { onDelete: 'cascade' }),
-    ...timestamps,
   },
-  (t) => ({
-    pk: primaryKey({ columns: [t.cardId, t.deviceId] }),
-  })
+  (t) => [
+    primaryKey({ columns: [t.cardId, t.deviceId] }),
+    index('card_device_card_id_idx').on(t.cardId),
+    index('card_device_device_id_idx').on(t.deviceId),
+  ]
 );
 
-// Access log for all card scan attempts
-export const accessLog = pgTable('access_log', {
-  // Card ID if the tag was found in the system
-  cardId: uuid('card_id').references(() => card.id, { onDelete: 'set null' }),
-  deviceId: text('device_id')
+export const deviceHealth = pgTable('device_health', {
+  deviceId: uuid('device_id')
     .notNull()
     .references(() => device.id, { onDelete: 'cascade' }),
-  id: uuid('id').primaryKey().defaultRandom(),
-  // Reason for denial (if denied)
-  reason: text('reason'),
-  // Result of the access attempt
-  result: text('result').notNull(), // 'granted', 'denied'
-  // Tag scanned (may not exist in card table if unknown)
-  tag: text('tag').notNull(),
-  // Timestamp of the access attempt
-  timestamp: timestamp('timestamp').notNull().defaultNow(),
-  // User ID associated with the card at the time of scan
+  deviceMeta: jsonb('device_meta')
+    .$type<{
+      fwVersion: string;
+      uptime: bigint;
+      ramFree: bigint;
+      storage: {
+        total: bigint;
+        used: bigint;
+      };
+      debug: {
+        lastResetReason: string;
+        deviceState: 'booting' | 'error' | 'idle' | 'updating';
+        errors: {
+          nfc: boolean;
+          sd: boolean;
+          wifi: boolean;
+          db: boolean;
+          ota: boolean;
+        };
+      };
+    }>()
+    .notNull(),
+  id: serial('id').primaryKey(),
+  timestamp: timestamps.createdAt,
+});
+
+export const auditLog = pgTable('audit_log', {
+  buttonPressed: boolean('button_pressed').notNull(),
+  cardData: text('card_data'),
+  cardId: uuid('card_id').references(() => card.id, { onDelete: 'set null' }),
+  deviceId: uuid('device_id')
+    .notNull()
+    .references(() => device.id, { onDelete: 'cascade' }),
+  id: serial('id').primaryKey(),
+  result: boolean('result').notNull(),
+  timestamp: timestamps.createdAt,
   userId: uuid('user_id').references(() => user.id, { onDelete: 'set null' }),
-  ...timestamps,
 });
 
 export const doorlockSchema = {
-  accessLog,
+  auditLog,
   card,
   cardDevice,
   device,
+  deviceHealth,
 };

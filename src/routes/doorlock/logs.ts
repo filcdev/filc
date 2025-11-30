@@ -1,13 +1,11 @@
-import { zValidator } from '@hono/zod-validator';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
-import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import { z } from 'zod';
+import z from 'zod';
 import { db } from '~/database';
 import { user } from '~/database/schema/authentication';
-import { accessLog, card, device } from '~/database/schema/doorlock';
+import { auditLog, card, device } from '~/database/schema/doorlock';
 import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
@@ -16,500 +14,217 @@ import {
 import { ensureJsonSafeDates } from '~/utils/zod';
 import { doorlockFactory } from './_factory';
 
-const listLogsSchema = z.object({
-  deviceId: z.string().optional(),
-  limit: z.coerce.number().int().positive().max(1000).optional().default(100),
-  offset: z.coerce.number().int().nonnegative().optional().default(0),
-  result: z.enum(['granted', 'denied']).optional(),
+const auditLogSelectSchema = createSelectSchema(auditLog);
+const deviceSummarySchema = createSelectSchema(device).pick({
+  id: true,
+  name: true,
+});
+const cardSummarySchema = createSelectSchema(card).pick({
+  id: true,
+  name: true,
+});
+const userSummarySchema = z.object({
+  email: z.string().nullable(),
+  id: z.uuid(),
+  name: z.string().nullable(),
+  nickname: z.string().nullable(),
 });
 
-const addUnknownCardSchemaJSON = z.object({
-  label: z.string().optional(),
-  tag: z.string().min(1),
-  userId: z.uuid(),
-});
+type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
+type CardSummary = Pick<typeof card.$inferSelect, 'id' | 'name'>;
+type UserSummary = Pick<
+  typeof user.$inferSelect,
+  'id' | 'name' | 'email' | 'nickname'
+>;
 
-const listLogsResponseSchema = z.object({
-  data: z.array(
-    ensureJsonSafeDates(
-      z.object({
-        cardId: z.string().uuid().nullable(),
-        cardLabel: z.string().nullable(),
-        deviceId: z.string().uuid(),
-        deviceName: z.string().nullable(),
-        id: z.string().uuid(),
-        reason: z.string().nullable(),
-        result: z.string(),
-        tag: z.string(),
-        timestamp: z.date(),
-        userId: z.string().uuid().nullable(),
-        userName: z.string().nullable(),
+export type DoorlockLogEntry = typeof auditLog.$inferSelect & {
+  device?: DeviceSummary | null;
+  card?: CardSummary | null;
+  owner?: UserSummary | null;
+};
+
+const logsResponseSchema = z.object({
+  data: z.object({
+    logs: z.array(
+      auditLogSelectSchema.extend({
+        card: cardSummarySchema.nullable().optional(),
+        device: deviceSummarySchema.nullable().optional(),
+        owner: userSummarySchema.nullable().optional(),
       })
-    )
-  ),
-  success: z.boolean(),
+    ),
+  }),
+  success: z.literal(true),
 });
 
-// List access logs with filters
-export const listLogs = doorlockFactory.createHandlers(
+const logsQuerySchema = z.object({
+  cardId: z.uuid().optional(),
+  deviceId: z.uuid().optional(),
+  from: z.string().datetime().optional(),
+  granted: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
+  limit: z.coerce.number().int().min(1).max(1000).default(500),
+  search: z.string().optional(),
+  to: z.string().datetime().optional(),
+  userId: z.uuid().optional(),
+});
+
+type LogQuery = z.infer<typeof logsQuerySchema>;
+
+const appendBaseFilters = (filters: SQL<unknown>[], query: LogQuery) => {
+  if (query.cardId) {
+    filters.push(eq(auditLog.cardId, query.cardId));
+  }
+  if (query.deviceId) {
+    filters.push(eq(auditLog.deviceId, query.deviceId));
+  }
+  if (query.userId) {
+    filters.push(eq(auditLog.userId, query.userId));
+  }
+  if (typeof query.granted === 'boolean') {
+    filters.push(eq(auditLog.result, query.granted));
+  }
+  if (query.from) {
+    filters.push(gte(auditLog.timestamp, new Date(query.from)));
+  }
+  if (query.to) {
+    filters.push(lte(auditLog.timestamp, new Date(query.to)));
+  }
+};
+
+const appendSearchFilters = (query: LogQuery) => {
+  const { search: searchTerm } = query;
+  if (!searchTerm) {
+    return;
+  }
+
+  const pattern = `%${searchTerm}%`;
+
+  return or(
+    ilike(device.name, pattern),
+    ilike(card.name, pattern),
+    ilike(user.name, pattern),
+    ilike(user.nickname, pattern),
+    ilike(auditLog.cardData, pattern)
+  );
+};
+
+const buildWhereClause = (query: LogQuery): SQL<unknown> | undefined => {
+  const filters: SQL<unknown>[] = [];
+
+  appendBaseFilters(filters, query);
+  filters.push(appendSearchFilters(query) as SQL);
+
+  if (!filters.length) {
+    return;
+  }
+
+  let combined: SQL<unknown> | undefined;
+  for (const clause of filters) {
+    combined = combined ? and(combined, clause) : clause;
+  }
+  return combined;
+};
+
+const mapRowsToLogs = (
+  rows: Array<{
+    buttonPressed: boolean;
+    cardData: string | null;
+    cardId: string | null;
+    deviceId: string;
+    id: number;
+    logCardId: string | null;
+    logCardName: string | null;
+    logDeviceId: string | null;
+    logDeviceName: string | null;
+    ownerEmail: string | null;
+    ownerId: string | null;
+    ownerName: string | null;
+    ownerNickname: string | null;
+    result: boolean;
+    timestamp: Date;
+    userId: string | null;
+  }>
+) =>
+  rows.map<DoorlockLogEntry>((row) => ({
+    buttonPressed: row.buttonPressed,
+    card: row.logCardId
+      ? { id: row.logCardId, name: row.logCardName ?? 'Unknown card' }
+      : null,
+    cardData: row.cardData,
+    cardId: row.cardId,
+    device: row.logDeviceId
+      ? { id: row.logDeviceId, name: row.logDeviceName ?? 'Unknown device' }
+      : null,
+    deviceId: row.deviceId,
+    id: row.id,
+    owner: row.ownerId
+      ? {
+          email: row.ownerEmail ?? 'unknown@example.com',
+          id: row.ownerId,
+          name: row.ownerName ?? 'Unknown user',
+          nickname: row.ownerNickname,
+        }
+      : null,
+    result: row.result,
+    timestamp: row.timestamp,
+    userId: row.userId,
+  }));
+
+export const listLogsRoute = doorlockFactory.createHandlers(
   describeRoute({
-    description:
-      'Get access logs with optional filtering by device and result.',
-    parameters: [
-      {
-        in: 'query',
-        name: 'deviceId',
-        required: false,
-        schema: {
-          description: 'Filter logs by device ID.',
-          format: 'uuid',
-          type: 'string',
-        },
-      },
-      {
-        in: 'query',
-        name: 'result',
-        required: false,
-        schema: {
-          description: 'Filter logs by access result.',
-          type: 'string',
-        },
-      },
-      {
-        in: 'query',
-        name: 'limit',
-        required: false,
-        schema: {
-          default: 50,
-          description: 'Maximum number of logs to return.',
-          type: 'integer',
-        },
-      },
-      {
-        in: 'query',
-        name: 'offset',
-        required: false,
-        schema: {
-          default: 0,
-          description: 'Number of logs to skip.',
-          type: 'integer',
-        },
-      },
-    ],
+    description: 'List audit log entries',
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(listLogsResponseSchema),
+            schema: resolver(ensureJsonSafeDates(logsResponseSchema)),
           },
         },
-        description: 'Successful Response',
+        description: 'Successful response',
       },
     },
     tags: ['Doorlock'],
   }),
   requireAuthentication,
   requireAuthorization('doorlock:logs:read'),
-  zValidator('query', listLogsSchema),
   async (c) => {
-    const { deviceId, result, limit, offset } = c.req.valid('query');
+    const url = new URL(c.req.url);
+    const queryParams = Object.fromEntries(url.searchParams.entries());
+    const query = logsQuerySchema.parse(queryParams);
 
-    const conditions: ReturnType<typeof eq>[] = [];
-    if (deviceId) {
-      conditions.push(eq(accessLog.deviceId, deviceId));
-    }
-    if (result) {
-      conditions.push(eq(accessLog.result, result));
-    }
-
-    const logs = await db
+    const rows = await db
       .select({
-        cardId: accessLog.cardId,
-        cardLabel: card.label,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        id: accessLog.id,
-        reason: accessLog.reason,
-        result: accessLog.result,
-        tag: accessLog.tag,
-        timestamp: accessLog.timestamp,
-        userId: accessLog.userId,
-        userName: user.name,
+        buttonPressed: auditLog.buttonPressed,
+        cardData: auditLog.cardData,
+        cardId: auditLog.cardId,
+        deviceId: auditLog.deviceId,
+        id: auditLog.id,
+        logCardId: card.id,
+        logCardName: card.name,
+        logDeviceId: device.id,
+        logDeviceName: device.name,
+        ownerEmail: user.email,
+        ownerId: user.id,
+        ownerName: user.name,
+        ownerNickname: user.nickname,
+        result: auditLog.result,
+        timestamp: auditLog.timestamp,
+        userId: auditLog.userId,
       })
-      .from(accessLog)
-      .leftJoin(device, eq(accessLog.deviceId, device.id))
-      .leftJoin(card, eq(accessLog.cardId, card.id))
-      .leftJoin(user, eq(accessLog.userId, user.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(accessLog.timestamp))
-      .limit(limit)
-      .offset(offset);
+      .from(auditLog)
+      .leftJoin(device, eq(auditLog.deviceId, device.id))
+      .leftJoin(card, eq(auditLog.cardId, card.id))
+      .leftJoin(user, eq(auditLog.userId, user.id))
+      .where(buildWhereClause(query))
+      .orderBy(desc(auditLog.timestamp))
+      .limit(query.limit);
 
-    return c.json<SuccessResponse<typeof logs>>({
-      data: logs,
-      success: true,
-    });
-  }
-);
+    const logs = mapRowsToLogs(rows);
 
-const getLogResponseSchema = z.object({
-  data: ensureJsonSafeDates(
-    z.object({
-      cardId: z.string().uuid().nullable(),
-      cardLabel: z.string().nullable(),
-      deviceId: z.string().uuid(),
-      deviceName: z.string().nullable(),
-      id: z.string().uuid(),
-      reason: z.string().nullable(),
-      result: z.string(),
-      tag: z.string(),
-      timestamp: z.date(),
-      userId: z.string().uuid().nullable(),
-      userName: z.string().nullable(),
-    })
-  ),
-  success: z.boolean(),
-});
-
-// Get a single log entry
-export const getLog = doorlockFactory.createHandlers(
-  describeRoute({
-    description: 'Get a specific access log entry by ID.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the log entry.',
-          format: 'uuid',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getLogResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  requireAuthentication,
-  requireAuthorization('doorlock:logs:read'),
-  async (c) => {
-    const id = c.req.param('id');
-    if (!id) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing id',
-      });
-    }
-
-    const [log] = await db
-      .select({
-        cardId: accessLog.cardId,
-        cardLabel: card.label,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        id: accessLog.id,
-        reason: accessLog.reason,
-        result: accessLog.result,
-        tag: accessLog.tag,
-        timestamp: accessLog.timestamp,
-        userId: accessLog.userId,
-        userName: user.name,
-      })
-      .from(accessLog)
-      .leftJoin(device, eq(accessLog.deviceId, device.id))
-      .leftJoin(card, eq(accessLog.cardId, card.id))
-      .leftJoin(user, eq(accessLog.userId, user.id))
-      .where(eq(accessLog.id, id))
-      .limit(1);
-
-    if (!log) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Log entry not found',
-      });
-    }
-
-    return c.json<SuccessResponse<typeof log>>({
-      data: log,
-      success: true,
-    });
-  }
-);
-
-const listUnknownTagsResponseSchema = z.object({
-  data: z.array(
-    ensureJsonSafeDates(
-      z.object({
-        accessCount: z.number(),
-        deviceId: z.string().uuid(),
-        deviceName: z.string().nullable(),
-        lastSeen: z.date(),
-        tag: z.string(),
-      })
-    )
-  ),
-  success: z.boolean(),
-});
-
-// List unknown tags (logs where cardId is null)
-export const listUnknownTags = doorlockFactory.createHandlers(
-  describeRoute({
-    description:
-      'Get a list of unknown tags that have attempted access but are not associated with any card.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(listUnknownTagsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  requireAuthentication,
-  requireAuthorization('doorlock:logs:read'),
-  async (c) => {
-    // Get unique unknown tags from logs
-    const unknownTags = await db
-      .selectDistinct({
-        accessCount: sql<number>`COUNT(*)`,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        lastSeen: sql<Date>`MAX(${accessLog.timestamp})`,
-        tag: accessLog.tag,
-      })
-      .from(accessLog)
-      .leftJoin(device, eq(accessLog.deviceId, device.id))
-      .where(isNull(accessLog.cardId))
-      .groupBy(accessLog.tag, accessLog.deviceId, device.name)
-      .orderBy(desc(sql`MAX(${accessLog.timestamp})`));
-
-    return c.json<SuccessResponse<typeof unknownTags>>({
-      data: unknownTags,
-      success: true,
-    });
-  }
-);
-
-const addUnknownCardSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        label: z.string().nullable(),
-        tag: z.string(),
-        userId: z.string(),
-      })
-    )
-  ).toOpenAPISchema()
-).schema;
-
-const addUnknownCardResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(card)),
-  success: z.boolean(),
-});
-
-// Add an unknown tag as a new card
-export const addUnknownCard = doorlockFactory.createHandlers(
-  describeRoute({
-    description:
-      'Create a new card from an unknown tag that has attempted access.',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: addUnknownCardSchema,
-        },
-      },
-      description: 'The data for the new card to create from an unknown tag.',
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(addUnknownCardResponseSchema),
-          },
-        },
-        description: 'Card successfully created',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  requireAuthentication,
-  requireAuthorization('card:create'),
-  zValidator('json', addUnknownCardSchemaJSON),
-  async (c) => {
-    const { tag, userId, label } = c.req.valid('json');
-
-    // Check if card already exists with this tag
-    const existing = await db
-      .select({ id: card.id })
-      .from(card)
-      .where(eq(card.tag, tag))
-      .limit(1);
-
-    if (existing.length > 0) {
-      throw new HTTPException(StatusCodes.CONFLICT, {
-        message: 'Card with this tag already exists',
-      });
-    }
-
-    const [newCard] = await db
-      .insert(card)
-      .values({
-        disabled: false,
-        frozen: false,
-        label,
-        tag,
-        userId,
-      })
-      .returning();
-
-    if (!newCard) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to create card',
-      });
-    }
-
-    return c.json<SuccessResponse<typeof newCard>>(
-      {
-        data: newCard,
-        success: true,
-      },
-      StatusCodes.CREATED
-    );
-  }
-);
-
-const getDeviceLogsResponseSchema = z.object({
-  data: z.array(
-    ensureJsonSafeDates(
-      z.object({
-        cardId: z.string().uuid().nullable(),
-        cardLabel: z.string().nullable(),
-        deviceId: z.string().uuid(),
-        deviceName: z.string().nullable(),
-        id: z.string().uuid(),
-        reason: z.string().nullable(),
-        result: z.string(),
-        tag: z.string(),
-        timestamp: z.date(),
-        userId: z.string().uuid().nullable(),
-        userName: z.string().nullable(),
-      })
-    )
-  ),
-  success: z.boolean(),
-});
-
-// Get logs for a specific device
-export const getDeviceLogs = doorlockFactory.createHandlers(
-  describeRoute({
-    description:
-      'Get access logs for a specific device with optional filtering by result.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'deviceId',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the device.',
-          format: 'uuid',
-          type: 'string',
-        },
-      },
-      {
-        in: 'query',
-        name: 'result',
-        required: false,
-        schema: {
-          description: 'Filter logs by access result.',
-          type: 'string',
-        },
-      },
-      {
-        in: 'query',
-        name: 'limit',
-        required: false,
-        schema: {
-          default: 50,
-          description: 'Maximum number of logs to return.',
-          type: 'integer',
-        },
-      },
-      {
-        in: 'query',
-        name: 'offset',
-        required: false,
-        schema: {
-          default: 0,
-          description: 'Number of logs to skip.',
-          type: 'integer',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getDeviceLogsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  requireAuthentication,
-  requireAuthorization('doorlock:logs:read'),
-  zValidator('query', listLogsSchema.omit({ deviceId: true })),
-  async (c) => {
-    const deviceId = c.req.param('deviceId');
-    if (!deviceId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing deviceId',
-      });
-    }
-
-    const { result, limit, offset } = c.req.valid('query');
-
-    const conditions = [eq(accessLog.deviceId, deviceId)];
-    if (result) {
-      conditions.push(eq(accessLog.result, result));
-    }
-
-    const logs = await db
-      .select({
-        cardId: accessLog.cardId,
-        cardLabel: card.label,
-        deviceId: accessLog.deviceId,
-        deviceName: device.name,
-        id: accessLog.id,
-        reason: accessLog.reason,
-        result: accessLog.result,
-        tag: accessLog.tag,
-        timestamp: accessLog.timestamp,
-        userId: accessLog.userId,
-        userName: user.name,
-      })
-      .from(accessLog)
-      .leftJoin(device, eq(accessLog.deviceId, device.id))
-      .leftJoin(card, eq(accessLog.cardId, card.id))
-      .leftJoin(user, eq(accessLog.userId, user.id))
-      .where(and(...conditions))
-      .orderBy(desc(accessLog.timestamp))
-      .limit(limit)
-      .offset(offset);
-
-    return c.json<SuccessResponse<typeof logs>>({
-      data: logs,
+    return c.json<SuccessResponse<{ logs: DoorlockLogEntry[] }>>({
+      data: { logs },
       success: true,
     });
   }

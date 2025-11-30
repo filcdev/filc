@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { cn } from '~/frontend/utils';
+import { cn } from '~/frontend/utils/index';
 
 function Card({ className, ...props }: ComponentProps<'div'>) {
   return (

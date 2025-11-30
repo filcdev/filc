@@ -1,14 +1,20 @@
-import { zValidator } from '@hono/zod-validator';
-import { eq } from 'drizzle-orm';
+import { getLogger } from '@logtape/logtape';
+import { eq, sql } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
-import { z } from 'zod';
+import z from 'zod';
 import { db } from '~/database';
-import { card } from '~/database/schema/doorlock';
-import { userHasPermission } from '~/utils/authorization';
-import { env } from '~/utils/environment';
+import { user } from '~/database/schema/authentication';
+import { card, device } from '~/database/schema/doorlock';
+import {
+  type DoorlockCardWithRelations,
+  fetchCardById,
+  fetchCards,
+  replaceCardDevices,
+} from '~/routes/doorlock/card-helpers';
+import { syncDevicesByIds } from '~/routes/doorlock/device-sync';
 import type { SuccessResponse } from '~/utils/globals';
 import {
   requireAuthentication,
@@ -17,355 +23,340 @@ import {
 import { ensureJsonSafeDates } from '~/utils/zod';
 import { doorlockFactory } from './_factory';
 
-const createCardSchema = z.object({
-  disabled: z.boolean().optional(),
-  frozen: z.boolean().optional(),
-  label: z.string().optional(),
-  tag: z.string().min(1),
-  userId: z.uuid(),
+const logger = getLogger(['chronos', 'doorlock', 'cards']);
+
+type DoorlockUserSummary = Pick<
+  typeof user.$inferSelect,
+  'id' | 'name' | 'email' | 'nickname'
+>;
+
+const cardSelectSchema = createSelectSchema(card);
+const deviceSummarySchema = createSelectSchema(device).pick({
+  id: true,
+  name: true,
+});
+const userSummarySchema = z.object({
+  email: z.string().nullable(),
+  id: z.uuid(),
+  name: z.string().nullable(),
+  nickname: z.string().nullable(),
 });
 
-const updateCardSchema = z.object({
-  disabled: z.boolean().optional(),
-  frozen: z.boolean().optional(),
-  label: z.string().optional(),
-  userId: z.uuid().optional(),
+export const cardWithRelationsSchema = cardSelectSchema.extend({
+  authorizedDevices: z.array(deviceSummarySchema),
+  owner: userSummarySchema.nullable().optional(),
 });
 
-const getAllResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(card)).array(),
-  success: z.boolean(),
+const cardsResponseSchema = z.object({
+  data: z.object({
+    cards: z.array(cardWithRelationsSchema),
+  }),
+  success: z.literal(true),
 });
 
-export const listCards = doorlockFactory.createHandlers(
+const cardResponseSchema = z.object({
+  data: z.object({
+    card: cardWithRelationsSchema,
+  }),
+  success: z.literal(true),
+});
+
+const usersResponseSchema = z.object({
+  data: z.object({
+    users: z.array(userSummarySchema),
+  }),
+  success: z.literal(true),
+});
+
+const baseCardPayloadSchema = z.object({
+  authorizedDeviceIds: z.array(z.uuid()).default([]),
+  enabled: z.boolean().default(true),
+  frozen: z.boolean().default(false),
+  name: z.string().min(1, 'Card name is required'),
+});
+
+const createCardSchema = baseCardPayloadSchema.extend({
+  cardData: z.string().min(1, 'Card UID is required'),
+  userId: z.uuid('User is required'),
+});
+
+const updateCardSchema = baseCardPayloadSchema.extend({
+  userId: z.uuid('User is required'),
+});
+const { schema: createCardRequestSchema } =
+  await resolver(createCardSchema).toOpenAPISchema();
+const { schema: updateCardRequestSchema } =
+  await resolver(updateCardSchema).toOpenAPISchema();
+
+const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
+  if (!cardRecord) {
+    throw new HTTPException(StatusCodes.NOT_FOUND, {
+      message: 'Card not found',
+    });
+  }
+  return cardRecord;
+};
+
+export const listCardsRoute = doorlockFactory.createHandlers(
   describeRoute({
-    description:
-      "Get all cards if the user has permission to read all of them, otherwise only get the user's cards.",
+    description: 'List all access cards',
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(ensureJsonSafeDates(cardsResponseSchema)),
           },
         },
-        description: 'Successful Response',
+        description: 'Successful response',
       },
     },
     tags: ['Doorlock'],
   }),
   requireAuthentication,
+  requireAuthorization('doorlock:cards:read'),
   async (c) => {
-    const currentUserId = c.var.session.userId;
-    const canReadAll = await userHasPermission(currentUserId, 'card:read');
-    const rows = canReadAll
-      ? await db.select().from(card)
-      : await db.select().from(card).where(eq(card.userId, currentUserId));
-    return c.json<SuccessResponse<typeof rows>>({
-      data: rows,
+    const cards = await fetchCards();
+
+    return c.json<SuccessResponse<{ cards: DoorlockCardWithRelations[] }>>({
+      data: { cards },
       success: true,
     });
   }
 );
 
-const getResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(card)),
-  success: z.boolean(),
-});
-
-export const getCard = doorlockFactory.createHandlers(
+export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
   describeRoute({
-    description: 'Get card via id.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description:
-            'The unique identifier for the card to get from the database.',
-          type: 'string',
-        },
-      },
-    ],
+    description: 'List users eligible for card ownership',
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+            schema: resolver(usersResponseSchema),
           },
         },
-        description: 'Successful Response',
+        description: 'Successful response',
       },
     },
     tags: ['Doorlock'],
   }),
   requireAuthentication,
+  requireAuthorization('doorlock:cards:write'),
   async (c) => {
-    const id = c.req.param('id');
-    if (!id) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing id',
-      });
-    }
-    const currentUserId = c.var.session.userId;
-    const [row] = await db
-      .select()
-      .from(card)
-      .where(eq(card.id, id as string))
-      .limit(1);
-    if (!row) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
-    }
-    const canReadAll = await userHasPermission(currentUserId, 'card:read');
-    if (!canReadAll && row.userId !== currentUserId) {
-      throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
-    }
-    return c.json<SuccessResponse<typeof row>>({
-      data: row,
-      success: true,
-    });
-  }
-);
-
-const createSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        disabled: z.boolean().nullable(),
-        frozen: z.boolean().nullable(),
-        label: z.string().nullable(),
-        tag: z.string(),
-        userId: z.string(),
+    const usersList = await db
+      .select({
+        email: user.email,
+        id: user.id,
+        name: user.name,
+        nickname: user.nickname,
       })
-    )
-  ).toOpenAPISchema()
-).schema;
+      .from(user)
+      .orderBy(sql`coalesce(${user.nickname}, ${user.name})`);
 
-export const createCard = doorlockFactory.createHandlers(
+    return c.json<SuccessResponse<{ users: DoorlockUserSummary[] }>>({
+      data: { users: usersList },
+      success: true,
+    });
+  }
+);
+
+export const createCardRoute = doorlockFactory.createHandlers(
   describeRoute({
-    description: 'Create a card.',
+    description: 'Create a new access card',
     requestBody: {
       content: {
         'application/json': {
-          schema: createSchema,
+          schema: createCardRequestSchema,
         },
       },
-      description: 'The data for the new card.',
     },
     responses: {
-      200: {
+      201: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+            schema: resolver(ensureJsonSafeDates(cardResponseSchema)),
           },
         },
-        description: 'Successful Response',
+        description: 'Card created',
       },
     },
     tags: ['Doorlock'],
   }),
   requireAuthentication,
-  requireAuthorization('card:create'),
-  zValidator('json', createCardSchema),
+  requireAuthorization('doorlock:cards:write'),
   async (c) => {
-    const data = c.req.valid('json');
+    const body = await c.req.json();
+    const payload = createCardSchema.parse(body);
+
     try {
-      const [inserted] = await db
-        .insert(card)
-        .values({
-          disabled: data.disabled ?? false,
-          frozen: data.frozen ?? false,
-          label: data.label,
-          tag: data.tag,
-          userId: data.userId,
-        })
-        .returning();
-      return c.json<SuccessResponse<typeof inserted>>({
-        data: inserted,
-        success: true,
+      const cardId = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(card)
+          .values({
+            cardData: payload.cardData,
+            enabled: payload.enabled,
+            frozen: payload.frozen,
+            name: payload.name,
+            userId: payload.userId,
+          })
+          .returning({ id: card.id });
+
+        if (!created) {
+          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+            message: 'Failed to create card',
+          });
+        }
+
+        await replaceCardDevices(tx, created.id, payload.authorizedDeviceIds);
+        return created.id;
       });
-    } catch (err) {
+
+      const createdCard = assertCardExists(await fetchCardById(cardId));
+
+      await syncDevicesByIds(
+        createdCard.authorizedDevices.map(
+          (authorizedDevice) => authorizedDevice.id
+        )
+      );
+
+      return c.json<SuccessResponse<{ card: DoorlockCardWithRelations }>>(
+        {
+          data: { card: createdCard },
+          success: true,
+        },
+        StatusCodes.CREATED
+      );
+    } catch (error) {
+      logger.error('Failed to create card', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause: env.mode === 'development' ? String(err) : undefined,
         message: 'Failed to create card',
       });
     }
   }
 );
 
-const UpdateSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        disabled: z.boolean().nullable(),
-        frozen: z.boolean().nullable(),
-        label: z.string().nullable(),
-        userId: z.string().nullable(),
-      })
-    )
-  ).toOpenAPISchema()
-).schema;
-
-export const updateCard = doorlockFactory.createHandlers(
+export const updateCardRoute = doorlockFactory.createHandlers(
   describeRoute({
-    description: "Update a card via it's ID.",
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the card to update.',
-          type: 'string',
-        },
-      },
-    ],
+    description: 'Update an access card',
     requestBody: {
       content: {
         'application/json': {
-          schema: UpdateSchema,
+          schema: updateCardRequestSchema,
         },
       },
-      description: 'The data for the updated card.',
     },
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
+            schema: resolver(ensureJsonSafeDates(cardResponseSchema)),
           },
         },
-        description: 'Successful Response',
+        description: 'Card updated',
       },
+      404: { description: 'Card not found' },
     },
     tags: ['Doorlock'],
   }),
   requireAuthentication,
-  zValidator('json', updateCardSchema),
+  requireAuthorization('doorlock:cards:write'),
   async (c) => {
-    const id = c.req.param('id');
-    if (!id) {
+    const cardId = c.req.param('id');
+    if (!cardId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing id',
+        message: 'Card id is required',
       });
     }
-    const data = c.req.valid('json');
-    const [existing] = await db
-      .select()
-      .from(card)
-      .where(eq(card.id, id as string))
-      .limit(1);
-    if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
-    }
+    const body = await c.req.json();
+    const payload = updateCardSchema.parse(body);
 
-    const currentUserId = c.var.session.userId;
-    const canUpdate = await userHasPermission(currentUserId, 'card:update');
-    if (!canUpdate) {
-      if (existing.userId !== currentUserId) {
-        throw new HTTPException(StatusCodes.FORBIDDEN, {
-          message: 'Forbidden',
-        });
-      }
-
-      const { label } = data;
-      try {
-        const [updated] = await db
-          .update(card)
-          .set({ label })
-          .where(eq(card.id, id as string))
-          .returning();
-        return c.json<SuccessResponse>({
-          data: updated,
-          success: true,
-        });
-      } catch (err) {
-        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-          cause: env.mode === 'development' ? String(err) : undefined,
-          message: 'Failed to update card',
-        });
-      }
-    }
     try {
-      const [updated] = await db
-        .update(card)
-        .set(data)
-        .where(eq(card.id, id as string))
-        .returning();
-      return c.json<SuccessResponse<typeof updated>>({
-        data: updated,
+      await db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(card)
+          .set({
+            enabled: payload.enabled,
+            frozen: payload.frozen,
+            name: payload.name,
+            userId: payload.userId,
+          })
+          .where(eq(card.id, cardId))
+          .returning({ id: card.id });
+
+        if (!updated) {
+          throw new HTTPException(StatusCodes.NOT_FOUND, {
+            message: 'Card not found',
+          });
+        }
+
+        await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
+      });
+
+      const updatedCard = assertCardExists(await fetchCardById(cardId));
+
+      await syncDevicesByIds(
+        updatedCard.authorizedDevices.map(
+          (authorizedDevice) => authorizedDevice.id
+        )
+      );
+
+      return c.json<SuccessResponse<{ card: DoorlockCardWithRelations }>>({
+        data: { card: updatedCard },
         success: true,
       });
-    } catch (err) {
+    } catch (error) {
+      logger.error('Failed to update card', { error });
+      if (error instanceof HTTPException) {
+        throw error;
+      }
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause: env.mode === 'development' ? String(err) : undefined,
         message: 'Failed to update card',
       });
     }
   }
 );
 
-export const deleteCard = doorlockFactory.createHandlers(
+export const deleteCardRoute = doorlockFactory.createHandlers(
   describeRoute({
-    description: 'Delete a card.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the card to delete.',
-          type: 'string',
-        },
-      },
-    ],
+    description: 'Delete an access card',
     responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(ensureJsonSafeDates(getResponseSchema)),
-          },
-        },
-        description: 'Successful Response',
-      },
+      200: { description: 'Card deleted' },
+      404: { description: 'Card not found' },
     },
     tags: ['Doorlock'],
   }),
   requireAuthentication,
+  requireAuthorization('doorlock:cards:write'),
   async (c) => {
-    const id = c.req.param('id');
-    if (!id) {
+    const cardId = c.req.param('id');
+    if (!cardId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing id',
+        message: 'Card id is required',
       });
     }
-    const [existing] = await db
-      .select()
-      .from(card)
-      .where(eq(card.id, id as string))
-      .limit(1);
-    if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, { message: 'Not found' });
-    }
-    const currentUserId = c.var.session.userId;
-    const canDelete = await userHasPermission(currentUserId, 'card:delete');
-    if (!canDelete && existing.userId !== currentUserId) {
-      throw new HTTPException(StatusCodes.FORBIDDEN, { message: 'Forbidden' });
-    }
-    try {
-      const [deleted] = await db
-        .delete(card)
-        .where(eq(card.id, id as string))
-        .returning();
-      return c.json<SuccessResponse>({
-        data: deleted,
-        success: true,
-      });
-    } catch (err) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause: env.mode === 'development' ? String(err) : undefined,
-        message: 'Failed to delete card',
+
+    const existingCard = await fetchCardById(cardId);
+    if (!existingCard) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Card not found',
       });
     }
+    const [deleted] = await db
+      .delete(card)
+      .where(eq(card.id, cardId))
+      .returning({ id: card.id });
+
+    if (!deleted) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Card not found',
+      });
+    }
+
+    await syncDevicesByIds(
+      existingCard.authorizedDevices.map(
+        (authorizedDevice) => authorizedDevice.id
+      )
+    );
+
+    return c.json<SuccessResponse>({ success: true });
   }
 );

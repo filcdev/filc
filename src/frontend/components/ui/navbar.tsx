@@ -92,6 +92,26 @@ export function Navbar({
             }
 
             if (data?.user) {
+              const displayName =
+                data.user.nickname ||
+                data.user.displayName ||
+                data.user.name ||
+                data.user.email ||
+                t('unknown');
+              const initialsSource =
+                data.user.nickname ||
+                data.user.displayName ||
+                data.user.name ||
+                data.user.email ||
+                'U';
+              const initials = initialsSource
+                // biome-ignore lint/performance/useTopLevelRegex: not needed
+                .split(/\s+/)
+                .filter(Boolean)
+                .map((segment) => segment[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
               return (
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -106,13 +126,7 @@ export function Navbar({
                             src={data.user.image ?? undefined}
                           />
                           <AvatarFallback className="bg-primary text-primary-foreground">
-                            {data.user.name
-                              ?.split(' ')
-                              .map((n) => n[0])
-                              .join('')
-                              .slice(0, 2) ||
-                              data.user.email?.slice(0, 2).toUpperCase() ||
-                              'U'}
+                            {initials}
                           </AvatarFallback>
                         </Avatar>
                       </Button>
@@ -124,7 +138,7 @@ export function Navbar({
                         <DropdownMenuLabel className="font-normal">
                           <div className="flex flex-col space-y-1">
                             <p className="font-medium text-sm leading-none">
-                              {data.user.name}
+                              {displayName}
                             </p>
                             <p className="text-muted-foreground text-xs leading-none">
                               {data.user.email}

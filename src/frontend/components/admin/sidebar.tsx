@@ -3,12 +3,11 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaCalendarDays,
-  FaCreditCard,
   FaDoorOpen,
-  FaFlag,
-  FaGear,
   FaGraduationCap,
-  FaListCheck,
+  FaIdCard,
+  FaList,
+  FaMicrochip,
 } from 'react-icons/fa6';
 import {
   Sidebar,
@@ -24,10 +23,12 @@ import {
 } from '~/frontend/components/ui/sidebar';
 import { authClient } from '~/frontend/utils/authentication';
 
+type MenuIcon = typeof FaCalendarDays;
+
 type MenuItem = {
   title: string;
   url: string;
-  icon: typeof FaDoorOpen;
+  icon: MenuIcon;
   permission?: string;
 };
 
@@ -45,34 +46,6 @@ export function AdminSidebar() {
       {
         items: [
           {
-            icon: FaDoorOpen,
-            title: t('admin.doorAccess'),
-            url: '/admin/doors',
-          },
-          {
-            icon: FaGear,
-            permission: 'device:upsert',
-            title: t('doorlock.manageDevices'),
-            url: '/admin/doors/devices',
-          },
-          {
-            icon: FaCreditCard,
-            permission: 'card:read',
-            title: t('doorlock.manageCards'),
-            url: '/admin/doors/cards',
-          },
-          {
-            icon: FaListCheck,
-            permission: 'doorlock:logs:read',
-            title: t('doorlock.accessLogs'),
-            url: '/admin/doors/logs',
-          },
-        ],
-        label: t('admin.door'),
-      },
-      {
-        items: [
-          {
             icon: FaCalendarDays,
             permission: 'import:timetable',
             title: t('timetable.import'),
@@ -84,13 +57,33 @@ export function AdminSidebar() {
       {
         items: [
           {
-            icon: FaFlag,
-            permission: 'feature-flags:read',
-            title: t('featureFlags.manage'),
-            url: '/admin/feature-flags',
+            icon: FaDoorOpen,
+            permission: 'doorlock:stats:read',
+            title: t('doorlock.dashboard', {
+              defaultValue: 'Doorlock dashboard',
+            }),
+            url: '/admin',
+          },
+          {
+            icon: FaMicrochip,
+            permission: 'doorlock:devices:read',
+            title: t('doorlock.devices', { defaultValue: 'Devices' }),
+            url: '/admin/devices',
+          },
+          {
+            icon: FaIdCard,
+            permission: 'doorlock:cards:read',
+            title: t('doorlock.cards', { defaultValue: 'Cards' }),
+            url: '/admin/cards',
+          },
+          {
+            icon: FaList,
+            permission: 'doorlock:logs:read',
+            title: t('doorlock.logs', { defaultValue: 'Logs' }),
+            url: '/admin/logs',
           },
         ],
-        label: t('admin.server'),
+        label: t('admin.doorlock', { defaultValue: 'Doorlock' }),
       },
     ],
     [t]

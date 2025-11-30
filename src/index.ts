@@ -1,22 +1,19 @@
 import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
+import { type BunWebSocketData, websocket } from 'hono/bun';
 import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
 import { openAPIRouteHandler } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '~/database';
 import { frontend } from '~/frontend/server';
-import { handleMqttShutdown, initializeMqttClient } from '~/mqtt/client';
-import { developmentRouter } from '~/routes/_dev/_router';
 import { cohortRouter } from '~/routes/cohort/_router';
 import { doorlockRouter } from '~/routes/doorlock/_router';
-import { featureFlagRouter } from '~/routes/feature-flags/_router';
 import { pingRouter } from '~/routes/ping/_router';
 import { timetableRouter } from '~/routes/timetable/_router';
 import { authRouter } from '~/utils/authentication';
 import { initializeRBAC } from '~/utils/authorization';
-import { startDeviceMonitor, stopDeviceMonitor } from '~/utils/device-monitor';
 import { env } from '~/utils/environment';
 import type { Context, ErrorResponse } from '~/utils/globals';
 import { configureLogger } from '~/utils/logger';
@@ -41,12 +38,8 @@ api.use('*', authenticationMiddleware);
 api.use('*', securityMiddleware);
 api.use('*', timingMiddleware);
 
-if (env.mode === 'development') {
-  api.route('/_dev', developmentRouter);
-}
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
-api.route('/feature-flags', featureFlagRouter);
 api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
 api.route('/doorlock', doorlockRouter);
@@ -113,16 +106,17 @@ app.onError((err, c) => {
   return c.redirect('/error');
 });
 
+let server: Bun.Server<BunWebSocketData> | null = null;
+
 const handleStartup = async () => {
   await prepareDb();
   await initializeRBAC();
-  await initializeMqttClient();
-  await startDeviceMonitor();
 
-  if (env.mode === 'production') {
-    Bun.serve({
+  if (env.mode !== 'development') {
+    server = Bun.serve({
       fetch: app.fetch,
       port: env.port,
+      websocket,
     });
   }
 
@@ -135,8 +129,6 @@ const handleStartup = async () => {
 
 const handleShutdown = () => {
   logger.info('Shutting down chronos...');
-  handleMqttShutdown();
-  stopDeviceMonitor();
   logger.info('Shutdown complete, exiting.');
   process.exit(0);
 };
@@ -149,4 +141,11 @@ await handleStartup();
 export type ApiType = typeof api;
 export type AppType = typeof app;
 
-export default env.mode === 'development' ? app : null;
+export { server };
+
+export default env.mode === 'development'
+  ? {
+      fetch: app.fetch,
+      websocket,
+    }
+  : null;
