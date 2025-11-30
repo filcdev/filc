@@ -3,12 +3,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FaCalendarDays,
-  FaCreditCard,
-  FaDoorOpen,
-  FaFlag,
-  FaGear,
+  type FaDoorOpen,
   FaGraduationCap,
-  FaListCheck,
 } from 'react-icons/fa6';
 import {
   Sidebar,
@@ -45,34 +41,6 @@ export function AdminSidebar() {
       {
         items: [
           {
-            icon: FaDoorOpen,
-            title: t('admin.doorAccess'),
-            url: '/admin/doors',
-          },
-          {
-            icon: FaGear,
-            permission: 'device:upsert',
-            title: t('doorlock.manageDevices'),
-            url: '/admin/doors/devices',
-          },
-          {
-            icon: FaCreditCard,
-            permission: 'card:read',
-            title: t('doorlock.manageCards'),
-            url: '/admin/doors/cards',
-          },
-          {
-            icon: FaListCheck,
-            permission: 'doorlock:logs:read',
-            title: t('doorlock.accessLogs'),
-            url: '/admin/doors/logs',
-          },
-        ],
-        label: t('admin.door'),
-      },
-      {
-        items: [
-          {
             icon: FaCalendarDays,
             permission: 'import:timetable',
             title: t('timetable.import'),
@@ -80,17 +48,6 @@ export function AdminSidebar() {
           },
         ],
         label: t('admin.timetable'),
-      },
-      {
-        items: [
-          {
-            icon: FaFlag,
-            permission: 'feature-flags:read',
-            title: t('featureFlags.manage'),
-            url: '/admin/feature-flags',
-          },
-        ],
-        label: t('admin.server'),
       },
     ],
     [t]
