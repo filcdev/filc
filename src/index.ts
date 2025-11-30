@@ -87,7 +87,7 @@ api.get(
         version: '0.0.1',
       },
       servers: [
-        { description: 'Local Server', url: 'http://localhost:3000/api' },
+        env.mode === "development" ? { description: 'Local Server', url: 'http://localhost:3000/api' } : { description: 'chronos', url: 'https://dev.filc.space' },
       ],
     },
   })
@@ -145,7 +145,7 @@ export { server };
 
 export default env.mode === 'development'
   ? {
-      fetch: app.fetch,
-      websocket,
-    }
+    fetch: app.fetch,
+    websocket,
+  }
   : null;

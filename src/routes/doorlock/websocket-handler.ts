@@ -123,7 +123,7 @@ const handleIncomingMessage = async (
         });
     }
   } catch (e) {
-    logger.warn('JSON parsing failed', { error: e });
+    logger.warn('Audit log store failed', { error: e });
   }
 };
 
