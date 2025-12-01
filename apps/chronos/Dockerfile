@@ -1,25 +1,30 @@
-FROM oven/bun:1.3.3 AS base
-WORKDIR /usr/src/app
+FROM oven/bun:1.3.3-alpine AS base
+RUN apk update
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 
-FROM base AS install
-RUN mkdir -p /temp/dev
-COPY package.json bun.lock /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
-
-RUN mkdir -p /temp/prod
-COPY package.json bun.lock /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
-
-FROM base AS prerelease
-COPY --from=install /temp/dev/node_modules node_modules
+FROM base AS prepare
+RUN bun add -g turbo@^2
 COPY . .
 
-RUN bun run build
+RUN turbo prune @filcdev/iris --docker
+
+FROM base AS install
+COPY --from=prepare /app/out/json/ .
+RUN bun install --production
+
+FROM base AS builder
+COPY --from=prepare /app/out/json/ .
+RUN bun install
+
+COPY --from=prepare /app/out/full/ .
+
+RUN bun run build --filter=@filcdev/chronos
 
 FROM base AS release
-COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /usr/src/app/src/database/migrations ./src/database/migrations
-COPY --from=prerelease /usr/src/app/dist ./dist
+COPY --from=install /app/node_modules node_modules
+COPY --from=builder /app/apps/chronos/src/database/migrations ./src/database/migrations
+COPY --from=builder /app/apps/chronos/dist ./dist
 
 # run the app
 USER bun

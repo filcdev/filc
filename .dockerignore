@@ -16,3 +16,5 @@ dist
 build
 biome.jsonc
 compose.yml
+.turbo
+.tanstack
