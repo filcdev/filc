@@ -24,6 +24,10 @@ const envSchema = z.object({
     .max(MAX_PORT)
     .default(DEFAULT_PORT),
   CHRONOS_REAL_IP_HEADER: z.string().optional(),
+  CHRONOS_TRUSTED_ORIGINS: z.preprocess(
+    (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
+    z.array(z.url()).optional()
+  ),
 });
 
 const makeTypedEnvironment =
