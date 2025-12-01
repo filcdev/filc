@@ -21,11 +21,7 @@
   // Configure tool-specific properties.
   "customizations": {
     "vscode": {
-      "extensions": [
-        "biomejs.biome",
-        "Lokalise.i18n-ally",
-        "TypeScriptTeam.native-preview"
-      ]
+      "extensions": ["biomejs.biome", "Lokalise.i18n-ally"]
     }
   },
 

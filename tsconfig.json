@@ -1,4 +1,5 @@
 {
+  "extends": "@tsconfig/strictest/tsconfig.json",
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
@@ -16,8 +17,6 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
-    // tsgo will fail with this set
-    // "baseUrl": "./",
     "paths": {
       "~/*": ["./src/*"]
     }
