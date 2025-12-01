@@ -14,7 +14,7 @@ export const timingMiddleware = createMiddleware<Context>(async (c, next) => {
   const ms = Date.now() - start;
 
   if (env.mode === 'development') {
-    logger.trace(`${c.req.method} ${c.req.url} - ${ms}ms`, {
+    logger.debug(`${c.req.method} ${c.req.url} - ${ms}ms`, {
       duration: ms,
       method: c.req.method,
       url: c.req.url,

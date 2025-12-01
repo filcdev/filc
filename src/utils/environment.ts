@@ -18,7 +18,6 @@ const envSchema = z.object({
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
   CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
-  CHRONOS_MQTT_BROKER_URL: z.url(),
   CHRONOS_PORT: z.coerce
     .number()
     .min(MIN_PORT)
