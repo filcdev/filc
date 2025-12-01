@@ -1,15 +1,10 @@
-const ms = Date.now();
+/** biome-ignore-all lint/suspicious/noConsole: logger would pull in .env */
+console.info('Starting Chronos server build...');
+console.time('Built Chronos server');
 
-import { getLogger } from '@logtape/logtape';
-import { configureLogger } from '#utils/logger';
 import packagesJson from './package.json';
 
 const dependencies = Object.keys(packagesJson.dependencies ?? {});
-
-await configureLogger('chronos');
-
-const logger = getLogger(['chronos', 'build']);
-logger.info('Building Chronos server...');
 
 await Bun.build({
   entrypoints: ['src/index.ts'],
@@ -21,4 +16,4 @@ await Bun.build({
   target: 'bun',
 });
 
-logger.info(`Built Chronos server in ${Date.now() - ms}ms`);
+console.timeEnd('Built Chronos server');
