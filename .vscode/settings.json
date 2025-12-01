@@ -17,10 +17,6 @@
   "biome.runFromTemporaryLocation": true,
   "biome.lsp.bin": "/workspaces/chronos/node_modules/@biomejs/cli-linux-x64-musl/biome",
 
-  // i18n
-  "i18n-ally.localesPaths": ["public/locales"],
-  "i18n-ally.keystyle": "nested",
-
   // Copilot commit messages
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
