@@ -6,8 +6,8 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { timestamps } from '@/database/helpers';
-import { cohort } from '@/database/schema/timetable';
+import { timestamps } from '#database/helpers';
+import { cohort } from '#database/schema/timetable';
 
 export const user = pgTable('user', {
   cohortId: text('cohort_id').references(() => cohort.id),

@@ -5,22 +5,19 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import { db } from '@/database';
-import { user } from '@/database/schema/authentication';
-import { card, device } from '@/database/schema/doorlock';
+import { db } from '#database';
+import { user } from '#database/schema/authentication';
+import { card, device } from '#database/schema/doorlock';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
   replaceCardDevices,
-} from '@/routes/doorlock/card-helpers';
-import { syncDevicesByIds } from '@/routes/doorlock/device-sync';
-import type { SuccessResponse } from '@/utils/globals';
-import {
-  requireAuthentication,
-  requireAuthorization,
-} from '@/utils/middleware';
-import { ensureJsonSafeDates } from '@/utils/zod';
+} from '#routes/doorlock/card-helpers';
+import { syncDevicesByIds } from '#routes/doorlock/device-sync';
+import type { SuccessResponse } from '#utils/globals';
+import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'cards']);

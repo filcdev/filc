@@ -6,19 +6,19 @@ import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
 import { openAPIRouteHandler } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
-import { prepareDb } from '@/database';
-import { cohortRouter } from '@/routes/cohort/_router';
-import { doorlockRouter } from '@/routes/doorlock/_router';
-import { pingRouter } from '@/routes/ping/_router';
-import { timetableRouter } from '@/routes/timetable/_router';
-import { authRouter } from '@/utils/authentication';
-import { initializeRBAC } from '@/utils/authorization';
-import { env } from '@/utils/environment';
-import type { Context, ErrorResponse } from '@/utils/globals';
-import { configureLogger } from '@/utils/logger';
-import { authenticationMiddleware } from '@/utils/middleware';
-import { corsMiddleware, securityMiddleware } from '@/utils/security';
-import { timingMiddleware } from '@/utils/timing';
+import { prepareDb } from '#database';
+import { cohortRouter } from '#routes/cohort/_router';
+import { doorlockRouter } from '#routes/doorlock/_router';
+import { pingRouter } from '#routes/ping/_router';
+import { timetableRouter } from '#routes/timetable/_router';
+import { authRouter } from '#utils/authentication';
+import { initializeRBAC } from '#utils/authorization';
+import { env } from '#utils/environment';
+import type { Context, ErrorResponse } from '#utils/globals';
+import { configureLogger } from '#utils/logger';
+import { authenticationMiddleware } from '#utils/middleware';
+import { corsMiddleware, securityMiddleware } from '#utils/security';
+import { timingMiddleware } from '#utils/timing';
 
 await configureLogger('chronos');
 const logger = getLogger(['chronos', 'server']);
@@ -115,7 +115,7 @@ export const server = Bun.serve({
   websocket,
 });
 
-logger.info('chronos started on http://localhost:3000');
+logger.info(`chronos listening on http://localhost:${env.port}`);
 if (env.logLevel === 'trace') {
   logger.info('Log level set to TRACE, verbose route listing enabled');
   showRoutes(app, { verbose: true });

@@ -3,15 +3,12 @@ import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import { db } from '@/database';
-import { user } from '@/database/schema/authentication';
-import { auditLog, card, device } from '@/database/schema/doorlock';
-import type { SuccessResponse } from '@/utils/globals';
-import {
-  requireAuthentication,
-  requireAuthorization,
-} from '@/utils/middleware';
-import { ensureJsonSafeDates } from '@/utils/zod';
+import { db } from '#database';
+import { user } from '#database/schema/authentication';
+import { auditLog, card, device } from '#database/schema/doorlock';
+import type { SuccessResponse } from '#utils/globals';
+import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const auditLogSelectSchema = createSelectSchema(auditLog);

@@ -1,7 +1,7 @@
 const ms = Date.now();
 
 import { getLogger } from '@logtape/logtape';
-import { configureLogger } from '@/utils/logger';
+import { configureLogger } from '#utils/logger';
 import packagesJson from './package.json';
 
 const dependencies = Object.keys(packagesJson.dependencies ?? {});
@@ -21,4 +21,4 @@ await Bun.build({
   target: 'bun',
 });
 
-logger.info(`Built Chronos server in ${Date.now() - ms}ms`)
+logger.info(`Built Chronos server in ${Date.now() - ms}ms`);

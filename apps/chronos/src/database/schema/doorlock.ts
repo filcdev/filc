@@ -8,7 +8,7 @@ import {
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { timestamps } from '@/database/helpers';
+import { timestamps } from '#database/helpers';
 import { user } from './authentication';
 
 export const device = pgTable('device', {

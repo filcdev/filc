@@ -1,8 +1,8 @@
 import type { SQL } from 'drizzle-orm';
 import { desc, eq } from 'drizzle-orm';
-import { db } from '@/database';
-import { user } from '@/database/schema/authentication';
-import { card, cardDevice, device } from '@/database/schema/doorlock';
+import { db } from '#database';
+import { user } from '#database/schema/authentication';
+import { card, cardDevice, device } from '#database/schema/doorlock';
 
 type CardRecord = typeof card.$inferSelect;
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;

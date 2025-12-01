@@ -5,14 +5,11 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import { db } from '@/database';
-import { device } from '@/database/schema/doorlock';
-import type { SuccessResponse } from '@/utils/globals';
-import {
-  requireAuthentication,
-  requireAuthorization,
-} from '@/utils/middleware';
-import { ensureJsonSafeDates } from '@/utils/zod';
+import { db } from '#database';
+import { device } from '#database/schema/doorlock';
+import type { SuccessResponse } from '#utils/globals';
+import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'devices']);

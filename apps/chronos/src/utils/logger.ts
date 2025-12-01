@@ -4,7 +4,7 @@ import {
   getLogger,
   jsonLinesFormatter,
 } from '@logtape/logtape';
-import { env } from '@/utils/environment';
+import { env } from '#utils/environment';
 
 const prettyFormatter = async () => {
   if (env.mode === 'production') {

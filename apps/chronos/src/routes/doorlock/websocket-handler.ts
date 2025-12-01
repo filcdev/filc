@@ -2,17 +2,17 @@ import { getLogger } from '@logtape/logtape';
 import type { ServerWebSocket } from 'bun';
 import { and, eq } from 'drizzle-orm';
 import { upgradeWebSocket } from 'hono/bun';
-import { db } from '@/database';
+import { db } from '#database';
 import {
   auditLog,
   card,
   cardDevice,
   deviceHealth,
   device as lockDevice,
-} from '@/database/schema/doorlock';
-import { server } from '@/index';
-import { doorlockFactory } from '@/routes/doorlock/_factory';
-import { env } from '@/utils/environment';
+} from '#database/schema/doorlock';
+import { server } from '#index';
+import { doorlockFactory } from '#routes/doorlock/_factory';
+import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 

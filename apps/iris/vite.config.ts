@@ -25,8 +25,9 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     host: true,
+    port: 3000,
     proxy: {
-      '/api': 'https://dev.filc.space',
+      '/api': 'http://localhost:3001',
     },
   },
 });

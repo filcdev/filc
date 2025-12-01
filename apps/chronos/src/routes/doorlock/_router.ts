@@ -1,25 +1,25 @@
-import { doorlockFactory } from '@/routes/doorlock/_factory';
+import { doorlockFactory } from '#routes/doorlock/_factory';
 import {
   createCardRoute,
   deleteCardRoute,
   listCardsRoute,
   listDoorlockUsersRoute,
   updateCardRoute,
-} from '@/routes/doorlock/cards';
+} from '#routes/doorlock/cards';
 import {
   createDeviceRoute,
   deleteDeviceRoute,
   listDevicesRoute,
   updateDeviceRoute,
-} from '@/routes/doorlock/devices';
-import { listLogsRoute } from '@/routes/doorlock/logs';
+} from '#routes/doorlock/devices';
+import { listLogsRoute } from '#routes/doorlock/logs';
 import {
   activateVirtualCardRoute,
   listSelfCardsRoute,
   updateSelfCardFrozenRoute,
-} from '@/routes/doorlock/self';
-import { doorlockStatsRoute } from '@/routes/doorlock/stats';
-import { websocketHandler } from '@/routes/doorlock/websocket-handler';
+} from '#routes/doorlock/self';
+import { doorlockStatsRoute } from '#routes/doorlock/stats';
+import { websocketHandler } from '#routes/doorlock/websocket-handler';
 
 export const doorlockRouter = doorlockFactory
   .createApp()

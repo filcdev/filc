@@ -26,7 +26,5 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  },
-
-  "references": [ { "chronos": "../chronos/tsconfig.json" } ]
+  }
 }

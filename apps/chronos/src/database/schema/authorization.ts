@@ -1,5 +1,5 @@
 import { jsonb, pgTable, text, uuid } from 'drizzle-orm/pg-core';
-import { timestamps } from '@/database/helpers';
+import { timestamps } from '#database/helpers';
 
 export const role = pgTable('role', {
   can: jsonb('can').$type<string[]>().notNull().default([]),

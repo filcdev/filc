@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { getConnInfo } from 'hono/bun';
 import { createMiddleware } from 'hono/factory';
-import { env } from '@/utils/environment';
-import type { Context } from '@/utils/globals';
+import { env } from '#utils/environment';
+import type { Context } from '#utils/globals';
 
 const logger = getLogger(['chronos', 'server']);
 

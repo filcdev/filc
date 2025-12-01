@@ -8,15 +8,12 @@ import { StatusCodes } from 'http-status-codes';
 import { decode, encode } from 'iconv-lite';
 import { DOMParser } from 'xmldom';
 import z from 'zod';
-import { timetableFactory } from '@/routes/timetable/_factory';
-import { env } from '@/utils/environment';
-import type { SuccessResponse } from '@/utils/globals';
-import {
-  requireAuthentication,
-  requireAuthorization,
-} from '@/utils/middleware';
-import { importTimetableXML } from '@/utils/timetable/imports';
-import { ensureJsonSafeDates } from '@/utils/zod';
+import { timetableFactory } from '#routes/timetable/_factory';
+import { env } from '#utils/environment';
+import type { SuccessResponse } from '#utils/globals';
+import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { importTimetableXML } from '#utils/timetable/imports';
+import { ensureJsonSafeDates } from '#utils/zod';
 
 const logger = getLogger(['chronos', 'timetable']);
 

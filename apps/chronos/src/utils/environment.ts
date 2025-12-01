@@ -4,7 +4,7 @@ import z from 'zod';
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
 const MAX_PORT = 65_535;
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 3001;
 
 const envSchema = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),

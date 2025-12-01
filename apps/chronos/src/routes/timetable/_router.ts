@@ -1,5 +1,5 @@
-import { timetableFactory } from '@/routes/timetable/_factory';
-import { importRoute } from '@/routes/timetable/import';
+import { timetableFactory } from '#routes/timetable/_factory';
+import { importRoute } from '#routes/timetable/import';
 import {
   createMovedLesson,
   deleteMovedLesson,
@@ -8,7 +8,7 @@ import {
   getRelevantMovedLessons,
   getRelevantMovedLessonsForCohort,
   updateMovedLesson,
-} from '@/routes/timetable/movedLesson';
+} from '#routes/timetable/movedLesson';
 import {
   createSubstitution,
   deleteSubstitution,
@@ -16,7 +16,7 @@ import {
   getRelevantSubstitutions,
   getRelevantSubstitutionsForCohort,
   updateSubstitution,
-} from '@/routes/timetable/substitution';
+} from '#routes/timetable/substitution';
 import {
   getAllTimetables,
   getAllValidTimetables,

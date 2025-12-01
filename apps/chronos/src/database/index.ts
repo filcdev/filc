@@ -2,7 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import { SQL } from 'bun';
 import { drizzle } from 'drizzle-orm/bun-sql';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
-import { env } from '@/utils/environment';
+import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'drizzle']);
 

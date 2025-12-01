@@ -1,9 +1,9 @@
 import { getLogger } from '@logtape/logtape';
 import RBAC from '@rbac/rbac';
 import { eq } from 'drizzle-orm';
-import { db } from '@/database';
-import { user as dbUser } from '@/database/schema/authentication';
-import { role as dbRole } from '@/database/schema/authorization';
+import { db } from '#database';
+import { user as dbUser } from '#database/schema/authentication';
+import { role as dbRole } from '#database/schema/authorization';
 
 const logger = getLogger(['chronos', 'rbac']);
 

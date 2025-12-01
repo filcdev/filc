@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { db } from '@/database';
-import { cardDevice } from '@/database/schema/doorlock';
-import { syncDatabase } from '@/routes/doorlock/websocket-handler';
+import { db } from '#database';
+import { cardDevice } from '#database/schema/doorlock';
+import { syncDatabase } from '#routes/doorlock/websocket-handler';
 
 const logger = getLogger(['chronos', 'doorlock', 'sync']);
 

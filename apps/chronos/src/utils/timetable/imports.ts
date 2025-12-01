@@ -1,6 +1,6 @@
 import { getLogger } from '@logtape/logtape';
 import { and, count, eq, inArray } from 'drizzle-orm';
-import { db } from '@/database';
+import { db } from '#database';
 import {
   building as buildingSchema,
   classroom as classroomSchema,
@@ -13,7 +13,7 @@ import {
   teacher as teacherSchema,
   timetable,
   weekDefinition as weekSchema,
-} from '@/database/schema/timetable';
+} from '#database/schema/timetable';
 
 const logger = getLogger(['chronos', 'timetable']);
 

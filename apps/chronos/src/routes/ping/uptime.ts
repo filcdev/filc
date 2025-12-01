@@ -3,9 +3,9 @@ import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import { pingFactory } from '@/routes/ping/_factory';
-import type { SuccessResponse } from '@/utils/globals';
-import { ensureJsonSafeDates } from '@/utils/zod';
+import { pingFactory } from '#routes/ping/_factory';
+import type { SuccessResponse } from '#utils/globals';
+import { ensureJsonSafeDates } from '#utils/zod';
 
 dayjs.extend(relativeTime);
 dayjs.extend(duration);

@@ -1,6 +1,6 @@
 import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
-import { env } from '@/utils/environment';
+import { env } from '#utils/environment';
 
 export const securityMiddleware = secureHeaders({
   contentSecurityPolicy: {

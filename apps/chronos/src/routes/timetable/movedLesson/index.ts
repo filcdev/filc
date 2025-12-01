@@ -5,7 +5,7 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import { db } from '@/database';
+import { db } from '#database';
 import {
   classroom,
   dayDefinition,
@@ -14,13 +14,10 @@ import {
   movedLesson,
   movedLessonLessonMTM,
   period,
-} from '@/database/schema/timetable';
-import type { SuccessResponse } from '@/utils/globals';
-import {
-  requireAuthentication,
-  requireAuthorization,
-} from '@/utils/middleware';
-import { ensureJsonSafeDates } from '@/utils/zod';
+} from '#database/schema/timetable';
+import type { SuccessResponse } from '#utils/globals';
+import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
