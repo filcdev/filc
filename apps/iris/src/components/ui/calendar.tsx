@@ -1,4 +1,5 @@
-/** biome-ignore-all lint/correctness/noNestedComponentDefinitions: allows for much less complex typing here */
+/** biome-ignore-all lint/correctness/noNestedComponentDefinitions: Defined outside causes typing issues with react-day-picker components prop */
+'use client';
 
 import { type ComponentProps, useEffect, useRef } from 'react';
 import {
@@ -6,11 +7,7 @@ import {
   DayPicker,
   getDefaultClassNames,
 } from 'react-day-picker';
-import {
-  FaChevronDown as ChevronDownIcon,
-  FaChevronLeft as ChevronLeftIcon,
-  FaChevronRight as ChevronRightIcon,
-} from 'react-icons/fa6';
+import { FaChevronDown, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/utils/index';
 
@@ -122,20 +119,20 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ className: cne, orientation, ...p }) => {
+        Chevron: ({ className: cls, orientation, ...p }) => {
           if (orientation === 'left') {
-            return <ChevronLeftIcon className={cn('size-4', cne)} {...p} />;
+            return <FaChevronLeft className={cn('size-4', cls)} {...p} />;
           }
 
           if (orientation === 'right') {
-            return <ChevronRightIcon className={cn('size-4', cne)} {...p} />;
+            return <FaChevronRight className={cn('size-4', cls)} {...p} />;
           }
 
-          return <ChevronDownIcon className={cn('size-4', cne)} {...p} />;
+          return <FaChevronDown className={cn('size-4', cls)} {...p} />;
         },
         DayButton: CalendarDayButton,
-        Root: ({ className: cne, rootRef, ...p }) => (
-          <div className={cn(cne)} data-slot="calendar" ref={rootRef} {...p} />
+        Root: ({ className: cls, rootRef, ...p }) => (
+          <div className={cn(cls)} data-slot="calendar" ref={rootRef} {...p} />
         ),
         WeekNumber: ({ children, ...p }) => (
           <td {...p}>
@@ -172,6 +169,8 @@ function CalendarDayButton({
     }
   }, [modifiers.focused]);
 
+  const { disabled, style, ...restProps } = props;
+
   return (
     <Button
       className={cn(
@@ -189,10 +188,12 @@ function CalendarDayButton({
         !modifiers.range_end &&
         !modifiers.range_middle
       }
+      disabled={disabled ?? false}
       ref={ref}
       size="icon"
+      {...(style && { style })}
       variant="ghost"
-      {...props}
+      {...restProps}
     />
   );
 }

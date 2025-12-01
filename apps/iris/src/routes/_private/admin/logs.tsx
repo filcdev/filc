@@ -442,7 +442,10 @@ function DateRangePicker({
               mode="range"
               numberOfMonths={2}
               onSelect={(range) =>
-                onChange({ from: range?.from, to: range?.to })
+                onChange({
+                  ...(range?.from && { from: range.from }),
+                  ...(range?.to && { to: range.to }),
+                })
               }
               selected={{ from: value.from, to: value.to }}
             />

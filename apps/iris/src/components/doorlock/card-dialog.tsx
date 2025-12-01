@@ -22,7 +22,7 @@ import {
 
 type CardFormValues = {
   authorizedDeviceIds: string[];
-  cardData?: string;
+  cardData: string;
   enabled: boolean;
   frozen: boolean;
   name: string;
@@ -61,7 +61,7 @@ type CardDialogProps<
 
 const initialState = (card?: CardLike | null): CardFormValues => ({
   authorizedDeviceIds: card?.authorizedDevices.map((device) => device.id) ?? [],
-  cardData: undefined,
+  cardData: '',
   enabled: card?.enabled ?? true,
   frozen: card?.frozen ?? false,
   name: card?.name ?? '',

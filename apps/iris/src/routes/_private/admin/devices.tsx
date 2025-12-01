@@ -140,7 +140,10 @@ function DevicesPage() {
   }, [devicesQuery.data]);
 
   const handleSave = async (payload: DevicePayload) => {
-    await upsertMutation.mutateAsync({ id: selectedDevice?.id, payload });
+    await upsertMutation.mutateAsync({
+      ...(selectedDevice?.id && { id: selectedDevice.id }),
+      payload,
+    });
   };
 
   const handleDelete = async (device: DoorlockDevice) => {

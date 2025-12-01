@@ -47,7 +47,7 @@ export const importTimetableXML = async (
   const teacherMap = await loadTeachers(xmlDoc);
   const classroomMap = await loadClassrooms(xmlDoc);
   const cohortMap = await loadCohort(xmlDoc, teacherMap, timetableId);
-  const _lessons = await loadLessons(
+  await loadLessons(
     xmlDoc,
     {
       classroomMap,

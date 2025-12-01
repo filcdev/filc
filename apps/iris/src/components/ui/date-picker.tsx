@@ -45,8 +45,9 @@ export function DatePicker({
           <Calendar
             autoFocus
             mode="single"
-            onSelect={onDateChange}
+            required={false}
             selected={date}
+            {...(onDateChange && { onSelect: onDateChange })}
           />
         </PopoverContent>
       </PopoverPositioner>

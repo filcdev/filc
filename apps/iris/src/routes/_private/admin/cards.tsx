@@ -179,7 +179,10 @@ function CardsPage() {
   }, [cardsQuery.data]);
 
   const handleSave = async (payload: CardPayload) => {
-    await upsertMutation.mutateAsync({ id: selectedCard?.id, payload });
+    await upsertMutation.mutateAsync({
+      ...(selectedCard?.id && { id: selectedCard.id }),
+      payload,
+    });
   };
 
   const handleDelete = async (card: DoorlockCard) => {
