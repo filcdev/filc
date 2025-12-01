@@ -202,7 +202,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof movedLessons>>({
         data: movedLessons,
         success: true,
       });
@@ -282,7 +282,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof movedLessons>>({
         data: movedLessons,
         success: true,
       });
@@ -356,7 +356,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         .where(eq(lessonCohortMTM.cohortId, cohortId))
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof movedLessons>>({
         data: movedLessons,
         success: true,
       });
@@ -439,7 +439,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof movedLessons>>({
         data: movedLessons,
         success: true,
       });
@@ -533,7 +533,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
         );
       }
 
-      return c.json<SuccessResponse>(
+      return c.json<SuccessResponse<typeof newMovedLesson>>(
         {
           data: newMovedLesson,
           success: true,
@@ -651,7 +651,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
         }
       }
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof updatedMovedLesson>>({
         data: updatedMovedLesson,
         success: true,
       });
@@ -713,7 +713,7 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
         });
       }
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof deletedMovedLesson>>({
         data: deletedMovedLesson,
         success: true,
       });

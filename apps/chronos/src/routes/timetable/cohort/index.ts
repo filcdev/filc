@@ -64,7 +64,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
         .leftJoin(timetable, eq(cohort.timetableId, timetable.id))
         .where(eq(timetable.id, timetableId));
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof cohorts>>({
         data: cohorts,
         success: true,
       });

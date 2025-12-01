@@ -18,6 +18,7 @@ import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateAdminIndexRouteImport } from './routes/_private/admin/index'
+import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
 import { Route as PrivateAdminLogsRouteImport } from './routes/_private/admin/logs'
 import { Route as PrivateAdminDevicesRouteImport } from './routes/_private/admin/devices'
 import { Route as PrivateAdminCardsRouteImport } from './routes/_private/admin/cards'
@@ -66,6 +67,11 @@ const PrivateAdminIndexRoute = PrivateAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PrivateAdminUsersRoute = PrivateAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 const PrivateAdminLogsRoute = PrivateAdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/admin/cards': typeof PrivateAdminCardsRoute
   '/admin/devices': typeof PrivateAdminDevicesRoute
   '/admin/logs': typeof PrivateAdminLogsRoute
+  '/admin/users': typeof PrivateAdminUsersRoute
   '/admin/': typeof PrivateAdminIndexRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
 }
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/admin/cards': typeof PrivateAdminCardsRoute
   '/admin/devices': typeof PrivateAdminDevicesRoute
   '/admin/logs': typeof PrivateAdminLogsRoute
+  '/admin/users': typeof PrivateAdminUsersRoute
   '/admin': typeof PrivateAdminIndexRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
 }
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/_private/admin/cards': typeof PrivateAdminCardsRoute
   '/_private/admin/devices': typeof PrivateAdminDevicesRoute
   '/_private/admin/logs': typeof PrivateAdminLogsRoute
+  '/_private/admin/users': typeof PrivateAdminUsersRoute
   '/_private/admin/': typeof PrivateAdminIndexRoute
   '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
 }
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/admin/cards'
     | '/admin/devices'
     | '/admin/logs'
+    | '/admin/users'
     | '/admin/'
     | '/admin/timetable/import'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/admin/cards'
     | '/admin/devices'
     | '/admin/logs'
+    | '/admin/users'
     | '/admin'
     | '/admin/timetable/import'
   id:
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/_private/admin/cards'
     | '/_private/admin/devices'
     | '/_private/admin/logs'
+    | '/_private/admin/users'
     | '/_private/admin/'
     | '/_private/admin/timetable/import'
   fileRoutesById: FileRoutesById
@@ -245,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/users': {
+      id: '/_private/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof PrivateAdminUsersRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/logs': {
       id: '/_private/admin/logs'
       path: '/logs'
@@ -280,6 +299,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminCardsRoute: typeof PrivateAdminCardsRoute
   PrivateAdminDevicesRoute: typeof PrivateAdminDevicesRoute
   PrivateAdminLogsRoute: typeof PrivateAdminLogsRoute
+  PrivateAdminUsersRoute: typeof PrivateAdminUsersRoute
   PrivateAdminIndexRoute: typeof PrivateAdminIndexRoute
   PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
 }
@@ -288,6 +308,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminCardsRoute: PrivateAdminCardsRoute,
   PrivateAdminDevicesRoute: PrivateAdminDevicesRoute,
   PrivateAdminLogsRoute: PrivateAdminLogsRoute,
+  PrivateAdminUsersRoute: PrivateAdminUsersRoute,
   PrivateAdminIndexRoute: PrivateAdminIndexRoute,
   PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
 }

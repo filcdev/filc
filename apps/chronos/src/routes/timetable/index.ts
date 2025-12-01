@@ -46,7 +46,7 @@ export const getAllTimetables = timetableFactory.createHandlers(
     try {
       const timetables = await db.select().from(timetable);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof timetables>>({
         data: timetables,
         success: true,
       });
@@ -93,13 +93,12 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
         .limit(1);
 
       if (!latestValidTimetable) {
-        return c.json<SuccessResponse>({
-          data: 'No valid timetable found.',
-          success: true,
+        throw new HTTPException(StatusCodes.NOT_FOUND, {
+          message: 'No valid timetable found.',
         });
       }
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof latestValidTimetable>>({
         data: latestValidTimetable,
         success: true,
       });
@@ -137,7 +136,7 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
         .from(timetable)
         .where(gte(timetable.validFrom, today.toString()));
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof timetables>>({
         data: timetables,
         success: true,
       });

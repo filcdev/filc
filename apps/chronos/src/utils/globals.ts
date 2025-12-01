@@ -14,8 +14,7 @@ export type AuthenticatedContext = {
   };
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: TODO: improve any usage
-export type SuccessResponse<T = any> = T extends any
+export type SuccessResponse<T = undefined> = [T] extends [undefined]
   ? { success: true; data?: T }
   : { success: true; data: T };
 

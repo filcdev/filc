@@ -79,7 +79,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const lessons = lessonRows.map((r) => r.lesson);
 
     if (lessons.length === 0) {
-      return c.json<SuccessResponse>({ data: [], success: true });
+      return c.json<SuccessResponse<[]>>({ data: [], success: true });
     }
 
     const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
@@ -169,6 +169,9 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       };
     });
 
-    return c.json<SuccessResponse>({ data: enriched, success: true });
+    return c.json<SuccessResponse<typeof enriched>>({
+      data: enriched,
+      success: true,
+    });
   }
 );
