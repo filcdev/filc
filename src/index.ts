@@ -1,13 +1,12 @@
 import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import { Hono } from 'hono';
-import { type BunWebSocketData, websocket } from 'hono/bun';
+import { websocket } from 'hono/bun';
 import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
 import { openAPIRouteHandler } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '~/database';
-import { frontend } from '~/frontend/server';
 import { cohortRouter } from '~/routes/cohort/_router';
 import { doorlockRouter } from '~/routes/doorlock/_router';
 import { pingRouter } from '~/routes/ping/_router';
@@ -87,7 +86,9 @@ api.get(
         version: '0.0.1',
       },
       servers: [
-        env.mode === "development" ? { description: 'Local Server', url: 'http://localhost:3000/api' } : { description: 'chronos', url: 'https://dev.filc.space/api' },
+        env.mode === 'development'
+          ? { description: 'Local Server', url: 'http://localhost:3000/api' }
+          : { description: 'chronos', url: 'https://dev.filc.space/api' },
       ],
     },
   })
@@ -96,7 +97,6 @@ api.get('/doc/swagger', swaggerUI({ url: '/api/doc/openapi.json' }));
 
 const app = new Hono();
 app.route('/api', api);
-app.route('/', frontend);
 
 app.onError((err, c) => {
   logger.error('Unhandled error occurred:', {
@@ -106,26 +106,20 @@ app.onError((err, c) => {
   return c.redirect('/error');
 });
 
-let server: Bun.Server<BunWebSocketData> | null = null;
+await prepareDb();
+await initializeRBAC();
 
-const handleStartup = async () => {
-  await prepareDb();
-  await initializeRBAC();
+export const server = Bun.serve({
+  fetch: app.fetch,
+  port: env.port,
+  websocket,
+});
 
-  if (env.mode !== 'development') {
-    server = Bun.serve({
-      fetch: app.fetch,
-      port: env.port,
-      websocket,
-    });
-  }
-
-  logger.info('chronos started on http://localhost:3000');
-  if (env.logLevel === 'trace') {
-    logger.info('Log level set to TRACE, verbose route listing enabled');
-    showRoutes(app, { verbose: true });
-  }
-};
+logger.info('chronos started on http://localhost:3000');
+if (env.logLevel === 'trace') {
+  logger.info('Log level set to TRACE, verbose route listing enabled');
+  showRoutes(app, { verbose: true });
+}
 
 const handleShutdown = () => {
   logger.info('Shutting down chronos...');
@@ -136,16 +130,5 @@ const handleShutdown = () => {
 process.on('SIGINT', handleShutdown);
 process.on('SIGTERM', handleShutdown);
 
-await handleStartup();
-
 export type ApiType = typeof api;
 export type AppType = typeof app;
-
-export { server };
-
-export default env.mode === 'development'
-  ? {
-    fetch: app.fetch,
-    websocket,
-  }
-  : null;

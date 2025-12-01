@@ -66,7 +66,7 @@ const authOptions = {
   telemetry: {
     enabled: false,
   },
-  trustedOrigins: [env.baseUrl],
+  trustedOrigins: env.trustedOrigins ?? [env.baseUrl],
   user: {
     additionalFields: {
       cohortId: {

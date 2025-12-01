@@ -18,13 +18,16 @@ const envSchema = z.object({
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
   CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
-  CHRONOS_MQTT_BROKER_URL: z.url(),
   CHRONOS_PORT: z.coerce
     .number()
     .min(MIN_PORT)
     .max(MAX_PORT)
     .default(DEFAULT_PORT),
   CHRONOS_REAL_IP_HEADER: z.string().optional(),
+  CHRONOS_TRUSTED_ORIGINS: z.preprocess(
+    (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
+    z.array(z.url()).optional()
+  ),
 });
 
 const makeTypedEnvironment =
