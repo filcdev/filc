@@ -14,6 +14,10 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
 
+  // i18n
+  "i18n-ally.localesPaths": ["public/locales"],
+  "i18n-ally.keystyle": "nested",
+
   // TODO: remove when biome fixes their extension
   "biome.runFromTemporaryLocation": true,
   "biome.lsp.bin": "/workspaces/chronos/node_modules/@biomejs/cli-linux-x64-musl/biome",
