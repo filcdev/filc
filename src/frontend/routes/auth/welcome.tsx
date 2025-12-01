@@ -177,7 +177,7 @@ const CohortSelector = (props: { user: UserType }) => {
                 {cohortQuery.data.map((cohort) => (
                   <CommandItem
                     key={cohort.id}
-                    onSelect={updateCohort}
+                    onSelect={() => updateCohort(cohort.id)}
                     value={cohort.name}
                   >
                     {cohort.name}
