@@ -6,7 +6,7 @@ await Bun.build({
   entrypoints: ['src/index.ts'],
   external: dependencies,
   minify: true,
-  outdir: 'dist',
+  outdir: 'build',
   packages: 'bundle',
   sourcemap: true,
   target: 'bun',

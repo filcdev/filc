@@ -10,12 +10,14 @@
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
     "types": ["bun"],
+    "outDir": "dist",
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "target": "es2022",
     "module": "preserve",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "verbatimModuleSyntax": true,
-    "noEmit": true,
 
     "paths": {
       "~/*": ["./src/*"]

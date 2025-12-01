@@ -1,0 +1,30 @@
+name: Publish Types
+
+on:
+  push:
+    branches:
+      - main
+      - seed
+    tags:
+      - v*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build types package
+        run: bun run build:package
+
+      - name: Publish types package
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun publish --registry https://npm.pkg.github.com

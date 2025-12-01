@@ -424,13 +424,12 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
       // Use a transaction to update the substitution and the many-to-many relationships
       const updatedSubstitution = await db.transaction(async (tx) => {
-        // Update the substitution (excluding lessonIds)
-        const updateData = { ...body };
-        updateData.lessonIds = undefined;
-
         const [updated] = await tx
           .update(substitution)
-          .set(updateData)
+          .set({
+            date: body.date,
+            substituter: body.substituter,
+          })
           .where(eq(substitution.id, id))
           .returning();
 

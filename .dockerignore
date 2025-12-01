@@ -13,5 +13,6 @@ LICENSE
 coverage*
 db.local
 dist
+build
 biome.jsonc
 compose.yml

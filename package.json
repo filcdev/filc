@@ -1,5 +1,6 @@
 {
   "name": "@filc/chronos",
+  "version": "0.0.1",
   "type": "module",
   "packageManager": "bun@1.3.3",
   "scripts": {
@@ -8,7 +9,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "lint": "biome check --write .",
-    "typecheck": "tsc"
+    "build:server": "bun run build.ts",
+    "build:package": "tsc && tsc-alias",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/standard-validator": "^0.2.0",
@@ -40,20 +43,24 @@
     "drizzle-kit": "^0.31.7",
     "npm-run-all2": "^8.0.4",
     "pg": "^8.16.3",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3",
     "wait-on": "^9.0.3"
   },
+  "repository": "https://github.com/filcdev/chronos",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
   "exports": {
     "./types/auth": {
-      "import": "./src/utils/types/auth.ts",
-      "types": "./src/utils/types/auth.ts"
+      "types": "./dist/src/utils/types/auth.d.ts"
     },
     "./types/hc": {
-      "import": "./src/utils/types/hc.ts",
-      "types": "./src/utils/types/hc.ts"
+      "types": "./dist/src/utils/types/hc.d.ts"
     }
   },
-  "imports": {
-    "#src/*": "./src/*.js"
-  }
+  "files": [
+    "dist/src/utils/types"
+  ]
 }
