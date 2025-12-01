@@ -156,15 +156,15 @@ const CohortSelector = (props: { user: UserType }) => {
           >
             {selectedCohortId
               ? cohortQuery.data.find(
-                (cohort) => cohort.id === selectedCohortId
-              )?.name
+                  (cohort) => cohort.id === selectedCohortId
+                )?.name
               : t('cohort.selectPlaceholder')}
             <FaChevronDown className="opacity-50" />
           </Button>
         }
       />
       <PopoverPositioner>
-        <PopoverContent className="w-[200px] p-0">
+        <PopoverContent className="absolute w-[200px] p-0">
           <Command>
             <CommandInput
               className="h-9"
@@ -178,7 +178,7 @@ const CohortSelector = (props: { user: UserType }) => {
                   <CommandItem
                     key={cohort.id}
                     onSelect={updateCohort}
-                    value={cohort.id}
+                    value={cohort.name}
                   >
                     {cohort.name}
                     <FaCheck
