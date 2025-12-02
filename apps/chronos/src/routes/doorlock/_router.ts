@@ -18,7 +18,7 @@ import {
   listSelfCardsRoute,
   updateSelfCardFrozenRoute,
 } from '#routes/doorlock/self';
-import { doorlockStatsRoute } from '#routes/doorlock/stats';
+import { deviceStatsRoute, doorlockStatsRoute } from '#routes/doorlock/stats';
 import { websocketHandler } from '#routes/doorlock/websocket-handler';
 
 export const doorlockRouter = doorlockFactory
@@ -29,6 +29,7 @@ export const doorlockRouter = doorlockFactory
   .post('/devices', ...createDeviceRoute)
   .put('/devices/:id', ...updateDeviceRoute)
   .delete('/devices/:id', ...deleteDeviceRoute)
+  .get('/devices/:id/stats', ...deviceStatsRoute)
   // Card routes
   .get('/cards', ...listCardsRoute)
   .post('/cards', ...createCardRoute)

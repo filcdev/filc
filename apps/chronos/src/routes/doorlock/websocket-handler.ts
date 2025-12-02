@@ -111,6 +111,11 @@ const handleIncomingMessage = async (
             },
           },
         });
+
+        await db
+          .update(lockDevice)
+          .set({ updatedAt: new Date() })
+          .where(eq(lockDevice.id, device.id));
         break;
       }
       case 'card-read':
@@ -120,6 +125,11 @@ const handleIncomingMessage = async (
           deviceId: device.id,
           result: deserialized.authorized,
         });
+
+        await db
+          .update(lockDevice)
+          .set({ updatedAt: new Date() })
+          .where(eq(lockDevice.id, device.id));
         break;
       default:
         logger.warn('Received unknown command via WebSocket', {
