@@ -12,7 +12,7 @@ import { api } from '@/utils/hc';
 type StatsResponse = InferResponseType<typeof api.doorlock.stats.overview.$get>;
 type DoorlockStatsOverview = NonNullable<StatsResponse['data']>['stats'];
 
-export const Route = createFileRoute('/_private/admin/')({
+export const Route = createFileRoute('/_private/admin/doorlock/')({
   component: () => (
     <PermissionGuard permission="doorlock:stats:read">
       <DoorlockDashboard />

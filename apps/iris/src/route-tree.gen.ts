@@ -17,11 +17,11 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
-import { Route as PrivateAdminIndexRouteImport } from './routes/_private/admin/index'
-import { Route as PrivateAdminLogsRouteImport } from './routes/_private/admin/logs'
-import { Route as PrivateAdminDevicesRouteImport } from './routes/_private/admin/devices'
-import { Route as PrivateAdminCardsRouteImport } from './routes/_private/admin/cards'
+import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private/admin/doorlock/index'
 import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
+import { Route as PrivateAdminDoorlockLogsRouteImport } from './routes/_private/admin/doorlock/logs'
+import { Route as PrivateAdminDoorlockDevicesRouteImport } from './routes/_private/admin/doorlock/devices'
+import { Route as PrivateAdminDoorlockCardsRouteImport } from './routes/_private/admin/doorlock/cards'
 
 const PublicRouteRoute = PublicRouteRouteImport.update({
   id: '/_public',
@@ -61,30 +61,34 @@ const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
-const PrivateAdminIndexRoute = PrivateAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PrivateAdminRouteRoute,
-} as any)
-const PrivateAdminLogsRoute = PrivateAdminLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => PrivateAdminRouteRoute,
-} as any)
-const PrivateAdminDevicesRoute = PrivateAdminDevicesRouteImport.update({
-  id: '/devices',
-  path: '/devices',
-  getParentRoute: () => PrivateAdminRouteRoute,
-} as any)
-const PrivateAdminCardsRoute = PrivateAdminCardsRouteImport.update({
-  id: '/cards',
-  path: '/cards',
-  getParentRoute: () => PrivateAdminRouteRoute,
-} as any)
+const PrivateAdminDoorlockIndexRoute =
+  PrivateAdminDoorlockIndexRouteImport.update({
+    id: '/doorlock/',
+    path: '/doorlock/',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
 const PrivateAdminTimetableImportRoute =
   PrivateAdminTimetableImportRouteImport.update({
     id: '/timetable/import',
     path: '/timetable/import',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminDoorlockLogsRoute =
+  PrivateAdminDoorlockLogsRouteImport.update({
+    id: '/doorlock/logs',
+    path: '/doorlock/logs',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminDoorlockDevicesRoute =
+  PrivateAdminDoorlockDevicesRouteImport.update({
+    id: '/doorlock/devices',
+    path: '/doorlock/devices',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminDoorlockCardsRoute =
+  PrivateAdminDoorlockCardsRouteImport.update({
+    id: '/doorlock/cards',
+    path: '/doorlock/cards',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
 
@@ -95,23 +99,24 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/': typeof PublicIndexRoute
-  '/admin/cards': typeof PrivateAdminCardsRoute
-  '/admin/devices': typeof PrivateAdminDevicesRoute
-  '/admin/logs': typeof PrivateAdminLogsRoute
-  '/admin/': typeof PrivateAdminIndexRoute
+  '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
+  '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
+  '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
+  '/admin/doorlock': typeof PrivateAdminDoorlockIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/': typeof PublicIndexRoute
-  '/admin/cards': typeof PrivateAdminCardsRoute
-  '/admin/devices': typeof PrivateAdminDevicesRoute
-  '/admin/logs': typeof PrivateAdminLogsRoute
-  '/admin': typeof PrivateAdminIndexRoute
+  '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
+  '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
+  '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
+  '/admin/doorlock': typeof PrivateAdminDoorlockIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,11 +128,11 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/_public/': typeof PublicIndexRoute
-  '/_private/admin/cards': typeof PrivateAdminCardsRoute
-  '/_private/admin/devices': typeof PrivateAdminDevicesRoute
-  '/_private/admin/logs': typeof PrivateAdminLogsRoute
-  '/_private/admin/': typeof PrivateAdminIndexRoute
+  '/_private/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
+  '/_private/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
+  '/_private/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
   '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
+  '/_private/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,23 +143,24 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/'
-    | '/admin/cards'
-    | '/admin/devices'
-    | '/admin/logs'
-    | '/admin/'
+    | '/admin/doorlock/cards'
+    | '/admin/doorlock/devices'
+    | '/admin/doorlock/logs'
     | '/admin/timetable/import'
+    | '/admin/doorlock'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/admin'
     | '/proba'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
     | '/'
-    | '/admin/cards'
-    | '/admin/devices'
-    | '/admin/logs'
-    | '/admin'
+    | '/admin/doorlock/cards'
+    | '/admin/doorlock/devices'
+    | '/admin/doorlock/logs'
     | '/admin/timetable/import'
+    | '/admin/doorlock'
   id:
     | '__root__'
     | '/_private'
@@ -165,11 +171,11 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/_public/'
-    | '/_private/admin/cards'
-    | '/_private/admin/devices'
-    | '/_private/admin/logs'
-    | '/_private/admin/'
+    | '/_private/admin/doorlock/cards'
+    | '/_private/admin/doorlock/devices'
+    | '/_private/admin/doorlock/logs'
     | '/_private/admin/timetable/import'
+    | '/_private/admin/doorlock/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -238,32 +244,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminRouteRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
-    '/_private/admin/': {
-      id: '/_private/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof PrivateAdminIndexRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/logs': {
-      id: '/_private/admin/logs'
-      path: '/logs'
-      fullPath: '/admin/logs'
-      preLoaderRoute: typeof PrivateAdminLogsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/devices': {
-      id: '/_private/admin/devices'
-      path: '/devices'
-      fullPath: '/admin/devices'
-      preLoaderRoute: typeof PrivateAdminDevicesRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/cards': {
-      id: '/_private/admin/cards'
-      path: '/cards'
-      fullPath: '/admin/cards'
-      preLoaderRoute: typeof PrivateAdminCardsRouteImport
+    '/_private/admin/doorlock/': {
+      id: '/_private/admin/doorlock/'
+      path: '/doorlock'
+      fullPath: '/admin/doorlock'
+      preLoaderRoute: typeof PrivateAdminDoorlockIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/timetable/import': {
@@ -273,23 +258,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminTimetableImportRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/doorlock/logs': {
+      id: '/_private/admin/doorlock/logs'
+      path: '/doorlock/logs'
+      fullPath: '/admin/doorlock/logs'
+      preLoaderRoute: typeof PrivateAdminDoorlockLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/doorlock/devices': {
+      id: '/_private/admin/doorlock/devices'
+      path: '/doorlock/devices'
+      fullPath: '/admin/doorlock/devices'
+      preLoaderRoute: typeof PrivateAdminDoorlockDevicesRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/doorlock/cards': {
+      id: '/_private/admin/doorlock/cards'
+      path: '/doorlock/cards'
+      fullPath: '/admin/doorlock/cards'
+      preLoaderRoute: typeof PrivateAdminDoorlockCardsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
   }
 }
 
 interface PrivateAdminRouteRouteChildren {
-  PrivateAdminCardsRoute: typeof PrivateAdminCardsRoute
-  PrivateAdminDevicesRoute: typeof PrivateAdminDevicesRoute
-  PrivateAdminLogsRoute: typeof PrivateAdminLogsRoute
-  PrivateAdminIndexRoute: typeof PrivateAdminIndexRoute
+  PrivateAdminDoorlockCardsRoute: typeof PrivateAdminDoorlockCardsRoute
+  PrivateAdminDoorlockDevicesRoute: typeof PrivateAdminDoorlockDevicesRoute
+  PrivateAdminDoorlockLogsRoute: typeof PrivateAdminDoorlockLogsRoute
   PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
+  PrivateAdminDoorlockIndexRoute: typeof PrivateAdminDoorlockIndexRoute
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
-  PrivateAdminCardsRoute: PrivateAdminCardsRoute,
-  PrivateAdminDevicesRoute: PrivateAdminDevicesRoute,
-  PrivateAdminLogsRoute: PrivateAdminLogsRoute,
-  PrivateAdminIndexRoute: PrivateAdminIndexRoute,
+  PrivateAdminDoorlockCardsRoute: PrivateAdminDoorlockCardsRoute,
+  PrivateAdminDoorlockDevicesRoute: PrivateAdminDoorlockDevicesRoute,
+  PrivateAdminDoorlockLogsRoute: PrivateAdminDoorlockLogsRoute,
   PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
+  PrivateAdminDoorlockIndexRoute: PrivateAdminDoorlockIndexRoute,
 }
 
 const PrivateAdminRouteRouteWithChildren =

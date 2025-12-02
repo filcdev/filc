@@ -35,7 +35,7 @@ import { api } from '@/utils/hc';
 type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
 type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
 
-export const Route = createFileRoute('/_private/admin/devices')({
+export const Route = createFileRoute('/_private/admin/doorlock/devices')({
   component: () => (
     <PermissionGuard permission="doorlock:devices:read">
       <DevicesPage />

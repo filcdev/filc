@@ -41,7 +41,7 @@ type DoorlockCard = NonNullable<CardsResponse['data']>['cards'][number];
 type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
 type DoorlockUser = NonNullable<UsersResponse['data']>['users'][number];
 
-export const Route = createFileRoute('/_private/admin/cards')({
+export const Route = createFileRoute('/_private/admin/doorlock/cards')({
   component: () => (
     <PermissionGuard permission="doorlock:cards:read">
       <CardsPage />
