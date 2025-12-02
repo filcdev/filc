@@ -21,7 +21,11 @@
   // Configure tool-specific properties.
   "customizations": {
     "vscode": {
-      "extensions": ["biomejs.biome", "Lokalise.i18n-ally"]
+      "extensions": [
+        "biomejs.biome",
+        "Lokalise.i18n-ally",
+        "yoavbls.pretty-ts-errors"
+      ]
     }
   },
 

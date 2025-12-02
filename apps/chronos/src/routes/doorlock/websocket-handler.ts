@@ -12,7 +12,6 @@ import {
 } from '#database/schema/doorlock';
 import { server } from '#index';
 import { doorlockFactory } from '#routes/doorlock/_factory';
-import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 
@@ -74,7 +73,13 @@ const handleIncomingMessage = async (
   device: { id: string }
 ) => {
   try {
+    logger.trace('Received WebSocket message', { device, message });
     const deserialized = JSON.parse(message) as IncomingMessage;
+    logger.trace('Deserialized WebSocket message', {
+      deserialized,
+      device,
+      message,
+    });
 
     switch (deserialized.type) {
       case 'ping': {
@@ -128,17 +133,6 @@ const handleIncomingMessage = async (
 };
 
 export const sendMessage = (content: OutgoingMessage, deviceId: string) => {
-  if (!server) {
-    if (env.mode === 'development') {
-      logger.warn(
-        'Websockets are unavailable due to hono-vite-devserver not supporting them.'
-      );
-    } else {
-      logger.error("Can't access Bun server for publishing!");
-    }
-    return;
-  }
-
   const payload: OutgoingMessage =
     content.type === 'open-door' && content.name
       ? { ...content, name: content.name.trim() }

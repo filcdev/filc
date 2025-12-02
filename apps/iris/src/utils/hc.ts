@@ -3,6 +3,7 @@ import type {
   DoorlockRouter,
   PingRouter,
   TimetableRouter,
+  UsersRouter,
 } from '@filcdev/chronos/types/hc';
 import { hc } from 'hono/client';
 
@@ -17,4 +18,5 @@ export const api = {
   doorlock: hc<DoorlockRouter>('/api/doorlock', dOpts),
   ping: hc<PingRouter>('/api/ping', dOpts),
   timetable: hc<TimetableRouter>('/api/timetable', dOpts),
+  users: hc<UsersRouter>('/api/users', dOpts),
 };

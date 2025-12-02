@@ -8,6 +8,7 @@ import {
   FaIdCard,
   FaList,
   FaMicrochip,
+  FaUsers,
 } from 'react-icons/fa6';
 import {
   Sidebar,
@@ -84,6 +85,17 @@ export function AdminSidebar() {
           },
         ],
         label: t('admin.doorlock', { defaultValue: 'Doorlock' }),
+      },
+      {
+        items: [
+          {
+            icon: FaUsers,
+            permission: 'users:read',
+            title: t('admin.users', { defaultValue: 'Users' }),
+            url: '/admin/users',
+          },
+        ],
+        label: t('admin.management', { defaultValue: 'Management' }),
       },
     ],
     [t]

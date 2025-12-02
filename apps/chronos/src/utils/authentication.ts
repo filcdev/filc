@@ -94,10 +94,9 @@ export const auth = betterAuth({
     ...(authOptions.plugins ?? []),
     customSession(async ({ user, session }) => {
       const permissions = await getUserPermissions(user.id);
-      const nickname = user.nickname?.trim();
-      const displayName = nickname?.length
-        ? nickname
-        : user.name?.trim() || user.email || 'Chronos user';
+      const displayName = user.nickname
+        ? user.nickname
+        : user.name || 'Unknown user';
       return {
         session,
         user: {
@@ -113,3 +112,6 @@ export const auth = betterAuth({
 export const authRouter = new Hono<Context>().on(['POST', 'GET'], '*', (c) =>
   auth.handler(c.req.raw)
 );
+
+export type Session = typeof auth.$Infer.Session;
+export type User = (typeof auth.$Infer.Session)['user'];

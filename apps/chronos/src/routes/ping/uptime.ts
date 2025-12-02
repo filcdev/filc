@@ -37,7 +37,7 @@ export const uptime = pingFactory.createHandlers(
     const NANOSECONDS_IN_MILLISECOND = 1_000_000;
     const uptime_ms = Bun.nanoseconds() / NANOSECONDS_IN_MILLISECOND;
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<{ pretty: string; uptime_ms: number }>>({
       data: {
         pretty: dayjs.duration(uptime_ms, 'millisecond').humanize(),
         uptime_ms,

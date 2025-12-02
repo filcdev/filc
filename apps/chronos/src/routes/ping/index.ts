@@ -27,7 +27,7 @@ export const ping = pingFactory.createHandlers(
     tags: ['Ping'],
   }),
   (c) =>
-    c.json<SuccessResponse>({
+    c.json<SuccessResponse<{ message: 'pong' }>>({
       data: { message: 'pong' },
       success: true,
     })

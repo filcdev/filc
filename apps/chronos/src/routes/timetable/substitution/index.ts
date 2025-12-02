@@ -64,7 +64,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         )
         .groupBy(substitution.id, teacher.id);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof substitutions>>({
         data: substitutions,
         success: true,
       });
@@ -115,7 +115,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         .where(gte(substitution.date, today as string))
         .groupBy(substitution.id, teacher.id);
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof substitutions>>({
         data: substitutions,
         success: true,
       });
@@ -195,7 +195,12 @@ export const getRelevantSubstitutionsForCohort =
           )
           .groupBy(substitution.id, teacher.id);
 
-        return c.json<SuccessResponse>({
+        return c.json<
+          SuccessResponse<{
+            cohortId: string;
+            substitutions: typeof substitutions;
+          }>
+        >({
           data: {
             cohortId,
             substitutions,
@@ -316,7 +321,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       return insertedSubstitution;
     });
 
-    return c.json<SuccessResponse>({
+    return c.json<SuccessResponse<typeof result>>({
       data: result,
       success: true,
     });
@@ -449,7 +454,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         return updated;
       });
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof updatedSubstitution>>({
         data: updatedSubstitution,
         success: true,
       });
@@ -520,7 +525,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         .where(eq(substitution.id, id))
         .returning();
 
-      return c.json<SuccessResponse>({
+      return c.json<SuccessResponse<typeof deletedSubstitution>>({
         data: deletedSubstitution,
         success: true,
       });
