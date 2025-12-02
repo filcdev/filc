@@ -73,7 +73,6 @@ const handleIncomingMessage = async (
   device: { id: string }
 ) => {
   try {
-    logger.trace('Received WebSocket message', { device, message });
     const deserialized = JSON.parse(message) as IncomingMessage;
     logger.trace('Deserialized WebSocket message', {
       deserialized,
@@ -128,7 +127,9 @@ const handleIncomingMessage = async (
         });
     }
   } catch (e) {
-    logger.warn('Audit log store failed', { error: e });
+    const err = e instanceof Error ? e : new Error(String(e));
+
+    logger.warn('Audit log store failed', { device, error: err, message });
   }
 };
 
