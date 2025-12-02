@@ -375,7 +375,7 @@ function LogsPage() {
               <TableHead>User</TableHead>
               <TableHead>Card</TableHead>
               <TableHead>Card UID</TableHead>
-              <TableHead>Button</TableHead>
+              <TableHead>Triggered by</TableHead>
               <TableHead>Result</TableHead>
             </TableRow>
           </TableHeader>
@@ -469,12 +469,19 @@ function SelectFilter<T extends string>({
   options,
   value,
 }: SelectFilterProps<T>) {
+  const handleChange = (next: string | null) =>
+    onValueChange((next ?? 'all') as T);
+  const selectedLabel =
+    options.find((option) => option.id === value)?.label ??
+    (value === 'all' ? `All ${label.toLowerCase()}` : undefined);
   return (
     <div className="space-y-2">
       <span className="font-medium text-muted-foreground text-sm">{label}</span>
-      <Select onValueChange={(next) => onValueChange(next as T)} value={value}>
+      <Select onValueChange={handleChange} value={value}>
         <SelectTrigger>
-          <SelectValue placeholder={`Filter by ${label.toLowerCase()}`} />
+          <SelectValue placeholder={`Filter by ${label.toLowerCase()}`}>
+            {selectedLabel}
+          </SelectValue>
         </SelectTrigger>
         <SelectPositioner>
           <SelectContent>
@@ -520,7 +527,6 @@ type LogTableRowProps = {
 };
 
 function LogTableRow({ log }: LogTableRowProps) {
-  const virtual = isVirtualLog(log);
   const buttonMeta = buildButtonMeta(log);
 
   return (
@@ -538,22 +544,12 @@ function LogTableRow({ log }: LogTableRowProps) {
       <TableCell>
         <div className="space-y-1">
           <span>{log.card?.name ?? '—'}</span>
-          {virtual && (
-            <span className="text-muted-foreground text-xs">
-              Self-service virtual activation
-            </span>
-          )}
         </div>
       </TableCell>
       <TableCell className="font-mono text-xs">{log.cardData ?? '—'}</TableCell>
       <TableCell>
         <div className="space-y-1">
           <Badge variant={buttonMeta.variant}>{buttonMeta.label}</Badge>
-          {buttonMeta.caption && (
-            <span className="text-muted-foreground text-xs">
-              {buttonMeta.caption}
-            </span>
-          )}
         </div>
       </TableCell>
       <TableCell>
