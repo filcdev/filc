@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
@@ -80,7 +81,7 @@ const buildButtonMeta = (log: DoorlockLogEntry): ButtonMeta => {
   };
 };
 
-export const Route = createFileRoute('/_private/admin/logs')({
+export const Route = createFileRoute('/_private/admin/doorlock/logs')({
   component: () => (
     <PermissionGuard permission="doorlock:logs:read">
       <LogsPage />
@@ -308,13 +309,16 @@ function LogsPage() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Input
-          className="w-full"
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search logs..."
-          value={search}
-        />
+      <div className="flex flex-wrap space-x-4 space-y-3 md:justify-between">
+        <div className="space-y-2">
+          <Label>Search</Label>
+          <Input
+            className="w-full"
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search logs..."
+            value={search}
+          />
+        </div>
         <SelectFilter
           label="Device"
           onValueChange={setDeviceFilter}
@@ -337,7 +341,6 @@ function LogsPage() {
           label="Access"
           onValueChange={setAccessFilter}
           options={[
-            { id: 'all', label: 'All attempts' },
             { id: 'granted', label: 'Access granted' },
             { id: 'denied', label: 'Access denied' },
           ]}
@@ -438,7 +441,7 @@ function DateRangePicker({
         <PopoverPositioner align="end">
           <PopoverContent className="w-auto p-0">
             <Calendar
-              initialFocus
+              autoFocus
               mode="range"
               numberOfMonths={2}
               onSelect={(range) =>
@@ -473,12 +476,12 @@ function SelectFilter<T extends string>({
     onValueChange((next ?? 'all') as T);
   const selectedLabel =
     options.find((option) => option.id === value)?.label ??
-    (value === 'all' ? `All ${label.toLowerCase()}` : undefined);
+    (value === 'all' ? 'All' : undefined);
   return (
-    <div className="space-y-2">
-      <span className="font-medium text-muted-foreground text-sm">{label}</span>
+    <div className="grow space-y-2">
+      <Label>{label}</Label>
       <Select onValueChange={handleChange} value={value}>
-        <SelectTrigger>
+        <SelectTrigger className="w-full min-w-24">
           <SelectValue placeholder={`Filter by ${label.toLowerCase()}`}>
             {selectedLabel}
           </SelectValue>
@@ -508,7 +511,7 @@ type StatCardProps = {
 function StatCard({ helper, icon, label, value }: StatCardProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex items-center justify-between space-y-0 pb-2">
         <CardTitle className="font-medium text-muted-foreground text-sm">
           {label}
         </CardTitle>
