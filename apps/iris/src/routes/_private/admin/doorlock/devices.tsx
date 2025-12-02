@@ -5,6 +5,7 @@ import { type InferResponseType, parseResponse } from 'hono/client';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import {
+  FaChartLine,
   FaDoorOpen,
   FaKey,
   FaMicrochip,
@@ -14,6 +15,7 @@ import {
 } from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
+import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +60,8 @@ function DevicesPage() {
   const [selectedDevice, setSelectedDevice] = useState<DoorlockDevice | null>(
     null
   );
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  const [statsDevice, setStatsDevice] = useState<DoorlockDevice | null>(null);
 
   const hasWritePermission = useMemo(() => {
     const perms = session?.user?.permissions ?? [];
@@ -245,6 +249,16 @@ function DevicesPage() {
                     <div className="flex gap-2">
                       <Button
                         onClick={() => {
+                          setStatsDevice(device);
+                          setStatsDialogOpen(true);
+                        }}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <FaChartLine className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => {
                           setSelectedDevice(device);
                           setDialogOpen(true);
                         }}
@@ -291,6 +305,18 @@ function DevicesPage() {
         }}
         onSubmit={handleSave}
         open={dialogOpen}
+      />
+
+      <DeviceStatsDialog
+        deviceId={statsDevice?.id ?? null}
+        deviceName={statsDevice?.name ?? ''}
+        onOpenChange={(open) => {
+          setStatsDialogOpen(open);
+          if (!open) {
+            setStatsDevice(null);
+          }
+        }}
+        open={statsDialogOpen}
       />
     </div>
   );

@@ -6,7 +6,12 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { auditLog, card, device } from '#database/schema/doorlock';
+import {
+  auditLog,
+  card,
+  device,
+  deviceHealth,
+} from '#database/schema/doorlock';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication, requireAuthorization } from '#utils/middleware';
 import { ensureJsonSafeDates } from '#utils/zod';
@@ -35,6 +40,36 @@ const statsResponseSchema = z.object({
       totalDevices: z.number().int(),
       totalSuccessfulOpens: z.number().int(),
     }),
+  }),
+  success: z.literal(true),
+});
+
+const deviceStatsResponseSchema = z.object({
+  data: z.object({
+    stats: z.array(
+      z.object({
+        debug: z.object({
+          deviceState: z.enum(['booting', 'error', 'idle', 'updating']),
+          errors: z.object({
+            db: z.boolean(),
+            nfc: z.boolean(),
+            ota: z.boolean(),
+            sd: z.boolean(),
+            wifi: z.boolean(),
+          }),
+          lastResetReason: z.string(),
+        }),
+        fwVersion: z.string(),
+        id: z.number(),
+        ramFree: z.number(),
+        storage: z.object({
+          total: z.number(),
+          used: z.number(),
+        }),
+        timestamp: z.date(),
+        uptime: z.number(),
+      })
+    ),
   }),
   success: z.literal(true),
 });
@@ -149,5 +184,60 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
         message: 'Failed to fetch doorlock stats',
       });
     }
+  }
+);
+
+export const deviceStatsRoute = doorlockFactory.createHandlers(
+  describeRoute({
+    description: 'Get device health statistics',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(ensureJsonSafeDates(deviceStatsResponseSchema)),
+          },
+        },
+        description: 'Successful response',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
+  requireAuthentication,
+  requireAuthorization('doorlock:stats:read'),
+  async (c) => {
+    const deviceId = c.req.param('id');
+    if (!deviceId) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Device ID is required',
+      });
+    }
+
+    const stats = await db
+      .select({
+        deviceMeta: deviceHealth.deviceMeta,
+        id: deviceHealth.id,
+        timestamp: deviceHealth.timestamp,
+      })
+      .from(deviceHealth)
+      .where(eq(deviceHealth.deviceId, deviceId))
+      .orderBy(desc(deviceHealth.timestamp))
+      .limit(100);
+
+    const mappedStats = stats.map((s) => ({
+      ...s.deviceMeta,
+      id: s.id,
+      ramFree: Number(s.deviceMeta.ramFree),
+      storage: {
+        total: Number(s.deviceMeta.storage.total),
+        used: Number(s.deviceMeta.storage.used),
+      },
+      timestamp: s.timestamp,
+      uptime: Number(s.deviceMeta.uptime),
+    }));
+
+    return c.json<SuccessResponse<{ stats: typeof mappedStats }>>({
+      data: { stats: mappedStats },
+      success: true,
+    });
   }
 );
