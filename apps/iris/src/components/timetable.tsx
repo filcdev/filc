@@ -31,6 +31,7 @@ export type ClassSession = {
   endTime: string;
   description?: string;
   color: string;
+  short: string;
 };
 
 // Legacy structure support (day -> time -> single session)
@@ -101,7 +102,7 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
         >
           <div className="flex h-full justify-between gap-1">
             <div className="truncate font-medium text-foreground text-xs">
-              {session.subject}
+              {session.short}
             </div>
             <div className="flex items-center justify-between">
               <div className="text-[10px] text-muted-foreground">
