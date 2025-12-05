@@ -90,12 +90,14 @@ const createClassSession = (lesson: EnrichedLesson): ClassSession => {
   const subject = lesson.subject?.name ?? '—';
   const teacher = lesson.teachers.map((t) => t.name).join(', ');
   const room = lesson.classrooms.map((r) => r.short || r.name).join(', ');
+  const short = lesson.subject?.short ?? subject;
 
   return {
     color: colorFromSubject(subject),
     endTime: end,
     id: lesson.id,
     room,
+    short,
     startTime: start,
     subject,
     teacher,
