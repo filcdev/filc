@@ -88,12 +88,8 @@ export function Navbar({
             }
 
             if (data?.user) {
-              const displayName =
-                data.user.nickname ||
-                data.user.displayName ||
-                data.user.name ||
-                data.user.email ||
-                t('unknown');
+              const displayName = data.user.name;
+              const displayNickname = data.user.nickname || displayName;
               const initialsSource =
                 data.user.nickname ||
                 data.user.displayName ||
@@ -133,9 +129,16 @@ export function Navbar({
                       <DropdownMenuGroup>
                         <DropdownMenuLabel className="font-normal">
                           <div className="flex flex-col space-y-1">
-                            <p className="font-medium text-sm leading-none">
-                              {displayName}
-                            </p>
+                            <div className="flex flex-row gap-1">
+                              <p className="font-medium text-sm leading-none">
+                                {displayNickname}
+                              </p>
+                              <p className="font-medium text-muted-foreground text-sm leading-none">
+                                {displayName !== displayNickname
+                                  ? `(${displayName})`
+                                  : null}
+                              </p>
+                            </div>
                             <p className="text-muted-foreground text-xs leading-none">
                               {data.user.email}
                             </p>
