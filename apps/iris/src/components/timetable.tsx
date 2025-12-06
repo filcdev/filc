@@ -150,11 +150,14 @@ const ClassCell = ({
   session: ClassSession | ClassSession[] | null;
 }) => {
   if (!session) {
-    return <div className="h-16 w-full" />;
+    return <div className="h-full w-full" />;
   }
   const sessions = Array.isArray(session) ? session : [session];
+  const gridWidth =
+    sessions.length > 3 ? 'grid-cols-3' : `grid-cols-${sessions.length}`;
+
   return (
-    <div className="flex h-16 w-full flex-col gap-1">
+    <div className={`grid h-full w-full ${gridWidth} gap-1`}>
       {sessions.map((s) => (
         <ClassTooltip key={`${s.id}-${s.startTime}`} session={s} />
       ))}
