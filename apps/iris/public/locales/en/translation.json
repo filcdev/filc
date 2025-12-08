@@ -22,7 +22,7 @@
   "welcome": {
     "title": "Welcome",
     "subtitle": "Let us get to know you",
-    "nicknameDescription": "This is the name we'll use across Chronos.",
+    "nicknameDescription": "What should we call you?",
     "nicknamePlaceholder": "e.g. Alex",
     "nicknameHelper": "Use {{min}}-{{max}} characters: letters, numbers, spaces, dashes or underscores.",
     "nicknameSave": "Save nickname",

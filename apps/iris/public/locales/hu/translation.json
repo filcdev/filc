@@ -40,7 +40,7 @@
   "welcome": {
     "subtitle": "Ismerkedjünk meg veled",
     "title": "Üdvözlünk",
-    "nicknameDescription": "Ezzel a névvel fogunk szólítani a Chronosban.",
+    "nicknameDescription": "Minek szólíthatunk?",
     "nicknamePlaceholder": "pl.: Ádám",
     "nicknameHelper": "Használj {{min}}-{{max}} karaktert: betűk, számok, szóköz, kötőjel vagy aláhúzás.",
     "nicknameSave": "Becenév mentése",
