@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,6 +18,15 @@ jobs:
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
 
       - name: Install dependencies
         run: bun install
@@ -31,7 +43,14 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: ".bun-version"
+          bun-version-file: package.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
 
       - name: Install dependencies
         run: bun install
