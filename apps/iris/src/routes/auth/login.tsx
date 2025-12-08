@@ -39,7 +39,7 @@ function RouteComponent() {
       });
     } catch (err) {
       toast.error(
-        err instanceof Error ? t(`${err.message}`) : t('microsoft.signInError')
+        err instanceof Error ? err.message : t('microsoft.signInError')
       );
       setIsLoading(false);
     }
