@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaMicrosoft, FaShield } from 'react-icons/fa6';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,7 +19,6 @@ export const Route = createFileRoute('/auth/login')({
 
 function RouteComponent() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const { t } = useTranslation();
 
   const handleMicrosoftSignIn = async (e: FormEvent) => {
@@ -29,7 +28,6 @@ function RouteComponent() {
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
       await authClient.signIn.social({
@@ -40,7 +38,9 @@ function RouteComponent() {
         provider: 'microsoft',
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('microsoft.signInError'));
+      toast.error(
+        err instanceof Error ? err.message : t('microsoft.signInError')
+      );
       setIsLoading(false);
     }
   };
@@ -71,12 +71,6 @@ function RouteComponent() {
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleMicrosoftSignIn}>
-              {error && (
-                <Alert className="text-sm" variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <Button
                 className="h-11 w-full font-medium"
                 disabled={isLoading}
