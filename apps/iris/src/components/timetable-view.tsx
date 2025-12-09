@@ -267,12 +267,12 @@ export function TimetableView() {
       )}
 
       {isLoading ? (
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-7xl">
           <Skeleton className="mb-2 h-8 w-64" />
           <Skeleton className="h-[480px] w-full" />
         </div>
       ) : (
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-7xl">
           <Timetable
             className="shadow-2xl"
             data={timetableData}
