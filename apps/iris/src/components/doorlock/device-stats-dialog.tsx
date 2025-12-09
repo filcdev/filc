@@ -89,7 +89,7 @@ export function DeviceStatsDialog({
       .map((stat) => ({
         ...stat,
         formattedTime: dayjs(stat.timestamp).format('HH:mm:ss'),
-        ramFreeMb: Math.round(stat.ramFree / 1024 / 1024),
+        ramFreeKb: Math.round(stat.ramFree / 1024),
         uptimeHours: Math.round((stat.uptime / 3600 / 1000) * 10) / 10,
       }))
       .reverse();
@@ -157,7 +157,7 @@ export function DeviceStatsDialog({
 
               {/* RAM Chart */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm">Free RAM (MB)</h3>
+                <h3 className="font-semibold text-sm">Free RAM (KB)</h3>
                 <div className="h-[200px] w-full rounded-lg border bg-card p-4">
                   <ResponsiveContainer height="100%" width="100%">
                     <AreaChart data={chartData}>
@@ -170,7 +170,7 @@ export function DeviceStatsDialog({
                       <YAxis fontSize={12} tickLine={false} />
                       <Tooltip />
                       <Area
-                        dataKey="ramFreeMb"
+                        dataKey="ramFreeKb"
                         fill="var(--color-primary)"
                         fillOpacity={0.2}
                         stroke="var(--color-primary)"
