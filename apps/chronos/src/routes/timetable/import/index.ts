@@ -100,7 +100,7 @@ export const importRoute = timetableFactory.createHandlers(
     const decoded = decode(buffer, 'win1250');
     // TODO: this is still broken
     const utf8Text = encode(decoded, 'utf-8').toString();
-    const cleaned = utf8Text.replace('Period=""', '');
+    const cleaned = utf8Text.replaceAll('Period=""', '');
 
     // TODO: Rewrite the import function to use these
     // types so we are more typeish :3.
