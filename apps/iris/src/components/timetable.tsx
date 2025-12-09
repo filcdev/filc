@@ -94,20 +94,18 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
     <Tooltip>
       <TooltipTrigger>
         <div
-          className="h-full w-full cursor-pointer rounded-md border p-1 transition-all hover:scale-[1.02] hover:shadow-lg"
+          className="h-full w-full cursor-pointer rounded-md border p-3 transition-all hover:scale-[1.02] hover:shadow-lg"
           style={{
             backgroundColor: `${session.color}20`,
             borderColor: `${session.color}50`,
           }}
         >
-          <div className="flex h-full justify-between gap-1">
-            <div className="truncate font-medium text-foreground text-xs">
+          <div className="flex h-full justify-between gap-1 items-center">
+            <div className="truncate font-medium text-foreground text-sm leading-5">
               {session.short}
             </div>
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] text-muted-foreground">
-                {session.room}
-              </div>
+            <div className="text-[10px] text-muted-foreground leading-5">
+              {session.room}
             </div>
           </div>
         </div>
@@ -255,7 +253,7 @@ export function Timetable({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                      className="p-1"
+                      className="p-1 text-center"
                       key={cell.id}
                       style={{ width: cell.column.getSize() }}
                     >
