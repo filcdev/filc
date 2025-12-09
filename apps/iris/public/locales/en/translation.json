@@ -4,6 +4,7 @@
   "sign_in": "Sign in",
   "schedule": "Schedule",
   "substitutions": "Substitutions",
+  "adminDashboard": "Admin Dashboard",
   "common": {
     "loading": "Loading...",
     "cancel": "Cancel",
