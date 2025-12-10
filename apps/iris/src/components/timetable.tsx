@@ -100,7 +100,7 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
             borderColor: `${session.color}50`,
           }}
         >
-          <div className="flex h-full justify-between gap-1 items-center">
+          <div className="flex h-full items-center justify-between gap-1">
             <div className="truncate font-medium text-foreground text-sm leading-5">
               {session.short}
             </div>
@@ -150,12 +150,16 @@ const ClassCell = ({
   if (!session) {
     return <div className="h-full w-full" />;
   }
+
   const sessions = Array.isArray(session) ? session : [session];
-  const gridWidth =
-    sessions.length > 3 ? 'grid-cols-3' : `grid-cols-${sessions.length}`;
 
   return (
-    <div className={`grid h-full w-full ${gridWidth} gap-1`}>
+    <div
+      className="grid h-full w-full gap-1"
+      style={{
+        gridTemplateColumns: `repeat(${sessions.length}, minmax(0, 1fr))`,
+      }}
+    >
       {sessions.map((s) => (
         <ClassTooltip key={`${s.id}-${s.startTime}`} session={s} />
       ))}
