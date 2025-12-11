@@ -9,7 +9,7 @@ import {
   FaRightFromBracket,
   FaRightToBracket,
   FaSpinner,
-  FaUserGear
+  FaUserGear,
 } from 'react-icons/fa6';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ export function Navbar({
           )}
         </div>
 
-        {showLinks && <NavLinks userRoles={data?.user.roles || ["user"]} />}
+        {showLinks && <NavLinks userRoles={data?.user.roles || ['user']} />}
 
         <div className="ml-auto flex items-center gap-3">
           {/* <Button
@@ -211,16 +211,16 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
         <FaBook className="mr-2 h-4 w-4" />
         {t('substitutions')}
       </Button>
-      { isAdmin && (
+      {isAdmin && (
         <Button
-        className="text-muted-foreground hover:text-foreground"
-        onClick={() => navigate({ to: '/admin' })}
-        size="sm"
-        variant="ghost"
-      >
-        <FaUserGear className="mr-2 h-4 w-4" />
-        {t('adminDashboard')}
-      </Button>
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => navigate({ to: '/admin' })}
+          size="sm"
+          variant="ghost"
+        >
+          <FaUserGear className="mr-2 h-4 w-4" />
+          {t('adminDashboard')}
+        </Button>
       )}
     </div>
   );
