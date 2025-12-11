@@ -5,7 +5,8 @@
     "includes": [
       "**/*",
       "!apps/chronos/src/database/migrations/**/*",
-      "!apps/iris/src/route-tree.gen.ts"
+      "!apps/iris/src/route-tree.gen.ts",
+      "!bun.lock"
     ]
   },
   "formatter": {
