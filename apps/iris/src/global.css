@@ -182,3 +182,41 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Styles we use for printing the timetable */
+
+@media print {
+  /* We can omit these styles to avoid printing the backgrounds */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything except the timetable root */
+  body * {
+    visibility: hidden !important;
+  }
+
+  #timetable-print-root,
+  #timetable-print-root * {
+    visibility: visible !important;
+  }
+
+  /* Ensure it starts at the top-left of the page */
+  #timetable-print-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  /* Optional: remove shadows/border-radius for cleaner print */
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  /* Optional: force white background for PDF */
+  .timetable {
+    background: white !important;
+  }
+}

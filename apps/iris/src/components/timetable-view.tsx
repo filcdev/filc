@@ -251,7 +251,10 @@ export function TimetableView() {
             </select>
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => window.print()} size="sm" variant="outline">
+            Save to PDF
+          </Button>
           <Button
             onClick={() => lessonsQuery.refetch()}
             size="sm"
@@ -272,13 +275,15 @@ export function TimetableView() {
           <Skeleton className="h-[480px] w-full" />
         </div>
       ) : (
-        <div className="w-full max-w-7xl">
-          <Timetable
-            className="shadow-2xl"
-            data={timetableData}
-            dayMetadata={dayMetadata}
-            title={`${selectedCohort?.name ?? 'Cohort'} - Week Schedule`}
-          />
+        <div id="timetable-print-root">
+          <div className="w-full max-w-7xl">
+            <Timetable
+              className="shadow-2xl"
+              data={timetableData}
+              dayMetadata={dayMetadata}
+              title={`${selectedCohort?.name ?? 'Cohort'} - Week Schedule`}
+            />
+          </div>
         </div>
       )}
     </div>
