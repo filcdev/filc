@@ -277,7 +277,7 @@ export function Timetable({
                 const rowHeight = hasMultipleSessions ? '100px' : 'auto';
                 const bgColor =
                   rowIndex % 2 === 0
-                    ? 'rgba(128, 128, 128, 0.2)'
+                    ? 'rgba(128, 128, 128, 0.15)'
                     : 'transparent';
 
                 return (
