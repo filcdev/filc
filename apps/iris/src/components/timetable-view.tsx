@@ -201,7 +201,7 @@ export function TimetableView() {
         return [];
       }
       const res = await parseResponse(
-        api.timetable.lessons.get_for_cohort[':cohort_id'].$get({
+        api.timetable.lessons['get-for-cohort'][':cohort_id'].$get({
           param: { cohort_id: selectedCohortId },
         })
       );
