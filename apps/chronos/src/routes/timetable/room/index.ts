@@ -1,11 +1,11 @@
-import { createSelectSchema } from "drizzle-zod";
-import { describeRoute, resolver } from "hono-openapi";
-import z from "zod";
-import { db } from "#database";
-import { classroom } from "#database/schema/timetable";
-import type { SuccessResponse } from "#utils/globals";
-import { ensureJsonSafeDates } from "#utils/zod";
-import { timetableFactory } from "../_factory";
+import { createSelectSchema } from 'drizzle-zod';
+import { describeRoute, resolver } from 'hono-openapi';
+import z from 'zod';
+import { db } from '#database';
+import { classroom } from '#database/schema/timetable';
+import type { SuccessResponse } from '#utils/globals';
+import { ensureJsonSafeDates } from '#utils/zod';
+import { timetableFactory } from '../_factory';
 
 const getClassroomsResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(classroom)).array(),
@@ -14,18 +14,18 @@ const getClassroomsResponseSchema = z.object({
 
 export const getClassrooms = timetableFactory.createHandlers(
   describeRoute({
-    description: "Get all classrooms from the database.",
+    description: 'Get all classrooms from the database.',
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(getClassroomsResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Classroom"],
+    tags: ['Classroom'],
   }),
   async (c) => {
     const classrooms = await db.select().from(classroom);
@@ -33,5 +33,5 @@ export const getClassrooms = timetableFactory.createHandlers(
       data: classrooms,
       success: true,
     });
-  },
+  }
 );

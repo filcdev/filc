@@ -1,10 +1,10 @@
-import { eq, inArray, sql } from "drizzle-orm";
-import { createSelectSchema } from "drizzle-zod";
-import { HTTPException } from "hono/http-exception";
-import { describeRoute, resolver } from "hono-openapi";
-import { StatusCodes } from "http-status-codes";
-import z from "zod";
-import { db } from "#database";
+import { eq, inArray, sql } from 'drizzle-orm';
+import { createSelectSchema } from 'drizzle-zod';
+import { HTTPException } from 'hono/http-exception';
+import { describeRoute, resolver } from 'hono-openapi';
+import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
+import { db } from '#database';
 import {
   classroom,
   cohort,
@@ -14,10 +14,10 @@ import {
   period,
   subject,
   teacher,
-} from "#database/schema/timetable";
-import type { SuccessResponse } from "#utils/globals";
-import { ensureJsonSafeDates } from "#utils/zod";
-import { timetableFactory } from "../_factory";
+} from '#database/schema/timetable';
+import type { SuccessResponse } from '#utils/globals';
+import { ensureJsonSafeDates } from '#utils/zod';
+import { timetableFactory } from '../_factory';
 
 const getForCohortResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
@@ -26,35 +26,35 @@ const getForCohortResponseSchema = z.object({
 
 export const getLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
-    description: "Get lessons for a given cohort from the database.",
+    description: 'Get lessons for a given cohort from the database.',
     parameters: [
       {
-        in: "path",
-        name: "cohort_id",
+        in: 'path',
+        name: 'cohort_id',
         required: true,
         schema: {
-          description: "The unique identifier for the cohort.",
-          type: "string",
+          description: 'The unique identifier for the cohort.',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(getForCohortResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Lesson"],
+    tags: ['Lesson'],
   }),
   async (c) => {
-    const cohortId = c.req.param("cohort_id");
+    const cohortId = c.req.param('cohort_id');
     if (!cohortId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing cohort_id",
+        message: 'Missing cohort_id',
       });
     }
 
@@ -66,7 +66,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
 
     if (!existingCohort) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: "Cohort not found",
+        message: 'Cohort not found',
       });
     }
 
@@ -88,16 +88,16 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const teacherIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : [],
-        ),
-      ),
+          Array.isArray(l.teacherIds) ? l.teacherIds : []
+        )
+      )
     );
     const classroomIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : [],
-        ),
-      ),
+          Array.isArray(l.classroomIds) ? l.classroomIds : []
+        )
+      )
     );
 
     const [subjects, days, periods, teachers, classrooms] = await Promise.all([
@@ -173,7 +173,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       data: enriched,
       success: true,
     });
-  },
+  }
 );
 
 const getForTeacherResponseSchema = z.object({
@@ -188,35 +188,35 @@ const getForRoomResponseSchema = z.object({
 
 export const getLessonsForTeacher = timetableFactory.createHandlers(
   describeRoute({
-    description: "Get lessons for a given teacher from the database.",
+    description: 'Get lessons for a given teacher from the database.',
     parameters: [
       {
-        in: "path",
-        name: "teacher_id",
+        in: 'path',
+        name: 'teacher_id',
         required: true,
         schema: {
-          description: "The unique identifier for the teacher.",
-          type: "string",
+          description: 'The unique identifier for the teacher.',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(getForTeacherResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Lesson"],
+    tags: ['Lesson'],
   }),
   async (c) => {
-    const teacherId = c.req.param("teacher_id");
+    const teacherId = c.req.param('teacher_id');
     if (!teacherId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing teacher_id",
+        message: 'Missing teacher_id',
       });
     }
 
@@ -228,7 +228,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
 
     if (!existingTeacher) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: "Teacher not found",
+        message: 'Teacher not found',
       });
     }
 
@@ -247,16 +247,16 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     const teacherIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : [],
-        ),
-      ),
+          Array.isArray(l.teacherIds) ? l.teacherIds : []
+        )
+      )
     );
     const classroomIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : [],
-        ),
-      ),
+          Array.isArray(l.classroomIds) ? l.classroomIds : []
+        )
+      )
     );
 
     const [subjects, days, periods, teachers, classrooms] = await Promise.all([
@@ -332,40 +332,40 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       data: enriched,
       success: true,
     });
-  },
+  }
 );
 
 export const getLessonsForRoom = timetableFactory.createHandlers(
   describeRoute({
-    description: "Get lessons for a given classroom from the database.",
+    description: 'Get lessons for a given classroom from the database.',
     parameters: [
       {
-        in: "path",
-        name: "classroom_id",
+        in: 'path',
+        name: 'classroom_id',
         required: true,
         schema: {
-          description: "The unique identifier for the classroom.",
-          type: "string",
+          description: 'The unique identifier for the classroom.',
+          type: 'string',
         },
       },
     ],
     responses: {
       200: {
         content: {
-          "application/json": {
+          'application/json': {
             schema: resolver(ensureJsonSafeDates(getForRoomResponseSchema)),
           },
         },
-        description: "Successful Response",
+        description: 'Successful Response',
       },
     },
-    tags: ["Lesson"],
+    tags: ['Lesson'],
   }),
   async (c) => {
-    const classroomId = c.req.param("classroom_id");
+    const classroomId = c.req.param('classroom_id');
     if (!classroomId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: "Missing classroom_id",
+        message: 'Missing classroom_id',
       });
     }
 
@@ -377,7 +377,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
 
     if (!existingClassroom) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: "Classroom not found",
+        message: 'Classroom not found',
       });
     }
 
@@ -396,16 +396,16 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     const teacherIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : [],
-        ),
-      ),
+          Array.isArray(l.teacherIds) ? l.teacherIds : []
+        )
+      )
     );
     const classroomIds = Array.from(
       new Set(
         lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : [],
-        ),
-      ),
+          Array.isArray(l.classroomIds) ? l.classroomIds : []
+        )
+      )
     );
 
     const [subjects, days, periods, teachers, classrooms] = await Promise.all([
@@ -481,5 +481,5 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       data: enriched,
       success: true,
     });
-  },
+  }
 );

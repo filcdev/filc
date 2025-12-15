@@ -100,7 +100,7 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
             borderColor: `${session.color}50`,
           }}
         >
-          <div className="flex h-full justify-between gap-1 items-center">
+          <div className="flex h-full items-center justify-between gap-1">
             <div className="truncate font-medium text-foreground text-sm leading-5">
               {session.short}
             </div>
