@@ -1,14 +1,20 @@
 {
   "name": "@filcdev/filc",
   "private": true,
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css,md}": "bun biome check --write"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "lint": "biome check --write .",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "turbo": "^2.6.3",
     "typescript": "catalog:"
   },
