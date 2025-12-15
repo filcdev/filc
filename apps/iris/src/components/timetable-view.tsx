@@ -224,7 +224,7 @@ export function TimetableView() {
   );
 
   const isLoading =
-    cohortsQuery.isLoading || lessonsQuery.isLoading || !selectedCohortId;
+    cohortsQuery.isFetching || lessonsQuery.isFetching || !selectedCohortId;
   const hasError = cohortsQuery.error || lessonsQuery.error;
 
   return (
