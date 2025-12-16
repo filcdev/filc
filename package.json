@@ -9,7 +9,7 @@
     "lint": "biome check --write .",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "prepare": "husky"
+    "prepare": "bun run .husky/install.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",

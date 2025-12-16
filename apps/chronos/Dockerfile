@@ -11,6 +11,7 @@ RUN turbo prune @filcdev/iris --docker
 
 FROM base AS install
 COPY --from=prepare /app/out/json/ .
+ENV HUSKY=0
 RUN bun install --production
 
 FROM base AS builder
