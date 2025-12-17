@@ -92,11 +92,11 @@ const getTimeSlotsFromData = (data: TimetableData): string[] => {
 const ClassTooltip = ({ session }: { session: ClassSession }) => (
   <TooltipProvider>
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger className="h-full w-full">
         <div
           className="h-full w-full cursor-pointer rounded-md border p-3 transition-all hover:scale-[1.02] hover:shadow-lg"
           style={{
-            backgroundColor: `${session.color}20`,
+            backgroundColor: `${session.color}30`,
             borderColor: `${session.color}50`,
           }}
         >
@@ -150,14 +150,30 @@ const ClassCell = ({
   if (!session) {
     return <div className="h-full w-full" />;
   }
+
   const sessions = Array.isArray(session) ? session : [session];
-  const gridWidth =
-    sessions.length > 3 ? 'grid-cols-3' : `grid-cols-${sessions.length}`;
 
   return (
-    <div className={`grid h-full w-full ${gridWidth} gap-1`}>
+    <div
+      className="grid h-full w-full gap-1"
+      style={
+        sessions.length === 1
+          ? { gridTemplateColumns: 'minmax(0, 1fr)' }
+          : { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }
+      }
+    >
       {sessions.map((s) => (
-        <ClassTooltip key={`${s.id}-${s.startTime}`} session={s} />
+        <div
+          className={
+            sessions.length % 2 === 1 &&
+            sessions.length === sessions.indexOf(s) + 1
+              ? 'col-span-2 h-full rounded-md bg-white'
+              : 'h-full rounded-md bg-white'
+          }
+          key={`${s.id}-${s.startTime}`}
+        >
+          <ClassTooltip session={s} />
+        </div>
       ))}
     </div>
   );
@@ -246,25 +262,48 @@ export function Timetable({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className="border-border hover:bg-muted/30"
-                  key={row.id}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      className="p-1 text-center"
-                      key={cell.id}
-                      style={{ width: cell.column.getSize() }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
+              {table.getRowModel().rows.map((row, rowIndex) => {
+                const hasMultipleSessions = row
+                  .getVisibleCells()
+                  .slice(1)
+                  .some((cell) => {
+                    const session = cell.getValue() as
+                      | ClassSession
+                      | ClassSession[]
+                      | null;
+                    return Array.isArray(session) && session.length >= 3;
+                  });
+
+                const rowHeight = hasMultipleSessions ? '100px' : 'auto';
+                const bgColor =
+                  rowIndex % 2 === 0
+                    ? 'rgba(128, 128, 128, 0.15)'
+                    : 'transparent';
+
+                return (
+                  <TableRow
+                    className="border-border hover:bg-muted/30"
+                    key={row.id}
+                    style={{ backgroundColor: bgColor, height: rowHeight }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        className="p-1 text-center"
+                        key={cell.id}
+                        style={{
+                          height: rowHeight,
+                          width: cell.column.getSize(),
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
