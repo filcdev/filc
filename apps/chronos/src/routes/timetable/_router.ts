@@ -29,7 +29,7 @@ export const timetableRouter = timetableFactory
   .createApp()
   // Timetable routes
   .get('/timetables', ...getAllTimetables)
-  .get('/timetables/latest-valid', ...getLatestValidTimetable)
+  .get('/timetables/latestValid', ...getLatestValidTimetable)
   .get('/timetables/valid', ...getAllValidTimetables)
   .post('/import', ...importRoute)
   // Substitution routes
@@ -40,20 +40,17 @@ export const timetableRouter = timetableFactory
   .put('/substitutions/:id', ...updateSubstitution)
   .delete('/substitutions/:id', ...deleteSubstitution)
   // Moved lesson routes
-  .get('/moved-lessons', ...getAllMovedLessons)
-  .get('/moved-lessons/relevant', ...getRelevantMovedLessons)
-  .get('/moved-lessons/cohort/:cohortId', ...getMovedLessonsForCohort)
+  .get('/movedLessons', ...getAllMovedLessons)
+  .get('/movedLessons/relevant', ...getRelevantMovedLessons)
+  .get('/movedLessons/cohort/:cohortId', ...getMovedLessonsForCohort)
   .get(
-    '/moved-lessons/cohort/:cohortId/relevant',
+    '/movedLessons/cohort/:cohortId/relevant',
     ...getRelevantMovedLessonsForCohort
   )
-  .post('/moved-lessons', ...createMovedLesson)
-  .put('/moved-lessons/:id', ...updateMovedLesson)
-  .delete('/moved-lessons/:id', ...deleteMovedLesson)
+  .post('/movedLessons', ...createMovedLesson)
+  .put('/movedLessons/:id', ...updateMovedLesson)
+  .delete('/movedLessons/:id', ...deleteMovedLesson)
   // Lesson routes
-  .get('/lessons/get_for_cohort/:cohort_id', ...getLessonsForCohort)
+  .get('/lessons/getForCohort/:cohort_id', ...getLessonsForCohort)
   // Cohort routes
-  .get(
-    '/cohorts/get-all-for-timetable/:timetable_id',
-    ...getCohortsForTimetable
-  );
+  .get('/cohorts/getAllForTimetable/:timetable_id', ...getCohortsForTimetable);
