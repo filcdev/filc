@@ -25,7 +25,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
     parameters: [
       {
         in: 'path',
-        name: 'timetable_id',
+        name: 'timetableId',
         required: true,
         schema: {
           description: 'The unique identifier for the timetable.',
@@ -50,11 +50,11 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     try {
-      const timetableId = c.req.param('timetable_id');
+      const timetableId = c.req.param('timetableId');
 
       if (!timetableId) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Missing timetable_id parameter.',
+          message: 'Missing timetableId parameter.',
         });
       }
 
