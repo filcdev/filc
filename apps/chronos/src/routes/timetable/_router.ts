@@ -51,6 +51,6 @@ export const timetableRouter = timetableFactory
   .put('/movedLessons/:id', ...updateMovedLesson)
   .delete('/movedLessons/:id', ...deleteMovedLesson)
   // Lesson routes
-  .get('/lessons/getForCohort/:cohort_id', ...getLessonsForCohort)
+  .get('/lessons/getForCohort/:cohortId', ...getLessonsForCohort)
   // Cohort routes
-  .get('/cohorts/getAllForTimetable/:timetable_id', ...getCohortsForTimetable);
+  .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable);
