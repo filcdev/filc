@@ -192,9 +192,9 @@ const fetchLessonsForCohort = async (
   cohortId: string
 ): Promise<EnrichedLesson[]> => {
   const res = await parseResponse(
-    api.timetable.lessons['get-for-cohort'][':cohort_id'].$get({
+    api.timetable.lessons.getForCohort[':cohortId'].$get({
       param: {
-        cohort_id: cohortId,
+        cohortId,
       },
     })
   );
@@ -209,9 +209,9 @@ const fetchLessonsForTeacher = async (
   teacherId: string
 ): Promise<EnrichedLesson[]> => {
   const res = await parseResponse(
-    api.timetable.lessons['get-for-teacher'][':teacher_id'].$get({
+    api.timetable.lessons.getForTeacher[':teacherId'].$get({
       param: {
-        teacher_id: teacherId,
+        teacherId,
       },
     })
   );
@@ -226,9 +226,9 @@ const fetchLessonsForClassroom = async (
   classroomId: string
 ): Promise<EnrichedLesson[]> => {
   const res = await parseResponse(
-    api.timetable.lessons['get-for-room'][':classroom_id'].$get({
+    api.timetable.lessons.getForRoom[':classroomId'].$get({
       param: {
-        classroom_id: classroomId,
+        classroomId,
       },
     })
   );
@@ -255,7 +255,7 @@ export function TimetableView() {
 
   const teachersQuery = useQuery({
     queryFn: async () => {
-      const res = await parseResponse(api.timetable.teachers['get-all'].$get());
+      const res = await parseResponse(api.timetable.teachers.getAll.$get());
       if (!res.success) {
         throw new Error('Failed to load teachers');
       }
@@ -266,9 +266,7 @@ export function TimetableView() {
 
   const classroomsQuery = useQuery({
     queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.classrooms['get-all'].$get()
-      );
+      const res = await parseResponse(api.timetable.classrooms.getAll.$get());
       if (!res.success) {
         throw new Error('Failed to load classrooms');
       }
