@@ -259,7 +259,7 @@ export function CardDialog<
           </div>
           <DialogFooter>
             <Button disabled={!isValid || isSubmitting} type="submit">
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {card ? 'Save changes' : 'Create card'}
             </Button>
           </DialogFooter>

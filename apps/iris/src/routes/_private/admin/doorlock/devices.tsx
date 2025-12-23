@@ -186,7 +186,7 @@ function DevicesPage() {
                 setDialogOpen(true);
               }}
             >
-              <Plus className="mr-2 h-4 w-4" /> Add device
+              <Plus /> Add device
             </Button>
           )}
         </div>
