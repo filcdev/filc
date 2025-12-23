@@ -30,5 +30,8 @@
       "hono": "^4.10.7",
       "better-auth": "^1.4.4"
     }
+  },
+  "dependencies": {
+    "lucide-react": "^0.562.0"
   }
 }
