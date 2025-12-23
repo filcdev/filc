@@ -207,8 +207,6 @@ export function FilterBar({
           </Button>
           {renderSelect()}
         </ButtonGroup>
-
-        <div className="flex items-center gap-2"></div>
       </div>
 
       <div className="flex items-center gap-2">
