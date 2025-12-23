@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator';
 import { count, desc, eq, ilike, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
+import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
@@ -99,7 +100,9 @@ export const updateUser = usersFactory.createHandlers(
   async (c) => {
     const userId = c.req.param('id');
     if (!userId) {
-      throw new HTTPException(400, { message: 'User ID is required' });
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'User ID is required',
+      });
     }
     const { nickname, roles } = c.req.valid('json');
 
@@ -113,7 +116,9 @@ export const updateUser = usersFactory.createHandlers(
       .returning();
 
     if (!updatedUser) {
-      return c.json({ error: 'User not found', success: false }, 404);
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'User not found',
+      });
     }
 
     return c.json<SuccessResponse<typeof updatedUser>>({
