@@ -1,16 +1,16 @@
 import { useNavigate } from '@tanstack/react-router';
+import {
+  Book,
+  Calendar,
+  Cog,
+  GraduationCap,
+  LoaderCircle,
+  LogIn,
+  LogOut,
+  UserCog,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FaBook,
-  FaCalendarDays,
-  FaGear,
-  FaGraduationCap,
-  FaRightFromBracket,
-  FaRightToBracket,
-  FaSpinner,
-  FaUserGear,
-} from 'react-icons/fa6';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,7 +19,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPositioner,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -49,7 +48,7 @@ export function Navbar({
           {showLogo && (
             <>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <FaGraduationCap className="h-5 w-5 text-primary-foreground" />
+                <GraduationCap className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="font-semibold text-foreground text-xl">
                 filc
@@ -83,7 +82,7 @@ export function Navbar({
                   size="sm"
                   variant="outline"
                 >
-                  <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 </Button>
               );
             }
@@ -125,44 +124,42 @@ export function Navbar({
                       </Button>
                     }
                   />
-                  <DropdownMenuPositioner>
-                    <DropdownMenuContent className="w-56">
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <div className="flex flex-row gap-1">
-                              <p className="font-medium text-sm leading-none">
-                                {displayNickname}
-                              </p>
-                              <p className="font-medium text-muted-foreground text-sm leading-none">
-                                {displayName !== displayNickname
-                                  ? `(${displayName})`
-                                  : null}
-                              </p>
-                            </div>
-                            <p className="text-muted-foreground text-xs leading-none">
-                              {data.user.email}
+                  <DropdownMenuContent className="w-56">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex flex-row gap-1">
+                            <p className="font-medium text-sm leading-none">
+                              {displayNickname}
+                            </p>
+                            <p className="font-medium text-muted-foreground text-sm leading-none">
+                              {displayName !== displayNickname
+                                ? `(${displayName})`
+                                : null}
                             </p>
                           </div>
-                        </DropdownMenuLabel>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <FaGear className="mr-2 h-4 w-4" />
-                        <span>{t('settings')}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={async () => {
-                          await authClient.signOut();
-                        }}
-                      >
-                        <FaRightFromBracket className="mr-2 h-4 w-4" />
-                        <span>{t('logout')}</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenuPositioner>
+                          <p className="text-muted-foreground text-xs leading-none">
+                            {data.user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <Cog className="mr-2 h-4 w-4" />
+                      <span>{t('settings')}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={async () => {
+                        await authClient.signOut();
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>{t('logout')}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                 </DropdownMenu>
               );
             }
@@ -174,8 +171,7 @@ export function Navbar({
                 size="sm"
                 variant="default"
               >
-                <FaRightToBracket className="h-4 w-4" />{' '}
-                {t('sign_in') || 'Sign in'}
+                <LogIn className="h-4 w-4" /> {t('sign_in') || 'Sign in'}
               </Button>
             );
           })()}
@@ -199,7 +195,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
         size="sm"
         variant="ghost"
       >
-        <FaCalendarDays className="mr-2 h-4 w-4" />
+        <Calendar className="mr-2 h-4 w-4" />
         {t('schedule')}
       </Button>
       <Button
@@ -208,7 +204,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
         size="sm"
         variant="ghost"
       >
-        <FaBook className="mr-2 h-4 w-4" />
+        <Book className="mr-2 h-4 w-4" />
         {t('substitutions')}
       </Button>
       {isAdmin && (
@@ -218,7 +214,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
           size="sm"
           variant="ghost"
         >
-          <FaUserGear className="mr-2 h-4 w-4" />
+          <UserCog className="mr-2 h-4 w-4" />
           {t('adminDashboard')}
         </Button>
       )}

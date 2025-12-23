@@ -1,13 +1,7 @@
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { InferResponseType } from 'hono/client';
-import {
-  FaBan,
-  FaDoorOpen,
-  FaIdCard,
-  FaLocationDot,
-  FaRegSnowflake,
-} from 'react-icons/fa6';
+import { Ban, DoorOpen, IdCard, MapPin, Snowflake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -58,24 +52,24 @@ export function UserCardList({
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <FaIdCard />
+                <IdCard />
                 <span>{card.name}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-muted-foreground text-sm">
               <div className="flex items-center gap-2">
-                <FaLocationDot />
+                <MapPin />
                 <span>{deviceNames || 'No authorized devices'}</span>
               </div>
               <div className="flex items-center gap-2">
-                <FaDoorOpen />
+                <DoorOpen />
                 <span>Updated {dayjs(card.updatedAt).fromNow()}</span>
               </div>
             </CardContent>
             <CardFooter className="flex flex-wrap items-center justify-end gap-3">
               {!card.enabled && (
                 <span className="flex items-center gap-1 font-semibold text-destructive">
-                  <FaBan /> Disabled
+                  <Ban /> Disabled
                 </span>
               )}
               <Button
@@ -84,7 +78,7 @@ export function UserCardList({
                 onClick={() => onToggleFreeze(card)}
                 variant="outline"
               >
-                <FaRegSnowflake />
+                <Snowflake />
                 <span>{card.frozen ? 'Unfreeze card' : 'Freeze card'}</span>
               </Button>
             </CardFooter>

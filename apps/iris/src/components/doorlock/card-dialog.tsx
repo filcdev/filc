@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FaFloppyDisk } from 'react-icons/fa6';
+import { Save } from 'lucide-react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -15,7 +15,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectPositioner,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -123,7 +122,7 @@ export function CardDialog<
     });
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!isValid) {
       return;
@@ -146,8 +145,8 @@ export function CardDialog<
             <Label htmlFor="card-name">Name</Label>
             <Input
               id="card-name"
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, name: event.target.value }))
+              onValueChange={(name) =>
+                setFormState((prev) => ({ ...prev, name }))
               }
               required
               value={formState.name}
@@ -172,23 +171,25 @@ export function CardDialog<
           <div className="space-y-2">
             <Label>Owner</Label>
             <Select
+              items={users.map((user) => ({
+                label: user.nickname ?? user.name ?? user.email ?? 'Unknown',
+                value: user.id,
+              }))}
               onValueChange={(value) =>
                 setFormState((prev) => ({ ...prev, userId: value ?? '' }))
               }
               value={formState.userId}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select user" />
+                <SelectValue />
               </SelectTrigger>
-              <SelectPositioner>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.nickname ?? user.name ?? user.email ?? 'Unknown'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </SelectPositioner>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname ?? user.name ?? user.email ?? 'Unknown'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -258,7 +259,7 @@ export function CardDialog<
           </div>
           <DialogFooter>
             <Button disabled={!isValid || isSubmitting} type="submit">
-              <FaFloppyDisk className="mr-2 h-4 w-4" />
+              <Save className="mr-2 h-4 w-4" />
               {card ? 'Save changes' : 'Create card'}
             </Button>
           </DialogFooter>

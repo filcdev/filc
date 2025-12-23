@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import { FaDoorOpen, FaIdCard, FaMicrochip } from 'react-icons/fa6';
+import { DoorOpen, IdCard, Microchip } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { DoorOpenChart } from '@/components/doorlock/door-open-chart';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,19 +51,19 @@ function DoorlockDashboard() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          icon={<FaIdCard className="text-primary" />}
+          icon={<IdCard className="text-primary" />}
           isLoading={!stats}
           label="Total cards"
           value={stats?.totalCards ?? 0}
         />
         <StatCard
-          icon={<FaMicrochip className="text-primary" />}
+          icon={<Microchip className="text-primary" />}
           isLoading={!stats}
           label="Total devices"
           value={stats?.totalDevices ?? 0}
         />
         <StatCard
-          icon={<FaDoorOpen className="text-primary" />}
+          icon={<DoorOpen className="text-primary" />}
           isLoading={!stats}
           label="Successful opens"
           value={stats?.totalSuccessfulOpens ?? 0}
@@ -119,7 +120,7 @@ function DoorlockDashboard() {
 }
 
 type StatCardProps = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   isLoading: boolean;
   label: string;
   value: number;
