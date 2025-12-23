@@ -57,15 +57,12 @@ export const timetableRouter = timetableFactory
   .put('/movedLessons/:id', ...updateMovedLesson)
   .delete('/movedLessons/:id', ...deleteMovedLesson)
   // Lesson routes
-  .get('/lessons/get-for-cohort/:cohort_id', ...getLessonsForCohort)
-  .get('/lessons/get-for-teacher/:teacher_id', ...getLessonsForTeacher)
-  .get('/lessons/get-for-room/:classroom_id', ...getLessonsForRoom)
+  .get('/lessons/getForCohort/:cohortId', ...getLessonsForCohort)
+  .get('/lessons/getForTeacher/:teacherId', ...getLessonsForTeacher)
+  .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
   // Cohort routes
-  .get(
-    '/cohorts/get-all-for-timetable/:timetable_id',
-    ...getCohortsForTimetable
-  )
+  .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
   // Teacher routes
-  .get('/teachers/get-all', ...getTeachers)
-  // Classrooms
-  .get('/classrooms/get-all', ...getClassrooms);
+  .get('/teachers/getAll', ...getTeachers)
+  // Classroom routes
+  .get('/classrooms/getAll', ...getClassrooms);

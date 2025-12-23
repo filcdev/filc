@@ -19,6 +19,95 @@ import type { SuccessResponse } from '#utils/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 
+async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
+  if (lessons.length === 0) {
+    return [];
+  }
+
+  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
+  const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
+  const teacherIds = Array.from(
+    new Set(
+      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
+    )
+  );
+  const classroomIds = Array.from(
+    new Set(
+      lessons.flatMap((l) =>
+        Array.isArray(l.classroomIds) ? l.classroomIds : []
+      )
+    )
+  );
+
+  const [subjects, days, periods, teachers, classrooms] = await Promise.all([
+    db.select().from(subject).where(inArray(subject.id, subjectIds)),
+    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
+    db.select().from(period).where(inArray(period.id, periodIds)),
+    teacherIds.length
+      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
+      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
+    classroomIds.length
+      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
+      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
+  ]);
+
+  const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
+  const dayMap = new Map(days.map((d) => [d.id, d] as const));
+  const periodMap = new Map(periods.map((p) => [p.id, p] as const));
+  const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
+  const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
+
+  return lessons.map((l) => {
+    const tIds = (Array.isArray(l.teacherIds) ? l.teacherIds : []) as string[];
+    const cIds = (
+      Array.isArray(l.classroomIds) ? l.classroomIds : []
+    ) as string[];
+
+    return {
+      classrooms: cIds
+        .map((id) => classroomMap.get(id))
+        .filter(Boolean)
+        .map((cr) => ({
+          id: (cr as (typeof classrooms)[number]).id,
+          name: (cr as (typeof classrooms)[number]).name,
+          short: (cr as (typeof classrooms)[number]).short,
+        })),
+      day: (() => {
+        const d = dayMap.get(l.dayDefinitionId);
+        return d;
+      })(),
+      id: l.id,
+      period: (() => {
+        const p = periodMap.get(l.periodId);
+        return p
+          ? {
+              endTime: String(p.endTime),
+              id: p.id,
+              period: p.period,
+              startTime: String(p.startTime),
+            }
+          : null;
+      })(),
+      periodsPerWeek: l.periodsPerWeek,
+      subject: (() => {
+        const s = subjMap.get(l.subjectId);
+        return s ? { id: s.id, name: s.name, short: s.short } : null;
+      })(),
+      teachers: tIds
+        .map((id) => teacherMap.get(id))
+        .filter(Boolean)
+        .map((t) => ({
+          id: (t as (typeof teachers)[number]).id,
+          name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
+          short: (t as (typeof teachers)[number]).short,
+        })),
+      termDefinitionId: l.termDefinitionId,
+      weeksDefinitionId: l.weeksDefinitionId,
+    };
+  });
+}
+
 const getForCohortResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
   success: z.boolean(),
@@ -51,8 +140,8 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   async (c) => {
-    const cohortId = c.req.param('cohortId');
-    if (!cohortId) {
+    const cId = c.req.param('cohortId');
+    if (!cId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Missing cohortId',
       });
@@ -61,7 +150,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const [existingCohort] = await db
       .select()
       .from(cohort)
-      .where(eq(cohort.id, cohortId))
+      .where(eq(cohort.id, cId))
       .limit(1);
 
     if (!existingCohort) {
@@ -74,7 +163,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       .select({ lesson })
       .from(lesson)
       .innerJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-      .where(eq(lessonCohortMTM.cohortId, cohortId));
+      .where(eq(lessonCohortMTM.cohortId, cId));
 
     const lessons = lessonRows.map((r) => r.lesson);
 
@@ -82,92 +171,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
     }
 
-    const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
-    const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
-    const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
-    const teacherIds = Array.from(
-      new Set(
-        lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : []
-        )
-      )
-    );
-    const classroomIds = Array.from(
-      new Set(
-        lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : []
-        )
-      )
-    );
-
-    const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-      db.select().from(subject).where(inArray(subject.id, subjectIds)),
-      db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-      db.select().from(period).where(inArray(period.id, periodIds)),
-      teacherIds.length
-        ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-        : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-      classroomIds.length
-        ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-        : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-    ]);
-
-    const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
-    const dayMap = new Map(days.map((d) => [d.id, d] as const));
-    const periodMap = new Map(periods.map((p) => [p.id, p] as const));
-    const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
-    const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
-
-    const enriched = lessons.map((l) => {
-      const tIds = (
-        Array.isArray(l.teacherIds) ? l.teacherIds : []
-      ) as string[];
-      const cIds = (
-        Array.isArray(l.classroomIds) ? l.classroomIds : []
-      ) as string[];
-
-      return {
-        classrooms: cIds
-          .map((id) => classroomMap.get(id))
-          .filter(Boolean)
-          .map((cr) => ({
-            id: (cr as (typeof classrooms)[number]).id,
-            name: (cr as (typeof classrooms)[number]).name,
-            short: (cr as (typeof classrooms)[number]).short,
-          })),
-        day: (() => {
-          const d = dayMap.get(l.dayDefinitionId);
-          return d;
-        })(),
-        id: l.id,
-        period: (() => {
-          const p = periodMap.get(l.periodId);
-          return p
-            ? {
-                endTime: String(p.endTime),
-                id: p.id,
-                period: p.period,
-                startTime: String(p.startTime),
-              }
-            : null;
-        })(),
-        periodsPerWeek: l.periodsPerWeek,
-        subject: (() => {
-          const s = subjMap.get(l.subjectId);
-          return s ? { id: s.id, name: s.name, short: s.short } : null;
-        })(),
-        teachers: tIds
-          .map((id) => teacherMap.get(id))
-          .filter(Boolean)
-          .map((t) => ({
-            id: (t as (typeof teachers)[number]).id,
-            name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-            short: (t as (typeof teachers)[number]).short,
-          })),
-        termDefinitionId: l.termDefinitionId,
-        weeksDefinitionId: l.weeksDefinitionId,
-      };
-    });
+    const enriched = await enrichLessons(lessons);
 
     return c.json<SuccessResponse<typeof enriched>>({
       data: enriched,
@@ -192,7 +196,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     parameters: [
       {
         in: 'path',
-        name: 'teacher_id',
+        name: 'teacherId',
         required: true,
         schema: {
           description: 'The unique identifier for the teacher.',
@@ -213,17 +217,17 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   async (c) => {
-    const teacherId = c.req.param('teacher_id');
-    if (!teacherId) {
+    const tId = c.req.param('teacherId');
+    if (!tId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing teacher_id',
+        message: 'Missing teacherId',
       });
     }
 
     const [existingTeacher] = await db
       .select()
       .from(teacher)
-      .where(eq(teacher.id, teacherId))
+      .where(eq(teacher.id, tId))
       .limit(1);
 
     if (!existingTeacher) {
@@ -235,98 +239,13 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     const lessons = await db
       .select()
       .from(lesson)
-      .where(sql`${lesson.teacherIds} @> ${JSON.stringify([teacherId])}`);
+      .where(sql`${lesson.teacherIds} @> ${JSON.stringify([tId])}`);
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
     }
 
-    const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
-    const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
-    const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
-    const teacherIds = Array.from(
-      new Set(
-        lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : []
-        )
-      )
-    );
-    const classroomIds = Array.from(
-      new Set(
-        lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : []
-        )
-      )
-    );
-
-    const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-      db.select().from(subject).where(inArray(subject.id, subjectIds)),
-      db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-      db.select().from(period).where(inArray(period.id, periodIds)),
-      teacherIds.length
-        ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-        : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-      classroomIds.length
-        ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-        : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-    ]);
-
-    const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
-    const dayMap = new Map(days.map((d) => [d.id, d] as const));
-    const periodMap = new Map(periods.map((p) => [p.id, p] as const));
-    const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
-    const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
-
-    const enriched = lessons.map((l) => {
-      const tIds = (
-        Array.isArray(l.teacherIds) ? l.teacherIds : []
-      ) as string[];
-      const cIds = (
-        Array.isArray(l.classroomIds) ? l.classroomIds : []
-      ) as string[];
-
-      return {
-        classrooms: cIds
-          .map((id) => classroomMap.get(id))
-          .filter(Boolean)
-          .map((cr) => ({
-            id: (cr as (typeof classrooms)[number]).id,
-            name: (cr as (typeof classrooms)[number]).name,
-            short: (cr as (typeof classrooms)[number]).short,
-          })),
-        day: (() => {
-          const d = dayMap.get(l.dayDefinitionId);
-          return d;
-        })(),
-        id: l.id,
-        period: (() => {
-          const p = periodMap.get(l.periodId);
-          return p
-            ? {
-                endTime: String(p.endTime),
-                id: p.id,
-                period: p.period,
-                startTime: String(p.startTime),
-              }
-            : null;
-        })(),
-        periodsPerWeek: l.periodsPerWeek,
-        subject: (() => {
-          const s = subjMap.get(l.subjectId);
-          return s ? { id: s.id, name: s.name, short: s.short } : null;
-        })(),
-        teachers: tIds
-          .map((id) => teacherMap.get(id))
-          .filter(Boolean)
-          .map((t) => ({
-            id: (t as (typeof teachers)[number]).id,
-            name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-            short: (t as (typeof teachers)[number]).short,
-          })),
-        termDefinitionId: l.termDefinitionId,
-        weeksDefinitionId: l.weeksDefinitionId,
-      };
-    });
+    const enriched = await enrichLessons(lessons);
 
     return c.json<SuccessResponse<typeof enriched>>({
       data: enriched,
@@ -341,7 +260,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     parameters: [
       {
         in: 'path',
-        name: 'classroom_id',
+        name: 'classroomId',
         required: true,
         schema: {
           description: 'The unique identifier for the classroom.',
@@ -362,17 +281,17 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   async (c) => {
-    const classroomId = c.req.param('classroom_id');
-    if (!classroomId) {
+    const rId = c.req.param('classroomId');
+    if (!rId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing classroom_id',
+        message: 'Missing roomId',
       });
     }
 
     const [existingClassroom] = await db
       .select()
       .from(classroom)
-      .where(eq(classroom.id, classroomId))
+      .where(eq(classroom.id, rId))
       .limit(1);
 
     if (!existingClassroom) {
@@ -384,98 +303,13 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     const lessons = await db
       .select()
       .from(lesson)
-      .where(sql`${lesson.classroomIds} @> ${JSON.stringify([classroomId])}`);
+      .where(sql`${lesson.classroomIds} @> ${JSON.stringify([rId])}`);
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
     }
 
-    const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
-    const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
-    const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
-    const teacherIds = Array.from(
-      new Set(
-        lessons.flatMap((l) =>
-          Array.isArray(l.teacherIds) ? l.teacherIds : []
-        )
-      )
-    );
-    const classroomIds = Array.from(
-      new Set(
-        lessons.flatMap((l) =>
-          Array.isArray(l.classroomIds) ? l.classroomIds : []
-        )
-      )
-    );
-
-    const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-      db.select().from(subject).where(inArray(subject.id, subjectIds)),
-      db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-      db.select().from(period).where(inArray(period.id, periodIds)),
-      teacherIds.length
-        ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-        : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-      classroomIds.length
-        ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-        : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-    ]);
-
-    const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
-    const dayMap = new Map(days.map((d) => [d.id, d] as const));
-    const periodMap = new Map(periods.map((p) => [p.id, p] as const));
-    const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
-    const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
-
-    const enriched = lessons.map((l) => {
-      const tIds = (
-        Array.isArray(l.teacherIds) ? l.teacherIds : []
-      ) as string[];
-      const cIds = (
-        Array.isArray(l.classroomIds) ? l.classroomIds : []
-      ) as string[];
-
-      return {
-        classrooms: cIds
-          .map((id) => classroomMap.get(id))
-          .filter(Boolean)
-          .map((cr) => ({
-            id: (cr as (typeof classrooms)[number]).id,
-            name: (cr as (typeof classrooms)[number]).name,
-            short: (cr as (typeof classrooms)[number]).short,
-          })),
-        day: (() => {
-          const d = dayMap.get(l.dayDefinitionId);
-          return d;
-        })(),
-        id: l.id,
-        period: (() => {
-          const p = periodMap.get(l.periodId);
-          return p
-            ? {
-                endTime: String(p.endTime),
-                id: p.id,
-                period: p.period,
-                startTime: String(p.startTime),
-              }
-            : null;
-        })(),
-        periodsPerWeek: l.periodsPerWeek,
-        subject: (() => {
-          const s = subjMap.get(l.subjectId);
-          return s ? { id: s.id, name: s.name, short: s.short } : null;
-        })(),
-        teachers: tIds
-          .map((id) => teacherMap.get(id))
-          .filter(Boolean)
-          .map((t) => ({
-            id: (t as (typeof teachers)[number]).id,
-            name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-            short: (t as (typeof teachers)[number]).short,
-          })),
-        termDefinitionId: l.termDefinitionId,
-        weeksDefinitionId: l.weeksDefinitionId,
-      };
-    });
+    const enriched = await enrichLessons(lessons);
 
     return c.json<SuccessResponse<typeof enriched>>({
       data: enriched,
