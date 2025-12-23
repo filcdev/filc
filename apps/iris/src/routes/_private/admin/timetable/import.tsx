@@ -1,16 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
+import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FaCalendarDays,
-  FaCircleCheck,
-  FaCircleExclamation,
-  FaFileArrowUp,
-  FaSpinner,
-  FaXmark,
-} from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -24,6 +17,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { api } from '@/utils/hc';
 
@@ -241,7 +235,7 @@ function TimetableImportPage() {
             {selectedFile ? (
               <div className="flex w-full items-center justify-between rounded-md bg-muted p-4">
                 <div className="flex items-center gap-3">
-                  <FaCalendarDays className="h-6 w-6 text-primary" />
+                  <Calendar className="h-6 w-6 text-primary" />
                   <div className="flex flex-col">
                     <span className="font-medium text-sm">
                       {selectedFile.name}
@@ -259,12 +253,12 @@ function TimetableImportPage() {
                   size="sm"
                   variant="ghost"
                 >
-                  <FaXmark className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
               <>
-                <FaFileArrowUp className="mb-4 h-12 w-12 text-muted-foreground" />
+                <FileUp className="mb-4 h-12 w-12 text-muted-foreground" />
                 <p className="mb-2 font-semibold text-sm">
                   {t('timetable.clickToUpload')}
                 </p>
@@ -281,7 +275,7 @@ function TimetableImportPage() {
           {/* Status Messages */}
           {importStatus === 'success' && (
             <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-              <FaCircleCheck className="h-4 w-4 text-green-600" />
+              <CircleCheck className="h-4 w-4 text-green-600" />
               <AlertTitle>{t('timetable.importSuccessTitle')}</AlertTitle>
               <AlertDescription>
                 {t('timetable.importSuccessMessage')}
@@ -294,7 +288,7 @@ function TimetableImportPage() {
               className="border-red-500 bg-red-50 dark:bg-red-950"
               variant="destructive"
             >
-              <FaCircleExclamation className="h-4 w-4" />
+              <CircleAlert className="h-4 w-4" />
               <AlertTitle>{t('timetable.importErrorTitle')}</AlertTitle>
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
@@ -313,12 +307,12 @@ function TimetableImportPage() {
             >
               {importStatus === 'uploading' ? (
                 <>
-                  <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2" />
                   {t('timetable.importing')}
                 </>
               ) : (
                 <>
-                  <FaFileArrowUp className="mr-2 h-4 w-4" />
+                  <FileUp />
                   {t('timetable.importButton')}
                 </>
               )}

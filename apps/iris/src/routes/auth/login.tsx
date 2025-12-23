@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { FingerprintPattern, Shield } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaMicrosoft, FaShield } from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +50,7 @@ function RouteComponent() {
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-4 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <FaShield className="h-8 w-8 text-primary" />
+            <Shield className="h-8 w-8 text-primary" />
           </div>
           <div className="space-y-2">
             <h1 className="font-bold text-3xl text-foreground">
@@ -80,7 +80,7 @@ function RouteComponent() {
                   t('common.loading')
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <FaMicrosoft className="h-4 w-4" />
+                    <FingerprintPattern className="h-4 w-4" />
                     {t('microsoft.signInButton')}
                   </span>
                 )}

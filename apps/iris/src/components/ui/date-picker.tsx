@@ -1,11 +1,10 @@
 import { format } from 'date-fns';
-import { FaCalendar } from 'react-icons/fa6';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
-  PopoverPositioner,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/utils';
@@ -35,22 +34,20 @@ export function DatePicker({
             disabled={disabled}
             variant={'outline'}
           >
-            <FaCalendar className="mr-2 h-4 w-4" />
+            <CalendarIcon />
             {date ? format(date, 'PPP') : <span>{placeholder}</span>}
           </Button>
         }
       />
-      <PopoverPositioner align="start">
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            autoFocus
-            mode="single"
-            required={false}
-            selected={date}
-            {...(onDateChange && { onSelect: onDateChange })}
-          />
-        </PopoverContent>
-      </PopoverPositioner>
+      <PopoverContent align="start" className="w-auto p-0">
+        <Calendar
+          autoFocus
+          mode="single"
+          required={false}
+          selected={date}
+          {...(onDateChange && { onSelect: onDateChange })}
+        />
+      </PopoverContent>
     </Popover>
   );
 }

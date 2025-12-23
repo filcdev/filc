@@ -2,17 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
+import {
+  ChartArea,
+  DoorOpen,
+  Key,
+  Microchip,
+  Pen,
+  Plus,
+  Trash,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import {
-  FaChartLine,
-  FaDoorOpen,
-  FaKey,
-  FaMicrochip,
-  FaPen,
-  FaPlus,
-  FaTrash,
-} from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
@@ -186,7 +186,7 @@ function DevicesPage() {
                 setDialogOpen(true);
               }}
             >
-              <FaPlus className="mr-2 h-4 w-4" /> Add device
+              <Plus /> Add device
             </Button>
           )}
         </div>
@@ -194,17 +194,17 @@ function DevicesPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          icon={<FaMicrochip className="text-primary" />}
+          icon={<Microchip className="text-primary" />}
           label="Total devices"
           value={totalDevices}
         />
         <StatCard
-          icon={<FaDoorOpen className="text-primary" />}
+          icon={<DoorOpen className="text-primary" />}
           label="Active (last 24h)"
           value={activeDevices}
         />
         <StatCard
-          icon={<FaKey className="text-primary" />}
+          icon={<Key className="text-primary" />}
           label="API tokens"
           value={totalDevices}
         />
@@ -255,7 +255,7 @@ function DevicesPage() {
                         size="icon"
                         variant="outline"
                       >
-                        <FaChartLine className="h-4 w-4" />
+                        <ChartArea className="h-4 w-4" />
                       </Button>
                       <Button
                         onClick={() => {
@@ -265,7 +265,7 @@ function DevicesPage() {
                         size="icon"
                         variant="outline"
                       >
-                        <FaPen className="h-4 w-4" />
+                        <Pen className="h-4 w-4" />
                       </Button>
                       <Button
                         disabled={deleteMutation.isPending}
@@ -273,7 +273,7 @@ function DevicesPage() {
                         size="icon"
                         variant="destructive"
                       >
-                        <FaTrash className="h-4 w-4" />
+                        <Trash className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

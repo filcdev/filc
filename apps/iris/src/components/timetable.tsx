@@ -4,7 +4,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { FaClock, FaLocationDot, FaUser } from 'react-icons/fa6';
+import { Clock, MapPin, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -17,7 +17,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipPositioner,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
@@ -110,34 +109,32 @@ const ClassTooltip = ({ session }: { session: ClassSession }) => (
           </div>
         </div>
       </TooltipTrigger>
-      <TooltipPositioner side="top">
-        <TooltipContent className="max-w-xs">
-          <div className="space-y-2">
-            <div className="font-semibold text-sm">{session.subject}</div>
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-2">
-                <FaClock className="h-3 w-3" />
-                <span>
-                  {session.startTime} - {session.endTime}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaUser className="h-3 w-3" />
-                <span>{session.teacher}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaLocationDot className="h-3 w-3" />
-                <span>{session.room}</span>
-              </div>
-              {session.description && (
-                <div className="border-border border-t pt-1">
-                  <p className="text-muted-foreground">{session.description}</p>
-                </div>
-              )}
+      <TooltipContent className="max-w-xs" side="top">
+        <div className="space-y-2">
+          <div className="font-semibold text-sm">{session.subject}</div>
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              <span>
+                {session.startTime} - {session.endTime}
+              </span>
             </div>
+            <div className="flex items-center gap-2">
+              <User className="h-3 w-3" />
+              <span>{session.teacher}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3 w-3" />
+              <span>{session.room}</span>
+            </div>
+            {session.description && (
+              <div className="border-border border-t pt-1">
+                <p className="text-muted-foreground">{session.description}</p>
+              </div>
+            )}
           </div>
-        </TooltipContent>
-      </TooltipPositioner>
+        </div>
+      </TooltipContent>
     </Tooltip>
   </TooltipProvider>
 );

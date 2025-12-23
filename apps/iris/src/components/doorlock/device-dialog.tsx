@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FaFloppyDisk } from 'react-icons/fa6';
-import { FiRefreshCw } from 'react-icons/fi';
+import { RotateCw, Save } from 'lucide-react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -61,7 +60,7 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
     [formState.name]
   );
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!isValid) {
       return;
@@ -145,13 +144,13 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
                 type="button"
                 variant="outline"
               >
-                <FiRefreshCw className="size-4" />
+                <RotateCw className="size-4" />
               </Button>
             </div>
           </div>
           <DialogFooter>
             <Button disabled={!isValid || isSubmitting} type="submit">
-              <FaFloppyDisk className="mr-2 h-4 w-4" />
+              <Save />
               {device ? 'Save changes' : 'Create device'}
             </Button>
           </DialogFooter>

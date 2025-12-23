@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
+import { Calendar as CalendarIcon, Check, DoorOpen, User } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
-import { FaCalendar, FaCheck, FaDoorOpen, FaUser } from 'react-icons/fa6';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,14 +15,12 @@ import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
-  PopoverPositioner,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectPositioner,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -293,17 +291,17 @@ function LogsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           helper={`${stats.virtualCount} virtual • ${stats.physicalCount} physical`}
-          icon={<FaDoorOpen className="text-primary" />}
+          icon={<DoorOpen className="text-primary" />}
           label="Total attempts"
           value={stats.total}
         />
         <StatCard
-          icon={<FaCheck className="text-primary" />}
+          icon={<Check className="text-primary" />}
           label="Success rate"
           value={`${stats.successRate}%`}
         />
         <StatCard
-          icon={<FaUser className="text-primary" />}
+          icon={<User className="text-primary" />}
           label="Unique users"
           value={stats.uniqueUsers}
         />
@@ -433,27 +431,25 @@ function DateRangePicker({
               )}
               variant="outline"
             >
-              <FaCalendar className="mr-2 h-4 w-4" />
+              <CalendarIcon />
               <span>{buttonLabel}</span>
             </Button>
           }
         />
-        <PopoverPositioner align="end">
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              autoFocus
-              mode="range"
-              numberOfMonths={2}
-              onSelect={(range) =>
-                onChange({
-                  ...(range?.from && { from: range.from }),
-                  ...(range?.to && { to: range.to }),
-                })
-              }
-              selected={{ from: value.from, to: value.to }}
-            />
-          </PopoverContent>
-        </PopoverPositioner>
+        <PopoverContent align="end" className="w-auto p-0">
+          <Calendar
+            autoFocus
+            mode="range"
+            numberOfMonths={2}
+            onSelect={(range) =>
+              onChange({
+                ...(range?.from && { from: range.from }),
+                ...(range?.to && { to: range.to }),
+              })
+            }
+            selected={{ from: value.from, to: value.to }}
+          />
+        </PopoverContent>
       </Popover>
     </div>
   );
@@ -482,20 +478,18 @@ function SelectFilter<T extends string>({
       <Label>{label}</Label>
       <Select onValueChange={handleChange} value={value}>
         <SelectTrigger className="w-full min-w-24">
-          <SelectValue placeholder={`Filter by ${label.toLowerCase()}`}>
+          <SelectValue data-placeholder={`Filter by ${label.toLowerCase()}`}>
             {selectedLabel}
           </SelectValue>
         </SelectTrigger>
-        <SelectPositioner>
-          <SelectContent>
-            <SelectItem value="all">All {label.toLowerCase()}</SelectItem>
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </SelectPositioner>
+        <SelectContent>
+          <SelectItem value="all">All {label.toLowerCase()}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </div>
   );

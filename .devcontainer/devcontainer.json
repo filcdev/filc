@@ -23,6 +23,7 @@
     "vscode": {
       "extensions": [
         "biomejs.biome",
+        "bradlc.vscode-tailwindcss",
         "Lokalise.i18n-ally",
         "yoavbls.pretty-ts-errors"
       ]
