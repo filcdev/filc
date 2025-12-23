@@ -1,14 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import {
-  Calendar,
-  CircleAlert,
-  CircleCheck,
-  FileUp,
-  LoaderCircle,
-  X,
-} from 'lucide-react';
+import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,6 +17,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { api } from '@/utils/hc';
 
@@ -313,7 +307,7 @@ function TimetableImportPage() {
             >
               {importStatus === 'uploading' ? (
                 <>
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2" />
                   {t('timetable.importing')}
                 </>
               ) : (
