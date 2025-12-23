@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { FaSpinner } from 'react-icons/fa6';
+import { LoaderCircle } from 'lucide-react';
 import { authClient } from '@/utils/authentication';
 
 export const Route = createFileRoute('/_private')({
@@ -12,7 +12,7 @@ function AppLayoutComponent() {
   if (isPending) {
     return (
       <div className="flex grow items-center justify-center gap-1 text-semibold">
-        <FaSpinner className="animate-spin text-primary" />
+        <LoaderCircle className="animate-spin text-primary" />
       </div>
     );
   }

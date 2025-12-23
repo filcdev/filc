@@ -1,15 +1,15 @@
 import { Link } from '@tanstack/react-router';
+import {
+  Calendar,
+  DoorOpen,
+  GraduationCap,
+  IdCard,
+  List,
+  Microchip,
+  Users,
+} from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FaCalendarDays,
-  FaDoorOpen,
-  FaGraduationCap,
-  FaIdCard,
-  FaList,
-  FaMicrochip,
-  FaUsers,
-} from 'react-icons/fa6';
 import {
   Sidebar,
   SidebarContent,
@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/sidebar';
 import { authClient } from '@/utils/authentication';
 
-type MenuIcon = typeof FaCalendarDays;
+type MenuIcon = typeof Calendar;
 
 type MenuItem = {
   title: string;
@@ -47,7 +47,7 @@ export function AdminSidebar() {
       {
         items: [
           {
-            icon: FaCalendarDays,
+            icon: Calendar,
             permission: 'import:timetable',
             title: t('timetable.import'),
             url: '/admin/timetable/import',
@@ -58,7 +58,7 @@ export function AdminSidebar() {
       {
         items: [
           {
-            icon: FaDoorOpen,
+            icon: DoorOpen,
             permission: 'doorlock:stats:read',
             title: t('doorlock.dashboard', {
               defaultValue: 'Doorlock',
@@ -66,19 +66,19 @@ export function AdminSidebar() {
             url: '/admin/doorlock',
           },
           {
-            icon: FaMicrochip,
+            icon: Microchip,
             permission: 'doorlock:devices:read',
             title: t('doorlock.devices', { defaultValue: 'Devices' }),
             url: '/admin/doorlock/devices',
           },
           {
-            icon: FaIdCard,
+            icon: IdCard,
             permission: 'doorlock:cards:read',
             title: t('doorlock.cards', { defaultValue: 'Cards' }),
             url: '/admin/doorlock/cards',
           },
           {
-            icon: FaList,
+            icon: List,
             permission: 'doorlock:logs:read',
             title: t('doorlock.logs', { defaultValue: 'Logs' }),
             url: '/admin/doorlock/logs',
@@ -89,7 +89,7 @@ export function AdminSidebar() {
       {
         items: [
           {
-            icon: FaUsers,
+            icon: Users,
             permission: 'users:read',
             title: t('admin.users', { defaultValue: 'Users' }),
             url: '/admin/users',
@@ -125,7 +125,7 @@ export function AdminSidebar() {
       <SidebarHeader className="border-border border-b p-4">
         <Link className="flex items-center gap-3" to="/">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <FaGraduationCap className="h-5 w-5 text-primary-foreground" />
+            <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-semibold text-foreground text-xl">filc</span>
         </Link>

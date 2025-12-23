@@ -1,6 +1,6 @@
+import { ChevronDown, Globe } from 'lucide-react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
-import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,7 +8,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPositioner,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -44,29 +43,27 @@ export function LanguageSelector() {
             size="sm"
             variant="ghost"
           >
-            <FaGlobe className="mr-1 h-4 w-4" />
+            <Globe className="mr-1 h-4 w-4" />
             {current?.toUpperCase()}
-            <FaChevronDown className="ml-1 h-3 w-3" />
+            <ChevronDown className="ml-1 h-3 w-3" />
           </Button>
         }
       />
-      <DropdownMenuPositioner>
-        <DropdownMenuContent className="w-32">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>{t('selectLanguage')}</DropdownMenuLabel>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          {LANGUAGES.map((lang) => (
-            <DropdownMenuItem
-              className={current === lang.code ? 'bg-accent' : ''}
-              key={lang.code}
-              onClick={() => handleChange(lang.code)}
-            >
-              {lang.name}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenuPositioner>
+      <DropdownMenuContent className="w-32">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{t('selectLanguage')}</DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        {LANGUAGES.map((lang) => (
+          <DropdownMenuItem
+            className={current === lang.code ? 'bg-accent' : ''}
+            key={lang.code}
+            onClick={() => handleChange(lang.code)}
+          >
+            {lang.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }

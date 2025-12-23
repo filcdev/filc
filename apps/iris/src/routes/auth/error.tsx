@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { FaCircleExclamation } from 'react-icons/fa6';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/ui/navbar';
@@ -23,7 +23,7 @@ function RouteComponent() {
       <Navbar showLinks={false} showLogo={true} />
       <main className="flex grow flex-col items-center justify-center gap-2">
         <span className="flex items-center gap-2 font-bold text-2xl">
-          <FaCircleExclamation className="text-destructive" />
+          <CircleAlert className="text-destructive" />
           {t('auth.error.title')}
         </span>
         {error ? (

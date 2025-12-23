@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
+import {
+  Check,
+  ChevronDown,
+  CircleCheck,
+  LoaderCircle,
+  Mail,
+  User,
+} from 'lucide-react';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FaCheck,
-  FaChevronDown,
-  FaCircleCheck,
-  FaEnvelope,
-  FaSpinner,
-  FaUser,
-} from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +27,6 @@ import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
-  PopoverPositioner,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -68,7 +67,7 @@ function RouteComponent() {
     <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 flex max-w-lg grow flex-col justify-center space-y-4 self-center px-4">
       <div className="flex gap-4">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <FaCircleCheck className="h-10 w-10 text-primary" />
+          <CircleCheck className="h-10 w-10 text-primary" />
         </div>
         <div className="items-start space-y-2">
           <h1 className="font-bold text-4xl text-foreground">
@@ -154,43 +153,41 @@ const CohortSelector = (props: { user: UserType }) => {
                   (cohort) => cohort.id === selectedCohortId
                 )?.name
               : t('cohort.selectPlaceholder')}
-            <FaChevronDown className="opacity-50" />
+            <ChevronDown className="opacity-50" />
           </Button>
         }
       />
-      <PopoverPositioner>
-        <PopoverContent className="absolute w-[200px] p-0">
-          <Command>
-            <CommandInput
-              className="h-9"
-              disabled={updating}
-              placeholder={t('search')}
-            />
-            <CommandList>
-              <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
-              <CommandGroup>
-                {cohortQuery.data.map((cohort) => (
-                  <CommandItem
-                    key={cohort.id}
-                    onSelect={() => updateCohort(cohort.id)}
-                    value={cohort.name}
-                  >
-                    {cohort.name}
-                    <FaCheck
-                      className={cn(
-                        'ml-auto',
-                        selectedCohortId === cohort.id
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                      )}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </PopoverPositioner>
+      <PopoverContent className="absolute w-[200px] p-0">
+        <Command>
+          <CommandInput
+            className="h-9"
+            disabled={updating}
+            placeholder={t('search')}
+          />
+          <CommandList>
+            <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
+            <CommandGroup>
+              {cohortQuery.data.map((cohort) => (
+                <CommandItem
+                  key={cohort.id}
+                  onSelect={() => updateCohort(cohort.id)}
+                  value={cohort.name}
+                >
+                  {cohort.name}
+                  <Check
+                    className={cn(
+                      'ml-auto',
+                      selectedCohortId === cohort.id
+                        ? 'opacity-100'
+                        : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
     </Popover>
   );
 };
@@ -255,19 +252,19 @@ const AccountDetails = (props: { user: UserType }) => {
     <>
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="flex items-center justify-start space-y-1">
-          <FaUser className="size-6 text-muted-foreground" />
+          <User className="size-6 text-muted-foreground" />
           <CardTitle className="text-lg">{t('account.details')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
             <InfoLine
               content={user.email}
-              icon={<FaEnvelope className="h-4 w-4 text-muted-foreground" />}
+              icon={<Mail className="h-4 w-4 text-muted-foreground" />}
               title={t('account.email')}
             />
             <InfoLine
               content={user.name ?? t('unknown')}
-              icon={<FaUser className="h-4 w-4 text-muted-foreground" />}
+              icon={<User className="h-4 w-4 text-muted-foreground" />}
               title={t('account.name')}
             />
             <hr />
@@ -303,7 +300,7 @@ const AccountDetails = (props: { user: UserType }) => {
               <Button disabled={!canSaveNickname} size="sm" type="submit">
                 {isSavingNickname ? (
                   <>
-                    <FaSpinner className="mr-2 h-4 w-4 animate-spin" />
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                     {t('common.loading')}
                   </>
                 ) : (
@@ -355,7 +352,7 @@ const AccountDetailsSkeleton = () => {
   return (
     <Card className="border-border/50 shadow-sm">
       <CardHeader className="flex items-center justify-start space-y-1">
-        <FaUser className="size-6 text-muted-foreground" />
+        <User className="size-6 text-muted-foreground" />
         <CardTitle className="text-lg">{t('account.details')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -1,6 +1,6 @@
+import { Cookie } from 'lucide-react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
-import { FaCookieBite } from 'react-icons/fa6';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
@@ -23,7 +23,7 @@ export function CookiePopup() {
       className="-translate-x-1/2 fixed bottom-4 left-1/2 z-50 w-[90%] max-w-md md:w-full"
       variant="default"
     >
-      <FaCookieBite />
+      <Cookie />
       <AlertTitle>{t('cookiePopup.title')}</AlertTitle>
       <AlertDescription>
         {t('cookiePopup.description')}

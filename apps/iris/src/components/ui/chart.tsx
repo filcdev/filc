@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: Intended for recharts payload */
-
 import {
   type ComponentProps,
   type ComponentType,
@@ -10,9 +8,13 @@ import {
   useId,
   useMemo,
 } from 'react';
-import { Legend, ResponsiveContainer, Tooltip } from 'recharts';
-
-import { cn } from '@/utils/index';
+import {
+  Legend,
+  type LegendProps,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
+import { cn } from '@/utils';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { dark: '.dark', light: '' } as const;
@@ -85,7 +87,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 
   return (
     <style
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: controlled usage
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: necessary for dynamic styles
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
@@ -124,26 +126,14 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: ComponentProps<'div'> & {
-  active?: boolean;
-  payload?: any[];
-  indicator?: 'line' | 'dot' | 'dashed';
-  hideLabel?: boolean;
-  hideIndicator?: boolean;
-  label?: string;
-  labelFormatter?: (label: any, payload: any[]) => ReactNode;
-  labelClassName?: string;
-  formatter?: (
-    value: any,
-    name: any,
-    item: any,
-    index: number,
-    payload: any
-  ) => ReactNode;
-  color?: string;
-  nameKey?: string;
-  labelKey?: string;
-}) {
+}: ComponentProps<typeof Tooltip> &
+  ComponentProps<'div'> & {
+    hideLabel?: boolean;
+    hideIndicator?: boolean;
+    indicator?: 'line' | 'dot' | 'dashed';
+    nameKey?: string;
+    labelKey?: string;
+  }) {
   const { config } = useChart();
 
   const tooltipLabel = useMemo(() => {
@@ -191,16 +181,16 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        'grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl',
+        'grid min-w-32 items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl',
         className
       )}
     >
       {nestLabel ? null : tooltipLabel}
       <div className="grid gap-1.5">
         {payload
-          .filter((item: any) => item.type !== 'none')
-          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shadcn is black magic
-          .map((item: any, index: number) => {
+          .filter((item) => item.type !== 'none')
+          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: blame shadcn, not me
+          .map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || 'value'}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
             const indicatorColor = color || item.payload.fill || item.color;
@@ -277,12 +267,11 @@ function ChartLegendContent({
   payload,
   verticalAlign = 'bottom',
   nameKey,
-}: ComponentProps<'div'> & {
-  payload?: any[];
-  verticalAlign?: 'top' | 'middle' | 'bottom';
-  hideIcon?: boolean;
-  nameKey?: string;
-}) {
+}: ComponentProps<'div'> &
+  Pick<LegendProps, 'payload' | 'verticalAlign'> & {
+    hideIcon?: boolean;
+    nameKey?: string;
+  }) {
   const { config } = useChart();
 
   if (!payload?.length) {
@@ -298,8 +287,8 @@ function ChartLegendContent({
       )}
     >
       {payload
-        .filter((item: any) => item.type !== 'none')
-        .map((item: any) => {
+        .filter((item) => item.type !== 'none')
+        .map((item) => {
           const key = `${nameKey || item.dataKey || 'value'}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
@@ -328,7 +317,6 @@ function ChartLegendContent({
   );
 }
 
-// Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
   config: ChartConfig,
   payload: unknown,

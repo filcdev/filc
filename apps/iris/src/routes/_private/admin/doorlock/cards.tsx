@@ -2,16 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
+import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import {
-  FaBan,
-  FaCreditCard,
-  FaLock,
-  FaPen,
-  FaPlus,
-  FaTrash,
-} from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -221,7 +214,7 @@ function CardsPage() {
                 setDialogOpen(true);
               }}
             >
-              <FaPlus className="mr-2 h-4 w-4" /> Add card
+              <Plus className="mr-2 h-4 w-4" /> Add card
             </Button>
           )}
         </div>
@@ -229,17 +222,17 @@ function CardsPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          icon={<FaCreditCard className="text-primary" />}
+          icon={<CreditCard className="text-primary" />}
           label="Total cards"
           value={totals.total}
         />
         <StatCard
-          icon={<FaLock className="text-primary" />}
+          icon={<Lock className="text-primary" />}
           label="Frozen cards"
           value={totals.frozen}
         />
         <StatCard
-          icon={<FaBan className="text-primary" />}
+          icon={<Ban className="text-primary" />}
           label="Disabled cards"
           value={totals.disabled}
         />
@@ -310,7 +303,7 @@ function CardsPage() {
                         size="icon"
                         variant="outline"
                       >
-                        <FaPen className="h-4 w-4" />
+                        <Pen className="h-4 w-4" />
                       </Button>
                       <Button
                         disabled={deleteMutation.isPending}
@@ -318,7 +311,7 @@ function CardsPage() {
                         size="icon"
                         variant="destructive"
                       >
-                        <FaTrash className="h-4 w-4" />
+                        <Trash className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
