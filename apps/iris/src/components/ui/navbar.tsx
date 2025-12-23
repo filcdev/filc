@@ -4,7 +4,6 @@ import {
   Calendar,
   Cog,
   GraduationCap,
-  LoaderCircle,
   LogIn,
   LogOut,
   UserCog,
@@ -22,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
 import { authClient } from '@/utils/authentication';
 
@@ -82,7 +82,7 @@ export function Navbar({
                   size="sm"
                   variant="outline"
                 >
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner />
                 </Button>
               );
             }

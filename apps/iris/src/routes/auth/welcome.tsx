@@ -1,14 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import {
-  Check,
-  ChevronDown,
-  CircleCheck,
-  LoaderCircle,
-  Mail,
-  User,
-} from 'lucide-react';
+import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -30,6 +23,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/utils';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
@@ -300,7 +294,7 @@ const AccountDetails = (props: { user: UserType }) => {
               <Button disabled={!canSaveNickname} size="sm" type="submit">
                 {isSavingNickname ? (
                   <>
-                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner className="mr-2" />
                     {t('common.loading')}
                   </>
                 ) : (
