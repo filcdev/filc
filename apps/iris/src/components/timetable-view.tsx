@@ -2,240 +2,61 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
+import { FilterBar } from '@/components/timetable/filter-bar';
+import { TimetableGrid } from '@/components/timetable/grid';
 import {
-  type ClassSession,
-  type DayMetadata,
-  Timetable,
-  type TimetableData,
-} from '@/components/timetable';
-import { Button } from '@/components/ui/button';
+  buildViewModel,
+  formatTeachers,
+  getSelectedFromUrl,
+} from '@/components/timetable/helpers';
+import type {
+  ClassroomItem,
+  CohortItem,
+  FilterType,
+  LessonItem,
+  TeacherItem,
+} from '@/components/timetable/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 
-// Local types for API responses
-type Cohort = { id: string; name: string; short: string };
-type Teacher = { id: string; firstName: string; lastName: string };
-type EnrichedLesson = {
-  id: string;
-  subject: { id: string; name: string; short: string } | null;
-  teachers: Array<{ id: string; name: string; short: string }>;
-  classrooms: Array<{ id: string; name: string; short: string }>;
-  day: {
-    id: string;
-    name: string;
-    short: string;
-    days?: string[];
-  } | null;
-  period: {
-    id: string;
-    startTime: string;
-    endTime: string;
-    period: number;
-  } | null;
-  weeksDefinitionId: string;
-  termDefinitionId: string | null;
-  periodsPerWeek: number;
-};
-
-// Helpers
-const TIME_FORMAT_SLICE = 5;
-const toHHMM = (t: string) => t.slice(0, TIME_FORMAT_SLICE);
-
-const COLORS = [
-  '#2563eb',
-  '#16a34a',
-  '#d97706',
-  '#dc2626',
-  '#7c3aed',
-  '#0891b2',
-  '#22c55e',
-  '#eab308',
-  '#f97316',
-  '#3b82f6',
-] as const;
-
-const colorFromSubject = (name: string) => {
-  let sum = 0;
-  for (const ch of name) {
-    sum += ch.codePointAt(0) ?? 0;
-  }
-  const idx = Math.abs(sum) % COLORS.length;
-  return COLORS[idx] ?? COLORS[0];
-};
-
-// Extract helper to upsert class session into timetable data
-const upsertClassSession = (
-  data: TimetableData,
-  day: string,
-  time: string,
-  item: ClassSession
-) => {
-  data[day] ??= {};
-  const cell = data[day][time];
-  if (!cell) {
-    data[day][time] = [item];
-    return;
-  }
-  if (Array.isArray(cell)) {
-    cell.push(item);
-    return;
-  }
-  data[day][time] = [cell, item];
-};
-
-// Extract helper to create class session from lesson
-const createClassSession = (lesson: EnrichedLesson): ClassSession => {
-  const start = lesson.period ? toHHMM(lesson.period.startTime) : '00:00';
-  const end = lesson.period ? toHHMM(lesson.period.endTime) : '00:00';
-  const subject = lesson.subject?.name ?? '—';
-  const teacher = lesson.teachers.map((t) => t.name).join(', ');
-  const room = lesson.classrooms.map((r) => r.short || r.name).join(', ');
-  const short = lesson.subject?.short ?? subject;
-
-  return {
-    color: colorFromSubject(subject),
-    endTime: end,
-    id: lesson.id,
-    room,
-    short,
-    startTime: start,
-    subject,
-    teacher,
-  };
-};
-
-// Extract helper to update day metadata
-const updateDayMetadata = (
-  metadata: DayMetadata,
-  day: string,
-  lesson: EnrichedLesson
-) => {
-  if (lesson.day && !metadata[day]) {
-    const dayNumber = lesson.day.days?.[0]
-      ? Number.parseInt(lesson.day.days[0], 10)
-      : 999;
-    metadata[day] = { sortOrder: dayNumber };
-  }
-};
-
-// Main function to build timetable data from lessons
-const buildTimetableData = (lessons: EnrichedLesson[]) => {
-  const data: TimetableData = {};
-  const metadata: DayMetadata = {};
-
-  for (const lesson of lessons) {
-    const day = lesson.day?.name ?? 'Unknown';
-    const classSession = createClassSession(lesson);
-
-    upsertClassSession(data, day, classSession.startTime, classSession);
-    updateDayMetadata(metadata, day, lesson);
-  }
-
-  return { dayMetadata: metadata, timetableData: data };
-};
-
-// Helper to initialize selected cohort from URL parameters
-const getSelectedCohortFromUrl = (
-  cohortsData: Cohort[] | undefined,
-  teachersData: Teacher[] | undefined,
-  classroomsData: Cohort[] | undefined
-): {
-  cohortClass: string | null;
-  cohortTeacher: string | null;
-  cohortClassroom: string | null;
-} => {
-  try {
-    const params = new URLSearchParams(window.location.search);
-
-    const urlCohort = params.get('cohortClass');
-    if (urlCohort && cohortsData?.some((c) => c.id === urlCohort)) {
-      return {
-        cohortClass: urlCohort,
-        cohortClassroom: null,
-        cohortTeacher: null,
-      };
+const fetchLessonsForSelection = async (
+  filter: FilterType,
+  selectionId: string
+): Promise<LessonItem[]> => {
+  if (filter === 'class') {
+    const res = await parseResponse(
+      api.timetable.lessons.getForCohort[':cohortId'].$get({
+        param: { cohortId: selectionId },
+      })
+    );
+    if (!res.success) {
+      throw new Error('Failed to load lessons');
     }
+    return (res.data ?? []) as LessonItem[];
+  }
 
-    const urlCohortByTeacher = params.get('cohortTeacher');
-    if (
-      urlCohortByTeacher &&
-      teachersData?.some((t) => t.id === urlCohortByTeacher)
-    ) {
-      return {
-        cohortClass: null,
-        cohortClassroom: null,
-        cohortTeacher: urlCohortByTeacher,
-      };
+  if (filter === 'teacher') {
+    const res = await parseResponse(
+      api.timetable.lessons.getForTeacher[':teacherId'].$get({
+        param: { teacherId: selectionId },
+      })
+    );
+    if (!res.success) {
+      throw new Error('Failed to load lessons');
     }
-
-    const urlCohortByClassroom = params.get('cohortClassroom');
-    if (
-      urlCohortByClassroom &&
-      classroomsData?.some((c) => c.id === urlCohortByClassroom)
-    ) {
-      return {
-        cohortClass: null,
-        cohortClassroom: urlCohortByClassroom,
-        cohortTeacher: null,
-      };
-    }
-  } catch {
-    // ignore URL parse errors
+    return (res.data ?? []) as LessonItem[];
   }
 
-  return { cohortClass: null, cohortClassroom: null, cohortTeacher: null };
-};
-
-// Helper to fetch lessons for a cohort
-const fetchLessonsForCohort = async (
-  cohortId: string
-): Promise<EnrichedLesson[]> => {
-  const res = await parseResponse(
-    api.timetable.lessons.getForCohort[':cohortId'].$get({
-      param: {
-        cohortId,
-      },
-    })
-  );
-  if (!res.success) {
-    throw new Error('Failed to load lessons');
-  }
-  return (res.data as EnrichedLesson[]) ?? [];
-};
-
-// Helper to fetch lessons for a teacher
-const fetchLessonsForTeacher = async (
-  teacherId: string
-): Promise<EnrichedLesson[]> => {
-  const res = await parseResponse(
-    api.timetable.lessons.getForTeacher[':teacherId'].$get({
-      param: {
-        teacherId,
-      },
-    })
-  );
-  if (!res.success) {
-    throw new Error('Failed to load lessons');
-  }
-  return (res.data as EnrichedLesson[]) ?? [];
-};
-
-// Helper to fetch lessons for a classroom
-const fetchLessonsForClassroom = async (
-  classroomId: string
-): Promise<EnrichedLesson[]> => {
   const res = await parseResponse(
     api.timetable.lessons.getForRoom[':classroomId'].$get({
-      param: {
-        classroomId,
-      },
+      param: { classroomId: selectionId },
     })
   );
   if (!res.success) {
     throw new Error('Failed to load lessons');
   }
-  return (res.data as EnrichedLesson[]) ?? [];
+  return (res.data ?? []) as LessonItem[];
 };
 
 export function TimetableView() {
@@ -243,213 +64,238 @@ export function TimetableView() {
   const navigate = useNavigate();
 
   const cohortsQuery = useQuery({
+    gcTime: Number.POSITIVE_INFINITY,
     queryFn: async () => {
       const res = await parseResponse(api.cohort.index.$get());
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return res.data as Cohort[];
+      return (res.data ?? []) as CohortItem[];
     },
     queryKey: ['cohorts'],
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const teachersQuery = useQuery({
+    gcTime: Number.POSITIVE_INFINITY,
     queryFn: async () => {
       const res = await parseResponse(api.timetable.teachers.getAll.$get());
       if (!res.success) {
         throw new Error('Failed to load teachers');
       }
-      return res.data as Teacher[];
+      return (res.data ?? []) as TeacherItem[];
     },
     queryKey: ['teachers'],
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const classroomsQuery = useQuery({
+    gcTime: Number.POSITIVE_INFINITY,
     queryFn: async () => {
       const res = await parseResponse(api.timetable.classrooms.getAll.$get());
       if (!res.success) {
         throw new Error('Failed to load classrooms');
       }
-      return res.data as Cohort[];
+      return (res.data ?? []) as ClassroomItem[];
     },
     queryKey: ['classrooms'],
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
-  const [selectedCohortIdByClass, setSelectedCohortIdByClass] = useState<
-    string | null
-  >(null);
-  const [selectedCohortIdByTeacher, setSelectedCohortIdByTeacher] = useState<
-    string | null
-  >(null);
-  const [selectedCohortIdByClassroom, setSelectedCohortIdByClassroom] =
-    useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('class');
+  const [selectedByClass, setSelectedByClass] = useState<string | null>(null);
+  const [selectedByTeacher, setSelectedByTeacher] = useState<string | null>(
+    null
+  );
+  const [selectedByRoom, setSelectedByRoom] = useState<string | null>(null);
 
-  // Initialize selected cohort from URL (if present) or user default / first cohort.
+  const activeSelectionId = useMemo(() => {
+    if (activeFilter === 'class') {
+      return selectedByClass;
+    }
+    if (activeFilter === 'teacher') {
+      return selectedByTeacher;
+    }
+    return selectedByRoom;
+  }, [activeFilter, selectedByClass, selectedByTeacher, selectedByRoom]);
+
   useEffect(() => {
     if (
       !(cohortsQuery.data && teachersQuery.data && classroomsQuery.data) ||
-      selectedCohortIdByClass ||
-      selectedCohortIdByTeacher ||
-      selectedCohortIdByClassroom ||
+      selectedByClass ||
+      selectedByTeacher ||
+      selectedByRoom ||
       isPending
     ) {
       return;
     }
 
-    const { cohortClass, cohortTeacher, cohortClassroom } =
-      getSelectedCohortFromUrl(
-        cohortsQuery.data,
-        teachersQuery.data,
-        classroomsQuery.data
-      );
+    const { cohortClass, cohortTeacher, cohortClassroom } = getSelectedFromUrl(
+      cohortsQuery.data,
+      teachersQuery.data,
+      classroomsQuery.data
+    );
 
     if (cohortClass) {
-      setSelectedCohortIdByClass(cohortClass);
+      setActiveFilter('class');
+      setSelectedByClass(cohortClass);
       return;
     }
     if (cohortTeacher) {
-      setSelectedCohortIdByTeacher(cohortTeacher);
+      setActiveFilter('teacher');
+      setSelectedByTeacher(cohortTeacher);
       return;
     }
     if (cohortClassroom) {
-      setSelectedCohortIdByClassroom(cohortClassroom);
+      setActiveFilter('classroom');
+      setSelectedByRoom(cohortClassroom);
       return;
     }
 
     const userDefault = session?.user?.cohortId as string | undefined;
-    const first = cohortsQuery.data[0]?.id;
-    setSelectedCohortIdByClass(userDefault ?? first ?? null);
+    const first = cohortsQuery.data[0]?.id ?? null;
+    setActiveFilter('class');
+    setSelectedByClass(userDefault ?? first);
   }, [
     cohortsQuery.data,
     teachersQuery.data,
     classroomsQuery.data,
-    selectedCohortIdByClass,
-    selectedCohortIdByTeacher,
-    selectedCohortIdByClassroom,
+    selectedByClass,
+    selectedByTeacher,
+    selectedByRoom,
     session,
     isPending,
   ]);
 
-  // Keep URL in sync with selected cohort
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Multiple conditions needed for URL synchronization
   useEffect(() => {
     if (
-      !(
-        selectedCohortIdByClass ||
-        selectedCohortIdByTeacher ||
-        selectedCohortIdByClassroom
-      )
+      activeFilter === 'class' &&
+      !selectedByClass &&
+      cohortsQuery.data?.[0]
     ) {
+      setSelectedByClass(cohortsQuery.data[0].id);
+      return;
+    }
+    if (
+      activeFilter === 'teacher' &&
+      !selectedByTeacher &&
+      teachersQuery.data?.[0]
+    ) {
+      setSelectedByTeacher(teachersQuery.data[0].id);
+      return;
+    }
+    if (
+      activeFilter === 'classroom' &&
+      !selectedByRoom &&
+      classroomsQuery.data?.[0]
+    ) {
+      setSelectedByRoom(classroomsQuery.data[0].id);
+    }
+  }, [
+    activeFilter,
+    selectedByClass,
+    selectedByTeacher,
+    selectedByRoom,
+    cohortsQuery.data,
+    teachersQuery.data,
+    classroomsQuery.data,
+  ]);
+
+  useEffect(() => {
+    if (!activeSelectionId) {
       return;
     }
 
     try {
       const url = new URL(window.location.href);
       const params = new URLSearchParams(url.search);
-      if (
-        params.get('cohortClass') !== selectedCohortIdByClass &&
-        selectedCohortIdByClass != null
-      ) {
-        params.delete('cohortTeacher');
-        params.delete('cohortClassroom');
-        params.set('cohortClass', selectedCohortIdByClass ?? '');
-      } else if (
-        params.get('cohortTeacher') !== selectedCohortIdByTeacher &&
-        selectedCohortIdByTeacher != null
-      ) {
-        params.delete('cohortClass');
-        params.delete('cohortClassroom');
-        params.set('cohortTeacher', selectedCohortIdByTeacher ?? '');
-      } else if (
-        params.get('cohortClassroom') !== selectedCohortIdByClassroom &&
-        selectedCohortIdByClassroom != null
-      ) {
-        params.delete('cohortClass');
-        params.delete('cohortTeacher');
-        params.set('cohortClassroom', selectedCohortIdByClassroom ?? '');
+      const before = params.toString();
+
+      params.delete('cohortClass');
+      params.delete('cohortTeacher');
+      params.delete('cohortClassroom');
+
+      if (activeFilter === 'class') {
+        params.set('cohortClass', activeSelectionId);
+      } else if (activeFilter === 'teacher') {
+        params.set('cohortTeacher', activeSelectionId);
+      } else {
+        params.set('cohortClassroom', activeSelectionId);
       }
-      const to = `${url.pathname}?${params.toString()}`;
-      navigate({ replace: true, to });
+
+      const next = params.toString();
+      if (next === before) {
+        return;
+      }
+
+      navigate({ replace: true, to: `${url.pathname}?${next}` });
     } catch {
       // ignore URL/navigation errors
     }
-  }, [
-    selectedCohortIdByClass,
-    selectedCohortIdByTeacher,
-    selectedCohortIdByClassroom,
-    navigate,
-  ]);
+  }, [activeFilter, activeSelectionId, navigate]);
 
   const lessonsQuery = useQuery({
-    enabled: !!(
-      selectedCohortIdByClass ||
-      selectedCohortIdByTeacher ||
-      selectedCohortIdByClassroom
-    ),
-    queryFn: async (): Promise<EnrichedLesson[]> => {
-      if (selectedCohortIdByClass) {
-        return await fetchLessonsForCohort(selectedCohortIdByClass);
+    enabled: !!activeSelectionId,
+    gcTime: Number.POSITIVE_INFINITY,
+    queryFn: async () => {
+      if (!activeSelectionId) {
+        return [] as LessonItem[];
       }
-      if (selectedCohortIdByTeacher) {
-        return await fetchLessonsForTeacher(selectedCohortIdByTeacher);
-      }
-      if (selectedCohortIdByClassroom) {
-        return await fetchLessonsForClassroom(selectedCohortIdByClassroom);
-      }
-      return [];
+      return await fetchLessonsForSelection(activeFilter, activeSelectionId);
     },
-    queryKey: [
-      'lessons',
-      selectedCohortIdByClass,
-      selectedCohortIdByTeacher,
-      selectedCohortIdByClassroom,
-    ],
+    queryKey: ['lessons', activeFilter, activeSelectionId],
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: Number.POSITIVE_INFINITY,
   });
 
   const selectedName = useMemo(() => {
-    if (selectedCohortIdByClass) {
+    if (activeFilter === 'class' && selectedByClass) {
       return (
-        cohortsQuery.data?.find((c) => c.id === selectedCohortIdByClass)
-          ?.name ?? 'Class'
+        cohortsQuery.data?.find((c) => c.id === selectedByClass)?.name ??
+        'Class'
       );
     }
-    if (selectedCohortIdByTeacher) {
+    if (activeFilter === 'teacher' && selectedByTeacher) {
       const teacher = teachersQuery.data?.find(
-        (t) => t.id === selectedCohortIdByTeacher
-      );
-      return teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Teacher';
+        (t) => t.id === selectedByTeacher
+      ) as LessonItem['teachers'][number] | undefined;
+      return teacher ? formatTeachers([teacher]) : 'Teacher';
     }
-    if (selectedCohortIdByClassroom) {
+    if (activeFilter === 'classroom' && selectedByRoom) {
       return (
-        classroomsQuery.data?.find((c) => c.id === selectedCohortIdByClassroom)
-          ?.name ?? 'Classroom'
+        classroomsQuery.data?.find((c) => c.id === selectedByRoom)?.name ??
+        'Classroom'
       );
     }
     return 'Schedule';
   }, [
-    selectedCohortIdByClass,
-    selectedCohortIdByTeacher,
-    selectedCohortIdByClassroom,
+    activeFilter,
+    selectedByClass,
+    selectedByTeacher,
+    selectedByRoom,
     cohortsQuery.data,
     teachersQuery.data,
     classroomsQuery.data,
   ]);
 
-  const { timetableData, dayMetadata } = useMemo(
-    () => buildTimetableData(lessonsQuery.data ?? []),
+  const model = useMemo(
+    () => buildViewModel((lessonsQuery.data ?? []) as LessonItem[]),
     [lessonsQuery.data]
   );
 
+  const selectorLoading = (() => {
+    if (activeFilter === 'class') {
+      return cohortsQuery.isLoading;
+    }
+    if (activeFilter === 'teacher') {
+      return teachersQuery.isLoading;
+    }
+    return classroomsQuery.isLoading;
+  })();
+
   const isLoading =
-    cohortsQuery.isLoading ||
-    teachersQuery.isLoading ||
-    classroomsQuery.isLoading ||
-    lessonsQuery.isLoading ||
-    !(
-      selectedCohortIdByClass ||
-      selectedCohortIdByTeacher ||
-      selectedCohortIdByClassroom
-    );
+    selectorLoading || lessonsQuery.isLoading || !activeSelectionId;
   const hasError =
     cohortsQuery.error ||
     teachersQuery.error ||
@@ -458,95 +304,22 @@ export function TimetableView() {
 
   return (
     <div className="flex grow flex-col items-center gap-4 p-4">
-      <div className="flex w-full max-w-5xl items-center justify-between">
-        <div className="flex items-center gap-2">
-          <label className="text-sm" htmlFor="cohort">
-            Class
-          </label>
-          {cohortsQuery.isLoading ? (
-            <Skeleton className="h-9 w-24" />
-          ) : (
-            <select
-              className="h-9 w-24 rounded-md border px-2 text-sm"
-              id="cohort"
-              onChange={(e) => {
-                setSelectedCohortIdByClass(e.target.value);
-                setSelectedCohortIdByTeacher(null);
-                setSelectedCohortIdByClassroom(null);
-              }} //different selected, query variable for each
-              value={selectedCohortIdByClass ?? ''}
-            >
-              {(cohortsQuery.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm" htmlFor="teacher">
-            Teacher
-          </label>
-          {teachersQuery.isLoading ? (
-            <Skeleton className="h-9 w-48" />
-          ) : (
-            <select
-              className="h-9 w-48 rounded-md border px-2 text-sm"
-              id="teacher"
-              onChange={(e) => {
-                setSelectedCohortIdByTeacher(e.target.value);
-                setSelectedCohortIdByClass(null);
-                setSelectedCohortIdByClassroom(null);
-              }}
-              value={selectedCohortIdByTeacher ?? ''}
-            >
-              {(teachersQuery.data ?? []).map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.firstName} {t.lastName}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm" htmlFor="classroom">
-            Classroom
-          </label>
-          {classroomsQuery.isLoading ? (
-            <Skeleton className="h-9 w-48" />
-          ) : (
-            <select
-              className="h-9 w-48 rounded-md border px-2 text-sm"
-              id="classroom"
-              onChange={(e) => {
-                setSelectedCohortIdByClassroom(e.target.value);
-                setSelectedCohortIdByClass(null);
-                setSelectedCohortIdByTeacher(null);
-              }}
-              value={selectedCohortIdByClassroom ?? ''}
-            >
-              {(classroomsQuery.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => window.print()} size="sm" variant="outline">
-            Save to PDF
-          </Button>
-          <Button
-            onClick={() => lessonsQuery.refetch()}
-            size="sm"
-            variant="outline"
-          >
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <FilterBar
+        activeFilter={activeFilter}
+        classrooms={classroomsQuery.data}
+        cohorts={cohortsQuery.data}
+        disabled={isLoading}
+        onFilterChange={setActiveFilter}
+        onPrint={() => window.print()}
+        onSelectClass={setSelectedByClass}
+        onSelectRoom={setSelectedByRoom}
+        onSelectTeacher={setSelectedByTeacher}
+        selectedByClass={selectedByClass}
+        selectedByRoom={selectedByRoom}
+        selectedByTeacher={selectedByTeacher}
+        selectorLoading={selectorLoading}
+        teachers={teachersQuery.data}
+      />
 
       {hasError && (
         <div className="text-red-500">Failed to load timetable.</div>
@@ -555,18 +328,17 @@ export function TimetableView() {
       {isLoading ? (
         <div className="w-full max-w-7xl">
           <Skeleton className="mb-2 h-8 w-64" />
-          <Skeleton className="h-[480px] w-full" />
+          <Skeleton className="h-[520px] w-full" />
         </div>
       ) : (
-        <div id="timetable-print-root">
-          <div className="w-full max-w-7xl">
-            <Timetable
-              className="shadow-2xl"
-              data={timetableData}
-              dayMetadata={dayMetadata}
-              title={`${selectedName} - Week Schedule`}
-            />
-          </div>
+        <div
+          className="w-full max-w-7xl print:max-w-none"
+          id="timetable-print-root"
+        >
+          <TimetableGrid
+            model={model}
+            title={`${selectedName} - Week Schedule`}
+          />
         </div>
       )}
     </div>

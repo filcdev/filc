@@ -150,7 +150,7 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
           </div>
           <DialogFooter>
             <Button disabled={!isValid || isSubmitting} type="submit">
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {device ? 'Save changes' : 'Create device'}
             </Button>
           </DialogFooter>

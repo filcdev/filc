@@ -431,7 +431,7 @@ function DateRangePicker({
               )}
               variant="outline"
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon />
               <span>{buttonLabel}</span>
             </Button>
           }

@@ -146,7 +146,7 @@ export function Navbar({
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
-                      <Cog className="mr-2 h-4 w-4" />
+                      <Cog />
                       <span>{t('settings')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -156,7 +156,7 @@ export function Navbar({
                         await authClient.signOut();
                       }}
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
+                      <LogOut />
                       <span>{t('logout')}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -195,7 +195,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
         size="sm"
         variant="ghost"
       >
-        <Calendar className="mr-2 h-4 w-4" />
+        <Calendar />
         {t('schedule')}
       </Button>
       <Button
@@ -204,7 +204,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
         size="sm"
         variant="ghost"
       >
-        <Book className="mr-2 h-4 w-4" />
+        <Book />
         {t('substitutions')}
       </Button>
       {isAdmin && (
@@ -214,7 +214,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
           size="sm"
           variant="ghost"
         >
-          <UserCog className="mr-2 h-4 w-4" />
+          <UserCog />
           {t('adminDashboard')}
         </Button>
       )}

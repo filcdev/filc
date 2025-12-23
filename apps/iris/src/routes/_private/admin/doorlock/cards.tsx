@@ -214,7 +214,7 @@ function CardsPage() {
                 setDialogOpen(true);
               }}
             >
-              <Plus className="mr-2 h-4 w-4" /> Add card
+              <Plus /> Add card
             </Button>
           )}
         </div>
