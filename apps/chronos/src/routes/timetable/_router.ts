@@ -23,7 +23,13 @@ import {
   getLatestValidTimetable,
 } from '.';
 import { getCohortsForTimetable } from './cohort';
-import { getLessonsForCohort } from './lesson';
+import {
+  getLessonsForCohort,
+  getLessonsForRoom,
+  getLessonsForTeacher,
+} from './lesson';
+import { getClassrooms } from './room';
+import { getTeachers } from './teacher';
 
 export const timetableRouter = timetableFactory
   .createApp()
@@ -52,5 +58,11 @@ export const timetableRouter = timetableFactory
   .delete('/movedLessons/:id', ...deleteMovedLesson)
   // Lesson routes
   .get('/lessons/getForCohort/:cohortId', ...getLessonsForCohort)
+  .get('/lessons/getForTeacher/:teacherId', ...getLessonsForTeacher)
+  .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
   // Cohort routes
-  .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable);
+  .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
+  // Teacher routes
+  .get('/teachers/getAll', ...getTeachers)
+  // Classroom routes
+  .get('/classrooms/getAll', ...getClassrooms);
