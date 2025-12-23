@@ -30,7 +30,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     parameters: [
       {
         in: 'path',
-        name: 'cohort_id',
+        name: 'cohortId',
         required: true,
         schema: {
           description: 'The unique identifier for the cohort.',
@@ -51,10 +51,10 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   async (c) => {
-    const cohortId = c.req.param('cohort_id');
+    const cohortId = c.req.param('cohortId');
     if (!cohortId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing cohort_id',
+        message: 'Missing cohortId',
       });
     }
 
