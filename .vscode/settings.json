@@ -5,6 +5,8 @@
   "editor.formatOnSave": true,
   "javascript.preferences.importModuleSpecifier": "non-relative",
   "typescript.preferences.importModuleSpecifier": "non-relative",
+  "editor.formatOnPaste": true,
+  "emmet.showExpandedAbbreviation": "never",
   "editor.codeActionsOnSave": {
     "source.organizeImports.biome": "always",
     "source.fixAll.biome": "always"
@@ -20,7 +22,7 @@
 
   // TODO: remove when biome fixes their extension
   "biome.runFromTemporaryLocation": true,
-  "biome.lsp.bin": "/workspaces/chronos/node_modules/@biomejs/cli-linux-x64-musl/biome",
+  "biome.lsp.bin": "node_modules/@biomejs/cli-linux-x64-musl/biome",
 
   // Copilot commit messages
   "github.copilot.chat.commitMessageGeneration.instructions": [
