@@ -8,12 +8,21 @@ export const baker = Baker.create({
   autoStart: false,
   logger,
   onError(error, jobName) {
-    logger.error(`Error in job ${jobName}: ${error.message}`);
+    logger.error(`Error in job ${jobName}: ${error.message}`, { error });
   },
 });
 
-baker.add({
-  callback: cleanUpOldDeviceAuditLogs,
-  cron: '0 0 0 ? * SUN *', // Runs every Sunday at midnight
-  name: 'clean-up-old-card-audit-logs',
-});
+export const setupCronJobs = () => {
+  baker.add({
+    callback: cleanUpOldDeviceAuditLogs,
+    cron: '@monthly',
+    name: 'clean-up-old-card-audit-logs',
+  });
+
+  const jobs = baker.getJobNames();
+
+  logger.info(`Configured ${jobs.length} cron jobs`);
+  logger.trace('Configured cron jobs:', { jobs });
+
+  baker.bakeAll();
+};
