@@ -7,6 +7,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "bun run ./src/utils/scripts/seed.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"
   },
