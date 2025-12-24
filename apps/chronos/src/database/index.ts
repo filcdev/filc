@@ -17,12 +17,14 @@ export const db = drizzle({
   client,
   logger: {
     logQuery: (query) => {
-      logger.trace(
-        env.mode === 'production'
-          ? `Executing query: ${query}`
-          : 'Executing query',
-        { query }
-      );
+      if (env.drizzleDebug) {
+        logger.trace(
+          env.mode === 'production'
+            ? `Executing query: ${query}`
+            : 'Executing query',
+          { query }
+        );
+      }
     },
   },
 });
