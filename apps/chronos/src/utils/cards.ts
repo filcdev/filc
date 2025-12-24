@@ -1,8 +1,18 @@
+import { getLogger } from '@logtape/logtape';
+import dayjs from 'dayjs';
 import type { SQL } from 'drizzle-orm';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, lt } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { card, cardDevice, device } from '#database/schema/doorlock';
+import {
+  auditLog,
+  card,
+  cardDevice,
+  device,
+  deviceHealth,
+} from '#database/schema/doorlock';
+
+const logger = getLogger(['chronos', 'doorlock', 'cards']);
 
 type CardRecord = typeof card.$inferSelect;
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
@@ -150,4 +160,43 @@ export async function replaceCardDevices(
       deviceId,
     }))
   );
+}
+
+export async function migrateAuditLogsForNewCard(
+  newCardId: string,
+  cardData: string
+) {
+  await db
+    .update(auditLog)
+    .set({ cardId: newCardId })
+    .where(eq(auditLog.cardData, cardData));
+}
+
+export async function cleanUpOldDeviceAuditLogs() {
+  logger.info('Starting cleanup of old device health and audit logs');
+  const sixtyDaysAgo = dayjs().subtract(60, 'day').toDate();
+  const oneEightyDaysAgo = dayjs().subtract(180, 'day').toDate();
+
+  // delete deviceHealth logs older than 60 days
+  const deviceHealthDeleted = await db
+    .delete(deviceHealth)
+    .where(lt(deviceHealth.timestamp, sixtyDaysAgo))
+    .returning();
+
+  logger.debug(
+    `Deleted ${deviceHealthDeleted.length} old deviceHealth entries`,
+    {
+      deletedCount: deviceHealthDeleted.length,
+    }
+  );
+
+  // delete auditLog entries older than 180 days
+  const auditLogDeleted = await db
+    .delete(auditLog)
+    .where(lt(auditLog.timestamp, oneEightyDaysAgo))
+    .returning();
+
+  logger.debug(`Deleted ${auditLogDeleted.length} old auditLog entries`, {
+    deletedCount: auditLogDeleted.length,
+  });
 }

@@ -7,14 +7,14 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { auditLog, card } from '#database/schema/doorlock';
+import { cardWithRelationsSchema } from '#routes/doorlock/cards';
+import { syncDevicesByIds } from '#routes/doorlock/device-sync';
+import { sendMessage } from '#routes/doorlock/websocket-handler';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
-} from '#routes/doorlock/card-helpers';
-import { cardWithRelationsSchema } from '#routes/doorlock/cards';
-import { syncDevicesByIds } from '#routes/doorlock/device-sync';
-import { sendMessage } from '#routes/doorlock/websocket-handler';
+} from '#utils/cards';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication } from '#utils/middleware';
 import { ensureJsonSafeDates } from '#utils/zod';

@@ -14,6 +14,7 @@ import { timetableRouter } from '#routes/timetable/_router';
 import { usersRouter } from '#routes/users/_router';
 import { authRouter } from '#utils/authentication';
 import { initializeRBAC } from '#utils/authorization';
+import { setupCronJobs } from '#utils/cron';
 import { env } from '#utils/environment';
 import type { Context, ErrorResponse } from '#utils/globals';
 import { configureLogger } from '#utils/logger';
@@ -32,6 +33,7 @@ export const api = new Hono<Context>();
 
 await prepareDb();
 await initializeRBAC();
+setupCronJobs();
 
 api.use('*', corsMiddleware);
 api.use('*', authenticationMiddleware);

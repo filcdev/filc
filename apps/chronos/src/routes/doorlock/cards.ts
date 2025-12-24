@@ -8,13 +8,14 @@ import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { card, device } from '#database/schema/doorlock';
+import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
+  migrateAuditLogsForNewCard,
   replaceCardDevices,
-} from '#routes/doorlock/card-helpers';
-import { syncDevicesByIds } from '#routes/doorlock/device-sync';
+} from '#utils/cards';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication, requireAuthorization } from '#utils/middleware';
 import { ensureJsonSafeDates } from '#utils/zod';
@@ -204,6 +205,7 @@ export const createCardRoute = doorlockFactory.createHandlers(
         }
 
         await replaceCardDevices(tx, created.id, payload.authorizedDeviceIds);
+        await migrateAuditLogsForNewCard(created.id, payload.cardData);
         return created.id;
       });
 
