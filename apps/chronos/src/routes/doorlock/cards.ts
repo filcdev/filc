@@ -12,6 +12,7 @@ import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
+  migrateAuditLogsForNewCard,
   replaceCardDevices,
 } from '#routes/doorlock/card-helpers';
 import { syncDevicesByIds } from '#routes/doorlock/device-sync';
@@ -204,6 +205,7 @@ export const createCardRoute = doorlockFactory.createHandlers(
         }
 
         await replaceCardDevices(tx, created.id, payload.authorizedDeviceIds);
+        await migrateAuditLogsForNewCard(created.id, payload.cardData);
         return created.id;
       });
 

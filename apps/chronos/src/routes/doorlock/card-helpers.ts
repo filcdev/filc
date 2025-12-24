@@ -2,7 +2,7 @@ import type { SQL } from 'drizzle-orm';
 import { desc, eq } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { card, cardDevice, device } from '#database/schema/doorlock';
+import { auditLog, card, cardDevice, device } from '#database/schema/doorlock';
 
 type CardRecord = typeof card.$inferSelect;
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
@@ -150,4 +150,14 @@ export async function replaceCardDevices(
       deviceId,
     }))
   );
+}
+
+export async function migrateAuditLogsForNewCard(
+  newCardId: string,
+  cardData: string
+) {
+  await db
+    .update(auditLog)
+    .set({ cardId: newCardId })
+    .where(eq(auditLog.cardData, cardData));
 }
