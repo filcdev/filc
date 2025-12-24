@@ -26,6 +26,7 @@
         "@scalar/hono-api-reference": "^0.9.28",
         "@types/xmldom": "^0.1.34",
         "better-auth": "catalog:",
+        "cronbake": "^0.4.0",
         "dayjs": "^1.11.19",
         "drizzle-orm": "^0.45.1",
         "drizzle-zod": "^0.8.3",
@@ -785,6 +786,8 @@
     "cors": ["cors@2.8.5", "", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g=="],
 
     "cosmiconfig": ["cosmiconfig@9.0.0", "", { "dependencies": { "env-paths": "^2.2.1", "import-fresh": "^3.3.0", "js-yaml": "^4.1.0", "parse-json": "^5.2.0" }, "peerDependencies": { "typescript": ">=4.9.5" }, "optionalPeers": ["typescript"] }, "sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg=="],
+
+    "cronbake": ["cronbake@0.4.0", "", {}, "sha512-xxRy6KNi858/3RuBXHziRgcntSCXaT9FgEKkY8zh/72/yPD+8IpTfUWYxmwjFcYsce4jDvcunr7tXCq4vz5Hrw=="],
 
     "cross-fetch": ["cross-fetch@4.0.0", "", { "dependencies": { "node-fetch": "^2.6.12" } }, "sha512-e4a5N8lVvuLgAWgnCrLr2PP0YyDOTHa9H/Rj54dirp61qXnNq46m82bRhNqIA5VccJtWBvPTFRV3TtvHUKPB1g=="],
 
