@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { confirm } from '@inquirer/prompts';
+import { checkbox, confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
 import { eq, inArray } from 'drizzle-orm';
@@ -242,6 +242,14 @@ const importBaseData = async () => {
   logger.info('Base data imported.');
 };
 
+const seedLessons = async (baseData: BaseData) => {
+  const dates = generateDates();
+
+  for (const currentCohort of baseData.cohorts) {
+    await processCohortLessons(currentCohort, dates, baseData);
+  }
+};
+
 const seed = async () => {
   await prepareDb();
 
@@ -266,10 +274,33 @@ const seed = async () => {
     baseData = await fetchBaseData();
   }
 
-  const dates = generateDates();
+  const modules = await checkbox({
+    choices: [
+      { name: 'Substitutions and Moved Lessons', value: 'lessons' },
+      // Future modules can be added here
+    ],
+    message: 'Select which modules to seed:',
+  });
 
-  for (const currentCohort of baseData.cohorts) {
-    await processCohortLessons(currentCohort, dates, baseData);
+  const moduleMapping = {
+    lessons: seedLessons,
+  };
+
+  if (modules.length === 0) {
+    logger.info('No modules selected. Exiting seeding process.');
+    process.exit(0);
+  }
+
+  for (const module of modules) {
+    const seedFunction = moduleMapping[module as keyof typeof moduleMapping];
+    if (seedFunction) {
+      logger.info(`Seeding module: ${module}...`);
+      try {
+        await seedFunction(baseData);
+      } catch (error) {
+        logger.error(`Error seeding module ${module}:`, { error });
+      }
+    }
   }
 
   logger.info('Database seeding completed!');
