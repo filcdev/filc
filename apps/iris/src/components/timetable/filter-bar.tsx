@@ -7,6 +7,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import {
@@ -22,10 +23,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/utils';
-import { filterLabelFor } from './helpers';
+
 import type {
   ClassroomItem,
   CohortItem,
@@ -33,8 +33,81 @@ import type {
   TeacherItem,
 } from './types';
 
-const teacherLabel = (t: TeacherItem): string =>
-  `${t.firstName} ${t.lastName}`.trim() || 'Teacher';
+const teacherLabel = (t: TeacherItem, fallback: string): string =>
+  `${t.firstName} ${t.lastName}`.trim() || fallback;
+
+const getFilterOptions = (
+  activeFilter: FilterType,
+  options: {
+    cohorts?: CohortItem[];
+    teachers?: TeacherItem[];
+    classrooms?: ClassroomItem[];
+    t: (key: string) => string;
+  }
+): { label: string; value: string }[] => {
+  const { cohorts, teachers, classrooms, t } = options;
+  if (activeFilter === 'class') {
+    return (cohorts ?? []).map((c) => ({ label: c.name, value: c.id }));
+  }
+  if (activeFilter === 'teacher') {
+    return (teachers ?? []).map((teacher) => ({
+      label: teacherLabel(teacher, t('timetable.teacherFallback')),
+      value: teacher.id,
+    }));
+  }
+  return (classrooms ?? []).map((c) => ({ label: c.name, value: c.id }));
+};
+
+const getSelectedValue = (
+  activeFilter: FilterType,
+  selectedByClass: string | null,
+  selectedByTeacher: string | null,
+  selectedByRoom: string | null
+): string => {
+  if (activeFilter === 'class') {
+    return selectedByClass ?? '';
+  }
+  if (activeFilter === 'teacher') {
+    return selectedByTeacher ?? '';
+  }
+  return selectedByRoom ?? '';
+};
+
+const getPlaceholder = (
+  activeFilter: FilterType,
+  t: (key: string) => string
+): string => {
+  const placeholders = {
+    class: 'timetable.selectClass',
+    classroom: 'timetable.selectClassroom',
+    teacher: 'timetable.selectTeacher',
+  };
+  return t(placeholders[activeFilter]);
+};
+
+const getSearchPlaceholder = (
+  activeFilter: FilterType,
+  t: (key: string) => string
+): string => {
+  const placeholders = {
+    class: 'timetable.searchClass',
+    classroom: 'timetable.searchClassroom',
+    teacher: 'timetable.searchTeacher',
+  };
+  return t(placeholders[activeFilter]);
+};
+
+const getEmptyMessage = (
+  activeFilter: FilterType,
+  t: (key: string) => string
+): string => {
+  const messages = {
+    class: 'timetable.noClassFound',
+    classroom: 'timetable.noClassroomFound',
+    teacher: 'timetable.noTeacherFound',
+  };
+  return t(messages[activeFilter]);
+};
 
 export function FilterBar({
   activeFilter,
@@ -67,58 +140,37 @@ export function FilterBar({
   onPrint: () => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
   const comboboxContentId = `${filterSelectId}-content`;
   const selectWidthClassName = activeFilter === 'class' ? 'w-40' : 'w-60';
-  const filterLabel = filterLabelFor(activeFilter);
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
-  let filterOptions: { label: string; value: string }[];
-  if (activeFilter === 'class') {
-    filterOptions = (cohorts ?? []).map((c) => ({
-      label: c.name,
-      value: c.id,
-    }));
-  } else if (activeFilter === 'teacher') {
-    filterOptions = (teachers ?? []).map((t) => ({
-      label: teacherLabel(t),
-      value: t.id,
-    }));
-  } else {
-    filterOptions = (classrooms ?? []).map((c) => ({
-      label: c.name,
-      value: c.id,
-    }));
-  }
-
-  let selectedValue: string;
-  if (activeFilter === 'class') {
-    selectedValue = selectedByClass ?? '';
-  } else if (activeFilter === 'teacher') {
-    selectedValue = selectedByTeacher ?? '';
-  } else {
-    selectedValue = selectedByRoom ?? '';
-  }
-
-  const placeholderLabel = `Select ${filterLabel.toLowerCase()}...`;
+  const filterOptions = getFilterOptions(activeFilter, {
+    classrooms,
+    cohorts,
+    t,
+    teachers,
+  });
+  const selectedValue = getSelectedValue(
+    activeFilter,
+    selectedByClass,
+    selectedByTeacher,
+    selectedByRoom
+  );
+  const placeholderLabel = getPlaceholder(activeFilter, t);
   const selectedLabel =
     filterOptions.find((option) => option.value === selectedValue)?.label ??
     placeholderLabel;
 
   const handleSelection = (value: string) => {
     setComboboxOpen(false);
-
-    if (activeFilter === 'class') {
-      onSelectClass(value);
-      return;
-    }
-
-    if (activeFilter === 'teacher') {
-      onSelectTeacher(value);
-      return;
-    }
-
-    onSelectRoom(value);
+    const handlers = {
+      class: onSelectClass,
+      classroom: onSelectRoom,
+      teacher: onSelectTeacher,
+    };
+    handlers[activeFilter](value);
   };
 
   const renderSelect = () => {
@@ -149,11 +201,9 @@ export function FilterBar({
           id={comboboxContentId}
         >
           <Command>
-            <CommandInput
-              placeholder={`Search ${filterLabel.toLowerCase()}...`}
-            />
+            <CommandInput placeholder={getSearchPlaceholder(activeFilter, t)} />
             <CommandList>
-              <CommandEmpty>No {filterLabel.toLowerCase()} found.</CommandEmpty>
+              <CommandEmpty>{getEmptyMessage(activeFilter, t)}</CommandEmpty>
               <CommandGroup>
                 {filterOptions.map((option) => (
                   <CommandItem
@@ -189,32 +239,29 @@ export function FilterBar({
             onClick={() => onFilterChange('class')}
             variant="outline"
           >
-            <GraduationCap /> Class
+            <GraduationCap /> {t('timetable.filterByClass')}
           </Button>
           <Button
             disabled={activeFilter === 'teacher'}
             onClick={() => onFilterChange('teacher')}
             variant="outline"
           >
-            <UserRound /> Teacher
+            <UserRound /> {t('timetable.filterByTeacher')}
           </Button>
           <Button
             disabled={activeFilter === 'classroom'}
             onClick={() => onFilterChange('classroom')}
             variant="outline"
           >
-            <Building2 /> Classroom
+            <Building2 /> {t('timetable.filterByClassroom')}
           </Button>
           {renderSelect()}
         </ButtonGroup>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button disabled={disabled} onClick={onPrint} variant="outline">
-          <Printer /> Print / PDF
-        </Button>
-        <Separator className="h-6" orientation="vertical" />
-      </div>
+      <Button disabled={disabled} onClick={onPrint} variant="outline">
+        <Printer /> {t('timetable.printPdf')}
+      </Button>
     </div>
   );
 }

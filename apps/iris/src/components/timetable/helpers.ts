@@ -166,7 +166,7 @@ const collectDayMetaAndSlots = (lessons: LessonItem[]) => {
   const dayTime = new Map<string, Map<string, LessonItem[]>>();
 
   for (const lesson of lessons) {
-    const dayName = lesson.day?.name ?? 'Unknown';
+    const dayName = lesson.day?.name ?? '';
     const dayOrder = lesson.day?.days?.[0]
       ? Number.parseInt(lesson.day.days[0], 10)
       : 999;
@@ -378,12 +378,15 @@ export const getSelectedFromUrl = (
   return { cohortClass: null, cohortClassroom: null, cohortTeacher: null };
 };
 
-export const filterLabelFor = (activeFilter: FilterType) => {
+export const filterLabelFor = (
+  activeFilter: FilterType,
+  t: (key: string) => string
+) => {
   if (activeFilter === 'class') {
-    return 'Class';
+    return t('timetable.filterByClass');
   }
   if (activeFilter === 'teacher') {
-    return 'Teacher';
+    return t('timetable.filterByTeacher');
   }
-  return 'Classroom';
+  return t('timetable.filterByClassroom');
 };

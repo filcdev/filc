@@ -87,9 +87,19 @@
     "filterByClass": "Osztály",
     "filterByTeacher": "Tanár",
     "filterByClassroom": "Terem",
+    "selectClass": "Osztály kiválasztása...",
+    "selectTeacher": "Tanár kiválasztása...",
+    "selectClassroom": "Terem kiválasztása...",
+    "searchClass": "Osztály keresése...",
+    "searchTeacher": "Tanár keresése...",
+    "searchClassroom": "Terem keresése...",
+    "noClassFound": "Nem található osztály.",
+    "noTeacherFound": "Nem található tanár.",
+    "noClassroomFound": "Nem található terem.",
     "printPdf": "Nyomtatás / PDF",
     "time": "Idő",
-    "teacherFallback": "Tanár"
+    "teacherFallback": "Tanár",
+    "unknownDay": "Ismeretlen"
   },
   "common": {
     "cancel": "Mégsem",

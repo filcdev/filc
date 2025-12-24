@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -18,6 +19,7 @@ export function TimetableGrid({
   model: ViewModel;
   title: string;
 }) {
+  const { t } = useTranslation();
   const { days, timeSlots, grid } = model;
 
   return (
@@ -33,7 +35,7 @@ export function TimetableGrid({
             <TableHeader className="print:table-header-group">
               <TableRow className="border-border bg-muted/50 print:bg-white">
                 <TableHead className="w-24 text-left font-semibold">
-                  Time
+                  {t('timetable.time')}
                 </TableHead>
                 {days.map((day) => (
                   <TableHead

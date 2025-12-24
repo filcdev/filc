@@ -92,9 +92,19 @@
     "filterByClass": "Class",
     "filterByTeacher": "Teacher",
     "filterByClassroom": "Classroom",
+    "selectClass": "Select class...",
+    "selectTeacher": "Select teacher...",
+    "selectClassroom": "Select classroom...",
+    "searchClass": "Search class...",
+    "searchTeacher": "Search teacher...",
+    "searchClassroom": "Search classroom...",
+    "noClassFound": "No class found.",
+    "noTeacherFound": "No teacher found.",
+    "noClassroomFound": "No classroom found.",
     "printPdf": "Print / PDF",
     "time": "Time",
-    "teacherFallback": "Teacher"
+    "teacherFallback": "Teacher",
+    "unknownDay": "Unknown"
   },
   "auth": {
     "error": {
