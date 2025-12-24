@@ -88,7 +88,13 @@
     "importInfoPoint1": "Only XML files exported from ÓMAN are supported",
     "importInfoPoint2": "The import process will update all timetable-related data including cohorts, subjects, teachers, and lessons",
     "importInfoPoint3": "Existing data will be preserved and matched with new data where possible",
-    "importInfoPoint4": "The import process may take a few moments depending on the size of the file"
+    "importInfoPoint4": "The import process may take a few moments depending on the size of the file",
+    "filterByClass": "Class",
+    "filterByTeacher": "Teacher",
+    "filterByClassroom": "Classroom",
+    "printPdf": "Print / PDF",
+    "time": "Time",
+    "teacherFallback": "Teacher"
   },
   "auth": {
     "error": {

@@ -83,7 +83,13 @@
     "importInfoPoint1": "Csak ÓMAN-ból exportált XML fájlok támogatottak",
     "importInfoPoint2": "Az importálási folyamat frissíti az összes órarenddel kapcsolatos adatot, beleértve a csoportokat, tárgyakat, tanárokat és órákat",
     "importInfoPoint3": "A meglévő adatok megmaradnak és párosítva lesznek az új adatokkal, ahol lehetséges",
-    "importInfoPoint4": "Az importálási folyamat néhány percet vehet igénybe a fájl méretétől függően"
+    "importInfoPoint4": "Az importálási folyamat néhány percet vehet igénybe a fájl méretétől függően",
+    "filterByClass": "Osztály",
+    "filterByTeacher": "Tanár",
+    "filterByClassroom": "Terem",
+    "printPdf": "Nyomtatás / PDF",
+    "time": "Idő",
+    "teacherFallback": "Tanár"
   },
   "common": {
     "cancel": "Mégsem",
