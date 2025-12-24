@@ -2,6 +2,11 @@ import type { InferResponseType } from 'hono/client';
 import type { api } from '@/utils/hc';
 
 export type FilterType = 'class' | 'teacher' | 'classroom';
+export type SelectionsType = {
+  class: string | null;
+  teacher: string | null;
+  classroom: string | null;
+};
 
 export type CohortResponse = InferResponseType<
   (typeof api.cohort.index)['$get']
