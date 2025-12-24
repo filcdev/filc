@@ -224,24 +224,19 @@ export function TimetableView() {
       classroomsQuery.data
     );
 
-    switch (true) {
-      case !!cohortClass:
-        setActiveFilter('class');
-        setSelections((s) => ({ ...s, class: cohortClass }));
-        break;
-      case !!cohortTeacher:
-        setActiveFilter('teacher');
-        setSelections((s) => ({ ...s, teacher: cohortTeacher }));
-        break;
-      case !!cohortClassroom:
-        setActiveFilter('classroom');
-        setSelections((s) => ({ ...s, classroom: cohortClassroom }));
-        break;
-      default: {
-        const userDefault = session?.user?.cohortId as string | undefined;
-        const firstCohort = cohortsQuery.data[0]?.id ?? null;
-        setSelections((s) => ({ ...s, class: userDefault ?? firstCohort }));
-      }
+    if (cohortClass) {
+      setActiveFilter('class');
+      setSelections((s) => ({ ...s, class: cohortClass }));
+    } else if (cohortTeacher) {
+      setActiveFilter('teacher');
+      setSelections((s) => ({ ...s, teacher: cohortTeacher }));
+    } else if (cohortClassroom) {
+      setActiveFilter('classroom');
+      setSelections((s) => ({ ...s, classroom: cohortClassroom }));
+    } else {
+      const userDefault = session?.user?.cohortId as string | undefined;
+      const firstCohort = cohortsQuery.data[0]?.id ?? null;
+      setSelections((s) => ({ ...s, class: userDefault ?? firstCohort }));
     }
   }, [
     cohortsQuery.data,
@@ -341,11 +336,6 @@ export function TimetableView() {
     classroomsQuery.error ||
     lessonsQuery.error;
 
-  // Handlers
-  const handleFilterChange = (filter: FilterType) => {
-    setActiveFilter(filter);
-  };
-
   return (
     <div className="flex grow flex-col items-center gap-4 p-4">
       <FilterBar
@@ -353,7 +343,7 @@ export function TimetableView() {
         classrooms={classroomsQuery.data}
         cohorts={cohortsQuery.data}
         disabled={isLoading}
-        onFilterChange={handleFilterChange}
+        onFilterChange={setActiveFilter}
         onPrint={() => window.print()}
         onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
         onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
