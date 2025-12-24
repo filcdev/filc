@@ -1,5 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
+import dayjs from 'dayjs';
 import { eq, inArray } from 'drizzle-orm';
+import { decode, encode } from 'iconv-lite';
+import { DOMParser } from 'xmldom';
 import { db, prepareDb } from '#database/index';
 import {
   classroom,
@@ -14,6 +20,13 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
+import { configureLogger } from '#utils/logger';
+import { importTimetableXML } from '#utils/timetable/imports';
+
+const CANCELLATION_PROBABILITY = 0.3;
+const SUBSTITUTION_ROOM_PROBABILITY = 0.4;
+
+await configureLogger('chronos');
 
 const logger = getLogger(['chronos', 'drizzle']);
 
@@ -44,13 +57,9 @@ type MovedLessonParams = {
 };
 
 const generateDates = (): string[] => {
-  const today = new Date();
   const offsets = [1, 2, 3, 5, 7];
 
-  return offsets.map((days) => {
-    const date = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
-    return date.toISOString().slice(0, 10);
-  });
+  return offsets.map((days) => dayjs().add(days, 'day').toISOString());
 };
 
 const fetchBaseData = async (): Promise<BaseData> => {
@@ -79,31 +88,34 @@ const getCohortLessons = async (cohortId: string) => {
 };
 
 const createSubstitution = async (params: SubstitutionParams) => {
-  const isCancelled = Math.random() > 0.7;
+  const isCancelled = Math.random() < CANCELLATION_PROBABILITY;
   const substituterId = isCancelled
     ? null
     : params.teachers[Math.floor(Math.random() * params.teachers.length)]?.id;
 
-  const insertedSub = await db
-    .insert(substitution)
-    .values({
-      date: params.date,
-      id: `sub-${params.cohortId}-${params.lessonId}-${params.index}`,
-      substituter: substituterId,
-    })
-    .returning();
+  const created = await db.transaction(async (tx) => {
+    const [insertedSub] = await tx
+      .insert(substitution)
+      .values({
+        date: params.date,
+        id: `sub-${params.cohortId}-${params.lessonId}-${params.index}`,
+        substituter: substituterId,
+      })
+      .returning();
 
-  const sub = insertedSub[0];
-  if (sub) {
-    await db.insert(substitutionLessonMTM).values({
+    if (!insertedSub) {
+      return null;
+    }
+
+    await tx.insert(substitutionLessonMTM).values({
       lessonId: params.lessonId,
-      substitutionId: sub.id,
+      substitutionId: insertedSub.id,
     });
 
     return isCancelled ? 'cancelled' : 'substituted';
-  }
+  });
 
-  return null;
+  return created;
 };
 
 const createMovedLesson = async (params: MovedLessonParams) => {
@@ -116,33 +128,38 @@ const createMovedLesson = async (params: MovedLessonParams) => {
       ? params.periods[Math.floor(Math.random() * params.periods.length)]?.id
       : null;
   const targetRoom =
-    params.classrooms.length > 0 && Math.random() > 0.5
+    params.classrooms.length > 0 &&
+    Math.random() > SUBSTITUTION_ROOM_PROBABILITY
       ? params.classrooms[Math.floor(Math.random() * params.classrooms.length)]
           ?.id
       : null;
 
-  const insertedMoved = await db
-    .insert(movedLesson)
-    .values({
-      date: params.date,
-      id: `moved-${params.cohortId}-${params.lessonId}-${params.index}`,
-      room: targetRoom,
-      startingDay: targetDay,
-      startingPeriod: targetPeriod,
-    })
-    .returning();
+  const created = await db.transaction(async (tx) => {
+    const insertedMoved = await tx
+      .insert(movedLesson)
+      .values({
+        date: params.date,
+        id: `moved-${params.cohortId}-${params.lessonId}-${params.index}`,
+        room: targetRoom,
+        startingDay: targetDay,
+        startingPeriod: targetPeriod,
+      })
+      .returning();
 
-  const moved = insertedMoved[0];
-  if (moved) {
-    await db.insert(movedLessonLessonMTM).values({
+    const moved = insertedMoved[0];
+    if (!moved) {
+      return false;
+    }
+
+    await tx.insert(movedLessonLessonMTM).values({
       lessonId: params.lessonId,
       movedLessonId: moved.id,
     });
 
     return true;
-  }
+  });
 
-  return false;
+  return created;
 };
 
 const processCohortLessons = async (
@@ -197,16 +214,56 @@ const processCohortLessons = async (
   }
 };
 
+const importBaseData = async () => {
+  logger.info('Importing base timetable data...');
+
+  const baseTimetableXmlPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'public',
+    'timetables',
+    'dev.xml'
+  );
+
+  const xmlBuffer = fs.readFileSync(baseTimetableXmlPath);
+  const decoded = decode(xmlBuffer, 'win1250');
+  const utf8Text = encode(decoded, 'utf-8').toString();
+  const cleaned = utf8Text.replaceAll('Period=""', '');
+
+  const xmlData = new DOMParser().parseFromString(cleaned, 'application/xml');
+
+  await importTimetableXML(xmlData, {
+    name: 'Default Timetable',
+    validFrom: dayjs().toISOString(),
+  });
+
+  logger.info('Base data imported.');
+};
+
 const seed = async () => {
   await prepareDb();
 
   logger.info('Seeding database...');
 
-  const baseData = await fetchBaseData();
+  let baseData = await fetchBaseData();
 
   if (baseData.cohorts.length === 0 || baseData.teachers.length === 0) {
-    logger.error('No cohorts or teachers found. Please seed base data first.');
-    return;
+    const proceed = await confirm({
+      message:
+        'No base timetable data found. Do you want to import the default timetable?',
+    });
+
+    if (!proceed) {
+      logger.info(
+        "Seeding aborted by user. You'll need to import a timetable first."
+      );
+      process.exit(1);
+    }
+
+    await importBaseData();
+    baseData = await fetchBaseData();
   }
 
   const dates = generateDates();
@@ -218,4 +275,4 @@ const seed = async () => {
   logger.info('Database seeding completed!');
 };
 
-seed();
+await seed();

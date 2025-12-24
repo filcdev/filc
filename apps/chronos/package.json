@@ -7,7 +7,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "bun run ./src/utils/scripts/seed.ts",
+    "db:seed": "bun run ./src/database/scripts/seed.ts",
+    "db:reset": "bun run ./src/database/scripts/reset.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"
   },
@@ -33,6 +34,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@inquirer/prompts": "^8.1.0",
     "@logtape/pretty": "^1.2.2",
     "@tsconfig/strictest": "^2.0.8",
     "@types/bun": "catalog:",

@@ -85,13 +85,6 @@ export const classroom = pgTable('classroom', {
   short: text('short').notNull(),
 });
 
-// export const grade = pgTable('grade', {
-//   id: text('id').primaryKey(),
-//   name: text('name').notNull(),
-//   short: text('short').notNull(),
-//   grade: integer('grade').notNull(),
-// });
-
 export const cohort = pgTable('cohort', {
   // TODO: review if we need to store multiple classrooms
   classroomIds: jsonb('classroom_ids').$type<string[]>(),
@@ -218,9 +211,15 @@ export const timetableSchema = {
   cohortGroup,
   dayDefinition,
   lesson,
+  lessonCohortMTM,
+  movedLesson,
+  movedLessonLessonMTM,
   period,
   subject,
+  substitution,
+  substitutionLessonMTM,
   teacher,
   termDefinition,
+  timetable,
   weekDefinition,
 };
