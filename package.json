@@ -28,7 +28,8 @@
       "@types/bun": "^1.3.4",
       "typescript": "^5.9.3",
       "hono": "^4.10.7",
-      "better-auth": "^1.4.4"
+      "better-auth": "^1.4.4",
+      "zod": "^4.3.5"
     }
   }
 }
