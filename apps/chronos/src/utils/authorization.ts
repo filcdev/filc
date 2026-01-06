@@ -1,11 +1,19 @@
 import { getLogger } from '@logtape/logtape';
-import RBAC from '@rbac/rbac';
+// biome-ignore lint/performance/noNamespaceImport: RBAC uses namespace exports
+import * as RBACImport from '@rbac/rbac';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { user as dbUser } from '#database/schema/authentication';
 import { role as dbRole } from '#database/schema/authorization';
 
 const logger = getLogger(['chronos', 'rbac']);
+
+// Workaround for CJS/ESM interop issues with @rbac/rbac.
+// In bundled builds, the default export might be double-wrapped.
+const RBAC = ((typeof RBACImport.default === 'function'
+  ? RBACImport.default
+  : // @ts-expect-error
+    RBACImport.default?.default) || RBACImport) as typeof RBACImport.default;
 
 export const rbac = RBAC({
   logger(role, operation, result) {
