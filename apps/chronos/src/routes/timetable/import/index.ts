@@ -5,7 +5,7 @@ import { getLogger } from '@logtape/logtape';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
-import { decode, encode } from 'iconv-lite';
+import iconv from 'iconv-lite';
 import { DOMParser } from 'xmldom';
 import z from 'zod';
 import { timetableFactory } from '#routes/timetable/_factory';
@@ -97,9 +97,9 @@ export const importRoute = timetableFactory.createHandlers(
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const decoded = decode(buffer, 'win1250');
+    const decoded = iconv.decode(buffer, 'win1250');
     // TODO: this is still broken
-    const utf8Text = encode(decoded, 'utf-8').toString();
+    const utf8Text = iconv.encode(decoded, 'utf-8').toString();
     const cleaned = utf8Text.replaceAll('Period=""', '');
 
     // TODO: Rewrite the import function to use these

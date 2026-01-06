@@ -4,7 +4,7 @@ import { checkbox, confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
 import { eq, inArray } from 'drizzle-orm';
-import { decode, encode } from 'iconv-lite';
+import iconv from 'iconv-lite';
 import { DOMParser } from 'xmldom';
 import { db, prepareDb } from '#database/index';
 import {
@@ -228,8 +228,8 @@ const importBaseData = async () => {
   );
 
   const xmlBuffer = fs.readFileSync(baseTimetableXmlPath);
-  const decoded = decode(xmlBuffer, 'win1250');
-  const utf8Text = encode(decoded, 'utf-8').toString();
+  const decoded = iconv.decode(xmlBuffer, 'win1250');
+  const utf8Text = iconv.encode(decoded, 'utf-8').toString();
   const cleaned = utf8Text.replaceAll('Period=""', '');
 
   const xmlData = new DOMParser().parseFromString(cleaned, 'application/xml');
