@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.4-alpine
+FROM oven/bun:1.3.5-alpine
 
 # Config Bun
 ENV PATH="~/.bun/bin:${PATH}"
