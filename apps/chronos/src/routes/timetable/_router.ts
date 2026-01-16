@@ -24,6 +24,7 @@ import {
 } from '.';
 import { getCohortsForTimetable } from './cohort';
 import {
+  getLessonForId,
   getLessonsForCohort,
   getLessonsForRoom,
   getLessonsForTeacher,
@@ -60,6 +61,7 @@ export const timetableRouter = timetableFactory
   .get('/lessons/getForCohort/:cohortId', ...getLessonsForCohort)
   .get('/lessons/getForTeacher/:teacherId', ...getLessonsForTeacher)
   .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
+  .get('/lessons/getForId/:lessonId', ...getLessonForId)
   // Cohort routes
   .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
   // Teacher routes

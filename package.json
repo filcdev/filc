@@ -2,7 +2,7 @@
   "name": "@filcdev/filc",
   "private": true,
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,css,md}": "bun biome check --write"
+    "*.{ts,tsx,js,jsx,json,css,md}": "bunx biome check --write"
   },
   "scripts": {
     "dev": "turbo run dev",
