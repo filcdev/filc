@@ -202,7 +202,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
       </Button>
       <Button
         className="text-muted-foreground hover:text-foreground"
-        onClick={() => navigate({ to: '/' })}
+        onClick={() => navigate({ to: '/subs' })}
         size="sm"
         variant="ghost"
       >
