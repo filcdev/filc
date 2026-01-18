@@ -80,6 +80,15 @@ const handleIncomingMessage = async (
       message,
     });
 
+    if (!deserialized.type || typeof deserialized.type !== 'string') {
+      logger.warn('Received WebSocket message without type', {
+        deserialized,
+        device,
+        message,
+      });
+      return;
+    }
+
     switch (deserialized.type) {
       case 'ping': {
         const getDeviceState = () => {

@@ -110,9 +110,6 @@ app.onError((err, c) => {
   return c.redirect('/error');
 });
 
-await prepareDb();
-await initializeRBAC();
-
 export const server = Bun.serve({
   fetch: app.fetch,
   port: env.port,
