@@ -11,7 +11,7 @@ const envSchema = z.object({
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
   CHRONOS_BASE_URL: z.url(),
   CHRONOS_DATABASE_URL: z.url(),
-  CHRONOS_DRIZZLE_DEBUG: z.boolean().default(false),
+  CHRONOS_DRIZZLE_DEBUG: z.coerce.boolean().default(false),
   CHRONOS_ENTRA_CLIENT_ID: z.string(),
   CHRONOS_ENTRA_CLIENT_SECRET: z.string(),
   CHRONOS_ENTRA_TENANT_ID: z.string(),

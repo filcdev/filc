@@ -211,16 +211,27 @@ const matchExistingDays = async (
     return result;
   }
 
+  // Build reverse lookup from day name to one or more predefined IDs
+  const nameToPredefinedIds: Map<string, string[]> = new Map();
+  for (const [predefinedId, data] of unique) {
+    const list = nameToPredefinedIds.get(data.name);
+    if (list) {
+      list.push(predefinedId);
+    } else {
+      nameToPredefinedIds.set(data.name, [predefinedId]);
+    }
+  }
   const existing = await tx
     .select({ id: daySchema.id, name: daySchema.name })
     .from(daySchema)
     .where(inArray(daySchema.name, names));
-
   for (const row of existing) {
-    for (const [predefinedId, data] of unique) {
-      if (data.name === row.name) {
-        result.set(predefinedId, row.id);
-      }
+    const predefinedIds = nameToPredefinedIds.get(row.name);
+    if (!predefinedIds) {
+      continue;
+    }
+    for (const predefinedId of predefinedIds) {
+      result.set(predefinedId, row.id);
     }
   }
 
@@ -378,7 +389,7 @@ const loadSubjects = async (
 ): Promise<Map<string, string>> => {
   const unique = collectUniqueSubjects(xmlDoc);
   const result = await matchExistingSubjects(tx, unique);
-  logger.trace('Loading lessons from schedules');
+  logger.trace('Loading subjects from XML');
   const missing = new Map(
     Array.from(unique.entries()).filter(
       ([predefinedId]) => !result.has(predefinedId)
@@ -396,6 +407,7 @@ const loadSubjects = async (
 const loadTeachers = async (
   tx: TxClient,
   xmlDoc: Document
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shh, it's fine (TODO fix this)
 ): Promise<Map<string, string>> => {
   logger.trace('Loading teachers from XML');
   const result: Map<string, string> = new Map();
@@ -451,28 +463,51 @@ const loadTeachers = async (
     byNameKey.set(`${row.firstName}|${row.lastName}`, row.id);
   }
 
+  // Collect missing teachers
+  const missing: Array<{
+    predefinedId: string;
+    firstName: string;
+    lastName: string;
+    short: string;
+  }> = [];
+
   for (const [predefinedId, data] of unique) {
     const key = `${data.firstName}|${data.lastName}`;
     const existingId = byNameKey.get(key);
     if (existingId) {
       result.set(predefinedId, existingId);
-      continue;
-    }
-
-    const [insertedTeacher] = await tx
-      .insert(teacherSchema)
-      .values({
+    } else {
+      missing.push({
         firstName: data.firstName,
-        id: crypto.randomUUID(),
         lastName: data.lastName,
+        predefinedId,
         short: data.short,
-        // gender,
-      })
-      .returning({ insertedId: teacherSchema.id });
+      });
+    }
+  }
 
-    if (insertedTeacher) {
-      result.set(predefinedId, insertedTeacher.insertedId);
-      byNameKey.set(key, insertedTeacher.insertedId);
+  if (missing.length) {
+    const toInsert = missing.map((item) => ({
+      firstName: item.firstName,
+      id: crypto.randomUUID(),
+      lastName: item.lastName,
+      short: item.short,
+    }));
+
+    const inserted = await tx.insert(teacherSchema).values(toInsert).returning({
+      firstName: teacherSchema.firstName,
+      id: teacherSchema.id,
+      lastName: teacherSchema.lastName,
+    });
+
+    for (const row of inserted) {
+      const match = missing.find(
+        (item) =>
+          item.firstName === row.firstName && item.lastName === row.lastName
+      );
+      if (match) {
+        result.set(match.predefinedId, row.id);
+      }
     }
   }
 
@@ -796,12 +831,12 @@ const hydrateExistingLessons = async (
   const result = new Map<string, string>();
   for (const lesson of existingLessons) {
     const key = makeLessonKey({
-      classroomIds: ((lesson.classroomIds ?? []) as string[]) ?? [],
+      classroomIds: (lesson.classroomIds ?? []) as string[],
       cohortIds: existingCohorts.get(lesson.id) ?? [],
       dayDefinitionId: lesson.dayDefinitionId,
       periodId: lesson.periodId,
       subjectId: lesson.subjectId,
-      teacherIds: ((lesson.teacherIds ?? []) as string[]) ?? [],
+      teacherIds: (lesson.teacherIds ?? []) as string[],
       weekDefinitionId: lesson.weekDefinitionId,
     });
     if (lessonKeySet.size === 0 || lessonKeySet.has(key)) {
