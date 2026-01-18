@@ -59,7 +59,7 @@ const authOptions = {
       clientId: env.entraClientId,
       clientSecret: env.entraClientSecret,
       enabled: true,
-      prompt: 'consent',
+      prompt: env.mode === 'development' ? 'consent' : undefined,
       tenantId: env.entraTenantId,
     },
   },
