@@ -20,10 +20,6 @@
   "i18n-ally.localesPaths": ["apps/iris/public/locales"],
   "i18n-ally.keystyle": "nested",
 
-  // TODO: remove when biome fixes their extension
-  "biome.runFromTemporaryLocation": true,
-  "biome.lsp.bin": "node_modules/@biomejs/cli-linux-x64-musl/biome",
-
   // Copilot commit messages
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {

@@ -105,28 +105,28 @@ const PrivateAdminDoorlockCardsRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
   '/subs': typeof PublicSubsRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/': typeof PublicIndexRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
-  '/admin/doorlock': typeof PrivateAdminDoorlockIndexRoute
+  '/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
   '/subs': typeof PublicSubsRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/': typeof PublicIndexRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
@@ -155,28 +155,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/admin'
     | '/proba'
     | '/subs'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
-    | '/'
     | '/admin/users'
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
     | '/admin/timetable/import'
-    | '/admin/doorlock'
+    | '/admin/doorlock/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/admin'
     | '/proba'
     | '/subs'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
-    | '/'
     | '/admin/users'
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
@@ -215,14 +215,14 @@ declare module '@tanstack/react-router' {
     '/_public': {
       id: '/_public'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof PublicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_private': {
       id: '/_private'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof PrivateRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -285,7 +285,7 @@ declare module '@tanstack/react-router' {
     '/_private/admin/doorlock/': {
       id: '/_private/admin/doorlock/'
       path: '/doorlock'
-      fullPath: '/admin/doorlock'
+      fullPath: '/admin/doorlock/'
       preLoaderRoute: typeof PrivateAdminDoorlockIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
