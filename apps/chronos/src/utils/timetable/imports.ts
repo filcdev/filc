@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/logtape';
-import { and, count, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import {
   building as buildingSchema,
@@ -17,202 +17,410 @@ import {
 
 const logger = getLogger(['chronos', 'timetable']);
 
-// Drizzle inferred row type helper
+type Database = typeof db;
+export type TxClient = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+// Drizzle inferred row type helpers
 type LessonRow = typeof lessonSchema.$inferSelect;
-
-export const importTimetableXML = async (
-  xmlDoc: Document,
-  timetableForm: { name: string; validFrom: string }
-) => {
-  const [newTimetable] = await db
-    .insert(timetable)
-    .values({
-      id: crypto.randomUUID(),
-      ...timetableForm,
-    })
-    .returning({ timetableId: timetable.id });
-
-  if (!newTimetable) {
-    throw new Error('Failed to insert new timetable.');
-  }
-  const { timetableId } = newTimetable;
-
-  // We might just want this in lessons for mapping
-  // This will work, just not all IDish and such.
-  // It would be ideal to fix when we add all that
-  // separate timetable ID stuff and such doohickeys.
-  const periodMap = await loadPeriods(xmlDoc);
-  const dayMap = await loadDays(xmlDoc);
-  const subjectMap = await loadSubjects(xmlDoc);
-  const teacherMap = await loadTeachers(xmlDoc);
-  const classroomMap = await loadClassrooms(xmlDoc);
-  const cohortMap = await loadCohort(xmlDoc, teacherMap, timetableId);
-  await loadLessons(
-    xmlDoc,
-    {
-      classroomMap,
-      cohortMap,
-      dayMap,
-      periodMap,
-      subjectMap,
-      teacherMap,
-    },
-    timetableId
-  );
+type LessonRowDraft = Omit<
+  LessonRow,
+  'teacherIds' | 'classroomIds' | 'groupsIds'
+> & {
+  teacherIds: string[];
+  classroomIds: string[];
+  groupsIds: string[];
 };
 
-const loadPeriods = async (xmlDoc: Document) => {
+type LessonMaps = {
+  subjectMap: Map<string, string>;
+  cohortMap: Map<string, string>;
+  teacherMap: Map<string, string>;
+  classroomMap: Map<string, string>;
+  dayMap: Map<string, string>;
+  periodMap: Map<string, string>;
+};
+
+type CohortAttributes = {
+  predefinedId: string;
+  name: string;
+  short: string;
+  teacherId: string | null;
+};
+
+export const importTimetableXML = (
+  xmlDoc: Document,
+  timetableForm: { name: string; validFrom: string }
+) =>
+  db.transaction(async (tx) => {
+    const startedAt = Date.now();
+    logger.info('Starting timetable import', {
+      timetableName: timetableForm.name,
+      validFrom: timetableForm.validFrom,
+    });
+
+    const [newTimetable] = await tx
+      .insert(timetable)
+      .values({
+        id: crypto.randomUUID(),
+        ...timetableForm,
+      })
+      .returning({ timetableId: timetable.id });
+
+    if (!newTimetable) {
+      throw new Error('Failed to insert new timetable.');
+    }
+    const { timetableId } = newTimetable;
+
+    const [periodMap, dayMap, subjectMap, teacherMap, classroomMap] =
+      await Promise.all([
+        loadPeriods(tx, xmlDoc),
+        loadDays(tx, xmlDoc),
+        loadSubjects(tx, xmlDoc),
+        loadTeachers(tx, xmlDoc),
+        loadClassrooms(tx, xmlDoc),
+      ]);
+
+    const cohortMap = await loadCohort(tx, xmlDoc, teacherMap, timetableId);
+
+    const lessons = await loadLessons(
+      tx,
+      xmlDoc,
+      {
+        classroomMap,
+        cohortMap,
+        dayMap,
+        periodMap,
+        subjectMap,
+        teacherMap,
+      },
+      timetableId
+    );
+
+    logger.info('Finished timetable import', {
+      classrooms: classroomMap.size,
+      cohorts: cohortMap.size,
+      days: dayMap.size,
+      durationMs: Date.now() - startedAt,
+      lessons: lessons.size,
+      periods: periodMap.size,
+      subjects: subjectMap.size,
+      teachers: teacherMap.size,
+      timetableId,
+    });
+  });
+
+const loadPeriods = async (
+  tx: TxClient,
+  xmlDoc: Document
+): Promise<Map<string, string>> => {
+  logger.trace('Loading periods from XML');
   const result: Map<string, string> = new Map();
+  const unique: Map<string, { period: number; start: string; end: string }> =
+    new Map();
   const periods = xmlDoc.getElementsByTagName('period');
 
   for (let i = 0; i < periods.length; i++) {
     const period = periods.item(i);
     if (!period) {
-      return result;
+      continue;
     }
 
     const predefinedId = period.getAttribute('period');
-    const end_time = period.getAttribute('endtime');
-    const start_time = period.getAttribute('starttime');
+    const endTime = period.getAttribute('endtime');
+    const startTime = period.getAttribute('starttime');
 
-    if (!(predefinedId && start_time && end_time)) {
+    if (!(predefinedId && startTime && endTime)) {
       throw new Error(
         'Incomplete data for period, unable to get all attributes'
       );
     }
 
-    const [existingPeriod] = await db
-      .select()
+    unique.set(predefinedId, {
+      end: endTime,
+      period: Number(predefinedId),
+      start: startTime,
+    });
+  }
+
+  const periodNumbers = Array.from(unique.values()).map((p) => p.period);
+  if (periodNumbers.length) {
+    const existing = await tx
+      .select({ id: periodSchema.id, period: periodSchema.period })
       .from(periodSchema)
-      .where(eq(periodSchema.period, Number(predefinedId)))
-      .limit(1);
+      .where(inArray(periodSchema.period, periodNumbers));
 
-    if (existingPeriod) {
-      // Use predefinedId as key consistently
-      result.set(predefinedId, existingPeriod.id);
-    } else {
-      const [insertedPeriod] = await db
-        .insert(periodSchema)
-        .values({
-          endTime: end_time,
-          id: crypto.randomUUID(),
-          period: Number(predefinedId),
-          startTime: start_time,
-        })
-        .returning({ insertedId: periodSchema.id });
-
-      if (insertedPeriod) {
-        // Use predefinedId as key consistently
-        result.set(predefinedId, insertedPeriod.insertedId);
+    for (const row of existing) {
+      const key = `${row.period}`;
+      if (unique.has(key)) {
+        result.set(key, row.id);
+        unique.delete(key);
       }
     }
   }
 
+  const toInsert = Array.from(unique.entries()).map(([, value]) => ({
+    endTime: value.end,
+    id: crypto.randomUUID(),
+    period: value.period,
+    startTime: value.start,
+  }));
+
+  if (toInsert.length) {
+    const inserted = await tx
+      .insert(periodSchema)
+      .values(toInsert)
+      .returning({ id: periodSchema.id, period: periodSchema.period });
+    for (const row of inserted) {
+      result.set(`${row.period}`, row.id);
+    }
+  }
+
+  logger.trace('Loaded periods', { total: result.size });
   return result;
 };
 
-const loadDays = async (xmlDoc: Document): Promise<Map<string, string>> => {
-  const result: Map<string, string> = new Map();
-  const days = xmlDoc.getElementsByTagName('day');
+type DayAttributes = { name: string; short: string };
 
+const collectUniqueDays = (xmlDoc: Document): Map<string, DayAttributes> => {
+  logger.trace('Collecting day definitions from XML');
+  const unique: Map<string, DayAttributes> = new Map();
+  const days = xmlDoc.getElementsByTagName('day');
   for (let i = 0; i < days.length; i++) {
     const day = days.item(i);
     if (!day) {
-      return result;
+      continue;
     }
-
     const predefinedId = day.getAttribute('day');
     const name = day.getAttribute('name');
     const short = day.getAttribute('short');
-
     if (!(name && predefinedId && short)) {
       throw new Error('Incomplete data for day, unable to get all attributes');
     }
+    unique.set(predefinedId, { name, short });
+  }
+  return unique;
+};
 
-    const [existingDay] = await db
-      .select()
-      .from(daySchema)
-      .where(eq(daySchema.name, name))
-      .limit(1);
+const matchExistingDays = async (
+  tx: TxClient,
+  unique: Map<string, DayAttributes>
+): Promise<Map<string, string>> => {
+  const result: Map<string, string> = new Map();
+  const names = Array.from(unique.values()).map((d) => d.name);
+  if (!names.length) {
+    return result;
+  }
 
-    if (existingDay) {
-      result.set(predefinedId, existingDay.id);
+  // Build reverse lookup from day name to one or more predefined IDs
+  const nameToPredefinedIds: Map<string, string[]> = new Map();
+  for (const [predefinedId, data] of unique) {
+    const list = nameToPredefinedIds.get(data.name);
+    if (list) {
+      list.push(predefinedId);
     } else {
-      const [insertedDay] = await db
-        .insert(daySchema)
-        .values({
-          // For now, we don't import specific days
-          days: [predefinedId],
-          id: crypto.randomUUID(),
-          name,
-          short,
-        })
-        .returning({ insertedId: daySchema.id });
-
-      if (insertedDay) {
-        result.set(predefinedId, insertedDay.insertedId);
-      }
+      nameToPredefinedIds.set(data.name, [predefinedId]);
+    }
+  }
+  const existing = await tx
+    .select({ id: daySchema.id, name: daySchema.name })
+    .from(daySchema)
+    .where(inArray(daySchema.name, names));
+  for (const row of existing) {
+    const predefinedIds = nameToPredefinedIds.get(row.name);
+    if (!predefinedIds) {
+      continue;
+    }
+    for (const predefinedId of predefinedIds) {
+      result.set(predefinedId, row.id);
     }
   }
 
   return result;
 };
 
-const loadSubjects = async (xmlDoc: Document): Promise<Map<string, string>> => {
+const insertMissingDays = async (
+  tx: TxClient,
+  missing: Map<string, DayAttributes>
+): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-  const subjects = xmlDoc.getElementsByTagName('subject');
+  if (!missing.size) {
+    return result;
+  }
 
+  const toInsert = Array.from(missing.entries()).map(
+    ([predefinedId, data]) => ({
+      days: [predefinedId],
+      id: crypto.randomUUID(),
+      name: data.name,
+      short: data.short,
+    })
+  );
+
+  const inserted = await tx
+    .insert(daySchema)
+    .values(toInsert)
+    .returning({ id: daySchema.id, name: daySchema.name });
+
+  for (const row of inserted) {
+    const match = Array.from(missing.entries()).find(
+      ([, data]) => data.name === row.name
+    );
+    if (match) {
+      const [predefinedId] = match;
+      result.set(predefinedId, row.id);
+    }
+  }
+
+  return result;
+};
+
+const loadDays = async (
+  tx: TxClient,
+  xmlDoc: Document
+): Promise<Map<string, string>> => {
+  const unique = collectUniqueDays(xmlDoc);
+  const result = await matchExistingDays(tx, unique);
+  const missing = new Map(
+    Array.from(unique.entries()).filter(
+      ([predefinedId]) => !result.has(predefinedId)
+    )
+  );
+
+  const inserted = await insertMissingDays(tx, missing);
+  for (const [predefinedId, id] of inserted) {
+    result.set(predefinedId, id);
+  }
+
+  return result;
+};
+
+type SubjectAttributes = { name: string; short: string };
+
+const collectUniqueSubjects = (
+  xmlDoc: Document
+): Map<string, SubjectAttributes> => {
+  logger.trace('Collecting subject definitions from XML');
+  const unique: Map<string, SubjectAttributes> = new Map();
+  const subjects = xmlDoc.getElementsByTagName('subject');
   for (let i = 0; i < subjects.length; i++) {
     const subject = subjects.item(i);
     if (!subject) {
-      throw new Error(`Failed to get subject at index: ${i}`);
+      continue;
     }
-
     const predefinedId = subject.getAttribute('id');
     const name = subject.getAttribute('name');
     const short = subject.getAttribute('short');
-
     if (!(name && predefinedId && short)) {
       throw new Error(
         `incomplete data for subject, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}`
       );
     }
+    unique.set(predefinedId, { name, short });
+  }
+  return unique;
+};
 
-    const [existingSubject] = await db
-      .select()
-      .from(subjectSchema)
-      .where(eq(subjectSchema.name, name))
-      .limit(1);
+const matchExistingSubjects = async (
+  tx: TxClient,
+  unique: Map<string, SubjectAttributes>
+): Promise<Map<string, string>> => {
+  const result: Map<string, string> = new Map();
+  const names = Array.from(unique.values()).map((s) => s.name);
+  if (!names.length) {
+    return result;
+  }
 
-    if (existingSubject) {
-      result.set(predefinedId, existingSubject.id);
-    } else {
-      const [insertedSubject] = await db
-        .insert(subjectSchema)
-        .values({
-          id: crypto.randomUUID(),
-          name,
-          short,
-        })
-        .returning({ insertedId: subjectSchema.id });
+  const existing = await tx
+    .select({ id: subjectSchema.id, name: subjectSchema.name })
+    .from(subjectSchema)
+    .where(inArray(subjectSchema.name, names));
 
-      if (insertedSubject) {
-        result.set(predefinedId, insertedSubject.insertedId);
-      }
+  for (const row of existing) {
+    const match = Array.from(unique.entries()).find(
+      ([, data]) => data.name === row.name
+    );
+    if (match) {
+      const [predefinedId] = match;
+      result.set(predefinedId, row.id);
     }
   }
 
   return result;
 };
 
-const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
+const insertMissingSubjects = async (
+  tx: TxClient,
+  missing: Map<string, SubjectAttributes>
+): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
+  if (!missing.size) {
+    return result;
+  }
+
+  const toInsert = Array.from(missing.entries()).map(
+    ([_predefinedId, data]) => ({
+      id: crypto.randomUUID(),
+      name: data.name,
+      short: data.short,
+    })
+  );
+
+  const inserted = await tx
+    .insert(subjectSchema)
+    .values(toInsert)
+    .returning({ id: subjectSchema.id, name: subjectSchema.name });
+
+  for (const row of inserted) {
+    const match = Array.from(missing.entries()).find(
+      ([, data]) => data.name === row.name
+    );
+    if (match) {
+      const [predefinedId] = match;
+      result.set(predefinedId, row.id);
+    }
+  }
+
+  return result;
+};
+
+const loadSubjects = async (
+  tx: TxClient,
+  xmlDoc: Document
+): Promise<Map<string, string>> => {
+  const unique = collectUniqueSubjects(xmlDoc);
+  const result = await matchExistingSubjects(tx, unique);
+  logger.trace('Loading subjects from XML');
+  const missing = new Map(
+    Array.from(unique.entries()).filter(
+      ([predefinedId]) => !result.has(predefinedId)
+    )
+  );
+
+  const inserted = await insertMissingSubjects(tx, missing);
+  for (const [predefinedId, id] of inserted) {
+    result.set(predefinedId, id);
+  }
+
+  return result;
+};
+
+const loadTeachers = async (
+  tx: TxClient,
+  xmlDoc: Document
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shh, it's fine (TODO fix this)
+): Promise<Map<string, string>> => {
+  logger.trace('Loading teachers from XML');
+  const result: Map<string, string> = new Map();
+  const unique: Map<
+    string,
+    { firstName: string; lastName: string; short: string }
+  > = new Map();
   const teachers = xmlDoc.getElementsByTagName('teacher');
 
   for (let i = 0; i < teachers.length; i++) {
     const teacher = teachers.item(i);
     if (!teacher) {
-      return result;
+      continue;
     }
 
     const predefinedId = teacher.getAttribute('id');
@@ -231,38 +439,94 @@ const loadTeachers = async (xmlDoc: Document): Promise<Map<string, string>> => {
     }
 
     const names = splitName(name);
-    const [existingTeacher] = await db
-      .select()
-      .from(teacherSchema)
-      .where(
-        and(
-          eq(teacherSchema.firstName, names.firstName),
-          eq(teacherSchema.lastName, names.restOfName)
-        )
-      )
-      .limit(1);
+    unique.set(predefinedId, {
+      firstName: names.firstName,
+      lastName: names.restOfName,
+      short,
+    });
+  }
 
-    if (existingTeacher) {
-      result.set(predefinedId, existingTeacher.id);
-    } else {
-      const [insertedTeacher] = await db
-        .insert(teacherSchema)
-        .values({
-          firstName: names.firstName,
-          id: crypto.randomUUID(),
-          lastName: names.restOfName,
-          short,
-          // gender,
+  const lastNames = Array.from(unique.values()).map((t) => t.lastName);
+  const existing = lastNames.length
+    ? await tx
+        .select({
+          firstName: teacherSchema.firstName,
+          id: teacherSchema.id,
+          lastName: teacherSchema.lastName,
         })
-        .returning({ insertedId: teacherSchema.id });
+        .from(teacherSchema)
+        .where(inArray(teacherSchema.lastName, lastNames))
+    : [];
 
-      if (insertedTeacher) {
-        result.set(predefinedId, insertedTeacher.insertedId);
+  const byNameKey = new Map<string, string>();
+  for (const row of existing) {
+    byNameKey.set(`${row.firstName}|${row.lastName}`, row.id);
+  }
+
+  // Collect missing teachers
+  const missing: Array<{
+    predefinedId: string;
+    firstName: string;
+    lastName: string;
+    short: string;
+  }> = [];
+
+  for (const [predefinedId, data] of unique) {
+    const key = `${data.firstName}|${data.lastName}`;
+    const existingId = byNameKey.get(key);
+    if (existingId) {
+      result.set(predefinedId, existingId);
+    } else {
+      missing.push({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        predefinedId,
+        short: data.short,
+      });
+    }
+  }
+
+  if (missing.length) {
+    const toInsert = missing.map((item) => ({
+      firstName: item.firstName,
+      id: crypto.randomUUID(),
+      lastName: item.lastName,
+      short: item.short,
+    }));
+
+    const inserted = await tx.insert(teacherSchema).values(toInsert).returning({
+      firstName: teacherSchema.firstName,
+      id: teacherSchema.id,
+      lastName: teacherSchema.lastName,
+    });
+
+    for (const row of inserted) {
+      const match = missing.find(
+        (item) =>
+          item.firstName === row.firstName && item.lastName === row.lastName
+      );
+      if (match) {
+        result.set(match.predefinedId, row.id);
       }
     }
   }
 
+  logger.trace('Loaded teachers', { total: result.size });
   return result;
+};
+
+const mapMaybeId = (
+  sourceId: string | null,
+  map: Map<string, string>,
+  acc: string[]
+) => {
+  if (!sourceId) {
+    return;
+  }
+  const mapped = map.get(sourceId);
+  if (mapped) {
+    acc.push(mapped);
+  }
 };
 
 const splitName = (
@@ -285,10 +549,11 @@ const splitName = (
   return { firstName, restOfName };
 };
 
-// --- Classrooms -----------------------------------------------------------------
-
-const getOrCreateBuilding = async (name: string): Promise<string> => {
-  const [existing] = await db
+const getOrCreateBuilding = async (
+  tx: TxClient,
+  name: string
+): Promise<string> => {
+  const [existing] = await tx
     .select()
     .from(buildingSchema)
     .where(eq(buildingSchema.name, name))
@@ -296,7 +561,7 @@ const getOrCreateBuilding = async (name: string): Promise<string> => {
   if (existing) {
     return existing.id;
   }
-  const [inserted] = await db
+  const [inserted] = await tx
     .insert(buildingSchema)
     .values({ id: crypto.randomUUID(), name })
     .returning({ insertedId: buildingSchema.id });
@@ -307,12 +572,13 @@ const getOrCreateBuilding = async (name: string): Promise<string> => {
 };
 
 const upsertClassroom = async (
+  tx: TxClient,
   buildingId: string,
   attrs: { id: string; name: string; short: string; capacityStr: string }
 ): Promise<[predefinedId: string, dbId: string] | null> => {
   const capacity =
     attrs.capacityStr === '*' ? null : Number.parseInt(attrs.capacityStr, 10);
-  const [existing] = await db
+  const [existing] = await tx
     .select()
     .from(classroomSchema)
     .where(eq(classroomSchema.name, attrs.name))
@@ -320,7 +586,7 @@ const upsertClassroom = async (
   if (existing) {
     return [attrs.id, existing.id];
   }
-  const [inserted] = await db
+  const [inserted] = await tx
     .insert(classroomSchema)
     .values({
       buildingId,
@@ -337,10 +603,12 @@ const upsertClassroom = async (
 };
 
 const loadClassrooms = async (
+  tx: TxClient,
   xmlDoc: Document
 ): Promise<Map<string, string>> => {
+  logger.trace('Loading classrooms from XML');
   const result: Map<string, string> = new Map();
-  const buildingId = await getOrCreateBuilding('A');
+  const buildingId = await getOrCreateBuilding(tx, 'A');
   const classrooms = xmlDoc.getElementsByTagName('classroom');
   for (let i = 0; i < classrooms.length; i++) {
     const el = classrooms.item(i);
@@ -356,7 +624,7 @@ const loadClassrooms = async (
         'Incomplete data for classroom, unable to get all attributes'
       );
     }
-    const upserted = await upsertClassroom(buildingId, {
+    const upserted = await upsertClassroom(tx, buildingId, {
       capacityStr,
       id: predefinedId,
       name,
@@ -367,17 +635,11 @@ const loadClassrooms = async (
       result.set(pre, dbId);
     }
   }
+  logger.trace('Loaded classrooms', { total: result.size });
   return result;
 };
 
-// --- Cohorts --------------------------------------------------------------------
-
-type CohortAttributes = {
-  predefinedId: string;
-  name: string;
-  short: string;
-  teacherId: string | null;
-};
+// --- Cohorts -----------------------------------------------------------
 
 const parseCohortElement = (
   el: Element,
@@ -397,10 +659,11 @@ const parseCohortElement = (
 };
 
 const upsertCohort = async (
+  tx: TxClient,
   attrs: CohortAttributes,
   timetableId: string
 ): Promise<[string, string] | null> => {
-  const [existing] = await db
+  const [existing] = await tx
     .select()
     .from(cohortSchema)
     .where(
@@ -414,9 +677,9 @@ const upsertCohort = async (
     return [attrs.predefinedId, existing.id];
   }
   if (!attrs.teacherId) {
-    return null; // original behaviour only inserts when teacher present
+    return null;
   }
-  const [inserted] = await db
+  const [inserted] = await tx
     .insert(cohortSchema)
     .values({
       id: crypto.randomUUID(),
@@ -433,10 +696,12 @@ const upsertCohort = async (
 };
 
 const loadCohort = async (
+  tx: TxClient,
   xmlDoc: Document,
   teacherMap: Map<string, string>,
   timetableId: string
 ): Promise<Map<string, string>> => {
+  logger.trace('Loading cohorts from XML');
   const result: Map<string, string> = new Map();
   const cohorts = xmlDoc.getElementsByTagName('class');
   for (let i = 0; i < cohorts.length; i++) {
@@ -448,19 +713,23 @@ const loadCohort = async (
     if (!attrs) {
       continue;
     }
-    const upserted = await upsertCohort(attrs, timetableId);
+    const upserted = await upsertCohort(tx, attrs, timetableId);
     if (upserted) {
       const [pre, dbId] = upserted;
       result.set(pre, dbId);
     }
   }
+  logger.trace('Loaded cohorts', { total: result.size });
   return result;
 };
 
-// --- Lessons --------------------------------------------------------------------
+// --- Lessons -----------------------------------------------------------
 
-const ensureWeekDefinition = async (weekName: string): Promise<string> => {
-  const [existing] = await db
+const ensureWeekDefinition = async (
+  tx: TxClient,
+  weekName: string
+): Promise<string> => {
+  const [existing] = await tx
     .select()
     .from(weekSchema)
     .where(eq(weekSchema.name, weekName))
@@ -468,7 +737,7 @@ const ensureWeekDefinition = async (weekName: string): Promise<string> => {
   if (existing) {
     return existing.id;
   }
-  const [inserted] = await db
+  const [inserted] = await tx
     .insert(weekSchema)
     .values({
       createdAt: new Date(),
@@ -485,107 +754,112 @@ const ensureWeekDefinition = async (weekName: string): Promise<string> => {
   return inserted.insertedId;
 };
 
-const arraysEqualUnordered = (a: string[], b: string[]): boolean => {
-  if (a.length !== b.length) {
-    return false;
-  }
-  const aSorted = [...a].sort();
-  const bSorted = [...b].sort();
-  for (let i = 0; i < aSorted.length; i++) {
-    if (aSorted[i] !== bSorted[i]) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const findExistingLesson = async (args: {
+const makeLessonKey = (args: {
   subjectId: string;
   dayDefinitionId: string;
   weekDefinitionId: string;
+  periodId: string;
   cohortIds: string[];
   teacherIds: string[];
-  periodId: string;
   classroomIds: string[];
-  timetableId: string;
-}): Promise<LessonRow | null> => {
-  const {
+}): string => {
+  const { subjectId, dayDefinitionId, weekDefinitionId, periodId } = args;
+  const cohorts = [...args.cohortIds].sort().join(',');
+  const teachers = [...args.teacherIds].sort().join(',');
+  const classrooms = [...args.classroomIds].sort().join(',');
+  return [
     subjectId,
     dayDefinitionId,
     weekDefinitionId,
-    cohortIds,
-    teacherIds,
     periodId,
-    classroomIds,
-    timetableId,
-  } = args;
-  const existingLessons = await db
-    .select()
-    .from(lessonSchema)
-    .where(
-      and(
-        eq(lessonSchema.subjectId, subjectId),
-        eq(lessonSchema.dayDefinitionId, dayDefinitionId),
-        eq(lessonSchema.weeksDefinitionId, weekDefinitionId),
-        eq(lessonSchema.periodId, periodId),
-        eq(lessonSchema.timetableId, timetableId),
-        inArray(
-          lessonSchema.id,
-          db
-            .select({ lessonId: lessonCohortMTM.lessonId })
-            .from(lessonCohortMTM)
-            .where(inArray(lessonCohortMTM.cohortId, cohortIds))
-            .groupBy(lessonCohortMTM.lessonId)
-            .having(eq(count(lessonCohortMTM.cohortId), cohortIds.length))
-        )
-      )
-    );
+    cohorts,
+    teachers,
+    classrooms,
+  ].join('|');
+};
 
+const loadExistingLessonCohorts = async (
+  tx: TxClient,
+  lessonIds: string[]
+): Promise<Map<string, string[]>> => {
+  const map: Map<string, string[]> = new Map();
+  if (!lessonIds.length) {
+    return map;
+  }
+  const rows = await tx
+    .select({
+      cohortId: lessonCohortMTM.cohortId,
+      lessonId: lessonCohortMTM.lessonId,
+    })
+    .from(lessonCohortMTM)
+    .where(inArray(lessonCohortMTM.lessonId, lessonIds));
+
+  for (const row of rows) {
+    const current = map.get(row.lessonId) ?? [];
+    current.push(row.cohortId);
+    map.set(row.lessonId, current);
+  }
+
+  for (const [lessonId, cohortIds] of map) {
+    map.set(lessonId, Array.from(new Set(cohortIds)).sort());
+  }
+
+  return map;
+};
+
+const hydrateExistingLessons = async (
+  tx: TxClient,
+  timetableId: string,
+  lessonKeySet: Set<string>
+): Promise<Map<string, string>> => {
+  const existingLessons = await tx
+    .select({
+      classroomIds: lessonSchema.classroomIds,
+      dayDefinitionId: lessonSchema.dayDefinitionId,
+      id: lessonSchema.id,
+      periodId: lessonSchema.periodId,
+      subjectId: lessonSchema.subjectId,
+      teacherIds: lessonSchema.teacherIds,
+      weekDefinitionId: lessonSchema.weeksDefinitionId,
+    })
+    .from(lessonSchema)
+    .where(eq(lessonSchema.timetableId, timetableId));
+
+  const lessonIds = existingLessons.map((l) => l.id);
+  const existingCohorts = await loadExistingLessonCohorts(tx, lessonIds);
+
+  const result = new Map<string, string>();
   for (const lesson of existingLessons) {
-    // const existingCohorts = (lesson.cohortIds || []) as string[];
-    const existingTeachers = (lesson.teacherIds || []) as string[];
-    const existingClassrooms = (lesson.classroomIds || []) as string[];
-    if (
-      // arraysEqualUnordered(existingCohorts, cohortIds) &&
-      arraysEqualUnordered(existingTeachers, teacherIds) &&
-      arraysEqualUnordered(existingClassrooms, classroomIds)
-    ) {
-      return lesson;
+    const key = makeLessonKey({
+      classroomIds: (lesson.classroomIds ?? []) as string[],
+      cohortIds: existingCohorts.get(lesson.id) ?? [],
+      dayDefinitionId: lesson.dayDefinitionId,
+      periodId: lesson.periodId,
+      subjectId: lesson.subjectId,
+      teacherIds: (lesson.teacherIds ?? []) as string[],
+      weekDefinitionId: lesson.weekDefinitionId,
+    });
+    if (lessonKeySet.size === 0 || lessonKeySet.has(key)) {
+      result.set(key, lesson.id);
     }
   }
-  return null;
+  return result;
 };
 
-const mapMaybeId = (
-  sourceId: string | null,
-  map: Map<string, string>,
-  acc: string[]
-) => {
-  if (!sourceId) {
-    return;
-  }
-  const mapped = map.get(sourceId);
-  if (mapped) {
-    acc.push(mapped);
-  }
+type LessonDraft = {
+  key: string;
+  row: LessonRowDraft;
+  cohortIds: string[];
+  scheduleKey: string;
 };
 
-type LessonMaps = {
-  subjectMap: Map<string, string>;
-  cohortMap: Map<string, string>;
-  teacherMap: Map<string, string>;
-  classroomMap: Map<string, string>;
-  dayMap: Map<string, string>;
-  periodMap: Map<string, string>;
-};
-
-const processSchedule = async (options: {
+const processSchedule = (options: {
   index: number;
   schedule: Element;
   maps: LessonMaps;
   weekDefinitionId: string;
   timetableId: string;
-}): Promise<[string, string] | null> => {
+}): LessonDraft | null => {
   const { index, schedule, maps, weekDefinitionId, timetableId } = options;
   const dayId = schedule.getAttribute('DayID');
   const subjectGradeId = schedule.getAttribute('SubjectGradeID');
@@ -599,8 +873,8 @@ const processSchedule = async (options: {
     return null;
   }
 
-  const actualPeriodId = maps.periodMap.get(period);
-  if (!actualPeriodId) {
+  const periodId = maps.periodMap.get(period);
+  if (!periodId) {
     logger.error(`Period: ${period} not found in periodMap.`);
     return null;
   }
@@ -621,66 +895,63 @@ const processSchedule = async (options: {
   const classroomIds: string[] = [];
   mapMaybeId(schoolRoomId, maps.classroomMap, classroomIds);
 
-  const existingLesson = await findExistingLesson({
+  const row: LessonRowDraft = {
+    classroomIds,
+    dayDefinitionId,
+    groupsIds: [],
+    id: crypto.randomUUID(),
+    periodId,
+    periodsPerWeek: 1,
+    subjectId,
+    teacherIds,
+    termDefinitionId: null,
+    timetableId,
+    weeksDefinitionId: weekDefinitionId,
+  };
+
+  const key = makeLessonKey({
     classroomIds,
     cohortIds,
     dayDefinitionId,
-    periodId: actualPeriodId,
+    periodId,
     subjectId,
     teacherIds,
-    timetableId,
     weekDefinitionId,
   });
-  if (existingLesson) {
-    return [`${index}`, existingLesson.id];
-  }
 
-  const [insertedLesson] = await db
-    .insert(lessonSchema)
-    .values({
-      classroomIds,
-      dayDefinitionId,
-      groupsIds: [],
-      id: crypto.randomUUID(),
-      periodId: actualPeriodId,
-      periodsPerWeek: 1,
-      subjectId,
-      // cohortIds,
-      teacherIds,
-      timetableId,
-      weeksDefinitionId: weekDefinitionId,
-    })
-    .returning({ insertedId: lessonSchema.id });
-  if (!insertedLesson) {
-    return null;
-  }
-
-  if (cohortIds.length !== 0) {
-    await db.insert(lessonCohortMTM).values(
-      cohortIds.map((cohortId) => ({
-        cohortId,
-        lessonId: insertedLesson.insertedId,
-      }))
-    );
-  }
-
-  return [`${index}`, insertedLesson.insertedId];
+  return { cohortIds, key, row, scheduleKey: `${index}` };
 };
 
+const insertChunked = async <T>(
+  items: T[],
+  chunkSize: number,
+  insertFn: (chunk: T[]) => Promise<void>
+): Promise<void> => {
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    await insertFn(chunk);
+  }
+};
+
+const LESSON_INSERT_CHUNK = 100;
+
 const loadLessons = async (
+  tx: TxClient,
   xmlDoc: Document,
   maps: LessonMaps,
   timetableId: string
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
-  const weekDefinitionId = await ensureWeekDefinition('A');
+  const weekDefinitionId = await ensureWeekDefinition(tx, 'A');
   const schedules = xmlDoc.getElementsByTagName('TimeTableSchedule');
+
+  const drafts: LessonDraft[] = [];
   for (let i = 0; i < schedules.length; i++) {
     const schedule = schedules.item(i);
     if (!schedule) {
       continue;
     }
-    const processed = await processSchedule({
+    const processed = processSchedule({
       index: i,
       maps,
       schedule,
@@ -688,9 +959,63 @@ const loadLessons = async (
       weekDefinitionId,
     });
     if (processed) {
-      const [key, lessonId] = processed;
-      result.set(key, lessonId);
+      drafts.push(processed);
     }
   }
+
+  if (!drafts.length) {
+    return result;
+  }
+
+  logger.trace('Prepared lesson drafts', { drafts: drafts.length });
+
+  const existingByKey = await hydrateExistingLessons(
+    tx,
+    timetableId,
+    new Set(drafts.map((d) => d.key))
+  );
+
+  logger.trace('Hydrated existing lessons', { existing: existingByKey.size });
+
+  for (const draft of drafts) {
+    const existingId = existingByKey.get(draft.key);
+    if (existingId) {
+      result.set(draft.scheduleKey, existingId);
+    }
+  }
+
+  const toInsert = drafts.filter((d) => !existingByKey.has(d.key));
+  if (!toInsert.length) {
+    return result;
+  }
+
+  logger.trace('Inserting new lessons', { toInsert: toInsert.length });
+
+  await insertChunked(toInsert, LESSON_INSERT_CHUNK, async (chunk) => {
+    const rows = chunk.map((item) => item.row);
+    const inserted = await tx
+      .insert(lessonSchema)
+      .values(rows)
+      .returning({ id: lessonSchema.id });
+
+    const idMap = new Map<string, string>();
+    for (const row of inserted) {
+      idMap.set(row.id, row.id);
+    }
+
+    const mtmRows: Array<{ cohortId: string; lessonId: string }> = [];
+    for (const item of chunk) {
+      const lessonId = idMap.get(item.row.id) ?? item.row.id;
+      result.set(item.scheduleKey, lessonId);
+      for (const cohortId of item.cohortIds) {
+        mtmRows.push({ cohortId, lessonId });
+      }
+    }
+
+    if (mtmRows.length) {
+      await tx.insert(lessonCohortMTM).values(mtmRows);
+    }
+  });
+
   return result;
 };
