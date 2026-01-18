@@ -58,7 +58,7 @@ function RouteComponent() {
   }
 
   return (
-    <div className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 flex max-w-lg grow flex-col justify-center space-y-4 self-center px-4">
+    <div className="absolute top-1/2 left-1/2 flex max-w-lg grow -translate-x-1/2 -translate-y-1/2 flex-col justify-center space-y-4 self-center px-4">
       <div className="flex gap-4">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
           <CircleCheck className="h-10 w-10 text-primary" />

@@ -96,12 +96,12 @@ function Calendar({
           defaultClassNames.outside
         ),
         range_end: cn(
-          '-z-0 relative isolate rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted',
+          'relative isolate -z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted',
           defaultClassNames.range_end
         ),
         range_middle: cn('rounded-none', defaultClassNames.range_middle),
         range_start: cn(
-          'elative -z-0 isolate rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted',
+          'elative isolate -z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted',
           defaultClassNames.range_start
         ),
         root: cn('w-fit', defaultClassNames.root),

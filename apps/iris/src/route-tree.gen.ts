@@ -15,6 +15,7 @@ import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
+import { Route as PublicSubsRouteImport } from './routes/_public/subs'
 import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
@@ -51,6 +52,11 @@ const AuthErrorRoute = AuthErrorRouteImport.update({
   id: '/auth/error',
   path: '/auth/error',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PublicSubsRoute = PublicSubsRouteImport.update({
+  id: '/subs',
+  path: '/subs',
+  getParentRoute: () => PublicRouteRoute,
 } as any)
 const PrivateProbaRoute = PrivateProbaRouteImport.update({
   id: '/proba',
@@ -99,26 +105,28 @@ const PrivateAdminDoorlockCardsRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
+  '/subs': typeof PublicSubsRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/': typeof PublicIndexRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
-  '/admin/doorlock': typeof PrivateAdminDoorlockIndexRoute
+  '/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/proba': typeof PrivateProbaRoute
+  '/subs': typeof PublicSubsRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
-  '/': typeof PublicIndexRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteRouteWithChildren
   '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
   '/_private/proba': typeof PrivateProbaRoute
+  '/_public/subs': typeof PublicSubsRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
@@ -146,26 +155,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/admin'
     | '/proba'
+    | '/subs'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
-    | '/'
     | '/admin/users'
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
     | '/admin/timetable/import'
-    | '/admin/doorlock'
+    | '/admin/doorlock/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/admin'
     | '/proba'
+    | '/subs'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
-    | '/'
     | '/admin/users'
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/_public'
     | '/_private/admin'
     | '/_private/proba'
+    | '/_public/subs'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
@@ -203,14 +215,14 @@ declare module '@tanstack/react-router' {
     '/_public': {
       id: '/_public'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof PublicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_private': {
       id: '/_private'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof PrivateRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -242,6 +254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthErrorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_public/subs': {
+      id: '/_public/subs'
+      path: '/subs'
+      fullPath: '/subs'
+      preLoaderRoute: typeof PublicSubsRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
     '/_private/proba': {
       id: '/_private/proba'
       path: '/proba'
@@ -266,7 +285,7 @@ declare module '@tanstack/react-router' {
     '/_private/admin/doorlock/': {
       id: '/_private/admin/doorlock/'
       path: '/doorlock'
-      fullPath: '/admin/doorlock'
+      fullPath: '/admin/doorlock/'
       preLoaderRoute: typeof PrivateAdminDoorlockIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
@@ -337,10 +356,12 @@ const PrivateRouteRouteWithChildren = PrivateRouteRoute._addFileChildren(
 )
 
 interface PublicRouteRouteChildren {
+  PublicSubsRoute: typeof PublicSubsRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
+  PublicSubsRoute: PublicSubsRoute,
   PublicIndexRoute: PublicIndexRoute,
 }
 

@@ -13,6 +13,7 @@ import {
   lessonCohortMTM,
   period,
   subject,
+  substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
 import type { SuccessResponse } from '#utils/globals';
@@ -313,6 +314,86 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
 
     return c.json<SuccessResponse<typeof enriched>>({
       data: enriched,
+      success: true,
+    });
+  }
+);
+
+export const getLessonForId = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Get a lesson by its ID from the database.',
+    parameters: [
+      {
+        in: 'path',
+        name: 'lessonId',
+        required: true,
+        schema: {
+          description: 'The unique identifier for the lesson.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(
+              ensureJsonSafeDates(
+                z.object({
+                  data: createSelectSchema(lesson).nullable(),
+                  success: z.boolean(),
+                })
+              )
+            ),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Lesson'],
+  }),
+  async (c) => {
+    const lId = c.req.param('lessonId');
+    if (!lId) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Missing lessonId',
+      });
+    }
+
+    const lessonRow = await db
+      .select()
+      .from(lesson)
+      .where(eq(lesson.id, lId))
+      .limit(1);
+
+    if (!lessonRow) {
+      return c.json({
+        data: null,
+        success: true,
+      });
+    }
+
+    const substitutionCohortRow = await db
+      .select({ name: cohort.name })
+      .from(substitutionLessonMTM)
+      .innerJoin(
+        lessonCohortMTM,
+        eq(substitutionLessonMTM.lessonId, lessonCohortMTM.lessonId)
+      )
+      .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+      .where(eq(substitutionLessonMTM.lessonId, lId))
+      .limit(1);
+
+    const [enriched] = await enrichLessons(lessonRow);
+
+    return c.json({
+      data: {
+        ...enriched,
+        substitutionCohortName:
+          substitutionCohortRow.length > 0
+            ? (substitutionCohortRow[0]?.name ?? null)
+            : null,
+      },
       success: true,
     });
   }

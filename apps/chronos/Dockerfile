@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.4-alpine AS base
+FROM oven/bun:1.3.5-alpine AS base
 RUN apk update
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -7,7 +7,7 @@ FROM base AS prepare
 RUN bun add -g turbo@^2
 COPY . .
 
-RUN turbo prune @filcdev/iris --docker
+RUN turbo prune @filcdev/chronos --docker
 
 FROM base AS install
 COPY --from=prepare /app/out/json/ .
@@ -22,7 +22,6 @@ COPY --from=prepare /app/out/full/ .
 RUN bun run build --filter=@filcdev/chronos
 
 FROM base AS release
-COPY --from=install /app/node_modules node_modules
 COPY --from=builder /app/apps/chronos/src/database/migrations ./src/database/migrations
 COPY --from=builder /app/apps/chronos/dist ./dist
 

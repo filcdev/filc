@@ -140,7 +140,7 @@ export async function fetchCardById(
   return single;
 }
 
-type CardDbExecutor = Pick<typeof db, 'delete' | 'insert'>;
+type CardDbExecutor = Pick<typeof db, 'delete' | 'insert' | 'update'>;
 
 export async function replaceCardDevices(
   tx: CardDbExecutor,
@@ -163,10 +163,11 @@ export async function replaceCardDevices(
 }
 
 export async function migrateAuditLogsForNewCard(
+  tx: CardDbExecutor,
   newCardId: string,
   cardData: string
 ) {
-  await db
+  await tx
     .update(auditLog)
     .set({ cardId: newCardId })
     .where(eq(auditLog.cardData, cardData));

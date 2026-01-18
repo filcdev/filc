@@ -20,7 +20,7 @@ export function CookiePopup() {
 
   return (
     <Alert
-      className="-translate-x-1/2 fixed bottom-4 left-1/2 z-50 w-[90%] max-w-md md:w-full"
+      className="fixed bottom-4 left-1/2 z-50 w-[90%] max-w-md -translate-x-1/2 md:w-full"
       variant="default"
     >
       <Cookie />
