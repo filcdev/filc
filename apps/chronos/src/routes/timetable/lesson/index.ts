@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { arrayContains, eq, inArray } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -240,7 +240,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     const lessons = await db
       .select()
       .from(lesson)
-      .where(sql`${lesson.teacherIds} @> ${JSON.stringify([tId])}`);
+      .where(arrayContains(lesson.teacherIds, [tId]));
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
@@ -304,7 +304,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     const lessons = await db
       .select()
       .from(lesson)
-      .where(sql`${lesson.classroomIds} @> ${JSON.stringify([rId])}`);
+      .where(arrayContains(lesson.classroomIds, [rId]));
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });

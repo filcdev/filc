@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import type { ServerWebSocket } from 'bun';
 import { and, eq } from 'drizzle-orm';
 import { upgradeWebSocket } from 'hono/bun';
+import { z } from 'zod';
 import { db } from '#database';
 import {
   auditLog,
@@ -15,65 +16,89 @@ import { doorlockFactory } from '#routes/doorlock/_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 
-type PingMessage = {
-  type: 'ping';
-  data: {
-    fwVersion: string;
-    uptime: bigint;
-    ramFree: bigint;
-    storage: {
-      total: bigint;
-      used: bigint;
-    };
-    debug: {
-      lastResetReason: string;
-      deviceState: number;
-      errors: {
-        nfc: boolean;
-        sd: boolean;
-        wifi: boolean;
-        db: boolean;
-        ota: boolean;
-      };
-    };
-  };
-};
+const pingMessageSchema = z.object({
+  data: z.object({
+    debug: z.object({
+      deviceState: z.number(),
+      errors: z.object({
+        db: z.boolean(),
+        nfc: z.boolean(),
+        ota: z.boolean(),
+        sd: z.boolean(),
+        wifi: z.boolean(),
+      }),
+      lastResetReason: z.string(),
+    }),
+    fwVersion: z.string(),
+    ramFree: z.bigint(),
+    storage: z.object({
+      total: z.bigint(),
+      used: z.bigint(),
+    }),
+    uptime: z.bigint(),
+  }),
+  type: z.literal('ping'),
+});
 
-type CardReadMessage = {
-  type: 'card-read';
-  uid: string;
-  authorized: boolean;
-  name: string;
-};
+const cardReadMessageSchema = z.object({
+  authorized: z.boolean(),
+  name: z.string(),
+  type: z.literal('card-read'),
+  uid: z.string(),
+});
 
-type SyncDatabaseMessage = {
-  type: 'sync-database';
-  db: {
-    uid: string;
-    name: string;
-  }[];
-};
+const incomingMessageSchema = z.discriminatedUnion('type', [
+  pingMessageSchema,
+  cardReadMessageSchema,
+]);
 
-type OpenDoorMessage = {
-  type: 'open-door';
-  name?: string; // optional, defaults to "WebUser" on device
-};
+// Zod schemas for outgoing messages
+const syncDatabaseMessageSchema = z.object({
+  db: z.array(
+    z.object({
+      name: z.string(),
+      uid: z.string(),
+    })
+  ),
+  type: z.literal('sync-database'),
+});
 
-type UpdateMessage = {
-  type: 'update';
-  url?: string; // optional, uses device config default if omitted
-};
+const openDoorMessageSchema = z.object({
+  name: z.string().optional(),
+  type: z.literal('open-door'),
+});
 
-type IncomingMessage = PingMessage | CardReadMessage;
+const updateMessageSchema = z.object({
+  type: z.literal('update'),
+  url: z.string().optional(),
+});
 
-type OutgoingMessage = SyncDatabaseMessage | OpenDoorMessage | UpdateMessage;
+const outgoingMessageSchema = z.discriminatedUnion('type', [
+  syncDatabaseMessageSchema,
+  openDoorMessageSchema,
+  updateMessageSchema,
+]);
+
+type OutgoingMessage = z.infer<typeof outgoingMessageSchema>;
 
 const handleIncomingMessage = async (
   message: string,
   device: { id: string }
 ) => {
   try {
-    const deserialized = JSON.parse(message) as IncomingMessage;
+    const parsed = JSON.parse(message);
+    const result = incomingMessageSchema.safeParse(parsed);
+
+    if (!result.success) {
+      logger.warn('Invalid WebSocket message format', {
+        device,
+        error: z.treeifyError(result.error),
+        message,
+      });
+      return;
+    }
+
+    const deserialized = result.data;
     logger.trace('Deserialized WebSocket message', {
       deserialized,
       device,
@@ -132,22 +157,24 @@ const handleIncomingMessage = async (
           .where(eq(lockDevice.id, device.id));
         break;
       default:
-        logger.warn('Received unknown command via WebSocket', {
-          command: deserialized,
+        logger.warn('Unhandled message type received', {
+          deserialized,
+          device,
         });
     }
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
-
-    logger.warn('Audit log store failed', { device, error: err, message });
+    logger.warn('Message handling failed', { device, error: err, message });
   }
 };
 
 export const sendMessage = (content: OutgoingMessage, deviceId: string) => {
+  const validated = outgoingMessageSchema.parse(content);
+
   const payload: OutgoingMessage =
-    content.type === 'open-door' && content.name
-      ? { ...content, name: content.name.trim() }
-      : content;
+    validated.type === 'open-door' && validated.name
+      ? { ...validated, name: validated.name.trim() }
+      : validated;
 
   server.publish(`device-${deviceId}`, JSON.stringify(payload));
 };

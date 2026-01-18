@@ -6,7 +6,6 @@
   "javascript.preferences.importModuleSpecifier": "non-relative",
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "editor.formatOnPaste": true,
-  "emmet.showExpandedAbbreviation": "never",
   "editor.codeActionsOnSave": {
     "source.organizeImports.biome": "always",
     "source.fixAll.biome": "always"
