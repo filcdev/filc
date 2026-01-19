@@ -1,10 +1,12 @@
 import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
+import type { Session } from 'better-auth';
 import { Hono } from 'hono';
-import { websocket } from 'hono/bun';
+import { getConnInfo, websocket } from 'hono/bun';
 import { showRoutes } from 'hono/dev';
 import { HTTPException } from 'hono/http-exception';
 import { openAPIRouteHandler } from 'hono-openapi';
+import { rateLimiter } from 'hono-rate-limiter';
 import { StatusCodes } from 'http-status-codes';
 import { prepareDb } from '#database';
 import { cohortRouter } from '#routes/cohort/_router';
@@ -39,6 +41,37 @@ api.use('*', corsMiddleware);
 api.use('*', authenticationMiddleware);
 api.use('*', securityMiddleware);
 api.use('*', timingMiddleware);
+
+api.use(
+  '*',
+  rateLimiter({
+    handler: async (c, _, options) => {
+      // Log the rate limit event
+      logger.debug(`Rate limit exceeded for ${await options.keyGenerator(c)}`);
+
+      // Return custom response
+      return c.json<ErrorResponse>(
+        {
+          data: {
+            retryAfter: c.res.headers.get('Retry-After'),
+          },
+          error: 'Too many requests',
+          success: false,
+        },
+        429
+      );
+    },
+    keyGenerator: (c) => {
+      const session = c.get('session' as never) as Session | null;
+      const userAgent = c.req.header('User-Agent') ?? 'unknown';
+      const connInfo = getConnInfo(c);
+      const uuid = `|${userAgent}|${session ? session.id : 'none'}|${connInfo.remote.address ?? 'unknown'}`;
+      return uuid;
+    },
+    limit: 60,
+    windowMs: 60 * 1000,
+  })
+);
 
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
@@ -122,8 +155,9 @@ if (env.logLevel === 'trace') {
   showRoutes(app, { verbose: true });
 }
 
-const handleShutdown = () => {
+const handleShutdown = async () => {
   logger.info('Shutting down chronos...');
+  await server.stop();
   logger.info('Shutdown complete, exiting.');
   process.exit(0);
 };
