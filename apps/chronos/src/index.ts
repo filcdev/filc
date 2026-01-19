@@ -65,7 +65,8 @@ api.use(
       const session = c.get('session' as never) as Session | null;
       const userAgent = c.req.header('User-Agent') ?? 'unknown';
       const connInfo = getConnInfo(c);
-      const uuid = `|${userAgent}|${session ? session.id : 'none'}|${connInfo.remote.address ?? 'unknown'}`;
+      const realIp = c.req.header(env.realIpHeader ?? 'X-Forwarded-For');
+      const uuid = `|${userAgent}|${session ? session.id : 'none'}|${realIp ? realIp : (connInfo.remote.address ?? 'unknown')}`;
       return uuid;
     },
     limit: 60,
