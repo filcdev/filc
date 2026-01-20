@@ -60,42 +60,40 @@ export function AdminSidebar() {
           {
             icon: DoorOpen,
             permission: 'doorlock:stats:read',
-            title: t('doorlock.dashboard', {
-              defaultValue: 'Doorlock',
-            }),
+            title: t('doorlock.dashboard'),
             url: '/admin/doorlock',
           },
           {
             icon: Microchip,
             permission: 'doorlock:devices:read',
-            title: t('doorlock.devices', { defaultValue: 'Devices' }),
+            title: t('doorlock.devices'),
             url: '/admin/doorlock/devices',
           },
           {
             icon: IdCard,
             permission: 'doorlock:cards:read',
-            title: t('doorlock.cards', { defaultValue: 'Cards' }),
+            title: t('doorlock.cards'),
             url: '/admin/doorlock/cards',
           },
           {
             icon: List,
             permission: 'doorlock:logs:read',
-            title: t('doorlock.logs', { defaultValue: 'Logs' }),
+            title: t('doorlock.logs'),
             url: '/admin/doorlock/logs',
           },
         ],
-        label: t('admin.doorlock', { defaultValue: 'Doorlock' }),
+        label: t('admin.doorlock'),
       },
       {
         items: [
           {
             icon: Users,
             permission: 'users:read',
-            title: t('admin.users', { defaultValue: 'Users' }),
+            title: t('admin.users'),
             url: '/admin/users',
           },
         ],
-        label: t('admin.management', { defaultValue: 'Management' }),
+        label: t('admin.management'),
       },
     ],
     [t]
