@@ -16,7 +16,8 @@
     "errorLoading": "Hiba a csoportok betöltése közben: {{message}}",
     "fetchFailed": "A csoportok lekérése nem sikerült",
     "noneFound": "Nem található csoport",
-    "selectPlaceholder": "Csoport kiválasztása"
+    "selectPlaceholder": "Csoport kiválasztása",
+    "select": "Válaszd ki a csoportodat"
   },
   "continue": "Folytatás",
   "error": {
@@ -50,7 +51,12 @@
     "nicknameValidation": "A becenév csak megengedett karaktereket tartalmazhat.",
     "nicknameRequired": "A folytatáshoz add meg a beceneved.",
     "cohortRequired": "A folytatáshoz válassz csoportot.",
-    "nicknameSaveFailed": "A becenevet nem sikerült elmenteni"
+    "nicknameSaveFailed": "A becenevet nem sikerült elmenteni",
+    "cohortDescription": "Válaszd ki az osztályodat vagy csoportodat.",
+    "cohortSaved": "Csoport sikeresen mentve",
+    "cohortSaveFailed": "A csoportot nem sikerült elmenteni",
+    "complete": "Minden kész!",
+    "completeDescription": "Minden be van állítva, és készen állsz. Kattints a Befejezés gombra az alkalmazás használatának megkezdéséhez."
   },
   "doorlock": {},
   "featureFlags": {},
@@ -104,7 +110,10 @@
   "common": {
     "cancel": "Mégsem",
     "loading": "Betöltés...",
-    "accept": "Rendben"
+    "accept": "Rendben",
+    "back": "Vissza",
+    "next": "Tovább",
+    "skip": "Kihagyás"
   },
   "auth": {
     "error": {

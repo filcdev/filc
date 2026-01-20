@@ -8,7 +8,10 @@
   "common": {
     "loading": "Loading...",
     "cancel": "Cancel",
-    "accept": "Accept"
+    "accept": "Accept",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip"
   },
   "login": {
     "byContinuing": "By continuing, you agree to our"
@@ -32,13 +35,19 @@
     "nicknameValidation": "Please enter a nickname using the allowed characters.",
     "nicknameRequired": "Add your nickname to continue.",
     "cohortRequired": "Select a cohort to continue.",
-    "nicknameSaveFailed": "Failed to save nickname"
+    "nicknameSaveFailed": "Failed to save nickname",
+    "cohortDescription": "Select the class or group you belong to.",
+    "cohortSaved": "Cohort saved successfully",
+    "cohortSaveFailed": "Failed to save cohort",
+    "complete": "All set!",
+    "completeDescription": "You're all set up and ready to go. Click Complete to start using the app."
   },
   "cohort": {
     "fetchFailed": "Fetching cohorts failed",
     "errorLoading": "Error loading cohorts: {{message}}",
     "selectPlaceholder": "Select cohort",
-    "noneFound": "No cohorts found"
+    "noneFound": "No cohorts found",
+    "select": "Select your cohort"
   },
   "search": "Search",
   "account": {
