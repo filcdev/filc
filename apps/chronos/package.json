@@ -27,6 +27,7 @@
     "fast-xml-parser": "^5.3.3",
     "hono": "catalog:",
     "hono-openapi": "^1.1.2",
+    "hono-rate-limiter": "^0.5.3",
     "http-status-codes": "^2.3.0",
     "iconv-lite": "^0.7.2",
     "string-ts": "^2.3.1",
