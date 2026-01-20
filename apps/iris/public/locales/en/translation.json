@@ -8,7 +8,11 @@
   "common": {
     "loading": "Loading...",
     "cancel": "Cancel",
-    "accept": "Accept"
+    "accept": "Accept",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "complete": "Complete"
   },
   "login": {
     "byContinuing": "By continuing, you agree to our"
@@ -26,19 +30,22 @@
     "nicknameDescription": "What should we call you?",
     "nicknamePlaceholder": "e.g. Alex",
     "nicknameHelper": "Use {{min}}-{{max}} characters: letters, numbers, spaces, dashes or underscores.",
-    "nicknameSave": "Save nickname",
     "nicknameSaved": "Nickname saved",
     "nicknameError": "We couldn't save your nickname. Please try again.",
     "nicknameValidation": "Please enter a nickname using the allowed characters.",
-    "nicknameRequired": "Add your nickname to continue.",
-    "cohortRequired": "Select a cohort to continue.",
-    "nicknameSaveFailed": "Failed to save nickname"
+    "nicknameSaveFailed": "Failed to save nickname",
+    "cohortDescription": "Select the class or group you belong to.",
+    "cohortSaved": "Cohort saved successfully",
+    "cohortSaveFailed": "Failed to save cohort",
+    "complete": "All set!",
+    "completeDescription": "You're all set up and ready to go. Click Complete to start using the app."
   },
   "cohort": {
     "fetchFailed": "Fetching cohorts failed",
     "errorLoading": "Error loading cohorts: {{message}}",
     "selectPlaceholder": "Select cohort",
-    "noneFound": "No cohorts found"
+    "noneFound": "No cohorts found",
+    "select": "Select your cohort"
   },
   "search": "Search",
   "account": {
@@ -48,7 +55,6 @@
     "nickname": "Preferred name"
   },
   "unknown": "Unknown",
-  "continue": "Continue",
   "microsoft": {
     "signInTitle": "Welcome back",
     "signInSubtitle": "Use your Microsoft account to continue",
@@ -57,10 +63,18 @@
     "signInButton": "Continue with Microsoft",
     "signInError": "Unable to start Microsoft sign-in. Please try again."
   },
-  "doorlock": {},
+  "doorlock": {
+    "dashboard": "Dashboard",
+    "devices": "Devices",
+    "cards": "Cards",
+    "logs": "Logs"
+  },
   "featureFlags": {},
   "admin": {
-    "timetable": "Timetable"
+    "timetable": "Timetable",
+    "doorlock": "Doorlock",
+    "management": "Management",
+    "users": "Users"
   },
   "timetable": {
     "import": "Import Timetable",
@@ -92,19 +106,9 @@
     "filterByClass": "Class",
     "filterByTeacher": "Teacher",
     "filterByClassroom": "Classroom",
-    "selectClass": "Select class...",
-    "selectTeacher": "Select teacher...",
-    "selectClassroom": "Select classroom...",
-    "searchClass": "Search class...",
-    "searchTeacher": "Search teacher...",
-    "searchClassroom": "Search classroom...",
-    "noClassFound": "No class found.",
-    "noTeacherFound": "No teacher found.",
-    "noClassroomFound": "No classroom found.",
     "printPdf": "Print / PDF",
     "time": "Time",
-    "teacherFallback": "Teacher",
-    "unknownDay": "Unknown"
+    "teacherFallback": "Teacher"
   },
   "auth": {
     "error": {

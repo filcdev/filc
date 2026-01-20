@@ -16,8 +16,10 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
 
   // i18n
+
   "i18n-ally.localesPaths": ["apps/iris/public/locales"],
   "i18n-ally.keystyle": "nested",
+  "i18n-ally.enabledFrameworks": ["react"],
 
   // Copilot commit messages
   "github.copilot.chat.commitMessageGeneration.instructions": [

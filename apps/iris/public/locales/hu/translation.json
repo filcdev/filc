@@ -16,9 +16,9 @@
     "errorLoading": "Hiba a csoportok betöltése közben: {{message}}",
     "fetchFailed": "A csoportok lekérése nem sikerült",
     "noneFound": "Nem található csoport",
-    "selectPlaceholder": "Csoport kiválasztása"
+    "selectPlaceholder": "Csoport kiválasztása",
+    "select": "Válaszd ki a csoportodat"
   },
-  "continue": "Folytatás",
   "error": {
     "generic": "Valami hiba történt: {{message}}"
   },
@@ -44,18 +44,28 @@
     "nicknameDescription": "Minek szólíthatunk?",
     "nicknamePlaceholder": "pl.: Ádám",
     "nicknameHelper": "Használj {{min}}-{{max}} karaktert: betűk, számok, szóköz, kötőjel vagy aláhúzás.",
-    "nicknameSave": "Becenév mentése",
     "nicknameSaved": "Becenév mentve",
     "nicknameError": "Nem sikerült elmenteni a becenevet. Próbáld újra.",
     "nicknameValidation": "A becenév csak megengedett karaktereket tartalmazhat.",
-    "nicknameRequired": "A folytatáshoz add meg a beceneved.",
-    "cohortRequired": "A folytatáshoz válassz csoportot.",
-    "nicknameSaveFailed": "A becenevet nem sikerült elmenteni"
+    "nicknameSaveFailed": "A becenevet nem sikerült elmenteni",
+    "cohortDescription": "Válaszd ki az osztályodat vagy csoportodat.",
+    "cohortSaved": "Csoport sikeresen mentve",
+    "cohortSaveFailed": "A csoportot nem sikerült elmenteni",
+    "complete": "Minden kész!",
+    "completeDescription": "Minden be van állítva, és készen állsz. Kattints a Befejezés gombra az alkalmazás használatának megkezdéséhez."
   },
-  "doorlock": {},
+  "doorlock": {
+    "dashboard": "Vezérlőpult",
+    "devices": "Eszközök",
+    "cards": "Kártyák",
+    "logs": "Naplók"
+  },
   "featureFlags": {},
   "admin": {
-    "timetable": "Órarend"
+    "timetable": "Órarend",
+    "doorlock": "Ajtózár",
+    "management": "Kezelés",
+    "users": "Felhasználók"
   },
   "timetable": {
     "import": "Órarend importálása",
@@ -87,24 +97,18 @@
     "filterByClass": "Osztály",
     "filterByTeacher": "Tanár",
     "filterByClassroom": "Terem",
-    "selectClass": "Osztály kiválasztása...",
-    "selectTeacher": "Tanár kiválasztása...",
-    "selectClassroom": "Terem kiválasztása...",
-    "searchClass": "Osztály keresése...",
-    "searchTeacher": "Tanár keresése...",
-    "searchClassroom": "Terem keresése...",
-    "noClassFound": "Nem található osztály.",
-    "noTeacherFound": "Nem található tanár.",
-    "noClassroomFound": "Nem található terem.",
     "printPdf": "Nyomtatás / PDF",
     "time": "Idő",
-    "teacherFallback": "Tanár",
-    "unknownDay": "Ismeretlen"
+    "teacherFallback": "Tanár"
   },
   "common": {
     "cancel": "Mégsem",
     "loading": "Betöltés...",
-    "accept": "Rendben"
+    "accept": "Rendben",
+    "back": "Vissza",
+    "next": "Tovább",
+    "skip": "Kihagyás",
+    "complete": "Befejezés"
   },
   "auth": {
     "error": {

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import Stepper, { Step } from '@/components/ui/stepper';
 import { cn } from '@/utils';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
@@ -57,25 +58,19 @@ function RouteComponent() {
     );
   }
 
-  return (
-    <div className="absolute top-1/2 left-1/2 flex max-w-lg grow -translate-x-1/2 -translate-y-1/2 flex-col justify-center space-y-4 self-center px-4">
-      <div className="flex gap-4">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <CircleCheck className="h-10 w-10 text-primary" />
-        </div>
-        <div className="items-start space-y-2">
-          <h1 className="font-bold text-4xl text-foreground">
-            {t('welcome.title')}
-          </h1>
-          <p className="text-balance text-muted-foreground text-xl">
-            {t('welcome.subtitle')}
-          </p>
-        </div>
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner className="h-8 w-8" />
       </div>
-      {isPending && <AccountDetailsSkeleton />}
-      {!isPending && data?.user && <AccountDetails user={data.user} />}
-    </div>
-  );
+    );
+  }
+
+  if (!data?.user) {
+    return null;
+  }
+
+  return <WelcomeStepper user={data.user} />;
 }
 
 const InfoLine = (props: {
@@ -92,12 +87,202 @@ const InfoLine = (props: {
   </div>
 );
 
-const CohortSelector = (props: { user: UserType }) => {
+const NICKNAME_MIN_LENGTH = 3;
+const NICKNAME_MAX_LENGTH = 32;
+const nicknamePattern = /^[\p{L}\p{N} _'-]+$/u;
+const normalizeNickname = (value?: string | null) =>
+  (value ?? '').trim().replace(/\s+/g, ' ');
+
+const WelcomeStepper = ({ user }: { user: UserType }) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState(user.nickname ?? '');
+  const [nicknameError, setNicknameError] = useState<string | null>(null);
+  const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
+    user.cohortId ?? null
+  );
+
+  const normalizedNickname = normalizeNickname(nicknameInput);
+  const nicknameValid =
+    normalizedNickname.length >= NICKNAME_MIN_LENGTH &&
+    normalizedNickname.length <= NICKNAME_MAX_LENGTH &&
+    nicknamePattern.test(normalizedNickname);
+
+  const handleNicknameSave = async () => {
+    setNicknameError(null);
+    if (!nicknameValid) {
+      setNicknameError(t('welcome.nicknameValidation'));
+      return false;
+    }
+    try {
+      setIsSubmitting(true);
+      await authClient.updateUser({ nickname: normalizedNickname });
+      toast.success(t('welcome.nicknameSaved'));
+      return true;
+    } catch (error) {
+      const errorMsg =
+        error instanceof Error ? error.message : t('welcome.nicknameError');
+      setNicknameError(errorMsg);
+      toast.error(t('welcome.nicknameSaveFailed'));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCohortSave = async (cohortId: string) => {
+    try {
+      setIsSubmitting(true);
+      setSelectedCohortId(cohortId);
+      await authClient.updateUser({ cohortId });
+      toast.success(t('welcome.cohortSaved'));
+      return true;
+    } catch {
+      toast.error(t('welcome.cohortSaveFailed'));
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStepChange = async (newStep: number) => {
+    // Save nickname when leaving step 2 if there's a valid nickname
+    if (currentStep === 2 && newStep > 2 && normalizedNickname) {
+      const saved = await handleNicknameSave();
+      if (!saved) {
+        return; // Don't proceed if save failed
+      }
+    }
+    setCurrentStep(newStep);
+  };
+
+  const handleFinalStepCompleted = async () => {
+    setIsSubmitting(true);
+    try {
+      await navigate({ replace: true, to: '/' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getNextButtonText = () => {
+    if (currentStep === 2) {
+      return normalizedNickname ? t('common.next') : t('common.skip');
+    }
+    return t('common.next');
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Stepper
+        backButtonText={t('common.back')}
+        nextButtonLoading={isSubmitting}
+        nextButtonText={getNextButtonText()}
+        onFinalStepCompleted={handleFinalStepCompleted}
+        onStepChange={handleStepChange}
+      >
+        <Step>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <CircleCheck className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="font-bold text-2xl">{t('welcome.title')}</h2>
+                <p className="text-muted-foreground">{t('welcome.subtitle')}</p>
+              </div>
+            </div>
+            <Card className="mb-1 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {t('account.details')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <InfoLine
+                  content={user.email}
+                  icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+                  title={t('account.email')}
+                />
+                <InfoLine
+                  content={user.name ?? t('unknown')}
+                  icon={<User className="h-4 w-4 text-muted-foreground" />}
+                  title={t('account.name')}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </Step>
+
+        <Step>
+          <div className="space-y-4">
+            <h2 className="font-bold text-2xl">{t('account.nickname')}</h2>
+            <p className="text-muted-foreground text-sm">
+              {t('welcome.nicknameDescription')}
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="nickname">{t('account.nickname')}</Label>
+              <Input
+                autoComplete="off"
+                id="nickname"
+                maxLength={NICKNAME_MAX_LENGTH}
+                onChange={(event) => {
+                  setNicknameInput(event.target.value);
+                  setNicknameError(null);
+                }}
+                placeholder={t('welcome.nicknamePlaceholder')}
+                value={nicknameInput}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t('welcome.nicknameHelper', {
+                  max: NICKNAME_MAX_LENGTH,
+                  min: NICKNAME_MIN_LENGTH,
+                })}
+              </p>
+              {nicknameError && (
+                <p className="text-destructive text-xs">{nicknameError}</p>
+              )}
+            </div>
+          </div>
+        </Step>
+
+        <Step>
+          <div className="space-y-4">
+            <h2 className="font-bold text-2xl">{t('cohort.select')}</h2>
+            <p className="text-muted-foreground text-sm">
+              {t('welcome.cohortDescription')}
+            </p>
+            <CohortSelectorStep
+              onCohortSelect={handleCohortSave}
+              selectedCohortId={selectedCohortId}
+            />
+          </div>
+        </Step>
+
+        <Step>
+          <div className="space-y-4 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10">
+              <Check className="h-10 w-10 text-green-500" />
+            </div>
+            <h2 className="font-bold text-2xl">{t('welcome.complete')}</h2>
+            <p className="text-muted-foreground">
+              {t('welcome.completeDescription')}
+            </p>
+          </div>
+        </Step>
+      </Stepper>
+    </div>
+  );
+};
+
+const CohortSelectorStep = (props: {
+  selectedCohortId: string | null;
+  onCohortSelect: (cohortId: string) => Promise<boolean>;
+}) => {
   const { t } = useTranslation();
   const [updating, setIsUpdating] = useState(false);
-  const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
-    props.user.cohortId ?? null
-  );
   const [open, setOpen] = useState(false);
 
   const cohortQuery = useQuery({
@@ -114,13 +299,13 @@ const CohortSelector = (props: { user: UserType }) => {
   const updateCohort = async (cohortId: string) => {
     setIsUpdating(true);
     setOpen(false);
-    setSelectedCohortId(cohortId);
-    await authClient.updateUser({ cohortId });
+    const success = await props.onCohortSelect(cohortId);
     setIsUpdating(false);
+    return success;
   };
 
   if (cohortQuery.isLoading) {
-    return <Skeleton className="h-9 w-full" />;
+    return <Skeleton className="h-10 w-full" />;
   }
 
   if (cohortQuery.error || !cohortQuery.data) {
@@ -142,16 +327,16 @@ const CohortSelector = (props: { user: UserType }) => {
             role="combobox"
             variant="outline"
           >
-            {selectedCohortId
+            {props.selectedCohortId
               ? cohortQuery.data.find(
-                  (cohort) => cohort.id === selectedCohortId
+                  (cohort) => cohort.id === props.selectedCohortId
                 )?.name
               : t('cohort.selectPlaceholder')}
             <ChevronDown className="opacity-50" />
           </Button>
         }
       />
-      <PopoverContent className="absolute w-[200px] p-0">
+      <PopoverContent className="p-0">
         <Command>
           <CommandInput
             className="h-9"
@@ -171,7 +356,7 @@ const CohortSelector = (props: { user: UserType }) => {
                   <Check
                     className={cn(
                       'ml-auto',
-                      selectedCohortId === cohort.id
+                      props.selectedCohortId === cohort.id
                         ? 'opacity-100'
                         : 'opacity-0'
                     )}
@@ -183,183 +368,5 @@ const CohortSelector = (props: { user: UserType }) => {
         </Command>
       </PopoverContent>
     </Popover>
-  );
-};
-
-const NICKNAME_MIN_LENGTH = 3;
-const NICKNAME_MAX_LENGTH = 32;
-const nicknamePattern = /^[\p{L}\p{N} _'-]+$/u;
-const normalizeNickname = (value?: string | null) =>
-  (value ?? '').trim().replace(/\s+/g, ' ');
-
-const AccountDetails = (props: { user: UserType }) => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { user } = props;
-  const [nicknameInput, setNicknameInput] = useState(user.nickname ?? '');
-  const [savedNickname, setSavedNickname] = useState(user.nickname ?? '');
-  const [isSavingNickname, setIsSavingNickname] = useState(false);
-  const [nicknameError, setNicknameError] = useState<string | null>(null);
-  const [nicknameSuccess, setNicknameSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    setNicknameInput(user.nickname ?? '');
-    setSavedNickname(user.nickname ?? '');
-  }, [user.nickname]);
-
-  const normalizedInput = normalizeNickname(nicknameInput);
-  const normalizedSaved = normalizeNickname(savedNickname);
-  const nicknameDirty = normalizedInput !== normalizedSaved;
-  const nicknameInputValid =
-    normalizedInput.length >= NICKNAME_MIN_LENGTH &&
-    normalizedInput.length <= NICKNAME_MAX_LENGTH &&
-    nicknamePattern.test(normalizedInput);
-  const canSaveNickname =
-    nicknameDirty && nicknameInputValid && !isSavingNickname;
-  const hasNickname = normalizedSaved.length >= NICKNAME_MIN_LENGTH;
-  const canContinue = Boolean(user.cohortId && hasNickname);
-
-  const handleNicknameSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setNicknameSuccess(null);
-    if (!nicknameInputValid) {
-      setNicknameError(t('welcome.nicknameValidation'));
-      return;
-    }
-    try {
-      setIsSavingNickname(true);
-      await authClient.updateUser({ nickname: normalizedInput });
-      setSavedNickname(normalizedInput);
-      setNicknameError(null);
-      setNicknameSuccess(t('welcome.nicknameSaved'));
-    } catch (error) {
-      toast.error(t('welcome.nicknameSaveFailed'));
-      setNicknameError(
-        error instanceof Error ? error.message : t('welcome.nicknameError')
-      );
-    } finally {
-      setIsSavingNickname(false);
-    }
-  };
-
-  return (
-    <>
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="flex items-center justify-start space-y-1">
-          <User className="size-6 text-muted-foreground" />
-          <CardTitle className="text-lg">{t('account.details')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col items-center gap-3 rounded-lg bg-muted/50 p-3">
-            <InfoLine
-              content={user.email}
-              icon={<Mail className="h-4 w-4 text-muted-foreground" />}
-              title={t('account.email')}
-            />
-            <InfoLine
-              content={user.name ?? t('unknown')}
-              icon={<User className="h-4 w-4 text-muted-foreground" />}
-              title={t('account.name')}
-            />
-            <hr />
-          </div>
-          <form className="space-y-2" onSubmit={handleNicknameSubmit}>
-            <div className="flex flex-col gap-1">
-              <Label className="font-medium text-sm" htmlFor="nickname">
-                {t('account.nickname')}
-              </Label>
-              <p className="text-muted-foreground text-xs">
-                {t('welcome.nicknameDescription')}
-              </p>
-            </div>
-            <Input
-              autoComplete="off"
-              id="nickname"
-              maxLength={NICKNAME_MAX_LENGTH}
-              onChange={(event) => {
-                setNicknameInput(event.target.value);
-                setNicknameError(null);
-                setNicknameSuccess(null);
-              }}
-              placeholder={t('welcome.nicknamePlaceholder')}
-              value={nicknameInput}
-            />
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-muted-foreground text-xs">
-                {t('welcome.nicknameHelper', {
-                  max: NICKNAME_MAX_LENGTH,
-                  min: NICKNAME_MIN_LENGTH,
-                })}
-              </p>
-              <Button disabled={!canSaveNickname} size="sm" type="submit">
-                {isSavingNickname ? (
-                  <>
-                    <Spinner className="mr-2" />
-                    {t('common.loading')}
-                  </>
-                ) : (
-                  t('welcome.nicknameSave')
-                )}
-              </Button>
-            </div>
-            {nicknameError && (
-              <p className="text-destructive text-xs">{nicknameError}</p>
-            )}
-            {nicknameSuccess && (
-              <p className="text-green-600 text-xs">{nicknameSuccess}</p>
-            )}
-          </form>
-          <hr />
-          <CohortSelector user={user} />
-        </CardContent>
-      </Card>
-      <div className="space-y-2">
-        <Button
-          className="mx-auto"
-          disabled={!canContinue}
-          onClick={() => {
-            if (!canContinue) {
-              return;
-            }
-            navigate({ replace: true, to: '/' });
-          }}
-        >
-          {t('continue')}
-        </Button>
-        {!hasNickname && (
-          <p className="text-center text-muted-foreground text-sm">
-            {t('welcome.nicknameRequired')}
-          </p>
-        )}
-        {hasNickname && !user.cohortId && (
-          <p className="text-center text-muted-foreground text-sm">
-            {t('welcome.cohortRequired')}
-          </p>
-        )}
-      </div>
-    </>
-  );
-};
-
-const AccountDetailsSkeleton = () => {
-  const { t } = useTranslation();
-  return (
-    <Card className="border-border/50 shadow-sm">
-      <CardHeader className="flex items-center justify-start space-y-1">
-        <User className="size-6 text-muted-foreground" />
-        <CardTitle className="text-lg">{t('account.details')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Skeleton className="h-9 w-full" />
-        <hr />
-        <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-          <Skeleton className="h-4 w-4 rounded-full" />
-          <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-40" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
