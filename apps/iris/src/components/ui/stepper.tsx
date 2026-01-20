@@ -7,7 +7,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/utils';
 
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
@@ -23,6 +25,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   nextButtonProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
   backButtonText?: string;
   nextButtonText?: string;
+  nextButtonLoading?: boolean;
   disableStepIndicators?: boolean;
   renderStepIndicator?: (props: {
     step: number;
@@ -47,10 +50,12 @@ export default function Stepper({
   nextButtonProps = {},
   backButtonText = 'Back',
   nextButtonText = 'Continue',
+  nextButtonLoading = false,
   disableStepIndicators = false,
   renderStepIndicator,
   ...rest
 }: StepperProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
   const [direction, setDirection] = useState<number>(0);
   const stepsArray = Children.toArray(children);
@@ -58,32 +63,30 @@ export default function Stepper({
   const isCompleted = currentStep > totalSteps;
   const isLastStep = currentStep === totalSteps;
 
-  const updateStep = (newStep: number) => {
-    setCurrentStep(newStep);
+  const updateStep = async (newStep: number) => {
     if (newStep > totalSteps) {
-      onFinalStepCompleted();
+      await onFinalStepCompleted();
+      setCurrentStep(newStep);
     } else {
-      onStepChange(newStep);
+      await onStepChange(newStep);
+      setCurrentStep(newStep);
     }
   };
-
-  const handleBack = () => {
+  const handleBack = async () => {
     if (currentStep > 1) {
       setDirection(-1);
-      updateStep(currentStep - 1);
+      await updateStep(currentStep - 1);
     }
   };
-
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!isLastStep) {
       setDirection(1);
-      updateStep(currentStep + 1);
+      await updateStep(currentStep + 1);
     }
   };
-
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setDirection(1);
-    updateStep(totalSteps + 1);
+    await updateStep(totalSteps + 1);
   };
 
   return (
@@ -152,6 +155,7 @@ export default function Stepper({
                   onClick={handleBack}
                   variant="ghost"
                   {...backButtonProps}
+                  disabled={nextButtonLoading || backButtonProps.disabled}
                 >
                   {backButtonText}
                 </Button>
@@ -160,8 +164,10 @@ export default function Stepper({
                 onClick={isLastStep ? handleComplete : handleNext}
                 variant="default"
                 {...nextButtonProps}
+                disabled={nextButtonLoading || nextButtonProps.disabled}
               >
-                {isLastStep ? 'Complete' : nextButtonText}
+                {nextButtonLoading && <Spinner className="h-4 w-4" />}
+                {isLastStep ? t('common.complete') : nextButtonText}
               </Button>
             </div>
           </div>

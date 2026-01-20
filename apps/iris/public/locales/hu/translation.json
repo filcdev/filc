@@ -107,7 +107,8 @@
     "accept": "Rendben",
     "back": "Vissza",
     "next": "Tovább",
-    "skip": "Kihagyás"
+    "skip": "Kihagyás",
+    "complete": "Befejezés"
   },
   "auth": {
     "error": {

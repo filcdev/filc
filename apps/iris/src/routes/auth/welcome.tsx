@@ -97,6 +97,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(user.nickname ?? '');
   const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
@@ -116,6 +117,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
       return false;
     }
     try {
+      setIsSubmitting(true);
       await authClient.updateUser({ nickname: normalizedNickname });
       toast.success(t('welcome.nicknameSaved'));
       return true;
@@ -125,11 +127,14 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
       setNicknameError(errorMsg);
       toast.error(t('welcome.nicknameSaveFailed'));
       return false;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleCohortSave = async (cohortId: string) => {
     try {
+      setIsSubmitting(true);
       setSelectedCohortId(cohortId);
       await authClient.updateUser({ cohortId });
       toast.success(t('welcome.cohortSaved'));
@@ -137,6 +142,8 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     } catch {
       toast.error(t('welcome.cohortSaveFailed'));
       return false;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -151,6 +158,15 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     setCurrentStep(newStep);
   };
 
+  const handleFinalStepCompleted = async () => {
+    setIsSubmitting(true);
+    try {
+      await navigate({ replace: true, to: '/' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getNextButtonText = () => {
     if (currentStep === 2) {
       return normalizedNickname ? t('common.next') : t('common.skip');
@@ -162,10 +178,9 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Stepper
         backButtonText={t('common.back')}
+        nextButtonLoading={isSubmitting}
         nextButtonText={getNextButtonText()}
-        onFinalStepCompleted={() => {
-          navigate({ replace: true, to: '/' });
-        }}
+        onFinalStepCompleted={handleFinalStepCompleted}
         onStepChange={handleStepChange}
       >
         <Step>
