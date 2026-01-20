@@ -31,15 +31,14 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   }) => ReactNode;
 }
 
+// biome-ignore lint/suspicious/noEmptyBlockStatements: this is intentional
+const noop = () => {};
+
 export default function Stepper({
   children,
   initialStep = 1,
-  onStepChange = () => {
-    '';
-  },
-  onFinalStepCompleted = () => {
-    '';
-  },
+  onStepChange = noop,
+  onFinalStepCompleted = noop,
   stepCircleContainerClassName = '',
   stepContainerClassName = '',
   contentClassName = '',

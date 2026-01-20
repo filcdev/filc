@@ -321,7 +321,7 @@ const CohortSelectorStep = (props: {
           </Button>
         }
       />
-      <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
+      <PopoverContent className="p-0">
         <Command>
           <CommandInput
             className="h-9"

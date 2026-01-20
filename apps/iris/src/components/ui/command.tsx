@@ -1,5 +1,5 @@
 import { Command as CommandPrimitive } from 'cmdk';
-import { CheckIcon, SearchIcon } from 'lucide-react';
+import { SearchIcon } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import {
   Dialog,
@@ -153,7 +153,6 @@ function CommandItem({
       {...props}
     >
       {children}
-      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
     </CommandPrimitive.Item>
   );
 }

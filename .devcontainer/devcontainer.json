@@ -13,9 +13,6 @@
   // This can be used to network with other containers or with the host.
   "forwardPorts": [3000],
 
-  // As a backup, keep appPort here.
-  "appPort": 3000,
-
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "bun install",
 
