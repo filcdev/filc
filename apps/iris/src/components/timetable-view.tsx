@@ -362,7 +362,7 @@ export function TimetableView() {
       {isLoading ? (
         <div className="w-full max-w-7xl">
           <Skeleton className="mb-2 h-8 w-64" />
-          <Skeleton className="h-[520px] w-full" />
+          <Skeleton className="h-130 w-full" />
         </div>
       ) : (
         <div

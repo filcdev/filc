@@ -69,7 +69,7 @@ api.use(
       const uuid = `|${userAgent}|${session ? session.id : 'none'}|${realIp ? realIp : (connInfo.remote.address ?? 'unknown')}`;
       return uuid;
     },
-    limit: 60,
+    limit: 180,
     windowMs: 60 * 1000,
   })
 );
