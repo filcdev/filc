@@ -7,8 +7,8 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { device } from '#database/schema/doorlock';
-import type { SuccessResponse } from '#utils/globals';
-import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 

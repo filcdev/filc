@@ -4,8 +4,9 @@ import { checkbox, confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
 import { eq, inArray } from 'drizzle-orm';
+import { XMLParser } from 'fast-xml-parser';
 import iconv from 'iconv-lite';
-import { DOMParser } from 'xmldom';
+import z from 'zod';
 import { db, prepareDb } from '#database/index';
 import {
   classroom,
@@ -22,6 +23,7 @@ import {
 } from '#database/schema/timetable';
 import { configureLogger } from '#utils/logger';
 import { importTimetableXML } from '#utils/timetable/imports';
+import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
 const CANCELLATION_PROBABILITY = 0.3;
 const SUBSTITUTION_ROOM_PROBABILITY = 0.4;
@@ -229,12 +231,21 @@ const importBaseData = async () => {
 
   const xmlBuffer = fs.readFileSync(baseTimetableXmlPath);
   const decoded = iconv.decode(xmlBuffer, 'win1250');
-  const utf8Text = iconv.encode(decoded, 'utf-8').toString();
-  const cleaned = utf8Text.replaceAll('Period=""', '');
+  const cleaned = decoded.replaceAll('Period=""', '');
 
-  const xmlData = new DOMParser().parseFromString(cleaned, 'application/xml');
+  const parser = new XMLParser({
+    attributeNamePrefix: '_',
+    ignoreAttributes: false,
+    parseAttributeValue: false,
+    parseTagValue: true,
+    textNodeName: 'text',
+    trimValues: true,
+  });
 
-  await importTimetableXML(xmlData, {
+  const input = parser.parse(cleaned);
+  const data = z.parse(timetableExportRootSchema, input);
+
+  await importTimetableXML(data, {
     name: 'Default Timetable',
     validFrom: dayjs().toISOString(),
   });

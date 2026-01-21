@@ -6,11 +6,11 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { usersFactory } from '#routes/users/_factory';
 import type { User } from '#utils/authentication';
 import { getUserPermissions } from '#utils/authorization';
-import type { SuccessResponse } from '#utils/globals';
-import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import type { SuccessResponse } from '#utils/types/globals';
 
 const listUsersQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),

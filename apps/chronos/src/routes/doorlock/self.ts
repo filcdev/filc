@@ -7,6 +7,7 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { auditLog, card } from '#database/schema/doorlock';
+import { requireAuthentication } from '#middleware/auth';
 import { cardWithRelationsSchema } from '#routes/doorlock/cards';
 import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import { sendMessage } from '#routes/doorlock/websocket-handler';
@@ -15,8 +16,7 @@ import {
   fetchCardById,
   fetchCards,
 } from '#utils/cards';
-import type { SuccessResponse } from '#utils/globals';
-import { requireAuthentication } from '#utils/middleware';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 

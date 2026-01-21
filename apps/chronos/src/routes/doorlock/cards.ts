@@ -8,6 +8,7 @@ import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { card, device } from '#database/schema/doorlock';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import {
   type DoorlockCardWithRelations,
@@ -16,8 +17,7 @@ import {
   migrateAuditLogsForNewCard,
   replaceCardDevices,
 } from '#utils/cards';
-import type { SuccessResponse } from '#utils/globals';
-import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 

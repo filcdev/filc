@@ -14,9 +14,9 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
-import type { SuccessResponse } from '#utils/globals';
-import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 

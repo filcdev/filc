@@ -16,7 +16,7 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
-import type { SuccessResponse } from '#utils/globals';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 

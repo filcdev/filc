@@ -14,6 +14,16 @@ import {
   timetable,
   weekDefinition as weekSchema,
 } from '#database/schema/timetable';
+import type {
+  Classes,
+  Classrooms,
+  Days,
+  Periods,
+  Subjects,
+  Teachers,
+  TimeTableSchedules,
+  TimetableExportRoot,
+} from '../types/timetable-export';
 
 const logger = getLogger(['chronos', 'timetable']);
 
@@ -48,7 +58,7 @@ type CohortAttributes = {
 };
 
 export const importTimetableXML = (
-  xmlDoc: Document,
+  xmlData: TimetableExportRoot,
   timetableForm: { name: string; validFrom: string }
 ) =>
   db.transaction(async (tx) => {
@@ -73,18 +83,23 @@ export const importTimetableXML = (
 
     const [periodMap, dayMap, subjectMap, teacherMap, classroomMap] =
       await Promise.all([
-        loadPeriods(tx, xmlDoc),
-        loadDays(tx, xmlDoc),
-        loadSubjects(tx, xmlDoc),
-        loadTeachers(tx, xmlDoc),
-        loadClassrooms(tx, xmlDoc),
+        loadPeriods(tx, xmlData.timetable.periods),
+        loadDays(tx, xmlData.timetable.days),
+        loadSubjects(tx, xmlData.timetable.subjects),
+        loadTeachers(tx, xmlData.timetable.teachers),
+        loadClassrooms(tx, xmlData.timetable.classrooms),
       ]);
 
-    const cohortMap = await loadCohort(tx, xmlDoc, teacherMap, timetableId);
+    const cohortMap = await loadCohort(
+      tx,
+      xmlData.timetable.classes,
+      teacherMap,
+      timetableId
+    );
 
     const lessons = await loadLessons(
       tx,
-      xmlDoc,
+      xmlData.timetable.TimeTableSchedules,
       {
         classroomMap,
         cohortMap,
@@ -111,30 +126,29 @@ export const importTimetableXML = (
 
 const loadPeriods = async (
   tx: TxClient,
-  xmlDoc: Document
+  periodsData: Periods
 ): Promise<Map<string, string>> => {
   logger.trace('Loading periods from XML');
   const result: Map<string, string> = new Map();
   const unique: Map<string, { period: number; start: string; end: string }> =
     new Map();
-  const periods = xmlDoc.getElementsByTagName('period');
 
-  for (let i = 0; i < periods.length; i++) {
-    const period = periods.item(i);
-    if (!period) {
-      continue;
-    }
+  for (const period of periodsData.period) {
+    const predefinedId = period._period;
+    const endTime = period._endtime;
+    const startTime = period._starttime;
 
-    const predefinedId = period.getAttribute('period');
-    const endTime = period.getAttribute('endtime');
-    const startTime = period.getAttribute('starttime');
-
-    if (!(predefinedId && startTime && endTime)) {
+    if (!(predefinedId !== undefined && startTime && endTime)) {
+      logger.error('Period missing attributes', {
+        parsed: { endTime, predefinedId, startTime },
+        period,
+      });
       throw new Error(
         'Incomplete data for period, unable to get all attributes'
       );
     }
 
+    logger.trace('Collected period', { endTime, predefinedId, startTime });
     unique.set(predefinedId, {
       end: endTime,
       period: Number(predefinedId),
@@ -181,19 +195,19 @@ const loadPeriods = async (
 
 type DayAttributes = { name: string; short: string };
 
-const collectUniqueDays = (xmlDoc: Document): Map<string, DayAttributes> => {
+const collectUniqueDays = (daysData: Days): Map<string, DayAttributes> => {
   logger.trace('Collecting day definitions from XML');
   const unique: Map<string, DayAttributes> = new Map();
-  const days = xmlDoc.getElementsByTagName('day');
-  for (let i = 0; i < days.length; i++) {
-    const day = days.item(i);
-    if (!day) {
-      continue;
-    }
-    const predefinedId = day.getAttribute('day');
-    const name = day.getAttribute('name');
-    const short = day.getAttribute('short');
-    if (!(name && predefinedId && short)) {
+
+  for (const day of daysData.day) {
+    const predefinedId = day._day;
+    const name = day._name;
+    const short = day._short;
+    if (!(name && predefinedId !== undefined && short)) {
+      logger.error('Day missing attributes', {
+        day,
+        parsed: { name, predefinedId, short },
+      });
       throw new Error('Incomplete data for day, unable to get all attributes');
     }
     unique.set(predefinedId, { name, short });
@@ -276,9 +290,9 @@ const insertMissingDays = async (
 
 const loadDays = async (
   tx: TxClient,
-  xmlDoc: Document
+  daysData: Days
 ): Promise<Map<string, string>> => {
-  const unique = collectUniqueDays(xmlDoc);
+  const unique = collectUniqueDays(daysData);
   const result = await matchExistingDays(tx, unique);
   const missing = new Map(
     Array.from(unique.entries()).filter(
@@ -297,19 +311,15 @@ const loadDays = async (
 type SubjectAttributes = { name: string; short: string };
 
 const collectUniqueSubjects = (
-  xmlDoc: Document
+  subjectsData: Subjects
 ): Map<string, SubjectAttributes> => {
   logger.trace('Collecting subject definitions from XML');
   const unique: Map<string, SubjectAttributes> = new Map();
-  const subjects = xmlDoc.getElementsByTagName('subject');
-  for (let i = 0; i < subjects.length; i++) {
-    const subject = subjects.item(i);
-    if (!subject) {
-      continue;
-    }
-    const predefinedId = subject.getAttribute('id');
-    const name = subject.getAttribute('name');
-    const short = subject.getAttribute('short');
+
+  for (const subject of subjectsData.subject) {
+    const predefinedId = subject._id;
+    const name = subject._name;
+    const short = subject._short;
     if (!(name && predefinedId && short)) {
       throw new Error(
         `incomplete data for subject, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}`
@@ -385,9 +395,9 @@ const insertMissingSubjects = async (
 
 const loadSubjects = async (
   tx: TxClient,
-  xmlDoc: Document
+  subjectsData: Subjects
 ): Promise<Map<string, string>> => {
-  const unique = collectUniqueSubjects(xmlDoc);
+  const unique = collectUniqueSubjects(subjectsData);
   const result = await matchExistingSubjects(tx, unique);
   logger.trace('Loading subjects from XML');
   const missing = new Map(
@@ -406,7 +416,7 @@ const loadSubjects = async (
 
 const loadTeachers = async (
   tx: TxClient,
-  xmlDoc: Document
+  teachersData: Teachers
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shh, it's fine (TODO fix this)
 ): Promise<Map<string, string>> => {
   logger.trace('Loading teachers from XML');
@@ -415,18 +425,12 @@ const loadTeachers = async (
     string,
     { firstName: string; lastName: string; short: string }
   > = new Map();
-  const teachers = xmlDoc.getElementsByTagName('teacher');
 
-  for (let i = 0; i < teachers.length; i++) {
-    const teacher = teachers.item(i);
-    if (!teacher) {
-      continue;
-    }
-
-    const predefinedId = teacher.getAttribute('id');
-    const name = teacher.getAttribute('name');
-    let short = teacher.getAttribute('short');
-    const gender = teacher.getAttribute('gender');
+  for (const teacher of teachersData.teacher) {
+    const predefinedId = teacher._id;
+    const name = teacher._name;
+    let short = teacher._short;
+    const gender = teacher._gender;
 
     if (!short) {
       short = '-';
@@ -604,21 +608,17 @@ const upsertClassroom = async (
 
 const loadClassrooms = async (
   tx: TxClient,
-  xmlDoc: Document
+  classroomsData: Classrooms
 ): Promise<Map<string, string>> => {
   logger.trace('Loading classrooms from XML');
   const result: Map<string, string> = new Map();
   const buildingId = await getOrCreateBuilding(tx, 'A');
-  const classrooms = xmlDoc.getElementsByTagName('classroom');
-  for (let i = 0; i < classrooms.length; i++) {
-    const el = classrooms.item(i);
-    if (!el) {
-      continue;
-    }
-    const predefinedId = el.getAttribute('id');
-    const name = el.getAttribute('name');
-    const short = el.getAttribute('short');
-    const capacityStr = el.getAttribute('capacity');
+
+  for (const el of classroomsData.classroom) {
+    const predefinedId = el._id;
+    const name = el._name;
+    const short = el._short;
+    const capacityStr = el._capacity;
     if (!(predefinedId && name && short && capacityStr)) {
       throw new Error(
         'Incomplete data for classroom, unable to get all attributes'
@@ -642,13 +642,13 @@ const loadClassrooms = async (
 // --- Cohorts -----------------------------------------------------------
 
 const parseCohortElement = (
-  el: Element,
+  el: { _id: string; _name: string; _short: string; _teacherid: string },
   teacherMap: Map<string, string>
 ): CohortAttributes | null => {
-  const predefinedId = el.getAttribute('id');
-  const name = el.getAttribute('name');
-  const short = el.getAttribute('short');
-  const predefinedTeacherId = el.getAttribute('teacherid');
+  const predefinedId = el._id;
+  const name = el._name;
+  const short = el._short;
+  const predefinedTeacherId = el._teacherid;
   if (!(predefinedId && name && short)) {
     return null;
   }
@@ -697,18 +697,14 @@ const upsertCohort = async (
 
 const loadCohort = async (
   tx: TxClient,
-  xmlDoc: Document,
+  classesData: Classes,
   teacherMap: Map<string, string>,
   timetableId: string
 ): Promise<Map<string, string>> => {
   logger.trace('Loading cohorts from XML');
   const result: Map<string, string> = new Map();
-  const cohorts = xmlDoc.getElementsByTagName('class');
-  for (let i = 0; i < cohorts.length; i++) {
-    const el = cohorts.item(i);
-    if (!el) {
-      continue;
-    }
+
+  for (const el of classesData.class) {
     const attrs = parseCohortElement(el, teacherMap);
     if (!attrs) {
       continue;
@@ -855,19 +851,27 @@ type LessonDraft = {
 
 const processSchedule = (options: {
   index: number;
-  schedule: Element;
+  schedule: {
+    _DayID: string;
+    _Period: string;
+    _SchoolRoomID: string;
+    _SubjectGradeID: string;
+    _ClassID: string;
+    _OptionalClassID: string;
+    _TeacherID: string;
+  };
   maps: LessonMaps;
   weekDefinitionId: string;
   timetableId: string;
 }): LessonDraft | null => {
   const { index, schedule, maps, weekDefinitionId, timetableId } = options;
-  const dayId = schedule.getAttribute('DayID');
-  const subjectGradeId = schedule.getAttribute('SubjectGradeID');
-  const period = schedule.getAttribute('Period');
-  const classId = schedule.getAttribute('ClassID');
-  const optionalClassId = schedule.getAttribute('OptionalClassID');
-  const teacherId = schedule.getAttribute('TeacherID');
-  const schoolRoomId = schedule.getAttribute('SchoolRoomID');
+  const dayId = schedule._DayID;
+  const subjectGradeId = schedule._SubjectGradeID;
+  const period = schedule._Period;
+  const classId = schedule._ClassID;
+  const optionalClassId = schedule._OptionalClassID;
+  const teacherId = schedule._TeacherID;
+  const schoolRoomId = schedule._SchoolRoomID;
 
   if (!(dayId && subjectGradeId && period)) {
     return null;
@@ -937,17 +941,16 @@ const LESSON_INSERT_CHUNK = 100;
 
 const loadLessons = async (
   tx: TxClient,
-  xmlDoc: Document,
+  schedulesData: TimeTableSchedules,
   maps: LessonMaps,
   timetableId: string
 ): Promise<Map<string, string>> => {
   const result: Map<string, string> = new Map();
   const weekDefinitionId = await ensureWeekDefinition(tx, 'A');
-  const schedules = xmlDoc.getElementsByTagName('TimeTableSchedule');
 
   const drafts: LessonDraft[] = [];
-  for (let i = 0; i < schedules.length; i++) {
-    const schedule = schedules.item(i);
+  for (let i = 0; i < schedulesData.TimeTableSchedule.length; i++) {
+    const schedule = schedulesData.TimeTableSchedule[i];
     if (!schedule) {
       continue;
     }

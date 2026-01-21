@@ -7,7 +7,7 @@ import { db } from '#database';
 import { authenticationSchema } from '#database/schema/authentication';
 import { getUserPermissions } from '#utils/authorization';
 import { env } from '#utils/environment';
-import type { Context } from '#utils/globals';
+import type { Context } from '#utils/types/globals';
 
 const logger = getLogger(['chronos', 'auth']);
 

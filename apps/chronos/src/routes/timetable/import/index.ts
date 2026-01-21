@@ -1,18 +1,16 @@
-// import { XMLParser } from "fast-xml-parser";
-// import type { TimetableExportRoot } from "~/utils/timetable/types";
-
 import { getLogger } from '@logtape/logtape';
+import { XMLParser } from 'fast-xml-parser';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
-import iconv from 'iconv-lite';
-import { DOMParser } from 'xmldom';
+import { decode } from 'iconv-lite';
 import z from 'zod';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
-import type { SuccessResponse } from '#utils/globals';
-import { requireAuthentication, requireAuthorization } from '#utils/middleware';
 import { importTimetableXML } from '#utils/timetable/imports';
+import { timetableExportRootSchema } from '#utils/timetable/schemas';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 
 const logger = getLogger(['chronos', 'timetable']);
@@ -97,36 +95,33 @@ export const importRoute = timetableFactory.createHandlers(
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const decoded = iconv.decode(buffer, 'win1250');
-    // TODO: this is still broken
-    const utf8Text = iconv.encode(decoded, 'utf-8').toString();
-    const cleaned = utf8Text.replaceAll('Period=""', '');
+    const decoded = decode(buffer, 'win1250');
+    const cleaned = decoded.replaceAll('Period=""', '');
 
-    // TODO: Rewrite the import function to use these
-    // types so we are more typeish :3.
-    // const parser = new XMLParser({
-    //   ignoreAttributes: false,
-    //   attributeNamePrefix: "",
-    //   textNodeName: "text",
-    //   parseTagValue: true,
-    //   parseAttributeValue: true,
-    //   trimValues: true,
-    // });
+    const parser = new XMLParser({
+      attributeNamePrefix: '_',
+      ignoreAttributes: false,
+      parseAttributeValue: false,
+      parseTagValue: true,
+      textNodeName: 'text',
+      trimValues: true,
+    });
 
-    // let xmlData: TimetableExportRoot | null = null;
     try {
       logger.info('Starting timetable import');
-      const xmlData = new DOMParser().parseFromString(
-        cleaned,
-        'application/xml'
-      );
+      const start = performance.now();
+      const input = parser.parse(cleaned);
+      const data = z.parse(timetableExportRootSchema, input);
 
-      await importTimetableXML(xmlData, {
+      await importTimetableXML(data, {
         name,
         validFrom: validFrom.toISOString(),
       });
+      const end = performance.now();
 
-      logger.info('Imported timetable');
+      logger.info('Imported timetable', {
+        durationMs: end - start,
+      });
 
       return c.json<SuccessResponse>({
         success: true,

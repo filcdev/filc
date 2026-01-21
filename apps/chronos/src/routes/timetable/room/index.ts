@@ -3,7 +3,7 @@ import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import { db } from '#database';
 import { classroom } from '#database/schema/timetable';
-import type { SuccessResponse } from '#utils/globals';
+import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 
