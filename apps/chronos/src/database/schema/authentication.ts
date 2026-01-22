@@ -1,11 +1,4 @@
-import {
-  boolean,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { timestamps } from '#database/helpers';
 import { cohort } from '#database/schema/timetable';
 
@@ -19,7 +12,7 @@ export const user = pgTable('user', {
   image: text('image'),
   name: text('name').notNull(),
   nickname: text('nickname'),
-  roles: jsonb('roles').$type<string[]>().notNull().default(['user']),
+  roles: text('roles').notNull().array().default(['user']),
   ...timestamps,
 });
 
