@@ -333,51 +333,6 @@ export const buildViewModel = (lessons: LessonItem[]): ViewModel => {
   return { days, grid, timeSlots };
 };
 
-export const getSelectedFromUrl = (
-  cohorts: { id: string }[] | undefined,
-  teachers: { id: string }[] | undefined,
-  classrooms: { id: string }[] | undefined
-): {
-  cohortClass: string | null;
-  cohortTeacher: string | null;
-  cohortClassroom: string | null;
-} => {
-  try {
-    const params = new URLSearchParams(window.location.search);
-
-    const byClass = params.get('cohortClass');
-    if (byClass && cohorts?.some((c) => c.id === byClass)) {
-      return {
-        cohortClass: byClass,
-        cohortClassroom: null,
-        cohortTeacher: null,
-      };
-    }
-
-    const byTeacher = params.get('cohortTeacher');
-    if (byTeacher && teachers?.some((t) => t.id === byTeacher)) {
-      return {
-        cohortClass: null,
-        cohortClassroom: null,
-        cohortTeacher: byTeacher,
-      };
-    }
-
-    const byRoom = params.get('cohortClassroom');
-    if (byRoom && classrooms?.some((c) => c.id === byRoom)) {
-      return {
-        cohortClass: null,
-        cohortClassroom: byRoom,
-        cohortTeacher: null,
-      };
-    }
-  } catch {
-    // ignore URL parsing issues
-  }
-
-  return { cohortClass: null, cohortClassroom: null, cohortTeacher: null };
-};
-
 export const filterLabelFor = (
   activeFilter: FilterType,
   t: (key: string) => string

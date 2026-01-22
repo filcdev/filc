@@ -16,10 +16,13 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
 
   // i18n
-
   "i18n-ally.localesPaths": ["apps/iris/public/locales"],
   "i18n-ally.keystyle": "nested",
   "i18n-ally.enabledFrameworks": ["react"],
+
+  // biome
+  "biome.lspBin": "./node_modules/@biomejs/biome/bin/biome",
+  "biome.requireConfiguration": false,
 
   // Copilot commit messages
   "github.copilot.chat.commitMessageGeneration.instructions": [

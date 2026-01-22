@@ -2,13 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
+import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
-import {
-  buildViewModel,
-  formatTeachers,
-  getSelectedFromUrl,
-} from '@/components/timetable/helpers';
+import { buildViewModel, formatTeachers } from '@/components/timetable/helpers';
 import type {
   ClassroomItem,
   CohortItem,
@@ -18,6 +15,7 @@ import type {
   TeacherItem,
 } from '@/components/timetable/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Route, type searchSchema } from '@/routes/_public/index';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 
@@ -97,32 +95,6 @@ const getActiveSelectionId = (
   }
 };
 
-const updateUrlParams = (
-  navigate: ReturnType<typeof useNavigate>,
-  filter: FilterType,
-  selectionId: string
-) => {
-  try {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    const before = params.toString();
-
-    params.delete('cohortClass');
-    params.delete('cohortTeacher');
-    params.delete('cohortClassroom');
-
-    const paramKey = `cohort${filter.charAt(0).toUpperCase()}${filter.slice(1)}`;
-    params.set(paramKey, selectionId);
-
-    const next = params.toString();
-    if (next !== before) {
-      navigate({ replace: true, to: `${url.pathname}?${next}` });
-    }
-  } catch {
-    // ignore URL/navigation errors
-  }
-};
-
 const getSelectedName = (
   filter: FilterType,
   selections: {
@@ -164,8 +136,9 @@ const getSelectedName = (
 
 // Component
 export function TimetableView() {
+  const search = Route.useSearch();
   const { data: session, isPending } = authClient.useSession();
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
 
   // Queries
   const cohortsQuery = useQuery({
@@ -187,7 +160,18 @@ export function TimetableView() {
   });
 
   // State
-  const [activeFilter, setActiveFilter] = useState<FilterType>('class');
+  const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
+    if (search.cohortClass) {
+      return 'class';
+    }
+    if (search.cohortTeacher) {
+      return 'teacher';
+    }
+    if (search.cohortClassroom) {
+      return 'classroom';
+    }
+    return 'class';
+  });
   const [selections, setSelections] = useState<SelectionsType>({
     class: null,
     classroom: null,
@@ -208,6 +192,7 @@ export function TimetableView() {
   });
 
   // Initialize from URL or defaults
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
   useEffect(() => {
     const allDataLoaded =
       cohortsQuery.data && teachersQuery.data && classroomsQuery.data;
@@ -218,11 +203,24 @@ export function TimetableView() {
       return;
     }
 
-    const { cohortClass, cohortTeacher, cohortClassroom } = getSelectedFromUrl(
-      cohortsQuery.data,
-      teachersQuery.data,
-      classroomsQuery.data
-    );
+    // Validate search params against available data
+    const cohortClass =
+      search.cohortClass &&
+      cohortsQuery.data.some((c) => c.id === search.cohortClass)
+        ? search.cohortClass
+        : null;
+
+    const cohortTeacher =
+      search.cohortTeacher &&
+      teachersQuery.data.some((t) => t.id === search.cohortTeacher)
+        ? search.cohortTeacher
+        : null;
+
+    const cohortClassroom =
+      search.cohortClassroom &&
+      classroomsQuery.data.some((c) => c.id === search.cohortClassroom)
+        ? search.cohortClassroom
+        : null;
 
     if (cohortClass) {
       setActiveFilter('class');
@@ -247,6 +245,9 @@ export function TimetableView() {
     selections.class,
     selections.classroom,
     selections.teacher,
+    search.cohortClass,
+    search.cohortTeacher,
+    search.cohortClassroom,
   ]);
 
   // Set default selection when filter changes
@@ -287,7 +288,22 @@ export function TimetableView() {
   // Sync selection to URL
   useEffect(() => {
     if (activeSelectionId) {
-      updateUrlParams(navigate, activeFilter, activeSelectionId);
+      const searchParams: z.Infer<typeof searchSchema> = {
+        cohortClass: undefined,
+        cohortClassroom: undefined,
+        cohortTeacher: undefined,
+      };
+
+      const paramKey =
+        `cohort${activeFilter.charAt(0).toUpperCase()}${activeFilter.slice(1)}` as
+          | 'cohortClass'
+          | 'cohortTeacher'
+          | 'cohortClassroom';
+      searchParams[paramKey] = activeSelectionId;
+      navigate({
+        replace: true,
+        search: () => searchParams,
+      });
     }
   }, [activeFilter, activeSelectionId, navigate]);
 
