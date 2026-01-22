@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { card, device } from '#database/schema/doorlock';
@@ -17,7 +18,6 @@ import {
   migrateAuditLogsForNewCard,
   replaceCardDevices,
 } from '#utils/cards';
-import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 

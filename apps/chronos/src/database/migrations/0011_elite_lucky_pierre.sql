@@ -1,1 +1,0 @@
-ALTER TABLE "moved_lesson" ADD COLUMN "date" date NOT NULL;

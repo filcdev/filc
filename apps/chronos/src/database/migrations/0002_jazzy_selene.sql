@@ -1,2 +1,0 @@
-ALTER TABLE "lesson" ADD COLUMN "period_id" text NOT NULL;--> statement-breakpoint
-ALTER TABLE "lesson" ADD CONSTRAINT "lesson_period_id_period_id_fk" FOREIGN KEY ("period_id") REFERENCES "public"."period"("id") ON DELETE no action ON UPDATE no action;

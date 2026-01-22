@@ -23,7 +23,7 @@ import type {
   Teachers,
   TimeTableSchedules,
   TimetableExportRoot,
-} from '../types/timetable-export';
+} from '../../_types/timetable-export';
 
 const logger = getLogger(['chronos', 'timetable']);
 

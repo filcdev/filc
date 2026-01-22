@@ -1,9 +1,9 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
+import type { AuthenticatedContext, Context } from '#_types/globals';
 import { auth } from '#utils/authentication';
 import { userHasPermission } from '#utils/authorization';
-import type { AuthenticatedContext, Context } from '#utils/types/globals';
 
 export const authenticationMiddleware = createMiddleware<Context>(
   async (c, next) => {

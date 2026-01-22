@@ -5,12 +5,12 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { decode } from 'iconv-lite';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
 import { importTimetableXML } from '#utils/timetable/imports';
 import { timetableExportRootSchema } from '#utils/timetable/schemas';
-import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 
 const logger = getLogger(['chronos', 'timetable']);

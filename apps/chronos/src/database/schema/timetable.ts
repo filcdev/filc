@@ -3,7 +3,6 @@ import {
   boolean,
   date,
   integer,
-  jsonb,
   type PgColumn,
   pgTable,
   primaryKey,
@@ -30,7 +29,7 @@ export const period = pgTable('period', {
 });
 
 export const dayDefinition = pgTable('day_definition', {
-  days: jsonb('days').$type<string[]>(),
+  days: text('days').array(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   short: text('short').notNull(),
@@ -42,7 +41,7 @@ export const weekDefinition = pgTable('week_definition', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   short: text('short').notNull(),
-  weeks: jsonb('weeks').$type<string[]>(),
+  weeks: text('weeks').array(),
   ...timestamps,
 });
 
@@ -50,7 +49,7 @@ export const termDefinition = pgTable('term_definition', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   short: text('short').notNull(),
-  terms: jsonb('terms').$type<string[]>(),
+  terms: text('terms').array(),
   ...timestamps,
 });
 
@@ -87,7 +86,7 @@ export const classroom = pgTable('classroom', {
 
 export const cohort = pgTable('cohort', {
   // TODO: review if we need to store multiple classrooms
-  classroomIds: jsonb('classroom_ids').$type<string[]>(),
+  classroomIds: text('classroom_ids').array(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   short: text('short').notNull(),
@@ -121,11 +120,11 @@ export const cohortGroup = pgTable('group', {
 });
 
 export const lesson = pgTable('lesson', {
-  classroomIds: jsonb('classroom_ids').$type<string[]>(),
+  classroomIds: text('classroom_ids').array(),
   dayDefinitionId: text('day_definition_id')
     .notNull()
     .references(() => dayDefinition.id),
-  groupsIds: jsonb('group_ids').$type<string[]>(),
+  groupsIds: text('group_ids').array(),
   id: text('id').primaryKey(),
   periodId: text('period_id')
     .notNull()
@@ -134,7 +133,7 @@ export const lesson = pgTable('lesson', {
   subjectId: text('subject_id')
     .notNull()
     .references(() => subject.id),
-  teacherIds: jsonb('teacher_ids').$type<string[]>(),
+  teacherIds: text('teacher_ids').array(),
   termDefinitionId: text('term_definition_id')
     // .notNull()
     .references(() => termDefinition.id),
