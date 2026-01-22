@@ -12,7 +12,7 @@ export const user = pgTable('user', {
   image: text('image'),
   name: text('name').notNull(),
   nickname: text('nickname'),
-  roles: text('roles').notNull().array().default(['user']),
+  roles: text('roles').array().notNull().default(['user']),
   ...timestamps,
 });
 

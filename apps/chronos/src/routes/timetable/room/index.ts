@@ -1,9 +1,9 @@
 import { createSelectSchema } from 'drizzle-zod';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { classroom } from '#database/schema/timetable';
-import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 

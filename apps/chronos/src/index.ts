@@ -8,6 +8,7 @@ import { HTTPException } from 'hono/http-exception';
 import { openAPIRouteHandler } from 'hono-openapi';
 import { rateLimiter } from 'hono-rate-limiter';
 import { StatusCodes } from 'http-status-codes';
+import type { Context, ErrorResponse } from '#_types/globals';
 import { prepareDb } from '#database';
 import { authenticationMiddleware } from '#middleware/auth';
 import { corsMiddleware, securityMiddleware } from '#middleware/security';
@@ -22,7 +23,6 @@ import { initializeRBAC } from '#utils/authorization';
 import { setupCronJobs } from '#utils/cron';
 import { env } from '#utils/environment';
 import { configureLogger } from '#utils/logger';
-import type { Context, ErrorResponse } from '#utils/types/globals';
 
 await configureLogger('chronos');
 const logger = getLogger(['chronos', 'server']);

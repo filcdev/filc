@@ -41,8 +41,8 @@
     "typescript": "catalog:"
   },
   "exports": {
-    "./types/auth": "./src/utils/types/auth.ts",
-    "./types/hc": "./src/utils/types/hc.ts"
+    "./types/auth": "./src/_types/auth.ts",
+    "./types/hc": "./src/_types/hc.ts"
   },
   "imports": {
     "#*": [

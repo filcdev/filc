@@ -3,11 +3,11 @@ import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import type { SuccessResponse } from '#utils/types/globals';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 

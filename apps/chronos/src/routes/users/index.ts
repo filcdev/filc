@@ -4,13 +4,12 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { usersFactory } from '#routes/users/_factory';
-import type { User } from '#utils/authentication';
 import { getUserPermissions } from '#utils/authorization';
-import type { SuccessResponse } from '#utils/types/globals';
 
 const listUsersQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
@@ -72,7 +71,7 @@ export const listUsers = usersFactory.createHandlers(
       .from(user)
       .where(whereClause);
 
-    return c.json<SuccessResponse<{ users: User[]; total: number }>>({
+    return c.json<SuccessResponse<{ users: typeof users; total: number }>>({
       data: { total: Number(userCount), users },
       success: true,
     });

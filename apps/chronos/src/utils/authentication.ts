@@ -3,11 +3,11 @@ import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession } from 'better-auth/plugins';
 import { Hono } from 'hono';
+import type { Context } from '#_types/globals';
 import { db } from '#database';
 import { authenticationSchema } from '#database/schema/authentication';
 import { getUserPermissions } from '#utils/authorization';
 import { env } from '#utils/environment';
-import type { Context } from '#utils/types/globals';
 
 const logger = getLogger(['chronos', 'auth']);
 
