@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import { SQL, type sql } from 'bun';
 import { drizzle } from 'drizzle-orm/bun-sql';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
+import { relations } from '#database/relations';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#database/schema/doorlock';
@@ -54,6 +55,7 @@ export const db = drizzle({
       }
     },
   },
+  relations,
   schema,
 });
 

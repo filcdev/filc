@@ -57,7 +57,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
           teacher,
         })
         .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+        .leftJoin(teacher, eq(substitution.substituterId, teacher.id))
         .leftJoin(
           substitutionLessonMTM,
           eq(substitution.id, substitutionLessonMTM.substitutionId)
@@ -107,7 +107,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
           teacher,
         })
         .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+        .leftJoin(teacher, eq(substitution.substituterId, teacher.id))
         .leftJoin(
           substitutionLessonMTM,
           eq(substitution.id, substitutionLessonMTM.substitutionId)
@@ -179,7 +179,7 @@ export const getRelevantSubstitutionsForCohort =
             teacher,
           })
           .from(substitution)
-          .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+          .leftJoin(teacher, eq(substitution.substituterId, teacher.id))
           .leftJoin(
             substitutionLessonMTM,
             eq(substitution.id, substitutionLessonMTM.substitutionId)
@@ -264,10 +264,10 @@ export const createSubstitution = timetableFactory.createHandlers(
     const body = (await c.req.json()) as {
       date: string;
       lessonIds: string[];
-      substituter?: string;
+      substituterId?: string;
     };
 
-    const { lessonIds, date, substituter } = body;
+    const { lessonIds, date, substituterId } = body;
 
     if (!(lessonIds && date)) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -296,7 +296,7 @@ export const createSubstitution = timetableFactory.createHandlers(
         .values({
           date,
           id: crypto.randomUUID(),
-          substituter,
+          substituterId,
         })
         .returning();
 
@@ -382,7 +382,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
       const body = (await c.req.json()) as {
         date?: string;
         lessonIds?: string[];
-        substituter?: string;
+        substituterId?: string;
       };
 
       if (!id) {
@@ -430,7 +430,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
           .update(substitution)
           .set({
             date: body.date,
-            substituter: body.substituter,
+            substituterId: body.substituterId,
           })
           .where(eq(substitution.id, id))
           .returning();

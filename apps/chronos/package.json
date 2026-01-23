@@ -20,7 +20,7 @@
     "better-auth": "catalog:",
     "cronbake": "^0.4.0",
     "dayjs": "^1.11.19",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^1.0.0-beta.12-a5629fb",
     "drizzle-zod": "^0.8.3",
     "fast-xml-parser": "^5.3.3",
     "hono": "catalog:",
@@ -36,7 +36,7 @@
     "@logtape/pretty": "^2.0.1",
     "@tsconfig/strictest": "^2.0.8",
     "@types/bun": "catalog:",
-    "drizzle-kit": "^0.31.8",
+    "drizzle-kit": "^1.0.0-beta.12-a5629fb",
     "pg": "^8.17.2",
     "typescript": "catalog:"
   },

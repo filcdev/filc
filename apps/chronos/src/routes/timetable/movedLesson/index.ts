@@ -122,27 +122,27 @@ const normalizeOptionalStringArray = (
 };
 
 const validateMovedLessonReferences = async (options: {
-  startingPeriod?: unknown;
-  startingDay?: unknown;
+  startingPeriodId?: unknown;
+  startingDayId?: unknown;
   room?: unknown;
   lessonIds?: unknown;
 }) => {
-  const { startingPeriod, startingDay, room, lessonIds } = options;
+  const { startingPeriodId, startingDayId, room, lessonIds } = options;
 
-  const normalizedStartingPeriod = normalizeOptionalString(
-    startingPeriod,
+  const normalizedstartingPeriodId = normalizeOptionalString(
+    startingPeriodId,
     'Starting period'
   );
-  if (normalizedStartingPeriod) {
-    await ensurePeriodExists(normalizedStartingPeriod);
+  if (normalizedstartingPeriodId) {
+    await ensurePeriodExists(normalizedstartingPeriodId);
   }
 
-  const normalizedStartingDay = normalizeOptionalString(
-    startingDay,
+  const normalizedstartingDayId = normalizeOptionalString(
+    startingDayId,
     'Starting day'
   );
-  if (normalizedStartingDay) {
-    await ensureDayDefinitionExists(normalizedStartingDay);
+  if (normalizedstartingDayId) {
+    await ensureDayDefinitionExists(normalizedstartingDayId);
   }
 
   const normalizedRoom = normalizeOptionalString(room, 'Classroom');
@@ -193,8 +193,11 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
           period,
         })
         .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+        .leftJoin(period, eq(movedLesson.startingPeriodId, period.id))
+        .leftJoin(
+          dayDefinition,
+          eq(movedLesson.startingDayId, dayDefinition.id)
+        )
         .leftJoin(classroom, eq(movedLesson.room, classroom.id))
         .leftJoin(
           movedLessonLessonMTM,
@@ -266,8 +269,11 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
           period,
         })
         .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+        .leftJoin(period, eq(movedLesson.startingPeriodId, period.id))
+        .leftJoin(
+          dayDefinition,
+          eq(movedLesson.startingDayId, dayDefinition.id)
+        )
         .leftJoin(classroom, eq(movedLesson.room, classroom.id))
         .leftJoin(
           movedLessonLessonMTM,
@@ -344,8 +350,11 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
           period,
         })
         .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+        .leftJoin(period, eq(movedLesson.startingPeriodId, period.id))
+        .leftJoin(
+          dayDefinition,
+          eq(movedLesson.startingDayId, dayDefinition.id)
+        )
         .leftJoin(classroom, eq(movedLesson.room, classroom.id))
         .leftJoin(
           movedLessonLessonMTM,
@@ -422,8 +431,11 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
           period,
         })
         .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+        .leftJoin(period, eq(movedLesson.startingPeriodId, period.id))
+        .leftJoin(
+          dayDefinition,
+          eq(movedLesson.startingDayId, dayDefinition.id)
+        )
         .leftJoin(classroom, eq(movedLesson.room, classroom.id))
         .leftJoin(
           movedLessonLessonMTM,
@@ -493,7 +505,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
   async (c) => {
     try {
       const body = await c.req.json();
-      const { startingPeriod, startingDay, room, date, lessonIds } = body;
+      const { startingPeriodId, startingDayId, room, date, lessonIds } = body;
 
       if (!date) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -504,8 +516,8 @@ export const createMovedLesson = timetableFactory.createHandlers(
       await validateMovedLessonReferences({
         lessonIds,
         room,
-        startingDay,
-        startingPeriod,
+        startingDayId,
+        startingPeriodId,
       });
 
       const [newMovedLesson] = await db
@@ -514,8 +526,8 @@ export const createMovedLesson = timetableFactory.createHandlers(
           date,
           id: crypto.randomUUID(),
           room,
-          startingDay,
-          startingPeriod,
+          startingDayId,
+          startingPeriodId,
         })
         .returning();
 
@@ -556,8 +568,8 @@ const updateSchema = (
         date: z.date(),
         lessonIds: z.string().array(),
         room: z.string(),
-        startingDay: z.uuid(),
-        startingPeriod: z.uuid(),
+        startingDayId: z.uuid(),
+        startingPeriodId: z.uuid(),
       })
     )
   ).toOpenAPISchema()
@@ -603,7 +615,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     try {
       const id = c.req.param('id');
       const body = await c.req.json();
-      const { startingPeriod, startingDay, room, date, lessonIds } = body;
+      const { startingPeriodId, startingDayId, room, date, lessonIds } = body;
 
       if (!id) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -614,8 +626,8 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       await validateMovedLessonReferences({
         lessonIds,
         room,
-        startingDay,
-        startingPeriod,
+        startingDayId,
+        startingPeriodId,
       });
 
       const [updatedMovedLesson] = await db
@@ -623,9 +635,10 @@ export const updateMovedLesson = timetableFactory.createHandlers(
         .set({
           date: date !== undefined ? date : undefined,
           room: room !== undefined ? room : undefined,
-          startingDay: startingDay !== undefined ? startingDay : undefined,
-          startingPeriod:
-            startingPeriod !== undefined ? startingPeriod : undefined,
+          startingDayId:
+            startingDayId !== undefined ? startingDayId : undefined,
+          startingPeriodId:
+            startingPeriodId !== undefined ? startingPeriodId : undefined,
         })
         .where(eq(movedLesson.id, id))
         .returning();
