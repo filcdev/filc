@@ -18,7 +18,7 @@ import {
   teacher,
 } from '#database/schema/timetable';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import { timetableFactory } from './_router';
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   if (lessons.length === 0) {

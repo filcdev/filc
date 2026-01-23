@@ -9,7 +9,7 @@ import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { doorlockFactory } from './_factory';
+import { doorlockFactory } from './_router';
 
 const auditLogSelectSchema = createSelectSchema(auditLog);
 const deviceSummarySchema = createSelectSchema(device).pick({

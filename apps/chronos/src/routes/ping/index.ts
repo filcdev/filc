@@ -1,7 +1,7 @@
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
-import { pingFactory } from '#routes/ping/_factory';
+import { pingFactory } from '#routes/ping/_router';
 import { ensureJsonSafeDates } from '#utils/zod';
 
 const pingResponseSchema = z.object({

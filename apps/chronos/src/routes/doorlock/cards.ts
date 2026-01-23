@@ -10,6 +10,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { doorlockFactory } from '#routes/doorlock/_router';
 import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import {
   type DoorlockCardWithRelations,
@@ -19,7 +20,6 @@ import {
   replaceCardDevices,
 } from '#utils/cards';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'cards']);
 

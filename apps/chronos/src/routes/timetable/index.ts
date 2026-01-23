@@ -10,7 +10,7 @@ import { db } from '#database';
 import { timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from './_factory';
+import { timetableFactory } from './_router';
 
 const logger = getLogger(['chronos', 'timetable']);
 

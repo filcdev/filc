@@ -8,7 +8,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { usersFactory } from '#routes/users/_factory';
+import { usersFactory } from '#routes/users/_router';
 import { getUserPermissions } from '#utils/authorization';
 
 const listUsersQuerySchema = z.object({
