@@ -1,5 +1,4 @@
-import { createFactory } from 'hono/factory';
-import type { AuthenticatedContext } from '#_types/globals';
+import { timetableFactory } from '#routes/timetable/_factory';
 import { importRoute } from '#routes/timetable/import';
 import {
   createMovedLesson,
@@ -9,7 +8,7 @@ import {
   getRelevantMovedLessons,
   getRelevantMovedLessonsForCohort,
   updateMovedLesson,
-} from '#routes/timetable/moved-lesson';
+} from '#routes/timetable/movedLesson';
 import {
   createSubstitution,
   deleteSubstitution,
@@ -33,7 +32,6 @@ import {
 import { getClassrooms } from './room';
 import { getTeachers } from './teacher';
 
-export const timetableFactory = createFactory<AuthenticatedContext>();
 export const timetableRouter = timetableFactory
   .createApp()
   // Timetable routes

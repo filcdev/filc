@@ -12,7 +12,7 @@ import {
   device as lockDevice,
 } from '#database/schema/doorlock';
 import { server } from '#index';
-import { doorlockFactory } from '#routes/doorlock/_router';
+import { doorlockFactory } from '#routes/doorlock/_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 

@@ -15,7 +15,7 @@ import {
 } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { doorlockFactory } from './_router';
+import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'stats']);
 

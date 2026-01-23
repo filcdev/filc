@@ -1,5 +1,4 @@
-import { createFactory } from 'hono/factory';
-import type { Context } from '#_types/globals';
+import { doorlockFactory } from '#routes/doorlock/_factory';
 import {
   createCardRoute,
   deleteCardRoute,
@@ -21,14 +20,6 @@ import {
 } from '#routes/doorlock/self';
 import { deviceStatsRoute, doorlockStatsRoute } from '#routes/doorlock/stats';
 import { websocketHandler } from '#routes/doorlock/websocket-handler';
-
-export const doorlockFactory = createFactory<
-  Context & {
-    Variables: {
-      device: { id: string; name: string } | undefined;
-    };
-  }
->();
 
 export const doorlockRouter = doorlockFactory
   .createApp()

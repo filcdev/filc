@@ -18,7 +18,7 @@ import {
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from './_router';
+import { timetableFactory } from '../_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
 
