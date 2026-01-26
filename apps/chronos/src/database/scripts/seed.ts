@@ -101,7 +101,7 @@ const createSubstitution = async (params: SubstitutionParams) => {
       .values({
         date: params.date,
         id: `sub-${params.cohortId}-${params.lessonId}-${params.index}`,
-        substituter: substituterId,
+        substituterId,
       })
       .returning();
 
@@ -143,8 +143,8 @@ const createMovedLesson = async (params: MovedLessonParams) => {
         date: params.date,
         id: `moved-${params.cohortId}-${params.lessonId}-${params.index}`,
         room: targetRoom,
-        startingDay: targetDay,
-        startingPeriod: targetPeriod,
+        startingDayId: targetDay,
+        startingPeriodId: targetPeriod,
       })
       .returning();
 
