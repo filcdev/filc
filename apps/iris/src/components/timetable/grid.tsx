@@ -42,16 +42,9 @@ export function TimetableGrid({ model }: TimetableGridProps) {
               <span className="font-medium text-[10px] text-muted-foreground">
                 {slot.start.format('HH:mm')}
               </span>
-              {/* check if any days have lessons */}
-              {days.some(
-                (day) =>
-                  grid.get(`${day.name}-${slot.start.format('HH:mm')}`)?.lessons
-                    .length
-              ) && (
-                <span className="font-bold text-muted-foreground text-xs">
-                  {slot.index}.
-                </span>
-              )}
+              <span className="font-bold text-muted-foreground text-xs">
+                {slot.index}.
+              </span>
               <span className="font-medium text-[10px] text-muted-foreground">
                 {slot.end.format('HH:mm')}
               </span>
