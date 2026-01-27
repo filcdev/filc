@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { TimetableView } from '@/components/timetable-view';
+import { TimetableView } from '@/components/timetable';
 
 export const searchSchema = z.object({
-  cohortClass: z.string().optional(),
-  cohortClassroom: z.string().optional(),
-  cohortTeacher: z.string().optional(),
+  cohort: z.string().optional(),
+  room: z.string().optional(),
+  teacher: z.string().optional(),
 });
 
 export const Route = createFileRoute('/_public/')({

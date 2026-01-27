@@ -1,7 +1,9 @@
+import type dayjs from 'dayjs';
 import type { InferResponseType } from 'hono/client';
 import type { api } from '@/utils/hc';
 
 export type FilterType = 'class' | 'teacher' | 'classroom';
+
 export type SelectionsType = {
   class: string | null;
   teacher: string | null;
@@ -28,23 +30,23 @@ export type LessonsResponse = InferResponseType<
 >;
 export type LessonItem = NonNullable<LessonsResponse['data']>[number];
 
-export type DayColumn = { name: string; sortOrder: number };
-
-export type CellBlock = {
-  key: string;
-  lessons: LessonItem[];
-  rowSpan: number;
-  startTime: string;
-  endTime: string;
+export type DayColumn = {
+  name: string;
+  sortOrder: number;
 };
 
-export type GridCell =
-  | { type: 'block'; block: CellBlock }
-  | { type: 'skip' }
-  | { type: 'empty' };
+export type TimeSlot = {
+  index: number;
+  start: dayjs.Dayjs;
+  end: dayjs.Dayjs;
+};
 
-export type ViewModel = {
+export type GridCell = {
+  lessons: LessonItem[];
+};
+
+export type TimetableViewModel = {
   days: DayColumn[];
-  timeSlots: string[];
-  grid: Record<string, Record<string, GridCell>>;
+  timeSlots: TimeSlot[];
+  grid: Map<string, GridCell>; // key: `${dayName}-${HH:mm formatted startTime}`
 };

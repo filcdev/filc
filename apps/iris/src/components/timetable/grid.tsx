@@ -1,106 +1,113 @@
-import { clsx } from 'clsx';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { cn } from '@/utils';
 import { LessonCard } from './lesson-card';
-import type { ViewModel } from './types';
+import type { TimetableViewModel } from './types';
 
-export function TimetableGrid({
-  model,
-  title,
-}: {
-  model: ViewModel;
-  title: string;
-}) {
-  const { t } = useTranslation();
+type TimetableGridProps = {
+  model: TimetableViewModel;
+};
+
+export function TimetableGrid({ model }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
 
   return (
-    <Card className="w-full shadow-2xl print:shadow-none">
-      <CardHeader className="print:hidden">
-        <CardTitle className="text-balance font-bold text-2xl">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-hidden rounded-lg border bg-card print:border-0">
-          <Table className="print:text-black">
-            <TableHeader className="print:table-header-group">
-              <TableRow className="border-border bg-muted/50 print:bg-white">
-                <TableHead className="w-24 text-left font-semibold">
-                  {t('timetable.time')}
-                </TableHead>
-                {days.map((day) => (
-                  <TableHead
-                    className="text-center font-semibold"
-                    key={day.name}
+    <div className="overflow-hidden rounded-xl border border-border bg-card print:border-0">
+      {/* Header Row */}
+      <div
+        className="grid gap-px border-border border-b bg-muted/50"
+        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
+      >
+        <div className="p-2" />
+        {days.map((day) => (
+          <div
+            className="p-3 text-center font-bold text-[11px] text-muted-foreground uppercase tracking-widest"
+            key={day.name}
+          >
+            {day.name}
+          </div>
+        ))}
+      </div>
+
+      {/* Body Rows */}
+      <div className="divide-y divide-border">
+        {timeSlots.map((slot) => (
+          <div
+            className="grid gap-px"
+            key={slot.start.format('HH:mm')}
+            style={{
+              gridTemplateColumns: `56px repeat(${days.length}, 1fr)`,
+            }}
+          >
+            {/* Time Cell */}
+            <div className="flex flex-col items-center justify-center border-border border-r bg-muted/30">
+              <span className="font-medium text-[10px] text-muted-foreground">
+                {slot.start.format('HH:mm')}
+              </span>
+              <span className="font-bold text-muted-foreground text-xs">
+                {slot.index}.
+              </span>
+              <span className="font-medium text-[10px] text-muted-foreground">
+                {slot.end.format('HH:mm')}
+              </span>
+            </div>
+
+            {/* Day Cells */}
+            {days.map((day) => {
+              const cellKey = `${day.name}-${slot.start.format('HH:mm')}`;
+              const cell = grid.get(cellKey);
+              const lessons = cell?.lessons ?? [];
+
+              if (lessons.length === 0) {
+                return <div className="min-h-24 p-0.5" key={cellKey} />;
+              }
+
+              const isSingle = lessons.length === 1;
+              const firstLesson = lessons[0];
+
+              if (isSingle && firstLesson) {
+                return (
+                  <div className="min-h-24 p-0.5" key={cellKey}>
+                    <LessonCard lesson={firstLesson} />
+                  </div>
+                );
+              }
+
+              // Split cell with multiple lessons
+              return (
+                <div className="min-h-24 p-0.5" key={cellKey}>
+                  <div
+                    className={cn(
+                      'h-full gap-0.5 overflow-hidden rounded-md bg-muted',
+                      getSplitGridClass(lessons.length)
+                    )}
                   >
-                    {day.name}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timeSlots.map((time) => (
-                <TableRow className="border-border align-top" key={time}>
-                  <TableCell className="w-24 whitespace-nowrap font-mono text-muted-foreground text-sm print:text-black">
-                    {time}
-                  </TableCell>
-                  {days.map((day) => {
-                    const cell = grid[time]?.[day.name];
-                    if (!cell || cell.type === 'skip') {
-                      return null;
-                    }
-                    if (cell.type === 'empty') {
-                      return <TableCell key={`${time}-${day.name}`} />;
-                    }
-
-                    const lessons = cell.block.lessons;
-                    const multi = lessons.length > 1;
-                    const isMultiRow = cell.block.rowSpan > 1;
-
-                    return (
-                      <TableCell
-                        className="relative min-w-52 p-0"
-                        key={cell.block.key}
-                        rowSpan={cell.block.rowSpan}
-                      >
-                        <div
-                          className={clsx('gap-2 p-1', {
-                            'absolute inset-0': isMultiRow,
-                            'absolute inset-0 overflow-auto':
-                              isMultiRow && multi,
-                            'flex flex-col': !multi,
-                            grid: multi,
-                          })}
-                          style={
-                            multi
-                              ? {
-                                  gridTemplateColumns: `repeat(${lessons.length}, minmax(0, 1fr))`,
-                                }
-                              : undefined
-                          }
-                        >
-                          {lessons.map((lesson) => (
-                            <LessonCard key={lesson.id} lesson={lesson} />
-                          ))}
-                        </div>
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                    {lessons.map((lesson, idx) => (
+                      <LessonCard key={lesson.id ?? idx} lesson={lesson} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
   );
+}
+
+/** Get CSS Grid class for split cells based on lesson count */
+function getSplitGridClass(count: number): string {
+  switch (count) {
+    case 2:
+      return 'grid grid-cols-2';
+    case 3:
+      return 'grid grid-cols-2 grid-rows-2 [&>*:last-child]:col-span-2';
+    case 4:
+      return 'grid grid-cols-2 grid-rows-2';
+    case 5:
+      return 'grid grid-cols-3 grid-rows-2';
+    case 6:
+      return 'grid grid-cols-3 grid-rows-2';
+    default:
+      return 'grid grid-cols-2';
+  }
 }

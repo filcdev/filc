@@ -109,7 +109,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   });
 }
 
-const getForCohortResponseSchema = z.object({
+const responseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
   success: z.boolean(),
 });
@@ -132,7 +132,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getForCohortResponseSchema)),
+            schema: resolver(ensureJsonSafeDates(responseSchema)),
           },
         },
         description: 'Successful Response',
@@ -181,16 +181,6 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
-const getForTeacherResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
-  success: z.boolean(),
-});
-
-const getForRoomResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
-  success: z.boolean(),
-});
-
 export const getLessonsForTeacher = timetableFactory.createHandlers(
   describeRoute({
     description: 'Get lessons for a given teacher from the database.',
@@ -209,7 +199,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getForTeacherResponseSchema)),
+            schema: resolver(ensureJsonSafeDates(responseSchema)),
           },
         },
         description: 'Successful Response',
@@ -273,7 +263,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getForRoomResponseSchema)),
+            schema: resolver(ensureJsonSafeDates(responseSchema)),
           },
         },
         description: 'Successful Response',
