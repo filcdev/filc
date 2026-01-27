@@ -1,6 +1,6 @@
 import { confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
-import { sql } from 'drizzle-orm';
+import { getTableName, sql } from 'drizzle-orm';
 import { db } from '#database/index';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
@@ -13,16 +13,13 @@ await configureLogger('chronos');
 const logger = getLogger(['chronos', 'drizzle']);
 
 const reset = async () => {
-  const allSchemas = [
-    authenticationSchema,
-    authorizationSchema,
-    doorlockSchema,
-    timetableSchema,
-  ];
-
   logger.warn(
     'If this errors without completing, the database may be left in an inconsistent state.'
   );
+
+  const nukeAuth = await confirm({
+    message: 'Do you want to delete auth tables as well?',
+  });
 
   const proceed = await confirm({
     message:
@@ -34,15 +31,20 @@ const reset = async () => {
     process.exit(1);
   }
 
+  const schema = {
+    ...(nukeAuth ? authenticationSchema : {}),
+    ...(nukeAuth ? authorizationSchema : {}),
+    ...doorlockSchema,
+    ...timetableSchema,
+  };
+
   // disable foreign key checks
   logger.info('Disabling foreign key checks');
   await db.execute(sql.raw('SET session_replication_role = replica;'));
 
-  for (const schema of allSchemas) {
-    for (const table of Object.values(schema)) {
-      logger.info(`Deleting all records from table: ${table.name}`);
-      await db.delete(table);
-    }
+  for (const table of Object.values(schema)) {
+    logger.info(`Deleting all records from table: ${getTableName(table)}`);
+    await db.delete(table);
   }
 
   logger.info('Re-enabling foreign key checks');
