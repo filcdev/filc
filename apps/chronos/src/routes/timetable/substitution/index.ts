@@ -8,9 +8,13 @@ import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
+  classroom,
   cohort,
+  dayDefinition,
   lesson,
   lessonCohortMTM,
+  period,
+  subject,
   substitution,
   substitutionLessonMTM,
   teacher,
@@ -28,6 +32,124 @@ const allResponseSchema = z.object({
   data: z.array(substitutionSchema),
   success: z.boolean(),
 });
+
+// Helper to enrich lessons with their related data
+async function enrichLessons(lessonIds: string[]) {
+  if (lessonIds.length === 0) {
+    return [];
+  }
+
+  const lessons = await db
+    .select()
+    .from(lesson)
+    .where(inArray(lesson.id, lessonIds));
+
+  if (lessons.length === 0) {
+    return [];
+  }
+
+  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
+  const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
+  const teacherIds = Array.from(
+    new Set(
+      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
+    )
+  );
+  const classroomIds = Array.from(
+    new Set(
+      lessons.flatMap((l) =>
+        Array.isArray(l.classroomIds) ? l.classroomIds : []
+      )
+    )
+  );
+
+  // Get lesson-cohort relationships
+  const lessonCohorts = await db
+    .select({
+      cohortId: lessonCohortMTM.cohortId,
+      cohortName: cohort.name,
+      lessonId: lessonCohortMTM.lessonId,
+    })
+    .from(lessonCohortMTM)
+    .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+    .where(inArray(lessonCohortMTM.lessonId, lessonIds));
+
+  // Create a map of lesson ID to cohort names
+  const lessonCohortMap = new Map<string, string[]>();
+  for (const lc of lessonCohorts) {
+    if (!lessonCohortMap.has(lc.lessonId)) {
+      lessonCohortMap.set(lc.lessonId, []);
+    }
+    lessonCohortMap.get(lc.lessonId)?.push(lc.cohortName);
+  }
+
+  const [subjects, days, periods, teachers, classrooms] = await Promise.all([
+    db.select().from(subject).where(inArray(subject.id, subjectIds)),
+    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
+    db.select().from(period).where(inArray(period.id, periodIds)),
+    teacherIds.length
+      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
+      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
+    classroomIds.length
+      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
+      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
+  ]);
+
+  const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
+  const dayMap = new Map(days.map((d) => [d.id, d] as const));
+  const periodMap = new Map(periods.map((p) => [p.id, p] as const));
+  const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
+  const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
+
+  return lessons.map((l) => {
+    const tIds = (Array.isArray(l.teacherIds) ? l.teacherIds : []) as string[];
+    const cIds = (
+      Array.isArray(l.classroomIds) ? l.classroomIds : []
+    ) as string[];
+    const cohortNames = lessonCohortMap.get(l.id) || [];
+
+    return {
+      classrooms: cIds
+        .map((id) => classroomMap.get(id))
+        .filter(Boolean)
+        .map((cr) => ({
+          id: (cr as (typeof classrooms)[number]).id,
+          name: (cr as (typeof classrooms)[number]).name,
+          short: (cr as (typeof classrooms)[number]).short,
+        })),
+      cohorts: cohortNames,
+      day: dayMap.get(l.dayDefinitionId),
+      id: l.id,
+      period: (() => {
+        const p = periodMap.get(l.periodId);
+        return p
+          ? {
+              endTime: String(p.endTime),
+              id: p.id,
+              period: p.period,
+              startTime: String(p.startTime),
+            }
+          : null;
+      })(),
+      periodsPerWeek: l.periodsPerWeek,
+      subject: (() => {
+        const s = subjMap.get(l.subjectId);
+        return s ? { id: s.id, name: s.name, short: s.short } : null;
+      })(),
+      teachers: tIds
+        .map((id) => teacherMap.get(id))
+        .filter(Boolean)
+        .map((t) => ({
+          id: (t as (typeof teachers)[number]).id,
+          name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
+          short: (t as (typeof teachers)[number]).short,
+        })),
+      termDefinitionId: l.termDefinitionId,
+      weeksDefinitionId: l.weeksDefinitionId,
+    };
+  });
+}
 
 export const getAllSubstitutions = timetableFactory.createHandlers(
   describeRoute({
@@ -47,14 +169,28 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     try {
+      // First get all substitutions with their lesson IDs
       const substitutions = await db
         .select({
-          lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+          lessonIds: sql<string[]>`COALESCE(
+            ARRAY_AGG(DISTINCT ${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
-          )`.as('lessons'),
+          )`.as('lessonIds'),
           substitution,
-          teacher,
+          teacher: sql`
+            CASE 
+              WHEN ${teacher.id} IS NOT NULL THEN
+                jsonb_build_object(
+                  'id', ${teacher.id},
+                  'firstName', ${teacher.firstName},
+                  'lastName', ${teacher.lastName},
+                  'short', ${teacher.short},
+                  'gender', ${teacher.gender},
+                  'userId', ${teacher.userId}
+                )
+              ELSE NULL
+            END
+          `.as('teacher'),
         })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -62,10 +198,34 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
           substitutionLessonMTM,
           eq(substitution.id, substitutionLessonMTM.substitutionId)
         )
-        .groupBy(substitution.id, teacher.id);
+        .groupBy(
+          substitution.id,
+          teacher.id,
+          teacher.firstName,
+          teacher.lastName,
+          teacher.short,
+          teacher.gender,
+          teacher.userId
+        );
 
-      return c.json<SuccessResponse<typeof substitutions>>({
-        data: substitutions,
+      // Collect all unique lesson IDs
+      const allLessonIds = Array.from(
+        new Set(substitutions.flatMap((s) => s.lessonIds))
+      );
+
+      // Enrich lessons in one batch
+      const enrichedLessons = await enrichLessons(allLessonIds);
+      const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
+
+      // Map lessons back to substitutions
+      const result = substitutions.map((s) => ({
+        lessons: s.lessonIds.map((id) => lessonMap.get(id)).filter(Boolean),
+        substitution: s.substitution,
+        teacher: s.teacher,
+      }));
+
+      return c.json<SuccessResponse<typeof result>>({
+        data: result,
         success: true,
       });
     } catch (error) {

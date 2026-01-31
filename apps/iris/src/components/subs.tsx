@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -9,15 +7,50 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
 
 type TimetableProps = {
   data: Subs[];
 };
 
+type Lesson = {
+  id: string;
+  subject: {
+    id: string;
+    name: string;
+    short: string;
+  } | null;
+  classrooms: {
+    id: string;
+    name: string;
+    short: string;
+  }[];
+  cohorts: string[];
+  day: {
+    id: string;
+    name: string;
+    short: string;
+    days: string[];
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  period: {
+    id: string;
+    period: number;
+    startTime: string;
+    endTime: string;
+  } | null;
+  periodsPerWeek: number;
+  teachers: {
+    id: string;
+    name: string;
+    short: string;
+  }[];
+  termDefinitionId: string | null;
+  weeksDefinitionId: string;
+};
+
 type Subs = {
-  lessons: string[];
+  lessons: Lesson[];
   substitution: {
     date: string;
     id: string;
@@ -33,100 +66,21 @@ type Subs = {
   } | null;
 };
 
-type Lesson = {
-  id: string;
-  subject: {
-    id: string;
-    name: string;
-    short: string;
-  };
-  classrooms: {
-    id: string;
-    name: string;
-    short: string;
-  }[];
-  day: {
-    id: string;
-    name: string;
-    short: string;
-    days: string[];
-    createdAt: string;
-    updatedAt: string;
-  };
-  period: {
-    id: string;
-    period: number;
-    startTime: string;
-    endTime: string;
-  };
-  periodsPerWeek: number;
-  substitutionCohortName: string | null;
-  teachers: {
-    id: string;
-    name: string;
-    short: string;
-  }[];
-  termDefinitionId: string | null;
-  weeksDefinitionId: string;
-};
-
 function LessonRow({
-  lessonId,
+  lesson,
   substituter,
 }: {
-  lessonId: string;
+  lesson: Lesson;
   substituter: string | null;
 }) {
-  const { isPending: sessionPending } = authClient.useSession();
-  const lessonQuery = useQuery({
-    enabled: !sessionPending,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.lessons.getForId[':lessonId'].$get({
-          param: { lessonId },
-        })
-      );
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load lesson');
-      }
-
-      return res.data as Lesson;
-    },
-    queryKey: ['lesson', lessonId],
-  });
-
-  if (lessonQuery.isLoading) {
-    return (
-      <>
-        <TableCell>Loading...</TableCell>
-        <TableCell>Loading...</TableCell>
-        <TableCell>Loading...</TableCell>
-        <TableCell>Loading...</TableCell>
-        <TableCell>Loading...</TableCell>
-        <TableCell>Loading...</TableCell>
-      </>
-    );
-  }
-
-  if (lessonQuery.isError || !lessonQuery.data) {
-    return (
-      <>
-        <TableCell>Error</TableCell>
-        <TableCell>Error</TableCell>
-        <TableCell>Error</TableCell>
-        <TableCell>Error</TableCell>
-        <TableCell>Error</TableCell>
-        <TableCell>Error</TableCell>
-      </>
-    );
-  }
-
-  const lesson = lessonQuery.data;
-
   return (
     <>
       <TableCell>{lesson.subject?.short ?? 'N/A'}</TableCell>
-      <TableCell>{lesson.substitutionCohortName ?? 'N/A'}</TableCell>
+      <TableCell>
+        {lesson.cohorts && lesson.cohorts.length > 0
+          ? lesson.cohorts.join(', ')
+          : 'N/A'}
+      </TableCell>
       <TableCell>
         {lesson.period?.startTime && lesson.period?.endTime
           ? `${lesson.period.startTime.slice(0, 5)} - ${lesson.period.endTime.slice(0, 5)}`
@@ -150,12 +104,12 @@ function LessonRow({
 }
 
 function LessonReturn(data: Subs[]) {
-  return data.map((sub) =>
+  return data.flatMap((sub) =>
     sub.lessons.map((lesson) => (
-      <TableRow key={`${sub.substitution.id}-${lesson}`}>
+      <TableRow key={`${sub.substitution.id}-${lesson.id}`}>
         <LessonRow
-          lessonId={lesson}
-          substituter={`${sub.teacher?.firstName} ${sub.teacher?.lastName}`}
+          lesson={lesson}
+          substituter={`${sub.teacher?.firstName ?? ''} ${sub.teacher?.lastName ?? ''}`.trim()}
         />
       </TableRow>
     ))
