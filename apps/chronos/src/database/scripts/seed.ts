@@ -328,7 +328,11 @@ const seedDoorlockCards = async (
     userId: currentUser.id,
   }));
 
-  const created = await db.insert(card).values(cardsToCreate).returning();
+  const created = await db
+    .insert(card)
+    .values(cardsToCreate)
+    .onConflictDoNothing()
+    .returning();
 
   logger.info(`Created ${created.length} access cards`);
   return created;
