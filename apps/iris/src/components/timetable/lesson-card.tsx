@@ -1,40 +1,92 @@
+import { Clock, MapPinIcon, UserIcon } from 'lucide-react';
 import {
-  colorFromSubject,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/utils';
+import {
   formatRooms,
-  formatRoomsShort,
-  formatTeachersShort,
+  formatTeachers,
+  getSubjectColor,
+  toHHMM,
 } from './helpers';
 import type { LessonItem } from './types';
 
-export function LessonCard({ lesson }: { lesson: LessonItem }) {
+type LessonCardProps = {
+  lesson: LessonItem;
+};
+
+export function LessonCard({ lesson }: LessonCardProps) {
   const subject = lesson.subject?.name ?? '—';
   const short = lesson.subject?.short ?? subject;
-  const teacherShort = formatTeachersShort(lesson.teachers);
+  const teacher = formatTeachers(lesson.teachers);
   const room = formatRooms(lesson.classrooms);
-  const roomShort = formatRoomsShort(lesson.classrooms);
-  const color = colorFromSubject(subject);
+  const color = getSubjectColor(subject);
+
+  const startTime = toHHMM(lesson.period?.startTime);
+  const endTime = toHHMM(lesson.period?.endTime);
+  const timeRange = `${startTime} - ${endTime}`;
 
   return (
-    <div
-      className="flex items-center justify-between rounded-md border border-border p-1.5 shadow-sm print:border-black/50 print:shadow-none"
-      style={{ backgroundColor: `${color}1a`, borderColor: `${color}33` }}
-    >
-      <div className="font-semibold text-base text-foreground leading-6">
-        {short}
-      </div>
-      <div className="mt-0.5 flex flex-col items-end space-y-0.5 text-muted-foreground text-xs">
-        <div className="truncate">
-          <span>{teacherShort}</span>
-        </div>
-        {room || roomShort ? (
-          <div className="truncate">
-            <span className="hidden sm:inline">{room}</span>
-            <span className="sm:hidden">{roomShort}</span>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <div
+            className={cn(
+              'relative flex h-full flex-col items-center justify-center overflow-hidden rounded-md border border-l-2 p-1 transition-colors hover:brightness-95',
+              color.bg,
+              color.border
+            )}
+          >
+            <div className="font-semibold text-sm leading-none">{short}</div>
+            <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+              {teacher} {room && <>| {room}</>}
+            </div>
           </div>
-        ) : (
-          <span>&nbsp;</span>
+        }
+      />
+      <TooltipContent
+        className={cn(
+          'w-72 border bg-card p-0 text-foreground shadow-2xl',
+          color.border
         )}
-      </div>
-    </div>
+        side="bottom"
+      >
+        <div className="p-4">
+          <div className="mb-2 flex items-start justify-between">
+            <h5 className="font-bold text-accent-foreground text-base leading-tight">
+              {subject}
+            </h5>
+          </div>
+
+          <div className="mb-3 flex items-center gap-2 border-b pb-3 text-muted-foreground text-xs">
+            <Clock className="h-4 w-4" />
+            <span className="font-medium text-foreground">{timeRange}</span>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            {room && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-accent-foreground">
+                  <MapPinIcon />
+                </span>
+                <span className="font-bold text-foreground">{room}</span>
+              </div>
+            )}
+            {teacher && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-accent-foreground">
+                  <UserIcon />
+                </span>
+                <span className="font-bold text-foreground">
+                  {lesson.teachers.map((t) => t.name).join(', ')}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }

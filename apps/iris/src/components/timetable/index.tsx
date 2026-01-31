@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
-import { buildViewModel, formatTeachers } from '@/components/timetable/helpers';
+import { buildViewModel } from '@/components/timetable/helpers';
 import type {
   ClassroomItem,
   CohortItem,
@@ -95,45 +95,6 @@ const getActiveSelectionId = (
   }
 };
 
-const getSelectedName = (
-  filter: FilterType,
-  selections: {
-    class: string | null;
-    teacher: string | null;
-    classroom: string | null;
-  },
-  data: {
-    cohorts?: CohortItem[];
-    teachers?: TeacherItem[];
-    classrooms?: ClassroomItem[];
-  }
-): string => {
-  switch (filter) {
-    case 'class':
-      return (
-        data.cohorts?.find((c) => c.id === selections.class)?.name ?? 'Class'
-      );
-    case 'teacher': {
-      const teacher = data.teachers?.find((t) => t.id === selections.teacher);
-      return teacher
-        ? formatTeachers([
-            {
-              ...teacher,
-              name: `${teacher.firstName} ${teacher.lastName}`,
-            },
-          ])
-        : 'Teacher';
-    }
-    case 'classroom':
-      return (
-        data.classrooms?.find((c) => c.id === selections.classroom)?.name ??
-        'Classroom'
-      );
-    default:
-      return 'Schedule';
-  }
-};
-
 // Component
 export function TimetableView() {
   const search = Route.useSearch();
@@ -161,13 +122,13 @@ export function TimetableView() {
 
   // State
   const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
-    if (search.cohortClass) {
+    if (search.cohort) {
       return 'class';
     }
-    if (search.cohortTeacher) {
+    if (search.teacher) {
       return 'teacher';
     }
-    if (search.cohortClassroom) {
+    if (search.room) {
       return 'classroom';
     }
     return 'class';
@@ -205,21 +166,18 @@ export function TimetableView() {
 
     // Validate search params against available data
     const cohortClass =
-      search.cohortClass &&
-      cohortsQuery.data.some((c) => c.id === search.cohortClass)
-        ? search.cohortClass
+      search.cohort && cohortsQuery.data.some((c) => c.id === search.cohort)
+        ? search.cohort
         : null;
 
     const cohortTeacher =
-      search.cohortTeacher &&
-      teachersQuery.data.some((t) => t.id === search.cohortTeacher)
-        ? search.cohortTeacher
+      search.teacher && teachersQuery.data.some((t) => t.id === search.teacher)
+        ? search.teacher
         : null;
 
     const cohortClassroom =
-      search.cohortClassroom &&
-      classroomsQuery.data.some((c) => c.id === search.cohortClassroom)
-        ? search.cohortClassroom
+      search.room && classroomsQuery.data.some((c) => c.id === search.room)
+        ? search.room
         : null;
 
     if (cohortClass) {
@@ -245,9 +203,9 @@ export function TimetableView() {
     selections.class,
     selections.classroom,
     selections.teacher,
-    search.cohortClass,
-    search.cohortTeacher,
-    search.cohortClassroom,
+    search.cohort,
+    search.teacher,
+    search.room,
   ]);
 
   // Set default selection when filter changes
@@ -289,16 +247,12 @@ export function TimetableView() {
   useEffect(() => {
     if (activeSelectionId) {
       const searchParams: z.Infer<typeof searchSchema> = {
-        cohortClass: undefined,
-        cohortClassroom: undefined,
-        cohortTeacher: undefined,
+        cohort: undefined,
+        room: undefined,
+        teacher: undefined,
       };
 
-      const paramKey =
-        `cohort${activeFilter.charAt(0).toUpperCase()}${activeFilter.slice(1)}` as
-          | 'cohortClass'
-          | 'cohortTeacher'
-          | 'cohortClassroom';
+      const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
       searchParams[paramKey] = activeSelectionId;
       navigate({
         replace: true,
@@ -306,23 +260,6 @@ export function TimetableView() {
       });
     }
   }, [activeFilter, activeSelectionId, navigate]);
-
-  // Computed values
-  const selectedName = useMemo(
-    () =>
-      getSelectedName(activeFilter, selections, {
-        classrooms: classroomsQuery.data,
-        cohorts: cohortsQuery.data,
-        teachers: teachersQuery.data,
-      }),
-    [
-      activeFilter,
-      selections,
-      cohortsQuery.data,
-      teachersQuery.data,
-      classroomsQuery.data,
-    ]
-  );
 
   const model = useMemo(
     () => buildViewModel((lessonsQuery.data ?? []) as LessonItem[]),
@@ -385,10 +322,7 @@ export function TimetableView() {
           className="w-full max-w-7xl print:max-w-none"
           id="timetable-print-root"
         >
-          <TimetableGrid
-            model={model}
-            title={`${selectedName} - Week Schedule`}
-          />
+          <TimetableGrid model={model} />
         </div>
       )}
     </div>
