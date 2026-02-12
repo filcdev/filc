@@ -234,7 +234,7 @@ const importBaseData = async () => {
   logger.info('Importing base timetable data...');
 
   const baseTimetableXmlPath = path.join(
-    __dirname,
+    import.meta.dirname,
     '..',
     '..',
     '..',
