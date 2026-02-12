@@ -65,7 +65,8 @@
     "timetable": "Órarend",
     "doorlock": "Ajtózár",
     "management": "Kezelés",
-    "users": "Felhasználók"
+    "users": "Felhasználók",
+    "roles": "Szerepkörök"
   },
   "timetable": {
     "import": "Órarend importálása",
@@ -120,5 +121,31 @@
   "cookiePopup": {
     "description": "Mi is sütiket használunk az oldalunkon, hogy jobb élményt adhassunk neked.",
     "title": "Kérsz egy sütit?"
+  },
+  "roles": {
+    "title": "Szerepkörök kezelése",
+    "name": "Név",
+    "permissions": "Jogosultságok",
+    "actions": "Műveletek",
+    "edit": "Szerkesztés",
+    "delete": "Törlés",
+    "createRole": "Szerepkör létrehozása",
+    "editRole": "Szerepkör szerkesztése",
+    "save": "Mentés",
+    "create": "Létrehozás",
+    "addPermission": "Hozzáadás",
+    "searchOrAddPermission": "Jogosultságok keresése...",
+    "customPermissionPlaceholder": "pl. egyedi:jogosultsag",
+    "addCustom": "\"{{name}}\" hozzáadása",
+    "noPermissions": "Nincsenek jogosultságok hozzárendelve",
+    "noRoles": "Nincsenek szerepkörök",
+    "nameValidation": "Csak kisbetűk, számok, kötőjel és aláhúzás használható.",
+    "createSuccess": "Szerepkör sikeresen létrehozva",
+    "createError": "Nem sikerült létrehozni a szerepkört",
+    "updateSuccess": "Szerepkör sikeresen frissítve",
+    "updateError": "Nem sikerült frissíteni a szerepkört",
+    "deleteSuccess": "Szerepkör sikeresen törölve",
+    "deleteError": "Nem sikerült törölni a szerepkört",
+    "loadError": "Hiba a szerepkörök betöltése közben"
   }
 }

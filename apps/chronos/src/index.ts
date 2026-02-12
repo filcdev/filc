@@ -16,6 +16,7 @@ import { timingMiddleware } from '#middleware/timing';
 import { cohortRouter } from '#routes/cohort/_router';
 import { doorlockRouter } from '#routes/doorlock/_router';
 import { pingRouter } from '#routes/ping/_router';
+import { rolesRouter } from '#routes/roles/_router';
 import { timetableRouter } from '#routes/timetable/_router';
 import { usersRouter } from '#routes/users/_router';
 import { authRouter } from '#utils/authentication';
@@ -80,6 +81,7 @@ api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
 api.route('/doorlock', doorlockRouter);
 api.route('/users', usersRouter);
+api.route('/roles', rolesRouter);
 
 api.onError((err, c) => {
   logger.error('UNCAUGHT API error occurred:', {

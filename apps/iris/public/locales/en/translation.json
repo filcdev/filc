@@ -74,7 +74,8 @@
     "timetable": "Timetable",
     "doorlock": "Doorlock",
     "management": "Management",
-    "users": "Users"
+    "users": "Users",
+    "roles": "Roles"
   },
   "timetable": {
     "import": "Import Timetable",
@@ -120,5 +121,31 @@
   "cookiePopup": {
     "title": "We use cookies",
     "description": "By using this site, you agree to our usage of cookie to enhance your experience."
+  },
+  "roles": {
+    "title": "Role Management",
+    "name": "Name",
+    "permissions": "Permissions",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "createRole": "Create Role",
+    "editRole": "Edit Role",
+    "save": "Save",
+    "create": "Create",
+    "addPermission": "Add",
+    "searchOrAddPermission": "Search permissions...",
+    "customPermissionPlaceholder": "e.g. custom:permission",
+    "addCustom": "Add \"{{name}}\"",
+    "noPermissions": "No permissions assigned",
+    "noRoles": "No roles found",
+    "nameValidation": "Use lowercase letters, numbers, dashes or underscores only.",
+    "createSuccess": "Role created successfully",
+    "createError": "Failed to create role",
+    "updateSuccess": "Role updated successfully",
+    "updateError": "Failed to update role",
+    "deleteSuccess": "Role deleted successfully",
+    "deleteError": "Failed to delete role",
+    "loadError": "Error loading roles"
   }
 }

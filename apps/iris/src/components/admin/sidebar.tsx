@@ -6,6 +6,7 @@ import {
   IdCard,
   List,
   Microchip,
+  Shield,
   Users,
 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -91,6 +92,12 @@ export function AdminSidebar() {
             permission: 'users:read',
             title: t('admin.users'),
             url: '/admin/users',
+          },
+          {
+            icon: Shield,
+            permission: 'roles:read',
+            title: t('admin.roles'),
+            url: '/admin/roles',
           },
         ],
         label: t('admin.management'),

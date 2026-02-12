@@ -1,8 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono';
+import { parseResponse } from 'hono/client';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -25,19 +29,30 @@ type UserDialogProps = {
 };
 
 export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
+  const { t } = useTranslation();
   const [nickname, setNickname] = useState(user.nickname || '');
-  const [roles, setRoles] = useState(user.roles.join(', '));
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles);
   const queryClient = useQueryClient();
+
+  const rolesQuery = useQuery({
+    queryFn: async () => {
+      const res = await parseResponse(api.roles.index.$get());
+      if (!res.success) {
+        throw new Error('Failed to load roles');
+      }
+      return res.data;
+    },
+    queryKey: ['roles'],
+  });
+
+  const availableRoles = rolesQuery.data?.roles ?? [];
 
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await api.users[':id'].$patch({
         json: {
           nickname: nickname || undefined,
-          roles: roles
-            .split(',')
-            .map((r) => r.trim())
-            .filter(Boolean),
+          roles: selectedRoles,
         },
         param: { id: user.id },
       });
@@ -80,17 +95,64 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="roles">Roles (comma separated)</Label>
-            <Input
-              id="roles"
-              onChange={(e) => setRoles(e.target.value)}
-              value={roles}
-            />
+            <Label>{t('roles.permissions')}</Label>
+            <div className="flex flex-wrap gap-1.5 pb-2">
+              {selectedRoles.map((role) => (
+                <Badge key={role} variant="default">
+                  {role}
+                </Badge>
+              ))}
+              {selectedRoles.length === 0 && (
+                <span className="text-muted-foreground text-sm">
+                  {t('roles.noRoles')}
+                </span>
+              )}
+            </div>
+            {rolesQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">
+                {t('common.loading')}
+              </p>
+            ) : (
+              <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-3">
+                {availableRoles.map((role) => (
+                  <label
+                    className="flex items-center gap-2 text-sm"
+                    htmlFor={`role-${role.name}`}
+                    key={role.name}
+                  >
+                    <Checkbox
+                      checked={selectedRoles.includes(role.name)}
+                      id={`role-${role.name}`}
+                      onCheckedChange={(checked) => {
+                        const isChecked = Boolean(checked);
+                        if (isChecked) {
+                          setSelectedRoles((prev) =>
+                            prev.includes(role.name)
+                              ? prev
+                              : [...prev, role.name]
+                          );
+                        } else {
+                          setSelectedRoles((prev) =>
+                            prev.filter((r) => r !== role.name)
+                          );
+                        }
+                      }}
+                    />
+                    {role.name}
+                  </label>
+                ))}
+                {availableRoles.length === 0 && (
+                  <p className="text-muted-foreground text-sm">
+                    {t('roles.noRoles')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)} variant="outline">
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             disabled={mutation.isPending}

@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import type { AuthenticatedContext, Context } from '#_types/globals';
 import { auth } from '#utils/authentication';
-import { userHasPermission } from '#utils/authorization';
+import { rbac, userHasPermission } from '#utils/authorization';
 
 export const authenticationMiddleware = createMiddleware<Context>(
   async (c, next) => {
@@ -33,8 +33,9 @@ export const requireAuthentication = createMiddleware<AuthenticatedContext>(
   }
 );
 
-export const requireAuthorization = (permission: string) =>
-  createMiddleware<AuthenticatedContext>(async (c, next) => {
+export const requireAuthorization = (permission: string) => {
+  rbac.registerPermission(permission);
+  return createMiddleware<AuthenticatedContext>(async (c, next) => {
     if (!c.var.session) {
       throw new HTTPException(StatusCodes.UNAUTHORIZED, {
         message: 'Unauthorized',
@@ -49,3 +50,4 @@ export const requireAuthorization = (permission: string) =>
 
     await next();
   });
+};

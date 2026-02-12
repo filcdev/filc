@@ -1,6 +1,4 @@
 import { getLogger } from '@logtape/logtape';
-// biome-ignore lint/performance/noNamespaceImport: RBAC uses namespace exports
-import * as RBACImport from '@rbac/rbac';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { user as dbUser } from '#database/schema/authentication';
@@ -8,29 +6,137 @@ import { role as dbRole } from '#database/schema/authorization';
 
 const logger = getLogger(['chronos', 'rbac']);
 
-// Workaround for CJS/ESM interop issues with @rbac/rbac.
-// In bundled builds, the default export might be double-wrapped.
-const RBAC = ((typeof RBACImport.default === 'function'
-  ? RBACImport.default
-  : // @ts-expect-error
-    RBACImport.default?.default) || RBACImport) as typeof RBACImport.default;
+type RoleDefinition = {
+  can: string[];
+};
 
-export const rbac = RBAC({
-  logger(role, operation, result) {
-    logger.info(
-      `RBAC check - role: ${role}, operation: ${operation}, result: ${result}`
+class RBAC {
+  private readonly roles = new Map<string, RoleDefinition>();
+  private readonly registeredPermissions = new Set<string>();
+
+  /** Register a permission as "known" (called automatically by middleware). */
+  registerPermission(permission: string): void {
+    this.registeredPermissions.add(permission);
+  }
+
+  /** Return every permission that has been registered via middleware or manually. */
+  getAllPermissions(): string[] {
+    return [...this.registeredPermissions].sort();
+  }
+
+  loadRoles(roles: Record<string, RoleDefinition>): void {
+    this.roles.clear();
+    for (const [name, def] of Object.entries(roles)) {
+      this.roles.set(name, { can: [...def.can] });
+    }
+  }
+
+  /** Check whether `roleName` is granted `permission`. Supports `*` wildcard. */
+  can(roleName: string, permission: string): boolean {
+    const role = this.roles.get(roleName);
+    if (!role) {
+      logger.trace(
+        `RBAC check - role: ${roleName}, operation: ${permission}, result: false (unknown role)`
+      );
+      return false;
+    }
+
+    const result = role.can.includes('*') || role.can.includes(permission);
+
+    logger.trace(
+      `RBAC check - role: ${roleName}, operation: ${permission}, result: ${result}`
     );
-  },
-})({
-  admin: {
-    can: ['*'],
-  },
-  user: {
-    can: [],
-  },
-});
+    return result;
+  }
+
+  /** Return permissions registered for a role (empty array if unknown). */
+  getPermissionsForRole(roleName: string): string[] {
+    return [...(this.roles.get(roleName)?.can ?? [])];
+  }
+
+  /** Return a snapshot of every role and its permissions. */
+  getAllRoles(): Record<string, RoleDefinition> {
+    const snapshot: Record<string, RoleDefinition> = {};
+    for (const [name, def] of this.roles) {
+      snapshot[name] = { can: [...def.can] };
+    }
+    return snapshot;
+  }
+
+  async createRole(name: string, permissions: string[]): Promise<void> {
+    const [inserted] = await db
+      .insert(dbRole)
+      .values({ can: permissions, name })
+      .returning();
+
+    if (!inserted) {
+      throw new Error(`Role "${name}" already exists`);
+    }
+
+    this.roles.set(name, { can: [...permissions] });
+    logger.info(
+      `Created role "${name}" with permissions: [${permissions.join(', ')}]`
+    );
+  }
+
+  async deleteRole(name: string): Promise<void> {
+    await db.delete(dbRole).where(eq(dbRole.name, name));
+    this.roles.delete(name);
+    logger.info(`Deleted role "${name}"`);
+  }
+
+  async setPermissions(roleName: string, permissions: string[]): Promise<void> {
+    await db
+      .update(dbRole)
+      .set({ can: permissions })
+      .where(eq(dbRole.name, roleName));
+    const role = this.roles.get(roleName);
+    if (role) {
+      role.can = [...permissions];
+    }
+    logger.info(
+      `Updated permissions for role "${roleName}": [${permissions.join(', ')}]`
+    );
+  }
+
+  async grantPermission(roleName: string, permission: string): Promise<void> {
+    const role = this.roles.get(roleName);
+    if (!role) {
+      logger.warn(`Cannot grant permission – role "${roleName}" not found.`);
+      return;
+    }
+    if (role.can.includes(permission)) {
+      return;
+    }
+
+    const updated = [...role.can, permission];
+    await this.setPermissions(roleName, updated);
+  }
+
+  async revokePermission(roleName: string, permission: string): Promise<void> {
+    const role = this.roles.get(roleName);
+    if (!role) {
+      logger.warn(`Cannot revoke permission – role "${roleName}" not found.`);
+      return;
+    }
+
+    const updated = role.can.filter((p) => p !== permission);
+    await this.setPermissions(roleName, updated);
+  }
+}
+
+export const rbac = new RBAC();
 
 export const initializeRBAC = async () => {
+  // Ensure default roles exist to prevent bootstrapping deadlock
+  await db
+    .insert(dbRole)
+    .values([
+      { can: ['*'], name: 'admin' },
+      { can: [], name: 'user' },
+    ])
+    .onConflictDoNothing();
+
   const roles = await db
     .select({
       can: dbRole.can,
@@ -48,7 +154,7 @@ export const initializeRBAC = async () => {
     {} as Record<string, { can: string[] }>
   );
 
-  rbac.updateRoles(rolesObject);
+  rbac.loadRoles(rolesObject);
 };
 
 export const userHasPermission = async (
@@ -73,11 +179,7 @@ export const userHasPermission = async (
     return false;
   }
 
-  const canPromises = user.roles.map((role) => rbac.can(role, permissionName));
-
-  const canResults = await Promise.all(canPromises);
-
-  return canResults.some((can) => can);
+  return user.roles.some((role) => rbac.can(role, permissionName));
 };
 
 export const getUserPermissions = async (userId: string): Promise<string[]> => {
@@ -108,11 +210,7 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
     if (!rolePermissions) {
       logger.warn(`Role ${role} not found in the database.`);
       // create it
-      await db
-        .insert(dbRole)
-        .values({ can: role === 'admin' ? ['*'] : [], name: role })
-        .returning({ can: dbRole.can });
-      logger.info(`Created missing role ${role} in the database.`);
+      await rbac.createRole(role, role === 'admin' ? ['*'] : []);
       continue;
     }
 
