@@ -8,6 +8,25 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { rolesFactory } from '#routes/roles/_factory';
 import { rbac } from '#utils/authorization';
 
+export const listPermissions = rolesFactory.createHandlers(
+  describeRoute({
+    description: 'List all known permissions registered by the application',
+    responses: {
+      200: {
+        description: 'List of permissions',
+      },
+    },
+    tags: ['Roles'],
+  }),
+  requireAuthentication,
+  requireAuthorization('roles:read'),
+  (c) =>
+    c.json<SuccessResponse<{ permissions: string[] }>>({
+      data: { permissions: rbac.getAllPermissions() },
+      success: true,
+    })
+);
+
 export const listRoles = rolesFactory.createHandlers(
   describeRoute({
     description: 'List all roles with their permissions',

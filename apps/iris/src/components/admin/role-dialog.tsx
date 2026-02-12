@@ -1,9 +1,19 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { parseResponse } from 'hono/client';
+import { CheckIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/utils';
 import { api } from '@/utils/hc';
 
 type Role = {
@@ -39,6 +50,19 @@ export function RoleDialog({
   const [permissionInput, setPermissionInput] = useState('');
   const [permissions, setPermissions] = useState<string[]>([]);
   const queryClient = useQueryClient();
+
+  const permissionsQuery = useQuery({
+    queryFn: async () => {
+      const res = await parseResponse(api.roles.permissions.$get());
+      if (!res.success) {
+        throw new Error('Failed to load permissions');
+      }
+      return res.data.permissions as string[];
+    },
+    queryKey: ['permissions'],
+  });
+
+  const knownPermissions = permissionsQuery.data ?? [];
 
   useEffect(() => {
     if (open) {
@@ -149,26 +173,8 @@ export function RoleDialog({
           </div>
           <div className="space-y-2">
             <Label>{t('roles.permissions')}</Label>
-            <div className="flex gap-2">
-              <Input
-                id="permission-input"
-                onChange={(e) => setPermissionInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="e.g. users:manage"
-                value={permissionInput}
-              />
-              <Button
-                disabled={!permissionInput.trim()}
-                onClick={handleAddPermission}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {t('roles.addPermission')}
-              </Button>
-            </div>
             {permissions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-1.5">
                 {permissions.map((perm) => (
                   <Badge
                     className="cursor-pointer"
@@ -186,6 +192,74 @@ export function RoleDialog({
                 {t('roles.noPermissions')}
               </p>
             )}
+            <Command className="rounded-lg border" shouldFilter>
+              <CommandInput
+                onValueChange={setPermissionInput}
+                placeholder={t('roles.searchOrAddPermission')}
+                value={permissionInput}
+              />
+              <CommandList className="max-h-40">
+                <CommandEmpty>
+                  {permissionInput.trim() ? (
+                    <Button
+                      className="text-sm"
+                      onClick={handleAddPermission}
+                      size="sm"
+                      variant="ghost"
+                    >
+                      {t('roles.addCustom', { name: permissionInput.trim() })}
+                    </Button>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      {t('roles.noPermissions')}
+                    </span>
+                  )}
+                </CommandEmpty>
+                <CommandGroup>
+                  {knownPermissions.map((perm) => {
+                    const selected = permissions.includes(perm);
+                    return (
+                      <CommandItem
+                        key={perm}
+                        onSelect={() => {
+                          if (selected) {
+                            handleRemovePermission(perm);
+                          } else {
+                            setPermissions((prev) => [...prev, perm]);
+                          }
+                        }}
+                        value={perm}
+                      >
+                        <CheckIcon
+                          className={cn(
+                            'size-4 shrink-0',
+                            selected ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        {perm}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+            <div className="flex gap-2">
+              <Input
+                onChange={(e) => setPermissionInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t('roles.customPermissionPlaceholder')}
+                value={permissionInput}
+              />
+              <Button
+                disabled={!permissionInput.trim()}
+                onClick={handleAddPermission}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {t('roles.addPermission')}
+              </Button>
+            </div>
           </div>
         </div>
         <DialogFooter>

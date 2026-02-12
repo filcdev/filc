@@ -12,6 +12,17 @@ type RoleDefinition = {
 
 class RBAC {
   private readonly roles = new Map<string, RoleDefinition>();
+  private readonly registeredPermissions = new Set<string>();
+
+  /** Register a permission as "known" (called automatically by middleware). */
+  registerPermission(permission: string): void {
+    this.registeredPermissions.add(permission);
+  }
+
+  /** Return every permission that has been registered via middleware or manually. */
+  getAllPermissions(): string[] {
+    return [...this.registeredPermissions].sort();
+  }
 
   loadRoles(roles: Record<string, RoleDefinition>): void {
     this.roles.clear();
