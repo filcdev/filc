@@ -1,4 +1,4 @@
-import { init } from '@sentry/browser';
+import { init } from '@sentry/react';
 
 const dsn = import.meta.env.VITE_TELEMETRY_DSN;
 const mode = import.meta.env.MODE;
@@ -11,6 +11,7 @@ export const initializeTelemetry = () => {
     init({
       dsn,
       environment: mode,
+      sendDefaultPii: true,
     });
   }
 };
