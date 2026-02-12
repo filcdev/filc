@@ -89,7 +89,14 @@ export const createRole = rolesFactory.createHandlers(
       });
     }
 
-    await rbac.createRole(name, permissions);
+    try {
+      await rbac.createRole(name, permissions);
+    } catch (_error) {
+      // Catch unique constraint violations from concurrent requests
+      throw new HTTPException(StatusCodes.CONFLICT, {
+        message: `Role "${name}" already exists`,
+      });
+    }
 
     return c.json<SuccessResponse<{ name: string; can: string[] }>>(
       {

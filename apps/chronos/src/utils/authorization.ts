@@ -64,10 +64,15 @@ class RBAC {
   }
 
   async createRole(name: string, permissions: string[]): Promise<void> {
-    await db
+    const [inserted] = await db
       .insert(dbRole)
       .values({ can: permissions, name })
-      .onConflictDoNothing();
+      .returning();
+
+    if (!inserted) {
+      throw new Error(`Role "${name}" already exists`);
+    }
+
     this.roles.set(name, { can: [...permissions] });
     logger.info(
       `Created role "${name}" with permissions: [${permissions.join(', ')}]`
@@ -123,6 +128,15 @@ class RBAC {
 export const rbac = new RBAC();
 
 export const initializeRBAC = async () => {
+  // Ensure default roles exist to prevent bootstrapping deadlock
+  await db
+    .insert(dbRole)
+    .values([
+      { can: ['*'], name: 'admin' },
+      { can: [], name: 'user' },
+    ])
+    .onConflictDoNothing();
+
   const roles = await db
     .select({
       can: dbRole.can,

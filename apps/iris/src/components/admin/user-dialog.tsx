@@ -124,8 +124,13 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                       checked={selectedRoles.includes(role.name)}
                       id={`role-${role.name}`}
                       onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedRoles((prev) => [...prev, role.name]);
+                        const isChecked = Boolean(checked);
+                        if (isChecked) {
+                          setSelectedRoles((prev) =>
+                            prev.includes(role.name)
+                              ? prev
+                              : [...prev, role.name]
+                          );
                         } else {
                           setSelectedRoles((prev) =>
                             prev.filter((r) => r !== role.name)
