@@ -1,6 +1,6 @@
 import { init } from '@sentry/browser';
 
-const dsn = import.meta.env.VITE_TELEMTRY_DSN;
+const dsn = import.meta.env.VITE_TELEMETRY_DSN;
 const mode = import.meta.env.MODE;
 
 export const initializeTelemetry = () => {
