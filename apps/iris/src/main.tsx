@@ -11,6 +11,7 @@ import { routeTree } from './route-tree.gen';
 
 import './global.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { initializeTelemetry } from '@/utils/telemetry';
 import { reportWebVitals } from '@/utils/web-vitals';
 
 // Create a new router instance
@@ -44,6 +45,8 @@ await i18n.use(Backend).init({
 });
 
 const queryClient = new QueryClient();
+
+initializeTelemetry();
 
 // Render the app
 const rootElement = document.getElementById('app');
