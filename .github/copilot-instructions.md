@@ -199,8 +199,8 @@ GitHub Actions workflow (`.github/workflows/check.yml`) runs on push to main and
 ## Validation Checklist
 
 Before committing changes, ensure:
-1. ✅ `bun install` completes without errors
-2. ✅ `bun lint` passes with no issues (auto-fixes applied)
+1. ✅ `bun install` completes without errors (if dependencies changed)
+2. ✅ `bun lint` passes with no issues (use `--write` to auto-fix)
 3. ✅ `bun typecheck` shows no type errors
 4. ✅ `bun run build` succeeds for both apps
 5. ✅ No changes to generated files (`route-tree.gen.ts`, migration SQL files)

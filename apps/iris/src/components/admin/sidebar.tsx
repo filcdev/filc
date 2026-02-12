@@ -1,11 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import {
+  ArrowRightLeft,
   Calendar,
   DoorOpen,
   GraduationCap,
   IdCard,
   List,
   Microchip,
+  RefreshCw,
   Shield,
   Users,
 } from 'lucide-react';
@@ -52,6 +54,18 @@ export function AdminSidebar() {
             permission: 'import:timetable',
             title: t('timetable.import'),
             url: '/admin/timetable/import',
+          },
+          {
+            icon: RefreshCw,
+            permission: 'substitution:create',
+            title: t('substitution.title'),
+            url: '/admin/timetable/substitutions',
+          },
+          {
+            icon: ArrowRightLeft,
+            permission: 'movedLesson:create',
+            title: t('movedLesson.title'),
+            url: '/admin/timetable/moved-lessons',
           },
         ],
         label: t('admin.timetable'),

@@ -193,7 +193,10 @@ function TimetableImportPage() {
           </div>
 
           {/* File Upload Area */}
-          <button
+          {/** biome-ignore lint/a11y/useKeyWithClickEvents: it's a file input disguised as a div, so keyboard interaction isn't necessary here */}
+          {/** biome-ignore lint/a11y/noStaticElementInteractions: it's a file input disguised as a div, so keyboard interaction isn't necessary here */}
+          {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: it's a file input disguised as a div, so keyboard interaction isn't necessary here */}
+          <div
             className="relative flex min-h-50 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-muted-foreground/25 border-dashed bg-transparent p-8 text-center transition-colors hover:border-muted-foreground/50"
             onClick={handleBrowseClick}
             onDragLeave={(e) => {
@@ -222,7 +225,6 @@ function TimetableImportPage() {
                 setErrorMessage(null);
               }
             }}
-            type="button"
           >
             <input
               accept=".xml,text/xml,application/xml"
@@ -270,7 +272,7 @@ function TimetableImportPage() {
                 </p>
               </>
             )}
-          </button>
+          </div>
 
           {/* Status Messages */}
           {importStatus === 'success' && (
