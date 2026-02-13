@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { parseResponse } from 'hono/client';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
@@ -73,6 +74,7 @@ const groupByDate = (data: Subs[]) =>
   );
 
 export function SubstitutionView() {
+  const { t } = useTranslation();
   const { isPending } = authClient.useSession();
 
   const substitutionsQuery = useQuery({
@@ -95,23 +97,26 @@ export function SubstitutionView() {
   const groupedData = substitutionsQuery.data
     ? groupByDate(substitutionsQuery.data)
     : {};
+  const groupedEntries = Object.entries(groupedData).sort(([a], [b]) =>
+    a.localeCompare(b)
+  );
 
   return (
     <div className="flex grow flex-col items-center gap-4 p-4">
       <div className="flex w-full max-w-5xl items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="font-bold text-2xl">Substitutions</h1>
+          <h1 className="font-bold text-2xl">{t('substitution.title')}</h1>
         </div>
       </div>
       {isLoading && <Skeleton className="h-64 w-full max-w-5xl" />}
       {hasError && (
         <div className="w-full max-w-5xl">
-          <p className="text-red-500">Failed to load substitutions</p>
+          <p className="text-red-500">{t('substitution.loadError')}</p>
         </div>
       )}
       <div className="w-full max-w-5xl">
         {!(isLoading || hasError) &&
-          Object.entries(groupedData).map(([date, data]) => (
+          groupedEntries.map(([date, data]) => (
             <SubsV data={data} key={date} />
           ))}
       </div>

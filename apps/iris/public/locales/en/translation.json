@@ -12,7 +12,8 @@
     "back": "Back",
     "next": "Next",
     "skip": "Skip",
-    "complete": "Complete"
+    "complete": "Complete",
+    "actions": "Actions"
   },
   "login": {
     "byContinuing": "By continuing, you agree to our"
@@ -75,7 +76,8 @@
     "doorlock": "Doorlock",
     "management": "Management",
     "users": "Users",
-    "roles": "Roles"
+    "roles": "Roles",
+    "substitutions": "Substitutions"
   },
   "timetable": {
     "import": "Import Timetable",
@@ -142,7 +144,16 @@
     "deleteError": "Failed to delete substitution",
     "deleteConfirm": "Delete this substitution? This action cannot be undone.",
     "loadError": "Unable to load substitutions",
-    "loadErrorMessage": "Please try again later."
+    "loadErrorMessage": "Please try again later.",
+    "notAvailable": "N/A",
+    "substitutionOn": "Substitution on {{date}}",
+    "lesson": "Lesson",
+    "class": "Class",
+    "time": "Time",
+    "classroom": "Classroom",
+    "substituter": "Substituter",
+    "originalTeacher": "Original Teacher",
+    "noSubstituter": "Missing"
   },
   "movedLesson": {
     "title": "Moved Lessons",
@@ -216,5 +227,23 @@
     "deleteSuccess": "Role deleted successfully",
     "deleteError": "Failed to delete role",
     "loadError": "Error loading roles"
+  },
+  "substitutionsAdmin": {
+    "title": "Substitutions Management",
+    "createSubstitution": "Create Substitution",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loadError": "Failed to load substitutions",
+    "noSubstitutions": "No substitutions found",
+    "notAvailable": "N/A",
+    "table": {
+      "date": "Date",
+      "lesson": "Lesson",
+      "class": "Class",
+      "time": "Time",
+      "classroom": "Classroom",
+      "substituter": "Substituter",
+      "originalTeacher": "Original Teacher"
+    }
   }
 }

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
   Calendar,
+  Clock,
   DoorOpen,
   GraduationCap,
   IdCard,
@@ -112,6 +113,12 @@ export function AdminSidebar() {
             permission: 'roles:read',
             title: t('admin.roles'),
             url: '/admin/roles',
+          },
+          {
+            icon: Clock,
+            permission: 'subtitution:create',
+            title: t('admin.substitutions'),
+            url: '/admin/substitutions',
           },
         ],
         label: t('admin.management'),

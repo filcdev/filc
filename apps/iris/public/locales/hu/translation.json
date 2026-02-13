@@ -66,7 +66,8 @@
     "doorlock": "Ajtózár",
     "management": "Kezelés",
     "users": "Felhasználók",
-    "roles": "Szerepkörök"
+    "roles": "Szerepkörök",
+    "substitutions": "Helyettesítések"
   },
   "timetable": {
     "import": "Órarend importálása",
@@ -109,7 +110,8 @@
     "back": "Vissza",
     "next": "Tovább",
     "skip": "Kihagyás",
-    "complete": "Befejezés"
+    "complete": "Befejezés",
+    "actions": "Műveletek"
   },
   "substitution": {
     "title": "Helyettesítések",
@@ -121,7 +123,7 @@
     "date": "Dátum",
     "datePlaceholder": "Válassz egy dátumot",
     "substituteTeacher": "Helyettesítő tanár",
-    "substituteTeacherHint": "Hagyd elmaradtra, ha az óra nem kerül megtartásra.",
+    "substituteTeacherHint": "Hagyd elmaradónak, ha az óra nem kerül megtartásra.",
     "cancelled": "Elmarad",
     "lessons": "Érintett órák",
     "affectedLessons": "Órák",
@@ -142,7 +144,16 @@
     "deleteError": "Nem sikerült törölni a helyettesítést",
     "deleteConfirm": "Törlöd ezt a helyettesítést? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni a helyettesítéseket",
-    "loadErrorMessage": "Kérlek próbáld újra később."
+    "loadErrorMessage": "Kérlek próbáld újra később.",
+    "notAvailable": "N/A",
+    "substitutionOn": "Helyettesítés - {{date}}",
+    "lesson": "Óra",
+    "class": "Osztály",
+    "time": "Idő",
+    "classroom": "Terem",
+    "substituter": "Helyettesítő",
+    "originalTeacher": "Eredeti tanár",
+    "noSubstituter": "Elmarad"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",
@@ -216,5 +227,23 @@
     "deleteSuccess": "Szerepkör sikeresen törölve",
     "deleteError": "Nem sikerült törölni a szerepkört",
     "loadError": "Hiba a szerepkörök betöltése közben"
+  },
+  "substitutionsAdmin": {
+    "title": "Helyettesítések kezelése",
+    "createSubstitution": "Helyettesítés létrehozása",
+    "edit": "Szerkesztés",
+    "delete": "Törlés",
+    "loadError": "Nem sikerült betölteni a helyettesítéseket",
+    "noSubstitutions": "Nincsenek helyettesítések",
+    "notAvailable": "N/A",
+    "table": {
+      "date": "Dátum",
+      "lesson": "Óra",
+      "class": "Osztály",
+      "time": "Idő",
+      "classroom": "Terem",
+      "substituter": "Helyettesítő",
+      "originalTeacher": "Eredeti tanár"
+    }
   }
 }

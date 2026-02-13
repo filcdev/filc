@@ -154,7 +154,12 @@ export function SubstitutionDialog({
     queryKey: ['lessons', 'cohort', selectedCohort],
   });
 
+  const isCreate = !item;
+
   const availableLessons = useMemo(() => {
+    if (isCreate) {
+      return cohortLessonsQuery.data ?? [];
+    }
     const map = new Map<string, EnrichedLesson>();
     for (const l of allLessons) {
       map.set(l.id, l);
@@ -163,9 +168,7 @@ export function SubstitutionDialog({
       map.set(l.id, l);
     }
     return Array.from(map.values());
-  }, [allLessons, cohortLessonsQuery.data]);
-
-  const isCreate = !item;
+  }, [allLessons, cohortLessonsQuery.data, isCreate]);
 
   const isValid = useMemo(() => {
     if (!formState.date) {
