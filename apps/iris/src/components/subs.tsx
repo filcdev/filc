@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -73,31 +74,34 @@ function LessonRow({
   lesson: Lesson;
   substituter: string | null;
 }) {
+  const { t } = useTranslation();
+  const notAvailable = t('substitution.notAvailable');
+
   return (
     <>
-      <TableCell>{lesson.subject?.short ?? 'N/A'}</TableCell>
+      <TableCell>{lesson.subject?.short ?? notAvailable}</TableCell>
       <TableCell>
         {lesson.cohorts && lesson.cohorts.length > 0
           ? lesson.cohorts.join(', ')
-          : 'N/A'}
+          : notAvailable}
       </TableCell>
       <TableCell>
         {lesson.period?.startTime && lesson.period?.endTime
           ? `${lesson.period.startTime.slice(0, 5)} - ${lesson.period.endTime.slice(0, 5)}`
-          : 'N/A'}
+          : notAvailable}
       </TableCell>
       <TableCell>
         {lesson.classrooms && lesson.classrooms.length > 0
           ? lesson.classrooms.map((c) => c.name).join(', ')
-          : 'N/A'}
+          : notAvailable}
       </TableCell>
       <TableCell>
-        {substituter !== 'undefined undefined' ? substituter : 'N/A'}
+        {substituter !== '' ? substituter : t('substitution.noSubstituter')}
       </TableCell>
       <TableCell>
         {lesson.teachers && lesson.teachers.length > 0
-          ? lesson.teachers.map((t) => t.name).join(', ')
-          : 'N/A'}
+          ? lesson.teachers.map((teacher) => teacher.name).join(', ')
+          : notAvailable}
       </TableCell>
     </>
   );
@@ -117,24 +121,30 @@ function LessonReturn(data: Subs[]) {
 }
 
 export function SubsV({ data }: TimetableProps) {
+  const { t } = useTranslation();
+
   if (!data || data.length === 0) {
     return null;
   }
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Substitution on {data[0]?.substitution.date}</CardTitle>
+        <CardTitle>
+          {t('substitution.substitutionOn', {
+            date: data[0]?.substitution.date,
+          })}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Lesson</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Classroom</TableHead>
-              <TableHead>Substituter</TableHead>
-              <TableHead>Original Teacher</TableHead>
+              <TableHead>{t('substitution.lesson')}</TableHead>
+              <TableHead>{t('substitution.class')}</TableHead>
+              <TableHead>{t('substitution.time')}</TableHead>
+              <TableHead>{t('substitution.classroom')}</TableHead>
+              <TableHead>{t('substitution.substituter')}</TableHead>
+              <TableHead>{t('substitution.originalTeacher')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>{LessonReturn(data)}</TableBody>
