@@ -24,9 +24,12 @@ import { initializeRBAC } from '#utils/authorization';
 import { setupCronJobs } from '#utils/cron';
 import { env } from '#utils/environment';
 import { configureLogger } from '#utils/logger';
+import { initSentry } from '#utils/telemetry';
 
 await configureLogger('chronos');
 const logger = getLogger(['chronos', 'server']);
+
+initSentry();
 
 if (env.mode === 'development') {
   logger.warn('Running in development mode, do not use in production!');

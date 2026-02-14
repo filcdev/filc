@@ -25,6 +25,15 @@ const envSchema = z.object({
     .max(MAX_PORT)
     .default(DEFAULT_PORT),
   CHRONOS_REAL_IP_HEADER: z.string().optional(),
+  CHRONOS_SENTRY_DSN: z.url().optional(),
+  CHRONOS_SENTRY_ENVIRONMENT: z.string().optional(),
+  CHRONOS_SENTRY_RELEASE: z.string().optional(),
+  CHRONOS_SENTRY_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(1.0),
+  CHRONOS_SENTRY_TRACES_SAMPLE_RATE: z.coerce
+    .number()
+    .min(0)
+    .max(1)
+    .default(0.1),
   CHRONOS_TRUSTED_ORIGINS: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()
