@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
+import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { SubsV } from './subs';
 
