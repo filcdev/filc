@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -117,24 +118,29 @@ function LessonReturn(data: Subs[]) {
 }
 
 export function SubsV({ data }: TimetableProps) {
+  const { t } = useTranslation();
   if (!data || data.length === 0) {
     return null;
   }
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Substitution on {data[0]?.substitution.date}</CardTitle>
+        <CardTitle>
+          {t('substitution.cardTitle', {
+            date: data[0]?.substitution.date,
+          })}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Lesson</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Classroom</TableHead>
-              <TableHead>Substituter</TableHead>
-              <TableHead>Original Teacher</TableHead>
+              <TableHead>{t('substitution.affectedLessons')}</TableHead>
+              <TableHead>{t('substitution.cohorts')}</TableHead>
+              <TableHead>{t('timetable.time')}</TableHead>
+              <TableHead>{t('timetable.filterByClassroom')}</TableHead>
+              <TableHead>{t('substitution.substituteTeacher')}</TableHead>
+              <TableHead>{t('timetable.teacherFallback')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>{LessonReturn(data)}</TableBody>

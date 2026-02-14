@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { parseResponse } from 'hono/client';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
-import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { SubsV } from './subs';
 
@@ -74,6 +74,7 @@ const groupByDate = (data: Subs[]) =>
 
 export function SubstitutionView() {
   const { isPending } = authClient.useSession();
+  const { t } = useTranslation();
 
   const substitutionsQuery = useQuery({
     enabled: !isPending,
@@ -106,7 +107,7 @@ export function SubstitutionView() {
       {isLoading && <Skeleton className="h-64 w-full max-w-5xl" />}
       {hasError && (
         <div className="w-full max-w-5xl">
-          <p className="text-red-500">Failed to load substitutions</p>
+          <p className="text-red-500">{t('substitution.loadError')}</p>
         </div>
       )}
       <div className="w-full max-w-5xl">

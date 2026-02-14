@@ -142,7 +142,10 @@
     "deleteError": "Nem sikerült törölni a helyettesítést",
     "deleteConfirm": "Törlöd ezt a helyettesítést? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni a helyettesítéseket",
-    "loadErrorMessage": "Kérlek próbáld újra később."
+    "loadErrorMessage": "Kérlek próbáld újra később.",
+    "availableForClass": "Helyettesítések elérhetők ehhez: {{className}}",
+    "yourClass": "a te osztályod",
+    "cardTitle": "Helyettesítés ezen a napon: {{date}}"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",

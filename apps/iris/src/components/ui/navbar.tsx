@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { parseResponse } from 'hono/client';
 import {
   Book,
   Calendar,
@@ -11,6 +13,7 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,11 +27,21 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
 import { authClient } from '@/utils/authentication';
+import { api } from '@/utils/hc';
 
 type NavbarProps = {
   children?: ReactNode;
   showLinks?: boolean;
   showLogo?: boolean;
+};
+
+type Cohort = {
+  id: string;
+  name: string;
+};
+
+type Substitution = {
+  lessons: { cohorts: string[] }[];
 };
 
 export function Navbar({
@@ -39,6 +52,49 @@ export function Navbar({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
+  const userClassId = data?.user?.cohortId ?? null;
+
+  const cohortsQuery = useQuery({
+    enabled: !!userClassId,
+    queryFn: async () => {
+      const res = await parseResponse(api.cohort.index.$get());
+      if (!res.success) {
+        throw new Error('Failed to load cohorts');
+      }
+      return res.data as Cohort[];
+    },
+    queryKey: ['cohorts'],
+  });
+
+  const substitutionsQuery = useQuery({
+    enabled: !!userClassId,
+    queryFn: async () => {
+      const res = await parseResponse(api.timetable.substitutions.$get());
+      if (!res.success) {
+        throw new Error('Failed to load substitutions');
+      }
+
+      return res.data as Substitution[];
+    },
+    queryKey: ['substitutions'],
+  });
+
+  const userClassName = cohortsQuery.data?.find(
+    (cohort) => cohort.id === userClassId
+  )?.name;
+
+  const hasUserSubs =
+    !!userClassName &&
+    substitutionsQuery.data?.some((sub) =>
+      sub.lessons.some((lesson) => lesson.cohorts.includes(userClassName))
+    );
+
+  const substitutionBadgeLabel =
+    substitutionsQuery.isSuccess && hasUserSubs
+      ? t('substitution.availableForClass', {
+          className: userClassName ?? t('substitution.yourClass'),
+        })
+      : null;
 
   return (
     <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -60,6 +116,10 @@ export function Navbar({
         {data && showLinks && (
           <NavLinks userRoles={data.user ? data.user.roles : ['user']} />
         )}
+
+        <div className="hidden flex-1 items-center px-6 md:flex">
+          {substitutionBadgeLabel && <Badge>{substitutionBadgeLabel}</Badge>}
+        </div>
 
         <div className="ml-auto flex items-center gap-3">
           {/* <Button
