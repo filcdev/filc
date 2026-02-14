@@ -142,7 +142,10 @@
     "deleteError": "Failed to delete substitution",
     "deleteConfirm": "Delete this substitution? This action cannot be undone.",
     "loadError": "Unable to load substitutions",
-    "loadErrorMessage": "Please try again later."
+    "loadErrorMessage": "Please try again later.",
+    "availableForClass": "Substitutions are available for {{className}}",
+    "yourClass": "your class",
+    "cardTitle": "Substitution on {{date}}"
   },
   "movedLesson": {
     "title": "Moved Lessons",
