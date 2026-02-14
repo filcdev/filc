@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import type { AuthenticatedContext, Context } from '#_types/globals';
 import { auth } from '#utils/authentication';
 import { rbac, userHasPermission } from '#utils/authorization';
+import { setSentryUser } from '#utils/telemetry';
 
 export const authenticationMiddleware = createMiddleware<Context>(
   async (c, next) => {
@@ -12,11 +13,13 @@ export const authenticationMiddleware = createMiddleware<Context>(
     if (!session) {
       c.set('user', null);
       c.set('session', null);
+      setSentryUser(null);
       return next();
     }
 
     c.set('user', session.user);
     c.set('session', session.session);
+    setSentryUser(session.session, session.user);
     return next();
   }
 );
