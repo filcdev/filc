@@ -98,11 +98,15 @@ export function SubstitutionView() {
     ? groupByDate(substitutionsQuery.data)
     : {};
 
+  const groupedEntries = Object.entries(groupedData).sort(([a], [b]) =>
+    a.localeCompare(b)
+  );
+
   return (
     <div className="flex grow flex-col items-center gap-4 p-4">
       <div className="flex w-full max-w-5xl items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="font-bold text-2xl">Substitutions</h1>
+          <h1 className="font-bold text-2xl">{t('substitution.title')}</h1>
         </div>
       </div>
       {isLoading && <Skeleton className="h-64 w-full max-w-5xl" />}
@@ -113,7 +117,7 @@ export function SubstitutionView() {
       )}
       <div className="w-full max-w-5xl">
         {!(isLoading || hasError) &&
-          Object.entries(groupedData).map(([date, data]) => (
+          groupedEntries.map(([date, data]) => (
             <SubsV data={data} key={date} />
           ))}
       </div>

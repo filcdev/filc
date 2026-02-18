@@ -145,7 +145,8 @@
     "loadErrorMessage": "Please try again later.",
     "availableForClass": "Substitutions are available for {{className}}",
     "yourClass": "your class",
-    "cardTitle": "Substitution on {{date}}"
+    "cardTitle": "Substitution on {{date}}",
+    "notAvailable": "N/A"
   },
   "movedLesson": {
     "title": "Moved Lessons",
