@@ -1,25 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import dayjs from 'dayjs';
 import { parseResponse } from 'hono/client';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Plus, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
+import { SubstitutionsTable } from '@/components/admin/substitutions-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
@@ -78,6 +69,10 @@ function SubstitutionsPage() {
   const [selectedItem, setSelectedItem] = useState<SubstitutionItem | null>(
     null
   );
+
+  useEffect(() => {
+    document.title = t('substitution.title');
+  }, [t]);
 
   const hasWritePermission = useHasPermission(
     'substitution:create',
@@ -315,86 +310,17 @@ function SubstitutionsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('substitution.date')}</TableHead>
-              <TableHead>{t('substitution.substituteTeacher')}</TableHead>
-              <TableHead>{t('substitution.affectedLessons')}</TableHead>
-              <TableHead>{t('substitution.cohorts')}</TableHead>
-              {hasWritePermission && (
-                <TableHead>{t('substitution.actions')}</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSubstitutions.map((sub) => (
-              <TableRow key={sub.substitution.id}>
-                <TableCell className="font-medium">
-                  {dayjs(sub.substitution.date).format('YYYY/MM/DD')}
-                </TableCell>
-                <TableCell>
-                  {sub.teacher ? (
-                    `${sub.teacher.firstName} ${sub.teacher.lastName}`
-                  ) : (
-                    <Badge variant="destructive">
-                      {t('substitution.cancelled')}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {sub.lessons.length > 0
-                    ? sub.lessons
-                        .map(
-                          (l) =>
-                            `${l.subject?.short ?? '?'} P${l.period?.period ?? '?'}`
-                        )
-                        .join(', ')
-                    : t('substitution.noLessons')}
-                </TableCell>
-                <TableCell>
-                  {Array.from(
-                    new Set(sub.lessons.flatMap((l) => l.cohorts))
-                  ).join(', ') || '-'}
-                </TableCell>
-                {hasWritePermission && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setSelectedItem(sub);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleDelete(sub)}
-                        size="icon"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-            {!(filteredSubstitutions.length || hasError) && (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground"
-                  colSpan={hasWritePermission ? 5 : 4}
-                >
-                  {t('substitution.noSubstitutions')}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <SubstitutionsTable
+          data={filteredSubstitutions}
+          hasWritePermission={hasWritePermission}
+          isLoading={isLoading}
+          isPendingDelete={deleteMutation.isPending}
+          onDelete={handleDelete}
+          onEdit={(sub) => {
+            setSelectedItem(sub);
+            setDialogOpen(true);
+          }}
+        />
       )}
 
       {hasWritePermission && (
