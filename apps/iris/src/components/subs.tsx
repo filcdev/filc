@@ -74,31 +74,34 @@ function LessonRow({
   lesson: Lesson;
   substituter: string | null;
 }) {
+  const { t } = useTranslation();
+  const notAvailable = t('substitution.notAvailable');
+
   return (
     <>
       <TableCell>{lesson.subject?.short ?? 'N/A'}</TableCell>
       <TableCell>
         {lesson.cohorts && lesson.cohorts.length > 0
           ? lesson.cohorts.join(', ')
-          : 'N/A'}
+          : notAvailable}
       </TableCell>
       <TableCell>
         {lesson.period?.startTime && lesson.period?.endTime
           ? `${lesson.period.startTime.slice(0, 5)} - ${lesson.period.endTime.slice(0, 5)}`
-          : 'N/A'}
+          : notAvailable}
       </TableCell>
       <TableCell>
         {lesson.classrooms && lesson.classrooms.length > 0
           ? lesson.classrooms.map((c) => c.name).join(', ')
-          : 'N/A'}
+          : notAvailable}
       </TableCell>
       <TableCell>
-        {substituter !== 'undefined undefined' ? substituter : 'N/A'}
+        {substituter !== '' ? substituter : t('substitution.noSubstitutions')}
       </TableCell>
       <TableCell>
         {lesson.teachers && lesson.teachers.length > 0
-          ? lesson.teachers.map((t) => t.name).join(', ')
-          : 'N/A'}
+          ? lesson.teachers.map((teacher) => teacher.name).join(', ')
+          : notAvailable}
       </TableCell>
     </>
   );
