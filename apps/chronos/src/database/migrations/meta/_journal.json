@@ -15,6 +15,13 @@
       "when": 1769513691943,
       "tag": "0001_sharp_roxanne_simpson",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771446349654,
+      "tag": "0002_legal_taskmaster",
+      "breakpoints": true
     }
   ]
 }
