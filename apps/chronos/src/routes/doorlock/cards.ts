@@ -1,3 +1,4 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { eq, sql } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
@@ -10,14 +11,14 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
   migrateAuditLogsForNewCard,
   replaceCardDevices,
-} from '#utils/cards';
+} from '#utils/doorlock/cards';
+import { syncDevicesByIds } from '#utils/doorlock/device-sync';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -181,9 +182,9 @@ export const createCardRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:cards:write'),
+  zValidator('json', createCardSchema),
   async (c) => {
-    const body = await c.req.json();
-    const payload = createCardSchema.parse(body);
+    const payload = c.req.valid('json');
 
     try {
       const cardId = await db.transaction(async (tx) => {
@@ -258,15 +259,11 @@ export const updateCardRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:cards:write'),
+  zValidator('json', updateCardSchema),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    const cardId = c.req.param('id');
-    if (!cardId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Card id is required',
-      });
-    }
-    const body = await c.req.json();
-    const payload = updateCardSchema.parse(body);
+    const { id: cardId } = c.req.valid('param');
+    const payload = c.req.valid('json');
 
     try {
       await db.transaction(async (tx) => {
@@ -325,13 +322,9 @@ export const deleteCardRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:cards:write'),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    const cardId = c.req.param('id');
-    if (!cardId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Card id is required',
-      });
-    }
+    const { id: cardId } = c.req.valid('param');
 
     const existingCard = await fetchCardById(cardId);
     if (!existingCard) {

@@ -1,3 +1,4 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
@@ -10,13 +11,13 @@ import { db } from '#database';
 import { auditLog, card } from '#database/schema/doorlock';
 import { requireAuthentication } from '#middleware/auth';
 import { cardWithRelationsSchema } from '#routes/doorlock/cards';
-import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import { sendMessage } from '#routes/doorlock/websocket-handler';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
-} from '#utils/cards';
+} from '#utils/doorlock/cards';
+import { syncDevicesByIds } from '#utils/doorlock/device-sync';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -116,20 +117,12 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   requireAuthentication,
+  zValidator('json', updateFrozenSchema),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     const session = c.var.session;
-    if (!session) {
-      throw new HTTPException(StatusCodes.UNAUTHORIZED);
-    }
-
-    const cardId = c.req.param('id');
-    if (!cardId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Card id is required',
-      });
-    }
-    const body = await c.req.json();
-    const payload = updateFrozenSchema.parse(body);
+    const { id: cardId } = c.req.valid('param');
+    const payload = c.req.valid('json');
 
     const [updated] = await db
       .update(card)
@@ -194,31 +187,12 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   requireAuthentication,
+  zValidator('json', activateVirtualCardSchema),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     const session = c.var.session;
-    if (!session) {
-      throw new HTTPException(StatusCodes.UNAUTHORIZED);
-    }
-
-    const cardId = c.req.param('id');
-    if (!cardId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Card id is required',
-      });
-    }
-
-    let body: unknown;
-    try {
-      body = await c.req.json();
-    } catch (error) {
-      logger.debug('Falling back to empty payload for virtual activation', {
-        cardId,
-        error,
-      });
-      body = {};
-    }
-
-    const payload = activateVirtualCardSchema.parse(body ?? {});
+    const { id: cardId } = c.req.valid('param');
+    const payload = c.req.valid('json');
 
     const cardRecord = await fetchCardById(cardId);
     if (!cardRecord || cardRecord.userId !== session.userId) {

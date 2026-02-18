@@ -1,6 +1,6 @@
 import { getLogger } from '@logtape/logtape';
 import Baker from 'cronbake';
-import { cleanUpOldDeviceAuditLogs } from '#utils/cards';
+import { cleanUpOldDeviceAuditLogs } from '#utils/doorlock/cards';
 
 const logger = getLogger(['chronos', 'cron']);
 

@@ -1,3 +1,4 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -204,13 +205,9 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:stats:read'),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    const deviceId = c.req.param('id');
-    if (!deviceId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Device ID is required',
-      });
-    }
+    const { id: deviceId } = c.req.valid('param');
 
     const stats = await db
       .select({

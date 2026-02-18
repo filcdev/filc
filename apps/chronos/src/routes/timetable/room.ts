@@ -5,7 +5,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { classroom } from '#database/schema/timetable';
 import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import { timetableFactory } from './_factory';
 
 const getClassroomsResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(classroom)).array(),

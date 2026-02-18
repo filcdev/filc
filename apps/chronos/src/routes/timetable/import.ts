@@ -1,3 +1,4 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { XMLParser } from 'fast-xml-parser';
 import { HTTPException } from 'hono/http-exception';
@@ -19,17 +20,11 @@ const importResponseSchema = z.object({
   success: z.literal(true),
 });
 
-const importSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        name: z.string(),
-        omanXml: z.file(),
-        validFrom: z.date(),
-      })
-    )
-  ).toOpenAPISchema()
-).schema;
+const importSchema = z.object({
+  name: z.string(),
+  omanXml: z.file(),
+  validFrom: z.date(),
+});
 
 export const importRoute = timetableFactory.createHandlers(
   describeRoute({
@@ -37,7 +32,9 @@ export const importRoute = timetableFactory.createHandlers(
     requestBody: {
       content: {
         'multipart/form-data': {
-          schema: importSchema,
+          schema: (
+            await resolver(ensureJsonSafeDates(importSchema)).toOpenAPISchema()
+          ).schema,
         },
       },
       description: 'The data for the new timetable.',
@@ -54,38 +51,21 @@ export const importRoute = timetableFactory.createHandlers(
     },
     tags: ['Timetable', 'Import'],
   }),
+  zValidator('form', importSchema),
   requireAuthentication,
   requireAuthorization('import:timetable'),
   async (c) => {
-    const body = (await c.req.parseBody()) as {
-      omanXml?: File;
-      name?: string;
-      validFrom?: string;
-    };
+    // const body = (await c.req.parseBody()) as {
+    //   omanXml?: File;
+    //   name?: string;
+    //   validFrom?: string;
+    // };
+    const body = c.req.valid('form');
 
     // get file
-    const file = body.omanXml as File;
+    const file = body.omanXml;
     const name = body.name;
-    const validFromString = body.validFrom;
-    const validFrom = validFromString ? new Date(validFromString) : undefined;
-
-    if (!file) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No file provided',
-      });
-    }
-
-    if (!name) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No name provided',
-      });
-    }
-
-    if (!validFrom) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No validFrom provided',
-      });
-    }
+    const validFrom = body.validFrom;
 
     // check that we got valid XML
     if (file.type !== 'text/xml' && file.type !== 'application/xml') {

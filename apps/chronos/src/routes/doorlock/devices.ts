@@ -1,3 +1,4 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { desc, eq } from 'drizzle-orm';
 import { createSelectSchema } from 'drizzle-zod';
@@ -119,9 +120,9 @@ export const createDeviceRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:devices:write'),
+  zValidator('json', devicePayloadSchema),
   async (c) => {
-    const body = await c.req.json();
-    const payload = devicePayloadSchema.parse(body);
+    const payload = c.req.valid('json');
 
     try {
       const [inserted] = await db
@@ -174,15 +175,11 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:devices:write'),
+  zValidator('json', devicePayloadSchema),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    const id = c.req.param('id');
-    if (!id) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Device id is required',
-      });
-    }
-    const body = await c.req.json();
-    const payload = devicePayloadSchema.parse(body);
+    const { id } = c.req.valid('param');
+    const payload = c.req.valid('json');
 
     try {
       const [updated] = await db
@@ -227,13 +224,9 @@ export const deleteDeviceRoute = doorlockFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('doorlock:devices:write'),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    const id = c.req.param('id');
-    if (!id) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Device id is required',
-      });
-    }
+    const { id } = c.req.valid('param');
 
     const [deleted] = await db
       .delete(device)

@@ -125,8 +125,9 @@ export const updateRole = rolesFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('roles:manage'),
   zValidator('json', updateRoleSchema),
+  zValidator('param', z.object({ name: z.string() })),
   async (c) => {
-    const roleName = c.req.param('name');
+    const { name: roleName } = c.req.valid('param');
     if (!roleName) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Role name is required',
@@ -162,13 +163,9 @@ export const deleteRole = rolesFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('roles:manage'),
+  zValidator('param', z.object({ name: z.string() })),
   async (c) => {
-    const roleName = c.req.param('name');
-    if (!roleName) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Role name is required',
-      });
-    }
+    const { name: roleName } = c.req.valid('param');
 
     const existingRoles = rbac.getAllRoles();
     if (!(roleName in existingRoles)) {
