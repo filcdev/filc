@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -221,16 +225,15 @@ function MovedLessonsPage() {
     [movedLessonsQuery.data, substitutionsQuery.data]
   );
 
-  const createMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      lessonIds: string[];
-      room: string | null;
-      startingDay: string | null;
-      startingPeriod: string | null;
-    }) => {
+  const $createMovedLesson = api.timetable.movedLessons.$post;
+  const createMutation = useMutation<
+    InferResponseType<typeof $createMovedLesson>,
+    Error,
+    InferRequestType<typeof $createMovedLesson>['json']
+  >({
+    mutationFn: async (payload) => {
       const res = await parseResponse(
-        api.timetable.movedLessons.$post({
+        $createMovedLesson({
           json: payload,
         })
       );
@@ -250,27 +253,15 @@ function MovedLessonsPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: {
-        date?: string;
-        lessonIds?: string[];
-        room?: string | null;
-        startingDay?: string | null;
-        startingPeriod?: string | null;
-      };
-    }) => {
+  const $updateMovedLesson = api.timetable.movedLessons[':id'].$put;
+  const updateMutation = useMutation<
+    InferResponseType<typeof $updateMovedLesson>,
+    Error,
+    { id: string; payload: InferRequestType<typeof $updateMovedLesson>['json'] }
+  >({
+    mutationFn: async ({ id, payload }) => {
       const res = await parseResponse(
-        api.timetable.movedLessons[':id'].$put(
-          { param: { id } },
-          {
-            init: { body: JSON.stringify(payload) },
-          }
-        )
+        api.timetable.movedLessons[':id'].$put({ json: payload, param: { id } })
       );
       if (!res.success) {
         throw new Error('Failed to update moved lesson');
@@ -288,7 +279,12 @@ function MovedLessonsPage() {
     },
   });
 
-  const deleteMutation = useMutation({
+  const $deleteMovedLesson = api.timetable.movedLessons[':id'].$delete;
+  const deleteMutation = useMutation<
+    InferResponseType<typeof $deleteMovedLesson>,
+    Error,
+    string
+  >({
     mutationFn: async (id: string) =>
       parseResponse(
         api.timetable.movedLessons[':id'].$delete({ param: { id } })
@@ -319,13 +315,8 @@ function MovedLessonsPage() {
     });
   }, [movedLessonsQuery.data, search]);
 
-  const handleSave = async (payload: {
-    date: string;
-    lessonIds: string[];
-    room: string | null;
-    startingDay: string | null;
-    startingPeriod: string | null;
-  }) => {
+  const upd = api.timetable.movedLessons[':id'].$put;
+  const handleSave = async (payload: InferRequestType<typeof upd>['json']) => {
     if (selectedItem) {
       await updateMutation.mutateAsync({
         id: selectedItem.movedLesson.id,

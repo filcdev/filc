@@ -1,7 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -22,7 +21,7 @@ import {
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
-import { ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
@@ -256,7 +255,8 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       const substitutions = await db
         .select({
@@ -273,7 +273,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
           substitutionLessonMTM,
           eq(substitution.id, substitutionLessonMTM.substitutionId)
         )
-        .where(gte(substitution.date, today as string))
+        .where(gte(substitution.date, today))
         .groupBy(substitution.id, teacher.id);
 
       return c.json<SuccessResponse<typeof substitutions>>({
@@ -322,7 +322,8 @@ export const getRelevantSubstitutionsForCohort =
     async (c) => {
       const { cohortId } = c.req.valid('param');
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       try {
         const substitutions = await db
@@ -343,12 +344,7 @@ export const getRelevantSubstitutionsForCohort =
           .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
           .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
           .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-          .where(
-            and(
-              gte(substitution.date, today as string),
-              eq(cohort.id, cohortId)
-            )
-          )
+          .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
           .groupBy(substitution.id, teacher.id);
 
         return c.json<
@@ -426,7 +422,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       const [insertedSubstitution] = await tx
         .insert(substitution)
         .values({
-          date: date.toDateString(),
+          date,
           id: crypto.randomUUID(),
           substituter,
         })
@@ -538,7 +534,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         const [updated] = await tx
           .update(substitution)
           .set({
-            date: body.date ? body.date.toDateString() : undefined,
+            date: body.date ?? undefined,
             substituter: body.substituter,
           })
           .where(eq(substitution.id, id))

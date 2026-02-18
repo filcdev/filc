@@ -164,7 +164,7 @@ export const lessonCohortMTM = pgTable(
 );
 
 export const substitution = pgTable('substitution', {
-  date: date('date').notNull(),
+  date: date('date', { mode: 'date' }).notNull(),
   id: text('id').primaryKey(),
   substituter: text('substituter').references(() => teacher.id), // If null, then cancelled.
 });
@@ -183,7 +183,7 @@ export const substitutionLessonMTM = pgTable(
 );
 
 export const movedLesson = pgTable('moved_lesson', {
-  date: date('date').notNull(),
+  date: date('date', { mode: 'date' }).notNull(),
   id: text('id').primaryKey(),
   room: text('room').references(() => classroom.id),
   startingDay: text('starting_day').references(() => dayDefinition.id),

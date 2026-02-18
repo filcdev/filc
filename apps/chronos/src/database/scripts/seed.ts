@@ -56,7 +56,7 @@ type SubstitutionParams = {
   cohortId: string;
   lessonId: string;
   index: number;
-  date: string;
+  date: Date;
   teachers: Array<{ id: string }>;
 };
 
@@ -64,7 +64,7 @@ type MovedLessonParams = {
   cohortId: string;
   lessonId: string;
   index: number;
-  date: string;
+  date: Date;
   days: Array<{ id: string }>;
   periods: Array<{ id: string }>;
   classrooms: Array<{ id: string }>;
@@ -201,7 +201,7 @@ const processCohortLessons = async (
     if (isSubstitution) {
       const result = await createSubstitution({
         cohortId: currentCohort.id,
-        date,
+        date: new Date(date),
         index: i,
         lessonId: selectedLesson.id,
         teachers: baseData.teachers,
@@ -216,7 +216,7 @@ const processCohortLessons = async (
       const created = await createMovedLesson({
         classrooms: baseData.classrooms,
         cohortId: currentCohort.id,
-        date,
+        date: new Date(date),
         days: baseData.days,
         index: i,
         lessonId: selectedLesson.id,

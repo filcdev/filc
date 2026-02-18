@@ -1,7 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -18,7 +17,7 @@ import {
   fetchCards,
 } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
-import { ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'self']);

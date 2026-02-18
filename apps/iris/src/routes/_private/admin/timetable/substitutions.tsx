@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -131,12 +135,13 @@ function SubstitutionsPage() {
     return Array.from(lessonMap.values());
   }, [substitutionsQuery.data]);
 
-  const createMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      lessonIds: string[];
-      substituter: string | null;
-    }) => {
+  const $create = api.timetable.substitutions.$post;
+  const createMutation = useMutation<
+    InferResponseType<typeof $create>,
+    Error,
+    InferRequestType<typeof $create>['json']
+  >({
+    mutationFn: async (payload) => {
       const res = await parseResponse(
         api.timetable.substitutions.$post({
           json: payload,
@@ -164,19 +169,13 @@ function SubstitutionsPage() {
       payload,
     }: {
       id: string;
-      payload: {
-        date?: string;
-        lessonIds?: string[];
-        substituter?: string | null;
-      };
+      payload: InferRequestType<typeof $create>['json'];
     }) => {
       const res = await parseResponse(
-        api.timetable.substitutions[':id'].$put(
-          { param: { id } },
-          {
-            init: { body: JSON.stringify(payload) },
-          }
-        )
+        api.timetable.substitutions[':id'].$put({
+          json: payload,
+          param: { id },
+        })
       );
       if (!res.success) {
         throw new Error('Failed to update substitution');
@@ -235,11 +234,9 @@ function SubstitutionsPage() {
     });
   }, [substitutionsQuery.data, search]);
 
-  const handleSave = async (payload: {
-    date: string;
-    lessonIds: string[];
-    substituter: string | null;
-  }) => {
+  const handleSave = async (
+    payload: InferRequestType<typeof $create>['json']
+  ) => {
     if (selectedItem) {
       await updateMutation.mutateAsync({
         id: selectedItem.substitution.id,

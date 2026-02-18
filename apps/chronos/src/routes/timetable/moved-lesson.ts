@@ -1,7 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -18,7 +17,11 @@ import {
   period,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { ensureJsonSafeDates } from '#utils/zod';
+import {
+  createInsertSchema,
+  createSelectSchema,
+  ensureJsonSafeDates,
+} from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
@@ -250,7 +253,6 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().slice(0, 10);
 
       const movedLessons = await db
         .select({
@@ -273,10 +275,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         )
         .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
         .where(
-          and(
-            gte(movedLesson.date, todayStr),
-            eq(lesson.timetableId, timetableId)
-          )
+          and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
@@ -396,7 +395,6 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().slice(0, 10);
 
       const movedLessons = await db
         .select({
@@ -422,7 +420,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         .where(
           and(
             eq(lessonCohortMTM.cohortId, cohortId),
-            gte(movedLesson.date, todayStr)
+            gte(movedLesson.date, today)
           )
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
@@ -442,7 +440,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
-const createSchema = createInsertSchema(movedLesson).extend({
+const createSchema = createInsertSchema(movedLesson).omit({ id: true }).extend({
   lessonIds: z.uuid().array().optional(),
 });
 
@@ -476,7 +474,8 @@ export const createMovedLesson = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('movedLesson:create'),
-  zValidator('param', z.object({ timetableId: z.uuid() })),
+  // TODO: timetable awareness for validation
+  // zValidator('param', z.object({ timetableId: z.uuid() })),
   zValidator('json', createSchema),
   async (c) => {
     try {
@@ -599,7 +598,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       const [updatedMovedLesson] = await db
         .update(movedLesson)
         .set({
-          date: date !== undefined ? date.toDateString() : undefined,
+          date,
           room: room !== undefined ? room : undefined,
           startingDay: startingDay !== undefined ? startingDay : undefined,
           startingPeriod:

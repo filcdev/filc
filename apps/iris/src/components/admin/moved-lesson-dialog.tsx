@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
+import { type InferRequestType, parseResponse } from 'hono/client';
 import { Save } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -71,12 +71,9 @@ type MovedLessonItem = {
   period: Period | null;
 };
 
-type MovedLessonFormValues = {
-  date: string;
+const upd = api.timetable.movedLessons[':id'].$put;
+type MovedLessonFormValues = InferRequestType<typeof upd>['json'] & {
   lessonIds: string[];
-  room: string | null;
-  startingDay: string | null;
-  startingPeriod: string | null;
 };
 
 type MovedLessonDialogProps = {
@@ -91,13 +88,6 @@ type MovedLessonDialogProps = {
   open: boolean;
   periods: Period[];
 };
-
-function toLocalDateString(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 function formatLessonLabel(lesson: EnrichedLesson): string {
   const parts: string[] = [];
@@ -119,11 +109,11 @@ function formatLessonLabel(lesson: EnrichedLesson): string {
 const initialState = (
   item?: MovedLessonItem | null
 ): MovedLessonFormValues => ({
-  date: item?.movedLesson.date ?? '',
+  date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons ?? [],
-  room: item?.movedLesson.room ?? null,
-  startingDay: item?.movedLesson.startingDay ?? null,
-  startingPeriod: item?.movedLesson.startingPeriod ?? null,
+  room: item?.movedLesson.room ?? '',
+  startingDay: item?.movedLesson.startingDay ?? '',
+  startingPeriod: item?.movedLesson.startingPeriod ?? '',
 });
 
 export function MovedLessonDialog({
@@ -273,7 +263,7 @@ export function MovedLessonDialog({
               onDateChange={(d) =>
                 setFormState((prev) => ({
                   ...prev,
-                  date: d ? toLocalDateString(d) : '',
+                  date: d ? d : prev.date,
                 }))
               }
               placeholder={t('movedLesson.datePlaceholder')}
@@ -287,7 +277,7 @@ export function MovedLessonDialog({
               onValueChange={(value) =>
                 setFormState((prev) => ({
                   ...prev,
-                  startingDay: value === '__none__' ? null : value || null,
+                  startingDay: value === '__none__' ? '' : value || '',
                 }))
               }
               options={[
@@ -313,7 +303,7 @@ export function MovedLessonDialog({
               onValueChange={(value) =>
                 setFormState((prev) => ({
                   ...prev,
-                  startingPeriod: value === '__none__' ? null : value || null,
+                  startingPeriod: value === '__none__' ? '' : value || '',
                 }))
               }
               options={[
@@ -343,7 +333,7 @@ export function MovedLessonDialog({
               onValueChange={(value) =>
                 setFormState((prev) => ({
                   ...prev,
-                  room: value === '__none__' ? null : value || null,
+                  room: value === '__none__' ? '' : value || '',
                 }))
               }
               options={[

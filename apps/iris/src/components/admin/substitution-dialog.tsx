@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
+import { type InferRequestType, parseResponse } from 'hono/client';
 import { Save } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,29 +56,18 @@ type SubstitutionItem = {
   teacher: Teacher | null;
 };
 
-type SubstitutionFormValues = {
-  date: string;
-  lessonIds: string[];
-  substituter: string | null;
-};
-
 type SubstitutionDialogProps = {
   allLessons: EnrichedLesson[];
   cohorts: Cohort[];
   isSubmitting: boolean;
   item?: SubstitutionItem | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: SubstitutionFormValues) => Promise<void>;
+  onSubmit: (
+    payload: InferRequestType<typeof api.timetable.substitutions.$post>['json']
+  ) => Promise<void>;
   open: boolean;
   teachers: Teacher[];
 };
-
-function toLocalDateString(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 function formatLessonLabel(lesson: EnrichedLesson): string {
   const parts: string[] = [];
@@ -99,8 +88,8 @@ function formatLessonLabel(lesson: EnrichedLesson): string {
 
 const initialState = (
   item?: SubstitutionItem | null
-): SubstitutionFormValues => ({
-  date: item?.substitution.date ?? '',
+): InferRequestType<typeof api.timetable.substitutions.$post>['json'] => ({
+  date: item?.substitution.date ? new Date(item.substitution.date) : new Date(),
   lessonIds: item?.lessons.map((l) => l.id) ?? [],
   substituter: item?.substitution.substituter ?? null,
 });
@@ -116,9 +105,9 @@ export function SubstitutionDialog({
   teachers,
 }: SubstitutionDialogProps) {
   const { t } = useTranslation();
-  const [formState, setFormState] = useState<SubstitutionFormValues>(
-    initialState(item)
-  );
+  const [formState, setFormState] = useState<
+    InferRequestType<typeof api.timetable.substitutions.$post>['json']
+  >(initialState(item));
   const [selectedCohort, setSelectedCohort] = useState<string>('');
 
   useEffect(() => {
@@ -220,7 +209,7 @@ export function SubstitutionDialog({
               onDateChange={(d) =>
                 setFormState((prev) => ({
                   ...prev,
-                  date: d ? toLocalDateString(d) : '',
+                  date: d ?? new Date(),
                 }))
               }
               placeholder={t('substitution.datePlaceholder')}

@@ -1,7 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -10,7 +9,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort, timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
-import { ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'cohort']);

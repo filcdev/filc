@@ -1,6 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
 import { arrayContains, eq, inArray } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -18,7 +17,7 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
-import { ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
