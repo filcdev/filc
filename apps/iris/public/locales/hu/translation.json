@@ -219,5 +219,10 @@
     "deleteSuccess": "Szerepkör sikeresen törölve",
     "deleteError": "Nem sikerült törölni a szerepkört",
     "loadError": "Hiba a szerepkörök betöltése közben"
+  },
+  "PageTitles": {
+    "timetable": "Órarend | Filc",
+    "substitutions": "Helyettesítések | Filc",
+    "adminPanel": "Adminisztrációs felület | Filc"
   }
 }

@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { TimetableView } from '@/components/timetable';
 
@@ -14,5 +16,11 @@ export const Route = createFileRoute('/_public/')({
 });
 
 function App() {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    document.title = t('PageTitles.timetable');
+  }, [t]);
+
   return <TimetableView />;
 }
