@@ -219,5 +219,10 @@
     "deleteSuccess": "Role deleted successfully",
     "deleteError": "Failed to delete role",
     "loadError": "Error loading roles"
+  },
+  "PageTitles": {
+    "timetable": "Timetable | Filc",
+    "substitutions": "Substitutions | Filc",
+    "adminPanel": "Admin Panel | Filc"
   }
 }
