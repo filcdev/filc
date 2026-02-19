@@ -220,20 +220,22 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
       .orderBy(desc(deviceHealth.timestamp))
       .limit(100);
 
-    const mappedStats = stats.map((s) => ({
-      ...s.deviceMeta,
-      id: s.id,
-      ramFree: Number(s.deviceMeta.ramFree),
-      storage: {
-        total: Number(s.deviceMeta.storage.total),
-        used: Number(s.deviceMeta.storage.used),
+    // map bigint to number for JSON serialization
+    const formattedStats = stats.map((stat) => ({
+      ...stat,
+      deviceMeta: {
+        ...stat.deviceMeta,
+        ramFree: Number(stat.deviceMeta.ramFree),
+        storage: {
+          total: Number(stat.deviceMeta.storage.total),
+          used: Number(stat.deviceMeta.storage.used),
+        },
+        uptime: Number(stat.deviceMeta.uptime),
       },
-      timestamp: s.timestamp,
-      uptime: Number(s.deviceMeta.uptime),
     }));
 
-    return c.json<SuccessResponse<{ stats: typeof mappedStats }>>({
-      data: { stats: mappedStats },
+    return c.json<SuccessResponse<typeof formattedStats>>({
+      data: formattedStats,
       success: true,
     });
   }

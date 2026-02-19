@@ -38,30 +38,13 @@ type DeviceStatsDialogProps = {
   open: boolean;
 };
 
-type DeviceStat = {
-  debug: {
-    deviceState: string;
-    errors: Record<string, boolean>;
-    lastResetReason: string;
-  };
-  fwVersion: string;
-  id: number;
-  ramFree: number;
-  storage: {
-    total: number;
-    used: number;
-  };
-  timestamp: string;
-  uptime: number;
-};
-
 export function DeviceStatsDialog({
   deviceId,
   deviceName,
   onOpenChange,
   open,
 }: DeviceStatsDialogProps) {
-  const statsQuery = useQuery<DeviceStat[]>({
+  const statsQuery = useQuery({
     enabled: !!deviceId && open,
     queryFn: async () => {
       if (!deviceId) {
@@ -75,7 +58,7 @@ export function DeviceStatsDialog({
       if (!res.success) {
         throw new Error('Failed to load stats');
       }
-      return (res.data as unknown as { stats: DeviceStat[] }).stats;
+      return res.data;
     },
     queryKey: ['doorlock', 'devices', deviceId, 'stats'],
     refetchInterval: 30_000, // Refresh every 30s
@@ -89,8 +72,9 @@ export function DeviceStatsDialog({
       .map((stat) => ({
         ...stat,
         formattedTime: dayjs(stat.timestamp).format('HH:mm:ss'),
-        ramFreeKb: Math.round(stat.ramFree / 1024),
-        uptimeHours: Math.round((stat.uptime / 3600 / 1000) * 10) / 10,
+        ramFreeKb: Math.round(stat.deviceMeta.ramFree / 1024),
+        uptimeHours:
+          Math.round((stat.deviceMeta.uptime / 3600 / 1000) * 10) / 10,
       }))
       .reverse();
   }, [statsQuery.data]);
@@ -123,14 +107,14 @@ export function DeviceStatsDialog({
                 <div className="rounded-lg border p-3">
                   <div className="text-muted-foreground text-xs">Firmware</div>
                   <div className="font-bold font-mono">
-                    {latestStat?.fwVersion ?? 'N/A'}
+                    {latestStat?.deviceMeta.fwVersion ?? 'N/A'}
                   </div>
                 </div>
                 <div className="rounded-lg border p-3">
                   <div className="text-muted-foreground text-xs">Uptime</div>
                   <div className="font-bold font-mono">
                     {latestStat
-                      ? `${Math.round(latestStat.uptime / 3_600_000)}h`
+                      ? `${Math.round(latestStat.deviceMeta.uptime / 3_600_000)}h`
                       : 'N/A'}
                   </div>
                 </div>
@@ -138,7 +122,7 @@ export function DeviceStatsDialog({
                   <div className="text-muted-foreground text-xs">Free RAM</div>
                   <div className="font-bold font-mono">
                     {latestStat
-                      ? `${Math.round(latestStat.ramFree / 1024)} KB`
+                      ? `${Math.round(latestStat.deviceMeta.ramFree / 1024)} KB`
                       : 'N/A'}
                   </div>
                 </div>
@@ -147,7 +131,8 @@ export function DeviceStatsDialog({
                   <div className="font-bold font-mono">
                     {latestStat
                       ? `${Math.round(
-                          (latestStat.storage.used / latestStat.storage.total) *
+                          (latestStat.deviceMeta.storage.used /
+                            latestStat.deviceMeta.storage.total) *
                             100
                         )}%`
                       : 'N/A'}
@@ -228,10 +213,14 @@ export function DeviceStatsDialog({
                               'YYYY-MM-DD HH:mm:ss'
                             )}
                           </TableCell>
-                          <TableCell>{stat.debug.deviceState}</TableCell>
-                          <TableCell>{stat.debug.lastResetReason}</TableCell>
                           <TableCell>
-                            {Object.entries(stat.debug.errors)
+                            {stat.deviceMeta.debug.deviceState}
+                          </TableCell>
+                          <TableCell>
+                            {stat.deviceMeta.debug.lastResetReason}
+                          </TableCell>
+                          <TableCell>
+                            {Object.entries(stat.deviceMeta.debug.errors)
                               .filter(([_, v]) => v)
                               .map(([k]) => k)
                               .join(', ') || '-'}
