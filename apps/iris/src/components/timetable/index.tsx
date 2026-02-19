@@ -194,7 +194,9 @@ export function TimetableView() {
         (cohort) => cohort.id === userClassId
       )?.id;
       const firstCohort = cohortsQuery.data[0]?.id ?? null;
-      setSelections((s) => ({ ...s, class: userDefault ?? firstCohort }));
+      const fallbackClass = userDefault ?? firstCohort;
+      setActiveFilter('class');
+      setSelections((s) => ({ ...s, class: fallbackClass }));
     }
 
     setInitialized(true);
