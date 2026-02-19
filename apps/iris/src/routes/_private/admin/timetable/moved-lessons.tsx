@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,54 +28,31 @@ import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
 
-type Classroom = {
-  id: string;
-  name: string;
-  short: string;
-};
+type MovedLessonApiResponse = InferResponseType<
+  typeof api.timetable.movedLessons.$get
+>;
+type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
+type Classroom = Omit<
+  NonNullable<MovedLessonItem['classroom']>,
+  'createdAt' | 'updatedAt'
+>;
+type Period = Omit<
+  NonNullable<MovedLessonItem['period']>,
+  'createdAt' | 'updatedAt'
+>;
+type DayDefinition = Omit<
+  NonNullable<MovedLessonItem['dayDefinition']>,
+  'createdAt' | 'updatedAt'
+>;
 
-type Period = {
-  endTime: string;
-  id: string;
-  period: number;
-  startTime: string;
-};
-
-type DayDefinition = {
-  days: string[];
-  id: string;
-  name: string;
-  short: string;
-};
-
-type EnrichedLesson = {
-  classrooms: { id: string; name: string; short: string }[];
-  cohorts: string[];
-  day: { id: string; name: string; short: string } | null;
-  id: string;
-  period: {
-    endTime: string;
-    id: string;
-    period: number;
-    startTime: string;
-  } | null;
-  subject: { id: string; name: string; short: string } | null;
-  teachers: { id: string; name: string; short: string }[];
-};
-
-type MovedLessonItem = {
-  classroom: Classroom | null;
-  dayDefinition: DayDefinition | null;
-  lessons: string[];
-  movedLesson: {
-    date: string;
-    id: string;
-    room: string | null;
-    startingDay: string | null;
-    startingPeriod: string | null;
-  };
-  period: Period | null;
-};
+type SubstitutionApiResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
+type SubstitutionData = NonNullable<SubstitutionApiResponse['data']>[number];
+type EnrichedLesson = Omit<
+  NonNullable<SubstitutionData['lessons'][number]>,
+  'createdAt' | 'updatedAt'
+>;
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -82,12 +63,6 @@ export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
     ),
   }
 );
-
-type SubstitutionData = {
-  lessons: EnrichedLesson[];
-  substitution: { date: string; id: string; substituter: string | null };
-  teacher: unknown;
-};
 
 function extractFromMovedLessons(
   movedLessons: MovedLessonItem[],
@@ -112,6 +87,9 @@ function extractFromSubstitutions(
 ) {
   for (const sub of subs) {
     for (const lesson of sub.lessons) {
+      if (!lesson) {
+        continue;
+      }
       lessonMap.set(lesson.id, lesson);
       if (lesson.period) {
         periodMap.set(lesson.period.id, lesson.period);
@@ -193,7 +171,7 @@ function MovedLessonsPage() {
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return (res.data ?? []) as { id: string; name: string }[];
+      return res.data;
     },
     queryKey: ['cohorts'],
   });
@@ -221,16 +199,15 @@ function MovedLessonsPage() {
     [movedLessonsQuery.data, substitutionsQuery.data]
   );
 
-  const createMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      lessonIds: string[];
-      room: string | null;
-      startingDay: string | null;
-      startingPeriod: string | null;
-    }) => {
+  const $createMovedLesson = api.timetable.movedLessons.$post;
+  const createMutation = useMutation<
+    InferResponseType<typeof $createMovedLesson>,
+    Error,
+    InferRequestType<typeof $createMovedLesson>['json']
+  >({
+    mutationFn: async (payload) => {
       const res = await parseResponse(
-        api.timetable.movedLessons.$post({
+        $createMovedLesson({
           json: payload,
         })
       );
@@ -250,27 +227,15 @@ function MovedLessonsPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: {
-        date?: string;
-        lessonIds?: string[];
-        room?: string | null;
-        startingDay?: string | null;
-        startingPeriod?: string | null;
-      };
-    }) => {
+  const $updateMovedLesson = api.timetable.movedLessons[':id'].$put;
+  const updateMutation = useMutation<
+    InferResponseType<typeof $updateMovedLesson>,
+    Error,
+    { id: string; payload: InferRequestType<typeof $updateMovedLesson>['json'] }
+  >({
+    mutationFn: async ({ id, payload }) => {
       const res = await parseResponse(
-        api.timetable.movedLessons[':id'].$put(
-          { param: { id } },
-          {
-            init: { body: JSON.stringify(payload) },
-          }
-        )
+        api.timetable.movedLessons[':id'].$put({ json: payload, param: { id } })
       );
       if (!res.success) {
         throw new Error('Failed to update moved lesson');
@@ -288,7 +253,12 @@ function MovedLessonsPage() {
     },
   });
 
-  const deleteMutation = useMutation({
+  const $deleteMovedLesson = api.timetable.movedLessons[':id'].$delete;
+  const deleteMutation = useMutation<
+    InferResponseType<typeof $deleteMovedLesson>,
+    Error,
+    string
+  >({
     mutationFn: async (id: string) =>
       parseResponse(
         api.timetable.movedLessons[':id'].$delete({ param: { id } })
@@ -319,13 +289,8 @@ function MovedLessonsPage() {
     });
   }, [movedLessonsQuery.data, search]);
 
-  const handleSave = async (payload: {
-    date: string;
-    lessonIds: string[];
-    room: string | null;
-    startingDay: string | null;
-    startingPeriod: string | null;
-  }) => {
+  const upd = api.timetable.movedLessons[':id'].$put;
+  const handleSave = async (payload: InferRequestType<typeof upd>['json']) => {
     if (selectedItem) {
       await updateMutation.mutateAsync({
         id: selectedItem.movedLesson.id,

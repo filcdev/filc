@@ -1,5 +1,5 @@
+import { zValidator } from '@hono/zod-validator';
 import { arrayContains, eq, inArray } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -17,8 +17,8 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
-import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { timetableFactory } from './_factory';
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   if (lessons.length === 0) {
@@ -140,18 +140,14 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
+  zValidator('param', z.object({ cohortId: z.uuid() })),
   async (c) => {
-    const cId = c.req.param('cohortId');
-    if (!cId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing cohortId',
-      });
-    }
+    const { cohortId } = c.req.valid('param');
 
     const [existingCohort] = await db
       .select()
       .from(cohort)
-      .where(eq(cohort.id, cId))
+      .where(eq(cohort.id, cohortId))
       .limit(1);
 
     if (!existingCohort) {
@@ -164,7 +160,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       .select({ lesson })
       .from(lesson)
       .innerJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-      .where(eq(lessonCohortMTM.cohortId, cId));
+      .where(eq(lessonCohortMTM.cohortId, cohortId));
 
     const lessons = lessonRows.map((r) => r.lesson);
 
@@ -207,18 +203,14 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
+  zValidator('param', z.object({ teacherId: z.uuid() })),
   async (c) => {
-    const tId = c.req.param('teacherId');
-    if (!tId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing teacherId',
-      });
-    }
+    const { teacherId } = c.req.valid('param');
 
     const [existingTeacher] = await db
       .select()
       .from(teacher)
-      .where(eq(teacher.id, tId))
+      .where(eq(teacher.id, teacherId))
       .limit(1);
 
     if (!existingTeacher) {
@@ -230,7 +222,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     const lessons = await db
       .select()
       .from(lesson)
-      .where(arrayContains(lesson.teacherIds, [tId]));
+      .where(arrayContains(lesson.teacherIds, [teacherId]));
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
@@ -271,18 +263,14 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
+  zValidator('param', z.object({ classroomId: z.uuid() })),
   async (c) => {
-    const rId = c.req.param('classroomId');
-    if (!rId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing roomId',
-      });
-    }
+    const { classroomId } = c.req.valid('param');
 
     const [existingClassroom] = await db
       .select()
       .from(classroom)
-      .where(eq(classroom.id, rId))
+      .where(eq(classroom.id, classroomId))
       .limit(1);
 
     if (!existingClassroom) {
@@ -294,7 +282,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     const lessons = await db
       .select()
       .from(lesson)
-      .where(arrayContains(lesson.classroomIds, [rId]));
+      .where(arrayContains(lesson.classroomIds, [classroomId]));
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
@@ -342,18 +330,14 @@ export const getLessonForId = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
+  zValidator('param', z.object({ lessonId: z.uuid() })),
   async (c) => {
-    const lId = c.req.param('lessonId');
-    if (!lId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing lessonId',
-      });
-    }
+    const { lessonId } = c.req.valid('param');
 
     const lessonRow = await db
       .select()
       .from(lesson)
-      .where(eq(lesson.id, lId))
+      .where(eq(lesson.id, lessonId))
       .limit(1);
 
     if (!lessonRow) {
@@ -371,7 +355,7 @@ export const getLessonForId = timetableFactory.createHandlers(
         eq(substitutionLessonMTM.lessonId, lessonCohortMTM.lessonId)
       )
       .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-      .where(eq(substitutionLessonMTM.lessonId, lId))
+      .where(eq(substitutionLessonMTM.lessonId, lessonId))
       .limit(1);
 
     const [enriched] = await enrichLessons(lessonRow);

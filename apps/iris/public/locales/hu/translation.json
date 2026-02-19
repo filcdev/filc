@@ -145,7 +145,8 @@
     "loadErrorMessage": "Kérlek próbáld újra később.",
     "availableForClass": "Helyettesítések elérhetők ehhez: {{className}}",
     "yourClass": "a te osztályod",
-    "cardTitle": "Helyettesítés ezen a napon: {{date}}"
+    "cardTitle": "Helyettesítés ezen a napon: {{date}}",
+    "notAvailable": "N/A"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",
@@ -219,5 +220,10 @@
     "deleteSuccess": "Szerepkör sikeresen törölve",
     "deleteError": "Nem sikerült törölni a szerepkört",
     "loadError": "Hiba a szerepkörök betöltése közben"
+  },
+  "PageTitles": {
+    "timetable": "Órarend | Filc",
+    "substitutions": "Helyettesítések | Filc",
+    "adminPanel": "Adminisztrációs felület | Filc"
   }
 }

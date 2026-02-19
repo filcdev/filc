@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,39 +29,12 @@ import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
 
-type EnrichedLesson = {
-  classrooms: { id: string; name: string; short: string }[];
-  cohorts: string[];
-  day: { id: string; name: string; short: string } | null;
-  id: string;
-  period: {
-    endTime: string;
-    id: string;
-    period: number;
-    startTime: string;
-  } | null;
-  subject: { id: string; name: string; short: string } | null;
-  teachers: { id: string; name: string; short: string }[];
-};
-
-type Teacher = {
-  firstName: string;
-  gender: string | null;
-  id: string;
-  lastName: string;
-  short: string;
-  userId: string | null;
-};
-
-type SubstitutionItem = {
-  lessons: EnrichedLesson[];
-  substitution: {
-    date: string;
-    id: string;
-    substituter: string | null;
-  };
-  teacher: Teacher | null;
-};
+type SubstitutionApiResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
+type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
+type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
+type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
 export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
   {
@@ -114,7 +91,7 @@ function SubstitutionsPage() {
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return (res.data ?? []) as { id: string; name: string }[];
+      return res.data;
     },
     queryKey: ['cohorts'],
   });
@@ -125,18 +102,22 @@ function SubstitutionsPage() {
     const lessonMap = new Map<string, EnrichedLesson>();
     for (const sub of subs) {
       for (const lesson of sub.lessons) {
+        if (!lesson) {
+          continue;
+        }
         lessonMap.set(lesson.id, lesson);
       }
     }
     return Array.from(lessonMap.values());
   }, [substitutionsQuery.data]);
 
-  const createMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      lessonIds: string[];
-      substituter: string | null;
-    }) => {
+  const $create = api.timetable.substitutions.$post;
+  const createMutation = useMutation<
+    InferResponseType<typeof $create>,
+    Error,
+    InferRequestType<typeof $create>['json']
+  >({
+    mutationFn: async (payload) => {
       const res = await parseResponse(
         api.timetable.substitutions.$post({
           json: payload,
@@ -164,19 +145,13 @@ function SubstitutionsPage() {
       payload,
     }: {
       id: string;
-      payload: {
-        date?: string;
-        lessonIds?: string[];
-        substituter?: string | null;
-      };
+      payload: InferRequestType<typeof $create>['json'];
     }) => {
       const res = await parseResponse(
-        api.timetable.substitutions[':id'].$put(
-          { param: { id } },
-          {
-            init: { body: JSON.stringify(payload) },
-          }
-        )
+        api.timetable.substitutions[':id'].$put({
+          json: payload,
+          param: { id },
+        })
       );
       if (!res.success) {
         throw new Error('Failed to update substitution');
@@ -218,11 +193,13 @@ function SubstitutionsPage() {
       const teacherName = sub.teacher
         ? `${sub.teacher.firstName} ${sub.teacher.lastName}`.toLowerCase()
         : '';
-      const lessonSubjects = sub.lessons
+      const lessons = sub.lessons.filter((l) => l !== null && l !== undefined);
+
+      const lessonSubjects = lessons
         .map((l) => l.subject?.name ?? '')
         .join(' ')
         .toLowerCase();
-      const cohorts = sub.lessons
+      const cohorts = lessons
         .flatMap((l) => l.cohorts)
         .join(' ')
         .toLowerCase();
@@ -235,11 +212,9 @@ function SubstitutionsPage() {
     });
   }, [substitutionsQuery.data, search]);
 
-  const handleSave = async (payload: {
-    date: string;
-    lessonIds: string[];
-    substituter: string | null;
-  }) => {
+  const handleSave = async (
+    payload: InferRequestType<typeof $create>['json']
+  ) => {
     if (selectedItem) {
       await updateMutation.mutateAsync({
         id: selectedItem.substitution.id,
@@ -347,14 +322,14 @@ function SubstitutionsPage() {
                     ? sub.lessons
                         .map(
                           (l) =>
-                            `${l.subject?.short ?? '?'} P${l.period?.period ?? '?'}`
+                            `${l?.subject?.short ?? '?'} P${l?.period?.period ?? '?'}`
                         )
                         .join(', ')
                     : t('substitution.noLessons')}
                 </TableCell>
                 <TableCell>
                   {Array.from(
-                    new Set(sub.lessons.flatMap((l) => l.cohorts))
+                    new Set(sub.lessons.flatMap((l) => l?.cohorts))
                   ).join(', ') || '-'}
                 </TableCell>
                 {hasWritePermission && (
@@ -400,7 +375,7 @@ function SubstitutionsPage() {
       {hasWritePermission && (
         <SubstitutionDialog
           allLessons={allLessons}
-          cohorts={cohortsQuery.data ?? []}
+          cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
           isSubmitting={createMutation.isPending || updateMutation.isPending}
           item={selectedItem}
           onOpenChange={(open) => {

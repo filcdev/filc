@@ -1,5 +1,17 @@
 import { timetableFactory } from '#routes/timetable/_factory';
+import { getCohortsForTimetable } from '#routes/timetable/cohort';
 import { importRoute } from '#routes/timetable/import';
+import {
+  getAllTimetables,
+  getAllValidTimetables,
+  getLatestValidTimetable,
+} from '#routes/timetable/index';
+import {
+  getLessonForId,
+  getLessonsForCohort,
+  getLessonsForRoom,
+  getLessonsForTeacher,
+} from '#routes/timetable/lesson';
 import {
   createMovedLesson,
   deleteMovedLesson,
@@ -8,7 +20,7 @@ import {
   getRelevantMovedLessons,
   getRelevantMovedLessonsForCohort,
   updateMovedLesson,
-} from '#routes/timetable/movedLesson';
+} from '#routes/timetable/moved-lesson';
 import {
   createSubstitution,
   deleteSubstitution,
@@ -17,18 +29,6 @@ import {
   getRelevantSubstitutionsForCohort,
   updateSubstitution,
 } from '#routes/timetable/substitution';
-import {
-  getAllTimetables,
-  getAllValidTimetables,
-  getLatestValidTimetable,
-} from '.';
-import { getCohortsForTimetable } from './cohort';
-import {
-  getLessonForId,
-  getLessonsForCohort,
-  getLessonsForRoom,
-  getLessonsForTeacher,
-} from './lesson';
 import { getClassrooms } from './room';
 import { getTeachers } from './teacher';
 

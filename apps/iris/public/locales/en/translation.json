@@ -145,7 +145,8 @@
     "loadErrorMessage": "Please try again later.",
     "availableForClass": "Substitutions are available for {{className}}",
     "yourClass": "your class",
-    "cardTitle": "Substitution on {{date}}"
+    "cardTitle": "Substitution on {{date}}",
+    "notAvailable": "N/A"
   },
   "movedLesson": {
     "title": "Moved Lessons",
@@ -219,5 +220,10 @@
     "deleteSuccess": "Role deleted successfully",
     "deleteError": "Failed to delete role",
     "loadError": "Error loading roles"
+  },
+  "PageTitles": {
+    "timetable": "Timetable | Filc",
+    "substitutions": "Substitutions | Filc",
+    "adminPanel": "Admin Panel | Filc"
   }
 }

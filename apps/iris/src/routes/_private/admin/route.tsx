@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Navbar } from '@/components/ui/navbar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -8,6 +10,12 @@ export const Route = createFileRoute('/_private/admin')({
 });
 
 function AppLayoutComponent() {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    document.title = t('PageTitles.adminPanel');
+  }, [t]);
+
   return (
     <SidebarProvider>
       <AdminSidebar />

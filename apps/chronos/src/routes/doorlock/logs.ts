@@ -1,6 +1,5 @@
 import type { SQL } from 'drizzle-orm';
 import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
@@ -8,7 +7,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const auditLogSelectSchema = createSelectSchema(auditLog);
@@ -20,11 +19,11 @@ const cardSummarySchema = createSelectSchema(card).pick({
   id: true,
   name: true,
 });
-const userSummarySchema = z.object({
-  email: z.string().nullable(),
-  id: z.uuid(),
-  name: z.string().nullable(),
-  nickname: z.string().nullable(),
+const userSummarySchema = createSelectSchema(user).pick({
+  email: true,
+  id: true,
+  name: true,
+  nickname: true,
 });
 
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
@@ -56,14 +55,14 @@ const logsResponseSchema = z.object({
 const logsQuerySchema = z.object({
   cardId: z.uuid().optional(),
   deviceId: z.uuid().optional(),
-  from: z.string().datetime().optional(),
+  from: z.iso.datetime().optional(),
   granted: z
     .enum(['true', 'false'])
     .optional()
     .transform((val) => (val === undefined ? undefined : val === 'true')),
   limit: z.coerce.number().int().min(1).max(1000).default(500),
   search: z.string().optional(),
-  to: z.string().datetime().optional(),
+  to: z.iso.datetime().optional(),
   userId: z.uuid().optional(),
 });
 

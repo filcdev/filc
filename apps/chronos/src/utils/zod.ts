@@ -1,3 +1,4 @@
+import { createSchemaFactory } from 'drizzle-zod';
 import { z } from 'zod';
 
 const rewriteDates = (schema: z.ZodTypeAny): z.ZodTypeAny => {
@@ -39,3 +40,6 @@ const rewriteDates = (schema: z.ZodTypeAny): z.ZodTypeAny => {
 
 export const ensureJsonSafeDates = <T extends z.ZodTypeAny>(schema: T): T =>
   rewriteDates(schema) as T;
+
+export const { createInsertSchema, createSelectSchema, createUpdateSchema } =
+  createSchemaFactory({});

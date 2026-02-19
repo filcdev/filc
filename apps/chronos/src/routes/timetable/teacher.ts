@@ -1,11 +1,10 @@
-import { createSelectSchema } from 'drizzle-zod';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { teacher } from '#database/schema/timetable';
-import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { timetableFactory } from './_factory';
 
 const getTeachersResponseSchema = z.object({
   data: ensureJsonSafeDates(createSelectSchema(teacher)).array(),
