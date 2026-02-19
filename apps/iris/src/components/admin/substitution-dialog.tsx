@@ -161,10 +161,6 @@ export function SubstitutionDialog({
     await onSubmit(formState);
   };
 
-  const dateAsDate = formState.date
-    ? new Date(`${formState.date}T00:00:00`)
-    : undefined;
-
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
@@ -177,7 +173,7 @@ export function SubstitutionDialog({
           <div className="space-y-2">
             <Label>{t('substitution.date')}</Label>
             <DatePicker
-              date={dateAsDate}
+              date={formState.date}
               onDateChange={(d) =>
                 setFormState((prev) => ({
                   ...prev,
