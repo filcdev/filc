@@ -1,5 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { type InferRequestType, parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { Save } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,44 +21,15 @@ import {
 import { Label } from '@/components/ui/label';
 import { api } from '@/utils/hc';
 
-type Teacher = {
-  firstName: string;
-  gender: string | null;
-  id: string;
-  lastName: string;
-  short: string;
-  userId: string | null;
-};
+type SubstitutionApiResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
+type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
+type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
+type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
-type Cohort = {
-  id: string;
-  name: string;
-};
-
-type EnrichedLesson = {
-  classrooms: { id: string; name: string; short: string }[];
-  cohorts: string[];
-  day: { id: string; name: string; short: string } | null;
-  id: string;
-  period: {
-    endTime: string;
-    id: string;
-    period: number;
-    startTime: string;
-  } | null;
-  subject: { id: string; name: string; short: string } | null;
-  teachers: { id: string; name: string; short: string }[];
-};
-
-type SubstitutionItem = {
-  lessons: EnrichedLesson[];
-  substitution: {
-    date: string;
-    id: string;
-    substituter: string | null;
-  };
-  teacher: Teacher | null;
-};
+type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
+type Cohort = NonNullable<CohortApiResponse['data']>[number];
 
 type SubstitutionDialogProps = {
   allLessons: EnrichedLesson[];
@@ -70,6 +45,9 @@ type SubstitutionDialogProps = {
 };
 
 function formatLessonLabel(lesson: EnrichedLesson): string {
+  if (!lesson) {
+    return '';
+  }
   const parts: string[] = [];
   if (lesson.subject) {
     parts.push(lesson.subject.short);
@@ -90,7 +68,10 @@ const initialState = (
   item?: SubstitutionItem | null
 ): InferRequestType<typeof api.timetable.substitutions.$post>['json'] => ({
   date: item?.substitution.date ? new Date(item.substitution.date) : new Date(),
-  lessonIds: item?.lessons.map((l) => l.id) ?? [],
+  lessonIds:
+    item?.lessons
+      .map((l) => l?.id)
+      .filter((v) => v !== undefined && v !== null) ?? [],
   substituter: item?.substitution.substituter ?? null,
 });
 
@@ -126,19 +107,7 @@ export function SubstitutionDialog({
       if (!res.success) {
         throw new Error('Failed to load lessons');
       }
-      return (res.data ?? []).map(
-        (l): EnrichedLesson => ({
-          classrooms: l.classrooms,
-          cohorts: [],
-          day: l.day
-            ? { id: l.day.id, name: l.day.name, short: l.day.short }
-            : null,
-          id: l.id,
-          period: l.period,
-          subject: l.subject,
-          teachers: l.teachers,
-        })
-      );
+      return res.data;
     },
     queryKey: ['lessons', 'cohort', selectedCohort],
   });
@@ -146,10 +115,13 @@ export function SubstitutionDialog({
   const availableLessons = useMemo(() => {
     const map = new Map<string, EnrichedLesson>();
     for (const l of allLessons) {
+      if (!l) {
+        continue;
+      }
       map.set(l.id, l);
     }
     for (const l of cohortLessonsQuery.data ?? []) {
-      map.set(l.id, l);
+      map.set(l.id, l as EnrichedLesson);
     }
     return Array.from(map.values());
   }, [allLessons, cohortLessonsQuery.data]);

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
+import { type InferResponseType, parseResponse } from 'hono/client';
 import { CheckIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,10 +26,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/utils';
 import { api } from '@/utils/hc';
 
-type Role = {
-  name: string;
-  can: string[];
-};
+type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
+type Role = NonNullable<RolesApiResponse['data']>['roles'][number];
 
 type RoleDialogProps = {
   editingRole: Role | null;

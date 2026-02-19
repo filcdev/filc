@@ -28,54 +28,31 @@ import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
 
-type Classroom = {
-  id: string;
-  name: string;
-  short: string;
-};
+type MovedLessonApiResponse = InferResponseType<
+  typeof api.timetable.movedLessons.$get
+>;
+type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
+type Classroom = Omit<
+  NonNullable<MovedLessonItem['classroom']>,
+  'createdAt' | 'updatedAt'
+>;
+type Period = Omit<
+  NonNullable<MovedLessonItem['period']>,
+  'createdAt' | 'updatedAt'
+>;
+type DayDefinition = Omit<
+  NonNullable<MovedLessonItem['dayDefinition']>,
+  'createdAt' | 'updatedAt'
+>;
 
-type Period = {
-  endTime: string;
-  id: string;
-  period: number;
-  startTime: string;
-};
-
-type DayDefinition = {
-  days: string[];
-  id: string;
-  name: string;
-  short: string;
-};
-
-type EnrichedLesson = {
-  classrooms: { id: string; name: string; short: string }[];
-  cohorts: string[];
-  day: { id: string; name: string; short: string } | null;
-  id: string;
-  period: {
-    endTime: string;
-    id: string;
-    period: number;
-    startTime: string;
-  } | null;
-  subject: { id: string; name: string; short: string } | null;
-  teachers: { id: string; name: string; short: string }[];
-};
-
-type MovedLessonItem = {
-  classroom: Classroom | null;
-  dayDefinition: DayDefinition | null;
-  lessons: string[];
-  movedLesson: {
-    date: string;
-    id: string;
-    room: string | null;
-    startingDay: string | null;
-    startingPeriod: string | null;
-  };
-  period: Period | null;
-};
+type SubstitutionApiResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
+type SubstitutionData = NonNullable<SubstitutionApiResponse['data']>[number];
+type EnrichedLesson = Omit<
+  NonNullable<SubstitutionData['lessons'][number]>,
+  'createdAt' | 'updatedAt'
+>;
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -86,12 +63,6 @@ export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
     ),
   }
 );
-
-type SubstitutionData = {
-  lessons: EnrichedLesson[];
-  substitution: { date: string; id: string; substituter: string | null };
-  teacher: unknown;
-};
 
 function extractFromMovedLessons(
   movedLessons: MovedLessonItem[],
@@ -116,6 +87,9 @@ function extractFromSubstitutions(
 ) {
   for (const sub of subs) {
     for (const lesson of sub.lessons) {
+      if (!lesson) {
+        continue;
+      }
       lessonMap.set(lesson.id, lesson);
       if (lesson.period) {
         periodMap.set(lesson.period.id, lesson.period);
@@ -197,7 +171,7 @@ function MovedLessonsPage() {
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return (res.data ?? []) as { id: string; name: string }[];
+      return res.data;
     },
     queryKey: ['cohorts'],
   });

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InferResponseType } from 'hono/client';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -15,10 +16,8 @@ import {
 import { api } from '@/utils/hc';
 import { RoleDialog } from './role-dialog';
 
-type Role = {
-  name: string;
-  can: string[];
-};
+type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
+type Role = NonNullable<RolesApiResponse['data']>['roles'][number];
 
 type RolesTableProps = {
   roles: Role[];

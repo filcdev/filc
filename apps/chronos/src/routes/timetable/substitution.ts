@@ -177,20 +177,26 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
             ARRAY[]::text[]
           )`.as('lessonIds'),
           substitution,
-          teacher: sql`
-            CASE 
-              WHEN ${teacher.id} IS NOT NULL THEN
-                jsonb_build_object(
-                  'id', ${teacher.id},
-                  'firstName', ${teacher.firstName},
-                  'lastName', ${teacher.lastName},
-                  'short', ${teacher.short},
-                  'gender', ${teacher.gender},
-                  'userId', ${teacher.userId}
-                )
-              ELSE NULL
-            END
-          `.as('teacher'),
+          // teacher: sql`
+          //   CASE
+          //     WHEN ${teacher.id} IS NOT NULL THEN
+          //       jsonb_build_object(
+          //         'id', ${teacher.id},
+          //         'firstName', ${teacher.firstName},
+          //         'lastName', ${teacher.lastName},
+          //         'short', ${teacher.short},
+          //         'gender', ${teacher.gender},
+          //         'userId', ${teacher.userId}
+          //       )
+          //     ELSE NULL
+          //   END
+          // `.as('teacher'),
+          teacher: {
+            firstName: teacher.firstName,
+            id: teacher.id,
+            lastName: teacher.lastName,
+            short: teacher.short,
+          },
         })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))

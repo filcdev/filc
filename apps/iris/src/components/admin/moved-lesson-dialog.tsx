@@ -1,5 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { type InferRequestType, parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { Save } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,59 +21,31 @@ import {
 import { Label } from '@/components/ui/label';
 import { api } from '@/utils/hc';
 
-type Classroom = {
-  id: string;
-  name: string;
-  short: string;
-};
+type MovedLessonApiResponse = InferResponseType<
+  typeof api.timetable.movedLessons.$get
+>;
+type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
+type Classroom = Omit<
+  NonNullable<MovedLessonItem['classroom']>,
+  'createdAt' | 'updatedAt'
+>;
+type Period = Omit<
+  NonNullable<MovedLessonItem['period']>,
+  'createdAt' | 'updatedAt'
+>;
+type DayDefinition = Omit<
+  NonNullable<MovedLessonItem['dayDefinition']>,
+  'createdAt' | 'updatedAt'
+>;
 
-type Period = {
-  endTime: string;
-  id: string;
-  period: number;
-  startTime: string;
-};
+type SubstitutionApiResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
+type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
+type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 
-type DayDefinition = {
-  days: string[];
-  id: string;
-  name: string;
-  short: string;
-};
-
-type Cohort = {
-  id: string;
-  name: string;
-};
-
-type EnrichedLesson = {
-  classrooms: { id: string; name: string; short: string }[];
-  cohorts: string[];
-  day: { id: string; name: string; short: string } | null;
-  id: string;
-  period: {
-    endTime: string;
-    id: string;
-    period: number;
-    startTime: string;
-  } | null;
-  subject: { id: string; name: string; short: string } | null;
-  teachers: { id: string; name: string; short: string }[];
-};
-
-type MovedLessonItem = {
-  classroom: Classroom | null;
-  dayDefinition: DayDefinition | null;
-  lessons: string[];
-  movedLesson: {
-    date: string;
-    id: string;
-    room: string | null;
-    startingDay: string | null;
-    startingPeriod: string | null;
-  };
-  period: Period | null;
-};
+type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
+type Cohort = NonNullable<CohortApiResponse['data']>[number];
 
 const upd = api.timetable.movedLessons[':id'].$put;
 type MovedLessonFormValues = InferRequestType<typeof upd>['json'] & {
@@ -150,19 +126,7 @@ export function MovedLessonDialog({
       if (!res.success) {
         throw new Error('Failed to load lessons');
       }
-      return (res.data ?? []).map(
-        (l): EnrichedLesson => ({
-          classrooms: l.classrooms,
-          cohorts: [],
-          day: l.day
-            ? { id: l.day.id, name: l.day.name, short: l.day.short }
-            : null,
-          id: l.id,
-          period: l.period,
-          subject: l.subject,
-          teachers: l.teachers,
-        })
-      );
+      return res.data;
     },
     queryKey: ['lessons', 'cohort', selectedCohort],
   });
@@ -173,7 +137,10 @@ export function MovedLessonDialog({
       map.set(l.id, l);
     }
     for (const l of cohortLessonsQuery.data ?? []) {
-      map.set(l.id, l);
+      if (!l.id) {
+        continue;
+      }
+      map.set(l.id, l as EnrichedLesson);
     }
     return Array.from(map.values());
   }, [allLessons, cohortLessonsQuery.data]);
@@ -220,7 +187,10 @@ export function MovedLessonDialog({
     return true;
   }, [formState.date]);
 
-  const toggleLesson = (lessonId: string, checked: boolean) => {
+  const toggleLesson = (lessonId: string | undefined, checked: boolean) => {
+    if (!lessonId) {
+      return;
+    }
     setFormState((prev) => {
       if (checked) {
         return {
@@ -390,7 +360,7 @@ export function MovedLessonDialog({
                     key={lesson.id}
                   >
                     <Checkbox
-                      checked={formState.lessonIds.includes(lesson.id)}
+                      checked={formState.lessonIds.includes(lesson.id ?? '')}
                       id={`ml-lesson-${lesson.id}`}
                       onCheckedChange={(checked) =>
                         toggleLesson(lesson.id, !!checked)
