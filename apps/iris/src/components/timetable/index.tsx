@@ -211,8 +211,8 @@ export function TimetableView() {
   ]);
 
   // Set default selection when filter changes
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <explanation>
-    useEffect(() => {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
+  useEffect(() => {
     if (!initialized) {
       return;
     }
