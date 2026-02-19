@@ -138,6 +138,7 @@ export function TimetableView() {
     classroom: null,
     teacher: null,
   });
+  const [initialized, setInitialized] = useState(false);
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
@@ -157,10 +158,8 @@ export function TimetableView() {
   useEffect(() => {
     const allDataLoaded =
       cohortsQuery.data && teachersQuery.data && classroomsQuery.data;
-    const anySelectionMade =
-      selections.class || selections.teacher || selections.classroom;
 
-    if (!allDataLoaded || anySelectionMade || isPending) {
+    if (!allDataLoaded || initialized || isPending) {
       return;
     }
 
@@ -190,26 +189,36 @@ export function TimetableView() {
       setActiveFilter('classroom');
       setSelections((s) => ({ ...s, classroom: cohortClassroom }));
     } else {
-      const userDefault = session?.user?.cohortId as string | undefined;
+      const userClassId = session?.user?.cohortId ?? null;
+      const userDefault = cohortsQuery.data?.find(
+        (cohort) => cohort.id === userClassId
+      )?.id;
       const firstCohort = cohortsQuery.data[0]?.id ?? null;
-      setSelections((s) => ({ ...s, class: userDefault ?? firstCohort }));
+      const fallbackClass = userDefault ?? firstCohort;
+      setActiveFilter('class');
+      setSelections((s) => ({ ...s, class: fallbackClass }));
     }
+
+    setInitialized(true);
   }, [
     cohortsQuery.data,
     teachersQuery.data,
     classroomsQuery.data,
     session,
     isPending,
-    selections.class,
-    selections.classroom,
-    selections.teacher,
+    initialized,
     search.cohort,
     search.teacher,
     search.room,
   ]);
 
   // Set default selection when filter changes
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
   useEffect(() => {
+    if (!initialized) {
+      return;
+    }
+
     const firstCohort = cohortsQuery.data?.[0];
     const firstTeacher = teachersQuery.data?.[0];
     const firstClassroom = classroomsQuery.data?.[0];
@@ -234,6 +243,7 @@ export function TimetableView() {
         break;
     }
   }, [
+    initialized,
     activeFilter,
     cohortsQuery.data,
     teachersQuery.data,
