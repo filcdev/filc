@@ -21,7 +21,12 @@ import {
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+  ensureJsonSafeDates,
+} from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
@@ -376,11 +381,11 @@ export const getRelevantSubstitutionsForCohort =
     }
   );
 
-const createSchema = z.object({
-  date: z.date(),
-  lessonIds: z.string().array(),
-  substituter: z.string().nullable(),
-});
+const createSchema = createInsertSchema(substitution)
+  .omit({ id: true })
+  .extend({
+    lessonIds: z.string().array(),
+  });
 
 const createResponseSchema = z.object({
   data: substitutionSchema,
@@ -462,11 +467,11 @@ export const createSubstitution = timetableFactory.createHandlers(
   }
 );
 
-const updateSchema = z.object({
-  date: z.date().nullable(),
-  lessonIds: z.string().array().nullable(),
-  substituter: z.string().nullable(),
-});
+const updateSchema = createUpdateSchema(substitution)
+  .omit({ id: true })
+  .extend({
+    lessonIds: z.string().array().nullable(),
+  });
 
 export const updateSubstitution = timetableFactory.createHandlers(
   describeRoute({

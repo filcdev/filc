@@ -19,11 +19,11 @@ const cardSummarySchema = createSelectSchema(card).pick({
   id: true,
   name: true,
 });
-const userSummarySchema = z.object({
-  email: z.string().nullable(),
-  id: z.uuid(),
-  name: z.string().nullable(),
-  nickname: z.string().nullable(),
+const userSummarySchema = createSelectSchema(user).pick({
+  email: true,
+  id: true,
+  name: true,
+  nickname: true,
 });
 
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
