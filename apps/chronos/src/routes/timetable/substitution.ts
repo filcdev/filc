@@ -1,6 +1,6 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -21,8 +21,13 @@ import {
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
-import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+  ensureJsonSafeDates,
+} from '#utils/zod';
+import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
 
@@ -177,20 +182,26 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
             ARRAY[]::text[]
           )`.as('lessonIds'),
           substitution,
-          teacher: sql`
-            CASE 
-              WHEN ${teacher.id} IS NOT NULL THEN
-                jsonb_build_object(
-                  'id', ${teacher.id},
-                  'firstName', ${teacher.firstName},
-                  'lastName', ${teacher.lastName},
-                  'short', ${teacher.short},
-                  'gender', ${teacher.gender},
-                  'userId', ${teacher.userId}
-                )
-              ELSE NULL
-            END
-          `.as('teacher'),
+          // teacher: sql`
+          //   CASE
+          //     WHEN ${teacher.id} IS NOT NULL THEN
+          //       jsonb_build_object(
+          //         'id', ${teacher.id},
+          //         'firstName', ${teacher.firstName},
+          //         'lastName', ${teacher.lastName},
+          //         'short', ${teacher.short},
+          //         'gender', ${teacher.gender},
+          //         'userId', ${teacher.userId}
+          //       )
+          //     ELSE NULL
+          //   END
+          // `.as('teacher'),
+          teacher: {
+            firstName: teacher.firstName,
+            id: teacher.id,
+            lastName: teacher.lastName,
+            short: teacher.short,
+          },
         })
         .from(substitution)
         .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -255,7 +266,8 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
   requireAuthentication,
   async (c) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       const substitutions = await db
         .select({
@@ -272,7 +284,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
           substitutionLessonMTM,
           eq(substitution.id, substitutionLessonMTM.substitutionId)
         )
-        .where(gte(substitution.date, today as string))
+        .where(gte(substitution.date, today))
         .groupBy(substitution.id, teacher.id);
 
       return c.json<SuccessResponse<typeof substitutions>>({
@@ -317,16 +329,12 @@ export const getRelevantSubstitutionsForCohort =
       tags: ['Substitution'],
     }),
     requireAuthentication,
+    zValidator('param', z.object({ cohortId: z.uuid() })),
     async (c) => {
-      const cohortId = c.req.param('cohortId');
+      const { cohortId } = c.req.valid('param');
 
-      if (!cohortId) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Cohort ID is required',
-        });
-      }
-
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       try {
         const substitutions = await db
@@ -347,12 +355,7 @@ export const getRelevantSubstitutionsForCohort =
           .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
           .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
           .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-          .where(
-            and(
-              gte(substitution.date, today as string),
-              eq(cohort.id, cohortId)
-            )
-          )
+          .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
           .groupBy(substitution.id, teacher.id);
 
         return c.json<
@@ -378,17 +381,11 @@ export const getRelevantSubstitutionsForCohort =
     }
   );
 
-const createSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        date: z.date(),
-        lessonIds: z.string().array(),
-        substituter: z.string().nullable(),
-      })
-    )
-  ).toOpenAPISchema()
-).schema;
+const createSchema = createInsertSchema(substitution)
+  .omit({ id: true })
+  .extend({
+    lessonIds: z.string().array(),
+  });
 
 const createResponseSchema = z.object({
   data: substitutionSchema,
@@ -400,9 +397,9 @@ export const createSubstitution = timetableFactory.createHandlers(
     description: 'Create a new substitution',
     requestBody: {
       content: {
-        'multipart/form-data': {
-          schema: createSchema,
-        },
+        'multipart/form-data': await resolver(
+          ensureJsonSafeDates(createSchema)
+        ).toOpenAPISchema(),
       },
       description: 'The data for the new substitution.',
     },
@@ -420,27 +417,9 @@ export const createSubstitution = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('substitution:create'),
+  zValidator('json', createSchema),
   async (c) => {
-    const body = (await c.req.json()) as {
-      date: string;
-      lessonIds: string[];
-      substituter?: string;
-    };
-
-    const { lessonIds, date, substituter } = body;
-
-    if (!(lessonIds && date)) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Missing required fields: lessonIds and date are required.',
-      });
-    }
-
-    const dateAsDateType = new Date(date);
-    if (Number.isNaN(dateAsDateType.getTime())) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid date format.',
-      });
-    }
+    const { lessonIds, date, substituter } = c.req.valid('json');
 
     const lessonCount = await db.$count(lesson, inArray(lesson.id, lessonIds));
 
@@ -488,17 +467,11 @@ export const createSubstitution = timetableFactory.createHandlers(
   }
 );
 
-const updateSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        date: z.date().nullable(),
-        lessonIds: z.string().array().nullable(),
-        substituter: z.string().nullable(),
-      })
-    )
-  ).toOpenAPISchema()
-).schema;
+const updateSchema = createUpdateSchema(substitution)
+  .omit({ id: true })
+  .extend({
+    lessonIds: z.string().array().nullable(),
+  });
 
 export const updateSubstitution = timetableFactory.createHandlers(
   describeRoute({
@@ -516,9 +489,9 @@ export const updateSubstitution = timetableFactory.createHandlers(
     ],
     requestBody: {
       content: {
-        'application/json': {
-          schema: updateSchema,
-        },
+        'application/json': await resolver(
+          ensureJsonSafeDates(updateSchema)
+        ).toOpenAPISchema(),
       },
       description: 'The data for updating the substitution.',
     },
@@ -536,20 +509,12 @@ export const updateSubstitution = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('substitution:update'),
+  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('json', updateSchema),
   async (c) => {
     try {
-      const id = c.req.param('id');
-      const body = (await c.req.json()) as {
-        date?: string;
-        lessonIds?: string[];
-        substituter?: string;
-      };
-
-      if (!id) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Substitution ID is required',
-        });
-      }
+      const { id } = c.req.valid('param');
+      const body = c.req.valid('json');
 
       const existingSubstitution = await db
         .select()
@@ -561,15 +526,6 @@ export const updateSubstitution = timetableFactory.createHandlers(
         throw new HTTPException(StatusCodes.NOT_FOUND, {
           message: 'Substitution not found',
         });
-      }
-
-      if (body.date) {
-        const dateAsDate = new Date(body.date);
-        if (Number.isNaN(dateAsDate.getTime())) {
-          throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message: 'Invalid date format',
-          });
-        }
       }
 
       if (body.lessonIds) {
@@ -589,7 +545,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         const [updated] = await tx
           .update(substitution)
           .set({
-            date: body.date,
+            date: body.date ?? undefined,
             substituter: body.substituter,
           })
           .where(eq(substitution.id, id))
@@ -657,23 +613,18 @@ export const deleteSubstitution = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('substitution:delete'),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     try {
-      const id = c.req.param('id');
+      const { id } = c.req.valid('param');
 
-      if (!id) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Substitution ID is required',
-        });
-      }
-
-      const existingSubstitution = await db
+      const [existingSubstitution] = await db
         .select()
         .from(substitution)
         .where(eq(substitution.id, id))
         .limit(1);
 
-      if (existingSubstitution.length === 0) {
+      if (!existingSubstitution) {
         throw new HTTPException(StatusCodes.NOT_FOUND, {
           message: 'Substitution not found',
         });

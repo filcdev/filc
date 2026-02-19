@@ -1,6 +1,6 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -17,8 +17,12 @@ import {
   period,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import {
+  createInsertSchema,
+  createSelectSchema,
+  ensureJsonSafeDates,
+} from '#utils/zod';
+import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
 
@@ -242,17 +246,13 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
+  zValidator('param', z.object({ timetableId: z.uuid() })),
   async (c) => {
     try {
-      const timetableId = c.req.param('timetableId');
-
-      if (!timetableId) {
-        throw new Error('timetableId resolved to undefined.');
-      }
+      const { timetableId } = c.req.valid('param');
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().slice(0, 10);
 
       const movedLessons = await db
         .select({
@@ -275,10 +275,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         )
         .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
         .where(
-          and(
-            gte(movedLesson.date, todayStr),
-            eq(lesson.timetableId, timetableId)
-          )
+          and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
@@ -322,15 +319,10 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
+  zValidator('param', z.object({ cohortId: z.uuid() })),
   async (c) => {
     try {
-      const cohortId = c.req.param('cohortId');
-
-      if (!cohortId) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Cohort ID is required',
-        });
-      }
+      const { cohortId } = c.req.valid('param');
 
       const movedLessons = await db
         .select({
@@ -396,19 +388,13 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
+  zValidator('param', z.object({ cohortId: z.uuid() })),
   async (c) => {
     try {
-      const cohortId = c.req.param('cohortId');
-
-      if (!cohortId) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Cohort ID is required',
-        });
-      }
+      const { cohortId } = c.req.valid('param');
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().slice(0, 10);
 
       const movedLessons = await db
         .select({
@@ -434,7 +420,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         .where(
           and(
             eq(lessonCohortMTM.cohortId, cohortId),
-            gte(movedLesson.date, todayStr)
+            gte(movedLesson.date, today)
           )
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
@@ -454,11 +440,9 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
-const createSchema = (
-  await resolver(
-    ensureJsonSafeDates(createInsertSchema(movedLesson))
-  ).toOpenAPISchema()
-).schema;
+const createSchema = createInsertSchema(movedLesson).omit({ id: true }).extend({
+  lessonIds: z.uuid().array().optional(),
+});
 
 const createResponseSchema = z.object({
   data: createSelectSchema(movedLesson),
@@ -470,9 +454,9 @@ export const createMovedLesson = timetableFactory.createHandlers(
     description: 'Create a moved lesson.',
     requestBody: {
       content: {
-        'application/json': {
-          schema: createSchema,
-        },
+        'application/json': await resolver(
+          ensureJsonSafeDates(createSchema)
+        ).toOpenAPISchema(),
       },
       description: 'The data for the moved lesson.',
     },
@@ -490,9 +474,12 @@ export const createMovedLesson = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('movedLesson:create'),
+  // TODO: timetable awareness for validation
+  // zValidator('param', z.object({ timetableId: z.uuid() })),
+  zValidator('json', createSchema),
   async (c) => {
     try {
-      const body = await c.req.json();
+      const body = c.req.valid('json');
       const { startingPeriod, startingDay, room, date, lessonIds } = body;
 
       if (!date) {
@@ -549,19 +536,13 @@ export const createMovedLesson = timetableFactory.createHandlers(
   }
 );
 
-const updateSchema = (
-  await resolver(
-    ensureJsonSafeDates(
-      z.object({
-        date: z.date(),
-        lessonIds: z.string().array(),
-        room: z.string(),
-        startingDay: z.uuid(),
-        startingPeriod: z.uuid(),
-      })
-    )
-  ).toOpenAPISchema()
-).schema;
+const updateSchema = z.object({
+  date: z.date(),
+  lessonIds: z.uuid().array(),
+  room: z.string(),
+  startingDay: z.uuid(),
+  startingPeriod: z.uuid(),
+});
 
 export const updateMovedLesson = timetableFactory.createHandlers(
   describeRoute({
@@ -579,9 +560,9 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     ],
     requestBody: {
       content: {
-        'application/json': {
-          schema: updateSchema,
-        },
+        'application/json': await resolver(
+          ensureJsonSafeDates(updateSchema)
+        ).toOpenAPISchema(),
       },
       description: 'The data for updating the moved lesson.',
     },
@@ -599,17 +580,13 @@ export const updateMovedLesson = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('movedLesson:update'),
+  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('json', updateSchema),
   async (c) => {
     try {
-      const id = c.req.param('id');
-      const body = await c.req.json();
-      const { startingPeriod, startingDay, room, date, lessonIds } = body;
-
-      if (!id) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Moved lesson ID is required',
-        });
-      }
+      const { id } = c.req.valid('param');
+      const { startingPeriod, startingDay, room, date, lessonIds } =
+        c.req.valid('json');
 
       await validateMovedLessonReferences({
         lessonIds,
@@ -621,7 +598,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       const [updatedMovedLesson] = await db
         .update(movedLesson)
         .set({
-          date: date !== undefined ? date : undefined,
+          date,
           room: room !== undefined ? room : undefined,
           startingDay: startingDay !== undefined ? startingDay : undefined,
           startingPeriod:
@@ -692,15 +669,10 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('movedLesson:delete'),
+  zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     try {
-      const id = c.req.param('id');
-
-      if (!id) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Moved lesson ID is required',
-        });
-      }
+      const { id } = c.req.valid('param');
 
       const [deletedMovedLesson] = await db
         .delete(movedLesson)

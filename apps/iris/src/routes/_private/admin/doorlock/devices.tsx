@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import {
   ChartArea,
   DoorOpen,
@@ -45,13 +49,6 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
   ),
 });
 
-type DevicePayload = {
-  apiToken: string;
-  lastResetReason?: string | null;
-  location?: string | null;
-  name: string;
-};
-
 function DevicesPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
@@ -79,18 +76,19 @@ function DevicesPage() {
     queryKey: ['doorlock', 'devices'],
   });
 
-  const upsertMutation = useMutation({
-    mutationFn: ({ id, payload }: { id?: string; payload: DevicePayload }) => {
+  const $upsertDevice = api.doorlock.devices.$post;
+  const upsertMutation = useMutation<
+    InferResponseType<typeof $upsertDevice>,
+    Error,
+    { id?: string; payload: InferRequestType<typeof $upsertDevice>['json'] }
+  >({
+    mutationFn: ({ id, payload }) => {
       if (id) {
         return parseResponse(
-          api.doorlock.devices[':id'].$put(
-            {
-              param: { id },
-            },
-            {
-              init: { body: JSON.stringify(payload) },
-            }
-          )
+          api.doorlock.devices[':id'].$put({
+            json: payload,
+            param: { id },
+          })
         );
       }
       return parseResponse(api.doorlock.devices.$post({ json: payload }));
@@ -106,7 +104,12 @@ function DevicesPage() {
     },
   });
 
-  const deleteMutation = useMutation({
+  const $deleteDevice = api.doorlock.devices[':id'].$delete;
+  const deleteMutation = useMutation<
+    InferResponseType<typeof $deleteDevice>,
+    Error,
+    string
+  >({
     mutationFn: async (id: string) =>
       parseResponse(api.doorlock.devices[':id'].$delete({ param: { id } })),
     onError: (error: Error) => {
@@ -143,7 +146,9 @@ function DevicesPage() {
     }).length;
   }, [devicesQuery.data]);
 
-  const handleSave = async (payload: DevicePayload) => {
+  const handleSave = async (
+    payload: InferRequestType<typeof $upsertDevice>['json']
+  ) => {
     await upsertMutation.mutateAsync({
       ...(selectedDevice?.id && { id: selectedDevice.id }),
       payload,

@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
@@ -41,15 +45,6 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
     </PermissionGuard>
   ),
 });
-
-type CardPayload = {
-  authorizedDeviceIds: string[];
-  cardData?: string;
-  enabled: boolean;
-  frozen: boolean;
-  name: string;
-  userId: string;
-};
 
 function CardsPage() {
   const queryClient = useQueryClient();
@@ -102,16 +97,16 @@ function CardsPage() {
     queryKey: ['doorlock', 'card-users'],
   });
 
-  const upsertMutation = useMutation({
-    mutationFn: ({ id, payload }: { id?: string; payload: CardPayload }) => {
+  const $upsertCard = api.doorlock.cards.$post;
+  const upsertMutation = useMutation<
+    InferResponseType<typeof $upsertCard>,
+    Error,
+    { id?: string; payload: InferRequestType<typeof $upsertCard>['json'] }
+  >({
+    mutationFn: ({ id, payload }) => {
       if (id) {
         return parseResponse(
-          api.doorlock.cards[':id'].$put(
-            { param: { id } },
-            {
-              init: { body: JSON.stringify(payload) },
-            }
-          )
+          api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
         );
       }
       return parseResponse(api.doorlock.cards.$post({ json: payload }));
@@ -127,7 +122,12 @@ function CardsPage() {
     },
   });
 
-  const deleteMutation = useMutation({
+  const $deleteCard = api.doorlock.cards[':id'].$delete;
+  const deleteMutation = useMutation<
+    InferResponseType<typeof $deleteCard>,
+    Error,
+    string
+  >({
     mutationFn: async (id: string) =>
       parseResponse(api.doorlock.cards[':id'].$delete({ param: { id } })),
     onError: (error: Error) => {
@@ -171,7 +171,9 @@ function CardsPage() {
     };
   }, [cardsQuery.data]);
 
-  const handleSave = async (payload: CardPayload) => {
+  const handleSave = async (
+    payload: InferRequestType<typeof $upsertCard>['json']
+  ) => {
     await upsertMutation.mutateAsync({
       ...(selectedCard?.id && { id: selectedCard.id }),
       payload,

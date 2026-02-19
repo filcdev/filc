@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
+import { type InferResponseType, parseResponse } from 'hono/client';
 import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,7 +50,12 @@ function TimetableImportPage() {
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const importMutation = useMutation({
+  const $import = api.timetable.import.$post;
+  const importMutation = useMutation<
+    InferResponseType<typeof $import>,
+    Error,
+    ImportPayload
+  >({
     mutationFn: async ({ file, name, validFrom }: ImportPayload) => {
       const res = await parseResponse(
         api.timetable.import.$post({

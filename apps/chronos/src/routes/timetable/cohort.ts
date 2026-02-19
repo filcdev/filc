@@ -1,6 +1,6 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -9,8 +9,8 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort, timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
-import { ensureJsonSafeDates } from '#utils/zod';
-import { timetableFactory } from '../_factory';
+import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'cohort']);
 
@@ -47,16 +47,11 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
     },
     tags: ['Cohort'],
   }),
+  zValidator('param', z.object({ timetableId: z.uuid() })),
   requireAuthentication,
   async (c) => {
     try {
-      const timetableId = c.req.param('timetableId');
-
-      if (!timetableId) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Missing timetableId parameter.',
-        });
-      }
+      const { timetableId } = c.req.valid('param');
 
       const cohorts = await db
         .select()
