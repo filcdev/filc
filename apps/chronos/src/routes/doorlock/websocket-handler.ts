@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import type { ServerWebSocket } from 'bun';
 import { and, eq } from 'drizzle-orm';
 import { upgradeWebSocket } from 'hono/bun';
+import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { db } from '#database';
 import {
@@ -36,7 +37,10 @@ const handleIncomingMessage = async (
         error: z.treeifyError(result.error),
         message,
       });
-      return;
+      return {
+        details: result.error,
+        error: 'INVALID_MESSAGE_FORMAT',
+      };
     }
 
     const deserialized = result.data;
@@ -108,9 +112,11 @@ const handleIncomingMessage = async (
           device,
         });
     }
+    return null;
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
     logger.warn('Message handling failed', { device, error: err, message });
+    return { details: err.message, error: 'MESSAGE_HANDLING_FAILED' };
   }
 };
 
@@ -163,7 +169,9 @@ export const websocketHandler = doorlockFactory.createHandlers(
     const gotToken = c.req.header('X-Aegis-Device-Token');
     if (!gotToken) {
       logger.warn('WebSocket connection attempt without device token');
-      return c.status(401);
+      throw new HTTPException(401, {
+        message: 'Device token is required in X-Aegis-Device-Token header',
+      });
     }
 
     const [device] = await db
@@ -203,13 +211,16 @@ export const websocketHandler = doorlockFactory.createHandlers(
         });
         raw.unsubscribe(`device-${device.id}`);
       },
-      async onMessage(event, _ws) {
+      async onMessage(event, ws) {
         const message = typeof event.data === 'string' ? event.data : '';
         logger.trace('WebSocket message event received', {
           device,
           isText: typeof event.data === 'string',
         });
-        await handleIncomingMessage(message, device);
+        const result = await handleIncomingMessage(message, device);
+        if (result) {
+          ws.send(JSON.stringify(result));
+        }
       },
       async onOpen(_e, ws) {
         logger.debug('WebSocket connection opened', { device });

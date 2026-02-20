@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const pingMessageSchema = z.object({
   data: z.object({
     debug: z.object({
-      deviceState: z.number(),
+      deviceState: z.coerce.number(),
       errors: z.object({
         db: z.boolean(),
         nfc: z.boolean(),
@@ -14,12 +14,12 @@ export const pingMessageSchema = z.object({
       lastResetReason: z.string(),
     }),
     fwVersion: z.string(),
-    ramFree: z.bigint(),
+    ramFree: z.coerce.number(),
     storage: z.object({
-      total: z.bigint(),
-      used: z.bigint(),
+      total: z.coerce.number(),
+      used: z.coerce.number(),
     }),
-    uptime: z.bigint(),
+    uptime: z.coerce.number(),
   }),
   type: z.literal('ping'),
 });
