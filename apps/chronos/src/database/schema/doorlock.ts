@@ -56,11 +56,11 @@ export const deviceHealth = pgTable('device_health', {
   deviceMeta: jsonb('device_meta')
     .$type<{
       fwVersion: string;
-      uptime: bigint;
-      ramFree: bigint;
+      uptime: number;
+      ramFree: number;
       storage: {
-        total: bigint;
-        used: bigint;
+        total: number;
+        used: number;
       };
       debug: {
         lastResetReason: string;
