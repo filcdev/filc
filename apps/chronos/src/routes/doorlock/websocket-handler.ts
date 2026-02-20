@@ -13,73 +13,13 @@ import {
 } from '#database/schema/doorlock';
 import { server } from '#index';
 import { doorlockFactory } from '#routes/doorlock/_factory';
+import {
+  incomingMessageSchema,
+  type OutgoingMessage,
+  outgoingMessageSchema,
+} from '#utils/doorlock/schemas';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
-
-const pingMessageSchema = z.object({
-  data: z.object({
-    debug: z.object({
-      deviceState: z.number(),
-      errors: z.object({
-        db: z.boolean(),
-        nfc: z.boolean(),
-        ota: z.boolean(),
-        sd: z.boolean(),
-        wifi: z.boolean(),
-      }),
-      lastResetReason: z.string(),
-    }),
-    fwVersion: z.string(),
-    ramFree: z.bigint(),
-    storage: z.object({
-      total: z.bigint(),
-      used: z.bigint(),
-    }),
-    uptime: z.bigint(),
-  }),
-  type: z.literal('ping'),
-});
-
-const cardReadMessageSchema = z.object({
-  authorized: z.boolean(),
-  name: z.string(),
-  type: z.literal('card-read'),
-  uid: z.string(),
-});
-
-const incomingMessageSchema = z.discriminatedUnion('type', [
-  pingMessageSchema,
-  cardReadMessageSchema,
-]);
-
-// Zod schemas for outgoing messages
-const syncDatabaseMessageSchema = z.object({
-  db: z.array(
-    z.object({
-      name: z.string(),
-      uid: z.string(),
-    })
-  ),
-  type: z.literal('sync-database'),
-});
-
-const openDoorMessageSchema = z.object({
-  name: z.string().optional(),
-  type: z.literal('open-door'),
-});
-
-const updateMessageSchema = z.object({
-  type: z.literal('update'),
-  url: z.string().optional(),
-});
-
-const outgoingMessageSchema = z.discriminatedUnion('type', [
-  syncDatabaseMessageSchema,
-  openDoorMessageSchema,
-  updateMessageSchema,
-]);
-
-type OutgoingMessage = z.infer<typeof outgoingMessageSchema>;
 
 const handleIncomingMessage = async (
   message: string,
