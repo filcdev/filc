@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import type { ServerWebSocket } from 'bun';
 import { and, eq } from 'drizzle-orm';
 import { upgradeWebSocket } from 'hono/bun';
+import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { db } from '#database';
 import {
@@ -13,79 +14,20 @@ import {
 } from '#database/schema/doorlock';
 import { server } from '#index';
 import { doorlockFactory } from '#routes/doorlock/_factory';
+import {
+  incomingMessageSchema,
+  type OutgoingMessage,
+  outgoingMessageSchema,
+} from '#utils/doorlock/schemas';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
-
-const pingMessageSchema = z.object({
-  data: z.object({
-    debug: z.object({
-      deviceState: z.number(),
-      errors: z.object({
-        db: z.boolean(),
-        nfc: z.boolean(),
-        ota: z.boolean(),
-        sd: z.boolean(),
-        wifi: z.boolean(),
-      }),
-      lastResetReason: z.string(),
-    }),
-    fwVersion: z.string(),
-    ramFree: z.bigint(),
-    storage: z.object({
-      total: z.bigint(),
-      used: z.bigint(),
-    }),
-    uptime: z.bigint(),
-  }),
-  type: z.literal('ping'),
-});
-
-const cardReadMessageSchema = z.object({
-  authorized: z.boolean(),
-  name: z.string(),
-  type: z.literal('card-read'),
-  uid: z.string(),
-});
-
-const incomingMessageSchema = z.discriminatedUnion('type', [
-  pingMessageSchema,
-  cardReadMessageSchema,
-]);
-
-// Zod schemas for outgoing messages
-const syncDatabaseMessageSchema = z.object({
-  db: z.array(
-    z.object({
-      name: z.string(),
-      uid: z.string(),
-    })
-  ),
-  type: z.literal('sync-database'),
-});
-
-const openDoorMessageSchema = z.object({
-  name: z.string().optional(),
-  type: z.literal('open-door'),
-});
-
-const updateMessageSchema = z.object({
-  type: z.literal('update'),
-  url: z.string().optional(),
-});
-
-const outgoingMessageSchema = z.discriminatedUnion('type', [
-  syncDatabaseMessageSchema,
-  openDoorMessageSchema,
-  updateMessageSchema,
-]);
-
-type OutgoingMessage = z.infer<typeof outgoingMessageSchema>;
 
 const handleIncomingMessage = async (
   message: string,
   device: { id: string }
 ) => {
   try {
+    logger.trace('Received raw WebSocket message', { device, message });
     const parsed = JSON.parse(message);
     const result = incomingMessageSchema.safeParse(parsed);
 
@@ -95,7 +37,10 @@ const handleIncomingMessage = async (
         error: z.treeifyError(result.error),
         message,
       });
-      return;
+      return {
+        details: result.error,
+        error: 'INVALID_MESSAGE_FORMAT',
+      };
     }
 
     const deserialized = result.data;
@@ -107,6 +52,7 @@ const handleIncomingMessage = async (
 
     switch (deserialized.type) {
       case 'ping': {
+        logger.trace('Handling ping message', { deserialized, device });
         const getDeviceState = () => {
           switch (deserialized.data.debug.deviceState) {
             case 0:
@@ -126,6 +72,7 @@ const handleIncomingMessage = async (
           }
         };
 
+        logger.trace('Persisting device health ping', { device });
         await db.insert(deviceHealth).values({
           deviceId: device.id,
           deviceMeta: {
@@ -137,6 +84,7 @@ const handleIncomingMessage = async (
           },
         });
 
+        logger.trace('Updating device heartbeat timestamp', { device });
         await db
           .update(lockDevice)
           .set({ updatedAt: new Date() })
@@ -144,6 +92,7 @@ const handleIncomingMessage = async (
         break;
       }
       case 'card-read':
+        logger.trace('Handling card-read message', { deserialized, device });
         await db.insert(auditLog).values({
           buttonPressed: false,
           cardData: deserialized.uid,
@@ -151,6 +100,7 @@ const handleIncomingMessage = async (
           result: deserialized.authorized,
         });
 
+        logger.trace('Updating device heartbeat timestamp', { device });
         await db
           .update(lockDevice)
           .set({ updatedAt: new Date() })
@@ -162,9 +112,11 @@ const handleIncomingMessage = async (
           device,
         });
     }
+    return null;
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
     logger.warn('Message handling failed', { device, error: err, message });
+    return { details: err.message, error: 'MESSAGE_HANDLING_FAILED' };
   }
 };
 
@@ -176,10 +128,12 @@ export const sendMessage = (content: OutgoingMessage, deviceId: string) => {
       ? { ...validated, name: validated.name.trim() }
       : validated;
 
+  logger.trace('Publishing WebSocket message', { deviceId, payload });
   server.publish(`device-${deviceId}`, JSON.stringify(payload));
 };
 
 export const syncDatabase = async (deviceId: string) => {
+  logger.trace('Preparing database sync payload', { deviceId });
   const cards = await db
     .select()
     .from(card)
@@ -197,6 +151,10 @@ export const syncDatabase = async (deviceId: string) => {
     uid: c.card.cardData,
   }));
 
+  logger.trace('Sending database sync payload', {
+    count: database.length,
+    deviceId,
+  });
   sendMessage(
     {
       db: database,
@@ -211,7 +169,9 @@ export const websocketHandler = doorlockFactory.createHandlers(
     const gotToken = c.req.header('X-Aegis-Device-Token');
     if (!gotToken) {
       logger.warn('WebSocket connection attempt without device token');
-      return c.status(401);
+      throw new HTTPException(401, {
+        message: 'Device token is required in X-Aegis-Device-Token header',
+      });
     }
 
     const [device] = await db
@@ -245,15 +205,30 @@ export const websocketHandler = doorlockFactory.createHandlers(
       onClose: (_e, ws) => {
         logger.info('Connection closed for device', { device });
         const raw = ws.raw as ServerWebSocket;
+        logger.trace('Unsubscribing from device channel', {
+          channel: `device-${device.id}`,
+          device,
+        });
         raw.unsubscribe(`device-${device.id}`);
       },
-      async onMessage(event, _ws) {
+      async onMessage(event, ws) {
         const message = typeof event.data === 'string' ? event.data : '';
-        await handleIncomingMessage(message, device);
+        logger.trace('WebSocket message event received', {
+          device,
+          isText: typeof event.data === 'string',
+        });
+        const result = await handleIncomingMessage(message, device);
+        if (result) {
+          ws.send(JSON.stringify(result));
+        }
       },
       async onOpen(_e, ws) {
         logger.debug('WebSocket connection opened', { device });
         const raw = ws.raw as ServerWebSocket;
+        logger.trace('Subscribing to device channel', {
+          channel: `device-${device.id}`,
+          device,
+        });
         raw.subscribe(`device-${device.id}`);
         await syncDatabase(device.id);
       },
