@@ -1,3 +1,4 @@
+import type { InferResponseType } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -8,71 +9,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import type { api } from '@/utils/hc';
 
 type TimetableProps = {
   data: Subs[];
 };
 
-type Lesson = {
-  id: string;
-  subject: {
-    id: string;
-    name: string;
-    short: string;
-  } | null;
-  classrooms: {
-    id: string;
-    name: string;
-    short: string;
-  }[];
-  cohorts: string[];
-  day: {
-    id: string;
-    name: string;
-    short: string;
-    days: string[];
-    createdAt: string;
-    updatedAt: string;
-  } | null;
-  period: {
-    id: string;
-    period: number;
-    startTime: string;
-    endTime: string;
-  } | null;
-  periodsPerWeek: number;
-  teachers: {
-    id: string;
-    name: string;
-    short: string;
-  }[];
-  termDefinitionId: string | null;
-  weeksDefinitionId: string;
-};
+type SubstitutionsResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
 
-type Subs = {
-  lessons: Lesson[];
-  substitution: {
-    date: string;
-    id: string;
-    substituter: string | null;
-  };
-  teacher: {
-    firstName: string;
-    gender: string | null;
-    id: string;
-    lastName: string;
-    short: string;
-    userId: string | null;
-  } | null;
-};
+type Subs = NonNullable<SubstitutionsResponse['data']>[number];
+type Lesson = NonNullable<Subs['lessons'][number]>;
 
 function LessonRow({
   lesson,
   substituter,
 }: {
   lesson: Lesson;
-  substituter: string | null;
+  substituter: string;
 }) {
   const { t } = useTranslation();
   const notAvailable = t('substitution.notAvailable');
@@ -96,7 +51,7 @@ function LessonRow({
           : notAvailable}
       </TableCell>
       <TableCell>
-        {substituter !== '' ? substituter : t('substitution.noSubstitutions')}
+        {substituter !== '' ? substituter : t('substitution.noSubstituter')}
       </TableCell>
       <TableCell>
         {lesson.teachers && lesson.teachers.length > 0
@@ -109,14 +64,16 @@ function LessonRow({
 
 function LessonReturn(data: Subs[]) {
   return data.flatMap((sub) =>
-    sub.lessons.map((lesson) => (
-      <TableRow key={`${sub.substitution.id}-${lesson.id}`}>
-        <LessonRow
-          lesson={lesson}
-          substituter={`${sub.teacher?.firstName ?? ''} ${sub.teacher?.lastName ?? ''}`.trim()}
-        />
-      </TableRow>
-    ))
+    sub.lessons
+      .filter((lesson) => lesson !== null)
+      .map((lesson) => (
+        <TableRow key={`${sub.substitution.id}-${lesson.id}`}>
+          <LessonRow
+            lesson={lesson}
+            substituter={`${sub.teacher?.firstName ?? ''} ${sub.teacher?.lastName ?? ''}`.trim()}
+          />
+        </TableRow>
+      ))
   );
 }
 
@@ -130,7 +87,7 @@ export function SubsV({ data }: TimetableProps) {
       <CardHeader>
         <CardTitle>
           {t('substitution.cardTitle', {
-            date: data[0]?.substitution.date,
+            date: data[0]?.substitution.date.split('T')[0],
           })}
         </CardTitle>
       </CardHeader>

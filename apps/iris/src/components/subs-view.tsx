@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import type { InferResponseType } from 'hono/client';
 import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -6,59 +7,11 @@ import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { SubsV } from './subs';
 
-type Lesson = {
-  id: string;
-  subject: {
-    id: string;
-    name: string;
-    short: string;
-  } | null;
-  classrooms: {
-    id: string;
-    name: string;
-    short: string;
-  }[];
-  cohorts: string[];
-  day: {
-    id: string;
-    name: string;
-    short: string;
-    days: string[];
-    createdAt: string;
-    updatedAt: string;
-  } | null;
-  period: {
-    id: string;
-    period: number;
-    startTime: string;
-    endTime: string;
-  } | null;
-  periodsPerWeek: number;
-  teachers: {
-    id: string;
-    name: string;
-    short: string;
-  }[];
-  termDefinitionId: string | null;
-  weeksDefinitionId: string;
-};
+type SubstitutionsResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
 
-type Subs = {
-  lessons: Lesson[];
-  substitution: {
-    date: string;
-    id: string;
-    substituter: string | null;
-  };
-  teacher: {
-    firstName: string;
-    gender: string | null;
-    id: string;
-    lastName: string;
-    short: string;
-    userId: string | null;
-  } | null;
-};
+type Subs = NonNullable<SubstitutionsResponse['data']>[number];
 
 const groupByDate = (data: Subs[]) =>
   data.reduce(

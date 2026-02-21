@@ -290,86 +290,93 @@ function SubstitutionsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('substitution.date')}</TableHead>
-              <TableHead>{t('substitution.substituteTeacher')}</TableHead>
-              <TableHead>{t('substitution.affectedLessons')}</TableHead>
-              <TableHead>{t('substitution.cohorts')}</TableHead>
-              {hasWritePermission && (
-                <TableHead>{t('substitution.actions')}</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSubstitutions.map((sub) => (
-              <TableRow key={sub.substitution.id}>
-                <TableCell className="font-medium">
-                  {dayjs(sub.substitution.date).format('YYYY/MM/DD')}
-                </TableCell>
-                <TableCell>
-                  {sub.teacher ? (
-                    `${sub.teacher.firstName} ${sub.teacher.lastName}`
-                  ) : (
-                    <Badge variant="destructive">
-                      {t('substitution.cancelled')}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {sub.lessons.length > 0
-                    ? sub.lessons
-                        .map(
-                          (l) =>
-                            `${l?.subject?.short ?? '?'} P${l?.period?.period ?? '?'}`
-                        )
-                        .join(', ')
-                    : t('substitution.noLessons')}
-                </TableCell>
-                <TableCell>
-                  {Array.from(
-                    new Set(sub.lessons.flatMap((l) => l?.cohorts))
-                  ).join(', ') || '-'}
-                </TableCell>
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('substitution.date')}</TableHead>
+                <TableHead>{t('substitution.substituteTeacher')}</TableHead>
+                <TableHead>{t('substitution.affectedLessons')}</TableHead>
+                <TableHead>{t('substitution.cohorts')}</TableHead>
                 {hasWritePermission && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setSelectedItem(sub);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleDelete(sub)}
-                        size="icon"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableHead>{t('substitution.actions')}</TableHead>
                 )}
               </TableRow>
-            ))}
-            {!(filteredSubstitutions.length || hasError) && (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground"
-                  colSpan={hasWritePermission ? 5 : 4}
-                >
-                  {t('substitution.noSubstitutions')}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredSubstitutions.map((sub) => (
+                <TableRow key={sub.substitution.id}>
+                  <TableCell className="font-medium">
+                    {dayjs(sub.substitution.date).format('YYYY/MM/DD')}
+                  </TableCell>
+                  <TableCell>
+                    {sub.teacher ? (
+                      `${sub.teacher.firstName} ${sub.teacher.lastName}`
+                    ) : (
+                      <Badge variant="destructive">
+                        {t('substitution.cancelled')}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {sub.lessons.length > 0
+                      ? sub.lessons
+                          .filter((l) => l !== null && l !== undefined)
+                          .map(
+                            (l) =>
+                              `${l.subject?.short ?? '?'} P${l.period?.period ?? '?'}`
+                          )
+                          .join(', ')
+                      : t('substitution.noLessons')}
+                  </TableCell>
+                  <TableCell>
+                    {Array.from(
+                      new Set(
+                        sub.lessons
+                          .filter((l) => l !== null && l !== undefined)
+                          .flatMap((l) => l.cohorts)
+                      )
+                    ).join(', ') || '-'}
+                  </TableCell>
+                  {hasWritePermission && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setSelectedItem(sub);
+                            setDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pen className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          disabled={deleteMutation.isPending}
+                          onClick={() => handleDelete(sub)}
+                          size="icon"
+                          variant="destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {!(filteredSubstitutions.length || hasError) && (
+                <TableRow>
+                  <TableCell
+                    className="text-muted-foreground"
+                    colSpan={hasWritePermission ? 5 : 4}
+                  >
+                    {t('substitution.noSubstitutions')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {hasWritePermission && (
