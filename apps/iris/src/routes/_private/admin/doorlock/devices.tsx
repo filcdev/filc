@@ -9,6 +9,7 @@ import {
 import {
   ChartArea,
   DoorOpen,
+  Download,
   Key,
   Microchip,
   Pen,
@@ -20,6 +21,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
+import { OtaUpdateDialog } from '@/components/doorlock/ota-update-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,6 +61,8 @@ function DevicesPage() {
   );
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [statsDevice, setStatsDevice] = useState<DoorlockDevice | null>(null);
+  const [otaDialogOpen, setOtaDialogOpen] = useState(false);
+  const [otaDevice, setOtaDevice] = useState<DoorlockDevice | null>(null);
 
   const hasWritePermission = useMemo(() => {
     const perms = session?.user?.permissions ?? [];
@@ -118,6 +122,38 @@ function DevicesPage() {
     onSuccess: () => {
       toast.success('Device deleted');
       queryClient.invalidateQueries({ queryKey: ['doorlock', 'devices'] });
+    },
+  });
+
+  const otaMutation = useMutation<
+    unknown,
+    Error,
+    { deviceId?: string; url: string }
+  >({
+    mutationFn: ({ deviceId, url }) => {
+      if (deviceId) {
+        return parseResponse(
+          api.doorlock.devices[':id'].update.$post({
+            json: { url },
+            param: { id: deviceId },
+          })
+        );
+      }
+      return parseResponse(
+        api.doorlock.devices.update.$post({ json: { url } })
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to trigger OTA update');
+    },
+    onSuccess: (_res, variables) => {
+      toast.success(
+        variables.deviceId
+          ? 'OTA update triggered'
+          : 'OTA update triggered on all devices'
+      );
+      setOtaDialogOpen(false);
+      setOtaDevice(null);
     },
   });
 
@@ -185,14 +221,25 @@ function DevicesPage() {
             Refresh
           </Button>
           {hasWritePermission && (
-            <Button
-              onClick={() => {
-                setSelectedDevice(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus /> Add device
-            </Button>
+            <>
+              <Button
+                onClick={() => {
+                  setOtaDevice(null);
+                  setOtaDialogOpen(true);
+                }}
+                variant="outline"
+              >
+                <Download /> Update all
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedDevice(null);
+                  setDialogOpen(true);
+                }}
+              >
+                <Plus /> Add device
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -264,6 +311,16 @@ function DevicesPage() {
                       </Button>
                       <Button
                         onClick={() => {
+                          setOtaDevice(device);
+                          setOtaDialogOpen(true);
+                        }}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => {
                           setSelectedDevice(device);
                           setDialogOpen(true);
                         }}
@@ -322,6 +379,24 @@ function DevicesPage() {
           }
         }}
         open={statsDialogOpen}
+      />
+
+      <OtaUpdateDialog
+        deviceName={otaDevice?.name}
+        isSubmitting={otaMutation.isPending}
+        onOpenChange={(open) => {
+          setOtaDialogOpen(open);
+          if (!open) {
+            setOtaDevice(null);
+          }
+        }}
+        onSubmit={async (url) => {
+          await otaMutation.mutateAsync({
+            ...(otaDevice?.id && { deviceId: otaDevice.id }),
+            url,
+          });
+        }}
+        open={otaDialogOpen}
       />
     </div>
   );
