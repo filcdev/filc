@@ -24,9 +24,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+            ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
 
       - name: Install dependencies
         run: bun install
@@ -48,9 +48,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('**/bun.lockb') }}
+            ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
 
       - name: Install dependencies
         run: bun install
