@@ -34,7 +34,7 @@ export type CardRow = {
   cardId: string;
   cardName: string;
   cardUpdatedAt: Date;
-  cardUserId: string;
+  cardUserId: string | null;
   deviceId: string | null;
   deviceName: string | null;
   ownerEmail: string | null;
