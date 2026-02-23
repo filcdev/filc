@@ -57,16 +57,10 @@ export const updateMessageSchema = z.object({
   url: z.string().optional(),
 });
 
-export const rejectOpenDoorMessageSchema = z.object({
-  message: z.string().optional(),
-  type: z.literal('reject-open-door'),
-});
-
 export const outgoingMessageSchema = z.discriminatedUnion('type', [
   syncDatabaseMessageSchema,
   openDoorMessageSchema,
   updateMessageSchema,
-  rejectOpenDoorMessageSchema,
 ]);
 
 export type IncomingMessage = z.infer<typeof incomingMessageSchema>;
