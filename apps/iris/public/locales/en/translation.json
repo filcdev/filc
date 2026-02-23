@@ -134,6 +134,7 @@
     "noCohortFound": "No class found.",
     "noTeachersFound": "No teacher found.",
     "noSubstitutions": "No substitutions found",
+    "noSubstituter": "No class",
     "createSuccess": "Substitution created successfully",
     "createError": "Failed to create substitution",
     "updateSuccess": "Substitution updated successfully",

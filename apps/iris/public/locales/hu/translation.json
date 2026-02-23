@@ -134,6 +134,7 @@
     "noCohortFound": "Nem található osztály.",
     "noTeachersFound": "Nem található tanár.",
     "noSubstitutions": "Nincsenek helyettesítések",
+    "noSubstituter": "Elmaradó óra",
     "createSuccess": "Helyettesítés sikeresen létrehozva",
     "createError": "Nem sikerült létrehozni a helyettesítést",
     "updateSuccess": "Helyettesítés sikeresen frissítve",
