@@ -1,7 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
 import type { SQL } from 'drizzle-orm';
-import { desc, eq, lt } from 'drizzle-orm';
+import { count, desc, eq, lt } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -180,25 +180,29 @@ export async function cleanUpOldDeviceAuditLogs() {
   const oneEightyDaysAgo = dayjs().subtract(180, 'day').toDate();
 
   // delete deviceHealth logs older than 60 days
-  const deviceHealthDeleted = await db
+  const [deviceHealthDeleted] = await db
     .delete(deviceHealth)
     .where(lt(deviceHealth.timestamp, sixtyDaysAgo))
-    .returning();
+    .returning({
+      count: count(),
+    });
 
   logger.debug(
-    `Deleted ${deviceHealthDeleted.length} old deviceHealth entries`,
+    `Deleted ${deviceHealthDeleted?.count} old deviceHealth entries`,
     {
-      deletedCount: deviceHealthDeleted.length,
+      deletedCount: deviceHealthDeleted?.count ?? 0,
     }
   );
 
   // delete auditLog entries older than 180 days
-  const auditLogDeleted = await db
+  const [auditLogDeleted] = await db
     .delete(auditLog)
     .where(lt(auditLog.timestamp, oneEightyDaysAgo))
-    .returning();
+    .returning({
+      count: count(),
+    });
 
-  logger.debug(`Deleted ${auditLogDeleted.length} old auditLog entries`, {
-    deletedCount: auditLogDeleted.length,
+  logger.debug(`Deleted ${auditLogDeleted?.count} old auditLog entries`, {
+    deletedCount: auditLogDeleted?.count ?? 0,
   });
 }
