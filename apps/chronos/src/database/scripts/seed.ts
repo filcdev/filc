@@ -313,7 +313,7 @@ const seedDoorlockDevices = async (): Promise<
 
 const seedDoorlockCards = async (
   baseData: BaseData
-): Promise<Array<{ id: string; userId: string; cardData: string }>> => {
+): Promise<Array<{ id: string; userId: string | null; cardData: string }>> => {
   if (baseData.users.length === 0) {
     logger.warn('No users found to create cards for');
     return [];
@@ -370,7 +370,7 @@ const seedCardDeviceRelations = async (
 };
 
 const seedAuditLogs = async (
-  cards: Array<{ id: string; userId: string; cardData: string }>,
+  cards: Array<{ id: string; userId: string | null; cardData: string }>,
   devices: Array<{ id: string }>
 ) => {
   if (cards.length === 0 || devices.length === 0) {
