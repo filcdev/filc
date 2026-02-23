@@ -165,11 +165,12 @@ export async function replaceCardDevices(
 export async function migrateAuditLogsForNewCard(
   tx: CardDbExecutor,
   newCardId: string,
+  userId: string,
   cardData: string
 ) {
   await tx
     .update(auditLog)
-    .set({ cardId: newCardId })
+    .set({ cardId: newCardId, userId })
     .where(eq(auditLog.cardData, cardData));
 }
 

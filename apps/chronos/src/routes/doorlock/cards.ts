@@ -205,7 +205,12 @@ export const createCardRoute = doorlockFactory.createHandlers(
         }
 
         await replaceCardDevices(tx, created.id, payload.authorizedDeviceIds);
-        await migrateAuditLogsForNewCard(tx, created.id, payload.cardData);
+        await migrateAuditLogsForNewCard(
+          tx,
+          created.id,
+          payload.userId,
+          payload.cardData
+        );
         return created.id;
       });
 

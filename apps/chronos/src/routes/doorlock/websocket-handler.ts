@@ -91,13 +91,21 @@ const handleIncomingMessage = async (
           .where(eq(lockDevice.id, device.id));
         break;
       }
-      case 'card-read':
+      case 'card-read': {
         logger.trace('Handling card-read message', { deserialized, device });
+
+        const [cardUser] = await db
+          .select()
+          .from(card)
+          .where(eq(card.cardData, deserialized.uid))
+          .limit(1);
+
         await db.insert(auditLog).values({
           buttonPressed: deserialized.buttonPressed,
           cardData: deserialized.uid,
           deviceId: device.id,
           result: deserialized.authorized,
+          userId: cardUser?.userId ?? null,
         });
 
         logger.trace('Updating device heartbeat timestamp', { device });
@@ -106,6 +114,7 @@ const handleIncomingMessage = async (
           .set({ updatedAt: new Date() })
           .where(eq(lockDevice.id, device.id));
         break;
+      }
       default:
         logger.warn('Unhandled message type received', {
           deserialized,
