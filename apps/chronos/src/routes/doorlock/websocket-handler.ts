@@ -91,26 +91,56 @@ const handleIncomingMessage = async (
           .where(eq(lockDevice.id, device.id));
         break;
       }
-      case 'card-read':
+      case 'card-read': {
         logger.trace('Handling card-read message', { deserialized, device });
-        await db.insert(auditLog).values({
-          buttonPressed: deserialized.buttonPressed,
-          cardData: deserialized.uid,
-          deviceId: device.id,
-          result: deserialized.authorized,
-        });
+
+        const [cardRecord] = await db
+          .select()
+          .from(card)
+          .innerJoin(cardDevice, eq(card.id, cardDevice.cardId))
+          .where(
+            and(
+              eq(cardDevice.deviceId, device.id),
+              eq(card.cardData, deserialized.uid)
+            )
+          )
+          .limit(1);
 
         logger.trace('Updating device heartbeat timestamp', { device });
         await db
           .update(lockDevice)
           .set({ updatedAt: new Date() })
           .where(eq(lockDevice.id, device.id));
+
+        const [_auditLogEntry] = await db
+          .insert(auditLog)
+          .values({
+            buttonPressed: deserialized.buttonPressed,
+            cardData: deserialized.uid,
+            deviceId: device.id,
+            result: deserialized.authorized,
+          })
+          .returning({ id: auditLog.id });
+
+        if (!cardRecord) {
+          logger.info('Unauthorized card read attempt', {
+            cardData: deserialized.uid,
+            device,
+          });
+          sendMessage(
+            {
+              message: 'Ismeretlen kartya!',
+              type: 'reject-open-door',
+            },
+            device.id
+          );
+          break;
+        }
+
         break;
+      }
       default:
-        logger.warn('Unhandled message type received', {
-          deserialized,
-          device,
-        });
+        logger.warn('Unhandled message type received', deserialized, device);
     }
     return null;
   } catch (e) {
