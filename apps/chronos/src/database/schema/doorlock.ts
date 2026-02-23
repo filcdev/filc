@@ -26,9 +26,7 @@ export const card = pgTable('card', {
   frozen: boolean('frozen').default(false).notNull(),
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => user.id, { onDelete: 'set null' }),
   ...timestamps,
 });
 

@@ -75,11 +75,11 @@ const baseCardPayloadSchema = z.object({
 
 const createCardSchema = baseCardPayloadSchema.extend({
   cardData: z.string().min(1, 'Card UID is required'),
-  userId: z.uuid('User is required'),
+  userId: z.uuid().nullable(),
 });
 
 const updateCardSchema = baseCardPayloadSchema.extend({
-  userId: z.uuid('User is required'),
+  userId: z.uuid().nullable(),
 });
 const { schema: createCardRequestSchema } =
   await resolver(createCardSchema).toOpenAPISchema();
@@ -194,7 +194,7 @@ export const createCardRoute = doorlockFactory.createHandlers(
             enabled: payload.enabled,
             frozen: payload.frozen,
             name: payload.name,
-            userId: payload.userId,
+            userId: payload.userId ?? null,
           })
           .returning({ id: card.id });
 
@@ -205,12 +205,14 @@ export const createCardRoute = doorlockFactory.createHandlers(
         }
 
         await replaceCardDevices(tx, created.id, payload.authorizedDeviceIds);
-        await migrateAuditLogsForNewCard(
-          tx,
-          created.id,
-          payload.userId,
-          payload.cardData
-        );
+        if (payload.userId) {
+          await migrateAuditLogsForNewCard(
+            tx,
+            created.id,
+            payload.userId,
+            payload.cardData
+          );
+        }
         return created.id;
       });
 
@@ -277,7 +279,7 @@ export const updateCardRoute = doorlockFactory.createHandlers(
             enabled: payload.enabled,
             frozen: payload.frozen,
             name: payload.name,
-            userId: payload.userId,
+            userId: payload.userId ?? null,
           })
           .where(eq(card.id, cardId))
           .returning({ id: card.id });
