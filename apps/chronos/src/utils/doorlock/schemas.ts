@@ -26,7 +26,7 @@ export const pingMessageSchema = z.object({
 
 export const cardReadMessageSchema = z.object({
   authorized: z.boolean(),
-  name: z.string(),
+  buttonPressed: z.boolean(),
   type: z.literal('card-read'),
   uid: z.string(),
 });

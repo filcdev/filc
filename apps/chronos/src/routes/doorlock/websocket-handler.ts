@@ -94,8 +94,8 @@ const handleIncomingMessage = async (
       case 'card-read':
         logger.trace('Handling card-read message', { deserialized, device });
         await db.insert(auditLog).values({
-          buttonPressed: false,
           cardData: deserialized.uid,
+          buttonPressed: deserialized.buttonPressed,
           deviceId: device.id,
           result: deserialized.authorized,
         });
