@@ -103,6 +103,7 @@ const handleIncomingMessage = async (
         await db.insert(auditLog).values({
           buttonPressed: deserialized.buttonPressed,
           cardData: deserialized.uid,
+          cardId: cardUser?.id ?? null,
           deviceId: device.id,
           result: deserialized.authorized,
           userId: cardUser?.userId ?? null,
