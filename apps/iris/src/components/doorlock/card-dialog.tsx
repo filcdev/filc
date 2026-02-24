@@ -25,7 +25,7 @@ type CardFormValues = {
   enabled: boolean;
   frozen: boolean;
   name: string;
-  userId: string;
+  userId: string | null;
 };
 
 type DeviceOption = { id: string; name: string };
@@ -41,7 +41,7 @@ type CardLike = {
   frozen: boolean;
   id: string;
   name: string;
-  userId: string;
+  userId: string | null;
 };
 
 type CardDialogProps<
@@ -64,7 +64,7 @@ const initialState = (card?: CardLike | null): CardFormValues => ({
   enabled: card?.enabled ?? true,
   frozen: card?.frozen ?? false,
   name: card?.name ?? '',
-  userId: card?.userId ?? '',
+  userId: card?.userId ?? null,
 });
 
 export function CardDialog<
@@ -94,14 +94,11 @@ export function CardDialog<
     if (!formState.name.trim()) {
       return false;
     }
-    if (!formState.userId) {
-      return false;
-    }
     if (isCreate && !formState.cardData?.trim()) {
       return false;
     }
     return true;
-  }, [formState.cardData, formState.name, formState.userId, isCreate]);
+  }, [formState.cardData, formState.name, isCreate]);
 
   const toggleDevice = (deviceId: string, checked: boolean) => {
     setFormState((prev) => {
@@ -176,7 +173,7 @@ export function CardDialog<
                 value: user.id,
               }))}
               onValueChange={(value) =>
-                setFormState((prev) => ({ ...prev, userId: value ?? '' }))
+                setFormState((prev) => ({ ...prev, userId: value ?? null }))
               }
               value={formState.userId}
             >

@@ -14,6 +14,10 @@ import {
 } from '#routes/doorlock/devices';
 import { listLogsRoute } from '#routes/doorlock/logs';
 import {
+  triggerBulkOtaRoute,
+  triggerDeviceOtaRoute,
+} from '#routes/doorlock/ota';
+import {
   activateVirtualCardRoute,
   listSelfCardsRoute,
   updateSelfCardFrozenRoute,
@@ -30,6 +34,9 @@ export const doorlockRouter = doorlockFactory
   .put('/devices/:id', ...updateDeviceRoute)
   .delete('/devices/:id', ...deleteDeviceRoute)
   .get('/devices/:id/stats', ...deviceStatsRoute)
+  // OTA routes
+  .post('/devices/:id/update', ...triggerDeviceOtaRoute)
+  .post('/devices/update', ...triggerBulkOtaRoute)
   // Card routes
   .get('/cards', ...listCardsRoute)
   .post('/cards', ...createCardRoute)

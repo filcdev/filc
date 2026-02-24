@@ -17,6 +17,7 @@ export const timingMiddleware = createMiddleware<Context>(async (c, next) => {
     logger.debug(`${c.req.method} ${c.req.url} - ${ms}ms`, {
       duration: ms,
       method: c.req.method,
+      status: c.res.status,
       url: c.req.url,
       user: c.get('user')
         ? { email: c.get('user')?.email, id: c.get('user')?.id }

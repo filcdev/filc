@@ -87,13 +87,8 @@ api.route('/users', usersRouter);
 api.route('/roles', rolesRouter);
 
 api.onError((err, c) => {
-  logger.error('UNCAUGHT API error occurred:', {
-    message: err.message,
-    stack: err.stack,
-  });
-
   if (err instanceof HTTPException) {
-    const errResponse =
+    return (
       err.res ??
       c.json<ErrorResponse>(
         {
@@ -102,9 +97,14 @@ api.onError((err, c) => {
           success: false,
         },
         err.status
-      );
-    return errResponse;
+      )
+    );
   }
+
+  logger.error('UNCAUGHT API error occurred:', {
+    message: err.message,
+    stack: err.stack,
+  });
 
   return c.json<ErrorResponse>(
     {

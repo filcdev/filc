@@ -110,7 +110,10 @@ const buildWhereClause = (query: LogQuery): SQL<unknown> | undefined => {
   const filters: SQL<unknown>[] = [];
 
   appendBaseFilters(filters, query);
-  filters.push(appendSearchFilters(query) as SQL);
+  const filter = appendSearchFilters(query);
+  if (filter) {
+    filters.push(filter);
+  }
 
   if (!filters.length) {
     return;
