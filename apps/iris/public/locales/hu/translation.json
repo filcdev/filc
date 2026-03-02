@@ -115,7 +115,7 @@
   },
   "substitution": {
     "title": "Helyettesítések",
-    "description": "Órahelyettesítések és elmaradó órák kezelése",
+    "description": "Órahelyettesítések és elmaradó órák elérése",
     "create": "Helyettesítés létrehozása",
     "edit": "Helyettesítés szerkesztése",
     "save": "Mentés",
@@ -156,6 +156,8 @@
   "movedLesson": {
     "title": "Áthelyezett órák",
     "description": "Más időpontra vagy terembe áthelyezett órák kezelése",
+    "moved": "Áthelyezve",
+    "available": "Áthelyezett órák elérhetők",
     "create": "Áthelyezett óra létrehozása",
     "edit": "Áthelyezett óra szerkesztése",
     "save": "Mentés",

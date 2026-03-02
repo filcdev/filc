@@ -13,6 +13,11 @@ type SubstitutionsResponse = InferResponseType<
 
 type Subs = NonNullable<SubstitutionsResponse['data']>[number];
 
+type MovedLessonApiResponse = InferResponseType<
+  typeof api.timetable.movedLessons.$get
+>;
+type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
+
 const groupByDate = (data: Subs[]) =>
   data.reduce(
     (acc, curr) => {
@@ -24,6 +29,19 @@ const groupByDate = (data: Subs[]) =>
       return acc;
     },
     {} as Record<string, Subs[]>
+  );
+
+const groupMovedLessonsByDate = (data: MovedLessonItem[]) =>
+  data.reduce(
+    (acc, curr) => {
+      const date = curr.movedLesson.date;
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(curr);
+      return acc;
+    },
+    {} as Record<string, MovedLessonItem[]>
   );
 
 export function SubstitutionView() {
@@ -43,24 +61,49 @@ export function SubstitutionView() {
     queryKey: ['substitutions'],
   });
 
+  const movedLessonsQuery = useQuery({
+    enabled: !isPending,
+    queryFn: async () => {
+      const res = await parseResponse(api.timetable.movedLessons.$get());
+      if (!res.success) {
+        throw new Error('Failed to load moved lessons');
+      }
+
+      return res.data as MovedLessonItem[];
+    },
+    queryKey: ['movedLessons'],
+  });
+
   const isLoading =
-    substitutionsQuery.isLoading || substitutionsQuery.isFetching;
-  const hasError = substitutionsQuery.error;
+    substitutionsQuery.isLoading ||
+    substitutionsQuery.isFetching ||
+    movedLessonsQuery.isLoading ||
+    movedLessonsQuery.isFetching;
+  const hasError = substitutionsQuery.error || movedLessonsQuery.error;
 
   const groupedData = substitutionsQuery.data
     ? groupByDate(substitutionsQuery.data)
     : {};
 
-  const groupedEntries = Object.entries(groupedData).sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
+  const groupedMovedLessons = movedLessonsQuery.data
+    ? groupMovedLessonsByDate(movedLessonsQuery.data)
+    : {};
+
+  // Merge all unique dates from both substitutions and moved lessons
+  const allDates = Array.from(
+    new Set([...Object.keys(groupedData), ...Object.keys(groupedMovedLessons)])
+  ).sort((a, b) => a.localeCompare(b));
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const hasFutureSubstitutions = substitutionsQuery.data?.some(
-    (sub) => new Date(sub.substitution.date) >= today
-  );
+  const hasFutureSubstitutions =
+    substitutionsQuery.data?.some(
+      (sub) => new Date(sub.substitution.date) >= today
+    ) ||
+    movedLessonsQuery.data?.some(
+      (ml) => new Date(ml.movedLesson.date) >= today
+    );
 
   return (
     <div className="flex grow flex-col items-center gap-6 p-6">
@@ -93,8 +136,12 @@ export function SubstitutionView() {
       )}
       <div className="w-full max-w-5xl space-y-4">
         {!(isLoading || hasError) && hasFutureSubstitutions
-          ? groupedEntries.map(([date, data]) => (
-              <SubsV data={data} key={date} />
+          ? allDates.map((date) => (
+              <SubsV
+                data={groupedData[date] || []}
+                key={date}
+                movedLessons={groupedMovedLessons[date] || []}
+              />
             ))
           : !(isLoading || hasError) && (
               <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">

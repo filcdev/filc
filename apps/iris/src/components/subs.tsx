@@ -15,6 +15,7 @@ import type { api } from '@/utils/hc';
 
 type TimetableProps = {
   data: Subs[];
+  movedLessons?: MovedLessonItem[];
 };
 
 type SubstitutionsResponse = InferResponseType<
@@ -23,6 +24,11 @@ type SubstitutionsResponse = InferResponseType<
 
 type Subs = NonNullable<SubstitutionsResponse['data']>[number];
 type Lesson = NonNullable<Subs['lessons'][number]>;
+
+type MovedLessonApiResponse = InferResponseType<
+  typeof api.timetable.movedLessons.$get
+>;
+type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
 
 function LessonRow({
   lesson,
@@ -106,6 +112,65 @@ function LessonRow({
   );
 }
 
+function MovedLessonRow({ movedLesson }: { movedLesson: MovedLessonItem }) {
+  const { t } = useTranslation();
+  const notAvailable = t('substitution.notAvailable');
+
+  return (
+    <>
+      <TableCell className="font-medium">
+        {movedLesson.lessons && movedLesson.lessons.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {movedLesson.lessons.map((lessonId) => (
+              <Badge className="text-xs" key={lessonId} variant="secondary">
+                {lessonId}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <span className="text-muted-foreground">{notAvailable}</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <Badge className="text-xs" variant="outline">
+          {t('movedLesson.moved')}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        {movedLesson.period?.startTime && movedLesson.period?.endTime ? (
+          <span className="font-medium">
+            {movedLesson.period.startTime.slice(0, 5)} –{' '}
+            {movedLesson.period.endTime.slice(0, 5)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">{notAvailable}</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {movedLesson.classroom ? (
+          <Badge className="text-xs" variant="outline">
+            {movedLesson.classroom.short || movedLesson.classroom.name}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">{notAvailable}</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {movedLesson.dayDefinition ? (
+          <span className="font-medium text-blue-700 dark:text-blue-400">
+            {movedLesson.dayDefinition.name} ({movedLesson.dayDefinition.short})
+          </span>
+        ) : (
+          <span className="text-muted-foreground">{notAvailable}</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <span className="text-muted-foreground">—</span>
+      </TableCell>
+    </>
+  );
+}
+
 function LessonReturn(data: Subs[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -129,7 +194,23 @@ function LessonReturn(data: Subs[]) {
     );
 }
 
-export function SubsV({ data }: TimetableProps) {
+function MovedLessonReturn(data: MovedLessonItem[]) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return data
+    .filter((ml) => new Date(ml.movedLesson.date) >= today)
+    .map((ml) => (
+      <TableRow
+        className="border-accent/10 transition-colors hover:bg-accent/5"
+        key={ml.movedLesson.id}
+      >
+        <MovedLessonRow movedLesson={ml} />
+      </TableRow>
+    ));
+}
+
+export function SubsV({ data, movedLessons = [] }: TimetableProps) {
   const { t } = useTranslation();
 
   const today = new Date();
@@ -151,7 +232,7 @@ export function SubsV({ data }: TimetableProps) {
   }
 
   return (
-    <Card className="w-full border-accent/50 bg-gradient-to-br from-background to-accent/5 shadow-sm">
+    <Card className="w-full border-accent/50 bg-linear-to-br from-background to-accent/5 shadow-sm">
       <CardHeader className="border-accent/20 border-b pb-4">
         <div className="flex items-center justify-between">
           <div>
@@ -163,7 +244,10 @@ export function SubsV({ data }: TimetableProps) {
             </p>
           </div>
           <Badge className="h-fit" variant="outline">
-            {data.filter((sub) => sub.lessons.some((l) => l !== null)).length}
+            {data.filter((sub) => sub.lessons.some((l) => l !== null)).length +
+              movedLessons.filter(
+                (ml) => new Date(ml.movedLesson.date) >= today
+              ).length}
           </Badge>
         </div>
       </CardHeader>
@@ -193,8 +277,12 @@ export function SubsV({ data }: TimetableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {LessonReturn(data).length > 0 ? (
-                LessonReturn(data)
+              {LessonReturn(data).length > 0 ||
+              MovedLessonReturn(movedLessons).length > 0 ? (
+                <>
+                  {LessonReturn(data)}
+                  {MovedLessonReturn(movedLessons)}
+                </>
               ) : (
                 <TableRow>
                   <TableCell

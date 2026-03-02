@@ -220,120 +220,130 @@ export function SubstitutionDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isCreate ? t('substitution.create') : t('substitution.edit')}
-          </DialogTitle>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <Label>{t('substitution.date')}</Label>
-            <DatePicker
-              date={formState.date}
-              onDateChange={(d) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  date: d ?? new Date(),
-                }))
-              }
-              placeholder={t('substitution.datePlaceholder')}
-            />
-          </div>
+      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col p-2">
+        <div className="flex-1 overflow-y-auto p-6">
+          <DialogHeader>
+            <DialogTitle>
+              {isCreate ? t('substitution.create') : t('substitution.edit')}
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            className="mt-4 space-y-4"
+            id="substitutionForm"
+            onSubmit={handleSubmit}
+          >
+            <div className="space-y-2">
+              <Label>{t('substitution.date')}</Label>
+              <DatePicker
+                date={formState.date}
+                onDateChange={(d) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    date: d ?? new Date(),
+                  }))
+                }
+                placeholder={t('substitution.datePlaceholder')}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>{t('substitution.substituteTeacher')}</Label>
-            <Combobox
-              emptyMessage={t('substitution.noTeachersFound')}
-              onValueChange={(value) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  substituter: value === '__none__' ? null : value || null,
-                }))
-              }
-              options={[
-                {
-                  label: t('substitution.cancelled'),
-                  value: '__none__',
-                },
-                ...teachers.map((teacher) => ({
-                  label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
-                  value: teacher.id,
-                })),
-              ]}
-              placeholder={t('substitution.substituteTeacher')}
-              searchPlaceholder={t('search')}
-              value={formState.substituter ?? '__none__'}
-            />
-            <p className="text-muted-foreground text-xs">
-              {t('substitution.substituteTeacherHint')}
-            </p>
-          </div>
+            <div className="space-y-2">
+              <Label>{t('substitution.substituteTeacher')}</Label>
+              <Combobox
+                emptyMessage={t('substitution.noTeachersFound')}
+                onValueChange={(value) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    substituter: value === '__none__' ? null : value || null,
+                  }))
+                }
+                options={[
+                  {
+                    label: t('substitution.cancelled'),
+                    value: '__none__',
+                  },
+                  ...teachers.map((teacher) => ({
+                    label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
+                    value: teacher.id,
+                  })),
+                ]}
+                placeholder={t('substitution.substituteTeacher')}
+                searchPlaceholder={t('search')}
+                value={formState.substituter ?? '__none__'}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t('substitution.substituteTeacherHint')}
+              </p>
+            </div>
 
-          <div className="space-y-2">
-            <Label>{t('substitution.selectCohort')}</Label>
-            <Combobox
-              emptyMessage={t('substitution.noCohortFound')}
-              onValueChange={(v) => setSelectedCohort(v)}
-              options={cohorts.map((c) => ({
-                label: c.name,
-                value: c.id,
-              }))}
-              placeholder={t('substitution.selectCohortPlaceholder')}
-              searchPlaceholder={t('search')}
-              value={selectedCohort}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label>{t('substitution.selectCohort')}</Label>
+              <Combobox
+                emptyMessage={t('substitution.noCohortFound')}
+                onValueChange={(v) => setSelectedCohort(v)}
+                options={cohorts.map((c) => ({
+                  label: c.name,
+                  value: c.id,
+                }))}
+                placeholder={t('substitution.selectCohortPlaceholder')}
+                searchPlaceholder={t('search')}
+                value={selectedCohort}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>{t('substitution.lessons')}</Label>
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
-              {!selectedCohort && (
-                <p className="p-2 text-muted-foreground text-sm">
-                  {t('substitution.selectCohortPlaceholder')}
-                </p>
-              )}
-              {selectedCohort && cohortLessonsQuery.isLoading && (
-                <p className="p-2 text-muted-foreground text-sm">
-                  {t('substitution.loadingLessons')}
-                </p>
-              )}
-              {selectedCohort &&
-                !cohortLessonsQuery.isLoading &&
-                availableLessons.length === 0 && (
+            <div className="space-y-2">
+              <Label>{t('substitution.lessons')}</Label>
+              <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
+                {!selectedCohort && (
                   <p className="p-2 text-muted-foreground text-sm">
-                    {t('substitution.noLessons')}
+                    {t('substitution.selectCohortPlaceholder')}
                   </p>
                 )}
-              {selectedCohort &&
-                !cohortLessonsQuery.isLoading &&
-                availableLessons.length > 0 &&
-                availableLessons.map((lesson) => (
-                  <label
-                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                    htmlFor={`sub-lesson-${lesson.id}`}
-                    key={lesson.id}
-                  >
-                    <Checkbox
-                      checked={formState.lessonIds.includes(lesson.id)}
-                      id={`sub-lesson-${lesson.id}`}
-                      onCheckedChange={(checked) =>
-                        toggleLesson(lesson.id, !!checked)
-                      }
-                    />
-                    <span>{formatLessonLabel(lesson)}</span>
-                  </label>
-                ))}
+                {selectedCohort && cohortLessonsQuery.isLoading && (
+                  <p className="p-2 text-muted-foreground text-sm">
+                    {t('substitution.loadingLessons')}
+                  </p>
+                )}
+                {selectedCohort &&
+                  !cohortLessonsQuery.isLoading &&
+                  availableLessons.length === 0 && (
+                    <p className="p-2 text-muted-foreground text-sm">
+                      {t('substitution.noLessons')}
+                    </p>
+                  )}
+                {selectedCohort &&
+                  !cohortLessonsQuery.isLoading &&
+                  availableLessons.length > 0 &&
+                  availableLessons.map((lesson) => (
+                    <label
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                      htmlFor={`sub-lesson-${lesson.id}`}
+                      key={lesson.id}
+                    >
+                      <Checkbox
+                        checked={formState.lessonIds.includes(lesson.id)}
+                        id={`sub-lesson-${lesson.id}`}
+                        onCheckedChange={(checked) =>
+                          toggleLesson(lesson.id, !!checked)
+                        }
+                      />
+                      <span>{formatLessonLabel(lesson)}</span>
+                    </label>
+                  ))}
+              </div>
             </div>
-          </div>
+          </form>
+        </div>
 
-          <DialogFooter>
-            <Button disabled={!isValid || isSubmitting} type="submit">
-              <Save className="h-4 w-4" />
-              {isCreate ? t('substitution.create') : t('substitution.save')}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter className="border-t p-4">
+          <Button
+            disabled={!isValid || isSubmitting}
+            form="substitutionForm"
+            type="submit"
+          >
+            <Save className="h-4 w-4" />
+            {isCreate ? t('substitution.create') : t('substitution.save')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

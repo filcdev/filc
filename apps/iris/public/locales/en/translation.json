@@ -115,7 +115,7 @@
   },
   "substitution": {
     "title": "Substitutions",
-    "description": "Manage lesson substitutions and cancellations",
+    "description": "Check out lesson substitutions and cancellations",
     "create": "Create Substitution",
     "edit": "Edit Substitution",
     "save": "Save",
@@ -156,6 +156,8 @@
   "movedLesson": {
     "title": "Moved Lessons",
     "description": "Manage lessons that have been moved to different times or rooms",
+    "moved": "Moved",
+    "available": "Moved lessons available",
     "create": "Create Moved Lesson",
     "edit": "Edit Moved Lesson",
     "save": "Save",

@@ -47,6 +47,11 @@ type SubstitutionsResponse = InferResponseType<
 
 type Substitution = NonNullable<SubstitutionsResponse['data']>[number];
 
+type MovedLessonApiResponse = InferResponseType<
+  typeof api.timetable.movedLessons.$get
+>;
+type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
+
 export function Navbar({
   children,
   showLinks = true,
@@ -82,6 +87,19 @@ export function Navbar({
     queryKey: ['substitutions'],
   });
 
+  const movedLessonsQuery = useQuery({
+    enabled: !!userClassId,
+    queryFn: async () => {
+      const res = await parseResponse(api.timetable.movedLessons.$get());
+      if (!res.success) {
+        throw new Error('Failed to load moved lessons');
+      }
+
+      return res.data as MovedLessonItem[];
+    },
+    queryKey: ['movedLessons'],
+  });
+
   const userClassName = cohortsQuery.data?.find(
     (cohort) => cohort.id === userClassId
   )?.name;
@@ -97,12 +115,32 @@ export function Navbar({
         sub.lessons.some((lesson) => lesson?.cohorts.includes(userClassName))
     );
 
-  const substitutionBadgeLabel =
-    substitutionsQuery.isSuccess && hasUserSubs
-      ? t('substitution.availableForClass', {
-          className: userClassName ?? t('substitution.yourClass'),
-        })
-      : null;
+  const hasMovedLessons =
+    movedLessonsQuery.data?.some(
+      (ml) => new Date(ml.movedLesson.date) >= today
+    ) ?? false;
+
+  const hasNotifications = hasUserSubs || hasMovedLessons;
+
+  const notificationBadgeLabel = (() => {
+    if (!hasNotifications) {
+      return null;
+    }
+    if (hasUserSubs && hasMovedLessons) {
+      return t('substitution.availableForClass', {
+        className: userClassName ?? t('substitution.yourClass'),
+      });
+    }
+    if (hasUserSubs) {
+      return t('substitution.availableForClass', {
+        className: userClassName ?? t('substitution.yourClass'),
+      });
+    }
+    if (hasMovedLessons) {
+      return t('movedLesson.available');
+    }
+    return null;
+  })();
 
   return (
     <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -126,7 +164,7 @@ export function Navbar({
         )}
 
         <div className="hidden flex-1 items-center px-6 md:flex">
-          {substitutionBadgeLabel && <Badge>{substitutionBadgeLabel}</Badge>}
+          {notificationBadgeLabel && <Badge>{notificationBadgeLabel}</Badge>}
         </div>
 
         <div className="ml-auto flex items-center gap-3">
