@@ -109,7 +109,9 @@
     "back": "Vissza",
     "next": "Tovább",
     "skip": "Kihagyás",
-    "complete": "Befejezés"
+    "complete": "Befejezés",
+    "delete": "Törlés",
+    "deleting": "Törlés..."
   },
   "substitution": {
     "title": "Helyettesítések",
@@ -118,6 +120,7 @@
     "edit": "Helyettesítés szerkesztése",
     "save": "Mentés",
     "refresh": "Frissítés",
+    "showPast": "Múltbeliek is",
     "date": "Dátum",
     "datePlaceholder": "Válassz egy dátumot",
     "substituteTeacher": "Helyettesítő tanár",
@@ -141,7 +144,8 @@
     "updateError": "Nem sikerült frissíteni a helyettesítést",
     "deleteSuccess": "Helyettesítés sikeresen törölve",
     "deleteError": "Nem sikerült törölni a helyettesítést",
-    "deleteConfirm": "Törlöd ezt a helyettesítést? Ez a művelet nem vonható vissza.",
+    "deleteConfirm": "Helyettesítés törlése",
+    "deleteDescription": "Törlöd ezt a helyettesítést? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni a helyettesítéseket",
     "loadErrorMessage": "Kérlek próbáld újra később.",
     "availableForClass": "Helyettesítések elérhetők ehhez: {{className}}",
@@ -156,6 +160,7 @@
     "edit": "Áthelyezett óra szerkesztése",
     "save": "Mentés",
     "refresh": "Frissítés",
+    "showPast": "Múltbeliek is",
     "date": "Dátum",
     "datePlaceholder": "Válassz egy dátumot",
     "targetDay": "Célnap",
