@@ -6,7 +6,15 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Pen,
+  Plus,
+  RefreshCw,
+  Trash,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -14,6 +22,7 @@ import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +61,25 @@ export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
   }
 );
 
+function SortIcon({
+  column,
+  currentColumn,
+  direction,
+}: {
+  column: 'date' | 'teacher' | 'lessons' | 'cohorts';
+  currentColumn: 'date' | 'teacher' | 'lessons' | 'cohorts' | null;
+  direction: 'asc' | 'desc' | null;
+}) {
+  if (currentColumn !== column) {
+    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+  }
+  return direction === 'asc' ? (
+    <ArrowUp className="h-4 w-4" />
+  ) : (
+    <ArrowDown className="h-4 w-4" />
+  );
+}
+
 function SubstitutionsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -65,6 +93,13 @@ function SubstitutionsPage() {
   const [itemToDelete, setItemToDelete] = useState<SubstitutionItem | null>(
     null
   );
+  const [sortColumn, setSortColumn] = useState<
+    'date' | 'teacher' | 'lessons' | 'cohorts' | null
+  >(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
+    null
+  );
+  const [showPast, setShowPast] = useState(false);
 
   const hasWritePermission = useHasPermission(
     'substitution:create',
@@ -179,33 +214,61 @@ function SubstitutionsPage() {
   });
 
   const filteredSubstitutions = useMemo(() => {
-    const list = substitutionsQuery.data ?? [];
+    let list = substitutionsQuery.data ?? [];
     const term = search.trim().toLowerCase();
-    if (!term) {
-      return list;
-    }
-    return list.filter((sub) => {
-      const teacherName = sub.teacher
-        ? `${sub.teacher.firstName} ${sub.teacher.lastName}`.toLowerCase()
-        : '';
-      const lessons = sub.lessons.filter((l) => l !== null && l !== undefined);
+    const today = dayjs().startOf('day');
 
-      const lessonSubjects = lessons
-        .map((l) => l.subject?.name ?? '')
-        .join(' ')
-        .toLowerCase();
-      const cohorts = lessons
-        .flatMap((l) => l.cohorts)
-        .join(' ')
-        .toLowerCase();
-      return (
-        sub.substitution.date.includes(term) ||
-        teacherName.includes(term) ||
-        lessonSubjects.includes(term) ||
-        cohorts.includes(term)
-      );
-    });
-  }, [substitutionsQuery.data, search]);
+    // Dátum szerinti szűrés (csak mai és jövőbeli, ha showPast false)
+    if (!showPast) {
+      list = list.filter((sub) => {
+        const subDate = dayjs(sub.substitution.date).startOf('day');
+        return !subDate.isBefore(today);
+      });
+    }
+
+    // Keresés szerinti szűrés
+    if (term) {
+      list = list.filter((sub) => {
+        const teacherName = sub.teacher
+          ? `${sub.teacher.firstName} ${sub.teacher.lastName}`.toLowerCase()
+          : '';
+        const lessons = sub.lessons.filter(
+          (l) => l !== null && l !== undefined
+        );
+
+        const lessonSubjects = lessons
+          .map((l) => l.subject?.name ?? '')
+          .join(' ')
+          .toLowerCase();
+        const cohorts = lessons
+          .flatMap((l) => l.cohorts)
+          .join(' ')
+          .toLowerCase();
+        return (
+          sub.substitution.date.includes(term) ||
+          teacherName.includes(term) ||
+          lessonSubjects.includes(term) ||
+          cohorts.includes(term)
+        );
+      });
+    }
+
+    // Rendezés
+    if (sortColumn && sortDirection) {
+      list = [...list].sort((a, b) => {
+        const aVal = getSortValue(a, sortColumn);
+        const bVal = getSortValue(b, sortColumn);
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          const comparison = aVal.localeCompare(bVal);
+          return sortDirection === 'asc' ? comparison : -comparison;
+        }
+        return 0;
+      });
+    }
+
+    return list;
+  }, [substitutionsQuery.data, search, sortColumn, sortDirection, showPast]);
 
   const handleSave = async (
     payload: InferRequestType<typeof $create>['json']
@@ -217,6 +280,22 @@ function SubstitutionsPage() {
       });
     } else {
       await createMutation.mutateAsync(payload);
+    }
+  };
+
+  const handleSort = (column: 'date' | 'teacher' | 'lessons' | 'cohorts') => {
+    if (sortColumn === column) {
+      // Ugyanaz az oszlop: asc -> desc -> null
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      // Új oszlop: kezdjük asc-vel
+      setSortColumn(column);
+      setSortDirection('asc');
     }
   };
 
@@ -256,6 +335,19 @@ function SubstitutionsPage() {
           placeholder={t('search')}
           value={search}
         />
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={showPast}
+            id="show-past"
+            onCheckedChange={(checked) => setShowPast(checked === true)}
+          />
+          <label
+            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="show-past"
+          >
+            {t('substitution.showPast')}
+          </label>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <Button
             onClick={() => substitutionsQuery.refetch()}
@@ -292,13 +384,61 @@ function SubstitutionsPage() {
         <Skeleton className="h-64 w-full" />
       ) : (
         <div className="overflow-x-auto rounded-md border">
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>{t('substitution.date')}</TableHead>
-                <TableHead>{t('substitution.substituteTeacher')}</TableHead>
-                <TableHead>{t('substitution.affectedLessons')}</TableHead>
-                <TableHead>{t('substitution.cohorts')}</TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('date')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('substitution.date')}
+                    <SortIcon
+                      column="date"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('teacher')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('substitution.substituteTeacher')}
+                    <SortIcon
+                      column="teacher"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('lessons')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('substitution.affectedLessons')}
+                    <SortIcon
+                      column="lessons"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('cohorts')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('substitution.cohorts')}
+                    <SortIcon
+                      column="cohorts"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
                 {hasWritePermission && (
                   <TableHead>{t('substitution.actions')}</TableHead>
                 )}
@@ -445,4 +585,30 @@ function useHasPermission(permission: string, permissions?: string[] | null) {
     return true;
   }
   return permissions.includes(permission);
+}
+function getSortValue(
+  a: SubstitutionItem,
+  sortColumn: 'date' | 'teacher' | 'lessons' | 'cohorts'
+): string {
+  switch (sortColumn) {
+    case 'date':
+      return a.substitution.date;
+    case 'teacher':
+      return a.teacher ? `${a.teacher.firstName} ${a.teacher.lastName}` : '';
+    case 'lessons':
+      return a.lessons
+        .filter((l) => l !== null && l !== undefined)
+        .map((l) => l.subject?.short ?? '')
+        .join(' ');
+    case 'cohorts':
+      return Array.from(
+        new Set(
+          a.lessons
+            .filter((l) => l !== null && l !== undefined)
+            .flatMap((l) => l.cohorts)
+        )
+      ).join(' ');
+    default:
+      return '';
+  }
 }
