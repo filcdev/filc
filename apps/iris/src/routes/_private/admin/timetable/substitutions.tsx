@@ -14,6 +14,14 @@ import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -26,14 +34,12 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { authClient } from '@/utils/authentication';
-import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
 
 type SubstitutionApiResponse = InferResponseType<
   typeof api.timetable.substitutions.$get
 >;
 type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
-type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
 export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
@@ -52,7 +58,11 @@ function SubstitutionsPage() {
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SubstitutionItem | null>(
+    null
+  );
+  const [itemToDelete, setItemToDelete] = useState<SubstitutionItem | null>(
     null
   );
 
@@ -95,21 +105,6 @@ function SubstitutionsPage() {
     },
     queryKey: ['cohorts'],
   });
-
-  // Get all lessons from all substitutions for the lesson picker
-  const allLessons = useMemo(() => {
-    const subs = substitutionsQuery.data ?? [];
-    const lessonMap = new Map<string, EnrichedLesson>();
-    for (const sub of subs) {
-      for (const lesson of sub.lessons) {
-        if (!lesson) {
-          continue;
-        }
-        lessonMap.set(lesson.id, lesson);
-      }
-    }
-    return Array.from(lessonMap.values());
-  }, [substitutionsQuery.data]);
 
   const $create = api.timetable.substitutions.$post;
   const createMutation = useMutation<
@@ -225,15 +220,21 @@ function SubstitutionsPage() {
     }
   };
 
-  const handleDelete = async (sub: SubstitutionItem) => {
+  const handleDelete = (sub: SubstitutionItem) => {
     if (!hasWritePermission) {
       return;
     }
-    const confirmed = confirmDestructiveAction(t('substitution.deleteConfirm'));
-    if (!confirmed) {
+    setItemToDelete(sub);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) {
       return;
     }
-    await deleteMutation.mutateAsync(sub.substitution.id);
+    await deleteMutation.mutateAsync(itemToDelete.substitution.id);
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
   const isLoading = substitutionsQuery.isLoading;
@@ -380,21 +381,57 @@ function SubstitutionsPage() {
       )}
 
       {hasWritePermission && (
-        <SubstitutionDialog
-          allLessons={allLessons}
-          cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
-          isSubmitting={createMutation.isPending || updateMutation.isPending}
-          item={selectedItem}
-          onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) {
-              setSelectedItem(null);
-            }
-          }}
-          onSubmit={handleSave}
-          open={dialogOpen}
-          teachers={teachersQuery.data ?? []}
-        />
+        <>
+          <SubstitutionDialog
+            cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            item={selectedItem}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) {
+                setSelectedItem(null);
+              }
+            }}
+            onSubmit={handleSave}
+            open={dialogOpen}
+            teachers={teachersQuery.data ?? []}
+          />
+          <Dialog
+            onOpenChange={(open) => {
+              setDeleteDialogOpen(open);
+              if (!open) {
+                setItemToDelete(null);
+              }
+            }}
+            open={deleteDialogOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('substitution.deleteConfirm')}</DialogTitle>
+                <DialogDescription>
+                  {t('substitution.deleteDescription')}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  onClick={() => setDeleteDialogOpen(false)}
+                  variant="outline"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  disabled={deleteMutation.isPending}
+                  onClick={confirmDelete}
+                  variant="destructive"
+                >
+                  {deleteMutation.isPending
+                    ? t('common.deleting')
+                    : t('common.delete')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   );

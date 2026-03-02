@@ -109,7 +109,9 @@
     "back": "Vissza",
     "next": "Tovább",
     "skip": "Kihagyás",
-    "complete": "Befejezés"
+    "complete": "Befejezés",
+    "delete": "Törlés",
+    "deleting": "Törlés..."
   },
   "substitution": {
     "title": "Helyettesítések",
@@ -141,7 +143,8 @@
     "updateError": "Nem sikerült frissíteni a helyettesítést",
     "deleteSuccess": "Helyettesítés sikeresen törölve",
     "deleteError": "Nem sikerült törölni a helyettesítést",
-    "deleteConfirm": "Törlöd ezt a helyettesítést? Ez a művelet nem vonható vissza.",
+    "deleteConfirm": "Helyettesítés törlése",
+    "deleteDescription": "Törlöd ezt a helyettesítést? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni a helyettesítéseket",
     "loadErrorMessage": "Kérlek próbáld újra később.",
     "availableForClass": "Helyettesítések elérhetők ehhez: {{className}}",

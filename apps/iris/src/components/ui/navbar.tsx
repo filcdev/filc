@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import type { InferResponseType } from 'hono/client';
 import { parseResponse } from 'hono/client';
 import {
   Book,
@@ -40,9 +41,11 @@ type Cohort = {
   name: string;
 };
 
-type Substitution = {
-  lessons: { cohorts: string[] }[];
-};
+type SubstitutionsResponse = InferResponseType<
+  typeof api.timetable.substitutions.$get
+>;
+
+type Substitution = NonNullable<SubstitutionsResponse['data']>[number];
 
 export function Navbar({
   children,
@@ -83,10 +86,15 @@ export function Navbar({
     (cohort) => cohort.id === userClassId
   )?.name;
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const hasUserSubs =
     !!userClassName &&
-    substitutionsQuery.data?.some((sub) =>
-      sub.lessons.some((lesson) => lesson.cohorts.includes(userClassName))
+    substitutionsQuery.data?.some(
+      (sub) =>
+        new Date(sub.substitution.date) >= today &&
+        sub.lessons.some((lesson) => lesson?.cohorts.includes(userClassName))
     );
 
   const substitutionBadgeLabel =
