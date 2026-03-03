@@ -12,7 +12,9 @@
     "back": "Back",
     "next": "Next",
     "skip": "Skip",
-    "complete": "Complete"
+    "complete": "Complete",
+    "delete": "Delete",
+    "deleting": "Deleting..."
   },
   "login": {
     "byContinuing": "By continuing, you agree to our"
@@ -113,11 +115,12 @@
   },
   "substitution": {
     "title": "Substitutions",
-    "description": "Manage lesson substitutions and cancellations",
+    "description": "Check out lesson substitutions and cancellations",
     "create": "Create Substitution",
     "edit": "Edit Substitution",
     "save": "Save",
     "refresh": "Refresh",
+    "showPast": "Show past substitutions",
     "date": "Date",
     "datePlaceholder": "Select a date",
     "substituteTeacher": "Substitute Teacher",
@@ -141,7 +144,8 @@
     "updateError": "Failed to update substitution",
     "deleteSuccess": "Substitution deleted successfully",
     "deleteError": "Failed to delete substitution",
-    "deleteConfirm": "Delete this substitution? This action cannot be undone.",
+    "deleteConfirm": "Delete Substitution",
+    "deleteDescription": "Are you sure you want to delete this substitution? This action cannot be undone.",
     "loadError": "Unable to load substitutions",
     "loadErrorMessage": "Please try again later.",
     "availableForClass": "Substitutions are available for {{className}}",
@@ -152,6 +156,8 @@
   "movedLesson": {
     "title": "Moved Lessons",
     "description": "Manage lessons that have been moved to different times or rooms",
+    "moved": "Moved",
+    "available": "Moved lessons available",
     "create": "Create Moved Lesson",
     "edit": "Edit Moved Lesson",
     "save": "Save",

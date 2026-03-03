@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 const rewriteDates = (schema: z.ZodTypeAny): z.ZodTypeAny => {
   if (schema instanceof z.ZodDate) {
-    return z.iso.datetime();
+    return z.string().datetime();
   }
 
   if (schema instanceof z.ZodNullable) {
