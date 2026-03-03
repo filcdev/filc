@@ -5,6 +5,7 @@ import {
   Book,
   Calendar,
   Cog,
+  DoorOpen,
   GraduationCap,
   LogIn,
   LogOut,
@@ -207,6 +208,12 @@ export function Navbar({
                       </DropdownMenuLabel>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => navigate({ to: '/cards' })}
+                    >
+                      <DoorOpen />
+                      <span>{t('doorlock.manage-cards')}</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Cog />
                       <span>{t('settings')}</span>

@@ -58,7 +58,28 @@
     "dashboard": "Vezérlőpult",
     "devices": "Eszközök",
     "cards": "Kártyák",
-    "logs": "Naplók"
+    "logs": "Naplók",
+    "manage-cards": "Kártyák kezelése",
+    "selfCards": {
+      "title": "Belépőkártyáim",
+      "loadError": "Nem sikerült betölteni a kártyáidat.",
+      "noCards": "Még nincsenek belépőkártyáid.",
+      "statusActive": "Aktív",
+      "statusFrozen": "Zárolt",
+      "statusDisabled": "Letiltva",
+      "noDevices": "Nincs engedélyezett eszköz",
+      "openDoor": "Ajtó nyitása",
+      "freeze": "Zárolás",
+      "unfreeze": "Feloldás",
+      "freezeSuccess": "Kártya zárolva",
+      "unfreezeSuccess": "Kártya feloldva",
+      "freezeError": "Nem sikerült frissíteni a kártyát",
+      "activateSuccess": "Ajtó sikeresen kinyílt",
+      "activateError": "Nem sikerült kinyitni az ajtót",
+      "dialogTitle": "Ajtó nyitása",
+      "dialogDescription": "Melyik ajtót szeretnéd kinyitni ezzel: {{cardName}}?",
+      "dialogNoDevices": "Ennek a kártyának nincs engedélyezett eszköze."
+    }
   },
   "featureFlags": {},
   "admin": {
