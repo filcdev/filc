@@ -441,6 +441,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
 );
 
 const createSchema = createInsertSchema(movedLesson).omit({ id: true }).extend({
+  date: z.coerce.date(),
   lessonIds: z.uuid().array().optional(),
 });
 
@@ -537,7 +538,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
 );
 
 const updateSchema = z.object({
-  date: z.date(),
+  date: z.coerce.date(),
   lessonIds: z.uuid().array(),
   room: z.string(),
   startingDay: z.uuid(),
