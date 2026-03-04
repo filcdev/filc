@@ -58,7 +58,28 @@
     "dashboard": "Vezérlőpult",
     "devices": "Eszközök",
     "cards": "Kártyák",
-    "logs": "Naplók"
+    "logs": "Naplók",
+    "manage-cards": "Kártyák kezelése",
+    "selfCards": {
+      "title": "Belépőkártyáim",
+      "loadError": "Nem sikerült betölteni a kártyáidat.",
+      "noCards": "Még nincsenek belépőkártyáid.",
+      "statusActive": "Aktív",
+      "statusFrozen": "Zárolt",
+      "statusDisabled": "Letiltva",
+      "noDevices": "Nincs engedélyezett eszköz",
+      "openDoor": "Ajtó nyitása",
+      "freeze": "Zárolás",
+      "unfreeze": "Feloldás",
+      "freezeSuccess": "Kártya zárolva",
+      "unfreezeSuccess": "Kártya feloldva",
+      "freezeError": "Nem sikerült frissíteni a kártyát",
+      "activateSuccess": "Ajtó sikeresen kinyílt",
+      "activateError": "Nem sikerült kinyitni az ajtót",
+      "dialogTitle": "Ajtó nyitása",
+      "dialogDescription": "Melyik ajtót szeretnéd kinyitni ezzel: {{cardName}}?",
+      "dialogNoDevices": "Ennek a kártyának nincs engedélyezett eszköze."
+    }
   },
   "featureFlags": {},
   "admin": {
@@ -115,12 +136,12 @@
   },
   "substitution": {
     "title": "Helyettesítések",
-    "description": "Órahelyettesítések és elmaradó órák kezelése",
+    "description": "Órahelyettesítések és elmaradó órák elérése",
     "create": "Helyettesítés létrehozása",
     "edit": "Helyettesítés szerkesztése",
     "save": "Mentés",
     "refresh": "Frissítés",
-    "showPast": "Múltbeliek is",
+    "showPast": "Múltbeli helyettesítések mutatása",
     "date": "Dátum",
     "datePlaceholder": "Válassz egy dátumot",
     "substituteTeacher": "Helyettesítő tanár",
@@ -156,6 +177,8 @@
   "movedLesson": {
     "title": "Áthelyezett órák",
     "description": "Más időpontra vagy terembe áthelyezett órák kezelése",
+    "moved": "Áthelyezve",
+    "available": "Áthelyezett órák elérhetők",
     "create": "Áthelyezett óra létrehozása",
     "edit": "Áthelyezett óra szerkesztése",
     "save": "Mentés",

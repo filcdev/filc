@@ -2,8 +2,8 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
-import { Navbar } from '@/components/ui/navbar';
 
 const errorSearchSchema = z.object({
   error: z.string().optional(),
