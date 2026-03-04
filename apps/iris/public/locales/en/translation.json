@@ -69,7 +69,28 @@
     "dashboard": "Dashboard",
     "devices": "Devices",
     "cards": "Cards",
-    "logs": "Logs"
+    "logs": "Logs",
+    "manage-cards": "Manage Cards",
+    "selfCards": {
+      "title": "My Access Cards",
+      "loadError": "Failed to load your cards.",
+      "noCards": "You don't have any access cards yet.",
+      "statusActive": "Active",
+      "statusFrozen": "Frozen",
+      "statusDisabled": "Disabled",
+      "noDevices": "No authorized devices",
+      "openDoor": "Open Door",
+      "freeze": "Freeze",
+      "unfreeze": "Unfreeze",
+      "freezeSuccess": "Card frozen",
+      "unfreezeSuccess": "Card unfrozen",
+      "freezeError": "Failed to update card",
+      "activateSuccess": "Door opened successfully",
+      "activateError": "Failed to open door",
+      "dialogTitle": "Open a Door",
+      "dialogDescription": "Choose which door to open using {{cardName}}.",
+      "dialogNoDevices": "This card has no authorized devices."
+    }
   },
   "featureFlags": {},
   "admin": {
