@@ -130,12 +130,18 @@ const handleIncomingMessage = async (
   }
 };
 
+const normalizeName = (name: string) =>
+  name
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
 export const sendMessage = (content: OutgoingMessage, deviceId: string) => {
   const validated = outgoingMessageSchema.parse(content);
 
   const payload: OutgoingMessage =
     validated.type === 'open-door' && validated.name
-      ? { ...validated, name: validated.name.trim() }
+      ? { ...validated, name: normalizeName(validated.name) }
       : validated;
 
   logger.trace('Publishing WebSocket message', { deviceId, payload });
@@ -157,7 +163,7 @@ export const syncDatabase = async (deviceId: string) => {
     );
 
   const database = cards.map((c) => ({
-    name: c.card.name,
+    name: normalizeName(c.card.name),
     uid: c.card.cardData,
   }));
 
