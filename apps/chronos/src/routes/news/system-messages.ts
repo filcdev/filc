@@ -2,7 +2,7 @@ import { zValidator } from '@hono/zod-validator';
 import type { SQL } from 'drizzle-orm';
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
-import { describeRoute } from 'hono-openapi';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
@@ -17,6 +17,7 @@ import {
   dateRangeBodySchema,
   dateRangeUpdateBodySchema,
 } from '#utils/news/schemas';
+import { createSelectSchema } from '#utils/zod';
 
 const validateCohortIds = async (cohortIds: string[]) => {
   const existingCohorts = await db
@@ -38,12 +39,52 @@ const authorSelect = {
   name: user.name,
 };
 
+const systemMessageSelectSchema = createSelectSchema(systemMessage);
+const authorSchema = z.object({
+  id: z.string(),
+  image: z.string().nullable(),
+  name: z.string(),
+});
+
+const systemMessageItemSchema = systemMessageSelectSchema.extend({
+  author: authorSchema.nullable().optional(),
+  cohortIds: z.array(z.string()),
+});
+
+const systemMessageListResponseSchema = z.object({
+  data: z.array(systemMessageItemSchema),
+  success: z.literal(true),
+  total: z.number(),
+});
+
+const systemMessageDetailResponseSchema = z.object({
+  data: systemMessageItemSchema,
+  success: z.literal(true),
+});
+
+const successResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+const { schema: createRequestSchema } =
+  await resolver(dateRangeBodySchema).toOpenAPISchema();
+const { schema: updateRequestSchema } = await resolver(
+  dateRangeUpdateBodySchema
+).toOpenAPISchema();
+
 export const listSystemMessages = newsFactory.createHandlers(
   describeRoute({
     description:
       'List active system messages within date range, filtered by user cohort',
     responses: {
-      200: { description: 'Paginated list of system messages' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(systemMessageListResponseSchema),
+          },
+        },
+        description: 'Paginated list of system messages',
+      },
     },
     tags: ['News / System Messages'],
   }),
@@ -123,7 +164,15 @@ export const getSystemMessage = newsFactory.createHandlers(
   describeRoute({
     description: 'Get a single system message by ID',
     responses: {
-      200: { description: 'System message details' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(systemMessageDetailResponseSchema),
+          },
+        },
+        description: 'System message details',
+      },
+      404: { description: 'System message not found' },
     },
     tags: ['News / System Messages'],
   }),
@@ -171,8 +220,23 @@ export const getSystemMessage = newsFactory.createHandlers(
 export const createSystemMessage = newsFactory.createHandlers(
   describeRoute({
     description: 'Create a new system message',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: createRequestSchema,
+        },
+      },
+    },
     responses: {
-      201: { description: 'System message created' },
+      201: {
+        content: {
+          'application/json': {
+            schema: resolver(systemMessageDetailResponseSchema),
+          },
+        },
+        description: 'System message created',
+      },
+      400: { description: 'Invalid input or cohort IDs' },
     },
     tags: ['News / System Messages'],
   }),
@@ -226,8 +290,24 @@ export const createSystemMessage = newsFactory.createHandlers(
 export const updateSystemMessage = newsFactory.createHandlers(
   describeRoute({
     description: 'Update an existing system message',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: updateRequestSchema,
+        },
+      },
+    },
     responses: {
-      200: { description: 'System message updated' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(systemMessageDetailResponseSchema),
+          },
+        },
+        description: 'System message updated',
+      },
+      400: { description: 'Invalid input or date range' },
+      404: { description: 'System message not found' },
     },
     tags: ['News / System Messages'],
   }),
@@ -323,7 +403,15 @@ export const deleteSystemMessage = newsFactory.createHandlers(
   describeRoute({
     description: 'Delete a system message',
     responses: {
-      200: { description: 'System message deleted' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(successResponseSchema),
+          },
+        },
+        description: 'System message deleted',
+      },
+      404: { description: 'System message not found' },
     },
     tags: ['News / System Messages'],
   }),

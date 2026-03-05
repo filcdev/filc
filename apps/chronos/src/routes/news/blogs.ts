@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
-import { describeRoute } from 'hono-openapi';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
@@ -17,12 +17,44 @@ import {
   generateSlug,
   paginationSchema,
 } from '#utils/news/schemas';
+import { createSelectSchema } from '#utils/zod';
 
 const authorSelect = {
   id: user.id,
   image: user.image,
   name: user.name,
 };
+
+const blogSelectSchema = createSelectSchema(blogPost);
+const authorSchema = z.object({
+  id: z.string(),
+  image: z.string().nullable(),
+  name: z.string(),
+});
+
+const blogItemSchema = blogSelectSchema.extend({
+  author: authorSchema.nullable().optional(),
+});
+
+const blogListResponseSchema = z.object({
+  data: z.array(blogItemSchema),
+  success: z.literal(true),
+  total: z.number(),
+});
+
+const blogDetailResponseSchema = z.object({
+  data: blogItemSchema,
+  success: z.literal(true),
+});
+
+const successResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+const { schema: createBlogRequestSchema } =
+  await resolver(blogCreateSchema).toOpenAPISchema();
+const { schema: updateBlogRequestSchema } =
+  await resolver(blogUpdateSchema).toOpenAPISchema();
 
 const checkSlugExists = async (slug: string, excludeId?: string) => {
   const conditions = [eq(blogPost.slug, slug)];
@@ -40,7 +72,14 @@ export const listPublishedBlogs = newsFactory.createHandlers(
   describeRoute({
     description: 'List published blog posts (public, no auth required)',
     responses: {
-      200: { description: 'Paginated list of published blog posts' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogListResponseSchema),
+          },
+        },
+        description: 'Paginated list of published blog posts',
+      },
     },
     tags: ['News / Blogs'],
   }),
@@ -85,7 +124,15 @@ export const getBlogBySlug = newsFactory.createHandlers(
   describeRoute({
     description: 'Get a published blog post by slug (public, no auth required)',
     responses: {
-      200: { description: 'Blog post details' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogDetailResponseSchema),
+          },
+        },
+        description: 'Blog post details',
+      },
+      404: { description: 'Blog post not found' },
     },
     tags: ['News / Blogs'],
   }),
@@ -127,7 +174,14 @@ export const listDrafts = newsFactory.createHandlers(
   describeRoute({
     description: 'List all blog posts including drafts (requires permission)',
     responses: {
-      200: { description: 'Paginated list of all blog posts' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogListResponseSchema),
+          },
+        },
+        description: 'Paginated list of all blog posts',
+      },
     },
     tags: ['News / Blogs'],
   }),
@@ -172,7 +226,15 @@ export const getBlogById = newsFactory.createHandlers(
     description:
       'Get any blog post by ID including drafts (requires permission)',
     responses: {
-      200: { description: 'Blog post details' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogDetailResponseSchema),
+          },
+        },
+        description: 'Blog post details',
+      },
+      404: { description: 'Blog post not found' },
     },
     tags: ['News / Blogs'],
   }),
@@ -215,8 +277,23 @@ export const getBlogById = newsFactory.createHandlers(
 export const createBlog = newsFactory.createHandlers(
   describeRoute({
     description: 'Create a new blog post (defaults to draft)',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: createBlogRequestSchema,
+        },
+      },
+    },
     responses: {
-      201: { description: 'Blog post created' },
+      201: {
+        content: {
+          'application/json': {
+            schema: resolver(blogDetailResponseSchema),
+          },
+        },
+        description: 'Blog post created',
+      },
+      400: { description: 'Invalid input' },
     },
     tags: ['News / Blogs'],
   }),
@@ -257,8 +334,23 @@ export const createBlog = newsFactory.createHandlers(
 export const updateBlog = newsFactory.createHandlers(
   describeRoute({
     description: 'Update a blog post',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: updateBlogRequestSchema,
+        },
+      },
+    },
     responses: {
-      200: { description: 'Blog post updated' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogDetailResponseSchema),
+          },
+        },
+        description: 'Blog post updated',
+      },
+      404: { description: 'Blog post not found' },
     },
     tags: ['News / Blogs'],
   }),
@@ -313,7 +405,16 @@ export const publishBlog = newsFactory.createHandlers(
   describeRoute({
     description: 'Publish a blog post (draft → published)',
     responses: {
-      200: { description: 'Blog post published' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogDetailResponseSchema),
+          },
+        },
+        description: 'Blog post published',
+      },
+      400: { description: 'Blog post is already published' },
+      404: { description: 'Blog post not found' },
     },
     tags: ['News / Blogs'],
   }),
@@ -357,7 +458,16 @@ export const unpublishBlog = newsFactory.createHandlers(
   describeRoute({
     description: 'Unpublish a blog post (published → draft)',
     responses: {
-      200: { description: 'Blog post unpublished' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(blogDetailResponseSchema),
+          },
+        },
+        description: 'Blog post unpublished',
+      },
+      400: { description: 'Blog post is already a draft' },
+      404: { description: 'Blog post not found' },
     },
     tags: ['News / Blogs'],
   }),
@@ -401,7 +511,15 @@ export const deleteBlog = newsFactory.createHandlers(
   describeRoute({
     description: 'Delete a blog post',
     responses: {
-      200: { description: 'Blog post deleted' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(successResponseSchema),
+          },
+        },
+        description: 'Blog post deleted',
+      },
+      404: { description: 'Blog post not found' },
     },
     tags: ['News / Blogs'],
   }),

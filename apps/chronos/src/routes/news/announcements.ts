@@ -2,7 +2,7 @@ import { zValidator } from '@hono/zod-validator';
 import type { SQL } from 'drizzle-orm';
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
-import { describeRoute } from 'hono-openapi';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
@@ -17,6 +17,7 @@ import {
   dateRangeBodySchema,
   dateRangeUpdateBodySchema,
 } from '#utils/news/schemas';
+import { createSelectSchema } from '#utils/zod';
 
 const validateCohortIds = async (cohortIds: string[]) => {
   const existingCohorts = await db
@@ -38,12 +39,52 @@ const authorSelect = {
   name: user.name,
 };
 
+const announcementSelectSchema = createSelectSchema(announcement);
+const authorSchema = z.object({
+  id: z.string(),
+  image: z.string().nullable(),
+  name: z.string(),
+});
+
+const announcementItemSchema = announcementSelectSchema.extend({
+  author: authorSchema.nullable().optional(),
+  cohortIds: z.array(z.string()),
+});
+
+const announcementListResponseSchema = z.object({
+  data: z.array(announcementItemSchema),
+  success: z.literal(true),
+  total: z.number(),
+});
+
+const announcementDetailResponseSchema = z.object({
+  data: announcementItemSchema,
+  success: z.literal(true),
+});
+
+const successResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+const { schema: createRequestSchema } =
+  await resolver(dateRangeBodySchema).toOpenAPISchema();
+const { schema: updateRequestSchema } = await resolver(
+  dateRangeUpdateBodySchema
+).toOpenAPISchema();
+
 export const listAnnouncements = newsFactory.createHandlers(
   describeRoute({
     description:
       'List active announcements within date range, filtered by user cohort',
     responses: {
-      200: { description: 'Paginated list of announcements' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(announcementListResponseSchema),
+          },
+        },
+        description: 'Paginated list of announcements',
+      },
     },
     tags: ['News / Announcements'],
   }),
@@ -126,7 +167,15 @@ export const getAnnouncement = newsFactory.createHandlers(
   describeRoute({
     description: 'Get a single announcement by ID',
     responses: {
-      200: { description: 'Announcement details' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(announcementDetailResponseSchema),
+          },
+        },
+        description: 'Announcement details',
+      },
+      404: { description: 'Announcement not found' },
     },
     tags: ['News / Announcements'],
   }),
@@ -174,8 +223,23 @@ export const getAnnouncement = newsFactory.createHandlers(
 export const createAnnouncement = newsFactory.createHandlers(
   describeRoute({
     description: 'Create a new announcement',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: createRequestSchema,
+        },
+      },
+    },
     responses: {
-      201: { description: 'Announcement created' },
+      201: {
+        content: {
+          'application/json': {
+            schema: resolver(announcementDetailResponseSchema),
+          },
+        },
+        description: 'Announcement created',
+      },
+      400: { description: 'Invalid input or cohort IDs' },
     },
     tags: ['News / Announcements'],
   }),
@@ -229,8 +293,24 @@ export const createAnnouncement = newsFactory.createHandlers(
 export const updateAnnouncement = newsFactory.createHandlers(
   describeRoute({
     description: 'Update an existing announcement',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: updateRequestSchema,
+        },
+      },
+    },
     responses: {
-      200: { description: 'Announcement updated' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(announcementDetailResponseSchema),
+          },
+        },
+        description: 'Announcement updated',
+      },
+      400: { description: 'Invalid input or date range' },
+      404: { description: 'Announcement not found' },
     },
     tags: ['News / Announcements'],
   }),
@@ -327,7 +407,15 @@ export const deleteAnnouncement = newsFactory.createHandlers(
   describeRoute({
     description: 'Delete an announcement',
     responses: {
-      200: { description: 'Announcement deleted' },
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(successResponseSchema),
+          },
+        },
+        description: 'Announcement deleted',
+      },
+      404: { description: 'Announcement not found' },
     },
     tags: ['News / Announcements'],
   }),
