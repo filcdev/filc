@@ -211,20 +211,7 @@
         "useJsxKeyInIterable": "error"
       },
       "nursery": {
-        "noDuplicateDependencies": "error",
-        "noEmptySource": "error",
         "noShadow": "error",
-        "noUnusedExpressions": "error",
-        "noUselessUndefined": "error",
-        "useConsistentArrowReturn": "error",
-        "useDeprecatedDate": "error",
-        "useMaxParams": "error",
-
-        "noReactForwardRef": "error",
-        "noJsxLiterals": "off",
-        "noUselessCatchBinding": "off",
-        "noUnnecessaryConditions": "off",
-        "useExplicitType": "off",
         "useSortedClasses": {
           "fix": "safe",
           "level": "error",
@@ -233,13 +220,10 @@
             "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
           }
         },
-
-        /** ------ Project rules use Scanner and are too slow (https://biomejs.dev/linter/domains/#project-rules) ------ **/
-        "noDeprecatedImports": "off",
+        "noUnnecessaryConditions": "off",
+        "useExplicitType": "off",
         "noFloatingPromises": "off",
         "noMisusedPromises": "off",
-        "noUnresolvedImports": "off",
-        "noImportCycles": "off",
         "useExhaustiveSwitchCases": "off"
       },
       "performance": {
