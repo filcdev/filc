@@ -25,7 +25,6 @@ import {
   createInsertSchema,
   createSelectSchema,
   createUpdateSchema,
-  ensureJsonSafeDates,
 } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -163,7 +162,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+            schema: resolver(allResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -255,7 +254,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+            schema: resolver(allResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -320,7 +319,7 @@ export const getRelevantSubstitutionsForCohort =
         200: {
           content: {
             'application/json': {
-              schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+              schema: resolver(allResponseSchema),
             },
           },
           description: 'Successful Response',
@@ -397,9 +396,7 @@ export const createSubstitution = timetableFactory.createHandlers(
     description: 'Create a new substitution',
     requestBody: {
       content: {
-        'multipart/form-data': await resolver(
-          ensureJsonSafeDates(createSchema)
-        ).toOpenAPISchema(),
+        'multipart/form-data': await resolver(createSchema).toOpenAPISchema(),
       },
       description: 'The data for the new substitution.',
     },
@@ -407,7 +404,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -417,7 +414,7 @@ export const createSubstitution = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('substitution:create'),
-  zValidator('json', ensureJsonSafeDates(createSchema)),
+  zValidator('json', createSchema),
   async (c) => {
     const { lessonIds, date, substituter } = c.req.valid('json');
 
@@ -489,9 +486,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     ],
     requestBody: {
       content: {
-        'application/json': await resolver(
-          ensureJsonSafeDates(updateSchema)
-        ).toOpenAPISchema(),
+        'application/json': await resolver(updateSchema).toOpenAPISchema(),
       },
       description: 'The data for updating the substitution.',
     },
@@ -499,7 +494,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -510,7 +505,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('substitution:update'),
   zValidator('param', z.object({ id: z.uuid() })),
-  zValidator('json', ensureJsonSafeDates(updateSchema)),
+  zValidator('json', updateSchema),
   async (c) => {
     try {
       const { id } = c.req.valid('param');
@@ -603,7 +598,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',

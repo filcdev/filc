@@ -5,7 +5,6 @@ import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { pingFactory } from '#routes/ping/_factory';
-import { ensureJsonSafeDates } from '#utils/zod';
 
 dayjs.extend(relativeTime);
 dayjs.extend(duration);
@@ -25,7 +24,7 @@ export const uptime = pingFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(uptimeResponseSchema)),
+            schema: resolver(uptimeResponseSchema),
           },
         },
         description: 'Successful Response',

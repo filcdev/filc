@@ -17,7 +17,7 @@ import {
   fetchCards,
 } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'self']);
@@ -67,7 +67,7 @@ export const listSelfCardsRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(cardsResponseSchema)),
+            schema: resolver(cardsResponseSchema),
           },
         },
         description: 'Successful response',
@@ -105,7 +105,7 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(cardResponseSchema)),
+            schema: resolver(cardResponseSchema),
           },
         },
         description: 'Card updated',
@@ -173,7 +173,7 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(activationResponseSchema)),
+            schema: resolver(activationResponseSchema),
           },
         },
         description: 'Door activation has been triggered',

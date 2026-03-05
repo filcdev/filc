@@ -17,7 +17,7 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
@@ -110,7 +110,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
 }
 
 const responseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
+  data: createSelectSchema(lesson).array(),
   success: z.boolean(),
 });
 
@@ -132,7 +132,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(responseSchema)),
+            schema: resolver(responseSchema),
           },
         },
         description: 'Successful Response',
@@ -195,7 +195,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(responseSchema)),
+            schema: resolver(responseSchema),
           },
         },
         description: 'Successful Response',
@@ -255,7 +255,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(responseSchema)),
+            schema: resolver(responseSchema),
           },
         },
         description: 'Successful Response',
@@ -316,12 +316,10 @@ export const getLessonForId = timetableFactory.createHandlers(
         content: {
           'application/json': {
             schema: resolver(
-              ensureJsonSafeDates(
-                z.object({
-                  data: createSelectSchema(lesson).nullable(),
-                  success: z.boolean(),
-                })
-              )
+              z.object({
+                data: createSelectSchema(lesson).nullable(),
+                success: z.boolean(),
+              })
             ),
           },
         },

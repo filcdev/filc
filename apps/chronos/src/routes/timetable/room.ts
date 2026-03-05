@@ -3,11 +3,11 @@ import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { classroom } from '#database/schema/timetable';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const getClassroomsResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(classroom)).array(),
+  data: createSelectSchema(classroom).array(),
   success: z.boolean(),
 });
 
@@ -18,7 +18,7 @@ export const getClassrooms = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getClassroomsResponseSchema)),
+            schema: resolver(getClassroomsResponseSchema),
           },
         },
         description: 'Successful Response',

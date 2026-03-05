@@ -15,7 +15,6 @@ import {
   deviceHealth,
 } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'stats']);
@@ -92,7 +91,7 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(statsResponseSchema)),
+            schema: resolver(statsResponseSchema),
           },
         },
         description: 'Successful response',
@@ -195,7 +194,7 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(deviceStatsResponseSchema)),
+            schema: resolver(deviceStatsResponseSchema),
           },
         },
         description: 'Successful response',

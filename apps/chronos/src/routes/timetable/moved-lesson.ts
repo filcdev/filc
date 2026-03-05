@@ -17,11 +17,7 @@ import {
   period,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import {
-  createInsertSchema,
-  createSelectSchema,
-  ensureJsonSafeDates,
-} from '#utils/zod';
+import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
@@ -164,7 +160,7 @@ const validateMovedLessonReferences = async (options: {
 };
 
 const getAllResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(movedLesson)),
+  data: createSelectSchema(movedLesson),
   success: z.boolean(),
 });
 
@@ -175,7 +171,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(getAllResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -238,7 +234,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(getAllResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -311,7 +307,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(getAllResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -380,7 +376,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(getAllResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -455,9 +451,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
     description: 'Create a moved lesson.',
     requestBody: {
       content: {
-        'application/json': await resolver(
-          ensureJsonSafeDates(createSchema)
-        ).toOpenAPISchema(),
+        'application/json': await resolver(createSchema).toOpenAPISchema(),
       },
       description: 'The data for the moved lesson.',
     },
@@ -465,7 +459,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -561,9 +555,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     ],
     requestBody: {
       content: {
-        'application/json': await resolver(
-          ensureJsonSafeDates(updateSchema)
-        ).toOpenAPISchema(),
+        'application/json': await resolver(updateSchema).toOpenAPISchema(),
       },
       description: 'The data for updating the moved lesson.',
     },
@@ -571,7 +563,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -660,7 +652,7 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',

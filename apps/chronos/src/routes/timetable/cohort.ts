@@ -9,13 +9,13 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort, timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'cohort']);
 
 const getForTimetableResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(cohort)).array(),
+  data: createSelectSchema(cohort).array(),
   success: z.boolean(),
 });
 
@@ -37,9 +37,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(
-              ensureJsonSafeDates(getForTimetableResponseSchema)
-            ),
+            schema: resolver(getForTimetableResponseSchema),
           },
         },
         description: 'Successful Response',

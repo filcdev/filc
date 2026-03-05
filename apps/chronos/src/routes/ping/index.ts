@@ -2,7 +2,6 @@ import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { pingFactory } from '#routes/ping/_factory';
-import { ensureJsonSafeDates } from '#utils/zod';
 
 const pingResponseSchema = z.object({
   data: z.object({
@@ -18,7 +17,7 @@ export const ping = pingFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(pingResponseSchema)),
+            schema: resolver(pingResponseSchema),
           },
         },
         description: 'Successful Response',
