@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import {
   type InferRequestType,
   type InferResponseType,
@@ -47,10 +48,8 @@ type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
 type Cohort = NonNullable<CohortApiResponse['data']>[number];
 
-const upd = api.timetable.movedLessons[':id'].$put;
-type MovedLessonFormValues = InferRequestType<typeof upd>['json'] & {
-  lessonIds: string[];
-};
+const create = api.timetable.movedLessons.$post;
+type MovedLessonCreatePayload = InferRequestType<typeof create>['json'];
 
 type MovedLessonDialogProps = {
   allLessons: EnrichedLesson[];
@@ -60,7 +59,7 @@ type MovedLessonDialogProps = {
   isSubmitting: boolean;
   item?: MovedLessonItem | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: MovedLessonFormValues) => Promise<void>;
+  onSubmit: (payload: MovedLessonCreatePayload) => Promise<void>;
   open: boolean;
   periods: Period[];
 };
@@ -76,7 +75,7 @@ function formatLessonLabel(lesson: EnrichedLesson): string {
   if (lesson.period) {
     parts.push(`P${lesson.period.period}`);
   }
-  if (lesson.cohorts.length > 0) {
+  if (lesson.cohorts && lesson.cohorts.length > 0) {
     parts.push(`(${lesson.cohorts.join(', ')})`);
   }
   return parts.join(' - ') || lesson.id;
@@ -84,12 +83,12 @@ function formatLessonLabel(lesson: EnrichedLesson): string {
 
 const initialState = (
   item?: MovedLessonItem | null
-): MovedLessonFormValues => ({
+): MovedLessonCreatePayload => ({
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons ?? [],
-  room: item?.movedLesson.room ?? '',
-  startingDay: item?.movedLesson.startingDay ?? '',
-  startingPeriod: item?.movedLesson.startingPeriod ?? '',
+  room: item?.movedLesson.room || undefined,
+  startingDay: item?.movedLesson.startingDay || undefined,
+  startingPeriod: item?.movedLesson.startingPeriod || undefined,
 });
 
 export function MovedLessonDialog({
@@ -105,7 +104,7 @@ export function MovedLessonDialog({
   periods,
 }: MovedLessonDialogProps) {
   const { t } = useTranslation();
-  const [formState, setFormState] = useState<MovedLessonFormValues>(
+  const [formState, setFormState] = useState<MovedLessonCreatePayload>(
     initialState(item)
   );
   const [selectedCohort, setSelectedCohort] = useState<string>('');
@@ -114,6 +113,43 @@ export function MovedLessonDialog({
     setFormState(initialState(item));
     setSelectedCohort('');
   }, [item]);
+
+  // Auto-fill target day when date changes
+  useEffect(() => {
+    if (!formState.date || days.length === 0) {
+      return;
+    }
+
+    const weekdayIndex = dayjs(formState.date as Date | string).day(); // 0 = Sunday, 1 = Monday, etc.
+
+    // Map dayjs weekday index to day definition
+    // Assuming days array contains: Hétfő (Mon), Kedd (Tue), Szerda (Wed), Csütörtök (Thu), Péntek (Fri), Szombat (Sat), Vasárnap (Sun)
+    const dayMap: Record<number, string[]> = {
+      0: ['va', 'vasárnap', 'sunday'], // Sunday
+      1: ['hé', 'hétfő', 'monday'], // Monday
+      2: ['ke', 'kedd', 'tuesday'], // Tuesday
+      3: ['sz', 'szerda', 'wednesday'], // Wednesday
+      4: ['cs', 'csütörtök', 'thursday'], // Thursday
+      5: ['pé', 'péntek', 'friday'], // Friday
+      6: ['o', 'szombat', 'saturday'], // Saturday
+    };
+
+    const possibleShorts = dayMap[weekdayIndex] || [];
+    const matchingDay = days.find((day) =>
+      possibleShorts.some(
+        (short) =>
+          day.short.toLowerCase() === short ||
+          day.name.toLowerCase().includes(short)
+      )
+    );
+
+    if (matchingDay) {
+      setFormState((prev) => ({
+        ...prev,
+        startingDay: matchingDay.id,
+      }));
+    }
+  }, [formState.date, days]);
 
   const cohortLessonsQuery = useQuery({
     enabled: !!selectedCohort,
@@ -133,74 +169,80 @@ export function MovedLessonDialog({
 
   const availableLessons = useMemo(() => {
     const map = new Map<string, EnrichedLesson>();
-    for (const l of allLessons) {
-      map.set(l.id, l);
-    }
-    for (const l of cohortLessonsQuery.data ?? []) {
-      if (!l.id) {
-        continue;
+    // Ha van kiválasztott osztály, akkor csak az ő óráit mutatjuk
+    if (selectedCohort) {
+      for (const l of cohortLessonsQuery.data ?? []) {
+        if (!l.id) {
+          continue;
+        }
+        map.set(l.id, l as EnrichedLesson);
       }
-      map.set(l.id, l as EnrichedLesson);
+    } else {
+      // Ha nincs, akkor az összeset (kezdeti állapot)
+      for (const l of allLessons) {
+        map.set(l.id, l);
+      }
     }
-    return Array.from(map.values());
-  }, [allLessons, cohortLessonsQuery.data]);
 
-  const mergedDays = useMemo(() => {
-    const dayMap = new Map<string, DayDefinition>();
-    for (const d of days) {
-      dayMap.set(d.id, d);
-    }
-    for (const l of cohortLessonsQuery.data ?? []) {
-      if (l.day) {
-        dayMap.set(l.day.id, {
-          days: [],
-          id: l.day.id,
-          name: l.day.name,
-          short: l.day.short,
-        });
-      }
-    }
-    return Array.from(dayMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-  }, [days, cohortLessonsQuery.data]);
+    // Rendezés nap szerint, majd óra szerint
+    return Array.from(map.values()).sort((a, b) => {
+      const aDay = a.day?.name ?? '';
+      const bDay = b.day?.name ?? '';
 
-  const mergedPeriods = useMemo(() => {
-    const periodMap = new Map<string, Period>();
-    for (const p of periods) {
-      periodMap.set(p.id, p);
-    }
-    for (const l of cohortLessonsQuery.data ?? []) {
-      if (l.period) {
-        periodMap.set(l.period.id, l.period);
+      if (aDay !== bDay) {
+        return aDay.localeCompare(bDay);
       }
-    }
-    return Array.from(periodMap.values()).sort((a, b) => a.period - b.period);
-  }, [periods, cohortLessonsQuery.data]);
+      // Ha ugyanaz a nap, akkor óra szerint
+      return (a.period?.period ?? 999) - (b.period?.period ?? 999);
+    });
+  }, [allLessons, cohortLessonsQuery.data, selectedCohort]);
 
   const isCreate = !item;
 
   const isValid = useMemo(() => {
-    if (!formState.date) {
+    // CREATE esetén csak date és lessonIds kötelező
+    if (isCreate) {
+      if (!formState.date) {
+        return false;
+      }
+      if (!formState.lessonIds || formState.lessonIds.length === 0) {
+        return false;
+      }
+      return true;
+    }
+
+    // UPDATE esetén minden kötelező
+    if (
+      !(
+        formState.date &&
+        formState.startingDay &&
+        formState.startingPeriod &&
+        formState.room
+      )
+    ) {
+      return false;
+    }
+    if (!formState.lessonIds || formState.lessonIds.length === 0) {
       return false;
     }
     return true;
-  }, [formState.date]);
+  }, [formState, isCreate]);
 
   const toggleLesson = (lessonId: string | undefined, checked: boolean) => {
     if (!lessonId) {
       return;
     }
     setFormState((prev) => {
+      const currentLessonIds = prev.lessonIds ?? [];
       if (checked) {
         return {
           ...prev,
-          lessonIds: Array.from(new Set([...prev.lessonIds, lessonId])),
+          lessonIds: Array.from(new Set([...currentLessonIds, lessonId])),
         };
       }
       return {
         ...prev,
-        lessonIds: prev.lessonIds.filter((id) => id !== lessonId),
+        lessonIds: currentLessonIds.filter((id) => id !== lessonId),
       };
     });
   };
@@ -213,172 +255,169 @@ export function MovedLessonDialog({
     await onSubmit(formState);
   };
 
-  const dateAsDate = formState.date
-    ? new Date(`${formState.date}T00:00:00`)
-    : undefined;
-
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isCreate ? t('movedLesson.create') : t('movedLesson.edit')}
-          </DialogTitle>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <Label>{t('movedLesson.date')}</Label>
-            <DatePicker
-              date={dateAsDate}
-              onDateChange={(d) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  date: d ? d : prev.date,
-                }))
-              }
-              placeholder={t('movedLesson.datePlaceholder')}
-            />
-          </div>
+      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col p-2">
+        <div className="flex-1 overflow-y-auto p-6">
+          <DialogHeader>
+            <DialogTitle>
+              {isCreate ? t('movedLesson.create') : t('movedLesson.edit')}
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            className="mt-4 space-y-4"
+            id="movedLessonForm"
+            onSubmit={handleSubmit}
+          >
+            <div className="space-y-2">
+              <Label>{t('movedLesson.date')}</Label>
+              <DatePicker
+                date={
+                  formState.date instanceof Date
+                    ? formState.date
+                    : new Date(String(formState.date))
+                }
+                onDateChange={(d) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    date: d ?? prev.date,
+                  }))
+                }
+                placeholder={t('movedLesson.datePlaceholder')}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label>{t('movedLesson.targetDay')}</Label>
-            <Combobox
-              emptyMessage={t('movedLesson.noDayFound')}
-              onValueChange={(value) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  startingDay: value === '__none__' ? '' : value || '',
-                }))
-              }
-              options={[
-                {
-                  label: t('movedLesson.noChange'),
-                  value: '__none__',
-                },
-                ...mergedDays.map((day) => ({
-                  label: `${day.name} (${day.short})`,
-                  value: day.id,
-                })),
-              ]}
-              placeholder={t('movedLesson.targetDay')}
-              searchPlaceholder={t('search')}
-              value={formState.startingDay ?? '__none__'}
-            />
-          </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{t('movedLesson.targetDay')}</Label>
+                <Combobox
+                  emptyMessage={t('movedLesson.noDayFound')}
+                  onValueChange={(value) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      startingDay: value || undefined,
+                    }))
+                  }
+                  options={days.map((day) => ({
+                    label: `${day.name} (${day.short})`,
+                    value: day.id,
+                  }))}
+                  placeholder={t('movedLesson.targetDay')}
+                  searchPlaceholder={t('search')}
+                  value={formState.startingDay ?? ''}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('movedLesson.targetPeriod')}</Label>
+                <Combobox
+                  emptyMessage={t('movedLesson.noPeriodFound')}
+                  onValueChange={(value) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      startingPeriod: value || undefined,
+                    }))
+                  }
+                  options={periods.map((p) => ({
+                    label: t('movedLesson.periodLabel', {
+                      end: p.endTime.slice(0, 5),
+                      num: p.period,
+                      start: p.startTime.slice(0, 5),
+                    }),
+                    value: p.id,
+                  }))}
+                  placeholder={t('movedLesson.targetPeriod')}
+                  searchPlaceholder={t('search')}
+                  value={formState.startingPeriod ?? ''}
+                />
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <Label>{t('movedLesson.targetPeriod')}</Label>
-            <Combobox
-              emptyMessage={t('movedLesson.noPeriodFound')}
-              onValueChange={(value) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  startingPeriod: value === '__none__' ? '' : value || '',
-                }))
-              }
-              options={[
-                {
-                  label: t('movedLesson.noChange'),
-                  value: '__none__',
-                },
-                ...mergedPeriods.map((p) => ({
-                  label: t('movedLesson.periodLabel', {
-                    end: p.endTime.slice(0, 5),
-                    num: p.period,
-                    start: p.startTime.slice(0, 5),
-                  }),
-                  value: p.id,
-                })),
-              ]}
-              placeholder={t('movedLesson.targetPeriod')}
-              searchPlaceholder={t('search')}
-              value={formState.startingPeriod ?? '__none__'}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('movedLesson.targetRoom')}</Label>
-            <Combobox
-              emptyMessage={t('movedLesson.noRoomFound')}
-              onValueChange={(value) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  room: value === '__none__' ? '' : value || '',
-                }))
-              }
-              options={[
-                {
-                  label: t('movedLesson.noChange'),
-                  value: '__none__',
-                },
-                ...classrooms.map((cr) => ({
+            <div className="space-y-2">
+              <Label>{t('movedLesson.targetRoom')}</Label>
+              <Combobox
+                emptyMessage={t('movedLesson.noRoomFound')}
+                onValueChange={(value) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    room: value || undefined,
+                  }))
+                }
+                options={classrooms.map((cr) => ({
                   label: `${cr.name} (${cr.short})`,
                   value: cr.id,
-                })),
-              ]}
-              placeholder={t('movedLesson.targetRoom')}
-              searchPlaceholder={t('search')}
-              value={formState.room ?? '__none__'}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('movedLesson.selectCohort')}</Label>
-            <Combobox
-              emptyMessage={t('movedLesson.noCohortFound')}
-              onValueChange={(v) => setSelectedCohort(v)}
-              options={cohorts.map((c) => ({
-                label: c.name,
-                value: c.id,
-              }))}
-              placeholder={t('movedLesson.selectCohortPlaceholder')}
-              searchPlaceholder={t('search')}
-              value={selectedCohort}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('movedLesson.lessons')}</Label>
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
-              {cohortLessonsQuery.isLoading && (
-                <p className="p-2 text-muted-foreground text-sm">
-                  {t('movedLesson.loadingLessons')}
-                </p>
-              )}
-              {!cohortLessonsQuery.isLoading &&
-                availableLessons.length === 0 && (
-                  <p className="p-2 text-muted-foreground text-sm">
-                    {t('movedLesson.noLessons')}
-                  </p>
-                )}
-              {!cohortLessonsQuery.isLoading &&
-                availableLessons.length > 0 &&
-                availableLessons.map((lesson) => (
-                  <label
-                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                    htmlFor={`ml-lesson-${lesson.id}`}
-                    key={lesson.id}
-                  >
-                    <Checkbox
-                      checked={formState.lessonIds.includes(lesson.id ?? '')}
-                      id={`ml-lesson-${lesson.id}`}
-                      onCheckedChange={(checked) =>
-                        toggleLesson(lesson.id, !!checked)
-                      }
-                    />
-                    <span>{formatLessonLabel(lesson)}</span>
-                  </label>
-                ))}
+                }))}
+                placeholder={t('movedLesson.targetRoom')}
+                searchPlaceholder={t('search')}
+                value={formState.room ?? ''}
+              />
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button disabled={!isValid || isSubmitting} type="submit">
-              <Save className="h-4 w-4" />
-              {isCreate ? t('movedLesson.create') : t('movedLesson.save')}
-            </Button>
-          </DialogFooter>
-        </form>
+            <div className="space-y-2">
+              <Label>{t('movedLesson.selectCohort')}</Label>
+              <Combobox
+                emptyMessage={t('movedLesson.noCohortFound')}
+                onValueChange={(v) => setSelectedCohort(v)}
+                options={cohorts.map((c) => ({
+                  label: c.name,
+                  value: c.id,
+                }))}
+                placeholder={t('movedLesson.selectCohortPlaceholder')}
+                searchPlaceholder={t('search')}
+                value={selectedCohort}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('movedLesson.lessons')}</Label>
+              <div className="max-h-48 overflow-y-auto rounded-lg border">
+                <div className="space-y-1 p-2">
+                  {cohortLessonsQuery.isLoading && (
+                    <p className="p-2 text-muted-foreground text-sm">
+                      {t('movedLesson.loadingLessons')}
+                    </p>
+                  )}
+                  {!cohortLessonsQuery.isLoading &&
+                    availableLessons.length === 0 && (
+                      <p className="p-2 text-muted-foreground text-sm">
+                        {t('movedLesson.noLessons')}
+                      </p>
+                    )}
+                  {!cohortLessonsQuery.isLoading &&
+                    availableLessons.length > 0 &&
+                    availableLessons.map((lesson) => (
+                      <label
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                        htmlFor={`ml-lesson-${lesson.id}`}
+                        key={lesson.id}
+                      >
+                        <Checkbox
+                          checked={(formState.lessonIds ?? []).includes(
+                            lesson.id ?? ''
+                          )}
+                          id={`ml-lesson-${lesson.id}`}
+                          onCheckedChange={(checked) =>
+                            toggleLesson(lesson.id, !!checked)
+                          }
+                        />
+                        <span>{formatLessonLabel(lesson)}</span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <DialogFooter className="border-t p-4">
+          <Button
+            disabled={!isValid || isSubmitting}
+            form="movedLessonForm"
+            type="submit"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {isCreate ? t('movedLesson.create') : t('movedLesson.save')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

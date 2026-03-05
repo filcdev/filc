@@ -12,7 +12,9 @@
     "back": "Back",
     "next": "Next",
     "skip": "Skip",
-    "complete": "Complete"
+    "complete": "Complete",
+    "delete": "Delete",
+    "deleting": "Deleting..."
   },
   "login": {
     "byContinuing": "By continuing, you agree to our"
@@ -67,7 +69,28 @@
     "dashboard": "Dashboard",
     "devices": "Devices",
     "cards": "Cards",
-    "logs": "Logs"
+    "logs": "Logs",
+    "manage-cards": "Manage Cards",
+    "selfCards": {
+      "title": "My Access Cards",
+      "loadError": "Failed to load your cards.",
+      "noCards": "You don't have any access cards yet.",
+      "statusActive": "Active",
+      "statusFrozen": "Frozen",
+      "statusDisabled": "Disabled",
+      "noDevices": "No authorized devices",
+      "openDoor": "Open Door",
+      "freeze": "Freeze",
+      "unfreeze": "Unfreeze",
+      "freezeSuccess": "Card frozen",
+      "unfreezeSuccess": "Card unfrozen",
+      "freezeError": "Failed to update card",
+      "activateSuccess": "Door opened successfully",
+      "activateError": "Failed to open door",
+      "dialogTitle": "Open a Door",
+      "dialogDescription": "Choose which door to open using {{cardName}}.",
+      "dialogNoDevices": "This card has no authorized devices."
+    }
   },
   "featureFlags": {},
   "admin": {
@@ -113,11 +136,12 @@
   },
   "substitution": {
     "title": "Substitutions",
-    "description": "Manage lesson substitutions and cancellations",
+    "description": "Check out lesson substitutions and cancellations",
     "create": "Create Substitution",
     "edit": "Edit Substitution",
     "save": "Save",
     "refresh": "Refresh",
+    "showPast": "Show past substitutions",
     "date": "Date",
     "datePlaceholder": "Select a date",
     "substituteTeacher": "Substitute Teacher",
@@ -141,7 +165,8 @@
     "updateError": "Failed to update substitution",
     "deleteSuccess": "Substitution deleted successfully",
     "deleteError": "Failed to delete substitution",
-    "deleteConfirm": "Delete this substitution? This action cannot be undone.",
+    "deleteConfirm": "Delete Substitution",
+    "deleteDescription": "Are you sure you want to delete this substitution? This action cannot be undone.",
     "loadError": "Unable to load substitutions",
     "loadErrorMessage": "Please try again later.",
     "availableForClass": "Substitutions are available for {{className}}",
@@ -152,10 +177,13 @@
   "movedLesson": {
     "title": "Moved Lessons",
     "description": "Manage lessons that have been moved to different times or rooms",
+    "moved": "Moved",
+    "available": "Moved lessons available",
     "create": "Create Moved Lesson",
     "edit": "Edit Moved Lesson",
     "save": "Save",
     "refresh": "Refresh",
+    "showPast": "Show past",
     "date": "Date",
     "datePlaceholder": "Select a date",
     "targetDay": "Target Day",

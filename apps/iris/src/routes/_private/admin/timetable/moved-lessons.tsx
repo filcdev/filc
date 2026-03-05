@@ -6,13 +6,23 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRightLeft,
+  ArrowUp,
+  ArrowUpDown,
+  Pen,
+  Plus,
+  RefreshCw,
+  Trash,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -54,6 +64,16 @@ type EnrichedLesson = Omit<
   'createdAt' | 'updatedAt'
 >;
 
+const dayOrderMap = new Map([
+  ['Hé', 0], // Hétfő (Monday)
+  ['Ke', 1], // Kedd (Tuesday)
+  ['Sz', 2], // Szerda (Wednesday)
+  ['Cs', 3], // Csütörtök (Thursday)
+  ['Pé', 4], // Péntek (Friday)
+  ['O', 5], // Szombat (Saturday)
+  ['Va', 6], // Vasárnap (Sunday)
+]);
+
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
     component: () => (
@@ -63,6 +83,25 @@ export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
     ),
   }
 );
+
+function SortIcon({
+  column,
+  currentColumn,
+  direction,
+}: {
+  column: 'date' | 'day' | 'period' | 'room' | 'count';
+  currentColumn: 'date' | 'day' | 'period' | 'room' | 'count' | null;
+  direction: 'asc' | 'desc' | null;
+}) {
+  if (currentColumn !== column) {
+    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+  }
+  return direction === 'asc' ? (
+    <ArrowUp className="h-4 w-4" />
+  ) : (
+    <ArrowDown className="h-4 w-4" />
+  );
+}
 
 function extractFromMovedLessons(
   movedLessons: MovedLessonItem[],
@@ -117,11 +156,15 @@ function extractReferenceData(
   extractFromMovedLessons(movedLessons, periodMap, dayMap);
   extractFromSubstitutions(subs, periodMap, dayMap, lessonMap);
 
+  const sortedDays = Array.from(dayMap.values()).sort((a, b) => {
+    const aOrder = dayOrderMap.get(a.short) ?? 999;
+    const bOrder = dayOrderMap.get(b.short) ?? 999;
+    return aOrder - bOrder;
+  });
+
   return {
     allLessons: Array.from(lessonMap.values()),
-    days: Array.from(dayMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    ),
+    days: sortedDays,
     periods: Array.from(periodMap.values()).sort((a, b) => a.period - b.period),
   };
 }
@@ -135,6 +178,13 @@ function MovedLessonsPage() {
   const [selectedItem, setSelectedItem] = useState<MovedLessonItem | null>(
     null
   );
+  const [sortColumn, setSortColumn] = useState<
+    'date' | 'day' | 'period' | 'room' | 'count' | null
+  >(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
+    null
+  );
+  const [showPast, setShowPast] = useState(false);
 
   const hasWritePermission = useHasPermission(
     'movedLesson:create',
@@ -273,28 +323,101 @@ function MovedLessonsPage() {
   });
 
   const filteredMovedLessons = useMemo(() => {
-    const list = movedLessonsQuery.data ?? [];
+    let list = movedLessonsQuery.data ?? [];
     const term = search.trim().toLowerCase();
-    if (!term) {
-      return list;
-    }
-    return list.filter((ml) => {
-      const roomName = ml.classroom?.name?.toLowerCase() ?? '';
-      const dayName = ml.dayDefinition?.name?.toLowerCase() ?? '';
-      return (
-        ml.movedLesson.date.includes(term) ||
-        roomName.includes(term) ||
-        dayName.includes(term)
-      );
-    });
-  }, [movedLessonsQuery.data, search]);
+    const today = dayjs().startOf('day');
 
+    // Dátum szerinti szűrés (csak mai és jövőbeli, ha showPast false)
+    if (!showPast) {
+      list = list.filter((ml) => {
+        const mlDate = dayjs(ml.movedLesson.date).startOf('day');
+        return !mlDate.isBefore(today);
+      });
+    }
+
+    // Keresés szerinti szűrés
+    if (term) {
+      list = list.filter((ml) => {
+        const roomName = ml.classroom?.name?.toLowerCase() ?? '';
+        const dayName = ml.dayDefinition?.name?.toLowerCase() ?? '';
+        return (
+          ml.movedLesson.date.includes(term) ||
+          roomName.includes(term) ||
+          dayName.includes(term)
+        );
+      });
+    }
+
+    // Rendezés
+    if (sortColumn && sortDirection) {
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: sorting logic
+      list = [...list].sort((a, b) => {
+        // Special handling for 'day' column - order by week day sequence
+        if (sortColumn === 'day') {
+          const aOrder = dayOrderMap.get(a.dayDefinition?.short ?? '') ?? 999;
+          const bOrder = dayOrderMap.get(b.dayDefinition?.short ?? '') ?? 999;
+          const comparison = aOrder - bOrder;
+          return sortDirection === 'asc' ? comparison : -comparison;
+        }
+
+        const aVal = getMovedLessonSortValue(a, sortColumn);
+        const bVal = getMovedLessonSortValue(b, sortColumn);
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          const comparison = aVal.localeCompare(bVal);
+          return sortDirection === 'asc' ? comparison : -comparison;
+        }
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        return 0;
+      });
+    }
+
+    return list;
+  }, [movedLessonsQuery.data, search, sortColumn, sortDirection, showPast]);
+
+  const handleSort = (column: 'date' | 'day' | 'period' | 'room' | 'count') => {
+    if (sortColumn === column) {
+      // Ugyanaz az oszlop: asc -> desc -> null
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      // Új oszlop: kezdjük asc-vel
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const create = api.timetable.movedLessons.$post;
   const upd = api.timetable.movedLessons[':id'].$put;
-  const handleSave = async (payload: InferRequestType<typeof upd>['json']) => {
+  type MovedLessonPayload = InferRequestType<typeof create>['json'];
+
+  const handleSave = async (payload: MovedLessonPayload) => {
     if (selectedItem) {
+      // For updates, ensure all required fields are present
+      const hasAllFields =
+        Boolean(payload.room) &&
+        Boolean(payload.startingDay) &&
+        Boolean(payload.startingPeriod);
+      if (!hasAllFields) {
+        throw new Error('All fields are required for updates');
+      }
+      // At this point TypeScript knows these fields are defined
+      const updatePayload: InferRequestType<typeof upd>['json'] = {
+        date: payload.date,
+        lessonIds: payload.lessonIds ?? [],
+        room: payload.room as string,
+        startingDay: payload.startingDay as string,
+        startingPeriod: payload.startingPeriod as string,
+      };
       await updateMutation.mutateAsync({
         id: selectedItem.movedLesson.id,
-        payload,
+        payload: updatePayload,
       });
     } else {
       await createMutation.mutateAsync(payload);
@@ -331,6 +454,19 @@ function MovedLessonsPage() {
           placeholder={t('search')}
           value={search}
         />
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={showPast}
+            id="show-past-moved"
+            onCheckedChange={(checked) => setShowPast(checked === true)}
+          />
+          <label
+            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="show-past-moved"
+          >
+            {t('movedLesson.showPast')}
+          </label>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => movedLessonsQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
@@ -363,80 +499,144 @@ function MovedLessonsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('movedLesson.date')}</TableHead>
-              <TableHead>{t('movedLesson.targetDay')}</TableHead>
-              <TableHead>{t('movedLesson.targetPeriod')}</TableHead>
-              <TableHead>{t('movedLesson.targetRoom')}</TableHead>
-              <TableHead>{t('movedLesson.lessonsCount')}</TableHead>
-              {hasWritePermission && (
-                <TableHead>{t('movedLesson.actions')}</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMovedLessons.map((ml) => (
-              <TableRow key={ml.movedLesson.id}>
-                <TableCell className="font-medium">
-                  {dayjs(ml.movedLesson.date).format('YYYY/MM/DD')}
-                </TableCell>
-                <TableCell>
-                  {ml.dayDefinition
-                    ? `${ml.dayDefinition.name} (${ml.dayDefinition.short})`
-                    : '-'}
-                </TableCell>
-                <TableCell>
-                  {ml.period
-                    ? `P${ml.period.period} (${ml.period.startTime.toString().slice(0, 5)}\u2013${ml.period.endTime.toString().slice(0, 5)})`
-                    : '-'}
-                </TableCell>
-                <TableCell>{ml.classroom ? ml.classroom.name : '-'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
-                    {ml.lessons.length}
+        <div className="overflow-x-auto rounded-md border">
+          <Table className="table-fixed">
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('date')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('movedLesson.date')}
+                    <SortIcon
+                      column="date"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
                   </div>
-                </TableCell>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('day')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('movedLesson.targetDay')}
+                    <SortIcon
+                      column="day"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('period')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('movedLesson.targetPeriod')}
+                    <SortIcon
+                      column="period"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('room')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('movedLesson.targetRoom')}
+                    <SortIcon
+                      column="room"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('count')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('movedLesson.lessonsCount')}
+                    <SortIcon
+                      column="count"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
                 {hasWritePermission && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setSelectedItem(ml);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleDelete(ml)}
-                        size="icon"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableHead>{t('movedLesson.actions')}</TableHead>
                 )}
               </TableRow>
-            ))}
-            {!(filteredMovedLessons.length || hasError) && (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground"
-                  colSpan={hasWritePermission ? 6 : 5}
-                >
-                  {t('movedLesson.noMovedLessons')}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredMovedLessons.map((ml) => (
+                <TableRow key={ml.movedLesson.id}>
+                  <TableCell className="font-medium">
+                    {dayjs(ml.movedLesson.date).format('YYYY/MM/DD')}
+                  </TableCell>
+                  <TableCell>
+                    {ml.dayDefinition
+                      ? `${ml.dayDefinition.name} (${ml.dayDefinition.short})`
+                      : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {ml.period
+                      ? `P${ml.period.period} (${ml.period.startTime.toString().slice(0, 5)}\u2013${ml.period.endTime.toString().slice(0, 5)})`
+                      : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {ml.classroom ? ml.classroom.name : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
+                      {ml.lessons.length}
+                    </div>
+                  </TableCell>
+                  {hasWritePermission && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setSelectedItem(ml);
+                            setDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pen className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          disabled={deleteMutation.isPending}
+                          onClick={() => handleDelete(ml)}
+                          size="icon"
+                          variant="destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {!(filteredMovedLessons.length || hasError) && (
+                <TableRow>
+                  <TableCell
+                    className="text-muted-foreground"
+                    colSpan={hasWritePermission ? 6 : 5}
+                  >
+                    {t('movedLesson.noMovedLessons')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {hasWritePermission && (
@@ -470,4 +670,24 @@ function useHasPermission(permission: string, permissions?: string[] | null) {
     return true;
   }
   return permissions.includes(permission);
+}
+
+function getMovedLessonSortValue(
+  ml: MovedLessonItem,
+  sortColumn: 'date' | 'day' | 'period' | 'room' | 'count'
+): string | number {
+  switch (sortColumn) {
+    case 'date':
+      return ml.movedLesson.date;
+    case 'day':
+      return ml.dayDefinition?.name ?? '';
+    case 'period':
+      return ml.period?.period ?? 0;
+    case 'room':
+      return ml.classroom?.name ?? '';
+    case 'count':
+      return ml.lessons.length;
+    default:
+      return '';
+  }
 }
