@@ -5,6 +5,7 @@ import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#database/schema/doorlock';
+import { newsSchema } from '#database/schema/news';
 import { timetableSchema } from '#database/schema/timetable';
 import { env } from '#utils/environment';
 
@@ -37,6 +38,7 @@ const schema = {
   ...authenticationSchema,
   ...authorizationSchema,
   ...doorlockSchema,
+  ...newsSchema,
   ...timetableSchema,
 };
 

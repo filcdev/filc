@@ -15,6 +15,7 @@ import { corsMiddleware, securityMiddleware } from '#middleware/security';
 import { timingMiddleware } from '#middleware/timing';
 import { cohortRouter } from '#routes/cohort/_router';
 import { doorlockRouter } from '#routes/doorlock/_router';
+import { newsRouter } from '#routes/news/_router';
 import { pingRouter } from '#routes/ping/_router';
 import { rolesRouter } from '#routes/roles/_router';
 import { timetableRouter } from '#routes/timetable/_router';
@@ -85,6 +86,7 @@ api.route('/cohort', cohortRouter);
 api.route('/doorlock', doorlockRouter);
 api.route('/users', usersRouter);
 api.route('/roles', rolesRouter);
+api.route('/news', newsRouter);
 
 api.onError((err, c) => {
   if (err instanceof HTTPException) {
