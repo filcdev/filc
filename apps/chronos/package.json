@@ -12,6 +12,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.5.3",
     "@hono/standard-validator": "^0.2.2",
     "@hono/swagger-ui": "^0.6.0",
     "@hono/zod-validator": "^0.7.6",
