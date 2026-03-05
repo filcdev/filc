@@ -8,7 +8,7 @@
     "typescript": "catalog:"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,css,md}": "bunx biome check --write"
+    "*.{ts,tsx,js,jsx,json,css}": "bunx biome check --write"
   },
   "packageManager": "bun@1.3.10",
   "private": true,
