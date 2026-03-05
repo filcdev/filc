@@ -160,7 +160,15 @@ const validateMovedLessonReferences = async (options: {
 };
 
 const getAllResponseSchema = z.object({
-  data: createSelectSchema(movedLesson),
+  data: z.array(
+    z.object({
+      classroom: createSelectSchema(classroom).nullable(),
+      dayDefinition: createSelectSchema(dayDefinition).nullable(),
+      lessons: z.array(z.string()),
+      movedLesson: createSelectSchema(movedLesson),
+      period: createSelectSchema(period).nullable(),
+    })
+  ),
   success: z.boolean(),
 });
 

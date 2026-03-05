@@ -109,8 +109,33 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   });
 }
 
+const enrichedLessonSchema = z.object({
+  classrooms: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  day: createSelectSchema(dayDefinition).optional(),
+  id: z.string(),
+  period: z
+    .object({
+      endTime: z.string(),
+      id: z.string(),
+      period: z.number(),
+      startTime: z.string(),
+    })
+    .nullable(),
+  periodsPerWeek: z.number(),
+  subject: z
+    .object({ id: z.string(), name: z.string(), short: z.string() })
+    .nullable(),
+  teachers: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  termDefinitionId: z.string().nullable(),
+  weeksDefinitionId: z.string(),
+});
+
 const responseSchema = z.object({
-  data: createSelectSchema(lesson).array(),
+  data: enrichedLessonSchema.array(),
   success: z.boolean(),
 });
 
@@ -317,7 +342,11 @@ export const getLessonForId = timetableFactory.createHandlers(
           'application/json': {
             schema: resolver(
               z.object({
-                data: createSelectSchema(lesson).nullable(),
+                data: enrichedLessonSchema
+                  .extend({
+                    substitutionCohortName: z.string().nullable(),
+                  })
+                  .nullable(),
                 success: z.boolean(),
               })
             ),
