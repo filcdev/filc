@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
 import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
+import { NewsPanel } from '@/components/news-panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
@@ -119,6 +120,7 @@ export function SubstitutionView() {
           </div>
         </div>
       </div>
+      <NewsPanel />
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />

@@ -213,6 +213,35 @@
     "loadError": "Nem sikerült betölteni az áthelyezett órákat",
     "loadErrorMessage": "Kérlek próbáld újra később."
   },
+  "news": {
+    "title": "Hírek"
+  },
+  "announcements": {
+    "title": "Bejelentések",
+    "description": "Iskolai bejelentések és hírek kezelése",
+    "create": "Bejelentés létrehozása",
+    "edit": "Bejelentés szerkesztése",
+    "save": "Mentés",
+    "delete": "Törlés",
+    "content": "Tartalom",
+    "validFrom": "Érvényes ettől",
+    "validUntil": "Érvényes eddig",
+    "cohorts": "Csoportok",
+    "noCohorts": "Minden",
+    "noAnnouncements": "Nincsenek bejelentések",
+    "actions": "Műveletek",
+    "refresh": "Frissítés",
+    "createSuccess": "Bejelentés sikeresen létrehozva",
+    "createError": "Nem sikerült létrehozni a bejelentést",
+    "updateSuccess": "Bejelentés sikeresen frissítve",
+    "updateError": "Nem sikerült frissíteni a bejelentést",
+    "deleteSuccess": "Bejelentés sikeresen törölve",
+    "deleteError": "Nem sikerült törölni a bejelentést",
+    "deleteConfirm": "Bejelentés törlése",
+    "deleteDescription": "Törölni akarod ezt a bejelentést? Ez a művelet nem vonható vissza.",
+    "loadError": "Nem sikerült betölteni a bejelentéseket",
+    "loadErrorMessage": "Kérlek próbáld újra később."
+  },
   "auth": {
     "error": {
       "returnToHome": "Vissza a kezdőlapra",
