@@ -47,7 +47,9 @@ const initialState = (item?: AnnouncementItem | null) => {
 
   return {
     cohortIds: item?.cohortIds ?? [],
-    content: (Array.isArray(item?.content) ? item.content : defaultContent) as Array<{
+    content: (Array.isArray(item?.content)
+      ? item.content
+      : defaultContent) as Array<{
       content: string;
       type: string;
     }>,

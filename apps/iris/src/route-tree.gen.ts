@@ -25,6 +25,7 @@ import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private
 import { Route as PrivateAdminTimetableSubstitutionsRouteImport } from './routes/_private/admin/timetable/substitutions'
 import { Route as PrivateAdminTimetableMovedLessonsRouteImport } from './routes/_private/admin/timetable/moved-lessons'
 import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
+import { Route as PrivateAdminNewsAnnouncementsRouteImport } from './routes/_private/admin/news/announcements'
 import { Route as PrivateAdminDoorlockLogsRouteImport } from './routes/_private/admin/doorlock/logs'
 import { Route as PrivateAdminDoorlockDevicesRouteImport } from './routes/_private/admin/doorlock/devices'
 import { Route as PrivateAdminDoorlockCardsRouteImport } from './routes/_private/admin/doorlock/cards'
@@ -111,6 +112,12 @@ const PrivateAdminTimetableImportRoute =
     path: '/timetable/import',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
+const PrivateAdminNewsAnnouncementsRoute =
+  PrivateAdminNewsAnnouncementsRouteImport.update({
+    id: '/news/announcements',
+    path: '/news/announcements',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
 const PrivateAdminDoorlockLogsRoute =
   PrivateAdminDoorlockLogsRouteImport.update({
     id: '/doorlock/logs',
@@ -144,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
   '/admin/timetable/moved-lessons': typeof PrivateAdminTimetableMovedLessonsRoute
   '/admin/timetable/substitutions': typeof PrivateAdminTimetableSubstitutionsRoute
@@ -163,6 +171,7 @@ export interface FileRoutesByTo {
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
   '/admin/timetable/moved-lessons': typeof PrivateAdminTimetableMovedLessonsRoute
   '/admin/timetable/substitutions': typeof PrivateAdminTimetableSubstitutionsRoute
@@ -185,6 +194,7 @@ export interface FileRoutesById {
   '/_private/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/_private/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/_private/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/_private/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
   '/_private/admin/timetable/moved-lessons': typeof PrivateAdminTimetableMovedLessonsRoute
   '/_private/admin/timetable/substitutions': typeof PrivateAdminTimetableSubstitutionsRoute
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
+    | '/admin/news/announcements'
     | '/admin/timetable/import'
     | '/admin/timetable/moved-lessons'
     | '/admin/timetable/substitutions'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
+    | '/admin/news/announcements'
     | '/admin/timetable/import'
     | '/admin/timetable/moved-lessons'
     | '/admin/timetable/substitutions'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
     | '/_private/admin/doorlock/cards'
     | '/_private/admin/doorlock/devices'
     | '/_private/admin/doorlock/logs'
+    | '/_private/admin/news/announcements'
     | '/_private/admin/timetable/import'
     | '/_private/admin/timetable/moved-lessons'
     | '/_private/admin/timetable/substitutions'
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminTimetableImportRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/news/announcements': {
+      id: '/_private/admin/news/announcements'
+      path: '/news/announcements'
+      fullPath: '/admin/news/announcements'
+      preLoaderRoute: typeof PrivateAdminNewsAnnouncementsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/doorlock/logs': {
       id: '/_private/admin/doorlock/logs'
       path: '/doorlock/logs'
@@ -404,6 +424,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminDoorlockCardsRoute: typeof PrivateAdminDoorlockCardsRoute
   PrivateAdminDoorlockDevicesRoute: typeof PrivateAdminDoorlockDevicesRoute
   PrivateAdminDoorlockLogsRoute: typeof PrivateAdminDoorlockLogsRoute
+  PrivateAdminNewsAnnouncementsRoute: typeof PrivateAdminNewsAnnouncementsRoute
   PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
   PrivateAdminTimetableMovedLessonsRoute: typeof PrivateAdminTimetableMovedLessonsRoute
   PrivateAdminTimetableSubstitutionsRoute: typeof PrivateAdminTimetableSubstitutionsRoute
@@ -416,6 +437,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminDoorlockCardsRoute: PrivateAdminDoorlockCardsRoute,
   PrivateAdminDoorlockDevicesRoute: PrivateAdminDoorlockDevicesRoute,
   PrivateAdminDoorlockLogsRoute: PrivateAdminDoorlockLogsRoute,
+  PrivateAdminNewsAnnouncementsRoute: PrivateAdminNewsAnnouncementsRoute,
   PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
   PrivateAdminTimetableMovedLessonsRoute:
     PrivateAdminTimetableMovedLessonsRoute,
