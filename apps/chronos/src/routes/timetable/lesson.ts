@@ -17,7 +17,7 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
@@ -109,8 +109,33 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   });
 }
 
+const enrichedLessonSchema = z.object({
+  classrooms: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  day: createSelectSchema(dayDefinition).optional(),
+  id: z.string(),
+  period: z
+    .object({
+      endTime: z.string(),
+      id: z.string(),
+      period: z.number(),
+      startTime: z.string(),
+    })
+    .nullable(),
+  periodsPerWeek: z.number(),
+  subject: z
+    .object({ id: z.string(), name: z.string(), short: z.string() })
+    .nullable(),
+  teachers: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  termDefinitionId: z.string().nullable(),
+  weeksDefinitionId: z.string(),
+});
+
 const responseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
+  data: enrichedLessonSchema.array(),
   success: z.boolean(),
 });
 
@@ -132,7 +157,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(responseSchema)),
+            schema: resolver(responseSchema),
           },
         },
         description: 'Successful Response',
@@ -195,7 +220,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(responseSchema)),
+            schema: resolver(responseSchema),
           },
         },
         description: 'Successful Response',
@@ -255,7 +280,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(responseSchema)),
+            schema: resolver(responseSchema),
           },
         },
         description: 'Successful Response',
@@ -316,12 +341,14 @@ export const getLessonForId = timetableFactory.createHandlers(
         content: {
           'application/json': {
             schema: resolver(
-              ensureJsonSafeDates(
-                z.object({
-                  data: createSelectSchema(lesson).nullable(),
-                  success: z.boolean(),
-                })
-              )
+              z.object({
+                data: enrichedLessonSchema
+                  .extend({
+                    substitutionCohortName: z.string().nullable(),
+                  })
+                  .nullable(),
+                success: z.boolean(),
+              })
             ),
           },
         },

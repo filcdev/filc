@@ -8,7 +8,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'timetable']);
@@ -32,7 +32,7 @@ export const getAllTimetables = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(getAllResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -72,7 +72,7 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getLatestValidReponseSchema)),
+            schema: resolver(getLatestValidReponseSchema),
           },
         },
         description: 'Successful Response',
@@ -117,7 +117,7 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getAllResponseSchema)),
+            schema: resolver(getAllResponseSchema),
           },
         },
         description: 'Successful Response',

@@ -9,7 +9,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'devices']);
@@ -72,7 +72,7 @@ export const listDevicesRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(devicesResponseSchema)),
+            schema: resolver(devicesResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -109,7 +109,7 @@ export const createDeviceRoute = doorlockFactory.createHandlers(
       201: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(deviceResponseSchema)),
+            schema: resolver(deviceResponseSchema),
           },
         },
         description: 'Device created',
@@ -163,7 +163,7 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(deviceResponseSchema)),
+            schema: resolver(deviceResponseSchema),
           },
         },
         description: 'Device updated',

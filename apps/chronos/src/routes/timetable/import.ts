@@ -12,7 +12,6 @@ import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
 import { importTimetableXML } from '#utils/timetable/imports';
 import { timetableExportRootSchema } from '#utils/timetable/schemas';
-import { ensureJsonSafeDates } from '#utils/zod';
 
 const logger = getLogger(['chronos', 'timetable']);
 
@@ -32,9 +31,7 @@ export const importRoute = timetableFactory.createHandlers(
     requestBody: {
       content: {
         'multipart/form-data': {
-          schema: (
-            await resolver(ensureJsonSafeDates(importSchema)).toOpenAPISchema()
-          ).schema,
+          schema: (await resolver(importSchema).toOpenAPISchema()).schema,
         },
       },
       description: 'The data for the new timetable.',
@@ -43,7 +40,7 @@ export const importRoute = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(importResponseSchema)),
+            schema: resolver(importResponseSchema),
           },
         },
         description: 'Successful Response',

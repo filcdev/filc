@@ -7,7 +7,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const auditLogSelectSchema = createSelectSchema(auditLog);
@@ -178,7 +178,7 @@ export const listLogsRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(logsResponseSchema)),
+            schema: resolver(logsResponseSchema),
           },
         },
         description: 'Successful response',

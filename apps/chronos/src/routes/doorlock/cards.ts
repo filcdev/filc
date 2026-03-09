@@ -18,7 +18,7 @@ import {
   replaceCardDevices,
 } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
-import { createSelectSchema, ensureJsonSafeDates } from '#utils/zod';
+import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'cards']);
@@ -102,7 +102,7 @@ export const listCardsRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(cardsResponseSchema)),
+            schema: resolver(cardsResponseSchema),
           },
         },
         description: 'Successful response',
@@ -171,7 +171,7 @@ export const createCardRoute = doorlockFactory.createHandlers(
       201: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(cardResponseSchema)),
+            schema: resolver(cardResponseSchema),
           },
         },
         description: 'Card created',
@@ -254,7 +254,7 @@ export const updateCardRoute = doorlockFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(cardResponseSchema)),
+            schema: resolver(cardResponseSchema),
           },
         },
         description: 'Card updated',

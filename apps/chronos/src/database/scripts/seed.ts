@@ -19,6 +19,12 @@ import {
   deviceHealth,
 } from '#database/schema/doorlock';
 import {
+  announcement,
+  announcementCohortMtm,
+  blogPost,
+  systemMessage,
+} from '#database/schema/news';
+import {
   classroom,
   cohort,
   dayDefinition,
@@ -640,24 +646,203 @@ const seedDoorlock = async (baseData: BaseData) => {
   logger.info('Doorlock module seeded successfully');
 };
 
+const seedNews = async (baseData: BaseData) => {
+  logger.info('Seeding news module...');
+
+  const authorId = baseData.users[0]?.id ?? (await seedUsers())[0]?.id;
+  if (!authorId) {
+    logger.warn('No users available. Skipping news seeding.');
+    return;
+  }
+
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const oneWeekAgoEnd = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+  // Announcements
+  const [globalAnnouncement] = await db
+    .insert(announcement)
+    .values({
+      authorId,
+      content: [
+        {
+          content:
+            'Welcome back to a new semester! We hope you had a great break.',
+          type: 'paragraph',
+        },
+        {
+          content:
+            'Please check the new timetables and contact your homeroom teacher if you have questions.',
+          type: 'paragraph',
+        },
+      ],
+      title: 'Welcome Back to School',
+      validFrom: oneWeekAgo,
+      validUntil: oneWeekFromNow,
+    })
+    .returning();
+  if (globalAnnouncement) {
+    logger.info(`Created global announcement: ${globalAnnouncement.id}`);
+  }
+
+  // Cohort-targeted announcement
+  const targetCohort = baseData.cohorts[0];
+  const [cohortAnnouncement] = await db
+    .insert(announcement)
+    .values({
+      authorId,
+      content: [
+        {
+          content:
+            'Please submit your signed permission slips for the upcoming field trip by Friday.',
+          type: 'paragraph',
+        },
+      ],
+      title: 'Field Trip Permission Slips Due',
+      validFrom: now,
+      validUntil: twoWeeksFromNow,
+    })
+    .returning();
+
+  if (targetCohort && cohortAnnouncement) {
+    await db.insert(announcementCohortMtm).values({
+      announcementId: cohortAnnouncement.id,
+      cohortId: targetCohort.id,
+    });
+  }
+  if (cohortAnnouncement) {
+    logger.info(
+      `Created cohort-targeted announcement: ${cohortAnnouncement.id}`
+    );
+  }
+
+  // Expired announcement
+  await db.insert(announcement).values({
+    authorId,
+    content: [
+      {
+        content:
+          'Due to weather conditions, the holiday schedule has been adjusted.',
+        type: 'paragraph',
+      },
+    ],
+    title: 'Holiday Schedule Change',
+    validFrom: twoWeeksAgo,
+    validUntil: oneWeekAgoEnd,
+  });
+  logger.info('Created expired announcement');
+
+  // System messages
+  await db.insert(systemMessage).values({
+    authorId,
+    content: [
+      {
+        content:
+          'The school portal will be undergoing scheduled maintenance this weekend.',
+        type: 'paragraph',
+      },
+      { content: 'Expected downtime: Saturday 2AM - 6AM.', type: 'paragraph' },
+    ],
+    title: 'Scheduled Maintenance',
+    validFrom: now,
+    validUntil: oneWeekFromNow,
+  });
+
+  await db.insert(systemMessage).values({
+    authorId,
+    content: [
+      {
+        content:
+          'You can now view your timetable on the mobile app! Update to the latest version to try it out.',
+        type: 'paragraph',
+      },
+    ],
+    title: 'New Feature: Mobile Timetable',
+    validFrom: oneWeekAgo,
+    validUntil: twoWeeksFromNow,
+  });
+  logger.info('Created 2 system messages');
+
+  // Blog posts
+  await db.insert(blogPost).values({
+    authorId,
+    content: [
+      {
+        content:
+          'We are proud to announce the winners of this years annual science fair!',
+        type: 'paragraph',
+      },
+      {
+        content:
+          'First place goes to the Solar Energy project by the 10th grade team.',
+        type: 'paragraph',
+      },
+    ],
+    publishedAt: oneWeekAgo,
+    slug: 'annual-science-fair-results',
+    status: 'published',
+    title: 'Annual Science Fair Results',
+  });
+
+  await db.insert(blogPost).values({
+    authorId,
+    content: [
+      {
+        content:
+          'What an incredible Sports Day! Here are the highlights from the event.',
+        type: 'paragraph',
+      },
+    ],
+    publishedAt: now,
+    slug: 'sports-day-highlights',
+    status: 'published',
+    title: 'Sports Day Highlights',
+  });
+
+  await db.insert(blogPost).values({
+    authorId,
+    content: [
+      {
+        content:
+          'Draft: We are considering several changes to the curriculum for the next academic year.',
+        type: 'paragraph',
+      },
+    ],
+    slug: 'upcoming-curriculum-changes',
+    status: 'draft',
+    title: 'Upcoming Curriculum Changes',
+  });
+  logger.info('Created 3 blog posts (2 published, 1 draft)');
+
+  logger.info('News module seeded successfully');
+};
+
 const handleUserCreation = async (
   modules: string[],
   baseData: BaseData
 ): Promise<BaseData> => {
-  if (modules.includes('doorlock') && baseData.users.length === 0) {
+  if (
+    (modules.includes('doorlock') || modules.includes('news')) &&
+    baseData.users.length === 0
+  ) {
     const createUsers = await confirm({
       message:
-        'No users found. Do you want to create sample users for doorlock seeding?',
+        'No users found. Do you want to create sample users for seeding?',
     });
 
     if (createUsers) {
       await seedUsers();
       return fetchBaseData();
     }
-    logger.warn('Doorlock seeding requires users. Skipping doorlock module.');
-    const doorlockIndex = modules.indexOf('doorlock');
-    if (doorlockIndex > -1) {
-      modules.splice(doorlockIndex, 1);
+    logger.warn('Skipping modules that require users.');
+    for (const mod of ['doorlock', 'news']) {
+      const idx = modules.indexOf(mod);
+      if (idx > -1) {
+        modules.splice(idx, 1);
+      }
     }
   }
   return baseData;
@@ -691,7 +876,7 @@ const seed = async () => {
     choices: [
       { name: 'Substitutions and Moved Lessons', value: 'lessons' },
       { name: 'Doorlock (Devices, Cards, Logs)', value: 'doorlock' },
-      // Future modules can be added here
+      { name: 'News (Announcements, System Messages, Blogs)', value: 'news' },
     ],
     message: 'Select which modules to seed:',
   });
@@ -699,6 +884,7 @@ const seed = async () => {
   const moduleMapping = {
     doorlock: seedDoorlock,
     lessons: seedLessons,
+    news: seedNews,
   };
 
   if (modules.length === 0) {

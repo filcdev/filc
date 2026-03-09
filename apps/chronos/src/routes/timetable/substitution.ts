@@ -25,7 +25,6 @@ import {
   createInsertSchema,
   createSelectSchema,
   createUpdateSchema,
-  ensureJsonSafeDates,
 } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -33,8 +32,65 @@ const logger = getLogger(['chronos', 'substitutions']);
 
 const substitutionSchema = createSelectSchema(substitution);
 
-const allResponseSchema = z.object({
-  data: z.array(substitutionSchema),
+// Enriched lesson schema for substitution endpoints
+const enrichedSubstitutionLessonSchema = z.object({
+  classrooms: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  cohorts: z.array(z.string()),
+  day: createSelectSchema(dayDefinition).optional(),
+  id: z.string(),
+  period: z
+    .object({
+      endTime: z.string(),
+      id: z.string(),
+      period: z.number(),
+      startTime: z.string(),
+    })
+    .nullable(),
+  periodsPerWeek: z.number(),
+  subject: z
+    .object({ id: z.string(), name: z.string(), short: z.string() })
+    .nullable(),
+  teachers: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  termDefinitionId: z.string().nullable(),
+  weeksDefinitionId: z.string(),
+});
+
+const allSubstitutionsResponseSchema = z.object({
+  data: z.array(
+    z.object({
+      lessons: z.array(enrichedSubstitutionLessonSchema),
+      substitution: substitutionSchema,
+      teacher: z.object({
+        firstName: z.string().nullable(),
+        id: z.string().nullable(),
+        lastName: z.string().nullable(),
+        short: z.string().nullable(),
+      }),
+    })
+  ),
+  success: z.boolean(),
+});
+
+const relevantSubstitutionItemSchema = z.object({
+  lessons: z.array(z.string()),
+  substitution: substitutionSchema,
+  teacher: createSelectSchema(teacher).nullable(),
+});
+
+const relevantSubstitutionsResponseSchema = z.object({
+  data: z.array(relevantSubstitutionItemSchema),
+  success: z.boolean(),
+});
+
+const cohortSubstitutionsResponseSchema = z.object({
+  data: z.object({
+    cohortId: z.string(),
+    substitutions: z.array(relevantSubstitutionItemSchema),
+  }),
   success: z.boolean(),
 });
 
@@ -163,7 +219,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+            schema: resolver(allSubstitutionsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -255,7 +311,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+            schema: resolver(relevantSubstitutionsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -320,7 +376,7 @@ export const getRelevantSubstitutionsForCohort =
         200: {
           content: {
             'application/json': {
-              schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+              schema: resolver(cohortSubstitutionsResponseSchema),
             },
           },
           description: 'Successful Response',
@@ -384,6 +440,7 @@ export const getRelevantSubstitutionsForCohort =
 const createSchema = createInsertSchema(substitution)
   .omit({ id: true })
   .extend({
+    date: z.coerce.date<Date>(),
     lessonIds: z.string().array(),
   });
 
@@ -397,9 +454,7 @@ export const createSubstitution = timetableFactory.createHandlers(
     description: 'Create a new substitution',
     requestBody: {
       content: {
-        'multipart/form-data': await resolver(
-          ensureJsonSafeDates(createSchema)
-        ).toOpenAPISchema(),
+        'application/json': await resolver(createSchema).toOpenAPISchema(),
       },
       description: 'The data for the new substitution.',
     },
@@ -407,7 +462,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -417,7 +472,7 @@ export const createSubstitution = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('substitution:create'),
-  zValidator('json', ensureJsonSafeDates(createSchema)),
+  zValidator('json', createSchema),
   async (c) => {
     const { lessonIds, date, substituter } = c.req.valid('json');
 
@@ -433,7 +488,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       const [insertedSubstitution] = await tx
         .insert(substitution)
         .values({
-          date: new Date(date),
+          date,
           id: crypto.randomUUID(),
           substituter,
         })
@@ -470,6 +525,7 @@ export const createSubstitution = timetableFactory.createHandlers(
 const updateSchema = createUpdateSchema(substitution)
   .omit({ id: true })
   .extend({
+    date: z.coerce.date<Date>().optional(),
     lessonIds: z.string().array().nullable(),
   });
 
@@ -489,9 +545,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     ],
     requestBody: {
       content: {
-        'application/json': await resolver(
-          ensureJsonSafeDates(updateSchema)
-        ).toOpenAPISchema(),
+        'application/json': await resolver(updateSchema).toOpenAPISchema(),
       },
       description: 'The data for updating the substitution.',
     },
@@ -499,7 +553,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -510,7 +564,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('substitution:update'),
   zValidator('param', z.object({ id: z.uuid() })),
-  zValidator('json', ensureJsonSafeDates(updateSchema)),
+  zValidator('json', updateSchema),
   async (c) => {
     try {
       const { id } = c.req.valid('param');
@@ -545,7 +599,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         const [updated] = await tx
           .update(substitution)
           .set({
-            date: body.date ? new Date(body.date) : undefined,
+            date: body.date ?? undefined,
             substituter: body.substituter,
           })
           .where(eq(substitution.id, id))
@@ -603,7 +657,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(createResponseSchema)),
+            schema: resolver(createResponseSchema),
           },
         },
         description: 'Successful Response',
