@@ -214,8 +214,15 @@ export function NewsPanel() {
                         {renderBlockContent(item.content)}
                       </AlertDescription>
                       <div className="mt-2 text-muted-foreground text-xs">
-                        {new Date(item.validFrom).toLocaleDateString()} -{' '}
-                        {new Date(item.validUntil).toLocaleDateString()}
+                        {(() => {
+                          const from = new Date(
+                            item.validFrom
+                          ).toLocaleDateString();
+                          const until = new Date(
+                            item.validUntil
+                          ).toLocaleDateString();
+                          return from === until ? from : `${from} – ${until}`;
+                        })()}
                       </div>
                     </Alert>
                   ))}

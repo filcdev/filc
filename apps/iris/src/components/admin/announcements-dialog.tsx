@@ -37,6 +37,18 @@ type AnnouncementDialogProps = {
   open: boolean;
 };
 
+const startOfDay = (d: Date): Date => {
+  const out = new Date(d);
+  out.setHours(0, 0, 0, 0);
+  return out;
+};
+
+const endOfDay = (d: Date): Date => {
+  const out = new Date(d);
+  out.setHours(23, 59, 59, 999);
+  return out;
+};
+
 const initialState = (item?: AnnouncementItem | null) => {
   const defaultContent: Array<{ content: string; type: string }> = [
     {
@@ -54,10 +66,12 @@ const initialState = (item?: AnnouncementItem | null) => {
       type: string;
     }>,
     title: item?.title ?? '',
-    validFrom: item?.validFrom ? new Date(item.validFrom) : new Date(),
-    validUntil: item?.validUntil
-      ? new Date(item.validUntil)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000),
+    validFrom: startOfDay(
+      item?.validFrom ? new Date(item.validFrom) : new Date()
+    ),
+    validUntil: endOfDay(
+      item?.validUntil ? new Date(item.validUntil) : new Date()
+    ),
   };
 };
 
@@ -137,7 +151,7 @@ export function AnnouncementsDialog({
                 onDateChange={(date) =>
                   setFormState((prev) => ({
                     ...prev,
-                    validFrom: date ?? new Date(),
+                    validFrom: startOfDay(date ?? new Date()),
                   }))
                 }
               />
@@ -152,7 +166,7 @@ export function AnnouncementsDialog({
                 onDateChange={(date) =>
                   setFormState((prev) => ({
                     ...prev,
-                    validUntil: date ?? new Date(),
+                    validUntil: endOfDay(date ?? new Date()),
                   }))
                 }
               />
