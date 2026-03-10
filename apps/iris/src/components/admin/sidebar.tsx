@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
+  Bell,
   Calendar,
   DoorOpen,
   GraduationCap,
@@ -69,6 +70,17 @@ export function AdminSidebar() {
           },
         ],
         label: t('admin.timetable'),
+      },
+      {
+        items: [
+          {
+            icon: Bell,
+            permission: 'announcements:create',
+            title: t('announcements.title'),
+            url: '/admin/news/announcements',
+          },
+        ],
+        label: t('admin.communications'),
       },
       {
         items: [

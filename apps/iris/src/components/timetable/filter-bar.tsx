@@ -143,7 +143,7 @@ export function FilterBar({
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
   const comboboxContentId = `${filterSelectId}-content`;
-  const selectWidthClassName = activeFilter === 'class' ? 'w-40' : 'w-60';
+  const selectWidthClassName = activeFilter === 'class' ? 'w-50' : 'w-60';
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {

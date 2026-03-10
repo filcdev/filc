@@ -84,12 +84,22 @@
   "featureFlags": {},
   "admin": {
     "timetable": "Órarend",
+    "communications": "Kommunikáció",
     "doorlock": "Ajtózár",
     "management": "Kezelés",
     "users": "Felhasználók",
     "roles": "Szerepkörök"
   },
   "timetable": {
+    "selectClass": "Osztály kiválasztása",
+    "noClassFound": "Nem található osztály",
+    "searchClass": "Osztály keresése...",
+    "selectTeacher": "Tanár kiválasztása",
+    "noTeacherFound": "Nem található tanár",
+    "searchTeacher": "Tanár keresése...",
+    "selectClassroom": "Terem kiválasztása",
+    "noClassroomFound": "Nem található terem",
+    "searchClassroom": "Terem keresése...",
     "import": "Órarend importálása",
     "importDescription": "ÓMAN XML fájlok feltöltése és importálása",
     "uploadFile": "Órarend fájl feltöltése",
@@ -211,6 +221,35 @@
     "deleteError": "Nem sikerült törölni az áthelyezett órát",
     "deleteConfirm": "Törlöd ezt az áthelyezett órát? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni az áthelyezett órákat",
+    "loadErrorMessage": "Kérlek próbáld újra később."
+  },
+  "news": {
+    "title": "Hírek"
+  },
+  "announcements": {
+    "title": "Bejelentések",
+    "description": "Iskolai bejelentések és hírek kezelése",
+    "create": "Bejelentés létrehozása",
+    "edit": "Bejelentés szerkesztése",
+    "save": "Mentés",
+    "delete": "Törlés",
+    "content": "Tartalom",
+    "validFrom": "Érvényes ettől",
+    "validUntil": "Érvényes eddig",
+    "cohorts": "Csoportok (opcionális)",
+    "noCohorts": "Minden",
+    "noAnnouncements": "Nincsenek bejelentések",
+    "actions": "Műveletek",
+    "refresh": "Frissítés",
+    "createSuccess": "Bejelentés sikeresen létrehozva",
+    "createError": "Nem sikerült létrehozni a bejelentést",
+    "updateSuccess": "Bejelentés sikeresen frissítve",
+    "updateError": "Nem sikerült frissíteni a bejelentést",
+    "deleteSuccess": "Bejelentés sikeresen törölve",
+    "deleteError": "Nem sikerült törölni a bejelentést",
+    "deleteConfirm": "Bejelentés törlése",
+    "deleteDescription": "Törölni akarod ezt a bejelentést? Ez a művelet nem vonható vissza.",
+    "loadError": "Nem sikerült betölteni a bejelentéseket",
     "loadErrorMessage": "Kérlek próbáld újra később."
   },
   "auth": {

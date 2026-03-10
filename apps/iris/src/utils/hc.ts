@@ -1,6 +1,7 @@
 import type {
   CohortRouter,
   DoorlockRouter,
+  NewsRouter,
   PingRouter,
   RolesRouter,
   TimetableRouter,
@@ -17,6 +18,7 @@ const dOpts = {
 export const api = {
   cohort: hc<CohortRouter>('/api/cohort', dOpts),
   doorlock: hc<DoorlockRouter>('/api/doorlock', dOpts),
+  news: hc<NewsRouter>('/api/news', dOpts),
   ping: hc<PingRouter>('/api/ping', dOpts),
   roles: hc<RolesRouter>('/api/roles', dOpts),
   timetable: hc<TimetableRouter>('/api/timetable', dOpts),

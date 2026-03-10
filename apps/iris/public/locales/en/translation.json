@@ -95,12 +95,22 @@
   "featureFlags": {},
   "admin": {
     "timetable": "Timetable",
+    "communications": "Communications",
     "doorlock": "Doorlock",
     "management": "Management",
     "users": "Users",
     "roles": "Roles"
   },
   "timetable": {
+    "selectClass": "Select class",
+    "noClassFound": "No class found",
+    "searchClass": "Search for a class...",
+    "selectTeacher": "Select teacher",
+    "noTeacherFound": "No teacher found",
+    "searchTeacher": "Search for a teacher...",
+    "selectClassroom": "Select classroom",
+    "noClassroomFound": "No classroom found",
+    "searchClassroom": "Search for a classroom...",
     "import": "Import Timetable",
     "importDescription": "Upload and import timetable data from ÓMAN XML files",
     "uploadFile": "Upload Timetable File",
@@ -211,6 +221,35 @@
     "deleteError": "Failed to delete moved lesson",
     "deleteConfirm": "Delete this moved lesson? This action cannot be undone.",
     "loadError": "Unable to load moved lessons",
+    "loadErrorMessage": "Please try again later."
+  },
+  "news": {
+    "title": "News"
+  },
+  "announcements": {
+    "title": "Announcements",
+    "description": "Manage school announcements and news",
+    "create": "Create Announcement",
+    "edit": "Edit Announcement",
+    "save": "Save",
+    "delete": "Delete",
+    "content": "Content",
+    "validFrom": "Valid From",
+    "validUntil": "Valid Until",
+    "cohorts": "Cohorts (Optional)",
+    "noCohorts": "All",
+    "noAnnouncements": "No announcements found",
+    "actions": "Actions",
+    "refresh": "Refresh",
+    "createSuccess": "Announcement created successfully",
+    "createError": "Failed to create announcement",
+    "updateSuccess": "Announcement updated successfully",
+    "updateError": "Failed to update announcement",
+    "deleteSuccess": "Announcement deleted successfully",
+    "deleteError": "Failed to delete announcement",
+    "deleteConfirm": "Delete Announcement",
+    "deleteDescription": "Are you sure you want to delete this announcement? This action cannot be undone.",
+    "loadError": "Unable to load announcements",
     "loadErrorMessage": "Please try again later."
   },
   "auth": {

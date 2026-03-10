@@ -165,3 +165,30 @@
     background: white !important;
   }
 }
+
+/* Collapsible animations */
+@keyframes collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--collapsible-content-height);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-collapsible-down {
+  animation: collapsible-down 200ms ease-out;
+}
+
+.animate-collapsible-up {
+  animation: collapsible-up 200ms ease-out;
+}
