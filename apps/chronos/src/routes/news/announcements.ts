@@ -336,9 +336,9 @@ export const updateAnnouncement = newsFactory.createHandlers(
     // Validate date range with existing values
     const validFrom = body.validFrom ?? existing.validFrom;
     const validUntil = body.validUntil ?? existing.validUntil;
-    if (validUntil <= validFrom) {
+    if (validUntil < validFrom) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'validUntil must be after validFrom',
+        message: 'validUntil must be on or after validFrom',
       });
     }
 

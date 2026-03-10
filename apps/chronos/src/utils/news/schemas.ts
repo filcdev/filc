@@ -27,8 +27,8 @@ export const dateRangeBodySchema = z
     validFrom: z.coerce.date(),
     validUntil: z.coerce.date(),
   })
-  .refine((data) => data.validUntil > data.validFrom, {
-    message: 'validUntil must be after validFrom',
+  .refine((data) => data.validUntil >= data.validFrom, {
+    message: 'validUntil must be on or after validFrom',
     path: ['validUntil'],
   });
 
@@ -43,12 +43,12 @@ export const dateRangeUpdateBodySchema = z
   .refine(
     (data) => {
       if (data.validFrom && data.validUntil) {
-        return data.validUntil > data.validFrom;
+        return data.validUntil >= data.validFrom;
       }
       return true;
     },
     {
-      message: 'validUntil must be after validFrom',
+      message: 'validUntil must be on or after validFrom',
       path: ['validUntil'],
     }
   );
