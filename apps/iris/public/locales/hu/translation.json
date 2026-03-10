@@ -84,6 +84,7 @@
   "featureFlags": {},
   "admin": {
     "timetable": "Órarend",
+    "communications": "Kommunikáció",
     "doorlock": "Ajtózár",
     "management": "Kezelés",
     "users": "Felhasználók",

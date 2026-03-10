@@ -95,6 +95,7 @@
   "featureFlags": {},
   "admin": {
     "timetable": "Timetable",
+    "communications": "Communications",
     "doorlock": "Doorlock",
     "management": "Management",
     "users": "Users",

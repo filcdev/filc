@@ -68,6 +68,11 @@ export function AdminSidebar() {
             title: t('movedLesson.title'),
             url: '/admin/timetable/moved-lessons',
           },
+        ],
+        label: t('admin.timetable'),
+      },
+      {
+        items: [
           {
             icon: Bell,
             permission: 'announcements:create',
@@ -75,7 +80,7 @@ export function AdminSidebar() {
             url: '/admin/news/announcements',
           },
         ],
-        label: t('admin.timetable'),
+        label: t('admin.communications'),
       },
       {
         items: [
