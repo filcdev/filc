@@ -236,7 +236,7 @@
     "content": "Tartalom",
     "validFrom": "Érvényes ettől",
     "validUntil": "Érvényes eddig",
-    "cohorts": "Csoportok",
+    "cohorts": "Csoportok (opcionális)",
     "noCohorts": "Minden",
     "noAnnouncements": "Nincsenek bejelentések",
     "actions": "Műveletek",

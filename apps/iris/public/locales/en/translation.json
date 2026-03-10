@@ -236,7 +236,7 @@
     "content": "Content",
     "validFrom": "Valid From",
     "validUntil": "Valid Until",
-    "cohorts": "Cohorts",
+    "cohorts": "Cohorts (Optional)",
     "noCohorts": "All",
     "noAnnouncements": "No announcements found",
     "actions": "Actions",
