@@ -7,6 +7,9 @@ import {
   parseResponse,
 } from 'hono/client';
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChartArea,
   DoorOpen,
   Download,
@@ -51,10 +54,35 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
   ),
 });
 
+type DeviceSortColumn = 'name' | 'location' | 'apiToken' | 'updated';
+
+function SortIcon({
+  column,
+  currentColumn,
+  direction,
+}: {
+  column: DeviceSortColumn;
+  currentColumn: DeviceSortColumn | null;
+  direction: 'asc' | 'desc' | null;
+}) {
+  if (currentColumn !== column) {
+    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+  }
+  return direction === 'asc' ? (
+    <ArrowUp className="h-4 w-4" />
+  ) : (
+    <ArrowDown className="h-4 w-4" />
+  );
+}
+
 function DevicesPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
+  const [sortColumn, setSortColumn] = useState<DeviceSortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
+    null
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<DoorlockDevice | null>(
     null
@@ -160,16 +188,33 @@ function DevicesPage() {
   const filteredDevices = useMemo(() => {
     const items = devicesQuery.data ?? [];
     const term = search.trim().toLowerCase();
-    if (!term) {
-      return items;
+    let filtered = items;
+
+    if (term) {
+      filtered = filtered.filter(
+        (device) =>
+          device.name.toLowerCase().includes(term) ||
+          device.apiToken.toLowerCase().includes(term) ||
+          (device.location ?? '').toLowerCase().includes(term)
+      );
     }
-    return items.filter(
-      (device) =>
-        device.name.toLowerCase().includes(term) ||
-        device.apiToken.toLowerCase().includes(term) ||
-        (device.location ?? '').toLowerCase().includes(term)
-    );
-  }, [devicesQuery.data, search]);
+
+    if (sortColumn && sortDirection) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = getDeviceSortValue(a, sortColumn);
+        const bValue = getDeviceSortValue(b, sortColumn);
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        const comparison = String(aValue).localeCompare(String(bValue));
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return filtered;
+  }, [devicesQuery.data, search, sortColumn, sortDirection]);
 
   const totalDevices = devicesQuery.data?.length ?? 0;
   const activeDevices = useMemo(() => {
@@ -202,6 +247,21 @@ function DevicesPage() {
       return;
     }
     await deleteMutation.mutateAsync(device.id);
+  };
+
+  const handleSort = (column: DeviceSortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection('asc');
   };
 
   const isLoading = devicesQuery.isLoading;
@@ -278,10 +338,58 @@ function DevicesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>API token</TableHead>
-              <TableHead>Last updated</TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center gap-2">
+                  Name
+                  <SortIcon
+                    column="name"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('location')}
+              >
+                <div className="flex items-center gap-2">
+                  Location
+                  <SortIcon
+                    column="location"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('apiToken')}
+              >
+                <div className="flex items-center gap-2">
+                  API token
+                  <SortIcon
+                    column="apiToken"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('updated')}
+              >
+                <div className="flex items-center gap-2">
+                  Last updated
+                  <SortIcon
+                    column="updated"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
               {hasWritePermission && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -422,4 +530,19 @@ function StatCard({ icon, label, value }: StatCardProps) {
       </CardContent>
     </Card>
   );
+}
+
+function getDeviceSortValue(device: DoorlockDevice, column: DeviceSortColumn) {
+  switch (column) {
+    case 'name':
+      return device.name;
+    case 'location':
+      return device.location ?? '';
+    case 'apiToken':
+      return device.apiToken;
+    case 'updated':
+      return new Date(device.updatedAt).getTime();
+    default:
+      return '';
+  }
 }

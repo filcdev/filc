@@ -6,7 +6,17 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Ban,
+  CreditCard,
+  Lock,
+  Pen,
+  Plus,
+  Trash,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -46,10 +56,35 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
   ),
 });
 
+type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
+
+function SortIcon({
+  column,
+  currentColumn,
+  direction,
+}: {
+  column: CardSortColumn;
+  currentColumn: CardSortColumn | null;
+  direction: 'asc' | 'desc' | null;
+}) {
+  if (currentColumn !== column) {
+    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+  }
+  return direction === 'asc' ? (
+    <ArrowUp className="h-4 w-4" />
+  ) : (
+    <ArrowDown className="h-4 w-4" />
+  );
+}
+
 function CardsPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
+  const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
+    null
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<DoorlockCard | null>(null);
 
@@ -142,25 +177,42 @@ function CardsPage() {
   const filteredCards = useMemo(() => {
     const list = cardsQuery.data ?? [];
     const term = search.trim().toLowerCase();
-    if (!term) {
-      return list;
+    let filtered = list;
+
+    if (term) {
+      filtered = filtered.filter((card) => {
+        const ownerLabel = (
+          card.owner?.nickname ||
+          card.owner?.name ||
+          card.owner?.email ||
+          ''
+        ).toLowerCase();
+        return (
+          card.name.toLowerCase().includes(term) ||
+          ownerLabel.includes(term) ||
+          card.authorizedDevices.some((device) =>
+            device.name.toLowerCase().includes(term)
+          )
+        );
+      });
     }
-    return list.filter((card) => {
-      const ownerLabel = (
-        card.owner?.nickname ||
-        card.owner?.name ||
-        card.owner?.email ||
-        ''
-      ).toLowerCase();
-      return (
-        card.name.toLowerCase().includes(term) ||
-        ownerLabel.includes(term) ||
-        card.authorizedDevices.some((device) =>
-          device.name.toLowerCase().includes(term)
-        )
-      );
-    });
-  }, [cardsQuery.data, search]);
+
+    if (sortColumn && sortDirection) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = getCardSortValue(a, sortColumn);
+        const bValue = getCardSortValue(b, sortColumn);
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        const comparison = String(aValue).localeCompare(String(bValue));
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return filtered;
+  }, [cardsQuery.data, search, sortColumn, sortDirection]);
 
   const totals = useMemo(() => {
     const cards = cardsQuery.data ?? [];
@@ -191,6 +243,21 @@ function CardsPage() {
       return;
     }
     await deleteMutation.mutateAsync(card.id);
+  };
+
+  const handleSort = (column: CardSortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection('asc');
   };
 
   const isLoading = cardsQuery.isLoading;
@@ -255,11 +322,71 @@ function CardsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Authorized devices</TableHead>
-              <TableHead>Updated</TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center gap-2">
+                  Name
+                  <SortIcon
+                    column="name"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('owner')}
+              >
+                <div className="flex items-center gap-2">
+                  Owner
+                  <SortIcon
+                    column="owner"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center gap-2">
+                  Status
+                  <SortIcon
+                    column="status"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('devices')}
+              >
+                <div className="flex items-center gap-2">
+                  Authorized devices
+                  <SortIcon
+                    column="devices"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('updated')}
+              >
+                <div className="flex items-center gap-2">
+                  Updated
+                  <SortIcon
+                    column="updated"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
               {hasWritePermission && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -384,4 +511,26 @@ function useHasPermission(permission: string, permissions?: string[] | null) {
     return true;
   }
   return permissions.includes(permission);
+}
+
+function getCardSortValue(card: DoorlockCard, column: CardSortColumn) {
+  switch (column) {
+    case 'name':
+      return card.name;
+    case 'owner':
+      return (
+        card.owner?.nickname || card.owner?.name || card.owner?.email || ''
+      );
+    case 'status':
+      if (!card.enabled) {
+        return 2;
+      }
+      return card.frozen ? 1 : 0;
+    case 'devices':
+      return card.authorizedDevices.map((device) => device.name).join(', ');
+    case 'updated':
+      return new Date(card.updatedAt).getTime();
+    default:
+      return '';
+  }
 }
