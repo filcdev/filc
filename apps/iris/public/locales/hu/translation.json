@@ -91,6 +91,15 @@
     "roles": "Szerepkörök"
   },
   "timetable": {
+    "selectClass": "Osztály kiválasztása",
+    "noClassFound": "Nem található osztály",
+    "searchClass": "Osztály keresése...",
+    "selectTeacher": "Tanár kiválasztása",
+    "noTeacherFound": "Nem található tanár",
+    "searchTeacher": "Tanár keresése...",
+    "selectClassroom": "Terem kiválasztása",
+    "noClassroomFound": "Nem található terem",
+    "searchClassroom": "Terem keresése...",
     "import": "Órarend importálása",
     "importDescription": "ÓMAN XML fájlok feltöltése és importálása",
     "uploadFile": "Órarend fájl feltöltése",

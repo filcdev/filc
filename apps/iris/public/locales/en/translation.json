@@ -102,6 +102,15 @@
     "roles": "Roles"
   },
   "timetable": {
+    "selectClass": "Select class",
+    "noClassFound": "No class found",
+    "searchClass": "Search for a class...",
+    "selectTeacher": "Select teacher",
+    "noTeacherFound": "No teacher found",
+    "searchTeacher": "Search for a teacher...",
+    "selectClassroom": "Select classroom",
+    "noClassroomFound": "No classroom found",
+    "searchClassroom": "Search for a classroom...",
     "import": "Import Timetable",
     "importDescription": "Upload and import timetable data from ÓMAN XML files",
     "uploadFile": "Upload Timetable File",
