@@ -29,6 +29,26 @@ const updateUserBodySchema = (
 export const listUsers = usersFactory.createHandlers(
   describeRoute({
     description: 'List users',
+    parameters: [
+      {
+        in: 'query',
+        name: 'limit',
+        required: false,
+        schema: { default: 20, maximum: 100, minimum: 1, type: 'number' },
+      },
+      {
+        in: 'query',
+        name: 'offset',
+        required: false,
+        schema: { default: 0, minimum: 0, type: 'number' },
+      },
+      {
+        in: 'query',
+        name: 'search',
+        required: false,
+        schema: { type: 'string' },
+      },
+    ],
     responses: {
       200: {
         description: 'List of users',
@@ -81,6 +101,17 @@ export const listUsers = usersFactory.createHandlers(
 export const updateUser = usersFactory.createHandlers(
   describeRoute({
     description: 'Update user',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'User ID to update.',
+          type: 'string',
+        },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': { schema: updateUserBodySchema },
@@ -95,14 +126,10 @@ export const updateUser = usersFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('users:manage'),
+  zValidator('param', z.object({ id: z.string() })),
   zValidator('json', userUpdatePayload),
   async (c) => {
-    const userId = c.req.param('id');
-    if (!userId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'User ID is required',
-      });
-    }
+    const { id: userId } = c.req.valid('param');
     const { nickname, roles } = c.req.valid('json');
 
     const [updatedUser] = await db

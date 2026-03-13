@@ -152,6 +152,17 @@ export const createDeviceRoute = doorlockFactory.createHandlers(
 export const updateDeviceRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Update an existing doorlock device',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The doorlock device ID.',
+          type: 'string',
+        },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': {
@@ -216,6 +227,17 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
 export const deleteDeviceRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Delete a doorlock device',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The doorlock device ID.',
+          type: 'string',
+        },
+      },
+    ],
     responses: {
       200: { description: 'Device deleted' },
     },

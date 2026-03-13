@@ -243,6 +243,17 @@ export const createCardRoute = doorlockFactory.createHandlers(
 export const updateCardRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Update an access card',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The access card ID.',
+          type: 'string',
+        },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': {
@@ -320,6 +331,17 @@ export const updateCardRoute = doorlockFactory.createHandlers(
 export const deleteCardRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Delete an access card',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The access card ID.',
+          type: 'string',
+        },
+      },
+    ],
     responses: {
       200: { description: 'Card deleted' },
       404: { description: 'Card not found' },
