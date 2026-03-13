@@ -2,7 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import { Calendar as CalendarIcon, Check, DoorOpen, User } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Calendar as CalendarIcon,
+  Check,
+  DoorOpen,
+  User,
+} from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -47,6 +55,14 @@ type DoorlockCard = NonNullable<CardsResponse['data']>['cards'][number];
 type DoorlockLogEntry = NonNullable<LogsResponse['data']>['logs'][number];
 
 type EventFilter = 'all' | 'virtual' | 'physical';
+type LogSortColumn =
+  | 'timestamp'
+  | 'device'
+  | 'user'
+  | 'card'
+  | 'cardData'
+  | 'triggeredBy'
+  | 'result';
 
 const isVirtualLog = (log: DoorlockLogEntry) =>
   Boolean(log.buttonPressed && log.cardId);
@@ -78,6 +94,25 @@ const buildButtonMeta = (log: DoorlockLogEntry): ButtonMeta => {
     variant: 'default',
   };
 };
+
+function SortIcon({
+  column,
+  currentColumn,
+  direction,
+}: {
+  column: LogSortColumn;
+  currentColumn: LogSortColumn | null;
+  direction: 'asc' | 'desc' | null;
+}) {
+  if (currentColumn !== column) {
+    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+  }
+  return direction === 'asc' ? (
+    <ArrowUp className="h-4 w-4" />
+  ) : (
+    <ArrowDown className="h-4 w-4" />
+  );
+}
 
 export const Route = createFileRoute('/_private/admin/doorlock/logs')({
   component: () => (
@@ -148,6 +183,10 @@ const buildLogsQuery = ({
 function LogsPage() {
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
+  const [sortColumn, setSortColumn] = useState<LogSortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
+    null
+  );
   const [deviceFilter, setDeviceFilter] = useState<'all' | string>('all');
   const [cardFilter, setCardFilter] = useState<'all' | string>('all');
   const [userFilter, setUserFilter] = useState<'all' | string>('all');
@@ -275,13 +314,44 @@ function LogsPage() {
 
   const filteredLogs = useMemo(() => {
     const logs = logsQuery.data ?? [];
-    if (eventFilter === 'all') {
-      return logs;
+    let filtered =
+      eventFilter === 'all'
+        ? logs
+        : logs.filter((log) =>
+            eventFilter === 'virtual' ? isVirtualLog(log) : !isVirtualLog(log)
+          );
+
+    if (sortColumn && sortDirection) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = getLogSortValue(a, sortColumn);
+        const bValue = getLogSortValue(b, sortColumn);
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        const comparison = String(aValue).localeCompare(String(bValue));
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
     }
-    return logs.filter((log) =>
-      eventFilter === 'virtual' ? isVirtualLog(log) : !isVirtualLog(log)
-    );
-  }, [eventFilter, logsQuery.data]);
+
+    return filtered;
+  }, [eventFilter, logsQuery.data, sortColumn, sortDirection]);
+
+  const handleSort = (column: LogSortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+      return;
+    }
+
+    setSortColumn(column);
+    setSortDirection('asc');
+  };
 
   const hasError = logsQuery.isError;
   const isLoading = logsQuery.isLoading;
@@ -371,13 +441,97 @@ function LogsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Timestamp</TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Card</TableHead>
-              <TableHead>Card UID</TableHead>
-              <TableHead>Triggered by</TableHead>
-              <TableHead>Result</TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('timestamp')}
+              >
+                <div className="flex items-center gap-2">
+                  Timestamp
+                  <SortIcon
+                    column="timestamp"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('device')}
+              >
+                <div className="flex items-center gap-2">
+                  Device
+                  <SortIcon
+                    column="device"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('user')}
+              >
+                <div className="flex items-center gap-2">
+                  User
+                  <SortIcon
+                    column="user"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('card')}
+              >
+                <div className="flex items-center gap-2">
+                  Card
+                  <SortIcon
+                    column="card"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('cardData')}
+              >
+                <div className="flex items-center gap-2">
+                  Card UID
+                  <SortIcon
+                    column="cardData"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('triggeredBy')}
+              >
+                <div className="flex items-center gap-2">
+                  Triggered by
+                  <SortIcon
+                    column="triggeredBy"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('result')}
+              >
+                <div className="flex items-center gap-2">
+                  Result
+                  <SortIcon
+                    column="result"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -592,4 +746,25 @@ function useOptions(
     }
   }
   return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
+}
+
+function getLogSortValue(log: DoorlockLogEntry, column: LogSortColumn) {
+  switch (column) {
+    case 'timestamp':
+      return new Date(log.timestamp).getTime();
+    case 'device':
+      return log.device?.name ?? '';
+    case 'user':
+      return log.owner?.nickname || log.owner?.name || log.owner?.email || '';
+    case 'card':
+      return log.card?.name ?? '';
+    case 'cardData':
+      return log.cardData ?? '';
+    case 'triggeredBy':
+      return buildButtonMeta(log).label;
+    case 'result':
+      return log.result ? 1 : 0;
+    default:
+      return '';
+  }
 }
