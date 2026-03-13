@@ -12,6 +12,7 @@ import {
   getLessonsForRoom,
   getLessonsForTeacher,
 } from '#routes/timetable/lesson';
+import { deleteTimetable, updateTimetable } from '#routes/timetable/manage';
 import {
   createMovedLesson,
   deleteMovedLesson,
@@ -38,6 +39,8 @@ export const timetableRouter = timetableFactory
   .get('/timetables', ...getAllTimetables)
   .get('/timetables/latestValid', ...getLatestValidTimetable)
   .get('/timetables/valid', ...getAllValidTimetables)
+  .patch('/timetables/:id', ...updateTimetable)
+  .delete('/timetables/:id', ...deleteTimetable)
   .post('/import', ...importRoute)
   // Substitution routes
   .get('/substitutions', ...getAllSubstitutions)

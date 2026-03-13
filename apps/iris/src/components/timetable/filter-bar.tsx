@@ -1,5 +1,6 @@
 import {
   Building2,
+  CalendarDays,
   CheckIcon,
   ChevronsUpDownIcon,
   GraduationCap,
@@ -32,6 +33,12 @@ import type {
   FilterType,
   TeacherItem,
 } from './types';
+
+type TimetableItem = {
+  id: string;
+  name: string;
+  validFrom: string | null;
+};
 
 const teacherLabel = (t: TeacherItem, fallback: string): string =>
   `${t.firstName} ${t.lastName}`.trim() || fallback;
@@ -109,6 +116,19 @@ const getEmptyMessage = (
   return t(messages[activeFilter]);
 };
 
+const formatTimetableLabel = (tt: TimetableItem): string => {
+  if (tt.validFrom) {
+    const date = new Date(tt.validFrom);
+    const formatted = date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return `${tt.name} (${formatted})`;
+  }
+  return tt.name;
+};
+
 export function FilterBar({
   activeFilter,
   onFilterChange,
@@ -124,6 +144,10 @@ export function FilterBar({
   selectorLoading,
   onPrint,
   disabled,
+  timetables,
+  selectedTimetableId,
+  currentTimetableId,
+  onTimetableChange,
 }: {
   activeFilter: FilterType;
   onFilterChange: (value: FilterType) => void;
@@ -139,12 +163,17 @@ export function FilterBar({
   selectorLoading: boolean;
   onPrint: () => void;
   disabled?: boolean;
+  timetables?: TimetableItem[];
+  selectedTimetableId: string | null;
+  currentTimetableId: string | null;
+  onTimetableChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
   const comboboxContentId = `${filterSelectId}-content`;
   const selectWidthClassName = activeFilter === 'class' ? 'w-50' : 'w-60';
   const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [timetableOpen, setTimetableOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {
     classrooms,
@@ -171,6 +200,79 @@ export function FilterBar({
       teacher: onSelectTeacher,
     };
     handlers[activeFilter](value);
+  };
+
+  const selectedTimetable = timetables?.find(
+    (tt) => tt.id === selectedTimetableId
+  );
+  const timetableLabel = selectedTimetable
+    ? formatTimetableLabel(selectedTimetable)
+    : t('timetable.selectTimetable');
+  const showTimetableSelector = timetables && timetables.length > 1;
+
+  const renderTimetableSelect = () => {
+    if (!showTimetableSelector) {
+      return null;
+    }
+
+    return (
+      <Popover onOpenChange={setTimetableOpen} open={timetableOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              aria-controls="timetable-select-content"
+              aria-expanded={timetableOpen}
+              className="h-9 w-64 justify-between"
+              id="timetable-select"
+              role="combobox"
+              size="sm"
+              variant="outline"
+            >
+              <CalendarDays className="mr-2 h-4 w-4 shrink-0" />
+              <span className="truncate">{timetableLabel}</span>
+              <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
+        <PopoverContent className="w-64 p-0" id="timetable-select-content">
+          <Command>
+            <CommandInput placeholder={t('timetable.searchTimetable')} />
+            <CommandList>
+              <CommandEmpty>{t('timetable.noTimetableFound')}</CommandEmpty>
+              <CommandGroup>
+                {(timetables ?? []).map((tt) => (
+                  <CommandItem
+                    key={tt.id}
+                    onSelect={() => {
+                      onTimetableChange(tt.id);
+                      setTimetableOpen(false);
+                    }}
+                    value={formatTimetableLabel(tt)}
+                  >
+                    <CheckIcon
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        selectedTimetableId === tt.id
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                    <span className="flex flex-col">
+                      <span>{formatTimetableLabel(tt)}</span>
+                      {tt.id === currentTimetableId && (
+                        <span className="text-muted-foreground text-xs">
+                          {t('timetable.activeTimetable')}
+                        </span>
+                      )}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
   };
 
   const renderSelect = () => {
@@ -233,6 +335,7 @@ export function FilterBar({
   return (
     <div className="flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 print:hidden">
       <div className="flex flex-wrap items-center gap-3">
+        {renderTimetableSelect()}
         <ButtonGroup>
           <Button
             disabled={activeFilter === 'class'}

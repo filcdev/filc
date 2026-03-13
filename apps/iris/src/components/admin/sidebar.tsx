@@ -51,6 +51,12 @@ export function AdminSidebar() {
       {
         items: [
           {
+            icon: List,
+            permission: 'import:timetable',
+            title: t('timetable.manage'),
+            url: '/admin/timetable/manage',
+          },
+          {
             icon: Calendar,
             permission: 'import:timetable',
             title: t('timetable.import'),

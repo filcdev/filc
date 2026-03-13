@@ -7,7 +7,7 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
-import { cohort, timetable } from '#database/schema/timetable';
+import { cohort } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -45,7 +45,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
     },
     tags: ['Cohort'],
   }),
-  zValidator('param', z.object({ timetableId: z.uuid() })),
+  zValidator('param', z.object({ timetableId: z.string() })),
   requireAuthentication,
   async (c) => {
     try {
@@ -54,8 +54,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
       const cohorts = await db
         .select()
         .from(cohort)
-        .leftJoin(timetable, eq(cohort.timetableId, timetable.id))
-        .where(eq(timetable.id, timetableId));
+        .where(eq(cohort.timetableId, timetableId));
 
       return c.json<SuccessResponse<typeof cohorts>>({
         data: cohorts,
