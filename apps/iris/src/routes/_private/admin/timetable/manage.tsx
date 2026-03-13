@@ -1,14 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import {
-  Calendar,
-  Check,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { Calendar, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,7 +17,6 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -92,7 +84,7 @@ function TimetableManagePage() {
     queryKey: ['timetables'],
   });
 
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<TimetableItem | null>(null);
   const [editName, setEditName] = useState('');
   const [editValidFrom, setEditValidFrom] = useState<Date | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<TimetableItem | null>(null);
@@ -120,7 +112,9 @@ function TimetableManagePage() {
     },
     onSuccess: () => {
       toast.success(t('timetable.updateSuccess'));
-      setEditingId(null);
+      setEditTarget(null);
+      setEditName('');
+      setEditValidFrom(undefined);
       queryClient.invalidateQueries({ queryKey: ['timetables'] });
     },
   });
@@ -155,24 +149,26 @@ function TimetableManagePage() {
   });
 
   const startEdit = (tt: TimetableItem) => {
-    setEditingId(tt.id);
+    setEditTarget(tt);
     setEditName(tt.name);
     setEditValidFrom(tt.validFrom ? new Date(tt.validFrom) : undefined);
   };
 
   const saveEdit = () => {
-    if (!(editingId && editName.trim())) {
+    if (!(editTarget && editName.trim())) {
       return;
     }
     updateMutation.mutate({
-      id: editingId,
+      id: editTarget.id,
       name: editName.trim(),
       validFrom: editValidFrom ? dateToYYYYMMDD(editValidFrom) : '',
     });
   };
 
   const cancelEdit = () => {
-    setEditingId(null);
+    setEditTarget(null);
+    setEditName('');
+    setEditValidFrom(undefined);
   };
 
   const today = dateToYYYYMMDD(new Date());
@@ -242,74 +238,39 @@ function TimetableManagePage() {
           {sortedTimetables.map((tt) => (
             <TableRow key={tt.id}>
               <TableCell>
-                {editingId === tt.id ? (
-                  <Input
-                    autoFocus
-                    className="h-8 w-60"
-                    onChange={(e) => setEditName(e.target.value)}
-                    value={editName}
-                  />
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{tt.name}</span>
-                    {tt.id === currentTimetable?.id && (
-                      <Badge variant="secondary">
-                        {t('timetable.activeTimetable')}
-                      </Badge>
-                    )}
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{tt.name}</span>
+                  {tt.id === currentTimetable?.id && (
+                    <Badge variant="secondary">
+                      {t('timetable.activeTimetable')}
+                    </Badge>
+                  )}
+                </div>
               </TableCell>
-              <TableCell>
-                {editingId === tt.id ? (
-                  <DatePicker
-                    date={editValidFrom ?? new Date()}
-                    onDateChange={setEditValidFrom}
-                    placeholder={t('timetable.validFromPlaceholder')}
-                  />
-                ) : (
-                  formatDate(tt.validFrom)
-                )}
-              </TableCell>
+              <TableCell>{formatDate(tt.validFrom)}</TableCell>
               <TableCell className="text-right">
-                {editingId === tt.id ? (
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      disabled={updateMutation.isPending}
-                      onClick={saveEdit}
-                      size="sm"
-                      variant="ghost"
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button size="sm" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => startEdit(tt)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      {t('timetable.editTimetable')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => setDeleteTarget(tt)}
                     >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button onClick={cancelEdit} size="sm" variant="ghost">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button size="sm" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => startEdit(tt)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        {t('timetable.editTimetable')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onSelect={() => setDeleteTarget(tt)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {t('timetable.deleteTimetable')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('timetable.deleteTimetable')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
@@ -339,6 +300,52 @@ function TimetableManagePage() {
         <CardContent>{renderContent()}</CardContent>
       </Card>
 
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            cancelEdit();
+          }
+        }}
+        open={!!editTarget}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('timetable.editTimetable')}</DialogTitle>
+            <DialogDescription>
+              {t('timetable.allTimetablesDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Input
+              autoFocus
+              onChange={(event) => setEditName(event.target.value)}
+              placeholder={t('timetable.importNamePlaceholder')}
+              value={editName}
+            />
+            <DatePicker
+              date={editValidFrom}
+              onDateChange={setEditValidFrom}
+              placeholder={t('timetable.validFromPlaceholder')}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={updateMutation.isPending}
+              onClick={cancelEdit}
+              variant="outline"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={updateMutation.isPending || !editName.trim()}
+              onClick={saveEdit}
+            >
+              {updateMutation.isPending ? t('common.saving') : t('common.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog
         onOpenChange={(open) => {
@@ -358,9 +365,13 @@ function TimetableManagePage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
+            <Button
+              disabled={deleteMutation.isPending}
+              onClick={() => setDeleteTarget(null)}
+              variant="outline"
+            >
               {t('common.cancel')}
-            </DialogClose>
+            </Button>
             <Button
               disabled={deleteMutation.isPending}
               onClick={() => {
@@ -370,7 +381,9 @@ function TimetableManagePage() {
               }}
               variant="destructive"
             >
-              {t('common.delete')}
+              {deleteMutation.isPending
+                ? t('common.deleting')
+                : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
