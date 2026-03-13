@@ -219,7 +219,7 @@ export function AnnouncementsDialog({
           </Button>
           <Button disabled={isSubmitting} form="announcementForm" type="submit">
             <Save className="h-4 w-4" />
-            {t('announcements.save')}
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

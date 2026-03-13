@@ -71,6 +71,20 @@ const checkSlugExists = async (slug: string, excludeId?: string) => {
 export const listPublishedBlogs = newsFactory.createHandlers(
   describeRoute({
     description: 'List published blog posts (public, no auth required)',
+    parameters: [
+      {
+        in: 'query',
+        name: 'limit',
+        required: false,
+        schema: { default: 20, minimum: 1, type: 'number' },
+      },
+      {
+        in: 'query',
+        name: 'offset',
+        required: false,
+        schema: { default: 0, minimum: 0, type: 'number' },
+      },
+    ],
     responses: {
       200: {
         content: {
@@ -123,6 +137,14 @@ export const listPublishedBlogs = newsFactory.createHandlers(
 export const getBlogBySlug = newsFactory.createHandlers(
   describeRoute({
     description: 'Get a published blog post by slug (public, no auth required)',
+    parameters: [
+      {
+        in: 'path',
+        name: 'slug',
+        required: true,
+        schema: { type: 'string' },
+      },
+    ],
     responses: {
       200: {
         content: {
@@ -173,6 +195,20 @@ export const getBlogBySlug = newsFactory.createHandlers(
 export const listDrafts = newsFactory.createHandlers(
   describeRoute({
     description: 'List all blog posts including drafts (requires permission)',
+    parameters: [
+      {
+        in: 'query',
+        name: 'limit',
+        required: false,
+        schema: { default: 20, minimum: 1, type: 'number' },
+      },
+      {
+        in: 'query',
+        name: 'offset',
+        required: false,
+        schema: { default: 0, minimum: 0, type: 'number' },
+      },
+    ],
     responses: {
       200: {
         content: {
@@ -225,6 +261,14 @@ export const getBlogById = newsFactory.createHandlers(
   describeRoute({
     description:
       'Get any blog post by ID including drafts (requires permission)',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: { format: 'uuid', type: 'string' },
+      },
+    ],
     responses: {
       200: {
         content: {

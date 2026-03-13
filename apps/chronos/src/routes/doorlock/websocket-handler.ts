@@ -3,6 +3,7 @@ import type { ServerWebSocket } from 'bun';
 import { and, eq } from 'drizzle-orm';
 import { upgradeWebSocket } from 'hono/bun';
 import { HTTPException } from 'hono/http-exception';
+import { describeRoute } from 'hono-openapi';
 import { z } from 'zod';
 import { db } from '#database';
 import {
@@ -181,6 +182,30 @@ export const syncDatabase = async (deviceId: string) => {
 };
 
 export const websocketHandler = doorlockFactory.createHandlers(
+  describeRoute({
+    description:
+      'Upgrade an authenticated device connection to WebSocket for doorlock events.',
+    parameters: [
+      {
+        in: 'header',
+        name: 'X-Aegis-Device-Token',
+        required: true,
+        schema: {
+          description: 'Device API token used for WebSocket authentication.',
+          type: 'string',
+        },
+      },
+    ],
+    responses: {
+      101: {
+        description: 'Switching Protocols',
+      },
+      401: {
+        description: 'Invalid or missing device token',
+      },
+    },
+    tags: ['Doorlock'],
+  }),
   async (c, next) => {
     const gotToken = c.req.header('X-Aegis-Device-Token');
     if (!gotToken) {

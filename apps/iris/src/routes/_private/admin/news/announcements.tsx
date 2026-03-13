@@ -304,7 +304,7 @@ function AnnouncementsPage() {
             variant="outline"
           >
             <RefreshCw className="h-4 w-4" />
-            {t('announcements.refresh')}
+            {t('common.refresh')}
           </Button>
           {hasWritePermission && (
             <Button
@@ -391,7 +391,7 @@ function AnnouncementsPage() {
                 </TableHead>
                 {hasWritePermission && (
                   <TableHead className="w-[20%]">
-                    {t('announcements.actions')}
+                    {t('common.actions')}
                   </TableHead>
                 )}
               </TableRow>

@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { HTTPException } from 'hono/http-exception';
-import { describeRoute } from 'hono-openapi';
+import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
@@ -13,6 +13,16 @@ export const listPermissions = rolesFactory.createHandlers(
     description: 'List all known permissions registered by the application',
     responses: {
       200: {
+        content: {
+          'application/json': {
+            schema: resolver(
+              z.object({
+                data: z.object({ permissions: z.array(z.string()) }),
+                success: z.literal(true),
+              })
+            ),
+          },
+        },
         description: 'List of permissions',
       },
     },
@@ -32,6 +42,23 @@ export const listRoles = rolesFactory.createHandlers(
     description: 'List all roles with their permissions',
     responses: {
       200: {
+        content: {
+          'application/json': {
+            schema: resolver(
+              z.object({
+                data: z.object({
+                  roles: z.array(
+                    z.object({
+                      can: z.array(z.string()),
+                      name: z.string(),
+                    })
+                  ),
+                }),
+                success: z.literal(true),
+              })
+            ),
+          },
+        },
         description: 'List of roles',
       },
     },
@@ -66,11 +93,46 @@ const createRoleSchema = z.object({
   permissions: z.array(z.string()).default([]),
 });
 
+const updateRoleSchema = z.object({
+  permissions: z.array(z.string()),
+});
+
+const roleResponseSchema = z.object({
+  data: z.object({
+    can: z.array(z.string()),
+    name: z.string(),
+  }),
+  success: z.literal(true),
+});
+
+const roleNameParamSchema = z.object({ name: z.string() });
+
+const createRoleRequestBodySchema = (
+  await resolver(createRoleSchema).toOpenAPISchema()
+).schema;
+
+const updateRoleRequestBodySchema = (
+  await resolver(updateRoleSchema).toOpenAPISchema()
+).schema;
+
 export const createRole = rolesFactory.createHandlers(
   describeRoute({
     description: 'Create a new role',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: createRoleRequestBodySchema,
+        },
+      },
+      description: 'Role details to create.',
+    },
     responses: {
       201: {
+        content: {
+          'application/json': {
+            schema: resolver(roleResponseSchema),
+          },
+        },
         description: 'Role created',
       },
     },
@@ -108,15 +170,35 @@ export const createRole = rolesFactory.createHandlers(
   }
 );
 
-const updateRoleSchema = z.object({
-  permissions: z.array(z.string()),
-});
-
 export const updateRole = rolesFactory.createHandlers(
   describeRoute({
     description: 'Update permissions for a role',
+    parameters: [
+      {
+        in: 'path',
+        name: 'name',
+        required: true,
+        schema: {
+          description: 'Role name to update.',
+          type: 'string',
+        },
+      },
+    ],
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: updateRoleRequestBodySchema,
+        },
+      },
+      description: 'Permissions payload for the role.',
+    },
     responses: {
       200: {
+        content: {
+          'application/json': {
+            schema: resolver(roleResponseSchema),
+          },
+        },
         description: 'Role updated',
       },
     },
@@ -125,7 +207,7 @@ export const updateRole = rolesFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('roles:manage'),
   zValidator('json', updateRoleSchema),
-  zValidator('param', z.object({ name: z.string() })),
+  zValidator('param', roleNameParamSchema),
   async (c) => {
     const { name: roleName } = c.req.valid('param');
     if (!roleName) {
@@ -154,8 +236,28 @@ export const updateRole = rolesFactory.createHandlers(
 export const deleteRole = rolesFactory.createHandlers(
   describeRoute({
     description: 'Delete a role',
+    parameters: [
+      {
+        in: 'path',
+        name: 'name',
+        required: true,
+        schema: {
+          description: 'Role name to delete.',
+          type: 'string',
+        },
+      },
+    ],
     responses: {
       200: {
+        content: {
+          'application/json': {
+            schema: resolver(
+              z.object({
+                success: z.literal(true),
+              })
+            ),
+          },
+        },
         description: 'Role deleted',
       },
     },
@@ -163,7 +265,7 @@ export const deleteRole = rolesFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('roles:manage'),
-  zValidator('param', z.object({ name: z.string() })),
+  zValidator('param', roleNameParamSchema),
   async (c) => {
     const { name: roleName } = c.req.valid('param');
 

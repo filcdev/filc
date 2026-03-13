@@ -190,6 +190,17 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
 export const deviceStatsRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Get device health statistics',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The doorlock device ID.',
+          type: 'string',
+        },
+      },
+    ],
     responses: {
       200: {
         content: {

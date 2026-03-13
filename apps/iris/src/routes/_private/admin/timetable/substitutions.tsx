@@ -354,7 +354,7 @@ function SubstitutionsPage() {
             variant="outline"
           >
             <RefreshCw className="h-4 w-4" />
-            {t('substitution.refresh')}
+            {t('common.refresh')}
           </Button>
           {hasWritePermission && (
             <Button
@@ -392,7 +392,7 @@ function SubstitutionsPage() {
                   onClick={() => handleSort('date')}
                 >
                   <div className="flex items-center gap-2">
-                    {t('substitution.date')}
+                    {t('common.date')}
                     <SortIcon
                       column="date"
                       currentColumn={sortColumn}
@@ -440,7 +440,7 @@ function SubstitutionsPage() {
                   </div>
                 </TableHead>
                 {hasWritePermission && (
-                  <TableHead>{t('substitution.actions')}</TableHead>
+                  <TableHead>{t('common.actions')}</TableHead>
                 )}
               </TableRow>
             </TableHeader>

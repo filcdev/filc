@@ -270,7 +270,7 @@ export function MovedLessonDialog({
             onSubmit={handleSubmit}
           >
             <div className="space-y-2">
-              <Label>{t('movedLesson.date')}</Label>
+              <Label>{t('common.date')}</Label>
               <DatePicker
                 date={
                   formState.date instanceof Date
@@ -415,7 +415,7 @@ export function MovedLessonDialog({
             type="submit"
           >
             <Save className="mr-2 h-4 w-4" />
-            {isCreate ? t('movedLesson.create') : t('movedLesson.save')}
+            {isCreate ? t('movedLesson.create') : t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

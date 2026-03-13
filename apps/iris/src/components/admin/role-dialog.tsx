@@ -270,7 +270,7 @@ export function RoleDialog({
           >
             {isPending
               ? t('common.loading')
-              : t(isEditing ? 'roles.save' : 'roles.create')}
+              : t(isEditing ? 'common.save' : 'roles.create')}
           </Button>
         </DialogFooter>
       </DialogContent>

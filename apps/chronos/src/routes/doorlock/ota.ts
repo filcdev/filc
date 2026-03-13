@@ -21,6 +21,17 @@ const otaPayloadSchema = z.object({
 export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Trigger an OTA update on a specific device',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The doorlock device ID.',
+          type: 'string',
+        },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': {

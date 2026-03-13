@@ -233,7 +233,7 @@ export function SubstitutionDialog({
             onSubmit={handleSubmit}
           >
             <div className="space-y-2">
-              <Label>{t('substitution.date')}</Label>
+              <Label>{t('common.date')}</Label>
               <DatePicker
                 date={formState.date}
                 onDateChange={(d) =>
@@ -341,7 +341,7 @@ export function SubstitutionDialog({
             type="submit"
           >
             <Save className="h-4 w-4" />
-            {isCreate ? t('substitution.create') : t('substitution.save')}
+            {isCreate ? t('substitution.create') : t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

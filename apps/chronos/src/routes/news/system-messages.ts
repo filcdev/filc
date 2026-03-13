@@ -76,6 +76,26 @@ export const listSystemMessages = newsFactory.createHandlers(
   describeRoute({
     description:
       'List active system messages within date range, filtered by user cohort',
+    parameters: [
+      {
+        in: 'query',
+        name: 'limit',
+        required: false,
+        schema: { default: 20, minimum: 1, type: 'number' },
+      },
+      {
+        in: 'query',
+        name: 'offset',
+        required: false,
+        schema: { default: 0, minimum: 0, type: 'number' },
+      },
+      {
+        in: 'query',
+        name: 'includeExpired',
+        required: false,
+        schema: { default: false, type: 'boolean' },
+      },
+    ],
     responses: {
       200: {
         content: {
@@ -163,6 +183,14 @@ export const listSystemMessages = newsFactory.createHandlers(
 export const getSystemMessage = newsFactory.createHandlers(
   describeRoute({
     description: 'Get a single system message by ID',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: { format: 'uuid', type: 'string' },
+      },
+    ],
     responses: {
       200: {
         content: {
@@ -290,6 +318,14 @@ export const createSystemMessage = newsFactory.createHandlers(
 export const updateSystemMessage = newsFactory.createHandlers(
   describeRoute({
     description: 'Update an existing system message',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: { format: 'uuid', type: 'string' },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': {

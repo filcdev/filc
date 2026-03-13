@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
@@ -15,6 +15,7 @@ import type {
   TeacherItem,
 } from '@/components/timetable/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSelectedTimetable } from '@/hooks/use-selected-timetable';
 import { Route, type searchSchema } from '@/routes/_public/index';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
@@ -28,8 +29,12 @@ const QUERY_OPTIONS = {
 };
 
 // API Calls
-const fetchCohorts = async () => {
-  const res = await parseResponse(api.cohort.index.$get());
+const fetchCohortsForTimetable = async (timetableId: string) => {
+  const res = await parseResponse(
+    api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+      param: { timetableId },
+    })
+  );
   if (!res.success) {
     throw new Error('Failed to load cohorts');
   }
@@ -101,11 +106,26 @@ export function TimetableView() {
   const { data: session, isPending } = authClient.useSession();
   const navigate = useNavigate({ from: Route.fullPath });
 
-  // Queries
+  // Timetable selection
+  const {
+    currentTimetableId,
+    isLoading: timetablesLoading,
+    selectedTimetableId,
+    setSelectedTimetableId,
+    timetables,
+  } = useSelectedTimetable(search.timetable);
+
+  // Queries — cohorts are now scoped to the selected timetable
   const cohortsQuery = useQuery({
     ...QUERY_OPTIONS,
-    queryFn: fetchCohorts,
-    queryKey: ['cohorts'],
+    enabled: !!selectedTimetableId,
+    queryFn: () => {
+      if (!selectedTimetableId) {
+        return Promise.resolve([] as CohortItem[]);
+      }
+      return fetchCohortsForTimetable(selectedTimetableId);
+    },
+    queryKey: ['cohorts', selectedTimetableId],
   });
 
   const teachersQuery = useQuery({
@@ -139,6 +159,9 @@ export function TimetableView() {
     teacher: null,
   });
   const [initialized, setInitialized] = useState(false);
+  const previousTimetableIdRef = useRef<string | null>(
+    selectedTimetableId ?? null
+  );
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
@@ -152,6 +175,25 @@ export function TimetableView() {
         : Promise.resolve([] as LessonItem[]),
     queryKey: ['lessons', activeFilter, activeSelectionId],
   });
+
+  // Reset selections when timetable changes
+  useEffect(() => {
+    if (!initialized) {
+      previousTimetableIdRef.current = selectedTimetableId ?? null;
+      return;
+    }
+
+    const previousTimetableId = previousTimetableIdRef.current;
+    const nextTimetableId = selectedTimetableId ?? null;
+
+    if (previousTimetableId === nextTimetableId) {
+      return;
+    }
+
+    previousTimetableIdRef.current = nextTimetableId;
+    setSelections({ class: null, classroom: null, teacher: null });
+    setInitialized(false);
+  }, [initialized, selectedTimetableId]);
 
   // Initialize from URL or defaults
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
@@ -260,6 +302,7 @@ export function TimetableView() {
         cohort: undefined,
         room: undefined,
         teacher: undefined,
+        timetable: selectedTimetableId ?? undefined,
       };
 
       const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
@@ -269,7 +312,7 @@ export function TimetableView() {
         search: () => searchParams,
       });
     }
-  }, [activeFilter, activeSelectionId, navigate]);
+  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
 
   const model = useMemo(
     () => buildViewModel((lessonsQuery.data ?? []) as LessonItem[]),
@@ -292,7 +335,10 @@ export function TimetableView() {
   const selectorLoading = getSelectorLoading();
 
   const isLoading =
-    selectorLoading || lessonsQuery.isLoading || !activeSelectionId;
+    timetablesLoading ||
+    selectorLoading ||
+    lessonsQuery.isLoading ||
+    !activeSelectionId;
   const hasError =
     cohortsQuery.error ||
     teachersQuery.error ||
@@ -305,17 +351,21 @@ export function TimetableView() {
         activeFilter={activeFilter}
         classrooms={classroomsQuery.data}
         cohorts={cohortsQuery.data}
+        currentTimetableId={currentTimetableId}
         disabled={isLoading}
         onFilterChange={setActiveFilter}
         onPrint={() => window.print()}
         onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
         onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
         onSelectTeacher={(id) => setSelections((s) => ({ ...s, teacher: id }))}
+        onTimetableChange={setSelectedTimetableId}
         selectedByClass={selections.class}
         selectedByRoom={selections.classroom}
         selectedByTeacher={selections.teacher}
+        selectedTimetableId={selectedTimetableId}
         selectorLoading={selectorLoading}
         teachers={teachersQuery.data}
+        timetables={timetables}
       />
 
       {hasError && (

@@ -94,6 +94,17 @@ export const listSelfCardsRoute = doorlockFactory.createHandlers(
 export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
   describeRoute({
     description: 'Update the frozen state of a user-owned card',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The user-owned card ID.',
+          type: 'string',
+        },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': {
@@ -162,6 +173,17 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
   describeRoute({
     description:
       'Activate an authorized device using a user-owned virtual card',
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        required: true,
+        schema: {
+          description: 'The user-owned card ID.',
+          type: 'string',
+        },
+      },
+    ],
     requestBody: {
       content: {
         'application/json': {
