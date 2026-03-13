@@ -229,9 +229,7 @@ function TimetableManagePage() {
           <TableRow>
             <TableHead>{t('timetable.importNameLabel')}</TableHead>
             <TableHead>{t('timetable.validFromLabel')}</TableHead>
-            <TableHead className="text-right">
-              {t('substitution.actions')}
-            </TableHead>
+            <TableHead className="text-right">{t('common.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

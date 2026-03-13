@@ -470,7 +470,7 @@ function MovedLessonsPage() {
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => movedLessonsQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
-            {t('movedLesson.refresh')}
+            {t('common.refresh')}
           </Button>
           {hasWritePermission && (
             <Button
@@ -508,7 +508,7 @@ function MovedLessonsPage() {
                   onClick={() => handleSort('date')}
                 >
                   <div className="flex items-center gap-2">
-                    {t('movedLesson.date')}
+                    {t('common.date')}
                     <SortIcon
                       column="date"
                       currentColumn={sortColumn}
@@ -569,7 +569,7 @@ function MovedLessonsPage() {
                   </div>
                 </TableHead>
                 {hasWritePermission && (
-                  <TableHead>{t('movedLesson.actions')}</TableHead>
+                  <TableHead>{t('common.actions')}</TableHead>
                 )}
               </TableRow>
             </TableHeader>

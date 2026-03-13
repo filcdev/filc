@@ -56,7 +56,7 @@ export function RolesTable({ roles }: RolesTableProps) {
             <TableRow>
               <TableHead>{t('roles.name')}</TableHead>
               <TableHead>{t('roles.permissions')}</TableHead>
-              <TableHead>{t('roles.actions')}</TableHead>
+              <TableHead>{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,7 +103,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                       size="sm"
                       variant="destructive"
                     >
-                      {t('roles.delete')}
+                      {t('common.delete')}
                     </Button>
                   </div>
                 </TableCell>
