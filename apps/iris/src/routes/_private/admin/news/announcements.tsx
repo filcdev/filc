@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import dayjs from 'dayjs';
 import {
   type InferRequestType,
   type InferResponseType,
@@ -41,6 +40,7 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { authClient } from '@/utils/authentication';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type AnnouncementApiResponse = InferResponseType<
@@ -76,7 +76,7 @@ function SortIcon({
 }
 
 function AnnouncementsPage() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
@@ -403,10 +403,13 @@ function AnnouncementsPage() {
                     {announcement.title}
                   </TableCell>
                   <TableCell>
-                    {dayjs(announcement.validFrom).format('YYYY/MM/DD')}
+                    {formatLocalizedDate(announcement.validFrom, i18n.language)}
                   </TableCell>
                   <TableCell>
-                    {dayjs(announcement.validUntil).format('YYYY/MM/DD')}
+                    {formatLocalizedDate(
+                      announcement.validUntil,
+                      i18n.language
+                    )}
                   </TableCell>
                   <TableCell>
                     {announcement.cohortIds.length > 0

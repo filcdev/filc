@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { authClient } from '@/utils/authentication';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type SubstitutionApiResponse = InferResponseType<
@@ -81,7 +82,7 @@ function SortIcon({
 }
 
 function SubstitutionsPage() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
@@ -448,7 +449,7 @@ function SubstitutionsPage() {
               {filteredSubstitutions.map((sub) => (
                 <TableRow key={sub.substitution.id}>
                   <TableCell className="font-medium">
-                    {dayjs(sub.substitution.date).format('YYYY/MM/DD')}
+                    {formatLocalizedDate(sub.substitution.date, i18n.language)}
                   </TableCell>
                   <TableCell>
                     {sub.teacher ? (

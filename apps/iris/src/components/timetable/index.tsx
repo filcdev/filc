@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
@@ -98,6 +99,7 @@ const getActiveSelectionId = (
 // Component
 export function TimetableView() {
   const search = Route.useSearch();
+  const { i18n } = useTranslation();
   const { data: session, isPending } = authClient.useSession();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -272,8 +274,9 @@ export function TimetableView() {
   }, [activeFilter, activeSelectionId, navigate]);
 
   const model = useMemo(
-    () => buildViewModel((lessonsQuery.data ?? []) as LessonItem[]),
-    [lessonsQuery.data]
+    () =>
+      buildViewModel((lessonsQuery.data ?? []) as LessonItem[], i18n.language),
+    [lessonsQuery.data, i18n.language]
   );
 
   const getSelectorLoading = () => {

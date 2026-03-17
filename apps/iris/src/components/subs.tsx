@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import type { InferResponseType } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import type { api } from '@/utils/hc';
 
 type TimetableProps = {
@@ -211,7 +211,7 @@ function MovedLessonReturn(data: MovedLessonItem[]) {
 }
 
 export function SubsV({ data, movedLessons = [] }: TimetableProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -237,7 +237,12 @@ export function SubsV({ data, movedLessons = [] }: TimetableProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="font-semibold text-foreground text-lg">
-              {dayjs(firstSub.substitution.date).format('dddd, YYYY. MMMM DD.')}
+              {formatLocalizedDate(firstSub.substitution.date, i18n.language, {
+                day: '2-digit',
+                month: 'long',
+                weekday: 'long',
+                year: 'numeric',
+              })}
             </CardTitle>
             <p className="mt-1 text-muted-foreground text-sm">
               {t('substitution.affectedLessons')}

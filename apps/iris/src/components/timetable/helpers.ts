@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { getLocalizedWeekdayName } from '@/utils/date-locale';
 import type {
   DayColumn,
   FilterType,
@@ -80,18 +81,20 @@ export const formatRooms = (rooms: LessonItem['classrooms']): string =>
 /** Process a single lesson into the grid structure */
 const processLesson = (
   lesson: LessonItem,
-  dayMap: Map<string, number>,
+  dayMap: Map<string, { sortOrder: number; shortName?: string }>,
   timeMap: Map<string, { start: dayjs.Dayjs; end: dayjs.Dayjs }>,
   grid: Map<string, { lessons: LessonItem[] }>
 ) => {
   const dayName = lesson.day?.name ?? '';
+  const dayShort = lesson.day?.short;
   const dayOrder = lesson.day?.days?.[0]
     ? Number.parseInt(lesson.day.days[0], 10)
     : 999;
 
   // Track day with lowest sort order
-  if (!dayMap.has(dayName) || (dayMap.get(dayName) ?? 999) > dayOrder) {
-    dayMap.set(dayName, dayOrder);
+  const currentDay = dayMap.get(dayName);
+  if (!currentDay || currentDay.sortOrder > dayOrder) {
+    dayMap.set(dayName, { shortName: dayShort, sortOrder: dayOrder });
   }
 
   // Parse start and end times from lesson period
@@ -118,13 +121,16 @@ const processLesson = (
 };
 
 /** Build view model from lessons array */
-export const buildViewModel = (lessons: LessonItem[]): TimetableViewModel => {
+export const buildViewModel = (
+  lessons: LessonItem[],
+  language: string | undefined
+): TimetableViewModel => {
   if (!lessons.length) {
     return { days: [], grid: new Map(), timeSlots: [] };
   }
 
   // Collect unique days and time slots
-  const dayMap = new Map<string, number>();
+  const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
   const timeMap = new Map<string, { start: dayjs.Dayjs; end: dayjs.Dayjs }>();
   const grid = new Map<string, { lessons: LessonItem[] }>();
 
@@ -135,8 +141,15 @@ export const buildViewModel = (lessons: LessonItem[]): TimetableViewModel => {
 
   // Build sorted arrays
   const days: DayColumn[] = Array.from(dayMap.entries())
-    .map(([name, sortOrder]) => ({ name, sortOrder }))
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    .map(([name, dayMeta]) => ({
+      key: name,
+      label: getLocalizedWeekdayName(name, dayMeta.shortName, language, 'long'),
+      sortOrder: dayMeta.sortOrder,
+    }))
+    .sort(
+      (a, b) =>
+        a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, language)
+    );
 
   const timeSlots = Array.from(timeMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))

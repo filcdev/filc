@@ -26,6 +26,7 @@ function Calendar({
   buttonVariant?: ComponentProps<typeof Button>['variant'];
 }) {
   const defaultClassNames = getDefaultClassNames();
+  const localeCode = (props.locale as { code?: string } | undefined)?.code;
 
   return (
     <DayPicker
@@ -177,7 +178,7 @@ function Calendar({
       }}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString('default', { month: 'short' }),
+          new Intl.DateTimeFormat(localeCode, { month: 'short' }).format(date),
         ...formatters,
       }}
       showOutsideDays={showOutsideDays}

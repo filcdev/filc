@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authClient } from '@/utils/authentication';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type AnnouncementApiResponse = InferResponseType<
@@ -106,7 +107,7 @@ function filterNewsItemsInDateRange(
 
 export function NewsPanel() {
   const { isPending } = authClient.useSession();
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
   const announcementsQuery = useQuery({
@@ -215,12 +216,14 @@ export function NewsPanel() {
                       </AlertDescription>
                       <div className="mt-2 text-muted-foreground text-xs">
                         {(() => {
-                          const from = new Date(
-                            item.validFrom
-                          ).toLocaleDateString();
-                          const until = new Date(
-                            item.validUntil
-                          ).toLocaleDateString();
+                          const from = formatLocalizedDate(
+                            item.validFrom,
+                            i18n.language
+                          );
+                          const until = formatLocalizedDate(
+                            item.validUntil,
+                            i18n.language
+                          );
                           return from === until ? from : `${from} – ${until}`;
                         })()}
                       </div>

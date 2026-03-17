@@ -31,7 +31,8 @@ export type LessonsResponse = InferResponseType<
 export type LessonItem = NonNullable<LessonsResponse['data']>[number];
 
 export type DayColumn = {
-  name: string;
+  key: string;
+  label: string;
   sortOrder: number;
 };
 
@@ -48,5 +49,5 @@ export type GridCell = {
 export type TimetableViewModel = {
   days: DayColumn[];
   timeSlots: TimeSlot[];
-  grid: Map<string, GridCell>; // key: `${dayName}-${HH:mm formatted startTime}`
+  grid: Map<string, GridCell>; // key: `${dayKey}-${HH:mm formatted startTime}`
 };
