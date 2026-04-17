@@ -17,6 +17,7 @@ import {
 import { env } from '#utils/environment';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { filcExt } from '#utils/openapi';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 
@@ -24,13 +25,31 @@ const logger = getLogger(['chronos', 'substitutions']);
 
 const substitutionSchema = createSelectSchema(substitution);
 
+const substitutionWithRelationsSchema = z.object({
+  lessons: z.array(z.string()),
+  substitution: ensureJsonSafeDates(substitutionSchema),
+  teacher: ensureJsonSafeDates(createSelectSchema(teacher)).nullable(),
+});
+
 const allResponseSchema = z.object({
-  data: z.array(substitutionSchema),
+  data: z.array(substitutionWithRelationsSchema),
   success: z.boolean(),
 });
 
+const substitutionsByCohortResponseSchema = z.object({
+  data: z.object({
+    cohortId: z.string(),
+    substitutions: z.array(substitutionWithRelationsSchema),
+  }),
+  success: z.boolean(),
+});
+
+const substitutionWithRelationsType =
+  '@listof SubstitutionWithRelations @field(.substitution, Substitution) @field(.teacher, Teacher) @field(.lessons, List<String>)';
+
 export const getAllSubstitutions = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', substitutionWithRelationsType, true),
     description: 'Get all substitutions from the database.',
     responses: {
       200: {
@@ -79,6 +98,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
 
 export const getRelevantSubstitutions = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', substitutionWithRelationsType, true),
     description: 'Get relevant substitutions from the database.',
     responses: {
       200: {
@@ -131,6 +151,11 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
 export const getRelevantSubstitutionsForCohort =
   timetableFactory.createHandlers(
     describeRoute({
+      ...filcExt(
+        'Substitution',
+        '@unit SubstitutionsByCohort @field(.substitutions, List<SubstitutionWithRelations>)',
+        true
+      ),
       description:
         'Get relevant substitutions for a given cohort from the database.',
       parameters: [
@@ -148,7 +173,7 @@ export const getRelevantSubstitutionsForCohort =
         200: {
           content: {
             'application/json': {
-              schema: resolver(ensureJsonSafeDates(allResponseSchema)),
+              schema: resolver(substitutionsByCohortResponseSchema),
             },
           },
           description: 'Successful Response',
@@ -237,6 +262,7 @@ const createResponseSchema = z.object({
 
 export const createSubstitution = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', '@unit Substitution', true),
     description: 'Create a new substitution',
     requestBody: {
       content: {
@@ -342,6 +368,7 @@ const updateSchema = (
 
 export const updateSubstitution = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', '@unit Substitution', true),
     description: 'Update a substitution',
     parameters: [
       {
@@ -471,6 +498,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
 export const deleteSubstitution = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', '@unit Substitution', true),
     description: 'Delete a substitution',
     parameters: [
       {

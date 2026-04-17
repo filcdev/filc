@@ -16,6 +16,7 @@ import {
   teacher,
 } from '#database/schema/timetable';
 import type { SuccessResponse } from '#utils/globals';
+import { filcExt } from '#utils/openapi';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 
@@ -108,13 +109,42 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   });
 }
 
-const getForCohortResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
+const enrichedLessonSchema = z.object({
+  classrooms: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  day: ensureJsonSafeDates(createSelectSchema(dayDefinition)).optional(),
+  id: z.string(),
+  period: z
+    .object({
+      endTime: z.string(),
+      id: z.string(),
+      period: z.number(),
+      startTime: z.string(),
+    })
+    .nullable(),
+  periodsPerWeek: z.number(),
+  subject: z
+    .object({ id: z.string(), name: z.string(), short: z.string() })
+    .nullable(),
+  teachers: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
+  termDefinitionId: z.string().nullable(),
+  weeksDefinitionId: z.string(),
+});
+
+const enrichedLessonResponseSchema = z.object({
+  data: z.array(enrichedLessonSchema),
   success: z.boolean(),
 });
 
+const enrichedLessonType =
+  '@listof EnrichedLesson @field(.classrooms, List<Classroom>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)';
+
 export const getLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Lesson', enrichedLessonType),
     description: 'Get lessons for a given cohort from the database.',
     parameters: [
       {
@@ -131,7 +161,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getForCohortResponseSchema)),
+            schema: resolver(enrichedLessonResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -141,6 +171,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
   }),
   async (c) => {
     const cId = c.req.param('cohortId');
+
     if (!cId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Missing cohortId',
@@ -180,18 +211,9 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
-const getForTeacherResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
-  success: z.boolean(),
-});
-
-const getForRoomResponseSchema = z.object({
-  data: ensureJsonSafeDates(createSelectSchema(lesson)).array(),
-  success: z.boolean(),
-});
-
 export const getLessonsForTeacher = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Lesson', enrichedLessonType),
     description: 'Get lessons for a given teacher from the database.',
     parameters: [
       {
@@ -208,7 +230,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getForTeacherResponseSchema)),
+            schema: resolver(enrichedLessonResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -256,6 +278,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
 
 export const getLessonsForRoom = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Lesson', enrichedLessonType),
     description: 'Get lessons for a given classroom from the database.',
     parameters: [
       {
@@ -272,7 +295,7 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(ensureJsonSafeDates(getForRoomResponseSchema)),
+            schema: resolver(enrichedLessonResponseSchema),
           },
         },
         description: 'Successful Response',
