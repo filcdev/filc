@@ -17,6 +17,7 @@ import { syncDevicesByIds } from '#routes/doorlock/device-sync';
 import { sendMessage } from '#routes/doorlock/websocket-handler';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication } from '#utils/middleware';
+import { filcExt } from '#utils/openapi';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -62,6 +63,11 @@ const activationResponseSchema = z.object({
 
 export const listSelfCardsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit CardListResponse @field(.cards, List<Card>)',
+      true
+    ),
     description: 'List cards owned by the authenticated user',
     responses: {
       200: {
@@ -93,6 +99,7 @@ export const listSelfCardsRoute = doorlockFactory.createHandlers(
 
 export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt('Doorlock', '@unit CardResponse @field(.card, Card)', true),
     description: 'Update the frozen state of a user-owned card',
     requestBody: {
       content: {
@@ -168,6 +175,11 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
 
 export const activateVirtualCardRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DoorlockActivationResponse @field(.log, AuditLog)',
+      true
+    ),
     description:
       'Activate an authorized device using a user-owned virtual card',
     requestBody: {

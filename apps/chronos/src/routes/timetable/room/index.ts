@@ -4,6 +4,7 @@ import z from 'zod';
 import { db } from '#database';
 import { classroom } from '#database/schema/timetable';
 import type { SuccessResponse } from '#utils/globals';
+import { filcExt } from '#utils/openapi';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { timetableFactory } from '../_factory';
 
@@ -14,6 +15,7 @@ const getClassroomsResponseSchema = z.object({
 
 export const getClassrooms = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Classroom', '@listof Classroom'),
     description: 'Get all classrooms from the database.',
     responses: {
       200: {

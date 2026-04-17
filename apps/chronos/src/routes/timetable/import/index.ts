@@ -12,6 +12,7 @@ import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { filcExt } from '#utils/openapi';
 import { importTimetableXML } from '#utils/timetable/imports';
 import { ensureJsonSafeDates } from '#utils/zod';
 
@@ -35,6 +36,7 @@ const importSchema = (
 
 export const importRoute = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Timetable', '@nodata', true),
     description: 'Import a timetable from an Oman XML file.',
     requestBody: {
       content: {

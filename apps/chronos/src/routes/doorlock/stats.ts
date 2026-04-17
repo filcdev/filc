@@ -14,6 +14,7 @@ import {
 } from '#database/schema/doorlock';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { filcExt } from '#utils/openapi';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -86,6 +87,11 @@ const sevenDaysAgo = () => {
 
 export const doorlockStatsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DoorlockStatsResponse @field(.stats, DoorlockStats)',
+      true
+    ),
     description: 'Get aggregated doorlock statistics',
     responses: {
       200: {
@@ -189,6 +195,11 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
 
 export const deviceStatsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DeviceStatsResponse @field(.stats, List<DeviceHealthStat>)',
+      true
+    ),
     description: 'Get device health statistics',
     responses: {
       200: {

@@ -9,6 +9,7 @@ import { db } from '#database';
 import { device } from '#database/schema/doorlock';
 import type { SuccessResponse } from '#utils/globals';
 import { requireAuthentication, requireAuthorization } from '#utils/middleware';
+import { filcExt } from '#utils/openapi';
 import { ensureJsonSafeDates } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -67,6 +68,11 @@ function buildConstraintError(error: unknown) {
 
 export const listDevicesRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DeviceListResponse @field(.devices, List<Device>)',
+      true
+    ),
     description: 'List all doorlock devices',
     responses: {
       200: {
@@ -97,6 +103,11 @@ export const listDevicesRoute = doorlockFactory.createHandlers(
 
 export const createDeviceRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DeviceResponse @field(.device, Device)',
+      true
+    ),
     description: 'Create a new doorlock device',
     requestBody: {
       content: {
@@ -151,6 +162,11 @@ export const createDeviceRoute = doorlockFactory.createHandlers(
 
 export const updateDeviceRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DeviceResponse @field(.device, Device)',
+      true
+    ),
     description: 'Update an existing doorlock device',
     requestBody: {
       content: {
@@ -219,6 +235,7 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
 
 export const deleteDeviceRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt('Doorlock', '@nodata', true),
     description: 'Delete a doorlock device',
     responses: {
       200: { description: 'Device deleted' },
