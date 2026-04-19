@@ -20,6 +20,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  formatLocalizedDate,
+  getDayOrder,
+  getLocalizedWeekdayName,
+  isMatchingWeekday,
+} from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type MovedLessonApiResponse = InferResponseType<
@@ -64,13 +70,23 @@ type MovedLessonDialogProps = {
   periods: Period[];
 };
 
-function formatLessonLabel(lesson: EnrichedLesson): string {
+function formatLessonLabel(
+  lesson: EnrichedLesson,
+  language: string | undefined
+): string {
   const parts: string[] = [];
   if (lesson.subject) {
     parts.push(lesson.subject.short);
   }
   if (lesson.day) {
-    parts.push(lesson.day.short);
+    parts.push(
+      getLocalizedWeekdayName(
+        lesson.day.name,
+        lesson.day.short,
+        language,
+        'short'
+      )
+    );
   }
   if (lesson.period) {
     parts.push(`P${lesson.period.period}`);
@@ -103,7 +119,7 @@ export function MovedLessonDialog({
   open,
   periods,
 }: MovedLessonDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [formState, setFormState] = useState<MovedLessonCreatePayload>(
     initialState(item)
   );
@@ -114,7 +130,7 @@ export function MovedLessonDialog({
     setSelectedCohort('');
   }, [item]);
 
-  // Auto-fill target day when date changes
+  // Auto-fill target day based on selected date.
   useEffect(() => {
     if (!formState.date || days.length === 0) {
       return;
@@ -122,25 +138,8 @@ export function MovedLessonDialog({
 
     const weekdayIndex = dayjs(formState.date as Date | string).day(); // 0 = Sunday, 1 = Monday, etc.
 
-    // Map dayjs weekday index to day definition
-    // Assuming days array contains: Hétfő (Mon), Kedd (Tue), Szerda (Wed), Csütörtök (Thu), Péntek (Fri), Szombat (Sat), Vasárnap (Sun)
-    const dayMap: Record<number, string[]> = {
-      0: ['va', 'vasárnap', 'sunday'], // Sunday
-      1: ['hé', 'hétfő', 'monday'], // Monday
-      2: ['ke', 'kedd', 'tuesday'], // Tuesday
-      3: ['sz', 'szerda', 'wednesday'], // Wednesday
-      4: ['cs', 'csütörtök', 'thursday'], // Thursday
-      5: ['pé', 'péntek', 'friday'], // Friday
-      6: ['o', 'szombat', 'saturday'], // Saturday
-    };
-
-    const possibleShorts = dayMap[weekdayIndex] || [];
     const matchingDay = days.find((day) =>
-      possibleShorts.some(
-        (short) =>
-          day.short.toLowerCase() === short ||
-          day.name.toLowerCase().includes(short)
-      )
+      isMatchingWeekday(weekdayIndex, day.name, day.short)
     );
 
     if (matchingDay) {
@@ -148,8 +147,24 @@ export function MovedLessonDialog({
         ...prev,
         startingDay: matchingDay.id,
       }));
+      return;
     }
+
+    setFormState((prev) => ({
+      ...prev,
+      startingDay: undefined,
+    }));
   }, [formState.date, days]);
+
+  const selectedWeekdayLabel = useMemo(() => {
+    if (!formState.date) {
+      return '-';
+    }
+
+    return formatLocalizedDate(formState.date as Date | string, i18n.language, {
+      weekday: 'long',
+    });
+  }, [formState.date, i18n.language]);
 
   const cohortLessonsQuery = useQuery({
     enabled: !!selectedCohort,
@@ -184,15 +199,15 @@ export function MovedLessonDialog({
       }
     }
 
-    // Rendezés nap szerint, majd óra szerint
+    // Sort by weekday order, then by period.
     return Array.from(map.values()).sort((a, b) => {
-      const aDay = a.day?.name ?? '';
-      const bDay = b.day?.name ?? '';
+      const aDay = getDayOrder(a.day?.name ?? '', a.day?.short);
+      const bDay = getDayOrder(b.day?.name ?? '', b.day?.short);
 
       if (aDay !== bDay) {
-        return aDay.localeCompare(bDay);
+        return aDay - bDay;
       }
-      // Ha ugyanaz a nap, akkor óra szerint
+
       return (a.period?.period ?? 999) - (b.period?.period ?? 999);
     });
   }, [allLessons, cohortLessonsQuery.data, selectedCohort]);
@@ -290,22 +305,9 @@ export function MovedLessonDialog({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{t('movedLesson.targetDay')}</Label>
-                <Combobox
-                  emptyMessage={t('movedLesson.noDayFound')}
-                  onValueChange={(value) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      startingDay: value || undefined,
-                    }))
-                  }
-                  options={days.map((day) => ({
-                    label: `${day.name} (${day.short})`,
-                    value: day.id,
-                  }))}
-                  placeholder={t('movedLesson.targetDay')}
-                  searchPlaceholder={t('search')}
-                  value={formState.startingDay ?? ''}
-                />
+                <div className="rounded-md border px-3 py-2 text-sm capitalize">
+                  {selectedWeekdayLabel}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>{t('movedLesson.targetPeriod')}</Label>
@@ -399,7 +401,7 @@ export function MovedLessonDialog({
                             toggleLesson(lesson.id, !!checked)
                           }
                         />
-                        <span>{formatLessonLabel(lesson)}</span>
+                        <span>{formatLessonLabel(lesson, i18n.language)}</span>
                       </label>
                     ))}
                 </div>

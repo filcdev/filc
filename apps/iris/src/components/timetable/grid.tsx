@@ -20,9 +20,9 @@ export function TimetableGrid({ model }: TimetableGridProps) {
         {days.map((day) => (
           <div
             className="p-3 text-center font-bold text-[11px] text-muted-foreground uppercase tracking-widest"
-            key={day.name}
+            key={day.key}
           >
-            {day.name}
+            {day.label}
           </div>
         ))}
       </div>
@@ -52,7 +52,7 @@ export function TimetableGrid({ model }: TimetableGridProps) {
 
             {/* Day Cells */}
             {days.map((day) => {
-              const cellKey = `${day.name}-${slot.start.format('HH:mm')}`;
+              const cellKey = `${day.key}-${slot.start.format('HH:mm')}`;
               const cell = grid.get(cellKey);
               const lessons = cell?.lessons ?? [];
 

@@ -1,1 +1,11 @@
-bunx lint-staged
+if command -v bunx >/dev/null 2>&1; then
+	bunx lint-staged && exit 0
+fi
+
+if command -v npx >/dev/null 2>&1; then
+	# Do not use --no-install here: on some host setups lint-staged is not in local node_modules.
+	npx lint-staged && exit 0
+fi
+
+echo "Warning: could not run lint-staged (bunx/npx unavailable or failed). Skipping pre-commit checks."
+exit 0

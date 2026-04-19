@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { isMatchingWeekday } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type SubstitutionApiResponse = InferResponseType<
@@ -144,29 +145,16 @@ export function SubstitutionDialog({
 
     // Get day of week from selected date (0 = Sunday, 1 = Monday, etc.)
     const selectedDayOfWeek = formState.date.getDay();
-    const dayNames = [
-      'Vasárnap',
-      'Hétfő',
-      'Kedd',
-      'Szerda',
-      'Csütörtök',
-      'Péntek',
-      'Szombat',
-    ];
-    const selectedDayName = dayNames[selectedDayOfWeek];
-
-    if (!selectedDayName) {
-      return [];
-    }
 
     return cohortLessonsQuery.data.filter((lesson) => {
       if (!lesson.day) {
         return false;
       }
-      // Check if the lesson's day matches the selected date's day
-      return (
-        lesson.day.name === selectedDayName ||
-        lesson.day.short === selectedDayName.substring(0, 3)
+      // Match backend day labels in either Hungarian or English.
+      return isMatchingWeekday(
+        selectedDayOfWeek,
+        lesson.day.name,
+        lesson.day.short
       );
     });
   }, [formState.date, cohortLessonsQuery.data]);

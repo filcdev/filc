@@ -36,6 +36,7 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
+import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type MovedLessonApiResponse = InferResponseType<
@@ -63,16 +64,6 @@ type EnrichedLesson = Omit<
   NonNullable<SubstitutionData['lessons'][number]>,
   'createdAt' | 'updatedAt'
 >;
-
-const dayOrderMap = new Map([
-  ['Hé', 0], // Hétfő (Monday)
-  ['Ke', 1], // Kedd (Tuesday)
-  ['Sz', 2], // Szerda (Wednesday)
-  ['Cs', 3], // Csütörtök (Thursday)
-  ['Pé', 4], // Péntek (Friday)
-  ['O', 5], // Szombat (Saturday)
-  ['Va', 6], // Vasárnap (Sunday)
-]);
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -157,8 +148,8 @@ function extractReferenceData(
   extractFromSubstitutions(subs, periodMap, dayMap, lessonMap);
 
   const sortedDays = Array.from(dayMap.values()).sort((a, b) => {
-    const aOrder = dayOrderMap.get(a.short) ?? 999;
-    const bOrder = dayOrderMap.get(b.short) ?? 999;
+    const aOrder = getDayOrder(a.name, a.short);
+    const bOrder = getDayOrder(b.name, b.short);
     return aOrder - bOrder;
   });
 
@@ -170,7 +161,7 @@ function extractReferenceData(
 }
 
 function MovedLessonsPage() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
@@ -354,8 +345,14 @@ function MovedLessonsPage() {
       list = [...list].sort((a, b) => {
         // Special handling for 'day' column - order by week day sequence
         if (sortColumn === 'day') {
-          const aOrder = dayOrderMap.get(a.dayDefinition?.short ?? '') ?? 999;
-          const bOrder = dayOrderMap.get(b.dayDefinition?.short ?? '') ?? 999;
+          const aOrder = getDayOrder(
+            a.dayDefinition?.name ?? '',
+            a.dayDefinition?.short
+          );
+          const bOrder = getDayOrder(
+            b.dayDefinition?.name ?? '',
+            b.dayDefinition?.short
+          );
           const comparison = aOrder - bOrder;
           return sortDirection === 'asc' ? comparison : -comparison;
         }
@@ -577,7 +574,7 @@ function MovedLessonsPage() {
               {filteredMovedLessons.map((ml) => (
                 <TableRow key={ml.movedLesson.id}>
                   <TableCell className="font-medium">
-                    {dayjs(ml.movedLesson.date).format('YYYY/MM/DD')}
+                    {formatLocalizedDate(ml.movedLesson.date, i18n.language)}
                   </TableCell>
                   <TableCell>
                     {ml.dayDefinition
