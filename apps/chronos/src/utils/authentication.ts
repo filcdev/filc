@@ -25,7 +25,7 @@ const authOptions = {
       generateId: false,
     },
   },
-
+  basePath: '/auth',
   baseURL: env.baseUrl,
   database: drizzleAdapter(db, {
     provider: 'pg',

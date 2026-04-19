@@ -6,6 +6,8 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+const API_REWRITE = /^\/api/;
+
 export default defineConfig({
   build: {
     sourcemap: true,
@@ -37,7 +39,12 @@ export default defineConfig({
     host: true,
     port: 3000,
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': {
+        rewrite(path) {
+          return path.replace(API_REWRITE, '');
+        },
+        target: 'http://localhost:3001',
+      },
     },
   },
 });
