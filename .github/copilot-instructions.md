@@ -6,12 +6,12 @@
 - **Chronos** (`apps/chronos/`): Backend API server built with Hono, providing REST endpoints for timetable management, doorlock access control, user management, and authentication
 - **Iris** (`apps/iris/`): Frontend React application built with Vite, TanStack Router, and shadcn/ui components
 
-**Repository Size**: ~150 source files | **Runtime**: Bun 1.3.10 | **Type**: TypeScript monorepo
+**Repository Size**: ~150 source files | **Runtime**: Bun 1.3.12 | **Type**: TypeScript monorepo
 
 ## Technology Stack
 
 ### Backend (Chronos)
-- **Runtime**: Bun 1.3.10
+- **Runtime**: Bun 1.3.12
 - **Framework**: Hono with OpenAPI support
 - **Database**: PostgreSQL with Drizzle ORM
 - **Auth**: better-auth with Microsoft Entra ID
