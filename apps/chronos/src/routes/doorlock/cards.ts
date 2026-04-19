@@ -18,6 +18,7 @@ import {
   replaceCardDevices,
 } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -97,6 +98,11 @@ const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
 
 export const listCardsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit CardListResponse @field(.cards, List<Card>)',
+      true
+    ),
     description: 'List all access cards',
     responses: {
       200: {
@@ -124,6 +130,11 @@ export const listCardsRoute = doorlockFactory.createHandlers(
 
 export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DoorlockUserListResponse @field(.users, List<DoorlockUser>)',
+      true
+    ),
     description: 'List users eligible for card ownership',
     responses: {
       200: {
@@ -159,6 +170,7 @@ export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
 
 export const createCardRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt('Doorlock', '@unit CardResponse @field(.card, Card)', true),
     description: 'Create a new access card',
     requestBody: {
       content: {
@@ -242,6 +254,7 @@ export const createCardRoute = doorlockFactory.createHandlers(
 
 export const updateCardRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt('Doorlock', '@unit CardResponse @field(.card, Card)', true),
     description: 'Update an access card',
     requestBody: {
       content: {
@@ -319,6 +332,7 @@ export const updateCardRoute = doorlockFactory.createHandlers(
 
 export const deleteCardRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt('Doorlock', '@nodata', true),
     description: 'Delete an access card',
     responses: {
       200: { description: 'Card deleted' },

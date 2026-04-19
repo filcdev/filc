@@ -2,6 +2,7 @@ import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { pingFactory } from '#routes/ping/_factory';
+import { filcExt } from '#utils/openapi';
 
 const pingResponseSchema = z.object({
   data: z.object({
@@ -12,6 +13,7 @@ const pingResponseSchema = z.object({
 
 export const ping = pingFactory.createHandlers(
   describeRoute({
+    ...filcExt('Ping', '@unit PingResponse'),
     description: 'Health check endpoint that returns a pong response.',
     responses: {
       200: {

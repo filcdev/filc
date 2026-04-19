@@ -9,6 +9,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort, timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -21,6 +22,7 @@ const getForTimetableResponseSchema = z.object({
 
 export const getCohortsForTimetable = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Cohort', '@listof Cohort', true),
     description: 'Get cohorts for a given timetable from the database.',
     parameters: [
       {

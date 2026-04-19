@@ -21,6 +21,7 @@ import {
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
+import { filcExt } from '#utils/openapi';
 import {
   createInsertSchema,
   createSelectSchema,
@@ -64,12 +65,7 @@ const allSubstitutionsResponseSchema = z.object({
     z.object({
       lessons: z.array(enrichedSubstitutionLessonSchema),
       substitution: substitutionSchema,
-      teacher: z.object({
-        firstName: z.string().nullable(),
-        id: z.string().nullable(),
-        lastName: z.string().nullable(),
-        short: z.string().nullable(),
-      }),
+      teacher: createSelectSchema(teacher).nullable(),
     })
   ),
   success: z.boolean(),
@@ -212,8 +208,12 @@ async function enrichLessons(lessonIds: string[]) {
   });
 }
 
+const substitutionWithRelationsType =
+  '@listof SubstitutionWithRelations @field(.substitution, Substitution) @field(.teacher, Teacher) @field(.lessons, List<String>)';
+
 export const getAllSubstitutions = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', substitutionWithRelationsType, true),
     description: 'Get all substitutions from the database.',
     responses: {
       200: {
@@ -306,6 +306,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
 
 export const getRelevantSubstitutions = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', substitutionWithRelationsType, true),
     description: 'Get relevant substitutions from the database.',
     responses: {
       200: {
@@ -359,6 +360,11 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
 export const getRelevantSubstitutionsForCohort =
   timetableFactory.createHandlers(
     describeRoute({
+      ...filcExt(
+        'Substitution',
+        '@unit SubstitutionsByCohort @field(.substitutions, List<SubstitutionWithRelations>)',
+        true
+      ),
       description:
         'Get relevant substitutions for a given cohort from the database.',
       parameters: [
@@ -451,6 +457,7 @@ const createResponseSchema = z.object({
 
 export const createSubstitution = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', '@unit Substitution', true),
     description: 'Create a new substitution',
     requestBody: {
       content: {
@@ -531,6 +538,7 @@ const updateSchema = createUpdateSchema(substitution)
 
 export const updateSubstitution = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', '@unit Substitution', true),
     description: 'Update a substitution',
     parameters: [
       {
@@ -641,6 +649,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
 export const deleteSubstitution = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Substitution', '@nodata', true),
     description: 'Delete a substitution',
     parameters: [
       {

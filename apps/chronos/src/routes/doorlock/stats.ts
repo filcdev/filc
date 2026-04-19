@@ -15,6 +15,7 @@ import {
   deviceHealth,
 } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { filcExt } from '#utils/openapi';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'stats']);
@@ -86,6 +87,11 @@ const sevenDaysAgo = () => {
 
 export const doorlockStatsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DoorlockStatsResponse @field(.stats, DoorlockStats)',
+      true
+    ),
     description: 'Get aggregated doorlock statistics',
     responses: {
       200: {
@@ -189,6 +195,11 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
 
 export const deviceStatsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DeviceStatsResponse @field(.stats, List<DeviceHealthStat>)',
+      true
+    ),
     description: 'Get device health statistics',
     responses: {
       200: {

@@ -4,6 +4,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort } from '#database/schema/timetable';
 import { cohortFactory } from '#routes/cohort/_factory';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
 const listCohortsResponseSchema = z.object({
@@ -13,6 +14,7 @@ const listCohortsResponseSchema = z.object({
 
 export const listCohorts = cohortFactory.createHandlers(
   describeRoute({
+    ...filcExt('Cohort', '@listof Cohort'),
     description: 'List all cohorts',
     responses: {
       200: {

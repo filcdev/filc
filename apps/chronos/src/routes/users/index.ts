@@ -10,6 +10,8 @@ import { user } from '#database/schema/authentication';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { usersFactory } from '#routes/users/_factory';
 import { getUserPermissions } from '#utils/authorization';
+import { filcExt } from '#utils/openapi';
+import { createSelectSchema } from '#utils/zod';
 
 const listUsersQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
@@ -26,11 +28,39 @@ const updateUserBodySchema = (
   await resolver(userUpdatePayload).toOpenAPISchema()
 ).schema;
 
+const userSchema = createSelectSchema(user).extend({
+  displayName: z.string(),
+  permissions: z.array(z.string()),
+});
+
+const listUsersResponseSchema = z.object({
+  data: z.object({
+    total: z.number(),
+    users: z.array(userSchema),
+  }),
+  success: z.boolean(),
+});
+
+const updateUserResponseSchema = z.object({
+  data: userSchema,
+  success: z.boolean(),
+});
+
 export const listUsers = usersFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Users',
+      '@unit UserListResponse @field(.users, List<User>) @field(.total, Int)',
+      true
+    ),
     description: 'List users',
     responses: {
       200: {
+        content: {
+          'application/json': {
+            schema: resolver(listUsersResponseSchema),
+          },
+        },
         description: 'List of users',
       },
     },
@@ -80,6 +110,7 @@ export const listUsers = usersFactory.createHandlers(
 
 export const updateUser = usersFactory.createHandlers(
   describeRoute({
+    ...filcExt('Users', '@unit User', true),
     description: 'Update user',
     requestBody: {
       content: {
@@ -88,6 +119,11 @@ export const updateUser = usersFactory.createHandlers(
     },
     responses: {
       200: {
+        content: {
+          'application/json': {
+            schema: resolver(updateUserResponseSchema),
+          },
+        },
         description: 'User updated',
       },
     },
