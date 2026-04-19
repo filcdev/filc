@@ -130,6 +130,12 @@
     "filterByTeacher": "Tanár",
     "filterByClassroom": "Terem",
     "printPdf": "Nyomtatás / PDF",
+    "printDialog": {
+      "title": "Órarend nyomtatása",
+      "blackAndWhite": "Fekete-fehér",
+      "generate": "PDF generálása",
+      "generating": "Generálás..."
+    },
     "time": "Idő",
     "teacherFallback": "Tanár",
     "selectTimetable": "Órarend kiválasztása",

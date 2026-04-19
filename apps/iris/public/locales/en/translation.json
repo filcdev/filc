@@ -141,6 +141,12 @@
     "filterByTeacher": "Teacher",
     "filterByClassroom": "Classroom",
     "printPdf": "Print / PDF",
+    "printDialog": {
+      "title": "Print Timetable",
+      "blackAndWhite": "Black & White",
+      "generate": "Generate PDF",
+      "generating": "Generating..."
+    },
     "time": "Time",
     "teacherFallback": "Teacher",
     "selectTimetable": "Select timetable",

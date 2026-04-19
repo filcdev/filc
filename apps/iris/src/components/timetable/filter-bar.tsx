@@ -239,7 +239,7 @@ export function FilterBar({
   };
 
   return (
-    <div className="flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 print:hidden">
+    <div className="flex w-full max-w-6xl flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <ButtonGroup>
           <Button

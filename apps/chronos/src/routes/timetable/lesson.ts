@@ -79,6 +79,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
         const d = dayMap.get(l.dayDefinitionId);
         return d;
       })(),
+      groupsIds: (Array.isArray(l.groupsIds) ? l.groupsIds : []) as string[],
       id: l.id,
       period: (() => {
         const p = periodMap.get(l.periodId);
@@ -115,6 +116,7 @@ const enrichedLessonSchema = z.object({
     z.object({ id: z.string(), name: z.string(), short: z.string() })
   ),
   day: createSelectSchema(dayDefinition).optional(),
+  groupsIds: z.array(z.string()),
   id: z.string(),
   period: z
     .object({
