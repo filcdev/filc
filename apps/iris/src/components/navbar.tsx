@@ -242,9 +242,9 @@ export function Navbar({
                               {displayNickname}
                             </p>
                             <p className="font-medium text-muted-foreground text-sm leading-none">
-                              {displayName !== displayNickname
-                                ? `(${displayName})`
-                                : null}
+                              {displayName === displayNickname
+                                ? null
+                                : `(${displayName})`}
                             </p>
                           </div>
                           <p className="text-muted-foreground text-xs leading-none">

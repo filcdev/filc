@@ -15,6 +15,11 @@ export type CohortResponse = InferResponseType<
 >;
 export type CohortItem = NonNullable<CohortResponse['data']>[number];
 
+export type TimetableResponse = InferResponseType<
+  (typeof api.timetable.timetables)['$get']
+>;
+export type TimetableItem = NonNullable<TimetableResponse['data']>[number];
+
 export type TeacherResponse = InferResponseType<
   (typeof api.timetable.teachers.getAll)['$get']
 >;

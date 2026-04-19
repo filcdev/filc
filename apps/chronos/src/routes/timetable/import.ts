@@ -23,6 +23,7 @@ const importSchema = z.object({
   name: z.string(),
   omanXml: z.file(),
   validFrom: z.coerce.date(),
+  validTo: z.coerce.date().optional(),
 });
 
 export const importRoute = timetableFactory.createHandlers(
@@ -63,6 +64,7 @@ export const importRoute = timetableFactory.createHandlers(
     const file = body.omanXml;
     const name = body.name;
     const validFrom = body.validFrom;
+    const validTo = body.validTo;
 
     // check that we got valid XML
     if (file.type !== 'text/xml' && file.type !== 'application/xml') {
@@ -93,6 +95,7 @@ export const importRoute = timetableFactory.createHandlers(
       await importTimetableXML(data, {
         name,
         validFrom: validFrom.toISOString(),
+        validTo: validTo?.toISOString() ?? null,
       });
       const end = performance.now();
 

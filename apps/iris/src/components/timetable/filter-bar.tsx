@@ -25,12 +25,14 @@ import {
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/utils';
+import { TimetableSelector } from './timetable-selector';
 
 import type {
   ClassroomItem,
   CohortItem,
   FilterType,
   TeacherItem,
+  TimetableItem,
 } from './types';
 
 const teacherLabel = (t: TeacherItem, fallback: string): string =>
@@ -115,12 +117,15 @@ export function FilterBar({
   cohorts,
   teachers,
   classrooms,
+  timetables,
   selectedByClass,
   selectedByTeacher,
   selectedByRoom,
+  selectedTimetableId,
   onSelectClass,
   onSelectTeacher,
   onSelectRoom,
+  onSelectTimetable,
   selectorLoading,
   onPrint,
   disabled,
@@ -130,12 +135,15 @@ export function FilterBar({
   cohorts?: CohortItem[];
   teachers?: TeacherItem[];
   classrooms?: ClassroomItem[];
+  timetables?: TimetableItem[];
   selectedByClass: string | null;
   selectedByTeacher: string | null;
   selectedByRoom: string | null;
+  selectedTimetableId: string | null;
   onSelectClass: (value: string) => void;
   onSelectTeacher: (value: string) => void;
   onSelectRoom: (value: string) => void;
+  onSelectTimetable: (value: string) => void;
   selectorLoading: boolean;
   onPrint: () => void;
   disabled?: boolean;
@@ -257,6 +265,12 @@ export function FilterBar({
           </Button>
           {renderSelect()}
         </ButtonGroup>
+        <TimetableSelector
+          loading={!timetables}
+          onSelect={onSelectTimetable}
+          selectedId={selectedTimetableId}
+          timetables={timetables}
+        />
       </div>
 
       <Button disabled={disabled} onClick={onPrint} variant="outline">

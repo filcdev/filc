@@ -8,6 +8,7 @@ export const searchSchema = z.object({
   cohort: z.string().optional(),
   room: z.string().optional(),
   teacher: z.string().optional(),
+  timetable: z.string().optional(),
 });
 
 export const Route = createFileRoute('/_public/')({
