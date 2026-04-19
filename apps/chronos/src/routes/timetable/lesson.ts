@@ -17,6 +17,7 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -139,8 +140,12 @@ const responseSchema = z.object({
   success: z.boolean(),
 });
 
+const enrichedLessonType =
+  '@listof EnrichedLesson @field(.classrooms, List<Classroom>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)';
+
 export const getLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Lesson', enrichedLessonType),
     description: 'Get lessons for a given cohort from the database.',
     parameters: [
       {
@@ -204,6 +209,7 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
 
 export const getLessonsForTeacher = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Lesson', enrichedLessonType),
     description: 'Get lessons for a given teacher from the database.',
     parameters: [
       {
@@ -264,6 +270,7 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
 
 export const getLessonsForRoom = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Lesson', enrichedLessonType),
     description: 'Get lessons for a given classroom from the database.',
     parameters: [
       {
@@ -324,6 +331,10 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
 
 export const getLessonForId = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Lesson',
+      '@unit EnrichedLesson @field(.classrooms, List<Classroom>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)'
+    ),
     description: 'Get a lesson by its ID from the database.',
     parameters: [
       {

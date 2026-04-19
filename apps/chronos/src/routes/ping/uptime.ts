@@ -5,6 +5,7 @@ import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { pingFactory } from '#routes/ping/_factory';
+import { filcExt } from '#utils/openapi';
 
 dayjs.extend(relativeTime);
 dayjs.extend(duration);
@@ -19,6 +20,7 @@ const uptimeResponseSchema = z.object({
 
 export const uptime = pingFactory.createHandlers(
   describeRoute({
+    ...filcExt('Ping', '@unit UptimeResponse'),
     description: 'Get the uptime.',
     responses: {
       200: {

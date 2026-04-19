@@ -7,6 +7,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
 
@@ -173,6 +174,11 @@ const mapRowsToLogs = (
 
 export const listLogsRoute = doorlockFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Doorlock',
+      '@unit DoorlockLogListResponse @field(.logs, List<DoorlockLogEntry>)',
+      true
+    ),
     description: 'List audit log entries',
     responses: {
       200: {

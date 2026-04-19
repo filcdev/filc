@@ -22,7 +22,7 @@ const importResponseSchema = z.object({
 const importSchema = z.object({
   name: z.string(),
   omanXml: z.file(),
-  validFrom: z.date(),
+  validFrom: z.coerce.date(),
 });
 
 export const importRoute = timetableFactory.createHandlers(

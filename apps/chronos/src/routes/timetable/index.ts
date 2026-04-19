@@ -8,6 +8,7 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { timetable } from '#database/schema/timetable';
 import { requireAuthentication } from '#middleware/auth';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -27,6 +28,7 @@ const getLatestValidReponseSchema = z.object({
 
 export const getAllTimetables = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Timetable', '@listof Timetable', true),
     description: 'Get all timetables from the database.',
     responses: {
       200: {
@@ -67,6 +69,7 @@ const dateToYYYYMMDD = (date: Date): string =>
 
 export const getLatestValidTimetable = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Timetable', '@unit Timetable', true),
     description: 'Get the latest valid timetable.',
     responses: {
       200: {
@@ -112,6 +115,7 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
 
 export const getAllValidTimetables = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('Timetable', '@listof Timetable', true),
     description: 'Get all the latest valid timetables.',
     responses: {
       200: {

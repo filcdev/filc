@@ -17,6 +17,7 @@ import {
   period,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { filcExt } from '#utils/openapi';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -172,8 +173,12 @@ const getAllResponseSchema = z.object({
   success: z.boolean(),
 });
 
+const movedLessonWithRelationsType =
+  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<String>)';
+
 export const getAllMovedLessons = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', movedLessonWithRelationsType),
     description: 'Get all moved lessons.',
     responses: {
       200: {
@@ -225,6 +230,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
 
 export const getRelevantMovedLessons = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', movedLessonWithRelationsType),
     description: 'Get relevant moved lessons for a given timetable.',
     parameters: [
       {
@@ -298,6 +304,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
 
 export const getMovedLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', movedLessonWithRelationsType),
     description: 'Get all moved lessons for a cohort.',
     parameters: [
       {
@@ -367,6 +374,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
 
 export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', movedLessonWithRelationsType),
     description: 'Get all relevant moved lessons for a given cohort.',
     parameters: [
       {
@@ -456,6 +464,7 @@ const createResponseSchema = z.object({
 
 export const createMovedLesson = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', '@unit MovedLesson', true),
     description: 'Create a moved lesson.',
     requestBody: {
       content: {
@@ -477,8 +486,6 @@ export const createMovedLesson = timetableFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('movedLesson:create'),
-  // TODO: timetable awareness for validation
-  // zValidator('param', z.object({ timetableId: z.uuid() })),
   zValidator('json', createSchema),
   async (c) => {
     try {
@@ -549,6 +556,7 @@ const updateSchema = z.object({
 
 export const updateMovedLesson = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', '@unit MovedLesson', true),
     description: 'Update a moved lesson.',
     parameters: [
       {
@@ -644,6 +652,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
 
 export const deleteMovedLesson = timetableFactory.createHandlers(
   describeRoute({
+    ...filcExt('MovedLesson', '@nodata', true),
     description: 'Delete a moved lesson',
     parameters: [
       {
