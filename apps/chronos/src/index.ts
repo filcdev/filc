@@ -140,8 +140,19 @@ api.get(
 );
 api.get('/doc/swagger', swaggerUI({ url: '/api/doc/openapi.json' }));
 
+const app = new Hono();
+app.route('/api', api);
+
+app.onError((err, c) => {
+  logger.error('Unhandled error occurred:', {
+    message: err.message,
+    stack: err.stack,
+  });
+  return c.redirect('/error');
+});
+
 export const server = Bun.serve({
-  fetch: api.fetch,
+  fetch: app.fetch,
   port: env.port,
   websocket,
 });
@@ -149,7 +160,7 @@ export const server = Bun.serve({
 logger.info(`chronos listening on http://localhost:${env.port}`);
 if (env.logLevel === 'trace') {
   logger.info('Log level set to TRACE, verbose route listing enabled');
-  showRoutes(api, { verbose: true });
+  showRoutes(app, { verbose: true });
 }
 
 const handleShutdown = async () => {
@@ -163,3 +174,4 @@ process.on('SIGINT', handleShutdown);
 process.on('SIGTERM', handleShutdown);
 
 export type ApiType = typeof api;
+export type AppType = typeof app;
