@@ -17,6 +17,7 @@ import {
   generateSlug,
   paginationSchema,
 } from '#utils/news/schemas';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
 const authorSelect = {
@@ -47,6 +48,11 @@ const blogDetailResponseSchema = z.object({
   success: z.literal(true),
 });
 
+const blogBaseDetailResponseSchema = z.object({
+  data: blogSelectSchema,
+  success: z.literal(true),
+});
+
 const successResponseSchema = z.object({
   success: z.literal(true),
 });
@@ -70,6 +76,7 @@ const checkSlugExists = async (slug: string, excludeId?: string) => {
 
 export const listPublishedBlogs = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author?)'),
     description: 'List published blog posts (public, no auth required)',
     responses: {
       200: {
@@ -122,6 +129,7 @@ export const listPublishedBlogs = newsFactory.createHandlers(
 
 export const getBlogBySlug = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author?)'),
     description: 'Get a published blog post by slug (public, no auth required)',
     responses: {
       200: {
@@ -172,6 +180,7 @@ export const getBlogBySlug = newsFactory.createHandlers(
 
 export const listDrafts = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author?)', true),
     description: 'List all blog posts including drafts (requires permission)',
     responses: {
       200: {
@@ -223,6 +232,7 @@ export const listDrafts = newsFactory.createHandlers(
 
 export const getBlogById = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author?)', true),
     description:
       'Get any blog post by ID including drafts (requires permission)',
     responses: {
@@ -276,6 +286,7 @@ export const getBlogById = newsFactory.createHandlers(
 
 export const createBlog = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@unit BlogPost', true),
     description: 'Create a new blog post (defaults to draft)',
     requestBody: {
       content: {
@@ -288,7 +299,7 @@ export const createBlog = newsFactory.createHandlers(
       201: {
         content: {
           'application/json': {
-            schema: resolver(blogDetailResponseSchema),
+            schema: resolver(blogBaseDetailResponseSchema),
           },
         },
         description: 'Blog post created',
@@ -333,6 +344,7 @@ export const createBlog = newsFactory.createHandlers(
 
 export const updateBlog = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@unit BlogPost', true),
     description: 'Update a blog post',
     requestBody: {
       content: {
@@ -345,7 +357,7 @@ export const updateBlog = newsFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(blogDetailResponseSchema),
+            schema: resolver(blogBaseDetailResponseSchema),
           },
         },
         description: 'Blog post updated',
@@ -403,12 +415,13 @@ export const updateBlog = newsFactory.createHandlers(
 
 export const publishBlog = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@unit BlogPost', true),
     description: 'Publish a blog post (draft → published)',
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(blogDetailResponseSchema),
+            schema: resolver(blogBaseDetailResponseSchema),
           },
         },
         description: 'Blog post published',
@@ -456,12 +469,13 @@ export const publishBlog = newsFactory.createHandlers(
 
 export const unpublishBlog = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@unit BlogPost', true),
     description: 'Unpublish a blog post (published → draft)',
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(blogDetailResponseSchema),
+            schema: resolver(blogBaseDetailResponseSchema),
           },
         },
         description: 'Blog post unpublished',
@@ -509,6 +523,7 @@ export const unpublishBlog = newsFactory.createHandlers(
 
 export const deleteBlog = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('BlogPost', '@nodata', true),
     description: 'Delete a blog post',
     responses: {
       200: {
