@@ -80,7 +80,11 @@ const { schema: updateRequestSchema } = await resolver(
 
 export const listAnnouncements = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('Announcement', '@listof Announcement @field(.author, Author?)', true),
+    ...filcExt(
+      'Announcement',
+      '@listof Announcement @field(.author, Author)',
+      true
+    ),
     description:
       'List active announcements within date range, filtered by user cohort',
     responses: {
@@ -172,7 +176,11 @@ export const listAnnouncements = newsFactory.createHandlers(
 
 export const getAnnouncement = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('Announcement', '@unit Announcement @field(.author, Author?)', true),
+    ...filcExt(
+      'Announcement',
+      '@unit Announcement @field(.author, Author)',
+      true
+    ),
     description: 'Get a single announcement by ID',
     responses: {
       200: {

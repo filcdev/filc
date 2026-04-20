@@ -76,7 +76,7 @@ const checkSlugExists = async (slug: string, excludeId?: string) => {
 
 export const listPublishedBlogs = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author?)'),
+    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author)'),
     description: 'List published blog posts (public, no auth required)',
     responses: {
       200: {
@@ -129,7 +129,7 @@ export const listPublishedBlogs = newsFactory.createHandlers(
 
 export const getBlogBySlug = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author?)'),
+    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author)'),
     description: 'Get a published blog post by slug (public, no auth required)',
     responses: {
       200: {
@@ -180,7 +180,7 @@ export const getBlogBySlug = newsFactory.createHandlers(
 
 export const listDrafts = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author?)', true),
+    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author)', true),
     description: 'List all blog posts including drafts (requires permission)',
     responses: {
       200: {
@@ -232,7 +232,7 @@ export const listDrafts = newsFactory.createHandlers(
 
 export const getBlogById = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author?)', true),
+    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author)', true),
     description:
       'Get any blog post by ID including drafts (requires permission)',
     responses: {

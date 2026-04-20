@@ -80,7 +80,11 @@ const { schema: updateRequestSchema } = await resolver(
 
 export const listSystemMessages = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('SystemMessage', '@listof SystemMessage @field(.author, Author?)', true),
+    ...filcExt(
+      'SystemMessage',
+      '@listof SystemMessage @field(.author, Author)',
+      true
+    ),
     description:
       'List active system messages within date range, filtered by user cohort',
     responses: {
@@ -169,7 +173,11 @@ export const listSystemMessages = newsFactory.createHandlers(
 
 export const getSystemMessage = newsFactory.createHandlers(
   describeRoute({
-    ...filcExt('SystemMessage', '@unit SystemMessage @field(.author, Author?)', true),
+    ...filcExt(
+      'SystemMessage',
+      '@unit SystemMessage @field(.author, Author)',
+      true
+    ),
     description: 'Get a single system message by ID',
     responses: {
       200: {
