@@ -130,8 +130,35 @@
     "filterByTeacher": "Tanár",
     "filterByClassroom": "Terem",
     "printPdf": "Nyomtatás / PDF",
+    "printDialog": {
+      "title": "Órarend nyomtatása",
+      "blackAndWhite": "Fekete-fehér",
+      "generate": "PDF generálása",
+      "generating": "Generálás..."
+    },
     "time": "Idő",
-    "teacherFallback": "Tanár"
+    "teacherFallback": "Tanár",
+    "selectTimetable": "Órarend kiválasztása",
+    "manage": "Órarendek kezelése",
+    "manageDescription": "Importált órarendek megtekintése, érvényességi dátumok szerkesztése és törlés.",
+    "nameLabel": "Név",
+    "validToLabel": "Érvényes eddig",
+    "validToPlaceholder": "Befejező dátum kiválasztása",
+    "validToDescription": "Opcionális. Hagyd üresen, ha az órarendnek nincs lejárati dátuma.",
+    "statusLabel": "Állapot",
+    "editTitle": "Órarend szerkesztése",
+    "updateSuccess": "Órarend sikeresen frissítve",
+    "updateError": "Nem sikerült frissíteni az órarendet",
+    "deleteSuccess": "Órarend sikeresen törölve",
+    "deleteError": "Nem sikerült törölni az órarendet",
+    "deleteConfirm": "Órarend törlése",
+    "deleteDescription": "Biztosan törölni szeretnéd a(z) \"{{name}}\" órarendet? Ezzel minden kapcsolódó csoport, óra és egyéb adat is törlődik. Ez a művelet nem vonható vissza.",
+    "noDate": "—",
+    "status": {
+      "current": "Aktuális",
+      "past": "Lejárt",
+      "upcoming": "Közelgő"
+    }
   },
   "common": {
     "cancel": "Mégsem",

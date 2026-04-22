@@ -190,7 +190,7 @@ export function MovedLessonDialog({
         if (!l.id) {
           continue;
         }
-        map.set(l.id, l as EnrichedLesson);
+        map.set(l.id, l as unknown as EnrichedLesson);
       }
     } else {
       // Ha nincs, akkor az összeset (kezdeti állapot)

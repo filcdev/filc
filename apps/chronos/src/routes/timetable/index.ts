@@ -1,5 +1,6 @@
+import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import { desc, gte } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lte, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -7,7 +8,7 @@ import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { timetable } from '#database/schema/timetable';
-import { requireAuthentication } from '#middleware/auth';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -90,7 +91,12 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
       const [latestValidTimetable] = await db
         .select()
         .from(timetable)
-        .where(gte(timetable.validFrom, today))
+        .where(
+          and(
+            lte(timetable.validFrom, today),
+            or(isNull(timetable.validTo), gte(timetable.validTo, today))
+          )
+        )
         .orderBy(desc(timetable.validFrom))
         .limit(1);
 
@@ -137,7 +143,12 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
       const timetables = await db
         .select()
         .from(timetable)
-        .where(gte(timetable.validFrom, today.toString()));
+        .where(
+          and(
+            lte(timetable.validFrom, today),
+            or(isNull(timetable.validTo), gte(timetable.validTo, today))
+          )
+        );
 
       return c.json<SuccessResponse<typeof timetables>>({
         data: timetables,
@@ -149,5 +160,116 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
         message: 'Failed to fetch all timetables',
       });
     }
+  }
+);
+
+const updateTimetableSchema = z.object({
+  validFrom: z.string().optional(),
+  validTo: z.string().nullable().optional(),
+});
+
+const updateTimetableResponseSchema = z.object({
+  data: timetableSelectSchema,
+  success: z.literal(true),
+});
+
+export const updateTimetable = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Timetable', '@unit Timetable', true),
+    description: 'Update a timetable validity dates.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(updateTimetableResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Timetable'],
+  }),
+  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('json', updateTimetableSchema),
+  requireAuthentication,
+  requireAuthorization('import:timetable'),
+  async (c) => {
+    const { id } = c.req.valid('param');
+    const body = c.req.valid('json');
+
+    const [existing] = await db
+      .select()
+      .from(timetable)
+      .where(eq(timetable.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Timetable not found',
+      });
+    }
+
+    const [updated] = await db
+      .update(timetable)
+      .set({
+        ...(body.validFrom !== undefined && { validFrom: body.validFrom }),
+        ...(body.validTo !== undefined && { validTo: body.validTo }),
+      })
+      .where(eq(timetable.id, id))
+      .returning();
+
+    if (!updated) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to update timetable',
+      });
+    }
+
+    return c.json<SuccessResponse<typeof updated>>({
+      data: updated,
+      success: true,
+    });
+  }
+);
+
+const deleteTimetableResponseSchema = z.object({
+  success: z.literal(true),
+});
+
+export const deleteTimetable = timetableFactory.createHandlers(
+  describeRoute({
+    description: 'Delete a timetable and all its related data.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(deleteTimetableResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Timetable'],
+  }),
+  zValidator('param', z.object({ id: z.uuid() })),
+  requireAuthentication,
+  requireAuthorization('import:timetable'),
+  async (c) => {
+    const { id } = c.req.valid('param');
+
+    const [existing] = await db
+      .select()
+      .from(timetable)
+      .where(eq(timetable.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Timetable not found',
+      });
+    }
+
+    await db.delete(timetable).where(eq(timetable.id, id));
+
+    return c.json<SuccessResponse>({ success: true });
   }
 );

@@ -59,7 +59,7 @@ type CohortAttributes = {
 
 export const importTimetableXML = (
   xmlData: TimetableExportRoot,
-  timetableForm: { name: string; validFrom: string }
+  timetableForm: { name: string; validFrom: string; validTo?: string | null }
 ) =>
   db.transaction(async (tx) => {
     const startedAt = Date.now();

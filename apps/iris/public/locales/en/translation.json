@@ -141,8 +141,35 @@
     "filterByTeacher": "Teacher",
     "filterByClassroom": "Classroom",
     "printPdf": "Print / PDF",
+    "printDialog": {
+      "title": "Print Timetable",
+      "blackAndWhite": "Black & White",
+      "generate": "Generate PDF",
+      "generating": "Generating..."
+    },
     "time": "Time",
-    "teacherFallback": "Teacher"
+    "teacherFallback": "Teacher",
+    "selectTimetable": "Select timetable",
+    "manage": "Manage Timetables",
+    "manageDescription": "View, edit validity dates, and delete imported timetables.",
+    "nameLabel": "Name",
+    "validToLabel": "Valid to",
+    "validToPlaceholder": "Select an end date",
+    "validToDescription": "Optional. Leave blank if this timetable has no end date.",
+    "statusLabel": "Status",
+    "editTitle": "Edit Timetable",
+    "updateSuccess": "Timetable updated successfully",
+    "updateError": "Failed to update timetable",
+    "deleteSuccess": "Timetable deleted successfully",
+    "deleteError": "Failed to delete timetable",
+    "deleteConfirm": "Delete Timetable",
+    "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This will also delete all related cohorts, lessons, and other data. This action cannot be undone.",
+    "noDate": "—",
+    "status": {
+      "current": "Current",
+      "past": "Past",
+      "upcoming": "Upcoming"
+    }
   },
   "substitution": {
     "title": "Substitutions",

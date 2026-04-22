@@ -17,6 +17,7 @@ export const timetable = pgTable('timetable', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   validFrom: date('valid_from'),
+  validTo: date('valid_to'),
   ...timestamps,
 });
 
