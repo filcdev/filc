@@ -1,5 +1,12 @@
 import { zValidator } from '@hono/zod-validator';
-import { arrayContains, arrayOverlaps, eq, inArray, or } from 'drizzle-orm';
+import {
+  and,
+  arrayContains,
+  arrayOverlaps,
+  eq,
+  inArray,
+  or,
+} from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
