@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
-import { arrayContains, eq, inArray, or } from 'drizzle-orm';
+import { arrayContains, arrayOverlaps, eq, inArray, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -27,6 +27,26 @@ const normalizeDayText = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
+const getWeekdayInBudapest = (value: Date): number => {
+  const weekdayName = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Budapest',
+    weekday: 'short',
+  }).format(value);
+  const weekdayIndex = {
+    Fri: 5,
+    Mon: 1,
+    Sat: 6,
+    Sun: 0,
+    Thu: 4,
+    Tue: 2,
+    Wed: 3,
+  }[weekdayName];
+  if (weekdayIndex === undefined) {
+    throw new Error(`Unsupported weekday value: ${weekdayName}`);
+  }
+  return weekdayIndex;
+};
+
 const weekdayAliases: Record<number, string[]> = {
   0: ['vasarnap', 'va', 'v', 'sunday', 'sun'],
   1: ['hetfo', 'he', 'h', 'monday', 'mon'],
@@ -46,12 +66,16 @@ const isMatchingWeekday = (
   const normalizedName = normalizeDayText(dayName);
   const normalizedShort = dayShort ? normalizeDayText(dayShort) : '';
 
-  return aliases.some(
-    (alias) =>
-      normalizedName === alias ||
-      normalizedShort === alias ||
-      normalizedName.includes(alias)
-  );
+  const matchesAlias = (alias: string): boolean => {
+    if (normalizedName === alias || normalizedShort === alias) {
+      return true;
+    }
+    if (alias.length <= 3) {
+      return normalizedName.startsWith(alias);
+    }
+    return normalizedName.includes(alias);
+  };
+  return aliases.some(matchesAlias);
 };
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
@@ -309,7 +333,7 @@ const teacherLessonsBatchResponseSchema = z.object({
   data: z.array(
     z.object({
       lessons: enrichedLessonSchema.array(),
-      teacherId: z.string(),
+      teacherId: z.uuid(),
     })
   ),
   success: z.boolean(),
@@ -320,9 +344,9 @@ const teacherLessonBatchType =
 
 const substitutionCandidatesRequestSchema = z.object({
   date: z.coerce.date(),
-  missingTeacherId: z.string().min(1),
+  missingTeacherId: z.uuid(),
   selectedLessonIds: z.array(z.string().min(1)).default([]),
-  teacherIds: z.array(z.string().min(1)).min(1),
+  teacherIds: z.array(z.uuid()).min(1),
 });
 
 const substitutionCandidateSchema = z.object({
@@ -468,7 +492,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       });
     }
 
-    const weekday = date.getDay();
+    const weekday = getWeekdayInBudapest(date);
 
     const missingTeacherLessons = await db
       .select()
@@ -551,16 +575,11 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     const candidateLessons = await db
       .select()
       .from(lesson)
-      .where(
-        or(
-          ...candidateTeacherIds.map((teacherId) =>
-            arrayContains(lesson.teacherIds, [teacherId])
-          )
-        )
-      );
+      .where(arrayOverlaps(lesson.teacherIds, candidateTeacherIds));
 
     const enrichedCandidateLessons = await enrichLessons(candidateLessons);
     const candidateLessonsByTeacherId = new Map<string, number[]>();
+    const candidateTeacherIdSet = new Set(candidateTeacherIds);
 
     for (const candidateLesson of enrichedCandidateLessons) {
       if (
@@ -582,7 +601,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       }
 
       for (const lessonTeacher of candidateLesson.teachers) {
-        if (!candidateTeacherIds.includes(lessonTeacher.id)) {
+        if (!candidateTeacherIdSet.has(lessonTeacher.id)) {
           continue;
         }
 
