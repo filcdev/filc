@@ -144,8 +144,8 @@ export const updateUser = usersFactory.createHandlers(
     const [updatedUser] = await db
       .update(user)
       .set({
-        ...(nickname !== undefined ? { nickname } : {}),
-        ...(roles !== undefined ? { roles } : {}),
+        ...(nickname === undefined ? {} : { nickname }),
+        ...(roles === undefined ? {} : { roles }),
       })
       .where(eq(user.id, userId))
       .returning();

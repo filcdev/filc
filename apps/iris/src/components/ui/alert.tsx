@@ -69,4 +69,4 @@ function AlertAction({ className, ...props }: ComponentProps<'div'>) {
   );
 }
 
-export { Alert, AlertTitle, AlertDescription, AlertAction };
+export { Alert, AlertAction, AlertDescription, AlertTitle };
