@@ -19,7 +19,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { isMatchingWeekday } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 
 type SubstitutionApiResponse = InferResponseType<
@@ -29,11 +28,14 @@ type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
 type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
-type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
-type Cohort = NonNullable<CohortApiResponse['data']>[number];
+type TeacherLessonsApiResponse = InferResponseType<
+  typeof api.timetable.lessons.getSubstitutionCandidates.$post
+>;
+type TeacherLesson = NonNullable<
+  NonNullable<TeacherLessonsApiResponse['data']>['availableLessons'][number]
+>;
 
 type SubstitutionDialogProps = {
-  cohorts: Cohort[];
   isSubmitting: boolean;
   item?: SubstitutionItem | null;
   onOpenChange: (open: boolean) => void;
@@ -78,7 +80,6 @@ const initialState = (
 });
 
 export function SubstitutionDialog({
-  cohorts,
   isSubmitting,
   item,
   onOpenChange,
@@ -90,86 +91,80 @@ export function SubstitutionDialog({
   const [formState, setFormState] = useState<
     InferRequestType<typeof api.timetable.substitutions.$post>['json']
   >(initialState(item));
-  const [selectedCohort, setSelectedCohort] = useState<string>('');
+  const [selectedMissingTeacher, setSelectedMissingTeacher] =
+    useState<string>('');
 
   useEffect(() => {
     setFormState(initialState(item));
-    // Automatically select cohort when editing based on the first lesson's cohort
+    // Automatically select teacher when editing based on the first lesson's teacher.
     if (item && item.lessons.length > 0) {
       const firstLesson = item.lessons[0];
-      if (firstLesson && firstLesson.cohorts.length > 0) {
-        const cohortName = firstLesson.cohorts[0];
-        const matchingCohort = cohorts.find((c) => c.name === cohortName);
-        if (matchingCohort) {
-          setSelectedCohort(matchingCohort.id);
-        } else {
-          setSelectedCohort('');
-        }
+      const firstTeacherId = firstLesson?.teachers?.[0]?.id;
+      if (firstTeacherId) {
+        setSelectedMissingTeacher(firstTeacherId);
       } else {
-        setSelectedCohort('');
+        setSelectedMissingTeacher('');
       }
     } else {
-      setSelectedCohort('');
+      setSelectedMissingTeacher('');
     }
-  }, [item, cohorts]);
+  }, [item]);
 
-  const cohortLessonsQuery = useQuery({
-    enabled: !!selectedCohort && !!formState.date,
+  const substituteCandidatesQuery = useQuery({
+    enabled:
+      !!formState.date && teachers.length > 0 && !!selectedMissingTeacher,
     queryFn: async () => {
       const res = await parseResponse(
-        api.timetable.lessons.getForCohort[':cohortId'].$get({
-          param: { cohortId: selectedCohort },
+        api.timetable.lessons.getSubstitutionCandidates.$post({
+          json: {
+            date: formState.date,
+            missingTeacherId: selectedMissingTeacher,
+            selectedLessonIds: formState.lessonIds,
+            teacherIds: teachers.map((teacher) => teacher.id),
+          },
         })
       );
+
       if (!res.success) {
-        throw new Error('Failed to load lessons');
+        throw new Error('Failed to load substitution candidates');
       }
+
       return res.data;
     },
     queryKey: [
-      'lessons',
-      'cohort',
-      selectedCohort,
+      'substitute-candidates',
+      selectedMissingTeacher,
       formState.date?.toISOString(),
+      [...formState.lessonIds].sort().join(','),
+      teachers
+        .map((teacher) => teacher.id)
+        .sort()
+        .join(','),
     ],
   });
 
-  // Filter lessons by the selected date's day of week
-  const filteredLessonsByDate = useMemo(() => {
-    if (!formState.date) {
-      return [];
-    }
-    if (!cohortLessonsQuery.data || cohortLessonsQuery.data.length === 0) {
-      return [];
-    }
-
-    // Get day of week from selected date (0 = Sunday, 1 = Monday, etc.)
-    const selectedDayOfWeek = formState.date.getDay();
-
-    return cohortLessonsQuery.data.filter((lesson) => {
-      if (!lesson.day) {
-        return false;
-      }
-      // Match backend day labels in either Hungarian or English.
-      return isMatchingWeekday(
-        selectedDayOfWeek,
-        lesson.day.name,
-        lesson.day.short
-      );
-    });
-  }, [formState.date, cohortLessonsQuery.data]);
-
   const availableLessons = useMemo(() => {
-    // Only show lessons from the selected cohort, filtered by date
-    if (!selectedCohort) {
-      return [];
-    }
-    if (!formState.date) {
+    if (!selectedMissingTeacher) {
       return [];
     }
 
-    return filteredLessonsByDate;
-  }, [selectedCohort, formState.date, filteredLessonsByDate]);
+    return (substituteCandidatesQuery.data?.availableLessons ??
+      []) as TeacherLesson[];
+  }, [selectedMissingTeacher, substituteCandidatesQuery.data]);
+
+  const substituteOptions = useMemo(() => {
+    const candidates =
+      substituteCandidatesQuery.data?.substituteCandidates ?? [];
+
+    return candidates.map((candidate) => ({
+      label: `${candidate.teacher.firstName} ${candidate.teacher.lastName} (${candidate.teacher.short})${
+        candidate.hasLessonBeforeOrAfter
+          ? ` - ${t('substitution.nearbyTeacherTag')}`
+          : ''
+      }`,
+      value: candidate.teacher.id,
+    }));
+  }, [substituteCandidatesQuery.data, t]);
 
   const isCreate = !item;
 
@@ -189,11 +184,13 @@ export function SubstitutionDialog({
         return {
           ...prev,
           lessonIds: Array.from(new Set([...prev.lessonIds, lessonId])),
+          substituter: null,
         };
       }
       return {
         ...prev,
         lessonIds: prev.lessonIds.filter((id) => id !== lessonId),
+        substituter: null,
       };
     });
   };
@@ -228,6 +225,8 @@ export function SubstitutionDialog({
                   setFormState((prev) => ({
                     ...prev,
                     date: d ?? new Date(),
+                    lessonIds: [],
+                    substituter: null,
                   }))
                 }
                 placeholder={t('substitution.datePlaceholder')}
@@ -235,71 +234,52 @@ export function SubstitutionDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>{t('substitution.substituteTeacher')}</Label>
+              <Label>{t('substitution.missingTeacher')}</Label>
               <Combobox
                 emptyMessage={t('substitution.noTeachersFound')}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
+                  setSelectedMissingTeacher(value);
                   setFormState((prev) => ({
                     ...prev,
-                    substituter: value === '__none__' ? null : value || null,
-                  }))
-                }
+                    lessonIds: [],
+                    substituter: null,
+                  }));
+                }}
                 options={[
-                  {
-                    label: t('substitution.cancelled'),
-                    value: '__none__',
-                  },
                   ...teachers.map((teacher) => ({
                     label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
                     value: teacher.id,
                   })),
                 ]}
-                placeholder={t('substitution.substituteTeacher')}
+                placeholder={t('substitution.missingTeacherPlaceholder')}
                 searchPlaceholder={t('search')}
-                value={formState.substituter ?? '__none__'}
-              />
-              <p className="text-muted-foreground text-xs">
-                {t('substitution.substituteTeacherHint')}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('substitution.selectCohort')}</Label>
-              <Combobox
-                emptyMessage={t('substitution.noCohortFound')}
-                onValueChange={(v) => setSelectedCohort(v)}
-                options={cohorts.map((c) => ({
-                  label: c.name,
-                  value: c.id,
-                }))}
-                placeholder={t('substitution.selectCohortPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={selectedCohort}
+                value={selectedMissingTeacher}
               />
             </div>
 
             <div className="space-y-2">
               <Label>{t('substitution.lessons')}</Label>
               <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
-                {!selectedCohort && (
+                {!selectedMissingTeacher && (
                   <p className="p-2 text-muted-foreground text-sm">
-                    {t('substitution.selectCohortPlaceholder')}
+                    {t('substitution.missingTeacherPlaceholder')}
                   </p>
                 )}
-                {selectedCohort && cohortLessonsQuery.isLoading && (
-                  <p className="p-2 text-muted-foreground text-sm">
-                    {t('substitution.loadingLessons')}
-                  </p>
-                )}
-                {selectedCohort &&
-                  !cohortLessonsQuery.isLoading &&
+                {selectedMissingTeacher &&
+                  substituteCandidatesQuery.isLoading && (
+                    <p className="p-2 text-muted-foreground text-sm">
+                      {t('substitution.loadingLessons')}
+                    </p>
+                  )}
+                {selectedMissingTeacher &&
+                  !substituteCandidatesQuery.isLoading &&
                   availableLessons.length === 0 && (
                     <p className="p-2 text-muted-foreground text-sm">
                       {t('substitution.noLessons')}
                     </p>
                   )}
-                {selectedCohort &&
-                  !cohortLessonsQuery.isLoading &&
+                {selectedMissingTeacher &&
+                  !substituteCandidatesQuery.isLoading &&
                   availableLessons.length > 0 &&
                   availableLessons.map((lesson) => (
                     <label
@@ -318,6 +298,42 @@ export function SubstitutionDialog({
                     </label>
                   ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('substitution.substituteTeacher')}</Label>
+              <Combobox
+                emptyMessage={
+                  selectedMissingTeacher && formState.lessonIds.length > 0
+                    ? t('substitution.noAvailableSubstituteTeachers')
+                    : t('substitution.selectLessonsFirst')
+                }
+                key={`substitute-${selectedMissingTeacher}-${formState.date?.toISOString() ?? 'no-date'}-${[...formState.lessonIds].sort().join(',')}`}
+                onValueChange={(value) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    substituter: value === '__none__' ? null : value || null,
+                  }))
+                }
+                options={[
+                  {
+                    label: t('substitution.cancelled'),
+                    value: '__none__',
+                  },
+                  ...substituteOptions,
+                ]}
+                placeholder={t('substitution.substituteTeacher')}
+                searchPlaceholder={t('search')}
+                value={formState.substituter ?? '__none__'}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t('substitution.substituteTeacherHint')}
+              </p>
+              {substituteCandidatesQuery.isLoading && (
+                <p className="text-muted-foreground text-xs">
+                  {t('substitution.loadingSubstituteTeachers')}
+                </p>
+              )}
             </div>
           </form>
         </div>

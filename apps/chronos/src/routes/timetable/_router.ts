@@ -11,6 +11,8 @@ import {
   getLessonsForCohort,
   getLessonsForRoom,
   getLessonsForTeacher,
+  getLessonsForTeachers,
+  getSubstitutionCandidates,
 } from '#routes/timetable/lesson';
 import {
   createMovedLesson,
@@ -60,6 +62,8 @@ export const timetableRouter = timetableFactory
   // Lesson routes
   .get('/lessons/getForCohort/:cohortId', ...getLessonsForCohort)
   .get('/lessons/getForTeacher/:teacherId', ...getLessonsForTeacher)
+  .post('/lessons/getForTeachers', ...getLessonsForTeachers)
+  .post('/lessons/getSubstitutionCandidates', ...getSubstitutionCandidates)
   .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
   .get('/lessons/getForId/:lessonId', ...getLessonForId)
   // Cohort routes
