@@ -136,6 +136,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
         const d = dayMap.get(l.dayDefinitionId);
         return d;
       })(),
+      groupsIds: (Array.isArray(l.groupsIds) ? l.groupsIds : []) as string[],
       id: l.id,
       period: (() => {
         const p = periodMap.get(l.periodId);
@@ -172,6 +173,7 @@ const enrichedLessonSchema = z.object({
     z.object({ id: z.string(), name: z.string(), short: z.string() })
   ),
   day: createSelectSchema(dayDefinition).optional(),
+  groupsIds: z.array(z.string()),
   id: z.string(),
   period: z
     .object({
@@ -292,8 +294,10 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   zValidator('param', z.object({ teacherId: z.uuid() })),
+  zValidator('query', z.object({ timetableId: z.uuid().optional() })),
   async (c) => {
     const { teacherId } = c.req.valid('param');
+    const { timetableId } = c.req.valid('query');
 
     const [existingTeacher] = await db
       .select()
@@ -307,10 +311,14 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       });
     }
 
-    const lessons = await db
-      .select()
-      .from(lesson)
-      .where(arrayContains(lesson.teacherIds, [teacherId]));
+    const whereClause = timetableId
+      ? and(
+          arrayContains(lesson.teacherIds, [teacherId]),
+          eq(lesson.timetableId, timetableId)
+        )
+      : arrayContains(lesson.teacherIds, [teacherId]);
+
+    const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });
@@ -691,8 +699,10 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   zValidator('param', z.object({ classroomId: z.uuid() })),
+  zValidator('query', z.object({ timetableId: z.uuid().optional() })),
   async (c) => {
     const { classroomId } = c.req.valid('param');
+    const { timetableId } = c.req.valid('query');
 
     const [existingClassroom] = await db
       .select()
@@ -706,10 +716,14 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       });
     }
 
-    const lessons = await db
-      .select()
-      .from(lesson)
-      .where(arrayContains(lesson.classroomIds, [classroomId]));
+    const whereClause = timetableId
+      ? and(
+          arrayContains(lesson.classroomIds, [classroomId]),
+          eq(lesson.timetableId, timetableId)
+        )
+      : arrayContains(lesson.classroomIds, [classroomId]);
+
+    const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
       return c.json<SuccessResponse<[]>>({ data: [], success: true });

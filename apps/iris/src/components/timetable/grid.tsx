@@ -10,7 +10,7 @@ export function TimetableGrid({ model }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card print:border-0">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       {/* Header Row */}
       <div
         className="grid gap-px border-border border-b bg-muted/50"
@@ -62,6 +62,23 @@ export function TimetableGrid({ model }: TimetableGridProps) {
 
               const isSingle = lessons.length === 1;
               const firstLesson = lessons[0];
+
+              // Single group-scoped lesson: render half-width with empty sibling
+              // so it's visually distinct from a whole-cohort lesson
+              if (
+                isSingle &&
+                firstLesson &&
+                (firstLesson.groupsIds?.length ?? 0) > 0
+              ) {
+                return (
+                  <div className="min-h-24 p-0.5" key={cellKey}>
+                    <div className="grid h-full grid-cols-2 gap-0.5 overflow-hidden rounded-md bg-muted">
+                      <LessonCard lesson={firstLesson} />
+                      <div />
+                    </div>
+                  </div>
+                );
+              }
 
               if (isSingle && firstLesson) {
                 return (

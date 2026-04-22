@@ -17,6 +17,7 @@ import {
   dateRangeBodySchema,
   dateRangeUpdateBodySchema,
 } from '#utils/news/schemas';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
 const validateCohortIds = async (cohortIds: string[]) => {
@@ -62,6 +63,11 @@ const systemMessageDetailResponseSchema = z.object({
   success: z.literal(true),
 });
 
+const systemMessageBaseDetailResponseSchema = z.object({
+  data: systemMessageSelectSchema.extend({ cohortIds: z.array(z.string()) }),
+  success: z.literal(true),
+});
+
 const successResponseSchema = z.object({
   success: z.literal(true),
 });
@@ -74,6 +80,11 @@ const { schema: updateRequestSchema } = await resolver(
 
 export const listSystemMessages = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'SystemMessage',
+      '@listof SystemMessage @field(.author, Author)',
+      true
+    ),
     description:
       'List active system messages within date range, filtered by user cohort',
     responses: {
@@ -162,6 +173,11 @@ export const listSystemMessages = newsFactory.createHandlers(
 
 export const getSystemMessage = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'SystemMessage',
+      '@unit SystemMessage @field(.author, Author)',
+      true
+    ),
     description: 'Get a single system message by ID',
     responses: {
       200: {
@@ -219,6 +235,7 @@ export const getSystemMessage = newsFactory.createHandlers(
 
 export const createSystemMessage = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('SystemMessage', '@unit SystemMessage', true),
     description: 'Create a new system message',
     requestBody: {
       content: {
@@ -231,7 +248,7 @@ export const createSystemMessage = newsFactory.createHandlers(
       201: {
         content: {
           'application/json': {
-            schema: resolver(systemMessageDetailResponseSchema),
+            schema: resolver(systemMessageBaseDetailResponseSchema),
           },
         },
         description: 'System message created',
@@ -289,6 +306,7 @@ export const createSystemMessage = newsFactory.createHandlers(
 
 export const updateSystemMessage = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('SystemMessage', '@unit SystemMessage', true),
     description: 'Update an existing system message',
     requestBody: {
       content: {
@@ -301,7 +319,7 @@ export const updateSystemMessage = newsFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(systemMessageDetailResponseSchema),
+            schema: resolver(systemMessageBaseDetailResponseSchema),
           },
         },
         description: 'System message updated',
@@ -401,6 +419,7 @@ export const updateSystemMessage = newsFactory.createHandlers(
 
 export const deleteSystemMessage = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('SystemMessage', '@nodata', true),
     description: 'Delete a system message',
     responses: {
       200: {

@@ -38,6 +38,7 @@ type ImportPayload = {
   file: File;
   name: string;
   validFrom: Date;
+  validTo?: Date;
 };
 
 function TimetableImportPage() {
@@ -47,6 +48,7 @@ function TimetableImportPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importName, setImportName] = useState('');
   const [validStartDate, setValidStartDate] = useState<Date | undefined>();
+  const [validEndDate, setValidEndDate] = useState<Date | undefined>();
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -56,10 +58,15 @@ function TimetableImportPage() {
     Error,
     ImportPayload
   >({
-    mutationFn: async ({ file, name, validFrom }: ImportPayload) => {
+    mutationFn: async ({ file, name, validFrom, validTo }: ImportPayload) => {
       const res = await parseResponse(
         api.timetable.import.$post({
-          form: { name, omanXml: file, validFrom: validFrom.toISOString() },
+          form: {
+            name,
+            omanXml: file,
+            validFrom: validFrom.toISOString(),
+            ...(validTo && { validTo: validTo.toISOString() }),
+          },
         })
       );
 
@@ -84,6 +91,7 @@ function TimetableImportPage() {
       setSelectedFile(null);
       setImportName('');
       setValidStartDate(undefined);
+      setValidEndDate(undefined);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -130,6 +138,7 @@ function TimetableImportPage() {
       file: selectedFile,
       name: trimmedName,
       validFrom: validStartDate,
+      validTo: validEndDate,
     });
   };
 
@@ -138,6 +147,7 @@ function TimetableImportPage() {
     setImportStatus('idle');
     setErrorMessage(null);
     setValidStartDate(undefined);
+    setValidEndDate(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -194,6 +204,20 @@ function TimetableImportPage() {
             />
             <p className="text-muted-foreground text-xs">
               {t('timetable.validFromDescription')}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="timetable-import-validTo">
+              {t('timetable.validToLabel')}
+            </Label>
+            <DatePicker
+              date={validEndDate}
+              onDateChange={setValidEndDate}
+              placeholder={t('timetable.validToPlaceholder')}
+            />
+            <p className="text-muted-foreground text-xs">
+              {t('timetable.validToDescription')}
             </p>
           </div>
 

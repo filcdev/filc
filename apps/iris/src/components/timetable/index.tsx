@@ -1,3 +1,4 @@
+import { pdf } from '@react-pdf/renderer';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
@@ -7,6 +8,8 @@ import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
 import { buildViewModel } from '@/components/timetable/helpers';
+import { TimetablePDF } from '@/components/timetable/pdf/document';
+import { PrintDialog } from '@/components/timetable/print-dialog';
 import type {
   ClassroomItem,
   CohortItem,
@@ -14,6 +17,8 @@ import type {
   LessonItem,
   SelectionsType,
   TeacherItem,
+  TimetableItem,
+  TimetableViewModel,
 } from '@/components/timetable/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Route, type searchSchema } from '@/routes/_public/index';
@@ -29,12 +34,24 @@ const QUERY_OPTIONS = {
 };
 
 // API Calls
-const fetchCohorts = async () => {
-  const res = await parseResponse(api.cohort.index.$get());
+const fetchTimetables = async () => {
+  const res = await parseResponse(api.timetable.timetables.$get());
+  if (!res.success) {
+    throw new Error('Failed to load timetables');
+  }
+  return (res.data ?? []) as TimetableItem[];
+};
+
+const fetchCohortsForTimetable = async (timetableId: string) => {
+  const res = await parseResponse(
+    api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+      param: { timetableId },
+    })
+  );
   if (!res.success) {
     throw new Error('Failed to load cohorts');
   }
-  return (res.data ?? []) as CohortItem[];
+  return ((res.data ?? []) as { cohort: CohortItem }[]).map((r) => r.cohort);
 };
 
 const fetchTeachers = async () => {
@@ -55,7 +72,8 @@ const fetchClassrooms = async () => {
 
 const fetchLessonsForSelection = async (
   filter: FilterType,
-  selectionId: string
+  selectionId: string,
+  timetableId?: string
 ): Promise<LessonItem[]> => {
   const endpoints = {
     class: () =>
@@ -65,10 +83,12 @@ const fetchLessonsForSelection = async (
     classroom: () =>
       api.timetable.lessons.getForRoom[':classroomId'].$get({
         param: { classroomId: selectionId },
+        query: timetableId ? { timetableId } : {},
       }),
     teacher: () =>
       api.timetable.lessons.getForTeacher[':teacherId'].$get({
         param: { teacherId: selectionId },
+        query: timetableId ? { timetableId } : {},
       }),
   };
 
@@ -103,11 +123,47 @@ export function TimetableView() {
   const { data: session, isPending } = authClient.useSession();
   const navigate = useNavigate({ from: Route.fullPath });
 
+  // Timetable query (all timetables for the selector)
+  const timetablesQuery = useQuery({
+    ...QUERY_OPTIONS,
+    queryFn: fetchTimetables,
+    queryKey: ['timetables'],
+  });
+
+  // Compute the latest valid timetable id from the list
+  const latestValidTimetableId = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const valid = (timetablesQuery.data ?? []).filter(
+      (t) =>
+        t.validFrom !== null &&
+        t.validFrom <= today &&
+        (t.validTo === null || t.validTo >= today)
+    );
+    valid.sort((a, b) => (b.validFrom ?? '').localeCompare(a.validFrom ?? ''));
+    return valid[0]?.id ?? timetablesQuery.data?.[0]?.id ?? null;
+  }, [timetablesQuery.data]);
+
+  // Selected timetable — initialised from URL param, else latestValid
+  const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(
+    search.timetable ?? null
+  );
+
+  // Once we know the latest valid, set it as default if nothing is selected
+  useEffect(() => {
+    if (!selectedTimetableId && latestValidTimetableId) {
+      setSelectedTimetableId(latestValidTimetableId);
+    }
+  }, [selectedTimetableId, latestValidTimetableId]);
+
   // Queries
   const cohortsQuery = useQuery({
     ...QUERY_OPTIONS,
-    queryFn: fetchCohorts,
-    queryKey: ['cohorts'],
+    enabled: !!selectedTimetableId,
+    queryFn: () =>
+      selectedTimetableId
+        ? fetchCohortsForTimetable(selectedTimetableId)
+        : Promise.resolve([] as CohortItem[]),
+    queryKey: ['cohorts', selectedTimetableId],
   });
 
   const teachersQuery = useQuery({
@@ -150,9 +206,13 @@ export function TimetableView() {
     enabled: !!activeSelectionId,
     queryFn: () =>
       activeSelectionId
-        ? fetchLessonsForSelection(activeFilter, activeSelectionId)
+        ? fetchLessonsForSelection(
+            activeFilter,
+            activeSelectionId,
+            selectedTimetableId ?? undefined
+          )
         : Promise.resolve([] as LessonItem[]),
-    queryKey: ['lessons', activeFilter, activeSelectionId],
+    queryKey: ['lessons', activeFilter, activeSelectionId, selectedTimetableId],
   });
 
   // Initialize from URL or defaults
@@ -255,6 +315,18 @@ export function TimetableView() {
     selections.teacher,
   ]);
 
+  // Reset class selection when timetable changes (cohorts are timetable-scoped)
+  const [prevTimetableId, setPrevTimetableId] = useState<string | null>(null);
+  useEffect(() => {
+    if (selectedTimetableId && selectedTimetableId !== prevTimetableId) {
+      if (prevTimetableId !== null) {
+        setSelections((s) => ({ ...s, class: null }));
+        setInitialized(false);
+      }
+      setPrevTimetableId(selectedTimetableId);
+    }
+  }, [selectedTimetableId, prevTimetableId]);
+
   // Sync selection to URL
   useEffect(() => {
     if (activeSelectionId) {
@@ -262,6 +334,7 @@ export function TimetableView() {
         cohort: undefined,
         room: undefined,
         teacher: undefined,
+        timetable: selectedTimetableId ?? undefined,
       };
 
       const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
@@ -271,13 +344,65 @@ export function TimetableView() {
         search: () => searchParams,
       });
     }
-  }, [activeFilter, activeSelectionId, navigate]);
+  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
 
   const model = useMemo(
     () =>
       buildViewModel((lessonsQuery.data ?? []) as LessonItem[], i18n.language),
     [lessonsQuery.data, i18n.language]
   );
+
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+
+  const getSelectionLabel = (): string => {
+    switch (activeFilter) {
+      case 'class':
+        return (
+          cohortsQuery.data?.find((c) => c.id === selections.class)?.name ?? ''
+        );
+      case 'teacher': {
+        const teacher = teachersQuery.data?.find(
+          (t) => t.id === selections.teacher
+        );
+        if (!teacher) {
+          return '';
+        }
+        return `${teacher.firstName} ${teacher.lastName}`.trim();
+      }
+      case 'classroom':
+        return (
+          classroomsQuery.data?.find((c) => c.id === selections.classroom)
+            ?.name ?? ''
+        );
+      default:
+        return '';
+    }
+  };
+
+  const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
+    const timetableName =
+      timetablesQuery.data?.find((t) => t.id === selectedTimetableId)?.name ??
+      '';
+    const label = getSelectionLabel();
+    const generatedAt = new Date().toLocaleDateString(i18n.language, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+
+    const blob = await pdf(
+      <TimetablePDF
+        blackAndWhite={blackAndWhite}
+        generatedAt={generatedAt}
+        label={label}
+        model={model as TimetableViewModel}
+        timetableName={timetableName}
+      />
+    ).toBlob();
+
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
 
   const getSelectorLoading = () => {
     switch (activeFilter) {
@@ -310,15 +435,24 @@ export function TimetableView() {
         cohorts={cohortsQuery.data}
         disabled={isLoading}
         onFilterChange={setActiveFilter}
-        onPrint={() => window.print()}
+        onPrint={() => setPrintDialogOpen(true)}
         onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
         onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
         onSelectTeacher={(id) => setSelections((s) => ({ ...s, teacher: id }))}
+        onSelectTimetable={setSelectedTimetableId}
         selectedByClass={selections.class}
         selectedByRoom={selections.classroom}
         selectedByTeacher={selections.teacher}
+        selectedTimetableId={selectedTimetableId}
         selectorLoading={selectorLoading}
         teachers={teachersQuery.data}
+        timetables={timetablesQuery.data}
+      />
+
+      <PrintDialog
+        onGenerate={handleGeneratePdf}
+        onOpenChange={setPrintDialogOpen}
+        open={printDialogOpen}
       />
 
       {hasError && (
@@ -331,10 +465,7 @@ export function TimetableView() {
           <Skeleton className="h-130 w-full" />
         </div>
       ) : (
-        <div
-          className="w-full max-w-7xl print:max-w-none"
-          id="timetable-print-root"
-        >
+        <div className="w-full max-w-7xl">
           <TimetableGrid model={model} />
         </div>
       )}

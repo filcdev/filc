@@ -57,6 +57,12 @@ export function AdminSidebar() {
             url: '/admin/timetable/import',
           },
           {
+            icon: List,
+            permission: 'import:timetable',
+            title: t('timetable.manage'),
+            url: '/admin/timetable/manage',
+          },
+          {
             icon: RefreshCw,
             permission: 'substitution:create',
             title: t('substitution.title'),

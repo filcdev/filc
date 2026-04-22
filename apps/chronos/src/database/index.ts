@@ -20,7 +20,9 @@ const createClient = () =>
     url: env.databaseUrl,
   });
 
-if (env.mode !== 'production') {
+if (env.mode === 'production') {
+  client = createClient();
+} else {
   const globalConn = global as typeof globalThis & {
     connection: null | typeof sql;
   };
@@ -30,8 +32,6 @@ if (env.mode !== 'production') {
   }
 
   client = globalConn.connection;
-} else {
-  client = createClient();
 }
 
 const schema = {

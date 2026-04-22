@@ -2,9 +2,11 @@ import { timetableFactory } from '#routes/timetable/_factory';
 import { getCohortsForTimetable } from '#routes/timetable/cohort';
 import { importRoute } from '#routes/timetable/import';
 import {
+  deleteTimetable,
   getAllTimetables,
   getAllValidTimetables,
   getLatestValidTimetable,
+  updateTimetable,
 } from '#routes/timetable/index';
 import {
   getLessonForId,
@@ -40,6 +42,8 @@ export const timetableRouter = timetableFactory
   .get('/timetables', ...getAllTimetables)
   .get('/timetables/latestValid', ...getLatestValidTimetable)
   .get('/timetables/valid', ...getAllValidTimetables)
+  .patch('/timetables/:id', ...updateTimetable)
+  .delete('/timetables/:id', ...deleteTimetable)
   .post('/import', ...importRoute)
   // Substitution routes
   .get('/substitutions', ...getAllSubstitutions)
