@@ -547,8 +547,8 @@ const splitName = (
     return { firstName: trimmedName, restOfName: '' };
   }
 
-  const firstName = trimmedName.substring(0, firstSpaceIndex);
-  const restOfName = trimmedName.substring(firstSpaceIndex + 1).trim();
+  const firstName = trimmedName.slice(0, firstSpaceIndex);
+  const restOfName = trimmedName.slice(firstSpaceIndex + 1).trim();
 
   return { firstName, restOfName };
 };

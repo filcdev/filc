@@ -608,10 +608,10 @@ export const updateMovedLesson = timetableFactory.createHandlers(
         .update(movedLesson)
         .set({
           date,
-          room: room !== undefined ? room : undefined,
-          startingDay: startingDay !== undefined ? startingDay : undefined,
+          room: room === undefined ? undefined : room,
+          startingDay: startingDay === undefined ? undefined : startingDay,
           startingPeriod:
-            startingPeriod !== undefined ? startingPeriod : undefined,
+            startingPeriod === undefined ? undefined : startingPeriod,
         })
         .where(eq(movedLesson.id, id))
         .returning();

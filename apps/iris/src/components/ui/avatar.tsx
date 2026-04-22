@@ -95,9 +95,9 @@ function AvatarGroupCount({ className, ...props }: ComponentProps<'div'>) {
 
 export {
   Avatar,
-  AvatarImage,
+  AvatarBadge,
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
-  AvatarBadge,
+  AvatarImage,
 };

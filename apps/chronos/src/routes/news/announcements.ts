@@ -17,6 +17,7 @@ import {
   dateRangeBodySchema,
   dateRangeUpdateBodySchema,
 } from '#utils/news/schemas';
+import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
 const validateCohortIds = async (cohortIds: string[]) => {
@@ -62,6 +63,11 @@ const announcementDetailResponseSchema = z.object({
   success: z.literal(true),
 });
 
+const announcementBaseDetailResponseSchema = z.object({
+  data: announcementSelectSchema.extend({ cohortIds: z.array(z.string()) }),
+  success: z.literal(true),
+});
+
 const successResponseSchema = z.object({
   success: z.literal(true),
 });
@@ -74,6 +80,11 @@ const { schema: updateRequestSchema } = await resolver(
 
 export const listAnnouncements = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Announcement',
+      '@listof Announcement @field(.author, Author)',
+      true
+    ),
     description:
       'List active announcements within date range, filtered by user cohort',
     responses: {
@@ -165,6 +176,11 @@ export const listAnnouncements = newsFactory.createHandlers(
 
 export const getAnnouncement = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt(
+      'Announcement',
+      '@unit Announcement @field(.author, Author)',
+      true
+    ),
     description: 'Get a single announcement by ID',
     responses: {
       200: {
@@ -222,6 +238,7 @@ export const getAnnouncement = newsFactory.createHandlers(
 
 export const createAnnouncement = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('Announcement', '@unit Announcement', true),
     description: 'Create a new announcement',
     requestBody: {
       content: {
@@ -234,7 +251,7 @@ export const createAnnouncement = newsFactory.createHandlers(
       201: {
         content: {
           'application/json': {
-            schema: resolver(announcementDetailResponseSchema),
+            schema: resolver(announcementBaseDetailResponseSchema),
           },
         },
         description: 'Announcement created',
@@ -292,6 +309,7 @@ export const createAnnouncement = newsFactory.createHandlers(
 
 export const updateAnnouncement = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('Announcement', '@unit Announcement', true),
     description: 'Update an existing announcement',
     requestBody: {
       content: {
@@ -304,7 +322,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(announcementDetailResponseSchema),
+            schema: resolver(announcementBaseDetailResponseSchema),
           },
         },
         description: 'Announcement updated',
@@ -405,6 +423,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
 
 export const deleteAnnouncement = newsFactory.createHandlers(
   describeRoute({
+    ...filcExt('Announcement', '@nodata', true),
     description: 'Delete an announcement',
     responses: {
       200: {
