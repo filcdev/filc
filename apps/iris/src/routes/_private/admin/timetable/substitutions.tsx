@@ -130,18 +130,6 @@ function SubstitutionsPage() {
     queryKey: ['teachers'],
   });
 
-  const cohortsQuery = useQuery({
-    enabled: hasWritePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data;
-    },
-    queryKey: ['cohorts'],
-  });
-
   const $create = api.timetable.substitutions.$post;
   const createMutation = useMutation<
     InferResponseType<typeof $create>,
@@ -524,7 +512,6 @@ function SubstitutionsPage() {
       {hasWritePermission && (
         <>
           <SubstitutionDialog
-            cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
             item={selectedItem}
             onOpenChange={(open) => {
