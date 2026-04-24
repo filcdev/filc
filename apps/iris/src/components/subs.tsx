@@ -112,21 +112,27 @@ function LessonRow({
   );
 }
 
-function MovedLessonRow({ movedLesson }: { movedLesson: MovedLessonItem }) {
+function MovedLessonRow({
+  lessonNameById,
+  movedLesson,
+}: {
+  lessonNameById: Map<string, string>;
+  movedLesson: MovedLessonItem;
+}) {
   const { t } = useTranslation();
   const notAvailable = t('substitution.notAvailable');
+  const movedLessonNames = movedLesson.lessons.map(
+    (lessonId, index) =>
+      movedLesson.lessonNames?.[index] ??
+      lessonNameById.get(lessonId) ??
+      lessonId
+  );
 
   return (
     <>
       <TableCell className="font-medium">
         {movedLesson.lessons && movedLesson.lessons.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {movedLesson.lessons.map((lessonId) => (
-              <Badge className="text-xs" key={lessonId} variant="secondary">
-                {lessonId}
-              </Badge>
-            ))}
-          </div>
+          <span>{movedLessonNames.join(', ')}</span>
         ) : (
           <span className="text-muted-foreground">{notAvailable}</span>
         )}
@@ -194,7 +200,10 @@ function LessonReturn(data: Subs[]) {
     );
 }
 
-function MovedLessonReturn(data: MovedLessonItem[]) {
+function MovedLessonReturn(
+  data: MovedLessonItem[],
+  lessonNameById: Map<string, string>
+) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -205,13 +214,27 @@ function MovedLessonReturn(data: MovedLessonItem[]) {
         className="border-accent/10 transition-colors hover:bg-accent/5"
         key={ml.movedLesson.id}
       >
-        <MovedLessonRow movedLesson={ml} />
+        <MovedLessonRow lessonNameById={lessonNameById} movedLesson={ml} />
       </TableRow>
     ));
 }
 
 export function SubsV({ data, movedLessons = [] }: TimetableProps) {
   const { i18n, t } = useTranslation();
+
+  const lessonNameById = new Map<string, string>();
+  for (const sub of data) {
+    for (const lesson of sub.lessons) {
+      if (!lesson) {
+        continue;
+      }
+
+      lessonNameById.set(
+        lesson.id,
+        lesson.subject?.name ?? lesson.subject?.short ?? lesson.id
+      );
+    }
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -283,10 +306,10 @@ export function SubsV({ data, movedLessons = [] }: TimetableProps) {
             </TableHeader>
             <TableBody>
               {LessonReturn(data).length > 0 ||
-              MovedLessonReturn(movedLessons).length > 0 ? (
+              MovedLessonReturn(movedLessons, lessonNameById).length > 0 ? (
                 <>
                   {LessonReturn(data)}
-                  {MovedLessonReturn(movedLessons)}
+                  {MovedLessonReturn(movedLessons, lessonNameById)}
                 </>
               ) : (
                 <TableRow>
