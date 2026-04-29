@@ -1,5 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { SystemMessageBanner } from '@/components/system-message-banner';
 import { Toaster } from '@/components/ui/sonner';
 import { CookiePopup } from '@/components/util/cookie-popup';
 import { authClient } from '@/utils/authentication';
@@ -25,6 +26,7 @@ function RootComponent() {
 
   return (
     <>
+      <SystemMessageBanner />
       <Outlet />
       <Toaster />
       <CookiePopup />

@@ -1,10 +1,3 @@
-import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
@@ -27,6 +20,13 @@ import {
   createSelectSchema,
   createUpdateSchema,
 } from '#utils/zod';
+import { zValidator } from '@hono/zod-validator';
+import { getLogger } from '@logtape/logtape';
+import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { describeRoute, resolver } from 'hono-openapi';
+import { HTTPException } from 'hono/http-exception';
+import { StatusCodes } from 'http-status-codes';
+import z from 'zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'substitutions']);
@@ -227,7 +227,6 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
   async (c) => {
     try {
       // First get all substitutions with their lesson IDs
@@ -320,7 +319,6 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
   async (c) => {
     try {
       const today = new Date();
@@ -390,7 +388,6 @@ export const getRelevantSubstitutionsForCohort =
       },
       tags: ['Substitution'],
     }),
-    requireAuthentication,
     zValidator('param', z.object({ cohortId: z.uuid() })),
     async (c) => {
       const { cohortId } = c.req.valid('param');

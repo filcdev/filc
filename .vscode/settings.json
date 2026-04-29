@@ -44,5 +44,10 @@
     {
       "text": "Reference issue numbers with # prefix"
     }
-  ]
+  ],
+  "go.goroot": "/home/nya/.local/share/mise/installs/go/1.26.2",
+  "go.alternateTools": {
+    "go": "/home/nya/.local/share/mise/shims/go",
+    "gopls": "/home/nya/.local/share/mise/shims/gopls"
+  }
 }
