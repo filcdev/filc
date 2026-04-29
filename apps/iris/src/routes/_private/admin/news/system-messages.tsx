@@ -191,10 +191,15 @@ function SystemMessagesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(
+    mutationFn: async (id: string) => {
+      const res = await parseResponse(
         api.news['system-messages'][':id'].$delete({ param: { id } })
-      ),
+      );
+      if (!res.success) {
+        throw new Error('Failed to delete system message');
+      }
+      return res;
+    },
     onError: (error: Error) => {
       toast.error(error.message || t('systemMessages.deleteError'));
     },
