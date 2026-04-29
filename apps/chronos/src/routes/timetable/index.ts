@@ -43,7 +43,6 @@ export const getAllTimetables = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  requireAuthentication,
   async (c) => {
     try {
       const timetables = await db.select().from(timetable);
@@ -84,7 +83,6 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  requireAuthentication,
   async (c) => {
     const today = dateToYYYYMMDD(new Date());
     try {
@@ -135,7 +133,6 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  requireAuthentication,
   async (c) => {
     try {
       const today = dateToYYYYMMDD(new Date());

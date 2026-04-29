@@ -227,7 +227,6 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
   async (c) => {
     try {
       // First get all substitutions with their lesson IDs
@@ -320,7 +319,6 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
   async (c) => {
     try {
       const today = new Date();
@@ -390,7 +388,6 @@ export const getRelevantSubstitutionsForCohort =
       },
       tags: ['Substitution'],
     }),
-    requireAuthentication,
     zValidator('param', z.object({ cohortId: z.uuid() })),
     async (c) => {
       const { cohortId } = c.req.valid('param');

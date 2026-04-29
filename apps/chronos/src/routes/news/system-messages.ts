@@ -99,12 +99,10 @@ export const listSystemMessages = newsFactory.createHandlers(
     },
     tags: ['News / System Messages'],
   }),
-  requireAuthentication,
   zValidator('query', announcementQuerySchema),
   async (c) => {
     const { limit, offset, includeExpired } = c.req.valid('query');
-    const currentUser = c.var.user;
-    const userCohortId = currentUser.cohortId;
+    const userCohortId = c.var.user?.cohortId;
 
     const now = new Date();
     const conditions: SQL[] = [];
@@ -192,7 +190,6 @@ export const getSystemMessage = newsFactory.createHandlers(
     },
     tags: ['News / System Messages'],
   }),
-  requireAuthentication,
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -258,7 +255,7 @@ export const createSystemMessage = newsFactory.createHandlers(
     tags: ['News / System Messages'],
   }),
   requireAuthentication,
-  requireAuthorization('news:system'),
+  requireAuthorization('system-messages:manage'),
   zValidator('json', dateRangeBodySchema),
   async (c) => {
     const body = c.req.valid('json');
@@ -330,7 +327,7 @@ export const updateSystemMessage = newsFactory.createHandlers(
     tags: ['News / System Messages'],
   }),
   requireAuthentication,
-  requireAuthorization('news:system'),
+  requireAuthorization('system-messages:manage'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   zValidator('json', dateRangeUpdateBodySchema),
   async (c) => {
@@ -435,7 +432,7 @@ export const deleteSystemMessage = newsFactory.createHandlers(
     tags: ['News / System Messages'],
   }),
   requireAuthentication,
-  requireAuthorization('news:system'),
+  requireAuthorization('system-messages:manage'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');

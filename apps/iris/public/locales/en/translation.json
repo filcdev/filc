@@ -285,6 +285,37 @@
     "loadError": "Unable to load announcements",
     "loadErrorMessage": "Please try again later."
   },
+  "systemMessages": {
+    "title": "System Messages",
+    "description": "Manage high-priority system-wide messages",
+    "create": "Create System Message",
+    "edit": "Edit System Message",
+    "save": "Save",
+    "delete": "Delete",
+    "content": "Content",
+    "contentPlaceholder": "System message content",
+    "titlePlaceholder": "System message title",
+    "validFrom": "Valid From",
+    "validUntil": "Valid Until",
+    "cohorts": "Cohorts (Optional)",
+    "noCohorts": "All",
+    "noSystemMessages": "No system messages found",
+    "actions": "Actions",
+    "refresh": "Refresh",
+    "createSuccess": "System message created successfully",
+    "createError": "Failed to create system message",
+    "updateSuccess": "System message updated successfully",
+    "updateError": "Failed to update system message",
+    "deleteSuccess": "System message deleted successfully",
+    "deleteError": "Failed to delete system message",
+    "deleteConfirm": "Delete System Message",
+    "deleteDescription": "Are you sure you want to delete this system message? This action cannot be undone.",
+    "loadError": "Unable to load system messages",
+    "loadErrorMessage": "Please try again later."
+  },
+  "systemMessagesBanner": {
+    "dismiss": "Dismiss system message"
+  },
   "auth": {
     "error": {
       "returnToHome": "Return to home",

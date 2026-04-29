@@ -85,6 +85,12 @@ export function AdminSidebar() {
             title: t('announcements.title'),
             url: '/admin/news/announcements',
           },
+          {
+            icon: Bell,
+            permission: 'system-messages:manage',
+            title: t('systemMessages.title'),
+            url: '/admin/news/system-messages',
+          },
         ],
         label: t('admin.communications'),
       },

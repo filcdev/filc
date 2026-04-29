@@ -20,11 +20,6 @@ type AnnouncementApiResponse = InferResponseType<
 >;
 type AnnouncementItem = NonNullable<AnnouncementApiResponse['data']>[number];
 
-type SystemMessageApiResponse = InferResponseType<
-  (typeof api.news)['system-messages']['$get']
->;
-type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
-
 type BlockContent = {
   content: string;
   type: string;
@@ -36,7 +31,7 @@ type NewsItem = {
   content: unknown;
   validFrom: string;
   validUntil: string;
-  type: 'announcement' | 'system';
+  type: 'announcement';
 };
 
 function renderBlockContent(content: unknown): string {
@@ -56,7 +51,6 @@ function renderBlockContent(content: unknown): string {
 
 function filterNewsItemsInDateRange(
   announcements: AnnouncementItem[] | undefined,
-  systemMessages: SystemMessageItem[] | undefined,
   today: Date,
   endDate: Date
 ): NewsItem[] {
@@ -76,25 +70,6 @@ function filterNewsItemsInDateRange(
           type: 'announcement',
           validFrom: announcement.validFrom,
           validUntil: announcement.validUntil,
-        });
-      }
-    }
-  }
-
-  // Add system messages
-  if (systemMessages) {
-    for (const message of systemMessages) {
-      const validFrom = new Date(message.validFrom);
-      const validUntil = new Date(message.validUntil);
-
-      if (validFrom <= endDate && validUntil >= today) {
-        items.push({
-          content: message.content,
-          id: message.id,
-          title: message.title,
-          type: 'system',
-          validFrom: message.validFrom,
-          validUntil: message.validUntil,
         });
       }
     }
@@ -126,22 +101,6 @@ export function NewsPanel() {
     queryKey: ['announcements-panel'],
   });
 
-  const systemMessagesQuery = useQuery({
-    enabled: !isPending,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.news['system-messages'].$get({
-          query: {},
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load system messages');
-      }
-      return res.data as SystemMessageItem[];
-    },
-    queryKey: ['system-messages-panel'],
-  });
-
   const newsItems = useMemo<NewsItem[]>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -150,17 +109,15 @@ export function NewsPanel() {
 
     return filterNewsItemsInDateRange(
       announcementsQuery.data,
-      systemMessagesQuery.data,
       today,
       fourteenDaysLater
     );
-  }, [announcementsQuery.data, systemMessagesQuery.data]);
+  }, [announcementsQuery.data]);
 
   const isLoading =
     announcementsQuery.isLoading ||
-    systemMessagesQuery.isLoading ||
     announcementsQuery.isFetching ||
-    systemMessagesQuery.isFetching;
+    announcementsQuery.isFetching;
 
   // Don't render if no news items and not loading
   if (!isLoading && newsItems.length === 0) {
@@ -202,12 +159,7 @@ export function NewsPanel() {
               {!isLoading && newsItems.length > 0 && (
                 <div className="space-y-3">
                   {newsItems.map((item) => (
-                    <Alert
-                      key={item.id}
-                      variant={
-                        item.type === 'system' ? 'destructive' : 'default'
-                      }
-                    >
+                    <Alert key={item.id}>
                       <AlertTitle className="font-semibold">
                         {item.title}
                       </AlertTitle>

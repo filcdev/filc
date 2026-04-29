@@ -285,6 +285,37 @@
     "loadError": "Nem sikerült betölteni a bejelentéseket",
     "loadErrorMessage": "Kérlek próbáld újra később."
   },
+  "systemMessages": {
+    "title": "Rendszerüzenetek",
+    "description": "Kiemelt, rendszer szintű üzenetek kezelése",
+    "create": "Rendszerüzenet létrehozása",
+    "edit": "Rendszerüzenet szerkesztése",
+    "save": "Mentés",
+    "delete": "Törlés",
+    "content": "Tartalom",
+    "contentPlaceholder": "Rendszerüzenet tartalma",
+    "titlePlaceholder": "Rendszerüzenet címe",
+    "validFrom": "Érvényes ettől",
+    "validUntil": "Érvényes eddig",
+    "cohorts": "Csoportok (opcionális)",
+    "noCohorts": "Minden",
+    "noSystemMessages": "Nincsenek rendszerüzenetek",
+    "actions": "Műveletek",
+    "refresh": "Frissítés",
+    "createSuccess": "Rendszerüzenet sikeresen létrehozva",
+    "createError": "Nem sikerült létrehozni a rendszerüzenetet",
+    "updateSuccess": "Rendszerüzenet sikeresen frissítve",
+    "updateError": "Nem sikerült frissíteni a rendszerüzenetet",
+    "deleteSuccess": "Rendszerüzenet sikeresen törölve",
+    "deleteError": "Nem sikerült törölni a rendszerüzenetet",
+    "deleteConfirm": "Rendszerüzenet törlése",
+    "deleteDescription": "Törölni akarod ezt a rendszerüzenetet? Ez a művelet nem vonható vissza.",
+    "loadError": "Nem sikerült betölteni a rendszerüzeneteket",
+    "loadErrorMessage": "Kérlek próbáld újra később."
+  },
+  "systemMessagesBanner": {
+    "dismiss": "Rendszerüzenet bezárása"
+  },
   "auth": {
     "error": {
       "returnToHome": "Vissza a kezdőlapra",
