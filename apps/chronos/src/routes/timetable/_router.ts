@@ -33,7 +33,7 @@ import {
   getRelevantSubstitutionsForCohort,
   updateSubstitution,
 } from '#routes/timetable/substitution';
-import { getClassrooms } from './room';
+import { getAvailableClassrooms, getClassrooms } from './room';
 import { getTeachers } from './teacher';
 
 export const timetableRouter = timetableFactory
@@ -70,9 +70,10 @@ export const timetableRouter = timetableFactory
   .post('/lessons/getSubstitutionCandidates', ...getSubstitutionCandidates)
   .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
   .get('/lessons/getForId/:lessonId', ...getLessonForId)
+  // Classroom routes
+  .get('/classrooms/getAvailable', ...getAvailableClassrooms)
+  .get('/classrooms/getAll', ...getClassrooms)
   // Cohort routes
   .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
   // Teacher routes
-  .get('/teachers/getAll', ...getTeachers)
-  // Classroom routes
-  .get('/classrooms/getAll', ...getClassrooms);
+  .get('/teachers/getAll', ...getTeachers);
