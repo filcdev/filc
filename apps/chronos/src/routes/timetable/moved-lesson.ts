@@ -15,6 +15,7 @@ import {
   movedLesson,
   movedLessonLessonMTM,
   period,
+  subject,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { filcExt } from '#utils/openapi';
@@ -165,6 +166,7 @@ const getAllResponseSchema = z.object({
     z.object({
       classroom: createSelectSchema(classroom).nullable(),
       dayDefinition: createSelectSchema(dayDefinition).nullable(),
+      lessonNames: z.array(z.string()),
       lessons: z.array(z.string()),
       movedLesson: createSelectSchema(movedLesson),
       period: createSelectSchema(period).nullable(),
@@ -174,7 +176,7 @@ const getAllResponseSchema = z.object({
 });
 
 const movedLessonWithRelationsType =
-  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<String>)';
+  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<String>) @field(.lessonNames, List<String>)';
 
 export const getAllMovedLessons = timetableFactory.createHandlers(
   describeRoute({
@@ -198,6 +200,10 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         .select({
           classroom,
           dayDefinition,
+          lessonNames: sql<string[]>`COALESCE(
+            ARRAY_AGG(${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as('lessonNames'),
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
@@ -213,6 +219,8 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
           movedLessonLessonMTM,
           eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
         )
+        .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+        .leftJoin(subject, eq(lesson.subjectId, subject.id))
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
       return c.json<SuccessResponse<typeof movedLessons>>({
@@ -268,6 +276,10 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         .select({
           classroom,
           dayDefinition,
+          lessonNames: sql<string[]>`COALESCE(
+            ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as('lessonNames'),
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
@@ -284,6 +296,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
           eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
         )
         .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+        .leftJoin(subject, eq(lesson.subjectId, subject.id))
         .where(
           and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
         )
@@ -339,6 +352,10 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         .select({
           classroom,
           dayDefinition,
+          lessonNames: sql<string[]>`COALESCE(
+            ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as('lessonNames'),
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
@@ -355,6 +372,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
           eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
         )
         .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+        .leftJoin(subject, eq(lesson.subjectId, subject.id))
         .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
         .where(eq(lessonCohortMTM.cohortId, cohortId))
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
@@ -412,6 +430,10 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         .select({
           classroom,
           dayDefinition,
+          lessonNames: sql<string[]>`COALESCE(
+            ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+            ARRAY[]::text[]
+          )`.as('lessonNames'),
           lessons: sql<string[]>`COALESCE(
             ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
             ARRAY[]::text[]
@@ -428,6 +450,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
           eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
         )
         .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+        .leftJoin(subject, eq(lesson.subjectId, subject.id))
         .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
         .where(
           and(
