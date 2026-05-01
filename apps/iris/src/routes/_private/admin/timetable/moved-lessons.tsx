@@ -138,7 +138,8 @@ function extractFromSubstitutions(
 
 function extractReferenceData(
   movedLessons: MovedLessonItem[],
-  subs: SubstitutionData[]
+  subs: SubstitutionData[],
+  cohortLessonsLists: Array<{ lessons: EnrichedLesson[] }>
 ) {
   const periodMap = new Map<string, Period>();
   const dayMap = new Map<string, DayDefinition>();
@@ -146,6 +147,26 @@ function extractReferenceData(
 
   extractFromMovedLessons(movedLessons, periodMap, dayMap);
   extractFromSubstitutions(subs, periodMap, dayMap, lessonMap);
+
+  // Also extract periods from cohort lessons
+  for (const cohortLessons of cohortLessonsLists) {
+    for (const lesson of cohortLessons.lessons) {
+      if (!lesson) {
+        continue;
+      }
+      if (lesson.period) {
+        periodMap.set(lesson.period.id, lesson.period);
+      }
+      if (lesson.day) {
+        dayMap.set(lesson.day.id, {
+          days: [],
+          id: lesson.day.id,
+          name: lesson.day.name,
+          short: lesson.day.short,
+        });
+      }
+    }
+  }
 
   const sortedDays = Array.from(dayMap.values()).sort((a, b) => {
     const aOrder = getDayOrder(a.name, a.short);
@@ -230,15 +251,39 @@ function MovedLessonsPage() {
     queryKey: ['substitutions'],
   });
 
-  // Extract unique periods and day definitions from moved lessons data
-  const { allLessons, days, periods } = useMemo(
-    () =>
-      extractReferenceData(
-        movedLessonsQuery.data ?? [],
-        substitutionsQuery.data ?? []
-      ),
-    [movedLessonsQuery.data, substitutionsQuery.data]
-  );
+    // Fetch lessons from all cohorts to ensure we have all periods
+    const cohortLessonsQueries = useQuery({
+      enabled: hasWritePermission && (cohortsQuery.data?.length ?? 0) > 0,
+      queryFn: async () => {
+        const cohorts = cohortsQuery.data ?? [];
+        const results = await Promise.all(
+          cohorts.map(async (cohort) => {
+            const res = await parseResponse(
+              api.timetable.lessons.getForCohort[':cohortId'].$get({
+                param: { cohortId: cohort.id },
+              })
+            );
+            if (!res.success) {
+              return { lessons: [] };
+            }
+            return { lessons: (res.data ?? []) as unknown as EnrichedLesson[] };
+          })
+        );
+        return results;
+      },
+      queryKey: ['cohort-lessons', cohortsQuery.data],
+    });
+
+    // Extract unique periods and day definitions from moved lessons data
+    const { allLessons, days, periods } = useMemo(
+      () =>
+        extractReferenceData(
+          movedLessonsQuery.data ?? [],
+          substitutionsQuery.data ?? [],
+          cohortLessonsQueries.data ?? []
+        ),
+      [movedLessonsQuery.data, substitutionsQuery.data, cohortLessonsQueries.data]
+    );
 
   const $createMovedLesson = api.timetable.movedLessons.$post;
   const createMutation = useMutation<

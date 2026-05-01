@@ -239,6 +239,7 @@
     "actions": "Actions",
     "noLessons": "No lessons available",
     "loadingLessons": "Loading lessons…",
+    "loadingRooms": "Loading available rooms…",
     "selectCohort": "Filter by Class",
     "selectCohortPlaceholder": "Select a class to see lessons",
     "noCohortFound": "No class found.",

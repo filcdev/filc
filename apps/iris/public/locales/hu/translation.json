@@ -239,6 +239,7 @@
     "actions": "Műveletek",
     "noLessons": "Nincsenek elérhető órák",
     "loadingLessons": "Órák betöltése…",
+    "loadingRooms": "Elérhető termek betöltése…",
     "selectCohort": "Szűrés osztály szerint",
     "selectCohortPlaceholder": "Válassz egy osztályt az órák megtekintéséhez",
     "noCohortFound": "Nem található osztály.",
