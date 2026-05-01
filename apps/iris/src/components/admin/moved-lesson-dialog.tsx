@@ -184,20 +184,26 @@ export function MovedLessonDialog({
 
   const availableClassroomsQuery = useQuery({
     enabled:
-      !!formState.date &&
-      !!formState.startingDay &&
-      !!formState.startingPeriod,
+      !!formState.date && !!formState.startingDay && !!formState.startingPeriod,
     queryFn: async () => {
-      const dateParam = formState.date instanceof Date
-        ? formState.date.toISOString().split('T')[0]
-        : String(formState.date ?? '');
+      const dateParam =
+        formState.date instanceof Date
+          ? formState.date.toISOString().split('T')[0]
+          : String(formState.date ?? '');
+
+      const sd = formState.startingDay;
+      const sp = formState.startingPeriod;
+
+      if (!(sd && sp)) {
+        return [];
+      }
 
       const res = await parseResponse(
         api.timetable.classrooms.getAvailable.$get({
           query: {
             date: dateParam as string,
-            startingDay: formState.startingDay!,
-            startingPeriod: formState.startingPeriod!,
+            startingDay: sd,
+            startingPeriod: sp,
           },
         })
       );
@@ -217,33 +223,28 @@ export function MovedLessonDialog({
 
   const availableLessons = useMemo(() => {
     const map = new Map<string, EnrichedLesson>();
-    // Ha van kiválasztott osztály, akkor csak az ő óráit mutatjuk
-    if (selectedCohort) {
-      for (const l of cohortLessonsQuery.data ?? []) {
-        if (!l.id) {
-          continue;
-        }
-        map.set(l.id, l as unknown as EnrichedLesson);
+    const source = selectedCohort
+      ? (cohortLessonsQuery.data ?? [])
+      : allLessons;
+    /* biome-disable useBlockStatements */
+    for (const l of source) {
+      if (!l?.id) {
+        continue;
       }
-    } else {
-      // Ha nincs, akkor az összeset (kezdeti állapot)
-      for (const l of allLessons) {
-        map.set(l.id, l);
-      }
+      map.set(l.id, l as EnrichedLesson);
     }
+    /* biome-enable useBlockStatements */
 
-    // Create list
     let lessons = Array.from(map.values());
 
-    // If a target period or day is selected, filter lessons to match
-    if (formState.startingPeriod) {
-      lessons = lessons.filter((l) => l.period?.id === formState.startingPeriod);
-    }
-    if (formState.startingDay) {
-      lessons = lessons.filter((l) => l.day?.id === formState.startingDay);
-    }
+    lessons = lessons.filter((l) => {
+      const periodMatch =
+        !formState.startingPeriod || l.period?.id === formState.startingPeriod;
+      const dayMatch =
+        !formState.startingDay || l.day?.id === formState.startingDay;
+      return periodMatch && dayMatch;
+    });
 
-    // Sort by weekday order, then by period.
     return lessons.sort((a, b) => {
       const aDay = getDayOrder(a.day?.name ?? '', a.day?.short);
       const bDay = getDayOrder(b.day?.name ?? '', b.day?.short);
@@ -254,7 +255,13 @@ export function MovedLessonDialog({
 
       return (a.period?.period ?? 999) - (b.period?.period ?? 999);
     });
-  }, [allLessons, cohortLessonsQuery.data, selectedCohort, formState.startingPeriod, formState.startingDay]);
+  }, [
+    allLessons,
+    cohortLessonsQuery.data,
+    selectedCohort,
+    formState.startingPeriod,
+    formState.startingDay,
+  ]);
 
   const isCreate = !item;
 
@@ -287,8 +294,11 @@ export function MovedLessonDialog({
     return true;
   }, [formState, isCreate]);
 
-  const toggleLesson = (lesson: EnrichedLesson | undefined, checked: boolean) => {
-    if (!lesson || !lesson.id) {
+  const toggleLesson = (
+    lesson: EnrichedLesson | undefined,
+    checked: boolean
+  ) => {
+    if (!lesson?.id) {
       return;
     }
     setFormState((prev) => {
@@ -389,7 +399,11 @@ export function MovedLessonDialog({
             <div className="space-y-2">
               <Label>{t('movedLesson.targetRoom')}</Label>
               <Combobox
-                className={availableClassroomsQuery.isLoading ? 'opacity-50 pointer-events-none' : undefined}
+                className={
+                  availableClassroomsQuery.isLoading
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
                 emptyMessage={
                   availableClassroomsQuery.isLoading
                     ? t('movedLesson.loadingRooms')
