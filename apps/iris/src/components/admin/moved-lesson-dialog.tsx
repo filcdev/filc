@@ -27,6 +27,7 @@ import {
   isMatchingWeekday,
 } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type MovedLessonApiResponse = InferResponseType<
   typeof api.timetable.movedLessons.$get
@@ -179,7 +180,7 @@ export function MovedLessonDialog({
       }
       return res.data;
     },
-    queryKey: ['lessons', 'cohort', selectedCohort],
+    queryKey: queryKeys.timetable.lessonsByCohort(selectedCohort),
   });
 
   const availableClassroomsQuery = useQuery({
@@ -212,13 +213,11 @@ export function MovedLessonDialog({
       }
       return res.data;
     },
-    queryKey: [
-      'classrooms',
-      'available',
+    queryKey: queryKeys.timetable.availableClassrooms(
       formState.date,
       formState.startingDay,
-      formState.startingPeriod,
-    ],
+      formState.startingPeriod
+    ),
   });
 
   const availableLessons = useMemo(() => {

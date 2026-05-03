@@ -6,6 +6,7 @@ import { NewsPanel } from '@/components/news-panel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 import { SubsV } from './subs';
 
 type SubstitutionsResponse = InferResponseType<
@@ -59,7 +60,7 @@ export function SubstitutionView() {
 
       return res.data as Subs[];
     },
-    queryKey: ['substitutions'],
+    queryKey: queryKeys.substitutions(),
   });
 
   const movedLessonsQuery = useQuery({
@@ -72,7 +73,7 @@ export function SubstitutionView() {
 
       return res.data as MovedLessonItem[];
     },
-    queryKey: ['movedLessons'],
+    queryKey: queryKeys.movedLessons(),
   });
 
   const isLoading =

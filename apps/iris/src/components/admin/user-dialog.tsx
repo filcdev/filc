@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type User = InferResponseType<
   typeof api.users.index.$get
@@ -42,7 +43,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
       }
       return res.data;
     },
-    queryKey: ['roles'],
+    queryKey: queryKeys.roles(),
   });
 
   const availableRoles = rolesQuery.data?.roles ?? [];
@@ -66,7 +67,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     },
     onSuccess: () => {
       toast.success('User updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.usersAll() });
       onOpenChange(false);
     },
   });

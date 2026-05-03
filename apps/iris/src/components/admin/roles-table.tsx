@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 import { RoleDialog } from './role-dialog';
 
 type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
@@ -44,7 +45,7 @@ export function RolesTable({ roles }: RolesTableProps) {
     },
     onSuccess: () => {
       toast.success(t('roles.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
     },
   });
 

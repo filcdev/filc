@@ -30,6 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type DeviceStatsDialogProps = {
   deviceId: string | null;
@@ -60,7 +61,7 @@ export function DeviceStatsDialog({
       }
       return res.data;
     },
-    queryKey: ['doorlock', 'devices', deviceId, 'stats'],
+    queryKey: queryKeys.doorlock.deviceStats(deviceId ?? ''),
     refetchInterval: 30_000, // Refresh every 30s
   });
 

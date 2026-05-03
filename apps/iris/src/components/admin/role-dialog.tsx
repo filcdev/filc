@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/utils';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
 type Role = NonNullable<RolesApiResponse['data']>['roles'][number];
@@ -57,7 +58,7 @@ export function RoleDialog({
       }
       return res.data.permissions as string[];
     },
-    queryKey: ['permissions'],
+    queryKey: queryKeys.permissions(),
   });
 
   const knownPermissions = permissionsQuery.data ?? [];
@@ -88,7 +89,7 @@ export function RoleDialog({
     },
     onSuccess: () => {
       toast.success(t('roles.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
       onOpenChange(false);
     },
   });
@@ -109,7 +110,7 @@ export function RoleDialog({
     },
     onSuccess: () => {
       toast.success(t('roles.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
       onOpenChange(false);
     },
   });

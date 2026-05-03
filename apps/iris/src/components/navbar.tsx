@@ -30,6 +30,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type NavbarProps = {
   children?: ReactNode;
@@ -72,7 +73,7 @@ export function Navbar({
       }
       return res.data as Cohort[];
     },
-    queryKey: ['cohorts'],
+    queryKey: queryKeys.cohorts(),
   });
 
   const substitutionsQuery = useQuery({
@@ -85,7 +86,7 @@ export function Navbar({
 
       return res.data as Substitution[];
     },
-    queryKey: ['substitutions'],
+    queryKey: queryKeys.substitutions(),
   });
 
   const movedLessonsQuery = useQuery({
@@ -98,7 +99,7 @@ export function Navbar({
 
       return res.data as MovedLessonItem[];
     },
-    queryKey: ['movedLessons'],
+    queryKey: queryKeys.movedLessons(),
   });
 
   const userClassName = cohortsQuery.data?.find(

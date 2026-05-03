@@ -7,6 +7,7 @@ import { RoleDialog } from '@/components/admin/role-dialog';
 import { RolesTable } from '@/components/admin/roles-table';
 import { Button } from '@/components/ui/button';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/_private/admin/roles')({
   component: AdminRolesPage,
@@ -24,7 +25,7 @@ function AdminRolesPage() {
       }
       return res.data;
     },
-    queryKey: ['roles'],
+    queryKey: queryKeys.roles(),
   });
 
   return (

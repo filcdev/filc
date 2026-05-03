@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { UsersTable } from '@/components/admin/users-table';
 import { Input } from '@/components/ui/input';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
@@ -39,7 +40,7 @@ function AdminUsersPage() {
       }
       return res.data;
     },
-    queryKey: ['users', page, debouncedSearch],
+    queryKey: queryKeys.users(page, debouncedSearch),
   });
 
   return (

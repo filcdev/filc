@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type SubstitutionApiResponse = InferResponseType<
   typeof api.timetable.substitutions.$get
@@ -131,16 +132,15 @@ export function SubstitutionDialog({
 
       return res.data;
     },
-    queryKey: [
-      'substitute-candidates',
+    queryKey: queryKeys.timetable.substituteCandidates(
       selectedMissingTeacher,
       formState.date?.toISOString(),
       [...formState.lessonIds].sort().join(','),
       teachers
         .map((teacher) => teacher.id)
         .sort()
-        .join(','),
-    ],
+        .join(',')
+    ),
   });
 
   const availableLessons = useMemo(() => {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type SystemMessageApiResponse = InferResponseType<
   (typeof api.news)['system-messages']['$get']
@@ -88,7 +89,7 @@ export function SystemMessageBanner() {
       }
       return res.data as SystemMessageItem[];
     },
-    queryKey: ['system-messages-banner'],
+    queryKey: queryKeys.news.systemMessagesBanner(),
   });
 
   const visibleMessages = useMemo(() => {

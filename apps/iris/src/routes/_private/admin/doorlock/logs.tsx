@@ -2,15 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Calendar as CalendarIcon,
-  Check,
-  DoorOpen,
-  User,
-} from 'lucide-react';
+import { Calendar as CalendarIcon, Check, DoorOpen, User } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -42,9 +34,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { SortIcon } from '@/components/util/sort-icon';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { cn } from '@/utils/index';
+import { queryKeys } from '@/utils/query-keys';
 
 type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
 type CardsResponse = InferResponseType<typeof api.doorlock.cards.$get>;
@@ -94,25 +89,6 @@ const buildButtonMeta = (log: DoorlockLogEntry): ButtonMeta => {
     variant: 'default',
   };
 };
-
-function SortIcon({
-  column,
-  currentColumn,
-  direction,
-}: {
-  column: LogSortColumn;
-  currentColumn: LogSortColumn | null;
-  direction: 'asc' | 'desc' | null;
-}) {
-  if (currentColumn !== column) {
-    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-  }
-  return direction === 'asc' ? (
-    <ArrowUp className="h-4 w-4" />
-  ) : (
-    <ArrowDown className="h-4 w-4" />
-  );
-}
 
 export const Route = createFileRoute('/_private/admin/doorlock/logs')({
   component: () => (
@@ -219,7 +195,7 @@ function LogsPage() {
       }
       return res.data.devices as DoorlockDevice[];
     },
-    queryKey: ['doorlock', 'devices'],
+    queryKey: queryKeys.doorlock.devices(),
   });
 
   const cardsQuery = useQuery({
@@ -231,7 +207,7 @@ function LogsPage() {
       }
       return res.data.cards as DoorlockCard[];
     },
-    queryKey: ['doorlock', 'cards'],
+    queryKey: queryKeys.doorlock.cards(),
   });
 
   const logsQuery = useQuery({
@@ -251,17 +227,15 @@ function LogsPage() {
       }
       return res.data.logs as DoorlockLogEntry[];
     },
-    queryKey: [
-      'doorlock',
-      'logs',
+    queryKey: queryKeys.doorlock.logs(
       deviceFilter,
       cardFilter,
       userFilter,
       accessFilter,
       dateRange.from?.toISOString() ?? 'none',
       dateRange.to?.toISOString() ?? 'none',
-      deferredSearch,
-    ],
+      deferredSearch
+    ),
     staleTime: 30_000,
   });
 
@@ -712,16 +686,6 @@ function LogTableRow({ log }: LogTableRowProps) {
       </TableCell>
     </TableRow>
   );
-}
-
-function useHasPermission(permission: string, permissions?: string[] | null) {
-  if (!permissions) {
-    return false;
-  }
-  if (permissions.includes('*')) {
-    return true;
-  }
-  return permissions.includes(permission);
 }
 
 function useOptions(
