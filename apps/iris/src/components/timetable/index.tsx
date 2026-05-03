@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Route, type searchSchema } from '@/routes/_public/index';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 // Constants
 const QUERY_OPTIONS = {
@@ -127,7 +128,7 @@ export function TimetableView() {
   const timetablesQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: fetchTimetables,
-    queryKey: ['timetables'],
+    queryKey: queryKeys.timetables(),
   });
 
   // Compute the latest valid timetable id from the list
@@ -163,19 +164,19 @@ export function TimetableView() {
       selectedTimetableId
         ? fetchCohortsForTimetable(selectedTimetableId)
         : Promise.resolve([] as CohortItem[]),
-    queryKey: ['cohorts', selectedTimetableId],
+    queryKey: queryKeys.timetable.cohorts(selectedTimetableId),
   });
 
   const teachersQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: fetchTeachers,
-    queryKey: ['teachers'],
+    queryKey: queryKeys.teachers(),
   });
 
   const classroomsQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: fetchClassrooms,
-    queryKey: ['classrooms'],
+    queryKey: queryKeys.classrooms(),
   });
 
   // State
@@ -212,7 +213,11 @@ export function TimetableView() {
             selectedTimetableId ?? undefined
           )
         : Promise.resolve([] as LessonItem[]),
-    queryKey: ['lessons', activeFilter, activeSelectionId, selectedTimetableId],
+    queryKey: queryKeys.timetable.lessons(
+      activeFilter,
+      activeSelectionId,
+      selectedTimetableId
+    ),
   });
 
   // Initialize from URL or defaults

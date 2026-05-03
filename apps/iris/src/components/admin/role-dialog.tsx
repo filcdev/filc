@@ -1,3 +1,4 @@
+import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type InferResponseType, parseResponse } from 'hono/client';
 import { CheckIcon } from 'lucide-react';
@@ -21,18 +22,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/utils';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
+import type { BaseDialogProps } from './admin.types';
 
 type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
 type Role = NonNullable<RolesApiResponse['data']>['roles'][number];
 
-type RoleDialogProps = {
+type RoleDialogProps = BaseDialogProps & {
   editingRole: Role | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
 };
 
 const ROLE_NAME_REGEX = /^[a-z0-9_-]+$/;
@@ -44,7 +45,6 @@ export function RoleDialog({
 }: RoleDialogProps) {
   const { t } = useTranslation();
   const isEditing = editingRole !== null;
-  const [name, setName] = useState('');
   const [permissionInput, setPermissionInput] = useState('');
   const [permissions, setPermissions] = useState<string[]>([]);
   const queryClient = useQueryClient();
@@ -57,26 +57,40 @@ export function RoleDialog({
       }
       return res.data.permissions as string[];
     },
-    queryKey: ['permissions'],
+    queryKey: queryKeys.permissions(),
   });
 
   const knownPermissions = permissionsQuery.data ?? [];
 
+  const form = useForm({
+    defaultValues: { name: editingRole?.name ?? '' },
+    onSubmit: ({ value }) => {
+      if (isEditing) {
+        updateMutation.mutate({ permissions });
+      } else {
+        createMutation.mutate({ name: value.name, permissions });
+      }
+    },
+  });
+
   useEffect(() => {
     if (open) {
-      setName(editingRole?.name ?? '');
+      form.reset({ name: editingRole?.name ?? '' });
       setPermissions(editingRole?.can ?? []);
       setPermissionInput('');
     }
-  }, [open, editingRole]);
+  }, [open, editingRole, form.reset]);
 
   const createMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({
+      name,
+      permissions: perms,
+    }: {
+      name: string;
+      permissions: string[];
+    }) => {
       const res = await api.roles.index.$post({
-        json: {
-          name,
-          permissions,
-        },
+        json: { name, permissions: perms },
       });
       if (!res.ok) {
         throw new Error('Failed to create role');
@@ -88,15 +102,15 @@ export function RoleDialog({
     },
     onSuccess: () => {
       toast.success(t('roles.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
       onOpenChange(false);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ permissions: perms }: { permissions: string[] }) => {
       const res = await api.roles[':name'].$patch({
-        json: { permissions },
+        json: { permissions: perms },
         param: { name: editingRole?.name ?? '' },
       });
       if (!res.ok) {
@@ -109,7 +123,7 @@ export function RoleDialog({
     },
     onSuccess: () => {
       toast.success(t('roles.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
       onOpenChange(false);
     },
   });
@@ -135,15 +149,8 @@ export function RoleDialog({
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const handleSave = () => {
-    if (isEditing) {
-      updateMutation.mutate();
-    } else {
-      createMutation.mutate();
-    }
-  };
-
-  const isNameValid = ROLE_NAME_REGEX.test(name) && name.length > 0;
+  const nameValue = useStore(form.store, (state) => state.values.name);
+  const isNameValid = ROLE_NAME_REGEX.test(nameValue) && nameValue.length > 0;
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -153,24 +160,32 @@ export function RoleDialog({
             {isEditing ? t('roles.editRole') : t('roles.createRole')}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="role-name">{t('roles.name')}</Label>
-            <Input
-              disabled={isEditing}
-              id="role-name"
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. moderator"
-              value={name}
-            />
-            {!isEditing && name.length > 0 && !isNameValid && (
-              <p className="text-destructive text-sm">
-                {t('roles.nameValidation')}
-              </p>
+        <form
+          className="space-y-4 py-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <form.Field name="name">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>{t('roles.name')}</FieldLabel>
+                <Input
+                  disabled={isEditing}
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="e.g. moderator"
+                  value={field.state.value}
+                />
+                {!isEditing && field.state.value.length > 0 && !isNameValid && (
+                  <FieldError errors={[t('roles.nameValidation')]} />
+                )}
+              </Field>
             )}
-          </div>
+          </form.Field>
           <div className="space-y-2">
-            <Label>{t('roles.permissions')}</Label>
+            <FieldLabel>{t('roles.permissions')}</FieldLabel>
             {permissions.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {permissions.map((perm) => (
@@ -259,20 +274,24 @@ export function RoleDialog({
               </Button>
             </div>
           </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="outline">
-            {t('common.cancel')}
-          </Button>
-          <Button
-            disabled={isPending || !(isEditing || isNameValid)}
-            onClick={handleSave}
-          >
-            {isPending
-              ? t('common.loading')
-              : t(isEditing ? 'roles.save' : 'roles.create')}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="outline"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={isPending || !(isEditing || isNameValid)}
+              type="submit"
+            >
+              {isPending
+                ? t('common.loading')
+                : t(isEditing ? 'roles.save' : 'roles.create')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

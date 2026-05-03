@@ -1,3 +1,4 @@
+import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
 import {
   type InferRequestType,
@@ -5,7 +6,7 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Save } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +21,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
+import type { BaseDialogProps } from './admin.types';
 
 type SubstitutionApiResponse = InferResponseType<
   typeof api.timetable.substitutions.$get
@@ -35,14 +38,11 @@ type TeacherLesson = NonNullable<
   NonNullable<TeacherLessonsApiResponse['data']>['availableLessons'][number]
 >;
 
-type SubstitutionDialogProps = {
-  isSubmitting: boolean;
+type SubstitutionDialogProps = BaseDialogProps & {
   item?: SubstitutionItem | null;
-  onOpenChange: (open: boolean) => void;
   onSubmit: (
     payload: InferRequestType<typeof api.timetable.substitutions.$post>['json']
   ) => Promise<void>;
-  open: boolean;
   teachers: Teacher[];
 };
 
@@ -80,7 +80,6 @@ const initialState = (
 });
 
 export function SubstitutionDialog({
-  isSubmitting,
   item,
   onOpenChange,
   onSubmit,
@@ -88,38 +87,48 @@ export function SubstitutionDialog({
   teachers,
 }: SubstitutionDialogProps) {
   const { t } = useTranslation();
-  const [formState, setFormState] = useState<
-    InferRequestType<typeof api.timetable.substitutions.$post>['json']
-  >(initialState(item));
   const [selectedMissingTeacher, setSelectedMissingTeacher] =
     useState<string>('');
+  const defaultValues = useMemo(() => initialState(item), [item]);
+
+  const form = useForm({
+    defaultValues,
+    onSubmit: async ({ value }) => {
+      await onSubmit(value);
+    },
+  });
+
+  const formDate = useStore(form.store, (state) => state.values.date);
+  const formLessonIds = useStore(form.store, (state) => state.values.lessonIds);
+  const formSubstituter = useStore(
+    form.store,
+    (state) => state.values.substituter
+  );
 
   useEffect(() => {
-    setFormState(initialState(item));
-    // Automatically select teacher when editing based on the first lesson's teacher.
+    if (!open) {
+      return;
+    }
+
+    form.reset(defaultValues);
     if (item && item.lessons.length > 0) {
       const firstLesson = item.lessons[0];
       const firstTeacherId = firstLesson?.teachers?.[0]?.id;
-      if (firstTeacherId) {
-        setSelectedMissingTeacher(firstTeacherId);
-      } else {
-        setSelectedMissingTeacher('');
-      }
+      setSelectedMissingTeacher(firstTeacherId ?? '');
     } else {
       setSelectedMissingTeacher('');
     }
-  }, [item]);
+  }, [defaultValues, form, item, open]);
 
   const substituteCandidatesQuery = useQuery({
-    enabled:
-      !!formState.date && teachers.length > 0 && !!selectedMissingTeacher,
+    enabled: !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
     queryFn: async () => {
       const res = await parseResponse(
         api.timetable.lessons.getSubstitutionCandidates.$post({
           json: {
-            date: formState.date,
+            date: formDate,
             missingTeacherId: selectedMissingTeacher,
-            selectedLessonIds: formState.lessonIds,
+            selectedLessonIds: formLessonIds,
             teacherIds: teachers.map((teacher) => teacher.id),
           },
         })
@@ -131,16 +140,15 @@ export function SubstitutionDialog({
 
       return res.data;
     },
-    queryKey: [
-      'substitute-candidates',
+    queryKey: queryKeys.timetable.substituteCandidates(
       selectedMissingTeacher,
-      formState.date?.toISOString(),
-      [...formState.lessonIds].sort().join(','),
+      formDate?.toISOString(),
+      [...formLessonIds].sort().join(','),
       teachers
         .map((teacher) => teacher.id)
         .sort()
-        .join(','),
-    ],
+        .join(',')
+    ),
   });
 
   const availableLessons = useMemo(() => {
@@ -168,39 +176,22 @@ export function SubstitutionDialog({
 
   const isCreate = !item;
 
-  const isValid = useMemo(() => {
-    if (!formState.date) {
-      return false;
-    }
-    if (formState.lessonIds.length === 0) {
-      return false;
-    }
-    return true;
-  }, [formState.date, formState.lessonIds]);
+  const isValid = !!formDate && formLessonIds.length > 0;
 
   const toggleLesson = (lessonId: string, checked: boolean) => {
-    setFormState((prev) => {
-      if (checked) {
-        return {
-          ...prev,
-          lessonIds: Array.from(new Set([...prev.lessonIds, lessonId])),
-          substituter: null,
-        };
-      }
-      return {
-        ...prev,
-        lessonIds: prev.lessonIds.filter((id) => id !== lessonId),
-        substituter: null,
-      };
-    });
-  };
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!isValid) {
-      return;
+    const current = form.getFieldValue('lessonIds');
+    if (checked) {
+      form.setFieldValue(
+        'lessonIds',
+        Array.from(new Set([...current, lessonId]))
+      );
+    } else {
+      form.setFieldValue(
+        'lessonIds',
+        current.filter((id) => id !== lessonId)
+      );
     }
-    await onSubmit(formState);
+    form.setFieldValue('substituter', null);
   };
 
   return (
@@ -215,20 +206,20 @@ export function SubstitutionDialog({
           <form
             className="mt-4 space-y-4"
             id="substitutionForm"
-            onSubmit={handleSubmit}
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
           >
             <div className="space-y-2">
               <Label>{t('substitution.date')}</Label>
               <DatePicker
-                date={formState.date}
-                onDateChange={(d) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    date: d ?? new Date(),
-                    lessonIds: [],
-                    substituter: null,
-                  }))
-                }
+                date={formDate}
+                onDateChange={(d) => {
+                  form.setFieldValue('date', d ?? new Date());
+                  form.setFieldValue('lessonIds', []);
+                  form.setFieldValue('substituter', null);
+                }}
                 placeholder={t('substitution.datePlaceholder')}
               />
             </div>
@@ -239,11 +230,8 @@ export function SubstitutionDialog({
                 emptyMessage={t('substitution.noTeachersFound')}
                 onValueChange={(value) => {
                   setSelectedMissingTeacher(value);
-                  setFormState((prev) => ({
-                    ...prev,
-                    lessonIds: [],
-                    substituter: null,
-                  }));
+                  form.setFieldValue('lessonIds', []);
+                  form.setFieldValue('substituter', null);
                 }}
                 options={[
                   ...teachers.map((teacher) => ({
@@ -288,7 +276,7 @@ export function SubstitutionDialog({
                       key={lesson.id}
                     >
                       <Checkbox
-                        checked={formState.lessonIds.includes(lesson.id)}
+                        checked={formLessonIds.includes(lesson.id)}
                         id={`sub-lesson-${lesson.id}`}
                         onCheckedChange={(checked) =>
                           toggleLesson(lesson.id, !!checked)
@@ -304,16 +292,16 @@ export function SubstitutionDialog({
               <Label>{t('substitution.substituteTeacher')}</Label>
               <Combobox
                 emptyMessage={
-                  selectedMissingTeacher && formState.lessonIds.length > 0
+                  selectedMissingTeacher && formLessonIds.length > 0
                     ? t('substitution.noAvailableSubstituteTeachers')
                     : t('substitution.selectLessonsFirst')
                 }
-                key={`substitute-${selectedMissingTeacher}-${formState.date?.toISOString() ?? 'no-date'}-${[...formState.lessonIds].sort().join(',')}`}
+                key={`substitute-${selectedMissingTeacher}-${formDate?.toISOString() ?? 'no-date'}-${[...formLessonIds].sort().join(',')}`}
                 onValueChange={(value) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    substituter: value === '__none__' ? null : value || null,
-                  }))
+                  form.setFieldValue(
+                    'substituter',
+                    value === '__none__' ? null : value || null
+                  )
                 }
                 options={[
                   {
@@ -324,7 +312,7 @@ export function SubstitutionDialog({
                 ]}
                 placeholder={t('substitution.substituteTeacher')}
                 searchPlaceholder={t('search')}
-                value={formState.substituter ?? '__none__'}
+                value={formSubstituter ?? '__none__'}
               />
               <p className="text-muted-foreground text-xs">
                 {t('substitution.substituteTeacherHint')}
@@ -340,7 +328,7 @@ export function SubstitutionDialog({
 
         <DialogFooter className="border-t p-4">
           <Button
-            disabled={!isValid || isSubmitting}
+            disabled={!isValid || form.state.isSubmitting}
             form="substitutionForm"
             type="submit"
           >

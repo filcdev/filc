@@ -1,16 +1,16 @@
 {
   "name": "@filcdev/filc",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
+    "@biomejs/biome": "^2.4.14",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "turbo": "^2.9.6",
+    "turbo": "^2.9.8",
     "typescript": "catalog:"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,css}": "bunx biome check --write"
   },
-  "packageManager": "bun@1.3.12",
+  "packageManager": "bun@1.3.13",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
@@ -25,11 +25,11 @@
       "apps/*"
     ],
     "catalog": {
-      "@types/bun": "^1.3.12",
+      "@types/bun": "^1.3.13",
       "typescript": "^6.0.3",
-      "hono": "^4.12.14",
-      "better-auth": "^1.6.5",
-      "zod": "^4.3.6"
+      "hono": "^4.12.16",
+      "better-auth": "^1.6.9",
+      "zod": "^4.4.2"
     }
   }
 }

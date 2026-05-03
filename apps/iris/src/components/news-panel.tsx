@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type AnnouncementApiResponse = InferResponseType<
   typeof api.news.announcements.$get
@@ -98,7 +99,7 @@ export function NewsPanel() {
       }
       return res.data as AnnouncementItem[];
     },
-    queryKey: ['announcements-panel'],
+    queryKey: queryKeys.news.announcementsPanel(),
   });
 
   const newsItems = useMemo<NewsItem[]>(() => {

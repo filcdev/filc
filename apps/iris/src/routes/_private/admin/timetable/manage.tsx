@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/_private/admin/timetable/manage')({
   component: () => (
@@ -85,7 +86,7 @@ function TimetableManagePage() {
       }
       return (res.data ?? []) as TimetableRow[];
     },
-    queryKey: ['timetables'],
+    queryKey: queryKeys.timetables(),
   });
 
   const updateMutation = useMutation({
@@ -114,7 +115,7 @@ function TimetableManagePage() {
       toast.success(t('timetable.updateSuccess'));
       setEditDialogOpen(false);
       setSelectedItem(null);
-      queryClient.invalidateQueries({ queryKey: ['timetables'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables() });
     },
   });
 
@@ -135,9 +136,9 @@ function TimetableManagePage() {
       toast.success(t('timetable.deleteSuccess'));
       setDeleteDialogOpen(false);
       setItemToDelete(null);
-      queryClient.invalidateQueries({ queryKey: ['timetables'] });
-      queryClient.invalidateQueries({ queryKey: ['cohorts'] });
-      queryClient.invalidateQueries({ queryKey: ['lessons'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
     },
   });
 

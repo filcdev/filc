@@ -6,17 +6,7 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Ban,
-  CreditCard,
-  Lock,
-  Pen,
-  Plus,
-  Trash,
-} from 'lucide-react';
+import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -36,9 +26,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { SortIcon } from '@/components/util/sort-icon';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type CardsResponse = InferResponseType<typeof api.doorlock.cards.$get>;
 type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
@@ -57,25 +50,6 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
 });
 
 type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
-
-function SortIcon({
-  column,
-  currentColumn,
-  direction,
-}: {
-  column: CardSortColumn;
-  currentColumn: CardSortColumn | null;
-  direction: 'asc' | 'desc' | null;
-}) {
-  if (currentColumn !== column) {
-    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-  }
-  return direction === 'asc' ? (
-    <ArrowUp className="h-4 w-4" />
-  ) : (
-    <ArrowDown className="h-4 w-4" />
-  );
-}
 
 function CardsPage() {
   const queryClient = useQueryClient();
@@ -105,7 +79,7 @@ function CardsPage() {
       }
       return res.data.cards as DoorlockCard[];
     },
-    queryKey: ['doorlock', 'cards'],
+    queryKey: queryKeys.doorlock.cards(),
   });
 
   const devicesQuery = useQuery({
@@ -117,7 +91,7 @@ function CardsPage() {
       }
       return res.data.devices as DoorlockDevice[];
     },
-    queryKey: ['doorlock', 'devices'],
+    queryKey: queryKeys.doorlock.devices(),
   });
 
   const usersQuery = useQuery({
@@ -129,7 +103,7 @@ function CardsPage() {
       }
       return res.data.users as DoorlockUser[];
     },
-    queryKey: ['doorlock', 'card-users'],
+    queryKey: queryKeys.doorlock.cardUsers(),
   });
 
   const $upsertCard = api.doorlock.cards.$post;
@@ -151,7 +125,7 @@ function CardsPage() {
     },
     onSuccess: (_res, variables) => {
       toast.success(variables.id ? 'Card updated' : 'Card created');
-      queryClient.invalidateQueries({ queryKey: ['doorlock', 'cards'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
       setDialogOpen(false);
       setSelectedCard(null);
     },
@@ -170,7 +144,7 @@ function CardsPage() {
     },
     onSuccess: () => {
       toast.success('Card deleted');
-      queryClient.invalidateQueries({ queryKey: ['doorlock', 'cards'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
     },
   });
 
@@ -465,7 +439,6 @@ function CardsPage() {
         <CardDialog<DoorlockCard, DoorlockDevice, DoorlockUser>
           card={selectedCard}
           devices={devicesQuery.data ?? []}
-          isSubmitting={upsertMutation.isPending}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
@@ -501,16 +474,6 @@ function StatCard({ icon, label, value }: StatCardProps) {
       </CardContent>
     </Card>
   );
-}
-
-function useHasPermission(permission: string, permissions?: string[] | null) {
-  if (!permissions) {
-    return false;
-  }
-  if (permissions.includes('*')) {
-    return true;
-  }
-  return permissions.includes(permission);
 }
 
 function getCardSortValue(card: DoorlockCard, column: CardSortColumn) {

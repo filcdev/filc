@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/utils';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type SelfCardsResponse = InferResponseType<typeof api.doorlock.self.cards.$get>;
 type SelfCard = NonNullable<SelfCardsResponse['data']>['cards'][number];
@@ -60,7 +61,7 @@ function CardsPage() {
       }
       return res.data.cards as SelfCard[];
     },
-    queryKey: ['doorlock', 'self-cards'],
+    queryKey: queryKeys.doorlock.selfCards(),
   });
 
   const freezeMutation = useMutation({
@@ -81,9 +82,9 @@ function CardsPage() {
           : t('doorlock.selfCards.unfreezeSuccess')
       );
       queryClient.invalidateQueries({
-        queryKey: ['doorlock', 'self-cards'],
+        queryKey: queryKeys.doorlock.selfCards(),
       });
-      queryClient.invalidateQueries({ queryKey: ['doorlock.cards'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
     },
   });
 

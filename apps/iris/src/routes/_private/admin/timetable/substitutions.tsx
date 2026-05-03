@@ -6,15 +6,7 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Pen,
-  Plus,
-  RefreshCw,
-  Trash,
-} from 'lucide-react';
+import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -42,9 +34,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { SortIcon } from '@/components/util/sort-icon';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type SubstitutionApiResponse = InferResponseType<
   typeof api.timetable.substitutions.$get
@@ -61,25 +56,6 @@ export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
     ),
   }
 );
-
-function SortIcon({
-  column,
-  currentColumn,
-  direction,
-}: {
-  column: 'date' | 'teacher' | 'lessons' | 'cohorts';
-  currentColumn: 'date' | 'teacher' | 'lessons' | 'cohorts' | null;
-  direction: 'asc' | 'desc' | null;
-}) {
-  if (currentColumn !== column) {
-    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-  }
-  return direction === 'asc' ? (
-    <ArrowUp className="h-4 w-4" />
-  ) : (
-    <ArrowDown className="h-4 w-4" />
-  );
-}
 
 function SubstitutionsPage() {
   const { i18n, t } = useTranslation();
@@ -115,7 +91,7 @@ function SubstitutionsPage() {
       }
       return res.data as SubstitutionItem[];
     },
-    queryKey: ['substitutions'],
+    queryKey: queryKeys.substitutions(),
   });
 
   const teachersQuery = useQuery({
@@ -127,7 +103,7 @@ function SubstitutionsPage() {
       }
       return res.data as Teacher[];
     },
-    queryKey: ['teachers'],
+    queryKey: queryKeys.teachers(),
   });
 
   const $create = api.timetable.substitutions.$post;
@@ -152,7 +128,7 @@ function SubstitutionsPage() {
     },
     onSuccess: () => {
       toast.success(t('substitution.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['substitutions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
       setDialogOpen(false);
       setSelectedItem(null);
     },
@@ -182,7 +158,7 @@ function SubstitutionsPage() {
     },
     onSuccess: () => {
       toast.success(t('substitution.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['substitutions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
       setDialogOpen(false);
       setSelectedItem(null);
     },
@@ -198,7 +174,7 @@ function SubstitutionsPage() {
     },
     onSuccess: () => {
       toast.success(t('substitution.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['substitutions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
     },
   });
 
@@ -509,10 +485,9 @@ function SubstitutionsPage() {
         </div>
       )}
 
-      {hasWritePermission && (
+      {hasWritePermission && dialogOpen && (
         <>
           <SubstitutionDialog
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
             item={selectedItem}
             onOpenChange={(open) => {
               setDialogOpen(open);
@@ -565,15 +540,6 @@ function SubstitutionsPage() {
   );
 }
 
-function useHasPermission(permission: string, permissions?: string[] | null) {
-  if (!permissions) {
-    return false;
-  }
-  if (permissions.includes('*')) {
-    return true;
-  }
-  return permissions.includes(permission);
-}
 function getSortValue(
   a: SubstitutionItem,
   sortColumn: 'date' | 'teacher' | 'lessons' | 'cohorts'

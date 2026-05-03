@@ -10,18 +10,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { api } from '@/utils/hc';
+import type { PaginationProps } from './admin.types';
 import { UserDialog } from './user-dialog';
 
 type User = InferResponseType<
   typeof api.users.index.$get
 >['data']['users'][number];
 
-type UsersTableProps = {
+type UsersTableProps = PaginationProps & {
   users: User[];
-  total: number;
-  page: number;
-  limit: number;
-  onPageChange: (page: number) => void;
 };
 
 export function UsersTable({

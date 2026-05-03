@@ -8,11 +8,15 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +34,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type DeviceStatsDialogProps = {
   deviceId: string | null;
@@ -37,6 +42,20 @@ type DeviceStatsDialogProps = {
   onOpenChange: (open: boolean) => void;
   open: boolean;
 };
+
+const ramChartConfig = {
+  ramFreeKb: {
+    color: 'var(--color-primary)',
+    label: 'Free RAM (KB)',
+  },
+} satisfies ChartConfig;
+
+const uptimeChartConfig = {
+  uptimeHours: {
+    color: 'var(--color-primary)',
+    label: 'Uptime (Hours)',
+  },
+} satisfies ChartConfig;
 
 export function DeviceStatsDialog({
   deviceId,
@@ -60,7 +79,7 @@ export function DeviceStatsDialog({
       }
       return res.data;
     },
-    queryKey: ['doorlock', 'devices', deviceId, 'stats'],
+    queryKey: queryKeys.doorlock.deviceStats(deviceId ?? ''),
     refetchInterval: 30_000, // Refresh every 30s
   });
 
@@ -90,8 +109,8 @@ export function DeviceStatsDialog({
 
         {statsQuery.isLoading && (
           <div className="space-y-4">
-            <Skeleton className="h-[200px] w-full" />
-            <Skeleton className="h-[200px] w-full" />
+            <Skeleton className="h-50 w-full" />
+            <Skeleton className="h-50 w-full" />
           </div>
         )}
 
@@ -143,53 +162,52 @@ export function DeviceStatsDialog({
               {/* RAM Chart */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">Free RAM (KB)</h3>
-                <div className="h-[200px] w-full rounded-lg border bg-card p-4">
-                  <ResponsiveContainer height="100%" width="100%">
-                    <AreaChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis
-                        dataKey="formattedTime"
-                        fontSize={12}
-                        tickLine={false}
-                      />
-                      <YAxis fontSize={12} tickLine={false} />
-                      <Tooltip />
-                      <Area
-                        dataKey="ramFreeKb"
-                        fill="var(--color-primary)"
-                        fillOpacity={0.2}
-                        stroke="var(--color-primary)"
-                        type="monotone"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                <ChartContainer className="h-50 w-full" config={ramChartConfig}>
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="formattedTime"
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <YAxis fontSize={12} tickLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Area
+                      dataKey="ramFreeKb"
+                      fill="var(--color-ramFreeKb)"
+                      fillOpacity={0.2}
+                      stroke="var(--color-ramFreeKb)"
+                      type="monotone"
+                    />
+                  </AreaChart>
+                </ChartContainer>
               </div>
 
               {/* Uptime Chart */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">Uptime (Hours)</h3>
-                <div className="h-[200px] w-full rounded-lg border bg-card p-4">
-                  <ResponsiveContainer height="100%" width="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis
-                        dataKey="formattedTime"
-                        fontSize={12}
-                        tickLine={false}
-                      />
-                      <YAxis fontSize={12} tickLine={false} />
-                      <Tooltip />
-                      <Line
-                        dataKey="uptimeHours"
-                        dot={false}
-                        stroke="var(--color-primary)"
-                        strokeWidth={2}
-                        type="monotone"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <ChartContainer
+                  className="h-50 w-full"
+                  config={uptimeChartConfig}
+                >
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="formattedTime"
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <YAxis fontSize={12} tickLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line
+                      dataKey="uptimeHours"
+                      dot={false}
+                      stroke="var(--color-uptimeHours)"
+                      strokeWidth={2}
+                      type="monotone"
+                    />
+                  </LineChart>
+                </ChartContainer>
               </div>
 
               {/* Recent History Table */}

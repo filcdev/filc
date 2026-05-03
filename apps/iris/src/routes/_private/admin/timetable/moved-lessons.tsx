@@ -6,16 +6,7 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import {
-  ArrowDown,
-  ArrowRightLeft,
-  ArrowUp,
-  ArrowUpDown,
-  Pen,
-  Plus,
-  RefreshCw,
-  Trash,
-} from 'lucide-react';
+import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -34,10 +25,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { SortIcon } from '@/components/util/sort-icon';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type MovedLessonApiResponse = InferResponseType<
   typeof api.timetable.movedLessons.$get
@@ -74,25 +68,6 @@ export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
     ),
   }
 );
-
-function SortIcon({
-  column,
-  currentColumn,
-  direction,
-}: {
-  column: 'date' | 'day' | 'period' | 'room' | 'count';
-  currentColumn: 'date' | 'day' | 'period' | 'room' | 'count' | null;
-  direction: 'asc' | 'desc' | null;
-}) {
-  if (currentColumn !== column) {
-    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-  }
-  return direction === 'asc' ? (
-    <ArrowUp className="h-4 w-4" />
-  ) : (
-    <ArrowDown className="h-4 w-4" />
-  );
-}
 
 function extractFromMovedLessons(
   movedLessons: MovedLessonItem[],
@@ -211,7 +186,7 @@ function MovedLessonsPage() {
       }
       return res.data as MovedLessonItem[];
     },
-    queryKey: ['movedLessons'],
+    queryKey: queryKeys.movedLessons(),
   });
 
   const classroomsQuery = useQuery({
@@ -223,7 +198,7 @@ function MovedLessonsPage() {
       }
       return res.data as Classroom[];
     },
-    queryKey: ['classrooms'],
+    queryKey: queryKeys.classrooms(),
   });
 
   const cohortsQuery = useQuery({
@@ -235,7 +210,7 @@ function MovedLessonsPage() {
       }
       return res.data;
     },
-    queryKey: ['cohorts'],
+    queryKey: queryKeys.cohorts(),
   });
 
   // Fetch substitutions to get enriched lessons list for the picker
@@ -248,7 +223,7 @@ function MovedLessonsPage() {
       }
       return res.data as SubstitutionData[];
     },
-    queryKey: ['substitutions'],
+    queryKey: queryKeys.substitutions(),
   });
 
   // Fetch lessons from all cohorts to ensure we have all periods
@@ -271,7 +246,7 @@ function MovedLessonsPage() {
       );
       return results;
     },
-    queryKey: ['cohort-lessons', cohortsQuery.data],
+    queryKey: queryKeys.timetable.cohortLessons(cohortsQuery.data),
   });
 
   // Extract unique periods and day definitions from moved lessons data
@@ -307,7 +282,7 @@ function MovedLessonsPage() {
     },
     onSuccess: () => {
       toast.success(t('movedLesson.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['movedLessons'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.movedLessons() });
       setDialogOpen(false);
       setSelectedItem(null);
     },
@@ -333,7 +308,7 @@ function MovedLessonsPage() {
     },
     onSuccess: () => {
       toast.success(t('movedLesson.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['movedLessons'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.movedLessons() });
       setDialogOpen(false);
       setSelectedItem(null);
     },
@@ -354,7 +329,7 @@ function MovedLessonsPage() {
     },
     onSuccess: () => {
       toast.success(t('movedLesson.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['movedLessons'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.movedLessons() });
     },
   });
 
@@ -681,13 +656,12 @@ function MovedLessonsPage() {
         </div>
       )}
 
-      {hasWritePermission && (
+      {hasWritePermission && dialogOpen && (
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
-          isSubmitting={createMutation.isPending || updateMutation.isPending}
           item={selectedItem}
           onOpenChange={(open) => {
             setDialogOpen(open);
@@ -702,16 +676,6 @@ function MovedLessonsPage() {
       )}
     </div>
   );
-}
-
-function useHasPermission(permission: string, permissions?: string[] | null) {
-  if (!permissions) {
-    return false;
-  }
-  if (permissions.includes('*')) {
-    return true;
-  }
-  return permissions.includes(permission);
 }
 
 function getMovedLessonSortValue(

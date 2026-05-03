@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type StatsResponse = InferResponseType<typeof api.doorlock.stats.overview.$get>;
 type DoorlockStatsOverview = NonNullable<StatsResponse['data']>['stats'];
@@ -30,7 +31,7 @@ function DoorlockDashboard() {
       }
       return res.data.stats as DoorlockStatsOverview;
     },
-    queryKey: ['doorlock', 'stats'],
+    queryKey: queryKeys.doorlock.stats(),
   });
 
   if (statsQuery.isError) {

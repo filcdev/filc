@@ -7,9 +7,6 @@ import {
   parseResponse,
 } from 'hono/client';
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
   ChartArea,
   DoorOpen,
   Download,
@@ -39,9 +36,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { SortIcon } from '@/components/util/sort-icon';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
 type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
@@ -55,25 +54,6 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
 });
 
 type DeviceSortColumn = 'name' | 'location' | 'apiToken' | 'updated';
-
-function SortIcon({
-  column,
-  currentColumn,
-  direction,
-}: {
-  column: DeviceSortColumn;
-  currentColumn: DeviceSortColumn | null;
-  direction: 'asc' | 'desc' | null;
-}) {
-  if (currentColumn !== column) {
-    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-  }
-  return direction === 'asc' ? (
-    <ArrowUp className="h-4 w-4" />
-  ) : (
-    <ArrowDown className="h-4 w-4" />
-  );
-}
 
 function DevicesPage() {
   const queryClient = useQueryClient();
@@ -105,7 +85,7 @@ function DevicesPage() {
       }
       return res.data.devices as DoorlockDevice[];
     },
-    queryKey: ['doorlock', 'devices'],
+    queryKey: queryKeys.doorlock.devices(),
   });
 
   const $upsertDevice = api.doorlock.devices.$post;
@@ -130,7 +110,7 @@ function DevicesPage() {
     },
     onSuccess: (_res, variables) => {
       toast.success(variables.id ? 'Device updated' : 'Device created');
-      queryClient.invalidateQueries({ queryKey: ['doorlock', 'devices'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
       setDialogOpen(false);
       setSelectedDevice(null);
     },
@@ -149,7 +129,7 @@ function DevicesPage() {
     },
     onSuccess: () => {
       toast.success('Device deleted');
-      queryClient.invalidateQueries({ queryKey: ['doorlock', 'devices'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
     },
   });
 
@@ -466,7 +446,6 @@ function DevicesPage() {
 
       <DeviceDialog<DoorlockDevice>
         device={selectedDevice}
-        isSubmitting={upsertMutation.isPending}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {

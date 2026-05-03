@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { UsersTable } from '@/components/admin/users-table';
 import { Input } from '@/components/ui/input';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
@@ -39,7 +40,7 @@ function AdminUsersPage() {
       }
       return res.data;
     },
-    queryKey: ['users', page, debouncedSearch],
+    queryKey: queryKeys.users(page, debouncedSearch),
   });
 
   return (
@@ -56,26 +57,19 @@ function AdminUsersPage() {
           value={search}
         />
       </div>
-      {(() => {
-        if (usersQuery.isLoading) {
-          return <p>Loading...</p>;
-        }
-        if (usersQuery.isError) {
-          return <p className="text-red-500">Error loading users</p>;
-        }
-        if (!usersQuery.data) {
-          return <p>No data</p>;
-        }
-        return (
-          <UsersTable
-            limit={limit}
-            onPageChange={setPage}
-            page={page}
-            total={usersQuery.data.total}
-            users={usersQuery.data.users}
-          />
-        );
-      })()}
+      {usersQuery.isLoading && <p>Loading...</p>}
+      {usersQuery.isError && (
+        <p className="text-red-500">Error loading users</p>
+      )}
+      {!(usersQuery.isLoading || usersQuery.isError) && usersQuery.data && (
+        <UsersTable
+          limit={limit}
+          onPageChange={setPage}
+          page={page}
+          total={usersQuery.data.total}
+          users={usersQuery.data.users}
+        />
+      )}
     </div>
   );
 }

@@ -5,19 +5,11 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Pen,
-  Plus,
-  RefreshCw,
-  Trash,
-} from 'lucide-react';
+import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SystemMessagesDialog } from '@/components/admin/system-messages-dialog';
+import { NewsItemDialog } from '@/components/admin/news-item-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,9 +31,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { SortIcon } from '@/components/util/sort-icon';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 type SystemMessageApiResponse = InferResponseType<
   (typeof api.news)['system-messages']['$get']
@@ -55,25 +50,6 @@ export const Route = createFileRoute('/_private/admin/news/system-messages')({
     </PermissionGuard>
   ),
 });
-
-function SortIcon({
-  column,
-  currentColumn,
-  direction,
-}: {
-  column: 'title' | 'validFrom' | 'validUntil' | 'cohorts';
-  currentColumn: 'title' | 'validFrom' | 'validUntil' | 'cohorts' | null;
-  direction: 'asc' | 'desc' | null;
-}) {
-  if (currentColumn !== column) {
-    return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-  }
-  return direction === 'asc' ? (
-    <ArrowUp className="h-4 w-4" />
-  ) : (
-    <ArrowDown className="h-4 w-4" />
-  );
-}
 
 function SystemMessagesPage() {
   const { i18n, t } = useTranslation();
@@ -113,7 +89,7 @@ function SystemMessagesPage() {
       }
       return res.data as SystemMessageItem[];
     },
-    queryKey: ['admin-system-messages'],
+    queryKey: queryKeys.news.adminSystemMessages(),
   });
 
   const cohortsQuery = useQuery({
@@ -125,7 +101,7 @@ function SystemMessagesPage() {
       }
       return res.data;
     },
-    queryKey: ['cohorts'],
+    queryKey: queryKeys.cohorts(),
   });
 
   const $create = api.news['system-messages'].$post;
@@ -150,9 +126,15 @@ function SystemMessagesPage() {
     },
     onSuccess: () => {
       toast.success(t('systemMessages.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['admin-system-messages'] });
-      queryClient.invalidateQueries({ queryKey: ['system-messages-banner'] });
-      queryClient.invalidateQueries({ queryKey: ['system-messages-panel'] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.adminSystemMessages(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.systemMessagesBanner(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.systemMessagesPanel(),
+      });
       setDialogOpen(false);
       setSelectedItem(null);
     },
@@ -182,9 +164,15 @@ function SystemMessagesPage() {
     },
     onSuccess: () => {
       toast.success(t('systemMessages.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['admin-system-messages'] });
-      queryClient.invalidateQueries({ queryKey: ['system-messages-banner'] });
-      queryClient.invalidateQueries({ queryKey: ['system-messages-panel'] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.adminSystemMessages(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.systemMessagesBanner(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.systemMessagesPanel(),
+      });
       setDialogOpen(false);
       setSelectedItem(null);
     },
@@ -205,9 +193,15 @@ function SystemMessagesPage() {
     },
     onSuccess: () => {
       toast.success(t('systemMessages.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['admin-system-messages'] });
-      queryClient.invalidateQueries({ queryKey: ['system-messages-banner'] });
-      queryClient.invalidateQueries({ queryKey: ['system-messages-panel'] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.adminSystemMessages(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.systemMessagesBanner(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.news.systemMessagesPanel(),
+      });
     },
   });
 
@@ -468,10 +462,10 @@ function SystemMessagesPage() {
 
       {hasManagePermission && (
         <>
-          <SystemMessagesDialog
+          <NewsItemDialog
             cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
             item={selectedItem}
+            mode="system-messages"
             onOpenChange={(open) => {
               setDialogOpen(open);
               if (!open) {
@@ -558,14 +552,4 @@ function getSortValue(
     default:
       return '';
   }
-}
-
-function useHasPermission(permission: string, permissions?: string[] | null) {
-  if (!permissions) {
-    return false;
-  }
-  if (permissions.includes('*')) {
-    return true;
-  }
-  return permissions.includes(permission);
 }

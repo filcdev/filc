@@ -77,7 +77,7 @@ export function TimetableSelector({
         {timetables.map((item) => {
           const status = getTimetableStatus(item);
           return (
-            <DropdownMenuItem key={item.id} onSelect={() => onSelect(item.id)}>
+            <DropdownMenuItem key={item.id} onClick={() => onSelect(item.id)}>
               <div className="flex w-full items-center justify-between gap-2">
                 <span className="truncate">{item.name}</span>
                 <Badge variant={statusBadgeVariant[status]}>

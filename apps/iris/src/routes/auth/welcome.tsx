@@ -29,6 +29,7 @@ import { cn } from '@/utils';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
@@ -293,7 +294,7 @@ const CohortSelectorStep = (props: {
       }
       return res.data;
     },
-    queryKey: ['cohorts'],
+    queryKey: queryKeys.cohorts(),
   });
 
   const updateCohort = async (cohortId: string) => {

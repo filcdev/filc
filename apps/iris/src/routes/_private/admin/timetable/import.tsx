@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { api } from '@/utils/hc';
+import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/_private/admin/timetable/import')({
   component: RouteComponent,
@@ -96,9 +97,9 @@ function TimetableImportPage() {
         fileInputRef.current.value = '';
       }
       // Invalidate any timetable-related queries
-      queryClient.invalidateQueries({ queryKey: ['timetable'] });
-      queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      queryClient.invalidateQueries({ queryKey: ['cohorts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
     },
   });
 
