@@ -182,25 +182,70 @@ export function MovedLessonDialog({
     queryKey: ['lessons', 'cohort', selectedCohort],
   });
 
+  const availableClassroomsQuery = useQuery({
+    enabled:
+      !!formState.date && !!formState.startingDay && !!formState.startingPeriod,
+    queryFn: async () => {
+      const dateParam =
+        formState.date instanceof Date
+          ? formState.date.toISOString().split('T')[0]
+          : String(formState.date ?? '');
+
+      const sd = formState.startingDay;
+      const sp = formState.startingPeriod;
+
+      if (!(sd && sp)) {
+        return [];
+      }
+
+      const res = await parseResponse(
+        api.timetable.classrooms.getAvailable.$get({
+          query: {
+            date: dateParam as string,
+            startingDay: sd,
+            startingPeriod: sp,
+          },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load available classrooms');
+      }
+      return res.data;
+    },
+    queryKey: [
+      'classrooms',
+      'available',
+      formState.date,
+      formState.startingDay,
+      formState.startingPeriod,
+    ],
+  });
+
   const availableLessons = useMemo(() => {
     const map = new Map<string, EnrichedLesson>();
-    // Ha van kiválasztott osztály, akkor csak az ő óráit mutatjuk
-    if (selectedCohort) {
-      for (const l of cohortLessonsQuery.data ?? []) {
-        if (!l.id) {
-          continue;
-        }
-        map.set(l.id, l as unknown as EnrichedLesson);
+    const source = selectedCohort
+      ? (cohortLessonsQuery.data ?? [])
+      : allLessons;
+    /* biome-disable useBlockStatements */
+    for (const l of source) {
+      if (!l?.id) {
+        continue;
       }
-    } else {
-      // Ha nincs, akkor az összeset (kezdeti állapot)
-      for (const l of allLessons) {
-        map.set(l.id, l);
-      }
+      map.set(l.id, l as EnrichedLesson);
     }
+    /* biome-enable useBlockStatements */
 
-    // Sort by weekday order, then by period.
-    return Array.from(map.values()).sort((a, b) => {
+    let lessons = Array.from(map.values());
+
+    lessons = lessons.filter((l) => {
+      const periodMatch =
+        !formState.startingPeriod || l.period?.id === formState.startingPeriod;
+      const dayMatch =
+        !formState.startingDay || l.day?.id === formState.startingDay;
+      return periodMatch && dayMatch;
+    });
+
+    return lessons.sort((a, b) => {
       const aDay = getDayOrder(a.day?.name ?? '', a.day?.short);
       const bDay = getDayOrder(b.day?.name ?? '', b.day?.short);
 
@@ -210,7 +255,13 @@ export function MovedLessonDialog({
 
       return (a.period?.period ?? 999) - (b.period?.period ?? 999);
     });
-  }, [allLessons, cohortLessonsQuery.data, selectedCohort]);
+  }, [
+    allLessons,
+    cohortLessonsQuery.data,
+    selectedCohort,
+    formState.startingPeriod,
+    formState.startingDay,
+  ]);
 
   const isCreate = !item;
 
@@ -243,21 +294,32 @@ export function MovedLessonDialog({
     return true;
   }, [formState, isCreate]);
 
-  const toggleLesson = (lessonId: string | undefined, checked: boolean) => {
-    if (!lessonId) {
+  const toggleLesson = (
+    lesson: EnrichedLesson | undefined,
+    checked: boolean
+  ) => {
+    if (!lesson?.id) {
       return;
     }
     setFormState((prev) => {
       const currentLessonIds = prev.lessonIds ?? [];
       if (checked) {
-        return {
+        const newState: MovedLessonCreatePayload = {
           ...prev,
-          lessonIds: Array.from(new Set([...currentLessonIds, lessonId])),
+          lessonIds: Array.from(new Set([...currentLessonIds, lesson.id])),
         };
+        // Auto-fill period/day if not already set
+        if (!prev.startingPeriod && lesson.period?.id) {
+          newState.startingPeriod = lesson.period.id;
+        }
+        if (!prev.startingDay && lesson.day?.id) {
+          newState.startingDay = lesson.day.id;
+        }
+        return newState;
       }
       return {
         ...prev,
-        lessonIds: currentLessonIds.filter((id) => id !== lessonId),
+        lessonIds: currentLessonIds.filter((id) => id !== lesson.id),
       };
     });
   };
@@ -337,17 +399,35 @@ export function MovedLessonDialog({
             <div className="space-y-2">
               <Label>{t('movedLesson.targetRoom')}</Label>
               <Combobox
-                emptyMessage={t('movedLesson.noRoomFound')}
+                className={
+                  availableClassroomsQuery.isLoading
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
+                emptyMessage={
+                  availableClassroomsQuery.isLoading
+                    ? t('movedLesson.loadingRooms')
+                    : t('movedLesson.noRoomFound')
+                }
                 onValueChange={(value) =>
                   setFormState((prev) => ({
                     ...prev,
                     room: value || undefined,
                   }))
                 }
-                options={classrooms.map((cr) => ({
-                  label: `${cr.name} (${cr.short})`,
-                  value: cr.id,
-                }))}
+                options={
+                  formState.date &&
+                  formState.startingDay &&
+                  formState.startingPeriod
+                    ? (availableClassroomsQuery.data ?? []).map((cr) => ({
+                        label: `${cr.name} (${cr.short})`,
+                        value: cr.id,
+                      }))
+                    : classrooms.map((cr) => ({
+                        label: `${cr.name} (${cr.short})`,
+                        value: cr.id,
+                      }))
+                }
                 placeholder={t('movedLesson.targetRoom')}
                 searchPlaceholder={t('search')}
                 value={formState.room ?? ''}
@@ -398,7 +478,7 @@ export function MovedLessonDialog({
                           )}
                           id={`ml-lesson-${lesson.id}`}
                           onCheckedChange={(checked) =>
-                            toggleLesson(lesson.id, !!checked)
+                            toggleLesson(lesson, !!checked)
                           }
                         />
                         <span>{formatLessonLabel(lesson, i18n.language)}</span>
