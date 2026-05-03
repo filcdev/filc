@@ -656,13 +656,12 @@ function MovedLessonsPage() {
         </div>
       )}
 
-      {hasWritePermission && (
+      {hasWritePermission && dialogOpen && (
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
-          isSubmitting={createMutation.isPending || updateMutation.isPending}
           item={selectedItem}
           onOpenChange={(open) => {
             setDialogOpen(open);

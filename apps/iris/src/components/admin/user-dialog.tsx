@@ -1,7 +1,7 @@
+import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono';
 import { parseResponse } from 'hono/client';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -14,25 +14,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
+import type { BaseDialogProps } from './admin.types';
 
 type User = InferResponseType<
   typeof api.users.index.$get
 >['data']['users'][number];
 
-type UserDialogProps = {
+type UserDialogProps = BaseDialogProps & {
   user: User;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
 };
 
 export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
   const { t } = useTranslation();
-  const [nickname, setNickname] = useState(user.nickname || '');
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles);
   const queryClient = useQueryClient();
 
   const rolesQuery = useQuery({
@@ -49,11 +46,17 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
   const availableRoles = rolesQuery.data?.roles ?? [];
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({
+      nickname,
+      roles,
+    }: {
+      nickname: string;
+      roles: string[];
+    }) => {
       const res = await api.users[':id'].$patch({
         json: {
           nickname: nickname || undefined,
-          roles: selectedRoles,
+          roles,
         },
         param: { id: user.id },
       });
@@ -72,33 +75,70 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     },
   });
 
+  const form = useForm({
+    defaultValues: {
+      nickname: user.nickname ?? '',
+      roles: user.roles as string[],
+    },
+    onSubmit: async ({ value }) => {
+      await mutation.mutateAsync(value);
+    },
+  });
+
+  const selectedRoles = useStore(form.store, (state) => state.values.roles);
+
+  const toggleRole = (roleName: string, checked: boolean) => {
+    const current = form.getFieldValue('roles');
+    if (checked) {
+      form.setFieldValue(
+        'roles',
+        current.includes(roleName) ? current : [...current, roleName]
+      );
+    } else {
+      form.setFieldValue(
+        'roles',
+        current.filter((r) => r !== roleName)
+      );
+    }
+  };
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input disabled id="name" value={user.name} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input disabled id="email" value={user.email} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="nickname">Nickname</Label>
-            <Input
-              id="nickname"
-              onChange={(e) => setNickname(e.target.value)}
-              value={nickname}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('roles.permissions')}</Label>
+        <form
+          className="space-y-4 py-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <Field>
+            <FieldLabel htmlFor="user-name">Name</FieldLabel>
+            <Input disabled id="user-name" value={user.name} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="user-email">Email</FieldLabel>
+            <Input disabled id="user-email" value={user.email} />
+          </Field>
+          <form.Field name="nickname">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>Nickname</FieldLabel>
+                <Input
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  value={field.state.value}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <Field>
+            <FieldLabel>{t('roles.permissions')}</FieldLabel>
             <div className="flex flex-wrap gap-1.5 pb-2">
-              {selectedRoles.map((role) => (
+              {selectedRoles.map((role: string) => (
                 <Badge key={role} variant="default">
                   {role}
                 </Badge>
@@ -124,20 +164,9 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                     <Checkbox
                       checked={selectedRoles.includes(role.name)}
                       id={`role-${role.name}`}
-                      onCheckedChange={(checked) => {
-                        const isChecked = Boolean(checked);
-                        if (isChecked) {
-                          setSelectedRoles((prev) =>
-                            prev.includes(role.name)
-                              ? prev
-                              : [...prev, role.name]
-                          );
-                        } else {
-                          setSelectedRoles((prev) =>
-                            prev.filter((r) => r !== role.name)
-                          );
-                        }
-                      }}
+                      onCheckedChange={(checked) =>
+                        toggleRole(role.name, Boolean(checked))
+                      }
                     />
                     {role.name}
                   </label>
@@ -149,19 +178,20 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                 )}
               </div>
             )}
-          </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="outline">
-            {t('common.cancel')}
-          </Button>
-          <Button
-            disabled={mutation.isPending}
-            onClick={() => mutation.mutate()}
-          >
-            Save
-          </Button>
-        </DialogFooter>
+          </Field>
+          <DialogFooter>
+            <Button
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="outline"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button disabled={!form.state.canSubmit} type="submit">
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

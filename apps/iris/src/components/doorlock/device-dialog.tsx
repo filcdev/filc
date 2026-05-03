@@ -1,5 +1,6 @@
+import { useForm } from '@tanstack/react-form';
 import { RotateCw, Save } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -8,32 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { deviceSchema } from '@/utils/form-schemas';
+import type {
+  DeviceDialogProps,
+  DeviceFormValues,
+  DeviceLike,
+} from './doorlock.types';
 
-type DeviceFormState = {
-  apiToken: string;
-  lastResetReason?: string | null;
-  location?: string | null;
-  name: string;
-};
-
-type DeviceLike = {
-  apiToken: string;
-  lastResetReason?: string | null;
-  location?: string | null;
-  name: string;
-};
-
-type DeviceDialogProps<TDevice extends DeviceLike = DeviceLike> = {
-  device?: TDevice | null;
-  isSubmitting: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: DeviceFormState) => Promise<void>;
-  open: boolean;
-};
-
-const initialState = (device?: DeviceLike | null): DeviceFormState => ({
+const initialState = (device?: DeviceLike | null): DeviceFormValues => ({
   apiToken: device?.apiToken ?? crypto.randomUUID(),
   lastResetReason: device?.lastResetReason ?? null,
   location: device?.location ?? null,
@@ -42,36 +27,26 @@ const initialState = (device?: DeviceLike | null): DeviceFormState => ({
 
 export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
   device,
-  isSubmitting,
   onOpenChange,
   onSubmit,
   open,
 }: DeviceDialogProps<TDevice>) {
-  const [formState, setFormState] = useState<DeviceFormState>(
-    initialState(device)
-  );
+  const form = useForm({
+    defaultValues: initialState(device),
+    onSubmit: async ({ value }) => {
+      await onSubmit({
+        ...value,
+        lastResetReason: value.lastResetReason?.trim() || null,
+        location: value.location?.trim() || null,
+        name: value.name.trim(),
+      });
+    },
+    validators: { onSubmit: deviceSchema },
+  });
 
   useEffect(() => {
-    setFormState(initialState(device));
-  }, [device]);
-
-  const isValid = useMemo(
-    () => formState.name.trim().length > 0,
-    [formState.name]
-  );
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!isValid) {
-      return;
-    }
-    await onSubmit({
-      ...formState,
-      lastResetReason: formState.lastResetReason?.trim() || null,
-      location: formState.location?.trim() || null,
-      name: formState.name.trim(),
-    });
-  };
+    form.reset(initialState(device));
+  }, [device, form.reset]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -79,77 +54,79 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
         <DialogHeader>
           <DialogTitle>{device ? 'Edit device' : 'Add device'}</DialogTitle>
         </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="device-name">Name</Label>
-            <Input
-              id="device-name"
-              onChange={(event) =>
-                setFormState((prev) => ({ ...prev, name: event.target.value }))
-              }
-              required
-              value={formState.name}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="device-location">Location</Label>
-            <Input
-              id="device-location"
-              onChange={(event) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  location: event.target.value,
-                }))
-              }
-              placeholder="Optional"
-              value={formState.location ?? ''}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="device-reset-reason">Last reset reason</Label>
-            <Input
-              id="device-reset-reason"
-              onChange={(event) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  lastResetReason: event.target.value,
-                }))
-              }
-              placeholder="Optional"
-              value={formState.lastResetReason ?? ''}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="device-api-token">API token</Label>
-            <div className="flex gap-2">
-              <Input
-                id="device-api-token"
-                onChange={(event) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    apiToken: event.target.value,
-                  }))
-                }
-                required
-                value={formState.apiToken}
-              />
-              <Button
-                onClick={() =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    apiToken: crypto.randomUUID(),
-                  }))
-                }
-                size="icon"
-                type="button"
-                variant="outline"
-              >
-                <RotateCw className="size-4" />
-              </Button>
-            </div>
-          </div>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <form.Field name="name">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>Name</FieldLabel>
+                <Input
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                  value={field.state.value}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="location">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>Location</FieldLabel>
+                <Input
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Optional"
+                  value={field.state.value ?? ''}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="lastResetReason">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>Last reset reason</FieldLabel>
+                <Input
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Optional"
+                  value={field.state.value ?? ''}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="apiToken">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>API token</FieldLabel>
+                <div className="flex gap-2">
+                  <Input
+                    id={field.name}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                    value={field.state.value}
+                  />
+                  <Button
+                    onClick={() => field.handleChange(crypto.randomUUID())}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    <RotateCw className="size-4" />
+                  </Button>
+                </div>
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </form.Field>
           <DialogFooter>
-            <Button disabled={!isValid || isSubmitting} type="submit">
+            <Button disabled={!form.state.canSubmit} type="submit">
               <Save />
               {device ? 'Save changes' : 'Create device'}
             </Button>

@@ -446,7 +446,6 @@ function DevicesPage() {
 
       <DeviceDialog<DoorlockDevice>
         device={selectedDevice}
-        isSubmitting={upsertMutation.isPending}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {

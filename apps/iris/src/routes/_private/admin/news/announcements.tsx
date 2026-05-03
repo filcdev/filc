@@ -9,7 +9,7 @@ import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
+import { NewsItemDialog } from '@/components/admin/news-item-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -446,10 +446,10 @@ function AnnouncementsPage() {
 
       {hasWritePermission && (
         <>
-          <AnnouncementsDialog
+          <NewsItemDialog
             cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
             item={selectedItem}
+            mode="announcements"
             onOpenChange={(open) => {
               setDialogOpen(open);
               if (!open) {

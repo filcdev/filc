@@ -485,10 +485,9 @@ function SubstitutionsPage() {
         </div>
       )}
 
-      {hasWritePermission && (
+      {hasWritePermission && dialogOpen && (
         <>
           <SubstitutionDialog
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
             item={selectedItem}
             onOpenChange={(open) => {
               setDialogOpen(open);

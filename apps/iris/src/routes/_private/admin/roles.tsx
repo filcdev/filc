@@ -36,18 +36,13 @@ function AdminRolesPage() {
           {t('roles.createRole')}
         </Button>
       </div>
-      {(() => {
-        if (rolesQuery.isLoading) {
-          return <p>{t('common.loading')}</p>;
-        }
-        if (rolesQuery.isError) {
-          return <p className="text-red-500">{t('roles.loadError')}</p>;
-        }
-        if (!rolesQuery.data) {
-          return <p>{t('roles.noRoles')}</p>;
-        }
-        return <RolesTable roles={rolesQuery.data.roles} />;
-      })()}
+      {rolesQuery.isLoading && <p>{t('common.loading')}</p>}
+      {rolesQuery.isError && (
+        <p className="text-red-500">{t('roles.loadError')}</p>
+      )}
+      {!(rolesQuery.isLoading || rolesQuery.isError) && rolesQuery.data && (
+        <RolesTable roles={rolesQuery.data.roles} />
+      )}
       <RoleDialog
         editingRole={null}
         onOpenChange={setIsCreateDialogOpen}

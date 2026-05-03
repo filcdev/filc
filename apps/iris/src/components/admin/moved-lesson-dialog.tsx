@@ -1,3 +1,4 @@
+import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {
@@ -6,7 +7,7 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Save } from 'lucide-react';
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +29,7 @@ import {
 } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
+import type { BaseDialogProps } from './admin.types';
 
 type MovedLessonApiResponse = InferResponseType<
   typeof api.timetable.movedLessons.$get
@@ -58,16 +60,13 @@ type Cohort = NonNullable<CohortApiResponse['data']>[number];
 const create = api.timetable.movedLessons.$post;
 type MovedLessonCreatePayload = InferRequestType<typeof create>['json'];
 
-type MovedLessonDialogProps = {
+type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
   classrooms: Classroom[];
   cohorts: Cohort[];
   days: DayDefinition[];
-  isSubmitting: boolean;
   item?: MovedLessonItem | null;
-  onOpenChange: (open: boolean) => void;
   onSubmit: (payload: MovedLessonCreatePayload) => Promise<void>;
-  open: boolean;
   periods: Period[];
 };
 
@@ -113,7 +112,6 @@ export function MovedLessonDialog({
   classrooms,
   cohorts,
   days,
-  isSubmitting,
   item,
   onOpenChange,
   onSubmit,
@@ -121,51 +119,67 @@ export function MovedLessonDialog({
   periods,
 }: MovedLessonDialogProps) {
   const { i18n, t } = useTranslation();
-  const [formState, setFormState] = useState<MovedLessonCreatePayload>(
-    initialState(item)
-  );
   const [selectedCohort, setSelectedCohort] = useState<string>('');
+  const defaultValues = useMemo(() => initialState(item), [item]);
+
+  const form = useForm({
+    defaultValues,
+    onSubmit: async ({ value }) => {
+      await onSubmit(value);
+    },
+  });
+
+  const formDate = useStore(form.store, (state) => state.values.date);
+  const formLessonIds = useStore(form.store, (state) => state.values.lessonIds);
+  const formStartingDay = useStore(
+    form.store,
+    (state) => state.values.startingDay
+  );
+  const formStartingPeriod = useStore(
+    form.store,
+    (state) => state.values.startingPeriod
+  );
+  const formRoom = useStore(form.store, (state) => state.values.room);
 
   useEffect(() => {
-    setFormState(initialState(item));
-    setSelectedCohort('');
-  }, [item]);
-
-  // Auto-fill target day based on selected date.
-  useEffect(() => {
-    if (!formState.date || days.length === 0) {
+    if (!open) {
       return;
     }
 
-    const weekdayIndex = dayjs(formState.date as Date | string).day(); // 0 = Sunday, 1 = Monday, etc.
+    form.reset(defaultValues);
+    setSelectedCohort('');
+  }, [defaultValues, form, open]);
+
+  // Auto-fill target day based on selected date.
+  useEffect(() => {
+    if (!formDate || days.length === 0) {
+      return;
+    }
+
+    const weekdayIndex = dayjs(formDate as Date | string).day();
 
     const matchingDay = days.find((day) =>
       isMatchingWeekday(weekdayIndex, day.name, day.short)
     );
 
-    if (matchingDay) {
-      setFormState((prev) => ({
-        ...prev,
-        startingDay: matchingDay.id,
-      }));
+    const matchingDayId = matchingDay?.id;
+
+    if (formStartingDay === matchingDayId) {
       return;
     }
 
-    setFormState((prev) => ({
-      ...prev,
-      startingDay: undefined,
-    }));
-  }, [formState.date, days]);
+    form.setFieldValue('startingDay', matchingDayId);
+  }, [days, form, formDate, formStartingDay]);
 
   const selectedWeekdayLabel = useMemo(() => {
-    if (!formState.date) {
+    if (!formDate) {
       return '-';
     }
 
-    return formatLocalizedDate(formState.date as Date | string, i18n.language, {
+    return formatLocalizedDate(formDate as Date | string, i18n.language, {
       weekday: 'long',
     });
-  }, [formState.date, i18n.language]);
+  }, [formDate, i18n.language]);
 
   const cohortLessonsQuery = useQuery({
     enabled: !!selectedCohort,
@@ -184,16 +198,15 @@ export function MovedLessonDialog({
   });
 
   const availableClassroomsQuery = useQuery({
-    enabled:
-      !!formState.date && !!formState.startingDay && !!formState.startingPeriod,
+    enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
     queryFn: async () => {
       const dateParam =
-        formState.date instanceof Date
-          ? formState.date.toISOString().split('T')[0]
-          : String(formState.date ?? '');
+        formDate instanceof Date
+          ? formDate.toISOString().split('T')[0]
+          : String(formDate ?? '');
 
-      const sd = formState.startingDay;
-      const sp = formState.startingPeriod;
+      const sd = formStartingDay;
+      const sp = formStartingPeriod;
 
       if (!(sd && sp)) {
         return [];
@@ -214,9 +227,9 @@ export function MovedLessonDialog({
       return res.data;
     },
     queryKey: queryKeys.timetable.availableClassrooms(
-      formState.date,
-      formState.startingDay,
-      formState.startingPeriod
+      formDate,
+      formStartingDay,
+      formStartingPeriod
     ),
   });
 
@@ -238,9 +251,8 @@ export function MovedLessonDialog({
 
     lessons = lessons.filter((l) => {
       const periodMatch =
-        !formState.startingPeriod || l.period?.id === formState.startingPeriod;
-      const dayMatch =
-        !formState.startingDay || l.day?.id === formState.startingDay;
+        !formStartingPeriod || l.period?.id === formStartingPeriod;
+      const dayMatch = !formStartingDay || l.day?.id === formStartingDay;
       return periodMatch && dayMatch;
     });
 
@@ -258,40 +270,31 @@ export function MovedLessonDialog({
     allLessons,
     cohortLessonsQuery.data,
     selectedCohort,
-    formState.startingPeriod,
-    formState.startingDay,
+    formStartingPeriod,
+    formStartingDay,
   ]);
 
   const isCreate = !item;
 
   const isValid = useMemo(() => {
-    // CREATE esetén csak date és lessonIds kötelező
     if (isCreate) {
-      if (!formState.date) {
-        return false;
-      }
-      if (!formState.lessonIds || formState.lessonIds.length === 0) {
-        return false;
-      }
-      return true;
+      return !!formDate && !!(formLessonIds && formLessonIds.length > 0);
     }
-
-    // UPDATE esetén minden kötelező
-    if (
-      !(
-        formState.date &&
-        formState.startingDay &&
-        formState.startingPeriod &&
-        formState.room
-      )
-    ) {
-      return false;
-    }
-    if (!formState.lessonIds || formState.lessonIds.length === 0) {
-      return false;
-    }
-    return true;
-  }, [formState, isCreate]);
+    return (
+      !!formDate &&
+      !!formStartingDay &&
+      !!formStartingPeriod &&
+      !!formRoom &&
+      !!(formLessonIds && formLessonIds.length > 0)
+    );
+  }, [
+    formDate,
+    formLessonIds,
+    formStartingDay,
+    formStartingPeriod,
+    formRoom,
+    isCreate,
+  ]);
 
   const toggleLesson = (
     lesson: EnrichedLesson | undefined,
@@ -300,35 +303,23 @@ export function MovedLessonDialog({
     if (!lesson?.id) {
       return;
     }
-    setFormState((prev) => {
-      const currentLessonIds = prev.lessonIds ?? [];
-      if (checked) {
-        const newState: MovedLessonCreatePayload = {
-          ...prev,
-          lessonIds: Array.from(new Set([...currentLessonIds, lesson.id])),
-        };
-        // Auto-fill period/day if not already set
-        if (!prev.startingPeriod && lesson.period?.id) {
-          newState.startingPeriod = lesson.period.id;
-        }
-        if (!prev.startingDay && lesson.day?.id) {
-          newState.startingDay = lesson.day.id;
-        }
-        return newState;
+    const current = form.getFieldValue('lessonIds') ?? [];
+    if (checked) {
+      const newLessonIds = Array.from(new Set([...current, lesson.id]));
+      form.setFieldValue('lessonIds', newLessonIds);
+      // Auto-fill period/day if not already set
+      if (!form.getFieldValue('startingPeriod') && lesson.period?.id) {
+        form.setFieldValue('startingPeriod', lesson.period.id);
       }
-      return {
-        ...prev,
-        lessonIds: currentLessonIds.filter((id) => id !== lesson.id),
-      };
-    });
-  };
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!isValid) {
-      return;
+      if (!form.getFieldValue('startingDay') && lesson.day?.id) {
+        form.setFieldValue('startingDay', lesson.day.id);
+      }
+    } else {
+      form.setFieldValue(
+        'lessonIds',
+        current.filter((id) => id !== lesson.id)
+      );
     }
-    await onSubmit(formState);
   };
 
   return (
@@ -343,22 +334,20 @@ export function MovedLessonDialog({
           <form
             className="mt-4 space-y-4"
             id="movedLessonForm"
-            onSubmit={handleSubmit}
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
           >
             <div className="space-y-2">
               <Label>{t('movedLesson.date')}</Label>
               <DatePicker
                 date={
-                  formState.date instanceof Date
-                    ? formState.date
-                    : new Date(String(formState.date))
+                  formDate instanceof Date
+                    ? formDate
+                    : new Date(String(formDate))
                 }
-                onDateChange={(d) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    date: d ?? prev.date,
-                  }))
-                }
+                onDateChange={(d) => form.setFieldValue('date', d ?? formDate)}
                 placeholder={t('movedLesson.datePlaceholder')}
               />
             </div>
@@ -375,10 +364,7 @@ export function MovedLessonDialog({
                 <Combobox
                   emptyMessage={t('movedLesson.noPeriodFound')}
                   onValueChange={(value) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      startingPeriod: value || undefined,
-                    }))
+                    form.setFieldValue('startingPeriod', value || undefined)
                   }
                   options={periods.map((p) => ({
                     label: t('movedLesson.periodLabel', {
@@ -390,7 +376,7 @@ export function MovedLessonDialog({
                   }))}
                   placeholder={t('movedLesson.targetPeriod')}
                   searchPlaceholder={t('search')}
-                  value={formState.startingPeriod ?? ''}
+                  value={formStartingPeriod ?? ''}
                 />
               </div>
             </div>
@@ -409,15 +395,10 @@ export function MovedLessonDialog({
                     : t('movedLesson.noRoomFound')
                 }
                 onValueChange={(value) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    room: value || undefined,
-                  }))
+                  form.setFieldValue('room', value || undefined)
                 }
                 options={
-                  formState.date &&
-                  formState.startingDay &&
-                  formState.startingPeriod
+                  formDate && formStartingDay && formStartingPeriod
                     ? (availableClassroomsQuery.data ?? []).map((cr) => ({
                         label: `${cr.name} (${cr.short})`,
                         value: cr.id,
@@ -429,7 +410,7 @@ export function MovedLessonDialog({
                 }
                 placeholder={t('movedLesson.targetRoom')}
                 searchPlaceholder={t('search')}
-                value={formState.room ?? ''}
+                value={formRoom ?? ''}
               />
             </div>
 
@@ -472,7 +453,7 @@ export function MovedLessonDialog({
                         key={lesson.id}
                       >
                         <Checkbox
-                          checked={(formState.lessonIds ?? []).includes(
+                          checked={(formLessonIds ?? []).includes(
                             lesson.id ?? ''
                           )}
                           id={`ml-lesson-${lesson.id}`}
@@ -491,7 +472,7 @@ export function MovedLessonDialog({
 
         <DialogFooter className="border-t p-4">
           <Button
-            disabled={!isValid || isSubmitting}
+            disabled={!isValid || form.state.isSubmitting}
             form="movedLessonForm"
             type="submit"
           >

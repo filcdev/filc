@@ -57,26 +57,19 @@ function AdminUsersPage() {
           value={search}
         />
       </div>
-      {(() => {
-        if (usersQuery.isLoading) {
-          return <p>Loading...</p>;
-        }
-        if (usersQuery.isError) {
-          return <p className="text-red-500">Error loading users</p>;
-        }
-        if (!usersQuery.data) {
-          return <p>No data</p>;
-        }
-        return (
-          <UsersTable
-            limit={limit}
-            onPageChange={setPage}
-            page={page}
-            total={usersQuery.data.total}
-            users={usersQuery.data.users}
-          />
-        );
-      })()}
+      {usersQuery.isLoading && <p>Loading...</p>}
+      {usersQuery.isError && (
+        <p className="text-red-500">Error loading users</p>
+      )}
+      {!(usersQuery.isLoading || usersQuery.isError) && usersQuery.data && (
+        <UsersTable
+          limit={limit}
+          onPageChange={setPage}
+          page={page}
+          total={usersQuery.data.total}
+          users={usersQuery.data.users}
+        />
+      )}
     </div>
   );
 }

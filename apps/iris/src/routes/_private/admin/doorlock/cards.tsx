@@ -439,7 +439,6 @@ function CardsPage() {
         <CardDialog<DoorlockCard, DoorlockDevice, DoorlockUser>
           card={selectedCard}
           devices={devicesQuery.data ?? []}
-          isSubmitting={upsertMutation.isPending}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
