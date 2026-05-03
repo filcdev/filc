@@ -135,11 +135,11 @@ export function SystemMessageBanner() {
   const until = formatLocalizedDate(message.validUntil, i18n.language);
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[70]">
+    <div className="fixed inset-x-0 top-0 z-70">
       <div className="flex items-center bg-destructive text-destructive-foreground shadow-md">
         <div className="min-w-0 flex-1 px-3 py-2 sm:px-4">
           <p className="font-semibold text-sm leading-5">{message.title}</p>
-          <p className="mt-0.5 break-words text-xs leading-5 opacity-95">
+          <p className="wrap-break-word mt-0.5 text-xs leading-5 opacity-95">
             {renderBlockContent(message.content)}
           </p>
           <p className="mt-0.5 text-[11px] opacity-80">

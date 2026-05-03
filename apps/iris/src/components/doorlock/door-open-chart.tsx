@@ -19,7 +19,7 @@ export type DoorOpenDatapoint = {
 
 export function DoorOpenChart({ data }: { data: DoorOpenDatapoint[] }) {
   return (
-    <ChartContainer className="h-[320px] w-full" config={chartConfig}>
+    <ChartContainer className="h-80 w-full" config={chartConfig}>
       <ResponsiveContainer height="100%" width="100%">
         <LineChart data={data} margin={{ bottom: 8, left: 12, right: 12 }}>
           <XAxis

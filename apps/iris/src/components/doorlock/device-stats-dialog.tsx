@@ -91,8 +91,8 @@ export function DeviceStatsDialog({
 
         {statsQuery.isLoading && (
           <div className="space-y-4">
-            <Skeleton className="h-[200px] w-full" />
-            <Skeleton className="h-[200px] w-full" />
+            <Skeleton className="h-50 w-full" />
+            <Skeleton className="h-50 w-full" />
           </div>
         )}
 
@@ -144,7 +144,7 @@ export function DeviceStatsDialog({
               {/* RAM Chart */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">Free RAM (KB)</h3>
-                <div className="h-[200px] w-full rounded-lg border bg-card p-4">
+                <div className="h-50 w-full rounded-lg border bg-card p-4">
                   <ResponsiveContainer height="100%" width="100%">
                     <AreaChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -170,7 +170,7 @@ export function DeviceStatsDialog({
               {/* Uptime Chart */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">Uptime (Hours)</h3>
-                <div className="h-[200px] w-full rounded-lg border bg-card p-4">
+                <div className="h-50 w-full rounded-lg border bg-card p-4">
                   <ResponsiveContainer height="100%" width="100%">
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />

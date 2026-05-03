@@ -213,7 +213,7 @@ function ChartTooltipContent({
                       !hideIndicator && (
                         <div
                           className={cn(
-                            'shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)',
+                            'shrink-0 rounded-[2px] border-border bg-(--color-bg)',
                             {
                               'h-2.5 w-2.5': indicator === 'dot',
                               'my-0.5': nestLabel && indicator === 'dashed',
