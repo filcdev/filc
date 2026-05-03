@@ -12,18 +12,18 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.6.5",
+    "@better-auth/drizzle-adapter": "^1.6.9",
     "@hono/standard-validator": "^0.2.2",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.7.6",
-    "@logtape/logtape": "^2.0.5",
-    "@sentry/bun": "^10.49.0",
+    "@logtape/logtape": "^2.0.6",
+    "@sentry/bun": "^10.51.0",
     "better-auth": "catalog:",
     "cronbake": "^0.4.0",
     "dayjs": "^1.11.20",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
-    "fast-xml-parser": "^5.7.1",
+    "fast-xml-parser": "^5.7.2",
     "hono": "catalog:",
     "hono-openapi": "^1.3.0",
     "hono-rate-limiter": "^0.5.3",
@@ -33,8 +33,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@inquirer/prompts": "^8.4.1",
-    "@logtape/pretty": "^2.0.5",
+    "@inquirer/prompts": "^8.4.2",
+    "@logtape/pretty": "^2.0.6",
     "@tsconfig/strictest": "^2.0.8",
     "@types/bun": "catalog:",
     "@types/cli-progress": "^3.11.6",
