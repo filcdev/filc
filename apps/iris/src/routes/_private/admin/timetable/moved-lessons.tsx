@@ -118,6 +118,7 @@ function extractFromSubstitutions(
   }
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex extraction logic for reference data
 function extractReferenceData(
   movedLessons: MovedLessonItem[],
   subs: SubstitutionData[],
@@ -136,6 +137,7 @@ function extractReferenceData(
       if (!lesson) {
         continue;
       }
+      lessonMap.set(lesson.id, lesson);
       if (lesson.period) {
         periodMap.set(lesson.period.id, lesson.period);
       }
@@ -146,6 +148,19 @@ function extractReferenceData(
           name: lesson.day.name,
           short: lesson.day.short,
         });
+      }
+    }
+  }
+
+  // Also include lessons from moved lessons
+  for (const ml of movedLessons) {
+    for (const lessonId of ml.lessons) {
+      // Find lesson from subs or cohortLessons
+      const foundLesson = Array.from(lessonMap.values()).find(
+        (l) => l.id === lessonId
+      );
+      if (foundLesson && !lessonMap.has(lessonId)) {
+        lessonMap.set(lessonId, foundLesson);
       }
     }
   }
@@ -678,6 +693,7 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
+          cohortLessonsData={cohortLessonsQueries.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
