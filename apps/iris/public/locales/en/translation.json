@@ -253,7 +253,8 @@
     "updateError": "Failed to update moved lesson",
     "deleteSuccess": "Moved lesson deleted successfully",
     "deleteError": "Failed to delete moved lesson",
-    "deleteConfirm": "Delete this moved lesson? This action cannot be undone.",
+    "deleteConfirm": "Delete Moved Lesson",
+    "deleteDescription": "Are you sure you want to delete this moved lesson? This action cannot be undone.",
     "loadError": "Unable to load moved lessons",
     "loadErrorMessage": "Please try again later."
   },

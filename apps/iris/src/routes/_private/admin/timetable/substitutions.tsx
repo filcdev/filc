@@ -486,55 +486,56 @@ function SubstitutionsPage() {
       )}
 
       {hasWritePermission && dialogOpen && (
-        <>
-          <SubstitutionDialog
-            item={selectedItem}
-            onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) {
-                setSelectedItem(null);
-              }
-            }}
-            onSubmit={handleSave}
-            open={dialogOpen}
-            teachers={teachersQuery.data ?? []}
-          />
-          <Dialog
-            onOpenChange={(open) => {
-              setDeleteDialogOpen(open);
-              if (!open) {
-                setItemToDelete(null);
-              }
-            }}
-            open={deleteDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t('substitution.deleteConfirm')}</DialogTitle>
-                <DialogDescription>
-                  {t('substitution.deleteDescription')}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  onClick={() => setDeleteDialogOpen(false)}
-                  variant="outline"
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  disabled={deleteMutation.isPending}
-                  onClick={confirmDelete}
-                  variant="destructive"
-                >
-                  {deleteMutation.isPending
-                    ? t('common.deleting')
-                    : t('common.delete')}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </>
+        <SubstitutionDialog
+          item={selectedItem}
+          onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) {
+              setSelectedItem(null);
+            }
+          }}
+          onSubmit={handleSave}
+          open={dialogOpen}
+          teachers={teachersQuery.data ?? []}
+        />
+      )}
+
+      {hasWritePermission && (
+        <Dialog
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setItemToDelete(null);
+            }
+          }}
+          open={deleteDialogOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('substitution.deleteConfirm')}</DialogTitle>
+              <DialogDescription>
+                {t('substitution.deleteDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                onClick={() => setDeleteDialogOpen(false)}
+                variant="outline"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                disabled={deleteMutation.isPending}
+                onClick={confirmDelete}
+                variant="destructive"
+              >
+                {deleteMutation.isPending
+                  ? t('common.deleting')
+                  : t('common.delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
