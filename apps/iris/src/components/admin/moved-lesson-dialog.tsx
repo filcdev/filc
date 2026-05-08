@@ -64,6 +64,7 @@ type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
   classrooms: Classroom[];
   cohorts: Cohort[];
+  cohortLessonsData?: Array<{ lessons: EnrichedLesson[] }>;
   days: DayDefinition[];
   item?: MovedLessonItem | null;
   onSubmit: (payload: MovedLessonCreatePayload) => Promise<void>;
@@ -107,10 +108,38 @@ const initialState = (
   startingPeriod: item?.movedLesson.startingPeriod || undefined,
 });
 
+function getDefaultCohortId(
+  lessonIds: string[],
+  cohortLessonsData: Array<{ lessons: EnrichedLesson[] }> | undefined,
+  cohorts: Cohort[]
+) {
+  if (!cohortLessonsData || cohortLessonsData.length === 0) {
+    return '';
+  }
+
+  // For each lesson ID, find which cohort contains it
+  for (const lessonId of lessonIds) {
+    for (let i = 0; i < cohortLessonsData.length; i++) {
+      const cohortLessons = cohortLessonsData[i]?.lessons ?? [];
+      const hasLesson = cohortLessons.some((l) => l.id === lessonId);
+
+      if (hasLesson) {
+        const cohortId = cohorts[i]?.id;
+        if (cohortId) {
+          return cohortId;
+        }
+      }
+    }
+  }
+
+  return '';
+}
+
 export function MovedLessonDialog({
   allLessons,
   classrooms,
   cohorts,
+  cohortLessonsData,
   days,
   item,
   onOpenChange,
@@ -147,8 +176,15 @@ export function MovedLessonDialog({
     }
 
     form.reset(defaultValues);
-    setSelectedCohort('');
-  }, [defaultValues, form, open]);
+
+    let cohortId = '';
+
+    if (item && item.lessons.length > 0) {
+      cohortId = getDefaultCohortId(item.lessons, cohortLessonsData, cohorts);
+    }
+
+    setSelectedCohort(cohortId);
+  }, [defaultValues, form, open, item, cohortLessonsData, cohorts]);
 
   // Auto-fill target day based on selected date.
   useEffect(() => {
@@ -233,11 +269,15 @@ export function MovedLessonDialog({
     ),
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex filtering and mapping logic
   const availableLessons = useMemo(() => {
     const map = new Map<string, EnrichedLesson>();
-    const source = selectedCohort
-      ? (cohortLessonsQuery.data ?? [])
-      : allLessons;
+
+    const source =
+      selectedCohort && cohortLessonsQuery.data?.length
+        ? cohortLessonsQuery.data
+        : allLessons;
+
     /* biome-disable useBlockStatements */
     for (const l of source) {
       if (!l?.id) {
@@ -246,6 +286,16 @@ export function MovedLessonDialog({
       map.set(l.id, l as EnrichedLesson);
     }
     /* biome-enable useBlockStatements */
+
+    // In edit mode, always include the current selected lessons even if they don't match current filters
+    if (item && formLessonIds) {
+      for (const lessonId of formLessonIds) {
+        const lesson = allLessons.find((l) => l.id === lessonId);
+        if (lesson) {
+          map.set(lesson.id, lesson);
+        }
+      }
+    }
 
     let lessons = Array.from(map.values());
 
@@ -272,6 +322,42 @@ export function MovedLessonDialog({
     selectedCohort,
     formStartingPeriod,
     formStartingDay,
+    item,
+    formLessonIds,
+  ]);
+
+  const roomOptions = useMemo(() => {
+    const availableRooms =
+      formDate && formStartingDay && formStartingPeriod
+        ? (availableClassroomsQuery.data ?? [])
+        : classrooms;
+
+    const roomMap = new Map<string, Classroom>();
+    for (const cr of availableRooms) {
+      roomMap.set(cr.id, cr);
+    }
+
+    // Ensure the current room is included in edit mode
+    if (item?.movedLesson.room) {
+      const currentRoom = classrooms.find(
+        (cr) => cr.id === item.movedLesson.room
+      );
+      if (currentRoom) {
+        roomMap.set(currentRoom.id, currentRoom);
+      }
+    }
+
+    return Array.from(roomMap.values()).map((cr) => ({
+      label: `${cr.name} (${cr.short})`,
+      value: cr.id,
+    }));
+  }, [
+    formDate,
+    formStartingDay,
+    formStartingPeriod,
+    availableClassroomsQuery.data,
+    classrooms,
+    item,
   ]);
 
   const isCreate = !item;
@@ -397,17 +483,7 @@ export function MovedLessonDialog({
                 onValueChange={(value) =>
                   form.setFieldValue('room', value || undefined)
                 }
-                options={
-                  formDate && formStartingDay && formStartingPeriod
-                    ? (availableClassroomsQuery.data ?? []).map((cr) => ({
-                        label: `${cr.name} (${cr.short})`,
-                        value: cr.id,
-                      }))
-                    : classrooms.map((cr) => ({
-                        label: `${cr.name} (${cr.short})`,
-                        value: cr.id,
-                      }))
-                }
+                options={roomOptions}
                 placeholder={t('movedLesson.targetRoom')}
                 searchPlaceholder={t('search')}
                 value={formRoom ?? ''}

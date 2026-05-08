@@ -14,6 +14,14 @@ import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -28,7 +36,6 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
-import { confirmDestructiveAction } from '@/utils/confirm';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -111,6 +118,7 @@ function extractFromSubstitutions(
   }
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex extraction logic for reference data
 function extractReferenceData(
   movedLessons: MovedLessonItem[],
   subs: SubstitutionData[],
@@ -129,6 +137,7 @@ function extractReferenceData(
       if (!lesson) {
         continue;
       }
+      lessonMap.set(lesson.id, lesson);
       if (lesson.period) {
         periodMap.set(lesson.period.id, lesson.period);
       }
@@ -139,6 +148,19 @@ function extractReferenceData(
           name: lesson.day.name,
           short: lesson.day.short,
         });
+      }
+    }
+  }
+
+  // Also include lessons from moved lessons
+  for (const ml of movedLessons) {
+    for (const lessonId of ml.lessons) {
+      // Find lesson from subs or cohortLessons
+      const foundLesson = Array.from(lessonMap.values()).find(
+        (l) => l.id === lessonId
+      );
+      if (foundLesson && !lessonMap.has(lessonId)) {
+        lessonMap.set(lessonId, foundLesson);
       }
     }
   }
@@ -156,6 +178,7 @@ function extractReferenceData(
   };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex form with multiple queries and state
 function MovedLessonsPage() {
   const { i18n, t } = useTranslation();
   const queryClient = useQueryClient();
@@ -163,6 +186,10 @@ function MovedLessonsPage() {
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MovedLessonItem | null>(
+    null
+  );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<MovedLessonItem | null>(
     null
   );
   const [sortColumn, setSortColumn] = useState<
@@ -441,15 +468,21 @@ function MovedLessonsPage() {
     }
   };
 
-  const handleDelete = async (ml: MovedLessonItem) => {
+  const handleDelete = (ml: MovedLessonItem) => {
     if (!hasWritePermission) {
       return;
     }
-    const confirmed = confirmDestructiveAction(t('movedLesson.deleteConfirm'));
-    if (!confirmed) {
+    setItemToDelete(ml);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) {
       return;
     }
-    await deleteMutation.mutateAsync(ml.movedLesson.id);
+    await deleteMutation.mutateAsync(itemToDelete.movedLesson.id);
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
   const isLoading = movedLessonsQuery.isLoading;
@@ -660,6 +693,7 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
+          cohortLessonsData={cohortLessonsQueries.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
@@ -673,6 +707,44 @@ function MovedLessonsPage() {
           open={dialogOpen}
           periods={periods}
         />
+      )}
+
+      {hasWritePermission && (
+        <Dialog
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setItemToDelete(null);
+            }
+          }}
+          open={deleteDialogOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('movedLesson.deleteConfirm')}</DialogTitle>
+              <DialogDescription>
+                {t('movedLesson.deleteDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                onClick={() => setDeleteDialogOpen(false)}
+                variant="outline"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                disabled={deleteMutation.isPending}
+                onClick={confirmDelete}
+                variant="destructive"
+              >
+                {deleteMutation.isPending
+                  ? t('common.deleting')
+                  : t('common.delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

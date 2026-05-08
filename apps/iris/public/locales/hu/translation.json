@@ -253,7 +253,8 @@
     "updateError": "Nem sikerült frissíteni az áthelyezett órát",
     "deleteSuccess": "Áthelyezett óra sikeresen törölve",
     "deleteError": "Nem sikerült törölni az áthelyezett órát",
-    "deleteConfirm": "Törlöd ezt az áthelyezett órát? Ez a művelet nem vonható vissza.",
+    "deleteConfirm": "Áthelyezett óra törlése",
+    "deleteDescription": "Biztosan törlöd ezt az áthelyezett órát? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni az áthelyezett órákat",
     "loadErrorMessage": "Kérlek próbáld újra később."
   },
