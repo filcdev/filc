@@ -399,9 +399,7 @@ async function getParallelLessons(
   ];
   const dayIds = [
     ...new Set(
-      selectedLessons
-        .map((l) => l.day?.id)
-        .filter((id): id is string => !!id)
+      selectedLessons.map((l) => l.day?.id).filter((id): id is string => !!id)
     ),
   ];
 
