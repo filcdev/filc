@@ -634,6 +634,9 @@ export const updateSubstitution = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
+      if (error instanceof HTTPException) {
+        throw error;
+      }
       logger.error('Error while updating substitution', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         cause:
@@ -701,6 +704,9 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
+      if (error instanceof HTTPException) {
+        throw error;
+      }
       logger.error('Error while deleting substitution', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         cause:

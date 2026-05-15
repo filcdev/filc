@@ -377,13 +377,84 @@ const substitutionCandidateSchema = z.object({
 const substitutionCandidatesResponseSchema = z.object({
   data: z.object({
     availableLessons: enrichedLessonSchema.array(),
+    parallelLessons: enrichedLessonSchema.array(),
     substituteCandidates: substitutionCandidateSchema.array(),
   }),
   success: z.literal(true),
 });
 
 const substitutionCandidatesType =
-  '@unit SubstitutionCandidatesResult @field(.availableLessons, List<EnrichedLesson>) @field(.substituteCandidates, List<SubstitutionCandidate>)';
+  '@unit SubstitutionCandidatesResult @field(.availableLessons, List<EnrichedLesson>) @field(.parallelLessons, List<EnrichedLesson>) @field(.substituteCandidates, List<SubstitutionCandidate>)';
+
+async function getParallelLessons(
+  selectedLessons: Awaited<ReturnType<typeof enrichLessons>>,
+  missingTeacherId: string
+): Promise<Awaited<ReturnType<typeof enrichLessons>>> {
+  const periodIds = [
+    ...new Set(
+      selectedLessons
+        .map((l) => l.period?.id)
+        .filter((id): id is string => !!id)
+    ),
+  ];
+  const dayIds = [
+    ...new Set(
+      selectedLessons
+        .map((l) => l.day?.id)
+        .filter((id): id is string => !!id)
+    ),
+  ];
+
+  if (periodIds.length === 0 || dayIds.length === 0) {
+    return [];
+  }
+
+  const selectedLessonIds = selectedLessons.map((l) => l.id);
+
+  const cohortRows = await db
+    .select({ cohortId: lessonCohortMTM.cohortId })
+    .from(lessonCohortMTM)
+    .where(inArray(lessonCohortMTM.lessonId, selectedLessonIds));
+
+  const cohortIds = [...new Set(cohortRows.map((r) => r.cohortId))];
+  if (cohortIds.length === 0) {
+    return [];
+  }
+
+  const parallelLinkRows = await db
+    .select({ lessonId: lessonCohortMTM.lessonId })
+    .from(lessonCohortMTM)
+    .where(inArray(lessonCohortMTM.cohortId, cohortIds));
+
+  const parallelLessonIds = [
+    ...new Set(
+      parallelLinkRows
+        .map((r) => r.lessonId)
+        .filter((id) => !selectedLessonIds.includes(id))
+    ),
+  ];
+  if (parallelLessonIds.length === 0) {
+    return [];
+  }
+
+  const rows = await db
+    .select()
+    .from(lesson)
+    .where(
+      and(
+        inArray(lesson.id, parallelLessonIds),
+        inArray(lesson.periodId, periodIds),
+        inArray(lesson.dayDefinitionId, dayIds)
+      )
+    );
+
+  const enriched = await enrichLessons(rows);
+  return enriched.filter(
+    (l) =>
+      l.teachers.length > 0 &&
+      !l.teachers.some((t) => t.id === missingTeacherId)
+  );
+}
 
 export const getLessonsForTeachers = timetableFactory.createHandlers(
   describeRoute({
@@ -544,16 +615,23 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       return c.json<
         SuccessResponse<{
           availableLessons: typeof availableLessons;
+          parallelLessons: [];
           substituteCandidates: [];
         }>
       >({
         data: {
           availableLessons,
+          parallelLessons: [],
           substituteCandidates: [],
         },
         success: true,
       });
     }
+
+    const parallelLessons = await getParallelLessons(
+      selectedLessons,
+      missingTeacherId
+    );
 
     const minPeriod = Math.min(...selectedPeriods);
     const maxPeriod = Math.max(...selectedPeriods);
@@ -566,11 +644,13 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       return c.json<
         SuccessResponse<{
           availableLessons: typeof availableLessons;
+          parallelLessons: typeof parallelLessons;
           substituteCandidates: [];
         }>
       >({
         data: {
           availableLessons,
+          parallelLessons,
           substituteCandidates: [],
         },
         success: true,
@@ -666,11 +746,13 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     return c.json<
       SuccessResponse<{
         availableLessons: typeof availableLessons;
+        parallelLessons: typeof parallelLessons;
         substituteCandidates: typeof substituteCandidates;
       }>
     >({
       data: {
         availableLessons,
+        parallelLessons,
         substituteCandidates,
       },
       success: true,

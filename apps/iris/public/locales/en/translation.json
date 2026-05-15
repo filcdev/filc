@@ -190,6 +190,7 @@
     "loadingSubstituteTeachers": "Filtering substitute teachers...",
     "nearbyTeacherTag": "H1 / H2",
     "cancelled": "Cancelled",
+    "merged": "Merged Lesson",
     "lessons": "Affected Lessons",
     "affectedLessons": "Lessons",
     "cohorts": "Cohorts",

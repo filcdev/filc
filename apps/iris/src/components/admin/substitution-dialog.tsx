@@ -6,7 +6,7 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Save } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,6 +46,12 @@ type SubstitutionDialogProps = BaseDialogProps & {
   teachers: Teacher[];
 };
 
+// Normalise to UTC midnight using local calendar date so the PostgreSQL DATE
+// column always stores the day the user actually selected, regardless of
+// their UTC offset.
+const toUTCDate = (d: Date): Date =>
+  new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+
 function formatLessonLabel(
   lesson: Partial<EnrichedLesson> & { id: string }
 ): string {
@@ -71,7 +77,9 @@ function formatLessonLabel(
 const initialState = (
   item?: SubstitutionItem | null
 ): InferRequestType<typeof api.timetable.substitutions.$post>['json'] => ({
-  date: item?.substitution.date ? new Date(item.substitution.date) : new Date(),
+  date: toUTCDate(
+    item?.substitution.date ? new Date(item.substitution.date) : new Date()
+  ),
   lessonIds:
     item?.lessons
       .map((l) => l?.id)
@@ -90,11 +98,16 @@ export function SubstitutionDialog({
   const [selectedMissingTeacher, setSelectedMissingTeacher] =
     useState<string>('');
   const defaultValues = useMemo(() => initialState(item), [item]);
+  const parallelTeacherRef = useRef<{ id: string; name: string } | null>(null);
 
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
-      await onSubmit(value);
+      const resolvedSubstituter =
+        value.substituter === '__merged__'
+          ? (parallelTeacherRef.current?.id ?? null)
+          : value.substituter;
+      await onSubmit({ ...value, substituter: resolvedSubstituter });
     },
   });
 
@@ -160,6 +173,18 @@ export function SubstitutionDialog({
       []) as TeacherLesson[];
   }, [selectedMissingTeacher, substituteCandidatesQuery.data]);
 
+  const parallelTeacher = useMemo(() => {
+    const lessons = substituteCandidatesQuery.data?.parallelLessons ?? [];
+    const firstTeacher = lessons[0]?.teachers[0];
+    return firstTeacher ?? null;
+  }, [substituteCandidatesQuery.data]);
+
+  useEffect(() => {
+    parallelTeacherRef.current = parallelTeacher
+      ? { id: parallelTeacher.id, name: parallelTeacher.name }
+      : null;
+  }, [parallelTeacher]);
+
   const substituteOptions = useMemo(() => {
     const candidates =
       substituteCandidatesQuery.data?.substituteCandidates ?? [];
@@ -216,7 +241,7 @@ export function SubstitutionDialog({
               <DatePicker
                 date={formDate}
                 onDateChange={(d) => {
-                  form.setFieldValue('date', d ?? new Date());
+                  form.setFieldValue('date', toUTCDate(d ?? new Date()));
                   form.setFieldValue('lessonIds', []);
                   form.setFieldValue('substituter', null);
                 }}
@@ -308,6 +333,14 @@ export function SubstitutionDialog({
                     label: t('substitution.cancelled'),
                     value: '__none__',
                   },
+                  ...(parallelTeacher
+                    ? [
+                        {
+                          label: t('substitution.merged'),
+                          value: '__merged__',
+                        },
+                      ]
+                    : []),
                   ...substituteOptions,
                 ]}
                 placeholder={t('substitution.substituteTeacher')}
