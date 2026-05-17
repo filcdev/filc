@@ -18,6 +18,10 @@ import {
   subject,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import {
+  cancelPendingNotification,
+  dispatchPendingNotification,
+} from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -553,6 +557,16 @@ export const createMovedLesson = timetableFactory.createHandlers(
         );
       }
 
+      if (newMovedLesson) {
+        dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
+          date: body.date,
+          lessonIds: lessonIds ?? [],
+          room,
+          startingDay,
+          startingPeriod,
+        });
+      }
+
       return c.json<SuccessResponse<typeof newMovedLesson>>(
         {
           data: newMovedLesson,
@@ -627,6 +641,8 @@ export const updateMovedLesson = timetableFactory.createHandlers(
         startingPeriod,
       });
 
+      cancelPendingNotification(id, 'moved_lesson');
+
       const [updatedMovedLesson] = await db
         .update(movedLesson)
         .set({
@@ -659,6 +675,14 @@ export const updateMovedLesson = timetableFactory.createHandlers(
           );
         }
       }
+
+      dispatchPendingNotification(id, 'moved_lesson', {
+        date,
+        lessonIds: lessonIds ?? [],
+        room,
+        startingDay,
+        startingPeriod,
+      });
 
       return c.json<SuccessResponse<typeof updatedMovedLesson>>({
         data: updatedMovedLesson,
@@ -717,6 +741,8 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
           message: 'Moved lesson not found',
         });
       }
+
+      cancelPendingNotification(id, 'moved_lesson');
 
       return c.json<SuccessResponse<typeof deletedMovedLesson>>({
         data: deletedMovedLesson,

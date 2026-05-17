@@ -19,12 +19,13 @@ import {
   type OutgoingMessage,
   outgoingMessageSchema,
 } from '#utils/doorlock/schemas';
+import { dispatchImmediateNotification } from '#utils/notifications/engine';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 
 const handleIncomingMessage = async (
   message: string,
-  device: { id: string }
+  device: { id: string; name: string }
 ) => {
   try {
     logger.trace('Received raw WebSocket message', { device, message });
@@ -107,6 +108,11 @@ const handleIncomingMessage = async (
           deviceId: device.id,
           result: deserialized.authorized,
           userId: cardUser?.userId ?? null,
+        });
+
+        dispatchImmediateNotification('doorlock_card_used', {
+          deviceName: device.name,
+          userId: cardUser?.userId,
         });
 
         logger.trace('Updating device heartbeat timestamp', { device });

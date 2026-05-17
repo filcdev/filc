@@ -17,6 +17,10 @@ import {
   dateRangeBodySchema,
   dateRangeUpdateBodySchema,
 } from '#utils/news/schemas';
+import {
+  cancelPendingNotification,
+  dispatchPendingNotification,
+} from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
@@ -291,6 +295,11 @@ export const createSystemMessage = newsFactory.createHandlers(
       );
     }
 
+    dispatchPendingNotification(created.id, 'system_message', {
+      cohortIds: body.cohortIds ?? [],
+      title: body.title,
+    });
+
     return c.json(
       {
         data: { ...created, cohortIds: body.cohortIds ?? [] },
@@ -357,6 +366,8 @@ export const updateSystemMessage = newsFactory.createHandlers(
       await validateCohortIds(body.cohortIds);
     }
 
+    cancelPendingNotification(id, 'system_message');
+
     const updateData: Record<string, unknown> = {};
     if (body.title !== undefined) {
       updateData.title = body.title;
@@ -407,6 +418,11 @@ export const updateSystemMessage = newsFactory.createHandlers(
           .where(eq(systemMessageCohortMtm.systemMessageId, id))
       ).map((m) => m.cohortId);
 
+    dispatchPendingNotification(id, 'system_message', {
+      cohortIds,
+      title: updated.title,
+    });
+
     return c.json({
       data: { ...updated, cohortIds },
       success: true as const,
@@ -447,6 +463,8 @@ export const deleteSystemMessage = newsFactory.createHandlers(
         message: 'System message not found',
       });
     }
+
+    cancelPendingNotification(id, 'system_message');
 
     return c.json<SuccessResponse>({
       success: true,
