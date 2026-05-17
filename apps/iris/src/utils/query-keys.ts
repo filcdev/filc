@@ -41,6 +41,20 @@ export const queryKeys = {
     systemMessagesBanner: () => ['system-messages-banner'] as const,
     systemMessagesPanel: () => ['system-messages-panel'] as const,
   },
+  notifications: {
+    all: () => ['notifications'] as const,
+    list: (
+      type: string,
+      unread: string,
+      page: number,
+      dateFrom: string,
+      dateTo: string
+    ) =>
+      ['notifications', 'list', type, unread, page, dateFrom, dateTo] as const,
+    preferences: () => ['notifications', 'preferences'] as const,
+    settings: () => ['notifications', 'settings'] as const,
+    unreadCount: () => ['notifications', 'unread-count'] as const,
+  },
   permissions: () => ['permissions'] as const,
   roles: () => ['roles'] as const,
   substitutions: () => ['substitutions'] as const,

@@ -356,6 +356,64 @@
     "deleteError": "Nem sikerült törölni a szerepkört",
     "loadError": "Hiba a szerepkörök betöltése közben"
   },
+  "navbar": {
+    "notifications": "Értesítések"
+  },
+  "notifications": {
+    "title": "Értesítések",
+    "bell": {
+      "empty": "Nincsenek új értesítések",
+      "viewAll": "Összes értesítés megtekintése",
+      "unreadCount": "{{count}} olvasatlan"
+    },
+    "history": {
+      "title": "Értesítési előzmények",
+      "description": "Értesítések megtekintése és kezelése",
+      "filterType": "Szűrés típus szerint",
+      "filterAll": "Minden típus",
+      "noNotifications": "Nincsenek értesítések",
+      "markRead": "Olvasottnak jelölés",
+      "markUnread": "Olvasatlannak jelölés",
+      "loadError": "Nem sikerült betölteni az értesítéseket",
+      "loadErrorMessage": "Kérlek próbáld újra később.",
+      "deleteConfirm": "Értesítés törlése?",
+      "deleteDescription": "Ez a művelet nem vonható vissza.",
+      "deleteSuccess": "Értesítés törölve",
+      "deleteError": "Nem sikerült törölni az értesítést"
+    },
+    "types": {
+      "substitution": "Helyettesítés",
+      "movedLesson": "Áthelyezett óra",
+      "announcement": "Bejelentés",
+      "systemMessage": "Rendszerüzenet",
+      "blogPost": "Blogbejegyzés",
+      "doorlockCardUsed": "Ajtó kinyitása"
+    }
+  },
+  "preferences": {
+    "title": "Beállítások",
+    "description": "Személyre szabás és értesítési beállítások",
+    "general": "Általános",
+    "language": "Nyelv",
+    "theme": "Téma",
+    "themeLight": "Világos",
+    "themeDark": "Sötét",
+    "themeSystem": "Rendszer szerint",
+    "timetableView": "Alapértelmezett órarend nézet",
+    "notifications": "Értesítések",
+    "notificationsDescription": "Válaszd ki, mely értesítéseket szeretnéd megkapni",
+    "channelsEnabled": "Értesítések engedélyezése",
+    "saveSuccess": "Beállítások mentve",
+    "saveError": "Nem sikerült menteni a beállításokat",
+    "loadError": "Nem sikerült betölteni a beállításokat"
+  },
+  "unsubscribe": {
+    "title": "Értesítési beállítások",
+    "description": "Értesítési beállítások kezelése",
+    "success": "Beállítások sikeresen frissítve",
+    "error": "Nem sikerült frissíteni a beállításokat",
+    "invalidToken": "Érvénytelen vagy lejárt leiratkozási link"
+  },
   "PageTitles": {
     "timetable": "Órarend | Filc",
     "substitutions": "Helyettesítések | Filc",

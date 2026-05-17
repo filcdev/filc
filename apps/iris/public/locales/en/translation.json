@@ -356,6 +356,64 @@
     "deleteError": "Failed to delete role",
     "loadError": "Error loading roles"
   },
+  "navbar": {
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": {
+      "empty": "No new notifications",
+      "viewAll": "View all notifications",
+      "unreadCount": "{{count}} unread"
+    },
+    "history": {
+      "title": "Notification History",
+      "description": "View and manage your notifications",
+      "filterType": "Filter by type",
+      "filterAll": "All types",
+      "noNotifications": "No notifications found",
+      "markRead": "Mark as read",
+      "markUnread": "Mark as unread",
+      "loadError": "Failed to load notifications",
+      "loadErrorMessage": "Please try again later.",
+      "deleteConfirm": "Delete notification?",
+      "deleteDescription": "This action cannot be undone.",
+      "deleteSuccess": "Notification deleted",
+      "deleteError": "Failed to delete notification"
+    },
+    "types": {
+      "substitution": "Substitution",
+      "movedLesson": "Moved lesson",
+      "announcement": "Announcement",
+      "systemMessage": "System message",
+      "blogPost": "Blog post",
+      "doorlockCardUsed": "Door unlock"
+    }
+  },
+  "preferences": {
+    "title": "Preferences",
+    "description": "Customize your experience and notification settings",
+    "general": "General",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "timetableView": "Default timetable view",
+    "notifications": "Notifications",
+    "notificationsDescription": "Choose which notifications you want to receive",
+    "channelsEnabled": "Enable notifications",
+    "saveSuccess": "Preferences saved",
+    "saveError": "Failed to save preferences",
+    "loadError": "Failed to load preferences"
+  },
+  "unsubscribe": {
+    "title": "Notification Preferences",
+    "description": "Manage your notification preferences",
+    "success": "Preferences updated successfully",
+    "error": "Failed to update preferences",
+    "invalidToken": "Invalid or expired unsubscribe link"
+  },
   "PageTitles": {
     "timetable": "Timetable | Filc",
     "substitutions": "Substitutions | Filc",
