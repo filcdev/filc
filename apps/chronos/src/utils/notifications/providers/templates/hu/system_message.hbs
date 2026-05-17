@@ -5,25 +5,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{title}}</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #1a73e8; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-    .header h1 { margin: 0; font-size: 20px; }
-    .content { background: #f8f9fa; padding: 20px; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
-    .footer { background: #f1f3f4; padding: 15px 20px; border-radius: 0 0 8px 8px; border: 1px solid #ddd; font-size: 12px; color: #666; }
-    .footer a { color: #1a73e8; }
+    body {
+      font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #18181b;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px;
+      background: #ffffff;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 1px 3px rgba(24,24,27,0.08), 0 0 0 1px rgba(24,24,27,0.06);
+      overflow: hidden;
+    }
+    .header {
+      background: #0d9488;
+      color: #ffffff;
+      padding: 24px 28px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .body {
+      padding: 24px 28px;
+      font-size: 15px;
+      color: #18181b;
+    }
+    .body p {
+      margin: 0 0 16px;
+    }
+    .body p:last-child {
+      margin-bottom: 0;
+    }
+    .btn {
+      display: inline-block;
+      background: #0d9488;
+      color: #ffffff;
+      padding: 10px 24px;
+      border-radius: 26px;
+      text-decoration: none;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .footer {
+      padding: 16px 28px;
+      border-top: 1px solid rgba(24,24,27,0.06);
+      font-size: 12px;
+      color: #71717a;
+    }
+    .footer a {
+      color: #0d9488;
+      text-decoration: none;
+    }
+    .footer p {
+      margin: 0 0 6px;
+    }
+    .footer p:last-child {
+      margin-bottom: 0;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>{{title}}</h1>
-  </div>
-  <div class="content">
-    <p>{{content}}</p>
-    <p><a href="{{baseUrl}}">Megtekintés a Filcben</a></p>
-  </div>
-  <div class="footer">
-    <p>Ez az email a Filc rendszer automatikus üzenete.</p>
-    <p><a href="{{unsubscribeUrl}}">Leiratkozás az értesítésekről</a></p>
+  <div class="card">
+    <div class="header">
+      <h1>{{title}}</h1>
+    </div>
+    <div class="body">
+      <p>{{content}}</p>
+      <a href="{{baseUrl}}" class="btn">Megtekintés a Filcben</a>
+    </div>
+    <div class="footer">
+      <p>Ez az email a Filc rendszer automatikus üzenete.</p>
+      <p><a href="{{unsubscribeUrl}}">Leiratkozás az értesítésekről</a></p>
+    </div>
   </div>
 </body>
 </html>
