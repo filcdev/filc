@@ -93,7 +93,9 @@ const fetchLessonsForSelection = async (
       }),
   };
 
-  const res = await parseResponse(endpoints[filter]());
+  const res = await parseResponse(
+    endpoints[filter]() as ReturnType<(typeof endpoints)['class']>
+  );
   if (!res.success) {
     throw new Error('Failed to load lessons');
   }

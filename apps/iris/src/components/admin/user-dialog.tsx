@@ -20,9 +20,9 @@ import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
 
-type User = InferResponseType<
-  typeof api.users.index.$get
->['data']['users'][number];
+type User = NonNullable<
+  InferResponseType<typeof api.users.index.$get>['data']
+>['users'][number];
 
 type UserDialogProps = BaseDialogProps & {
   user: User;

@@ -13,9 +13,9 @@ import type { api } from '@/utils/hc';
 import type { PaginationProps } from './admin.types';
 import { UserDialog } from './user-dialog';
 
-type User = InferResponseType<
-  typeof api.users.index.$get
->['data']['users'][number];
+type User = NonNullable<
+  InferResponseType<typeof api.users.index.$get>['data']
+>['users'][number];
 
 type UsersTableProps = PaginationProps & {
   users: User[];
