@@ -1,17 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import {
-  and,
-  count,
-  eq,
-  gte,
-  inArray,
-  isNull,
-  lte,
-  ne,
-  notInArray,
-  or,
-} from 'drizzle-orm';
+import { and, count, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -439,7 +428,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       name: string;
     }> = [];
     if (timetableCohorts.length > 0) {
-      const cohortIds = timetableCohorts.map((c) => c.id);
+      const cohortIds = timetableCohorts.map((row) => row.id);
       const survivingRows = await db
         .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
         .from(cohortTimetableMtm)
@@ -450,19 +439,21 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
           )
         );
       const survivingSet = new Set(survivingRows.map((r) => r.cohortId));
-      cohortResults = timetableCohorts.map((c) => ({
-        becomesOrphaned: !survivingSet.has(c.id),
-        id: c.id,
-        name: c.name,
+      cohortResults = timetableCohorts.map((row) => ({
+        becomesOrphaned: !survivingSet.has(row.id),
+        id: row.id,
+        name: row.name,
       }));
     }
 
-    const orphanedCount = cohortResults.filter((c) => c.becomesOrphaned).length;
+    const orphanedCount = cohortResults.filter(
+      (item) => item.becomesOrphaned
+    ).length;
 
     // Count users whose cohort will be orphaned by this deletion
     const orphanedCohortIds = cohortResults
-      .filter((c) => c.becomesOrphaned)
-      .map((c) => c.id);
+      .filter((item) => item.becomesOrphaned)
+      .map((item) => item.id);
     let affectedUserCount = 0;
     if (orphanedCohortIds.length > 0) {
       const [affectedCount] = await db
