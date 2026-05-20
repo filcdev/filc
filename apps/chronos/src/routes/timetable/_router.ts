@@ -6,6 +6,7 @@ import {
   getAllTimetables,
   getAllValidTimetables,
   getLatestValidTimetable,
+  previewDeleteTimetable,
   updateTimetable,
 } from '#routes/timetable/index';
 import {
@@ -43,6 +44,7 @@ export const timetableRouter = timetableFactory
   .get('/timetables/latestValid', ...getLatestValidTimetable)
   .get('/timetables/valid', ...getAllValidTimetables)
   .patch('/timetables/:id', ...updateTimetable)
+  .get('/timetables/:id/preview-delete', ...previewDeleteTimetable)
   .delete('/timetables/:id', ...deleteTimetable)
   .post('/import', ...importRoute)
   // Substitution routes

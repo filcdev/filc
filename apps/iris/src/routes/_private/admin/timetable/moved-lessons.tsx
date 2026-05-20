@@ -263,6 +263,7 @@ function MovedLessonsPage() {
           const res = await parseResponse(
             api.timetable.lessons.getForCohort[':cohortId'].$get({
               param: { cohortId: cohort.id },
+              query: {},
             })
           );
           if (!res.success) {

@@ -223,6 +223,7 @@ export function MovedLessonDialog({
       const res = await parseResponse(
         api.timetable.lessons.getForCohort[':cohortId'].$get({
           param: { cohortId: selectedCohort },
+          query: {},
         })
       );
       if (!res.success) {

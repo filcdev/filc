@@ -48,7 +48,9 @@ function TimetableImportPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importName, setImportName] = useState('');
-  const [validStartDate, setValidStartDate] = useState<Date | undefined>();
+  const [validStartDate, setValidStartDate] = useState<Date | undefined>(
+    new Date()
+  );
   const [validEndDate, setValidEndDate] = useState<Date | undefined>();
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -91,7 +93,7 @@ function TimetableImportPage() {
       toast.success(t('timetable.importSuccess'));
       setSelectedFile(null);
       setImportName('');
-      setValidStartDate(undefined);
+      setValidStartDate(new Date());
       setValidEndDate(undefined);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -147,7 +149,7 @@ function TimetableImportPage() {
     setSelectedFile(null);
     setImportStatus('idle');
     setErrorMessage(null);
-    setValidStartDate(undefined);
+    setValidStartDate(new Date());
     setValidEndDate(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

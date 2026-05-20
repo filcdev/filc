@@ -3,7 +3,9 @@ import { timestamps } from '#database/helpers';
 import { cohort } from '#database/schema/timetable';
 
 export const user = pgTable('user', {
-  cohortId: text('cohort_id').references(() => cohort.id),
+  cohortId: text('cohort_id').references(() => cohort.id, {
+    onDelete: 'set null',
+  }),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified')
     .$defaultFn(() => !1)

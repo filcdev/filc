@@ -49,7 +49,7 @@ await configureLogger('chronos');
 const logger = getLogger(['chronos', 'drizzle']);
 
 type BaseData = {
-  cohorts: Array<{ id: string; name: string; timetableId: string }>;
+  cohorts: Array<{ id: string; name: string; timetableId: string | null }>;
   teachers: Array<{ id: string }>;
   days: Array<{ id: string }>;
   periods: Array<{ id: string }>;

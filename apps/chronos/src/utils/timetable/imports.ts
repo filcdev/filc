@@ -1,10 +1,12 @@
 import { getLogger } from '@logtape/logtape';
-import { and, eq, inArray } from 'drizzle-orm';
+import dayjs from 'dayjs';
+import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import {
   building as buildingSchema,
   classroom as classroomSchema,
   cohort as cohortSchema,
+  cohortTimetableMtm,
   dayDefinition as daySchema,
   lessonCohortMTM,
   lesson as lessonSchema,
@@ -59,7 +61,11 @@ type CohortAttributes = {
 
 export const importTimetableXML = (
   xmlData: TimetableExportRoot,
-  timetableForm: { name: string; validFrom: string; validTo?: string | null }
+  timetableForm: {
+    name: string;
+    validFrom: string;
+    validTo?: string | null;
+  }
 ) =>
   db.transaction(async (tx) => {
     const startedAt = Date.now();
@@ -68,11 +74,43 @@ export const importTimetableXML = (
       validFrom: timetableForm.validFrom,
     });
 
+    // Resolve and expire the currently active timetable inside this
+    // transaction so concurrent imports cannot race on the same row.
+    const today = new Date().toLocaleDateString('en-CA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const [active] = await tx
+      .select({ id: timetable.id, validTo: timetable.validTo })
+      .from(timetable)
+      .where(
+        and(
+          lte(timetable.validFrom, today),
+          or(isNull(timetable.validTo), gte(timetable.validTo, today))
+        )
+      )
+      .orderBy(desc(timetable.validFrom))
+      .limit(1)
+      .for('update');
+
+    if (active?.validTo === null) {
+      const dayBefore = dayjs(timetableForm.validFrom)
+        .subtract(1, 'day')
+        .format('YYYY-MM-DD');
+      await tx
+        .update(timetable)
+        .set({ validTo: dayBefore })
+        .where(eq(timetable.id, active.id));
+    }
+
     const [newTimetable] = await tx
       .insert(timetable)
       .values({
         id: crypto.randomUUID(),
-        ...timetableForm,
+        name: timetableForm.name,
+        validFrom: timetableForm.validFrom,
+        validTo: timetableForm.validTo,
       })
       .returning({ timetableId: timetable.id });
 
@@ -666,33 +704,38 @@ const upsertCohort = async (
   const [existing] = await tx
     .select()
     .from(cohortSchema)
-    .where(
-      and(
-        eq(cohortSchema.name, attrs.name),
-        eq(cohortSchema.timetableId, timetableId)
-      )
-    )
+    .where(eq(cohortSchema.name, attrs.name))
     .limit(1);
+
+  let cohortId: string;
+
   if (existing) {
-    return [attrs.predefinedId, existing.id];
+    cohortId = existing.id;
+  } else {
+    if (!attrs.teacherId) {
+      return null;
+    }
+    const [inserted] = await tx
+      .insert(cohortSchema)
+      .values({
+        id: crypto.randomUUID(),
+        name: attrs.name,
+        short: attrs.short,
+        teacherId: attrs.teacherId,
+      })
+      .returning({ insertedId: cohortSchema.id });
+    if (!inserted) {
+      return null;
+    }
+    cohortId = inserted.insertedId;
   }
-  if (!attrs.teacherId) {
-    return null;
-  }
-  const [inserted] = await tx
-    .insert(cohortSchema)
-    .values({
-      id: crypto.randomUUID(),
-      name: attrs.name,
-      short: attrs.short,
-      teacherId: attrs.teacherId,
-      timetableId,
-    })
-    .returning({ insertedId: cohortSchema.id });
-  if (!inserted) {
-    return null;
-  }
-  return [attrs.predefinedId, inserted.insertedId];
+
+  await tx
+    .insert(cohortTimetableMtm)
+    .values({ cohortId, timetableId })
+    .onConflictDoNothing();
+
+  return [attrs.predefinedId, cohortId];
 };
 
 const loadCohort = async (
