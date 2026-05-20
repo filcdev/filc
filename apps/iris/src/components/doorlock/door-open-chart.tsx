@@ -15,7 +15,7 @@ export type DoorOpenDatapoint = {
 
 const chartConfig = {
   count: {
-    color: 'hsl(var(--primary))',
+    color: 'var(--primary)',
     label: 'Door opens',
   },
 } satisfies ChartConfig;
