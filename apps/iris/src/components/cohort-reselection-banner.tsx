@@ -12,7 +12,12 @@ export function CohortReselectionBanner() {
   const cohortId = data?.user?.cohortId;
   const isWelcomePage = router.state.location.pathname === '/auth/welcome';
 
-  if (isPending || cohortId || isWelcomePage) {
+  if (
+    !(data?.session && data?.user) ||
+    isPending ||
+    cohortId ||
+    isWelcomePage
+  ) {
     return null;
   }
 

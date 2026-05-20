@@ -52,7 +52,7 @@ const fetchCohortsForTimetable = async (timetableId: string) => {
   if (!res.success) {
     throw new Error('Failed to load cohorts');
   }
-  return ((res.data ?? []) as { cohort: CohortItem }[]).map((r) => r.cohort);
+  return (res.data ?? []) as CohortItem[];
 };
 
 const fetchTeachers = async () => {

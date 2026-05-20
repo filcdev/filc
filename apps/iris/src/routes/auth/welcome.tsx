@@ -314,7 +314,7 @@ const CohortSelectorStep = (props: {
         if (!res.success) {
           throw new Error(t('cohort.fetchFailed'));
         }
-        return (res.data ?? []).map((r) => r.cohort);
+        return res.data ?? [];
       }
       const res = await parseResponse(api.cohort.index.$get());
       if (!res.success) {
@@ -322,7 +322,9 @@ const CohortSelectorStep = (props: {
       }
       return res.data;
     },
-    queryKey: queryKeys.cohorts(),
+    queryKey: queryKeys.timetable.cohorts(
+      props.userCohortId ?? activeTimetableQuery.data?.id ?? null
+    ),
   });
 
   const updateCohort = async (cohortId: string) => {

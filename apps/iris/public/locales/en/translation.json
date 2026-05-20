@@ -166,15 +166,15 @@
     "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This will also delete all related cohorts, lessons, and other data. This action cannot be undone.",
     "deletePreview": {
       "title": "Delete Timetable",
-      "description": "You are about to delete \"{{name}}\". The following will be removed:",
+      "description": "The following changes will occur for \"{{name}}\":",
       "orphanedCohorts": "{{count}} cohort(s) will lose their last timetable association",
-      "survivingCohorts": "{{count}} cohort(s) shared with other timetables will survive",
+      "survivingCohorts": "{{count}} cohort(s) shared with other timetables will remain",
       "lessonsDeleted": "{{count}} lesson(s)",
       "substitutionsDeleted": "{{count}} substitution(s)",
       "movedLessonsDeleted": "{{count}} moved lesson(s)",
       "danglingUsersCleaned": "{{count}} user(s) with broken cohort references will be fixed",
       "currentTimetableWarning": "This is the currently active timetable and cannot be deleted.",
-      "noImpact": "No data will be affected beyond the timetable itself."
+      "noImpact": "No other data will be affected beyond the timetable itself."
     },
     "noDate": "—",
     "status": {

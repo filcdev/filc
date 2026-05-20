@@ -155,7 +155,7 @@
     "deleteDescription": "Biztosan törölni szeretnéd a(z) \"{{name}}\" órarendet? Ezzel minden kapcsolódó csoport, óra és egyéb adat is törlődik. Ez a művelet nem vonható vissza.",
     "deletePreview": {
       "title": "Órarend törlése",
-      "description": "A(z) \"{{name}}\" órarend törlésével az alábbiak kerülnek eltávolításra:",
+      "description": "A(z) \"{{name}}\" órarend törlése az alábbi változásokkal jár:",
       "orphanedCohorts": "{{count}} csoport elveszíti az utolsó órarend-társítását",
       "survivingCohorts": "{{count}} más órarendekkel is megosztott csoport megmarad",
       "lessonsDeleted": "{{count}} óra",

@@ -93,7 +93,7 @@ function TimetableImportPage() {
       toast.success(t('timetable.importSuccess'));
       setSelectedFile(null);
       setImportName('');
-      setValidStartDate(undefined);
+      setValidStartDate(new Date());
       setValidEndDate(undefined);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -149,7 +149,7 @@ function TimetableImportPage() {
     setSelectedFile(null);
     setImportStatus('idle');
     setErrorMessage(null);
-    setValidStartDate(undefined);
+    setValidStartDate(new Date());
     setValidEndDate(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
