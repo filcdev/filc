@@ -1,7 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
-import { parseResponse } from 'hono/client';
 import {
   Book,
   Calendar,
@@ -13,9 +10,11 @@ import {
   UserCog,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NotificationBell } from '@/components/notification-bell';
+import { SettingsDialog } from '@/components/settings-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,30 +28,12 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
 import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
 
 type NavbarProps = {
   children?: ReactNode;
   showLinks?: boolean;
   showLogo?: boolean;
 };
-
-type Cohort = {
-  id: string;
-  name: string;
-};
-
-type SubstitutionsResponse = InferResponseType<
-  typeof api.timetable.substitutions.$get
->;
-
-type Substitution = NonNullable<SubstitutionsResponse['data']>[number];
-
-type MovedLessonApiResponse = InferResponseType<
-  typeof api.timetable.movedLessons.$get
->;
-type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
 
 export function Navbar({
   children,
@@ -62,238 +43,148 @@ export function Navbar({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
-  const userClassId = data?.user?.cohortId ?? null;
-
-  const cohortsQuery = useQuery({
-    enabled: !!userClassId,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data as Cohort[];
-    },
-    queryKey: queryKeys.cohorts(),
-  });
-
-  const substitutionsQuery = useQuery({
-    enabled: !!userClassId,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.substitutions.$get());
-      if (!res.success) {
-        throw new Error('Failed to load substitutions');
-      }
-
-      return res.data as Substitution[];
-    },
-    queryKey: queryKeys.substitutions(),
-  });
-
-  const movedLessonsQuery = useQuery({
-    enabled: !!userClassId,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.movedLessons.$get());
-      if (!res.success) {
-        throw new Error('Failed to load moved lessons');
-      }
-
-      return res.data as MovedLessonItem[];
-    },
-    queryKey: queryKeys.movedLessons(),
-  });
-
-  const userClassName = cohortsQuery.data?.find(
-    (cohort) => cohort.id === userClassId
-  )?.name;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const hasUserSubs =
-    !!userClassName &&
-    substitutionsQuery.data?.some(
-      (sub) =>
-        new Date(sub.substitution.date) >= today &&
-        sub.lessons.some((lesson) => lesson?.cohorts.includes(userClassName))
-    );
-
-  const hasMovedLessons =
-    movedLessonsQuery.data?.some(
-      (ml) => new Date(ml.movedLesson.date) >= today
-    ) ?? false;
-
-  const hasNotifications = hasUserSubs || hasMovedLessons;
-
-  const notificationBadgeLabel = (() => {
-    if (!hasNotifications) {
-      return null;
-    }
-    if (hasUserSubs && hasMovedLessons) {
-      return t('substitution.availableForClass', {
-        className: userClassName ?? t('substitution.yourClass'),
-      });
-    }
-    if (hasUserSubs) {
-      return t('substitution.availableForClass', {
-        className: userClassName ?? t('substitution.yourClass'),
-      });
-    }
-    if (hasMovedLessons) {
-      return t('movedLesson.available');
-    }
-    return null;
-  })();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="flex h-16 items-center px-6">
-        <div className="flex items-center gap-3">
-          {children}
-          {showLogo && (
-            <>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <GraduationCap className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-semibold text-foreground text-xl">
-                filc
-              </span>
-            </>
+    <>
+      <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="flex h-16 items-center px-6">
+          <div className="flex items-center gap-3">
+            {children}
+            {showLogo && (
+              <>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                  <GraduationCap className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <span className="font-semibold text-foreground text-xl">
+                  filc
+                </span>
+              </>
+            )}
+          </div>
+
+          {data && showLinks && (
+            <NavLinks userRoles={data.user ? data.user.roles : ['user']} />
           )}
-        </div>
 
-        {data && showLinks && (
-          <NavLinks userRoles={data.user ? data.user.roles : ['user']} />
-        )}
+          <div className="ml-auto flex items-center gap-3">
+            <NotificationBell />
 
-        <div className="hidden flex-1 items-center px-6 md:flex">
-          {notificationBadgeLabel && <Badge>{notificationBadgeLabel}</Badge>}
-        </div>
+            <LanguageSelector />
 
-        <div className="ml-auto flex items-center gap-3">
-          {/* <Button
-            className="relative text-muted-foreground hover:text-foreground"
-            size="sm"
-            variant="ghost"
-          >
-            <Bell className="h-4 w-4" />
-            <Badge className="-top-1 -right-1 absolute h-5 w-5 rounded-full bg-primary p-0 text-primary-foreground text-xs">
-              3
-            </Badge>
-          </Button> */}
+            {(() => {
+              if (isPending) {
+                return (
+                  <Button
+                    className="h-9 w-24"
+                    disabled
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Spinner />
+                  </Button>
+                );
+              }
 
-          <LanguageSelector />
-
-          {(() => {
-            if (isPending) {
-              return (
-                <Button
-                  className="h-9 w-24"
-                  disabled
-                  size="sm"
-                  variant="outline"
-                >
-                  <Spinner />
-                </Button>
-              );
-            }
-
-            if (data?.user) {
-              const displayName = data.user.name;
-              const displayNickname = data.user.nickname || displayName;
-              const initialsSource =
-                data.user.nickname ||
-                data.user.displayName ||
-                data.user.name ||
-                data.user.email ||
-                'U';
-              const initials = initialsSource
-                // biome-ignore lint/performance/useTopLevelRegex: not needed
-                .split(/\s+/)
-                .filter(Boolean)
-                .map((segment) => segment[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase();
-              return (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        className="relative h-9 w-9 rounded-full"
-                        variant="ghost"
-                      >
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage
-                            alt="Profile"
-                            src={data.user.image ?? undefined}
-                          />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent className="w-56">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                          <div className="flex flex-row gap-1">
-                            <p className="font-medium text-sm leading-none">
-                              {displayNickname}
-                            </p>
-                            <p className="font-medium text-muted-foreground text-sm leading-none">
-                              {displayName === displayNickname
-                                ? null
-                                : `(${displayName})`}
+              if (data?.user) {
+                const displayName = data.user.name;
+                const displayNickname = data.user.nickname || displayName;
+                const initialsSource =
+                  data.user.nickname ||
+                  data.user.displayName ||
+                  data.user.name ||
+                  data.user.email ||
+                  'U';
+                const initials = initialsSource
+                  // biome-ignore lint/performance/useTopLevelRegex: not needed
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .map((segment) => segment[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase();
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          className="relative h-9 w-9 rounded-full"
+                          variant="ghost"
+                        >
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage
+                              alt="Profile"
+                              src={data.user.image ?? undefined}
+                            />
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex flex-row gap-1">
+                              <p className="font-medium text-sm leading-none">
+                                {displayNickname}
+                              </p>
+                              <p className="font-medium text-muted-foreground text-sm leading-none">
+                                {displayName === displayNickname
+                                  ? null
+                                  : `(${displayName})`}
+                              </p>
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-none">
+                              {data.user.email}
                             </p>
                           </div>
-                          <p className="text-muted-foreground text-xs leading-none">
-                            {data.user.email}
-                          </p>
-                        </div>
-                      </DropdownMenuLabel>
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => navigate({ to: '/cards' })}
-                    >
-                      <DoorOpen />
-                      <span>{t('doorlock.manage-cards')}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Cog />
-                      <span>{t('settings')}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={async () => {
-                        await authClient.signOut();
-                      }}
-                    >
-                      <LogOut />
-                      <span>{t('logout')}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            }
+                        </DropdownMenuLabel>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: '/cards' })}
+                      >
+                        <DoorOpen />
+                        <span>{t('doorlock.manage-cards')}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                        <Cog />
+                        <span>{t('preferences.title')}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={async () => {
+                          await authClient.signOut();
+                        }}
+                      >
+                        <LogOut />
+                        <span>{t('logout')}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
 
-            return (
-              <Button
-                className="gap-2"
-                onClick={() => navigate({ to: '/auth/login' })}
-                size="sm"
-                variant="default"
-              >
-                <LogIn className="h-4 w-4" /> {t('sign_in') || 'Sign in'}
-              </Button>
-            );
-          })()}
+              return (
+                <Button
+                  className="gap-2"
+                  onClick={() => navigate({ to: '/auth/login' })}
+                  size="sm"
+                  variant="default"
+                >
+                  <LogIn className="h-4 w-4" /> {t('sign_in') || 'Sign in'}
+                </Button>
+              );
+            })()}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      <SettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
+    </>
   );
 }
 

@@ -6,6 +6,7 @@ import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#database/schema/doorlock';
 import { newsSchema } from '#database/schema/news';
+import { notificationsSchema } from '#database/schema/notifications';
 import { timetableSchema } from '#database/schema/timetable';
 import { env } from '#utils/environment';
 
@@ -39,6 +40,7 @@ const schema = {
   ...authorizationSchema,
   ...doorlockSchema,
   ...newsSchema,
+  ...notificationsSchema,
   ...timetableSchema,
 };
 

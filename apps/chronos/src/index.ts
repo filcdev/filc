@@ -16,6 +16,7 @@ import { timingMiddleware } from '#middleware/timing';
 import { cohortRouter } from '#routes/cohort/_router';
 import { doorlockRouter } from '#routes/doorlock/_router';
 import { newsRouter } from '#routes/news/_router';
+import { notificationsRouter } from '#routes/notifications/_router';
 import { pingRouter } from '#routes/ping/_router';
 import { rolesRouter } from '#routes/roles/_router';
 import { timetableRouter } from '#routes/timetable/_router';
@@ -25,6 +26,7 @@ import { initializeRBAC } from '#utils/authorization';
 import { setupCronJobs } from '#utils/cron';
 import { env } from '#utils/environment';
 import { configureLogger } from '#utils/logger';
+import { initializeNotificationEngine } from '#utils/notifications/initialize';
 import { initSentry } from '#utils/telemetry';
 
 await configureLogger('chronos');
@@ -41,6 +43,7 @@ export const api = new Hono<Context>();
 await prepareDb();
 await initializeRBAC();
 setupCronJobs();
+initializeNotificationEngine();
 
 api.use('*', corsMiddleware);
 api.use('*', authenticationMiddleware);
@@ -87,6 +90,7 @@ api.route('/doorlock', doorlockRouter);
 api.route('/users', usersRouter);
 api.route('/roles', rolesRouter);
 api.route('/news', newsRouter);
+api.route('/notifications', notificationsRouter);
 
 api.onError((err, c) => {
   if (err instanceof HTTPException) {

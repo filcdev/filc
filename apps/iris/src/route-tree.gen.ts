@@ -15,8 +15,11 @@ import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
+import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscribe'
 import { Route as PublicSubsRouteImport } from './routes/_public/subs'
+import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
 import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
+import { Route as PrivateNotificationsRouteImport } from './routes/_private/notifications'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
@@ -60,14 +63,29 @@ const AuthErrorRoute = AuthErrorRouteImport.update({
   path: '/auth/error',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicUnsubscribeRoute = PublicUnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
 const PublicSubsRoute = PublicSubsRouteImport.update({
   id: '/subs',
   path: '/subs',
   getParentRoute: () => PublicRouteRoute,
 } as any)
+const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => PrivateRouteRoute,
+} as any)
 const PrivateProbaRoute = PrivateProbaRouteImport.update({
   id: '/proba',
   path: '/proba',
+  getParentRoute: () => PrivateRouteRoute,
+} as any)
+const PrivateNotificationsRoute = PrivateNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
@@ -154,8 +172,11 @@ const PrivateAdminDoorlockCardsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
+  '/notifications': typeof PrivateNotificationsRoute
   '/proba': typeof PrivateProbaRoute
+  '/settings': typeof PrivateSettingsRoute
   '/subs': typeof PublicSubsRoute
+  '/unsubscribe': typeof PublicUnsubscribeRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
@@ -176,8 +197,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
+  '/notifications': typeof PrivateNotificationsRoute
   '/proba': typeof PrivateProbaRoute
+  '/settings': typeof PrivateSettingsRoute
   '/subs': typeof PublicSubsRoute
+  '/unsubscribe': typeof PublicUnsubscribeRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
@@ -200,8 +224,11 @@ export interface FileRoutesById {
   '/_private': typeof PrivateRouteRouteWithChildren
   '/_public': typeof PublicRouteRouteWithChildren
   '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
+  '/_private/notifications': typeof PrivateNotificationsRoute
   '/_private/proba': typeof PrivateProbaRoute
+  '/_private/settings': typeof PrivateSettingsRoute
   '/_public/subs': typeof PublicSubsRoute
+  '/_public/unsubscribe': typeof PublicUnsubscribeRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
@@ -225,8 +252,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/notifications'
     | '/proba'
+    | '/settings'
     | '/subs'
+    | '/unsubscribe'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
@@ -247,8 +277,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/notifications'
     | '/proba'
+    | '/settings'
     | '/subs'
+    | '/unsubscribe'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
@@ -270,8 +303,11 @@ export interface FileRouteTypes {
     | '/_private'
     | '/_public'
     | '/_private/admin'
+    | '/_private/notifications'
     | '/_private/proba'
+    | '/_private/settings'
     | '/_public/subs'
+    | '/_public/unsubscribe'
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
@@ -343,6 +379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthErrorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_public/unsubscribe': {
+      id: '/_public/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof PublicUnsubscribeRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
     '/_public/subs': {
       id: '/_public/subs'
       path: '/subs'
@@ -350,11 +393,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicSubsRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/_private/settings': {
+      id: '/_private/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof PrivateSettingsRouteImport
+      parentRoute: typeof PrivateRouteRoute
+    }
     '/_private/proba': {
       id: '/_private/proba'
       path: '/proba'
       fullPath: '/proba'
       preLoaderRoute: typeof PrivateProbaRouteImport
+      parentRoute: typeof PrivateRouteRoute
+    }
+    '/_private/notifications': {
+      id: '/_private/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof PrivateNotificationsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
     '/_private/admin': {
@@ -495,13 +552,17 @@ const PrivateAdminRouteRouteWithChildren =
 
 interface PrivateRouteRouteChildren {
   PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
+  PrivateNotificationsRoute: typeof PrivateNotificationsRoute
   PrivateProbaRoute: typeof PrivateProbaRoute
+  PrivateSettingsRoute: typeof PrivateSettingsRoute
   PrivateCardsIndexRoute: typeof PrivateCardsIndexRoute
 }
 
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
   PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
+  PrivateNotificationsRoute: PrivateNotificationsRoute,
   PrivateProbaRoute: PrivateProbaRoute,
+  PrivateSettingsRoute: PrivateSettingsRoute,
   PrivateCardsIndexRoute: PrivateCardsIndexRoute,
 }
 
@@ -511,11 +572,13 @@ const PrivateRouteRouteWithChildren = PrivateRouteRoute._addFileChildren(
 
 interface PublicRouteRouteChildren {
   PublicSubsRoute: typeof PublicSubsRoute
+  PublicUnsubscribeRoute: typeof PublicUnsubscribeRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
   PublicSubsRoute: PublicSubsRoute,
+  PublicUnsubscribeRoute: PublicUnsubscribeRoute,
   PublicIndexRoute: PublicIndexRoute,
 }
 

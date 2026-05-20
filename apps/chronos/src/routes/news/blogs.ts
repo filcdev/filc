@@ -17,6 +17,10 @@ import {
   generateSlug,
   paginationSchema,
 } from '#utils/news/schemas';
+import {
+  cancelPendingNotification,
+  dispatchPendingNotification,
+} from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
@@ -460,6 +464,11 @@ export const publishBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id))
       .returning();
 
+    dispatchPendingNotification(id, 'blog_post', {
+      slug: existing.slug,
+      title: existing.title,
+    });
+
     return c.json<SuccessResponse<typeof updated>>({
       data: updated,
       success: true,
@@ -513,6 +522,8 @@ export const unpublishBlog = newsFactory.createHandlers(
       .set({ publishedAt: null, status: 'draft' })
       .where(eq(blogPost.id, id))
       .returning();
+
+    cancelPendingNotification(id, 'blog_post');
 
     return c.json<SuccessResponse<typeof updated>>({
       data: updated,

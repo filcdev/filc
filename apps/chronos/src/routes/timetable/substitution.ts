@@ -21,6 +21,10 @@ import {
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
+import {
+  cancelPendingNotification,
+  dispatchPendingNotification,
+} from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import {
   createInsertSchema,
@@ -519,6 +523,12 @@ export const createSubstitution = timetableFactory.createHandlers(
       return insertedSubstitution;
     });
 
+    dispatchPendingNotification(result.id, 'substitution', {
+      date: result.date,
+      lessonIds,
+      substituter,
+    });
+
     return c.json<SuccessResponse<typeof result>>({
       data: result,
       success: true,
@@ -600,6 +610,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
       }
 
       // Use a transaction to update the substitution and the many-to-many relationships
+      cancelPendingNotification(id, 'substitution');
       const updatedSubstitution = await db.transaction(async (tx) => {
         const [updated] = await tx
           .update(substitution)
@@ -628,6 +639,14 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
         return updated;
       });
+
+      if (updatedSubstitution) {
+        dispatchPendingNotification(id, 'substitution', {
+          date: body.date ?? existingSubstitution[0]?.date,
+          lessonIds: body.lessonIds ?? [],
+          substituter: body.substituter ?? existingSubstitution[0]?.substituter,
+        });
+      }
 
       return c.json<SuccessResponse<typeof updatedSubstitution>>({
         data: updatedSubstitution,
@@ -698,6 +717,8 @@ export const deleteSubstitution = timetableFactory.createHandlers(
         .delete(substitution)
         .where(eq(substitution.id, id))
         .returning();
+
+      cancelPendingNotification(id, 'substitution');
 
       return c.json<SuccessResponse<typeof deletedSubstitution>>({
         data: deletedSubstitution,

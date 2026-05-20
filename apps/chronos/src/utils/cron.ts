@@ -1,6 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import Baker from 'cronbake';
 import { cleanUpOldDeviceAuditLogs } from '#utils/doorlock/cards';
+import { cleanUpOldNotifications } from '#utils/notifications/cleanup';
 
 const logger = getLogger(['chronos', 'cron']);
 
@@ -17,6 +18,12 @@ export const setupCronJobs = () => {
     callback: cleanUpOldDeviceAuditLogs,
     cron: '@monthly',
     name: 'clean-up-old-card-audit-logs',
+  });
+
+  baker.add({
+    callback: cleanUpOldNotifications,
+    cron: '@daily',
+    name: 'clean-up-old-notifications',
   });
 
   const jobs = baker.getJobNames();
