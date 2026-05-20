@@ -31,6 +31,9 @@ const envSchema = z.object({
   CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
   CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce.number().default(60),
   CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce.number().default(60),
+  CHRONOS_NOTIFICATION_DELAY_COHORT_RESELECTION_REQUIRED: z.coerce
+    .number()
+    .default(0),
   CHRONOS_NOTIFICATION_DELAY_MOVED_LESSON: z.coerce.number().default(60),
 
   CHRONOS_NOTIFICATION_DELAY_SUBSTITUTION: z.coerce.number().default(60),

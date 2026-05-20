@@ -151,6 +151,40 @@ async function resolveAudienceForDoorlock(
   ];
 }
 
+async function resolveAudienceForCohortReselection(
+  payload: unknown
+): Promise<AudienceUser[]> {
+  const p = payload as { userId: string };
+  const [targetUser] = await db
+    .select({
+      cohortId: userTable.cohortId,
+      email: userTable.email,
+      id: userTable.id,
+    })
+    .from(userTable)
+    .where(eq(userTable.id, p.userId))
+    .limit(1);
+
+  if (!targetUser) {
+    return [];
+  }
+
+  const [prefs] = await db
+    .select()
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, targetUser.id))
+    .limit(1);
+
+  return [
+    {
+      cohortId: targetUser.cohortId,
+      email: targetUser.email,
+      id: targetUser.id,
+      language: prefs?.language ?? 'hu',
+    },
+  ];
+}
+
 async function enrichUsersWithLanguage(
   users: { id: string; email: string; cohortId: string | null }[]
 ): Promise<AudienceUser[]> {
@@ -188,6 +222,7 @@ const audienceResolvers: Record<
   announcement: (p) =>
     resolveAudienceByCohortOrAll((p as { cohortIds?: string[] }).cohortIds),
   blog_post: () => resolveAudienceForBlogPost(),
+  cohort_reselection_required: resolveAudienceForCohortReselection,
   doorlock_card_used: resolveAudienceForDoorlock,
   moved_lesson: resolveAudienceForLessonChange,
   substitution: resolveAudienceForLessonChange,

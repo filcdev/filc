@@ -5,6 +5,7 @@ export type NotificationType =
   | 'system_message'
   | 'blog_post'
   | 'doorlock_card_used'
+  | 'cohort_reselection_required'
   | 'test';
 
 export type NotificationPreferences = {
