@@ -43,6 +43,13 @@
       "when": 1779039758902,
       "tag": "0005_nostalgic_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779265490919,
+      "tag": "0006_glamorous_puppet_master",
+      "breakpoints": true
     }
   ]
 }
