@@ -27,7 +27,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
-import { canAccessAdminUi } from '@/utils/admin-access';
+import {
+  ADMIN_UI_PERMISSIONS,
+  useHasPermission,
+} from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {
@@ -195,7 +198,7 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const canSeeAdminUi = canAccessAdminUi(userPermissions);
+  const canSeeAdminUi = useHasPermission(ADMIN_UI_PERMISSIONS, userPermissions);
 
   return (
     <div className="ml-8 hidden items-center gap-6 md:flex">
