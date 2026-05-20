@@ -131,7 +131,7 @@ export function TimetableImportDialog({
   };
 
   const handleImport = () => {
-    if (!selectedFile || !importName.trim() || !validStartDate) {
+    if (!(selectedFile && importName.trim() && validStartDate)) {
       return;
     }
     importMutation.mutate({
@@ -304,10 +304,7 @@ export function TimetableImportDialog({
                 </>
               )}
             </Button>
-            <Button
-              onClick={() => handleOpenChange(false)}
-              variant="outline"
-            >
+            <Button onClick={() => handleOpenChange(false)} variant="outline">
               {t('common.cancel')}
             </Button>
           </div>
