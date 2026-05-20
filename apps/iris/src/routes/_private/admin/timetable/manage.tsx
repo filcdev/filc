@@ -2,11 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import { Pen, Trash } from 'lucide-react';
+import { FileUp, Pen, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
+import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
 import type { TimetableItem } from '@/components/timetable/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -142,6 +143,7 @@ function TimetableManagePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TimetableRow | null>(null);
@@ -183,7 +185,7 @@ function TimetableManagePage() {
       payload,
     }: {
       id: string;
-      payload: { validFrom?: string; validTo?: string | null };
+      payload: { name?: string; validFrom?: string; validTo?: string | null };
     }) => {
       const res = await parseResponse(
         api.timetable.timetables[':id'].$patch({
@@ -231,6 +233,7 @@ function TimetableManagePage() {
   });
 
   const handleEditSubmit = async (payload: {
+    name?: string;
     validFrom?: string;
     validTo?: string | null;
   }) => {
@@ -249,13 +252,19 @@ function TimetableManagePage() {
 
   return (
     <div className="container mx-auto space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="font-bold text-3xl tracking-tight">
-          {t('timetable.manage')}
-        </h1>
-        <p className="text-muted-foreground">
-          {t('timetable.manageDescription')}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-bold text-3xl tracking-tight">
+            {t('timetable.manage')}
+          </h1>
+          <p className="text-muted-foreground">
+            {t('timetable.manageDescription')}
+          </p>
+        </div>
+        <Button onClick={() => setImportDialogOpen(true)}>
+          <FileUp className="mr-2 h-4 w-4" />
+          {t('timetable.import')}
+        </Button>
       </div>
 
       {timetablesQuery.isLoading ? (
@@ -319,6 +328,11 @@ function TimetableManagePage() {
           </TableBody>
         </Table>
       )}
+
+      <TimetableImportDialog
+        onOpenChange={setImportDialogOpen}
+        open={importDialogOpen}
+      />
 
       <TimetableEditDialog
         isSubmitting={updateMutation.isPending}

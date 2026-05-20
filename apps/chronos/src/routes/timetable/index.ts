@@ -170,6 +170,7 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
 );
 
 const updateTimetableSchema = z.object({
+  name: z.string().optional(),
   validFrom: z.string().optional(),
   validTo: z.string().nullable().optional(),
 });
@@ -218,6 +219,7 @@ export const updateTimetable = timetableFactory.createHandlers(
     const [updated] = await db
       .update(timetable)
       .set({
+        ...(body.name !== undefined && { name: body.name }),
         ...(body.validFrom !== undefined && { validFrom: body.validFrom }),
         ...(body.validTo !== undefined && { validTo: body.validTo }),
       })

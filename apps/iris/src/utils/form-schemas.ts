@@ -63,6 +63,7 @@ export const movedLessonSchema = z.object({
 });
 
 export const timetableImportSchema = z.object({
+  file: z.instanceof(File),
   name: z.string().min(1, 'Name is required'),
   validFrom: z.date({ error: 'Start date is required' }),
   validTo: z.date().optional(),
