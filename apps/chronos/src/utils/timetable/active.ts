@@ -1,4 +1,4 @@
-import { and, desc, gte, isNull, lte, ne, or } from 'drizzle-orm';
+import { and, desc, gte, isNull, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import { timetable } from '#database/schema/timetable';
 import { dateToYYYYMMDD } from './date';
@@ -17,16 +17,4 @@ export async function getActiveTimetableId(): Promise<string | null> {
     .orderBy(desc(timetable.validFrom))
     .limit(1);
   return active?.id ?? null;
-}
-
-export async function getLatestNonDeletedTimetableId(
-  excludeId: string
-): Promise<string | null> {
-  const [latest] = await db
-    .select({ id: timetable.id })
-    .from(timetable)
-    .where(ne(timetable.id, excludeId))
-    .orderBy(desc(timetable.validFrom))
-    .limit(1);
-  return latest?.id ?? null;
 }

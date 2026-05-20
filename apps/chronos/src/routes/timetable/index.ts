@@ -6,10 +6,10 @@ import {
   eq,
   gte,
   inArray,
-  isNotNull,
   isNull,
   lte,
   ne,
+  notInArray,
   or,
 } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -32,10 +32,7 @@ import {
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
-import {
-  getActiveTimetableId,
-  getLatestNonDeletedTimetableId,
-} from '#utils/timetable/active';
+import { getActiveTimetableId } from '#utils/timetable/active';
 import { dateToYYYYMMDD } from '#utils/timetable/date';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -310,19 +307,35 @@ export const deleteTimetable = timetableFactory.createHandlers(
     const notifiedUserIds: string[] = [];
 
     await db.transaction(async (tx) => {
-      const danglingUsers = await tx
-        .select({ id: user.id })
-        .from(user)
-        .leftJoin(cohort, eq(user.cohortId, cohort.id))
-        .where(and(isNotNull(user.cohortId), isNull(cohort.id)));
+      // Find cohorts in other timetables (will survive deletion)
+      const survivingRows = await tx
+        .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
+        .from(cohortTimetableMtm)
+        .where(ne(cohortTimetableMtm.timetableId, id));
+      const survivingSet = new Set(survivingRows.map((r) => r.cohortId));
 
-      if (danglingUsers.length > 0) {
-        const danglingIds = danglingUsers.map((u) => u.id);
-        await tx
-          .update(user)
-          .set({ cohortId: null })
-          .where(inArray(user.id, danglingIds));
-        notifiedUserIds.push(...danglingIds);
+      // Cohorts linked only to this timetable become orphaned after deletion
+      const timetableCohortRows = await tx
+        .select({ cohortId: cohortTimetableMtm.cohortId })
+        .from(cohortTimetableMtm)
+        .where(eq(cohortTimetableMtm.timetableId, id));
+      const orphanedCohortIds = timetableCohortRows
+        .map((r) => r.cohortId)
+        .filter((cohortId) => !survivingSet.has(cohortId));
+
+      if (orphanedCohortIds.length > 0) {
+        const affectedUsers = await tx
+          .select({ id: user.id })
+          .from(user)
+          .where(inArray(user.cohortId, orphanedCohortIds));
+        if (affectedUsers.length > 0) {
+          const userIds = affectedUsers.map((u) => u.id);
+          await tx
+            .update(user)
+            .set({ cohortId: null })
+            .where(inArray(user.id, userIds));
+          notifiedUserIds.push(...userIds);
+        }
       }
 
       await tx.delete(timetable).where(eq(timetable.id, id));
@@ -401,54 +414,63 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
     const activeId = await getActiveTimetableId();
     const isCurrentTimetable = activeId === id;
 
-    const targetId = await getLatestNonDeletedTimetableId(id);
-    const targetName = targetId
-      ? ((
-          await db
-            .select({ name: timetable.name })
-            .from(timetable)
-            .where(eq(timetable.id, targetId))
-            .limit(1)
-        )[0]?.name ?? 'Unknown')
-      : null;
+    // Fetch the active timetable's name in one query (it's the fallback target)
+    let targetTimetable: { id: string; name: string } | null = null;
+    if (activeId && activeId !== id) {
+      const [activeTimetable] = await db
+        .select({ id: timetable.id, name: timetable.name })
+        .from(timetable)
+        .where(eq(timetable.id, activeId))
+        .limit(1);
+      targetTimetable = activeTimetable ?? null;
+    }
 
+    // Cohorts linked to this timetable
     const timetableCohorts = await db
-      .select({
-        id: cohort.id,
-        name: cohort.name,
-      })
+      .select({ id: cohort.id, name: cohort.name })
       .from(cohort)
       .innerJoin(cohortTimetableMtm, eq(cohort.id, cohortTimetableMtm.cohortId))
       .where(eq(cohortTimetableMtm.timetableId, id));
 
-    const cohortResults = await Promise.all(
-      timetableCohorts.map(async (cohortItem) => {
-        const [remaining] = await db
-          .select({ count: count() })
-          .from(cohortTimetableMtm)
-          .where(
-            and(
-              eq(cohortTimetableMtm.cohortId, cohortItem.id),
-              ne(cohortTimetableMtm.timetableId, id)
-            )
-          );
-        return {
-          becomesOrphaned: (remaining?.count ?? 0) === 0,
-          id: cohortItem.id,
-          name: cohortItem.name,
-        };
-      })
-    );
+    // Single query: which of those cohorts also exist in other timetables
+    let cohortResults: Array<{
+      becomesOrphaned: boolean;
+      id: string;
+      name: string;
+    }> = [];
+    if (timetableCohorts.length > 0) {
+      const cohortIds = timetableCohorts.map((c) => c.id);
+      const survivingRows = await db
+        .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
+        .from(cohortTimetableMtm)
+        .where(
+          and(
+            inArray(cohortTimetableMtm.cohortId, cohortIds),
+            ne(cohortTimetableMtm.timetableId, id)
+          )
+        );
+      const survivingSet = new Set(survivingRows.map((r) => r.cohortId));
+      cohortResults = timetableCohorts.map((c) => ({
+        becomesOrphaned: !survivingSet.has(c.id),
+        id: c.id,
+        name: c.name,
+      }));
+    }
 
-    const orphanedCount = cohortResults.filter(
-      (cohortItem) => cohortItem.becomesOrphaned
-    ).length;
+    const orphanedCount = cohortResults.filter((c) => c.becomesOrphaned).length;
 
-    const [danglingCount] = await db
-      .select({ count: count() })
-      .from(user)
-      .leftJoin(cohort, eq(user.cohortId, cohort.id))
-      .where(and(isNotNull(user.cohortId), isNull(cohort.id)));
+    // Count users whose cohort will be orphaned by this deletion
+    const orphanedCohortIds = cohortResults
+      .filter((c) => c.becomesOrphaned)
+      .map((c) => c.id);
+    let affectedUserCount = 0;
+    if (orphanedCohortIds.length > 0) {
+      const [affectedCount] = await db
+        .select({ count: count() })
+        .from(user)
+        .where(inArray(user.cohortId, orphanedCohortIds));
+      affectedUserCount = affectedCount?.count ?? 0;
+    }
 
     const [lessonCount] = await db
       .select({ count: count() })
@@ -479,11 +501,9 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       data: {
         cohorts: cohortResults,
         isCurrentTimetable,
-        targetTimetable: targetName
-          ? { id: targetId as string, name: targetName }
-          : null,
+        targetTimetable,
         totals: {
-          danglingUsersCleaned: danglingCount?.count ?? 0,
+          danglingUsersCleaned: affectedUserCount,
           lessonsDeleted: lessonCount?.count ?? 0,
           movedLessonsDeleted: movedLessonIds.length,
           orphanedCohorts: orphanedCount,

@@ -1,7 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
-import { eq } from 'drizzle-orm';
 import { XMLParser } from 'fast-xml-parser';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -9,8 +8,6 @@ import { StatusCodes } from 'http-status-codes';
 import { decode } from 'iconv-lite';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
-import { db } from '#database';
-import { timetable } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
@@ -78,25 +75,17 @@ export const importRoute = timetableFactory.createHandlers(
       });
     }
 
-    // Auto-expire any active timetable that has no validTo, setting it to
-    // the day before the new timetable's validFrom.
+    // Compute auto-expire params for the currently active timetable (if any).
+    // The actual DB update happens inside importTimetableXML's transaction so
+    // it is rolled back atomically if the import fails.
     const activeId = await getActiveTimetableId();
-    if (activeId && validFrom) {
-      const [active] = await db
-        .select({ validTo: timetable.validTo })
-        .from(timetable)
-        .where(eq(timetable.id, activeId))
-        .limit(1);
-      if (active && active.validTo === null) {
-        const dayBefore = dayjs(validFrom)
-          .subtract(1, 'day')
-          .format('YYYY-MM-DD');
-        await db
-          .update(timetable)
-          .set({ validTo: dayBefore })
-          .where(eq(timetable.id, activeId));
-      }
-    }
+    const autoExpire =
+      activeId && validFrom
+        ? {
+            id: activeId,
+            validTo: dayjs(validFrom).subtract(1, 'day').format('YYYY-MM-DD'),
+          }
+        : undefined;
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const decoded = decode(buffer, 'win1250');
@@ -118,6 +107,7 @@ export const importRoute = timetableFactory.createHandlers(
       const data = z.parse(timetableExportRootSchema, input);
 
       await importTimetableXML(data, {
+        autoExpire,
         name,
         validFrom: validFrom.toISOString(),
         validTo: validTo?.toISOString() ?? null,

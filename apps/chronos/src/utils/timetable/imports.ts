@@ -60,7 +60,12 @@ type CohortAttributes = {
 
 export const importTimetableXML = (
   xmlData: TimetableExportRoot,
-  timetableForm: { name: string; validFrom: string; validTo?: string | null }
+  timetableForm: {
+    autoExpire?: { id: string; validTo: string };
+    name: string;
+    validFrom: string;
+    validTo?: string | null;
+  }
 ) =>
   db.transaction(async (tx) => {
     const startedAt = Date.now();
@@ -69,11 +74,30 @@ export const importTimetableXML = (
       validFrom: timetableForm.validFrom,
     });
 
+    // Auto-expire the previously active timetable inside this transaction so
+    // the update is rolled back if the import itself fails.
+    if (timetableForm.autoExpire) {
+      const { id: expireId, validTo: expireValidTo } = timetableForm.autoExpire;
+      const [current] = await tx
+        .select({ validTo: timetable.validTo })
+        .from(timetable)
+        .where(eq(timetable.id, expireId))
+        .limit(1);
+      if (current?.validTo === null) {
+        await tx
+          .update(timetable)
+          .set({ validTo: expireValidTo })
+          .where(eq(timetable.id, expireId));
+      }
+    }
+
     const [newTimetable] = await tx
       .insert(timetable)
       .values({
         id: crypto.randomUUID(),
-        ...timetableForm,
+        name: timetableForm.name,
+        validFrom: timetableForm.validFrom,
+        validTo: timetableForm.validTo,
       })
       .returning({ timetableId: timetable.id });
 
