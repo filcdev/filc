@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
+import { canAccessAdminUi } from '@/utils/admin-access';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {
@@ -64,7 +65,9 @@ export function Navbar({
           </div>
 
           {data && showLinks && (
-            <NavLinks userRoles={data.user ? data.user.roles : ['user']} />
+            <NavLinks
+              userPermissions={data.user ? data.user.permissions : []}
+            />
           )}
 
           <div className="ml-auto flex items-center gap-3">
@@ -188,11 +191,11 @@ export function Navbar({
   );
 }
 
-function NavLinks({ userRoles }: { userRoles?: string[] }) {
+function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const isAdmin = userRoles?.includes('admin');
+  const canSeeAdminUi = canAccessAdminUi(userPermissions);
 
   return (
     <div className="ml-8 hidden items-center gap-6 md:flex">
@@ -214,7 +217,7 @@ function NavLinks({ userRoles }: { userRoles?: string[] }) {
         <Book />
         {t('substitutions')}
       </Button>
-      {isAdmin && (
+      {canSeeAdminUi && (
         <Button
           className="text-muted-foreground hover:text-foreground"
           onClick={() => navigate({ to: '/admin' })}

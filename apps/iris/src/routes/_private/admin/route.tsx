@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Navbar } from '@/components/navbar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { canAccessAdminUi } from '@/utils/admin-access';
 import { authClient } from '@/utils/authentication';
 
 export const Route = createFileRoute('/_private/admin')({
@@ -20,7 +21,7 @@ function AppLayoutComponent() {
   }, [t]);
 
   useEffect(() => {
-    if (session?.user && !session.user.roles.includes('admin')) {
+    if (session?.user && !canAccessAdminUi(session.user.permissions)) {
       navigate({
         replace: true,
         to: '/',
