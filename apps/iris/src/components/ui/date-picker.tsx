@@ -18,6 +18,18 @@ type DatePickerProps = {
   disabled?: boolean;
 };
 
+function toLocalNoon(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+    0,
+    0,
+    0
+  );
+}
+
 export function DatePicker({
   date,
   onDateChange,
@@ -53,9 +65,14 @@ export function DatePicker({
           autoFocus
           locale={locale}
           mode="single"
+          onSelect={(selectedDate) => {
+            onDateChange?.(
+              selectedDate ? toLocalNoon(selectedDate) : undefined
+            );
+          }}
           required={false}
           selected={date}
-          {...(onDateChange && { onSelect: onDateChange })}
+          weekStartsOn={1}
         />
       </PopoverContent>
     </Popover>
