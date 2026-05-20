@@ -1,3 +1,4 @@
+import { useForm, useStore } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type InferResponseType, parseResponse } from 'hono/client';
 import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
@@ -13,9 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { timetableImportSchema } from '@/utils/form-schemas';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -39,12 +41,6 @@ export function TimetableImportDialog({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [importName, setImportName] = useState('');
-  const [validStartDate, setValidStartDate] = useState<Date | undefined>(
-    new Date()
-  );
-  const [validEndDate, setValidEndDate] = useState<Date | undefined>();
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -84,65 +80,84 @@ export function TimetableImportDialog({
     onSuccess: () => {
       setImportStatus('success');
       toast.success(t('timetable.importSuccess'));
-      resetForm();
+      form.reset();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables() });
       queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
       queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
       onOpenChange(false);
     },
   });
 
-  const resetForm = () => {
-    setSelectedFile(null);
-    setImportName('');
-    setValidStartDate(undefined);
-    setValidEndDate(undefined);
-    setImportStatus('idle');
-    setErrorMessage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const form = useForm({
+    defaultValues: {
+      file: null as File | null,
+      name: '',
+      validFrom: new Date(),
+      validTo: undefined as Date | undefined,
+    },
+    onSubmit: ({ value: { name, validFrom, validTo, file } }) => {
+      if (!file) {
+        return;
+      }
+      importMutation.mutate({
+        file,
+        name: name.trim(),
+        validFrom,
+        validTo,
+      });
+    },
+    validators: {
+      onSubmit: ({ value }) => {
+        const result = timetableImportSchema.safeParse(value);
+        if (!result.success) {
+          return result.error.issues.map((i) => i.message).join(', ');
+        }
+        return undefined;
+      },
+    },
+  });
 
-  const handleOpenChange = (value: boolean) => {
-    if (!value) {
-      resetForm();
-    }
-    onOpenChange(value);
-  };
+  const selectedFile = useStore(form.store, (s) => s.values.file);
 
-  const validateAndSetFile = (file: File) => {
+  const validateAndSetFile = (f: File) => {
     if (
-      file.type !== 'text/xml' &&
-      file.type !== 'application/xml' &&
-      !file.name.endsWith('.xml')
+      f.type !== 'text/xml' &&
+      f.type !== 'application/xml' &&
+      !f.name.endsWith('.xml')
     ) {
       toast.error(t('timetable.invalidFileType'));
       return;
     }
-    setSelectedFile(file);
+    form.setFieldValue('file', f);
     setImportStatus('idle');
     setErrorMessage(null);
   };
 
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      validateAndSetFile(file);
+    const f = event.target.files?.[0];
+    if (f) {
+      validateAndSetFile(f);
     }
   };
 
-  const handleImport = () => {
-    if (!(selectedFile && importName.trim() && validStartDate)) {
-      return;
+  const handleOpenChange = (value: boolean) => {
+    if (!value) {
+      form.reset();
+      setImportStatus('idle');
+      setErrorMessage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-    importMutation.mutate({
-      file: selectedFile,
-      name: importName.trim(),
-      validFrom: validStartDate,
-      validTo: validEndDate,
-    });
+    onOpenChange(value);
   };
+
+  const canImport =
+    form.state.canSubmit && selectedFile && importStatus !== 'uploading';
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
@@ -151,46 +166,69 @@ export function TimetableImportDialog({
           <DialogTitle>{t('timetable.import')}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="import-dialog-name">
-              {t('timetable.importNameLabel')}
-            </Label>
-            <Input
-              autoComplete="off"
-              id="import-dialog-name"
-              onChange={(e) => setImportName(e.target.value)}
-              placeholder={t('timetable.importNamePlaceholder')}
-              value={importName}
-            />
-            <p className="text-muted-foreground text-xs">
-              {t('timetable.importNameDescription')}
-            </p>
-          </div>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <form.Field name="name">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>
+                  {t('timetable.importNameLabel')}
+                </FieldLabel>
+                <Input
+                  autoComplete="off"
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder={t('timetable.importNamePlaceholder')}
+                  value={field.state.value}
+                />
+                <FieldError errors={field.state.meta.errors} />
+                <p className="text-muted-foreground text-xs">
+                  {t('timetable.importNameDescription')}
+                </p>
+              </Field>
+            )}
+          </form.Field>
 
-          <div className="space-y-2">
-            <Label>{t('timetable.validFromLabel')}</Label>
-            <DatePicker
-              date={validStartDate ?? new Date()}
-              onDateChange={setValidStartDate}
-              placeholder={t('timetable.validFromPlaceholder')}
-            />
-            <p className="text-muted-foreground text-xs">
-              {t('timetable.validFromDescription')}
-            </p>
-          </div>
+          <form.Field name="validFrom">
+            {(field) => (
+              <Field>
+                <FieldLabel>{t('timetable.validFromLabel')}</FieldLabel>
+                <DatePicker
+                  date={field.state.value}
+                  onDateChange={(date) =>
+                    field.handleChange(date ?? new Date())
+                  }
+                  placeholder={t('timetable.validFromPlaceholder')}
+                />
+                <FieldError errors={field.state.meta.errors} />
+                <p className="text-muted-foreground text-xs">
+                  {t('timetable.validFromDescription')}
+                </p>
+              </Field>
+            )}
+          </form.Field>
 
-          <div className="space-y-2">
-            <Label>{t('timetable.validToLabel')}</Label>
-            <DatePicker
-              date={validEndDate}
-              onDateChange={setValidEndDate}
-              placeholder={t('timetable.validToPlaceholder')}
-            />
-            <p className="text-muted-foreground text-xs">
-              {t('timetable.validToDescription')}
-            </p>
-          </div>
+          <form.Field name="validTo">
+            {(field) => (
+              <Field>
+                <FieldLabel>{t('timetable.validToLabel')}</FieldLabel>
+                <DatePicker
+                  date={field.state.value}
+                  onDateChange={field.handleChange}
+                  placeholder={t('timetable.validToPlaceholder')}
+                />
+                <FieldError errors={field.state.meta.errors} />
+                <p className="text-muted-foreground text-xs">
+                  {t('timetable.validToDescription')}
+                </p>
+              </Field>
+            )}
+          </form.Field>
 
           {/** biome-ignore lint/a11y/useKeyWithClickEvents: file input disguised as div */}
           {/** biome-ignore lint/a11y/noStaticElementInteractions: file input disguised as div */}
@@ -209,9 +247,9 @@ export function TimetableImportDialog({
             onDrop={(e) => {
               e.preventDefault();
               e.currentTarget.classList.remove('border-primary');
-              const file = e.dataTransfer.files[0];
-              if (file) {
-                validateAndSetFile(file);
+              const f = e.dataTransfer.files[0];
+              if (f) {
+                validateAndSetFile(f);
               }
             }}
           >
@@ -239,7 +277,7 @@ export function TimetableImportDialog({
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedFile(null);
+                    form.setFieldValue('file', null);
                     setImportStatus('idle');
                     if (fileInputRef.current) {
                       fileInputRef.current.value = '';
@@ -288,11 +326,8 @@ export function TimetableImportDialog({
           <div className="flex gap-3">
             <Button
               className="flex-1"
-              disabled={
-                !(selectedFile && importName.trim() && validStartDate) ||
-                importStatus === 'uploading'
-              }
-              onClick={handleImport}
+              disabled={!canImport}
+              onClick={() => form.handleSubmit()}
             >
               {importStatus === 'uploading' ? (
                 <>
@@ -310,7 +345,7 @@ export function TimetableImportDialog({
               {t('common.cancel')}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
