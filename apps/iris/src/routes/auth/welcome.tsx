@@ -258,6 +258,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
             <CohortSelectorStep
               onCohortSelect={handleCohortSave}
               selectedCohortId={selectedCohortId}
+              userCohortId={user.cohortId ?? null}
             />
           </div>
         </Step>
@@ -281,13 +282,40 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
 const CohortSelectorStep = (props: {
   selectedCohortId: string | null;
   onCohortSelect: (cohortId: string) => Promise<boolean>;
+  userCohortId: string | null;
 }) => {
   const { t } = useTranslation();
   const [updating, setIsUpdating] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const cohortQuery = useQuery({
+  const activeTimetableQuery = useQuery({
+    enabled: !props.userCohortId,
     queryFn: async () => {
+      const res = await parseResponse(
+        api.timetable.timetables.latestValid.$get()
+      );
+      if (!res.success) {
+        throw new Error('Failed to fetch active timetable');
+      }
+      return res.data;
+    },
+    queryKey: ['timetables', 'latestValid'] as const,
+  });
+
+  const cohortQuery = useQuery({
+    enabled: !!(props.userCohortId || activeTimetableQuery.data?.id),
+    queryFn: async () => {
+      if (!props.userCohortId && activeTimetableQuery.data?.id) {
+        const res = await parseResponse(
+          api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+            param: { timetableId: activeTimetableQuery.data.id },
+          })
+        );
+        if (!res.success) {
+          throw new Error(t('cohort.fetchFailed'));
+        }
+        return (res.data ?? []).map((r) => r.cohort);
+      }
       const res = await parseResponse(api.cohort.index.$get());
       if (!res.success) {
         throw new Error(t('cohort.fetchFailed'));

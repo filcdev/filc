@@ -134,17 +134,22 @@ export function TimetableView() {
   });
 
   // Compute the latest valid timetable id from the list
-  const latestValidTimetableId = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const valid = (timetablesQuery.data ?? []).filter(
-      (t) =>
-        t.validFrom !== null &&
-        t.validFrom <= today &&
-        (t.validTo === null || t.validTo >= today)
-    );
-    valid.sort((a, b) => (b.validFrom ?? '').localeCompare(a.validFrom ?? ''));
-    return valid[0]?.id ?? timetablesQuery.data?.[0]?.id ?? null;
-  }, [timetablesQuery.data]);
+  const latestValidTimetableQuery = useQuery({
+    ...QUERY_OPTIONS,
+    queryFn: async () => {
+      const res = await parseResponse(
+        api.timetable.timetables.latestValid.$get()
+      );
+      if (!res.success) {
+        throw new Error('Failed to fetch latest valid timetable');
+      }
+      return res.data ?? null;
+    },
+    queryKey: ['timetables', 'latestValid'] as const,
+  });
+
+  const latestValidTimetableId =
+    latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
 
   // Selected timetable — initialised from URL param, else latestValid
   const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(

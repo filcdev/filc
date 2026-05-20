@@ -1,5 +1,6 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { CohortReselectionBanner } from '@/components/cohort-reselection-banner';
 import { SystemMessageBanner } from '@/components/system-message-banner';
 import { Toaster } from '@/components/ui/sonner';
 import { CookiePopup } from '@/components/util/cookie-popup';
@@ -12,10 +13,8 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  // Get session data to set Sentry user context
   const { data } = authClient.useSession();
 
-  // Update Sentry user context when session changes
   useEffect(() => {
     if (data?.session && data?.user) {
       setSentryUser(data.session, data.user);
@@ -26,6 +25,7 @@ function RootComponent() {
 
   return (
     <>
+      <CohortReselectionBanner />
       <SystemMessageBanner />
       <Outlet />
       <Toaster />

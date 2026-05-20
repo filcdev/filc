@@ -153,6 +153,18 @@
     "deleteError": "Nem sikerült törölni az órarendet",
     "deleteConfirm": "Órarend törlése",
     "deleteDescription": "Biztosan törölni szeretnéd a(z) \"{{name}}\" órarendet? Ezzel minden kapcsolódó csoport, óra és egyéb adat is törlődik. Ez a művelet nem vonható vissza.",
+    "deletePreview": {
+      "title": "Órarend törlése",
+      "description": "A(z) \"{{name}}\" órarend törlésével az alábbiak kerülnek eltávolításra:",
+      "orphanedCohorts": "{{count}} csoport elveszíti az utolsó órarend-társítását",
+      "survivingCohorts": "{{count}} más órarendekkel is megosztott csoport megmarad",
+      "lessonsDeleted": "{{count}} óra",
+      "substitutionsDeleted": "{{count}} helyettesítés",
+      "movedLessonsDeleted": "{{count}} áthelyezett óra",
+      "danglingUsersCleaned": "{{count}} hibás csoport-hivatkozással rendelkező felhasználó javítva",
+      "currentTimetableWarning": "Ez az aktuálisan érvényes órarend, nem törölhető.",
+      "noImpact": "Az órarenden kívül más adat nem érintett."
+    },
     "noDate": "—",
     "status": {
       "current": "Aktuális",
@@ -418,5 +430,10 @@
     "timetable": "Órarend | Filc",
     "substitutions": "Helyettesítések | Filc",
     "adminPanel": "Adminisztrációs felület | Filc"
+  },
+  "cohortReselectionBanner": {
+    "title": "Csoport kiválasztása szükséges",
+    "description": "A hozzárendelt osztályod vagy csoportod már nem elérhető. Kérjük, válassz újat.",
+    "selectCohort": "Csoport kiválasztása"
   }
 }
