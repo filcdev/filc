@@ -343,9 +343,12 @@ export const unregisterFcmToken = notificationsFactory.createHandlers(
 );
 
 export const getUnsubscribePage = notificationsFactory.createHandlers(
-  zValidator('query', z.object({ token: z.string() })),
+  zValidator(
+    'query',
+    z.object({ token: z.string(), userId: z.string().uuid() })
+  ),
   (c) => {
-    const { token } = c.req.valid('query');
+    const { token, userId } = c.req.valid('query');
 
     return c.html(`<!DOCTYPE html>
 <html lang="hu">
@@ -367,6 +370,7 @@ export const getUnsubscribePage = notificationsFactory.createHandlers(
     <h1>Leiratkozás az értesítésekről</h1>
     <p>Szeretnéd lemondani az összes email értesítést a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
     <form method="POST" action="/api/notifications/unsubscribe">
+      <input type="hidden" name="userId" value="${userId}">
       <input type="hidden" name="token" value="${token}">
       <button type="submit">Leiratkozás</button>
     </form>
@@ -377,22 +381,15 @@ export const getUnsubscribePage = notificationsFactory.createHandlers(
 );
 
 export const processUnsubscribe = notificationsFactory.createHandlers(
-  zValidator('form', z.object({ token: z.string() })),
+  zValidator(
+    'form',
+    z.object({ token: z.string(), userId: z.string().uuid() })
+  ),
   async (c) => {
-    const { token } = c.req.valid('form');
+    const { token, userId } = c.req.valid('form');
 
-    const users = await db.query.user.findMany({});
-    let foundUserId: string | null = null;
-
-    for (const u of users) {
-      const expected = generateUnsubscribeToken(u.id);
-      if (expected === token) {
-        foundUserId = u.id;
-        break;
-      }
-    }
-
-    if (!foundUserId) {
+    const expected = generateUnsubscribeToken(userId);
+    if (expected !== token) {
       return c.html(
         `<!DOCTYPE html>
 <html lang="hu">
@@ -403,20 +400,23 @@ export const processUnsubscribe = notificationsFactory.createHandlers(
       );
     }
 
+    const allDisabled = {
+      announcement: false,
+      blogPost: false,
+      channelsEnabled: false,
+      doorlockCardUsed: false,
+      movedLesson: false,
+      substitution: false,
+      systemMessage: false,
+    };
+
     await db
-      .update(userPreferences)
-      .set({
-        notificationPreferences: {
-          announcement: false,
-          blogPost: false,
-          channelsEnabled: false,
-          doorlockCardUsed: false,
-          movedLesson: false,
-          substitution: false,
-          systemMessage: false,
-        },
-      })
-      .where(eq(userPreferences.userId, foundUserId));
+      .insert(userPreferences)
+      .values({ notificationPreferences: allDisabled, userId })
+      .onConflictDoUpdate({
+        set: { notificationPreferences: allDisabled },
+        target: userPreferences.userId,
+      });
 
     return c.html(`<!DOCTYPE html>
 <html lang="hu">

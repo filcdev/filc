@@ -30,10 +30,17 @@ async function processJob(job: DeliveryJob): Promise<boolean> {
   let emailSuccess = false;
   let pushSuccess = false;
 
-  const emailPromise = sendEmail(job.email, job.title, job.type, 'hu', {
-    content: job.content,
-    title: job.title,
-  })
+  const emailPromise = sendEmail(
+    job.email,
+    job.title,
+    job.type,
+    'hu',
+    {
+      content: job.content,
+      title: job.title,
+    },
+    job.userId
+  )
     .then((ok) => {
       emailSuccess = ok;
     })

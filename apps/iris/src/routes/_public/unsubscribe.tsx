@@ -9,26 +9,27 @@ function UnsubscribePage() {
   const [status, setStatus] = useState<'loading' | 'error' | 'done'>('loading');
   const [message, setMessage] = useState('');
   const [token, setToken] = useState('');
+  const [userId, setUserId] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('token');
-    if (!t) {
+    const u = params.get('userId');
+    if (!(t && u)) {
       setStatus('error');
       setMessage('Invalid or expired unsubscribe link');
       return;
     }
     setToken(t);
+    setUserId(u);
     setStatus('done');
   }, []);
 
   const handleUnsubscribe = () => {
     setStatus('loading');
-    const formData = new FormData();
-    formData.append('token', token);
 
     fetch('/api/notifications/unsubscribe', {
-      body: new URLSearchParams({ token }),
+      body: new URLSearchParams({ token, userId }),
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       method: 'POST',
     })
@@ -57,7 +58,7 @@ function UnsubscribePage() {
             ? 'Loading...'
             : message || 'Manage your notification preferences'}
         </p>
-        {status === 'done' && token && !message && (
+        {status === 'done' && token && userId && !message && (
           <button
             className="mt-6 rounded-lg bg-destructive px-6 py-2 text-destructive-foreground hover:opacity-90"
             onClick={handleUnsubscribe}

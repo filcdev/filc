@@ -50,14 +50,14 @@ const envSchema = z.object({
     .min(0)
     .max(1)
     .default(0.1),
-  CHRONOS_SMTP_FROM_EMAIL: z.string(),
-  CHRONOS_SMTP_FROM_NAME: z.string(),
+  CHRONOS_SMTP_FROM_EMAIL: z.string().optional(),
+  CHRONOS_SMTP_FROM_NAME: z.string().optional(),
 
-  CHRONOS_SMTP_HOST: z.string(),
-  CHRONOS_SMTP_PASS: z.string(),
-  CHRONOS_SMTP_PORT: z.coerce.number(),
-  CHRONOS_SMTP_SECURE: boolean,
-  CHRONOS_SMTP_USER: z.string(),
+  CHRONOS_SMTP_HOST: z.string().optional(),
+  CHRONOS_SMTP_PASS: z.string().optional(),
+  CHRONOS_SMTP_PORT: z.coerce.number().default(587),
+  CHRONOS_SMTP_SECURE: boolean.default(false),
+  CHRONOS_SMTP_USER: z.string().optional(),
   CHRONOS_TRUSTED_ORIGINS: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()

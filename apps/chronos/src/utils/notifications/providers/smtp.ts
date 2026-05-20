@@ -15,8 +15,8 @@ export function getTransporter(): Transporter | null {
     return transporter;
   }
 
-  if (!env.smtpHost || env.smtpHost === 'localhost') {
-    logger.warn('SMTP host not configured, email delivery disabled');
+  if (!env.smtpHost || env.smtpHost === 'localhost' || !env.smtpFromEmail) {
+    logger.warn('SMTP not fully configured, email delivery disabled');
     return null;
   }
 
@@ -82,7 +82,8 @@ export async function sendEmail(
   subject: string,
   type: NotificationType,
   locale: string,
-  templateData: Record<string, unknown>
+  templateData: Record<string, unknown>,
+  userId: string
 ): Promise<boolean> {
   const tp = getTransporter();
   if (!tp) {
@@ -91,8 +92,8 @@ export async function sendEmail(
   }
 
   try {
-    const unsubscribeToken = generateUnsubscribeToken(to);
-    const unsubscribeUrl = `${env.baseUrl}/unsubscribe?token=${unsubscribeToken}`;
+    const unsubscribeToken = generateUnsubscribeToken(userId);
+    const unsubscribeUrl = `${env.baseUrl}/unsubscribe?userId=${userId}&token=${unsubscribeToken}`;
 
     const template = await loadTemplate(locale, type);
     const html = template({
@@ -103,7 +104,7 @@ export async function sendEmail(
     });
 
     await tp.sendMail({
-      from: `"${env.smtpFromName}" <${env.smtpFromEmail}>`,
+      from: `"${env.smtpFromName ?? ''}" <${env.smtpFromEmail ?? ''}>`,
       html,
       subject,
       to,
