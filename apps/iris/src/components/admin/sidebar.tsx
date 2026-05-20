@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
   Bell,
-  Calendar,
   DoorOpen,
   GraduationCap,
   IdCard,
@@ -28,7 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { authClient } from '@/utils/authentication';
 
-type MenuIcon = typeof Calendar;
+type MenuIcon = typeof List;
 
 type MenuItem = {
   title: string;
@@ -50,12 +49,6 @@ export function AdminSidebar() {
     () => [
       {
         items: [
-          {
-            icon: Calendar,
-            permission: 'import:timetable',
-            title: t('timetable.import'),
-            url: '/admin/timetable/import',
-          },
           {
             icon: List,
             permission: 'import:timetable',

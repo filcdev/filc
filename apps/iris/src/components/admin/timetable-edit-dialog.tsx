@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type TimetableEditDialogProps = {
@@ -19,6 +20,7 @@ type TimetableEditDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: {
+    name?: string;
     validFrom?: string;
     validTo?: string | null;
   }) => Promise<void>;
@@ -33,6 +35,7 @@ export function TimetableEditDialog({
 }: TimetableEditDialogProps) {
   const { t } = useTranslation();
 
+  const [name, setName] = useState(item?.name ?? '');
   const [validFrom, setValidFrom] = useState<Date | undefined>(
     item?.validFrom ? new Date(item.validFrom) : undefined
   );
@@ -42,6 +45,7 @@ export function TimetableEditDialog({
 
   useEffect(() => {
     if (open) {
+      setName(item?.name ?? '');
       setValidFrom(item?.validFrom ? new Date(item.validFrom) : undefined);
       setValidTo(item?.validTo ? new Date(item.validTo) : undefined);
     }
@@ -50,6 +54,7 @@ export function TimetableEditDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit({
+      name: name.trim() || undefined,
       validFrom: validFrom?.toISOString().slice(0, 10),
       validTo: validTo ? validTo.toISOString().slice(0, 10) : null,
     });
@@ -64,6 +69,15 @@ export function TimetableEditDialog({
           </DialogTitle>
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <Label>{t('timetable.nameLabel')}</Label>
+            <Input
+              autoComplete="off"
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('timetable.importNamePlaceholder')}
+              value={name}
+            />
+          </div>
           <div className="space-y-2">
             <Label>{t('timetable.validFromLabel')}</Label>
             <DatePicker
