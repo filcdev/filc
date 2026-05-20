@@ -1,5 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
+import dayjs from 'dayjs';
+import { eq } from 'drizzle-orm';
 import { XMLParser } from 'fast-xml-parser';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -7,9 +9,12 @@ import { StatusCodes } from 'http-status-codes';
 import { decode } from 'iconv-lite';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
+import { db } from '#database';
+import { timetable } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
+import { getActiveTimetableId } from '#utils/timetable/active';
 import { importTimetableXML } from '#utils/timetable/imports';
 import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
@@ -71,6 +76,26 @@ export const importRoute = timetableFactory.createHandlers(
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Invalid file type, must be XML',
       });
+    }
+
+    // Auto-expire any active timetable that has no validTo, setting it to
+    // the day before the new timetable's validFrom.
+    const activeId = await getActiveTimetableId();
+    if (activeId && validFrom) {
+      const [active] = await db
+        .select({ validTo: timetable.validTo })
+        .from(timetable)
+        .where(eq(timetable.id, activeId))
+        .limit(1);
+      if (active && active.validTo === null) {
+        const dayBefore = dayjs(validFrom)
+          .subtract(1, 'day')
+          .format('YYYY-MM-DD');
+        await db
+          .update(timetable)
+          .set({ validTo: dayBefore })
+          .where(eq(timetable.id, activeId));
+      }
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

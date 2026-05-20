@@ -7,7 +7,7 @@ import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
-import { cohort, timetable } from '#database/schema/timetable';
+import { cohort, cohortTimetableMtm } from '#database/schema/timetable';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -54,8 +54,11 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
       const cohorts = await db
         .select()
         .from(cohort)
-        .leftJoin(timetable, eq(cohort.timetableId, timetable.id))
-        .where(eq(timetable.id, timetableId));
+        .innerJoin(
+          cohortTimetableMtm,
+          eq(cohort.id, cohortTimetableMtm.cohortId)
+        )
+        .where(eq(cohortTimetableMtm.timetableId, timetableId));
 
       return c.json<SuccessResponse<typeof cohorts>>({
         data: cohorts,

@@ -1,10 +1,11 @@
 import { getLogger } from '@logtape/logtape';
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import {
   building as buildingSchema,
   classroom as classroomSchema,
   cohort as cohortSchema,
+  cohortTimetableMtm,
   dayDefinition as daySchema,
   lessonCohortMTM,
   lesson as lessonSchema,
@@ -666,33 +667,38 @@ const upsertCohort = async (
   const [existing] = await tx
     .select()
     .from(cohortSchema)
-    .where(
-      and(
-        eq(cohortSchema.name, attrs.name),
-        eq(cohortSchema.timetableId, timetableId)
-      )
-    )
+    .where(eq(cohortSchema.name, attrs.name))
     .limit(1);
+
+  let cohortId: string;
+
   if (existing) {
-    return [attrs.predefinedId, existing.id];
+    cohortId = existing.id;
+  } else {
+    if (!attrs.teacherId) {
+      return null;
+    }
+    const [inserted] = await tx
+      .insert(cohortSchema)
+      .values({
+        id: crypto.randomUUID(),
+        name: attrs.name,
+        short: attrs.short,
+        teacherId: attrs.teacherId,
+      })
+      .returning({ insertedId: cohortSchema.id });
+    if (!inserted) {
+      return null;
+    }
+    cohortId = inserted.insertedId;
   }
-  if (!attrs.teacherId) {
-    return null;
-  }
-  const [inserted] = await tx
-    .insert(cohortSchema)
-    .values({
-      id: crypto.randomUUID(),
-      name: attrs.name,
-      short: attrs.short,
-      teacherId: attrs.teacherId,
-      timetableId,
-    })
-    .returning({ insertedId: cohortSchema.id });
-  if (!inserted) {
-    return null;
-  }
-  return [attrs.predefinedId, inserted.insertedId];
+
+  await tx
+    .insert(cohortTimetableMtm)
+    .values({ cohortId, timetableId })
+    .onConflictDoNothing();
+
+  return [attrs.predefinedId, cohortId];
 };
 
 const loadCohort = async (
