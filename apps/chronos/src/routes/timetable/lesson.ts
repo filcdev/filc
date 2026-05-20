@@ -223,6 +223,17 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
           type: 'string',
         },
       },
+      {
+        in: 'query',
+        name: 'timetableId',
+        required: false,
+        schema: {
+          description:
+            'Optional timetable ID to filter lessons to a single timetable.',
+          format: 'uuid',
+          type: 'string',
+        },
+      },
     ],
     responses: {
       200: {
@@ -237,8 +248,10 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     tags: ['Lesson'],
   }),
   zValidator('param', z.object({ cohortId: z.uuid() })),
+  zValidator('query', z.object({ timetableId: z.uuid().optional() })),
   async (c) => {
     const { cohortId } = c.req.valid('param');
+    const { timetableId } = c.req.valid('query');
 
     const [existingCohort] = await db
       .select()
@@ -252,11 +265,18 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       });
     }
 
+    const whereClause = timetableId
+      ? and(
+          eq(lessonCohortMTM.cohortId, cohortId),
+          eq(lesson.timetableId, timetableId)
+        )
+      : eq(lessonCohortMTM.cohortId, cohortId);
+
     const lessonRows = await db
       .select({ lesson })
       .from(lesson)
       .innerJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-      .where(eq(lessonCohortMTM.cohortId, cohortId));
+      .where(whereClause);
 
     const lessons = lessonRows.map((r) => r.lesson);
 

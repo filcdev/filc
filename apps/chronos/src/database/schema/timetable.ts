@@ -2,6 +2,7 @@ import {
   bit,
   boolean,
   date,
+  index,
   integer,
   type PgColumn,
   pgTable,
@@ -92,19 +93,17 @@ export const cohort = pgTable('cohort', {
   name: text('name').notNull(),
   short: text('short').notNull(),
   teacherId: text('teacher_id').references(() => teacher.id),
-  timetableId: text('timetable_id')
-    .references(() => timetable.id, {
-      onDelete: 'cascade',
-    })
-    .notNull(),
+  timetableId: text('timetable_id').references(() => timetable.id, {
+    onDelete: 'set null',
+  }),
   // TODO: review if school uses this
   // grade: integer('grade').notNull();
 });
 
 export const cohortGroup = pgTable('group', {
-  cohortId: text('cohort_id')
-    .notNull()
-    .references(() => cohort.id),
+  cohortId: text('cohort_id').references(() => cohort.id, {
+    onDelete: 'set null',
+  }),
   entireClass: boolean('entire_class').notNull(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -150,6 +149,22 @@ export const lesson = pgTable('lesson', {
   // TLDR: We don't need this.
   // capacity: integer('capacity').notNull(),
 });
+
+export const cohortTimetableMtm = pgTable(
+  'cohort_timetable_mtm',
+  {
+    cohortId: text('cohort_id')
+      .notNull()
+      .references(() => cohort.id, { onDelete: 'cascade' }),
+    timetableId: text('timetable_id')
+      .notNull()
+      .references(() => timetable.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.cohortId, t.timetableId] }),
+    index('cohort_timetable_mtm_timetable_id_idx').on(t.timetableId),
+  ]
+);
 
 export const lessonCohortMTM = pgTable(
   'lesson_cohort_mtm',
@@ -209,6 +224,7 @@ export const timetableSchema = {
   classroom,
   cohort,
   cohortGroup,
+  cohortTimetableMtm,
   dayDefinition,
   lesson,
   lessonCohortMTM,

@@ -70,6 +70,75 @@ const statusBadgeVariant: Record<
   upcoming: 'outline',
 };
 
+function DeletePreviewContent({
+  isLoading,
+  data,
+}: {
+  isLoading: boolean;
+  data: Record<string, unknown> | null;
+}) {
+  const { t } = useTranslation();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2 py-4">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <p className="py-2 text-destructive text-sm">
+        {t('timetable.deleteError')}
+      </p>
+    );
+  }
+
+  const totals = data.totals as Record<string, number> | undefined;
+  const isCurrent = data.isCurrentTimetable as boolean;
+  if (!totals) {
+    return (
+      <p className="py-2 text-destructive text-sm">
+        {t('timetable.deleteError')}
+      </p>
+    );
+  }
+
+  const items: Array<{ key: string; count: number }> = [
+    { count: totals.lessonsDeleted ?? 0, key: 'lessonsDeleted' },
+    { count: totals.substitutionsDeleted ?? 0, key: 'substitutionsDeleted' },
+    { count: totals.movedLessonsDeleted ?? 0, key: 'movedLessonsDeleted' },
+    { count: totals.orphanedCohorts ?? 0, key: 'orphanedCohorts' },
+    { count: totals.survivingCohorts ?? 0, key: 'survivingCohorts' },
+    { count: totals.danglingUsersCleaned ?? 0, key: 'danglingUsersCleaned' },
+  ];
+
+  return (
+    <div className="space-y-3 py-2">
+      {isCurrent && (
+        <p className="font-semibold text-destructive text-sm">
+          {t('timetable.deletePreview.currentTimetableWarning')}
+        </p>
+      )}
+      <div className="space-y-1 text-sm">
+        {items
+          .filter((item) => item.count > 0)
+          .map((item) => (
+            <p key={item.key}>
+              {t(`timetable.deletePreview.${item.key}`, { count: item.count })}
+            </p>
+          ))}
+        {items.every((item) => item.count === 0) && (
+          <p>{t('timetable.deletePreview.noImpact')}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TimetableManagePage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -89,6 +158,25 @@ function TimetableManagePage() {
       return (res.data ?? []) as TimetableRow[];
     },
     queryKey: queryKeys.timetables(),
+  });
+
+  const previewQuery = useQuery({
+    enabled: !!itemToDelete,
+    queryFn: async () => {
+      if (!itemToDelete) {
+        return null;
+      }
+      const res = await parseResponse(
+        api.timetable.timetables[':id']['preview-delete'].$get({
+          param: { id: itemToDelete.id },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load preview');
+      }
+      return res.data;
+    },
+    queryKey: ['timetables', 'preview-delete', itemToDelete?.id] as const,
   });
 
   const updateMutation = useMutation({
@@ -257,13 +345,17 @@ function TimetableManagePage() {
       <Dialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('timetable.deleteConfirm')}</DialogTitle>
+            <DialogTitle>{t('timetable.deletePreview.title')}</DialogTitle>
             <DialogDescription>
-              {t('timetable.deleteDescription', {
+              {t('timetable.deletePreview.description', {
                 name: itemToDelete?.name ?? '',
               })}
             </DialogDescription>
           </DialogHeader>
+          <DeletePreviewContent
+            data={previewQuery.data as Record<string, unknown> | null}
+            isLoading={previewQuery.isLoading}
+          />
           <DialogFooter>
             <Button
               onClick={() => setDeleteDialogOpen(false)}
@@ -272,7 +364,10 @@ function TimetableManagePage() {
               {t('common.cancel')}
             </Button>
             <Button
-              disabled={deleteMutation.isPending}
+              disabled={
+                deleteMutation.isPending ||
+                (previewQuery.data?.isCurrentTimetable ?? true)
+              }
               onClick={() => {
                 if (itemToDelete) {
                   deleteMutation.mutate(itemToDelete.id);

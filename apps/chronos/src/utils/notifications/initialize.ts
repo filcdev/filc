@@ -171,7 +171,28 @@ export function initializeNotificationEngine(): void {
     type: 'doorlock_card_used',
   });
 
+  registerHandler({
+    buildContent: (payload, locale) => {
+      const p = payload as { userId: string };
+      const content =
+        locale === 'hu'
+          ? 'A csoportod már nem elérhető. Kérjük, válassz új csoportot a beállításokban.'
+          : 'Your cohort is no longer available. Please select a new cohort in settings.';
+      return {
+        content,
+        metadata: { action: 'cohort_reselection', userId: p.userId },
+        title:
+          locale === 'hu'
+            ? 'Csoport újraválasztása szükséges'
+            : 'Cohort Reselection Required',
+      };
+    },
+    getAudience: async () => [],
+    getDelay: () => 0,
+    type: 'cohort_reselection_required',
+  });
+
   initializeFcm();
 
-  logger.info('Notification engine initialized with 6 handlers');
+  logger.info('Notification engine initialized with 7 handlers');
 }
