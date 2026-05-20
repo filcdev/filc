@@ -119,8 +119,8 @@ export function DeviceStatsDialog({
         )}
 
         {statsQuery.isSuccess && (
-          <ScrollArea className="h-[80vh] pr-4">
-            <div className="space-y-8">
+          <ScrollArea className="h-[80vh] w-full overflow-x-hidden">
+            <div className="space-y-8 pr-4">
               {/* Summary */}
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div className="rounded-lg border p-3">
@@ -214,7 +214,7 @@ export function DeviceStatsDialog({
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">Recent History</h3>
                 <div className="rounded-md border">
-                  <Table>
+                  <Table className="w-full table-fixed">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Time</TableHead>
@@ -231,13 +231,13 @@ export function DeviceStatsDialog({
                               'YYYY-MM-DD HH:mm:ss'
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="wrap-break-word">
                             {stat.deviceMeta.debug.deviceState}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="wrap-break-word">
                             {stat.deviceMeta.debug.lastResetReason}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="wrap-break-word">
                             {Object.entries(stat.deviceMeta.debug.errors)
                               .filter(([_, v]) => v)
                               .map(([k]) => k)
