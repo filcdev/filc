@@ -335,11 +335,14 @@ const CohortSelectorStep = (props: {
     return success;
   };
 
-  if (cohortQuery.isLoading) {
+  if (
+    cohortQuery.isLoading ||
+    (!props.userCohortId && activeTimetableQuery.isLoading)
+  ) {
     return <Skeleton className="h-10 w-full" />;
   }
 
-  if (cohortQuery.error || !cohortQuery.data) {
+  if (cohortQuery.isError || !cohortQuery.data) {
     return (
       <div className="text-red-500">
         {t('cohort.errorLoading', { message: `${cohortQuery.error ?? ''}` })}

@@ -91,7 +91,8 @@ export const importTimetableXML = (
         )
       )
       .orderBy(desc(timetable.validFrom))
-      .limit(1);
+      .limit(1)
+      .for('update');
 
     if (active?.validTo === null) {
       const dayBefore = dayjs(timetableForm.validFrom)
