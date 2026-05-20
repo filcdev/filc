@@ -70,9 +70,10 @@ export function TimetableEditDialog({
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label>{t('timetable.nameLabel')}</Label>
+            <Label htmlFor="timetable-name">{t('timetable.nameLabel')}</Label>
             <Input
               autoComplete="off"
+              id="timetable-name"
               onChange={(e) => setName(e.target.value)}
               placeholder={t('timetable.importNamePlaceholder')}
               value={name}
