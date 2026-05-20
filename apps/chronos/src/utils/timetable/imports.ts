@@ -1,5 +1,6 @@
 import { getLogger } from '@logtape/logtape';
-import { eq, inArray } from 'drizzle-orm';
+import dayjs from 'dayjs';
+import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import {
   building as buildingSchema,
@@ -61,7 +62,6 @@ type CohortAttributes = {
 export const importTimetableXML = (
   xmlData: TimetableExportRoot,
   timetableForm: {
-    autoExpire?: { id: string; validTo: string };
     name: string;
     validFrom: string;
     validTo?: string | null;
@@ -74,21 +74,33 @@ export const importTimetableXML = (
       validFrom: timetableForm.validFrom,
     });
 
-    // Auto-expire the previously active timetable inside this transaction so
-    // the update is rolled back if the import itself fails.
-    if (timetableForm.autoExpire) {
-      const { id: expireId, validTo: expireValidTo } = timetableForm.autoExpire;
-      const [current] = await tx
-        .select({ validTo: timetable.validTo })
-        .from(timetable)
-        .where(eq(timetable.id, expireId))
-        .limit(1);
-      if (current?.validTo === null) {
-        await tx
-          .update(timetable)
-          .set({ validTo: expireValidTo })
-          .where(eq(timetable.id, expireId));
-      }
+    // Resolve and expire the currently active timetable inside this
+    // transaction so concurrent imports cannot race on the same row.
+    const today = new Date().toLocaleDateString('en-CA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const [active] = await tx
+      .select({ id: timetable.id, validTo: timetable.validTo })
+      .from(timetable)
+      .where(
+        and(
+          lte(timetable.validFrom, today),
+          or(isNull(timetable.validTo), gte(timetable.validTo, today))
+        )
+      )
+      .orderBy(desc(timetable.validFrom))
+      .limit(1);
+
+    if (active?.validTo === null) {
+      const dayBefore = dayjs(timetableForm.validFrom)
+        .subtract(1, 'day')
+        .format('YYYY-MM-DD');
+      await tx
+        .update(timetable)
+        .set({ validTo: dayBefore })
+        .where(eq(timetable.id, active.id));
     }
 
     const [newTimetable] = await tx

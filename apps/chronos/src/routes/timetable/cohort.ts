@@ -51,7 +51,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
     try {
       const { timetableId } = c.req.valid('param');
 
-      const cohorts = await db
+      const cohortRows = await db
         .select()
         .from(cohort)
         .innerJoin(
@@ -59,6 +59,8 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
           eq(cohort.id, cohortTimetableMtm.cohortId)
         )
         .where(eq(cohortTimetableMtm.timetableId, timetableId));
+
+      const cohorts = cohortRows.map((r) => r.cohort);
 
       return c.json<SuccessResponse<typeof cohorts>>({
         data: cohorts,

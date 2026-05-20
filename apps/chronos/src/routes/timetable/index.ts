@@ -115,6 +115,9 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
         success: true,
       });
     } catch (error) {
+      if (error instanceof HTTPException) {
+        throw error;
+      }
       logger.error('Failed to get latest valid timetable: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         message: 'Failed to get latest valid template.',
@@ -468,7 +471,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       .from(lesson)
       .where(eq(lesson.timetableId, id));
 
-    const movedLessonIds = await db
+    const movedLessonRows = await db
       .select({ id: movedLesson.id })
       .from(movedLesson)
       .innerJoin(
@@ -477,8 +480,9 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       )
       .innerJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
       .where(eq(lesson.timetableId, id));
+    const movedLessonIds = [...new Set(movedLessonRows.map((r) => r.id))];
 
-    const substitutionIds = await db
+    const substitutionRows = await db
       .select({ id: substitution.id })
       .from(substitution)
       .innerJoin(
@@ -487,6 +491,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       )
       .innerJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
       .where(eq(lesson.timetableId, id));
+    const substitutionIds = [...new Set(substitutionRows.map((r) => r.id))];
 
     return c.json({
       data: {

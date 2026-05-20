@@ -50,6 +50,13 @@
       "when": 1779265490919,
       "tag": "0006_glamorous_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779276180652,
+      "tag": "0007_talented_bill_hollister",
+      "breakpoints": true
     }
   ]
 }

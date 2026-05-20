@@ -2,6 +2,7 @@ import {
   bit,
   boolean,
   date,
+  index,
   integer,
   type PgColumn,
   pgTable,
@@ -159,7 +160,10 @@ export const cohortTimetableMtm = pgTable(
       .notNull()
       .references(() => timetable.id, { onDelete: 'cascade' }),
   },
-  (t) => [primaryKey({ columns: [t.cohortId, t.timetableId] })]
+  (t) => [
+    primaryKey({ columns: [t.cohortId, t.timetableId] }),
+    index('cohort_timetable_mtm_timetable_id_idx').on(t.timetableId),
+  ]
 );
 
 export const lessonCohortMTM = pgTable(

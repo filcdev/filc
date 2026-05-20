@@ -223,6 +223,17 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
           type: 'string',
         },
       },
+      {
+        in: 'query',
+        name: 'timetableId',
+        required: false,
+        schema: {
+          description:
+            'Optional timetable ID to filter lessons to a single timetable.',
+          format: 'uuid',
+          type: 'string',
+        },
+      },
     ],
     responses: {
       200: {

@@ -1,0 +1,1 @@
+CREATE INDEX "cohort_timetable_mtm_timetable_id_idx" ON "cohort_timetable_mtm" USING btree ("timetable_id");

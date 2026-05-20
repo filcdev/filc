@@ -1,6 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import dayjs from 'dayjs';
 import { XMLParser } from 'fast-xml-parser';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -11,7 +10,6 @@ import type { SuccessResponse } from '#_types/globals';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
-import { getActiveTimetableId } from '#utils/timetable/active';
 import { importTimetableXML } from '#utils/timetable/imports';
 import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
@@ -75,18 +73,6 @@ export const importRoute = timetableFactory.createHandlers(
       });
     }
 
-    // Compute auto-expire params for the currently active timetable (if any).
-    // The actual DB update happens inside importTimetableXML's transaction so
-    // it is rolled back atomically if the import fails.
-    const activeId = await getActiveTimetableId();
-    const autoExpire =
-      activeId && validFrom
-        ? {
-            id: activeId,
-            validTo: dayjs(validFrom).subtract(1, 'day').format('YYYY-MM-DD'),
-          }
-        : undefined;
-
     const buffer = Buffer.from(await file.arrayBuffer());
     const decoded = decode(buffer, 'win1250');
     const cleaned = decoded.replaceAll('Period=""', '');
@@ -107,7 +93,6 @@ export const importRoute = timetableFactory.createHandlers(
       const data = z.parse(timetableExportRootSchema, input);
 
       await importTimetableXML(data, {
-        ...(autoExpire && { autoExpire }),
         name,
         validFrom: validFrom.toISOString(),
         validTo: validTo?.toISOString() ?? null,
