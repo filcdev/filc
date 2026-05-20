@@ -107,7 +107,7 @@ export const importRoute = timetableFactory.createHandlers(
       const data = z.parse(timetableExportRootSchema, input);
 
       await importTimetableXML(data, {
-        autoExpire,
+        ...(autoExpire && { autoExpire }),
         name,
         validFrom: validFrom.toISOString(),
         validTo: validTo?.toISOString() ?? null,

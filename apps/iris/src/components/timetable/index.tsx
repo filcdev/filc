@@ -80,6 +80,7 @@ const fetchLessonsForSelection = async (
     class: () =>
       api.timetable.lessons.getForCohort[':cohortId'].$get({
         param: { cohortId: selectionId },
+        query: timetableId ? { timetableId } : {},
       }),
     classroom: () =>
       api.timetable.lessons.getForRoom[':classroomId'].$get({
