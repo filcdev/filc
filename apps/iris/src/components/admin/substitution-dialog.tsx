@@ -6,7 +6,7 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Save } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -98,13 +98,11 @@ export function SubstitutionDialog({
   const [selectedMissingTeacher, setSelectedMissingTeacher] =
     useState<string>('');
   const defaultValues = useMemo(() => initialState(item), [item]);
-  const parallelTeachersRef = useRef<Map<string, string>>(new Map());
-
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       const resolvedSubstituter = value.substituter?.startsWith('__merged__:')
-        ? (parallelTeachersRef.current.get(value.substituter) ?? null)
+        ? value.substituter.slice('__merged__:'.length)
         : value.substituter;
       await onSubmit({ ...value, substituter: resolvedSubstituter });
     },
@@ -193,12 +191,6 @@ export function SubstitutionDialog({
     }
     return [...seen.values()];
   }, [substituteCandidatesQuery.data, availableLessons, formLessonIds]);
-
-  useEffect(() => {
-    parallelTeachersRef.current = new Map(
-      parallelTeachers.map((pt) => [`__merged__:${pt.id}`, pt.id])
-    );
-  }, [parallelTeachers]);
 
   const substituteOptions = useMemo(() => {
     const candidates =
