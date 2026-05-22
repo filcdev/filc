@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { getLocalizedWeekdayName } from '@/utils/date-locale';
+import { getDayOrder, getLocalizedWeekdayName } from '@/utils/date-locale';
 import type {
   DayColumn,
   FilterType,
@@ -87,11 +87,11 @@ const processLesson = (
 ) => {
   const dayName = lesson.day?.name ?? '';
   const dayShort = lesson.day?.short;
-  const dayOrder = lesson.day?.days?.[0]
-    ? Number.parseInt(lesson.day.days[0], 10)
-    : 999;
 
-  // Track day with lowest sort order
+  // Normalise to the 0-6 Mon–Sun scale used by getDayOrder so the sort order
+  // is consistent with WEEKDAY_STUBS regardless of the backend's raw index.
+  const dayOrder = getDayOrder(dayName, dayShort);
+
   const currentDay = dayMap.get(dayName);
   if (!currentDay || currentDay.sortOrder > dayOrder) {
     dayMap.set(dayName, { shortName: dayShort, sortOrder: dayOrder });
@@ -120,36 +120,58 @@ const processLesson = (
   grid.set(key, cell);
 };
 
+/**
+ * Canonical Mon–Fri stubs — sortOrders here are on the same 0-6 scale as
+ * getDayOrder (0 = Monday … 6 = Sunday), matching what processLesson stores.
+ */
+const WEEKDAY_STUBS = [
+  { dayName: 'Monday', dayShort: 'Mon', sortOrder: 0 },
+  { dayName: 'Tuesday', dayShort: 'Tue', sortOrder: 1 },
+  { dayName: 'Wednesday', dayShort: 'Wed', sortOrder: 2 },
+  { dayName: 'Thursday', dayShort: 'Thu', sortOrder: 3 },
+  { dayName: 'Friday', dayShort: 'Fri', sortOrder: 4 },
+] as const;
+
 /** Build view model from lessons array */
 export const buildViewModel = (
   lessons: LessonItem[],
   language: string | undefined
 ): TimetableViewModel => {
-  if (!lessons.length) {
-    return { days: [], grid: new Map(), timeSlots: [] };
-  }
-
   // Collect unique days and time slots
   const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
   const timeMap = new Map<string, { start: dayjs.Dayjs; end: dayjs.Dayjs }>();
   const grid = new Map<string, { lessons: LessonItem[] }>();
 
-  // Process each lesson
   for (const lesson of lessons) {
     processLesson(lesson, dayMap, timeMap, grid);
   }
 
-  // Build sorted arrays
-  const days: DayColumn[] = Array.from(dayMap.entries())
-    .map(([name, dayMeta]) => ({
+  // Build day columns from lessons
+  const days: DayColumn[] = Array.from(dayMap.entries()).map(
+    ([name, dayMeta]) => ({
       key: name,
       label: getLocalizedWeekdayName(name, dayMeta.shortName, language, 'long'),
       sortOrder: dayMeta.sortOrder,
-    }))
-    .sort(
-      (a, b) =>
-        a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, language)
-    );
+    })
+  );
+
+  // Always show Mon–Fri: insert a synthetic column for any weekday that has
+  // no lessons, using the same 0-4 scale so deduplication is reliable.
+  const presentOrders = new Set(days.map((d) => d.sortOrder));
+  for (const { dayName, dayShort, sortOrder } of WEEKDAY_STUBS) {
+    if (!presentOrders.has(sortOrder)) {
+      days.push({
+        key: dayName,
+        label: getLocalizedWeekdayName(dayName, dayShort, language, 'long'),
+        sortOrder,
+      });
+    }
+  }
+
+  days.sort(
+    (a, b) =>
+      a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, language)
+  );
 
   const timeSlots = Array.from(timeMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
