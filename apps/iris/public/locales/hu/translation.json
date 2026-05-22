@@ -146,6 +146,7 @@
     "validToPlaceholder": "Befejező dátum kiválasztása",
     "validToDescription": "Opcionális. Hagyd üresen, ha az órarendnek nincs lejárati dátuma.",
     "statusLabel": "Állapot",
+    "noLessonsOnThisDay": "Nincs óra",
     "editTitle": "Órarend szerkesztése",
     "updateSuccess": "Órarend sikeresen frissítve",
     "updateError": "Nem sikerült frissíteni az órarendet",

@@ -151,7 +151,8 @@ export function FilterBar({
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
   const comboboxContentId = `${filterSelectId}-content`;
-  const selectWidthClassName = activeFilter === 'class' ? 'w-50' : 'w-60';
+  const selectWidthClassName =
+    activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {
@@ -199,13 +200,13 @@ export function FilterBar({
               size="sm"
               variant="outline"
             >
-              {selectedLabel}
+              <span className="truncate">{selectedLabel}</span>
               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           }
         />
         <PopoverContent
-          className={`${selectWidthClassName} p-0`}
+          className="w-[var(--radix-popper-anchor-width)] p-0"
           id={comboboxContentId}
         >
           <Command>
@@ -239,42 +240,72 @@ export function FilterBar({
   };
 
   return (
-    <div className="flex w-full max-w-6xl flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <ButtonGroup>
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      {/*
+        On mobile: two stacked rows.
+        On desktop (sm+): sm:contents makes this wrapper transparent to the
+        parent flex, so ButtonGroup + selects flow directly in the parent row.
+      */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        {/* Mobile row 1: filter toggles + print icon */}
+        <div className="flex items-center gap-2">
+          <ButtonGroup>
+            <Button
+              disabled={activeFilter === 'class'}
+              onClick={() => onFilterChange('class')}
+              variant="outline"
+            >
+              <GraduationCap /> {t('timetable.filterByClass')}
+            </Button>
+            <Button
+              disabled={activeFilter === 'teacher'}
+              onClick={() => onFilterChange('teacher')}
+              variant="outline"
+            >
+              <UserRound /> {t('timetable.filterByTeacher')}
+            </Button>
+            <Button
+              disabled={activeFilter === 'classroom'}
+              onClick={() => onFilterChange('classroom')}
+              variant="outline"
+            >
+              <Building2 /> {t('timetable.filterByClassroom')}
+            </Button>
+          </ButtonGroup>
+          {/* Print icon — mobile only, pushed to the right */}
           <Button
-            disabled={activeFilter === 'class'}
-            onClick={() => onFilterChange('class')}
+            className="ml-auto sm:hidden"
+            disabled={disabled}
+            onClick={onPrint}
+            size="sm"
             variant="outline"
           >
-            <GraduationCap /> {t('timetable.filterByClass')}
+            <Printer />
           </Button>
-          <Button
-            disabled={activeFilter === 'teacher'}
-            onClick={() => onFilterChange('teacher')}
-            variant="outline"
-          >
-            <UserRound /> {t('timetable.filterByTeacher')}
-          </Button>
-          <Button
-            disabled={activeFilter === 'classroom'}
-            onClick={() => onFilterChange('classroom')}
-            variant="outline"
-          >
-            <Building2 /> {t('timetable.filterByClassroom')}
-          </Button>
-          {renderSelect()}
-        </ButtonGroup>
-        <TimetableSelector
-          loading={!timetables}
-          onSelect={onSelectTimetable}
-          selectedId={selectedTimetableId}
-          timetables={timetables}
-        />
+        </div>
+
+        {/* Mobile row 2 / desktop inline: cohort select + timetable select */}
+        <div className="flex items-center gap-2 sm:contents">
+          <div className="min-w-0">{renderSelect()}</div>
+          <TimetableSelector
+            loading={!timetables}
+            onSelect={onSelectTimetable}
+            selectedId={selectedTimetableId}
+            timetables={timetables}
+          />
+        </div>
       </div>
 
-      <Button disabled={disabled} onClick={onPrint} variant="outline">
-        <Printer /> {t('timetable.printPdf')}
+      {/* Print with label — desktop only, sits at the far right */}
+      <Button
+        className="hidden sm:flex"
+        disabled={disabled}
+        onClick={onPrint}
+        size="sm"
+        variant="outline"
+      >
+        <Printer />
+        {t('timetable.printPdf')}
       </Button>
     </div>
   );

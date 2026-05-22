@@ -441,47 +441,49 @@ export function TimetableView() {
     lessonsQuery.error;
 
   return (
-    <div className="flex grow flex-col items-center gap-4 p-4">
-      <FilterBar
-        activeFilter={activeFilter}
-        classrooms={classroomsQuery.data}
-        cohorts={cohortsQuery.data}
-        disabled={isLoading}
-        onFilterChange={setActiveFilter}
-        onPrint={() => setPrintDialogOpen(true)}
-        onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
-        onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
-        onSelectTeacher={(id) => setSelections((s) => ({ ...s, teacher: id }))}
-        onSelectTimetable={setSelectedTimetableId}
-        selectedByClass={selections.class}
-        selectedByRoom={selections.classroom}
-        selectedByTeacher={selections.teacher}
-        selectedTimetableId={selectedTimetableId}
-        selectorLoading={selectorLoading}
-        teachers={teachersQuery.data}
-        timetables={timetablesQuery.data}
-      />
+    <div className="flex grow flex-col items-center p-4">
+      <div className="flex w-full max-w-7xl flex-col gap-4">
+        <FilterBar
+          activeFilter={activeFilter}
+          classrooms={classroomsQuery.data}
+          cohorts={cohortsQuery.data}
+          disabled={isLoading}
+          onFilterChange={setActiveFilter}
+          onPrint={() => setPrintDialogOpen(true)}
+          onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
+          onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
+          onSelectTeacher={(id) =>
+            setSelections((s) => ({ ...s, teacher: id }))
+          }
+          onSelectTimetable={setSelectedTimetableId}
+          selectedByClass={selections.class}
+          selectedByRoom={selections.classroom}
+          selectedByTeacher={selections.teacher}
+          selectedTimetableId={selectedTimetableId}
+          selectorLoading={selectorLoading}
+          teachers={teachersQuery.data}
+          timetables={timetablesQuery.data}
+        />
 
-      <PrintDialog
-        onGenerate={handleGeneratePdf}
-        onOpenChange={setPrintDialogOpen}
-        open={printDialogOpen}
-      />
+        <PrintDialog
+          onGenerate={handleGeneratePdf}
+          onOpenChange={setPrintDialogOpen}
+          open={printDialogOpen}
+        />
 
-      {hasError && (
-        <div className="text-red-500">Failed to load timetable.</div>
-      )}
+        {hasError && (
+          <div className="text-red-500">Failed to load timetable.</div>
+        )}
 
-      {isLoading ? (
-        <div className="w-full max-w-7xl">
-          <Skeleton className="mb-2 h-8 w-64" />
-          <Skeleton className="h-130 w-full" />
-        </div>
-      ) : (
-        <div className="w-full max-w-7xl">
+        {isLoading ? (
+          <div className="w-full">
+            <Skeleton className="mb-2 h-8 w-64" />
+            <Skeleton className="h-130 w-full" />
+          </div>
+        ) : (
           <TimetableGrid model={model} />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

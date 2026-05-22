@@ -149,6 +149,7 @@
     },
     "time": "Time",
     "teacherFallback": "Teacher",
+    "noLessonsOnThisDay": "No lessons",
     "selectTimetable": "Select timetable",
     "manage": "Manage Timetables",
     "manageDescription": "View, edit validity dates, and delete imported timetables.",
