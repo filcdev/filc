@@ -20,8 +20,8 @@ export function TimetableGrid({ model }: TimetableGridProps) {
             (day) =>
               !timeSlots.some(
                 (slot) =>
-                  (grid.get(`${day.key}-${slot.start.format('HH:mm')}`)
-                    ?.lessons.length ?? 0) > 0
+                  (grid.get(`${day.key}-${slot.start.format('HH:mm')}`)?.lessons
+                    .length ?? 0) > 0
               )
           )
           .map((day) => day.key)
@@ -96,7 +96,7 @@ export function TimetableGrid({ model }: TimetableGridProps) {
                 </div>
 
                 {/* Day Cells */}
-                {/** biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <explanation> */}
+                {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: multiple render branches kept inline */}
                 {days.map((day, i) => {
                   const cellKey = `${day.key}-${slot.start.format('HH:mm')}`;
                   const lessons = grid.get(cellKey)?.lessons ?? [];

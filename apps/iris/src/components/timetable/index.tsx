@@ -452,7 +452,9 @@ export function TimetableView() {
           onPrint={() => setPrintDialogOpen(true)}
           onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
           onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
-          onSelectTeacher={(id) => setSelections((s) => ({ ...s, teacher: id }))}
+          onSelectTeacher={(id) =>
+            setSelections((s) => ({ ...s, teacher: id }))
+          }
           onSelectTimetable={setSelectedTimetableId}
           selectedByClass={selections.class}
           selectedByRoom={selections.classroom}

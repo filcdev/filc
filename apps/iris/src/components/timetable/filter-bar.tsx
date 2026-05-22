@@ -151,7 +151,8 @@ export function FilterBar({
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
   const comboboxContentId = `${filterSelectId}-content`;
-  const selectWidthClassName = activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
+  const selectWidthClassName =
+    activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {
@@ -285,9 +286,7 @@ export function FilterBar({
 
         {/* Mobile row 2 / desktop inline: cohort select + timetable select */}
         <div className="flex items-center gap-2 sm:contents">
-          <div className="min-w-0">
-            {renderSelect()}
-          </div>
+          <div className="min-w-0">{renderSelect()}</div>
           <TimetableSelector
             loading={!timetables}
             onSelect={onSelectTimetable}
