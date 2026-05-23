@@ -6,7 +6,7 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Save } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -98,15 +98,12 @@ export function SubstitutionDialog({
   const [selectedMissingTeacher, setSelectedMissingTeacher] =
     useState<string>('');
   const defaultValues = useMemo(() => initialState(item), [item]);
-  const parallelTeacherRef = useRef<{ id: string; name: string } | null>(null);
-
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
-      const resolvedSubstituter =
-        value.substituter === '__merged__'
-          ? (parallelTeacherRef.current?.id ?? null)
-          : value.substituter;
+      const resolvedSubstituter = value.substituter?.startsWith('__merged__:')
+        ? value.substituter.slice('__merged__:'.length)
+        : value.substituter;
       await onSubmit({ ...value, substituter: resolvedSubstituter });
     },
   });
@@ -173,17 +170,27 @@ export function SubstitutionDialog({
       []) as TeacherLesson[];
   }, [selectedMissingTeacher, substituteCandidatesQuery.data]);
 
-  const parallelTeacher = useMemo(() => {
-    const lessons = substituteCandidatesQuery.data?.parallelLessons ?? [];
-    const firstTeacher = lessons[0]?.teachers[0];
-    return firstTeacher ?? null;
-  }, [substituteCandidatesQuery.data]);
-
-  useEffect(() => {
-    parallelTeacherRef.current = parallelTeacher
-      ? { id: parallelTeacher.id, name: parallelTeacher.name }
-      : null;
-  }, [parallelTeacher]);
+  const parallelTeachers = useMemo(() => {
+    const parallelLessons =
+      substituteCandidatesQuery.data?.parallelLessons ?? [];
+    const selectedSubjectIds = new Set(
+      availableLessons
+        .filter((l) => formLessonIds.includes(l.id) && l.subject)
+        .map((l) => l.subject?.id)
+    );
+    const seen = new Map<string, { id: string; name: string }>();
+    for (const lesson of parallelLessons) {
+      if (!(lesson.subject && selectedSubjectIds.has(lesson.subject.id))) {
+        continue;
+      }
+      for (const teacher of lesson.teachers ?? []) {
+        if (!seen.has(teacher.id)) {
+          seen.set(teacher.id, { id: teacher.id, name: teacher.name });
+        }
+      }
+    }
+    return [...seen.values()];
+  }, [substituteCandidatesQuery.data, availableLessons, formLessonIds]);
 
   const substituteOptions = useMemo(() => {
     const candidates =
@@ -333,14 +340,10 @@ export function SubstitutionDialog({
                     label: t('substitution.cancelled'),
                     value: '__none__',
                   },
-                  ...(parallelTeacher
-                    ? [
-                        {
-                          label: t('substitution.merged'),
-                          value: '__merged__',
-                        },
-                      ]
-                    : []),
+                  ...parallelTeachers.map((teacher) => ({
+                    label: `${t('substitution.merged')} - ${teacher.name}`,
+                    value: `__merged__:${teacher.id}`,
+                  })),
                   ...substituteOptions,
                 ]}
                 placeholder={t('substitution.substituteTeacher')}
