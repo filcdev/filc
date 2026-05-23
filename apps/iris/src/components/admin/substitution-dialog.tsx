@@ -183,7 +183,7 @@ export function SubstitutionDialog({
       if (!(lesson.subject && selectedSubjectIds.has(lesson.subject.id))) {
         continue;
       }
-      for (const teacher of lesson.teachers) {
+      for (const teacher of lesson.teachers ?? []) {
         if (!seen.has(teacher.id)) {
           seen.set(teacher.id, { id: teacher.id, name: teacher.name });
         }
