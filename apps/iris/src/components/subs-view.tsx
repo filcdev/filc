@@ -8,7 +8,7 @@ import {
   GraduationCap,
   UserRound,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NewsPanel } from '@/components/news-panel';
 import type {
@@ -45,7 +45,6 @@ type SubstitutionsResponse = InferResponseType<
 >;
 
 type Subs = NonNullable<SubstitutionsResponse['data']>[number];
-type SubLesson = NonNullable<Subs['lessons'][number]>;
 
 type MovedLessonApiResponse = InferResponseType<
   typeof api.timetable.movedLessons.$get
@@ -85,7 +84,7 @@ const groupMovedLessonsByDate = (data: MovedLessonItem[]) =>
     {} as Record<string, MovedLessonItem[]>
   );
 
-// ─── Filter helpers ───────────────────────────────────────────────────────────
+// Filter helpers
 
 const teacherLabel = (teacher: TeacherItem, fallback: string): string =>
   `${teacher.firstName} ${teacher.lastName}`.trim() || fallback;
@@ -187,7 +186,7 @@ const getSelectorLoading = (
 };
 
 const lessonMatchesFilter = (
-  lesson: SubLesson,
+  lesson: NonNullable<Subs['lessons'][number]>,
   activeFilter: FilterType,
   selectionId: string,
   cohorts: CohortItem[] | undefined
@@ -214,7 +213,6 @@ const filterSubs = (
     return data;
   }
   return data.filter((sub) => {
-    // For teacher filter: also match the substitute teacher on the sub
     if (activeFilter === 'teacher' && sub.teacher?.id === selectionId) {
       return true;
     }
@@ -238,7 +236,16 @@ const filterMovedLessons = (
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
 
-// ─── SubsFilterBar ────────────────────────────────────────────────────────────
+const getCohortsForDate = (subs: Subs[]): string[] =>
+  [
+    ...new Set(
+      subs.flatMap((sub) =>
+        sub.lessons.flatMap((lesson) => lesson?.cohorts ?? [])
+      )
+    ),
+  ].sort();
+
+// SubsFilterBar
 
 function SubsFilterBar({
   activeFilter,
@@ -382,13 +389,12 @@ function SubsFilterBar({
   );
 }
 
-// ─── SubstitutionView ─────────────────────────────────────────────────────────
+// SubstitutionView
 
 export function SubstitutionView() {
-  const { data: session, isPending } = authClient.useSession();
+  const { isPending } = authClient.useSession();
   const { t } = useTranslation();
 
-  // Filter state
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
   const [selections, setSelections] = useState<SelectionsType>({
     class: null,
@@ -396,7 +402,6 @@ export function SubstitutionView() {
     teacher: null,
   });
 
-  // All timetables — used as fallback when latestValid returns nothing
   const timetablesQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: async () => {
@@ -409,7 +414,6 @@ export function SubstitutionView() {
     queryKey: queryKeys.timetables(),
   });
 
-  // Latest valid timetable (preferred source for cohort scoping)
   const latestValidTimetableQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: async () => {
@@ -424,11 +428,9 @@ export function SubstitutionView() {
     queryKey: ['timetables', 'latestValid'] as const,
   });
 
-  // Use latestValid ID; fall back to first available timetable
   const latestTimetableId =
     latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
 
-  // Cohorts for the resolved timetable
   const cohortsQuery = useQuery({
     ...QUERY_OPTIONS,
     enabled: !!latestTimetableId,
@@ -449,7 +451,6 @@ export function SubstitutionView() {
     queryKey: queryKeys.timetable.cohorts(latestTimetableId),
   });
 
-  // All teachers
   const teachersQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: async () => {
@@ -462,7 +463,6 @@ export function SubstitutionView() {
     queryKey: queryKeys.teachers(),
   });
 
-  // All classrooms
   const classroomsQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: async () => {
@@ -475,24 +475,6 @@ export function SubstitutionView() {
     queryKey: queryKeys.classrooms(),
   });
 
-  // Default to user's cohort (or first available) once cohort data is loaded
-  useEffect(() => {
-    if (
-      selections.class ||
-      !cohortsQuery.data ||
-      cohortsQuery.data.length === 0
-    ) {
-      return;
-    }
-    const userClassId = session?.user?.cohortId ?? null;
-    const match = cohortsQuery.data.find((c) => c.id === userClassId)?.id;
-    setSelections((s) => ({
-      ...s,
-      class: match ?? cohortsQuery.data?.[0]?.id ?? null,
-    }));
-  }, [cohortsQuery.data, session, selections.class]);
-
-  // Substitutions query
   const substitutionsQuery = useQuery({
     enabled: !isPending,
     queryFn: async () => {
@@ -505,7 +487,6 @@ export function SubstitutionView() {
     queryKey: queryKeys.substitutions(),
   });
 
-  // Moved lessons query
   const movedLessonsQuery = useQuery({
     enabled: !isPending,
     queryFn: async () => {
@@ -543,7 +524,6 @@ export function SubstitutionView() {
   const groupedData = groupByDate(filteredSubs);
   const groupedMovedLessons = groupMovedLessonsByDate(filteredMovedLessons);
 
-  // Merge all unique dates from both substitutions and moved lessons
   const allDates = Array.from(
     new Set([...Object.keys(groupedData), ...Object.keys(groupedMovedLessons)])
   ).sort((a, b) => a.localeCompare(b));
@@ -561,6 +541,40 @@ export function SubstitutionView() {
     teachersQuery.isLoading,
     classroomsQuery.isLoading
   );
+
+  const renderDateCards = (date: string) => {
+    const dateSubs = groupedData[date] ?? [];
+    const dateMovedLessons = groupedMovedLessons[date] ?? [];
+    const cohorts = getCohortsForDate(dateSubs);
+
+    if (cohorts.length === 0) {
+      return [
+        <SubsV data={dateSubs} key={date} movedLessons={dateMovedLessons} />,
+      ];
+    }
+
+    const cohortCards = cohorts.map((cohort) => (
+      <SubsV
+        cohortFilter={cohort}
+        data={dateSubs.filter((sub) =>
+          sub.lessons.some((l) => l?.cohorts.includes(cohort))
+        )}
+        key={`${date}-${cohort}`}
+      />
+    ));
+
+    const movedCard =
+      dateMovedLessons.length > 0 ? (
+        <SubsV
+          data={[]}
+          date={date}
+          key={`${date}-moved`}
+          movedLessons={dateMovedLessons}
+        />
+      ) : null;
+
+    return [...cohortCards, movedCard].filter(Boolean);
+  };
 
   return (
     <div className="flex grow flex-col items-center gap-6 p-6">
@@ -612,13 +626,7 @@ export function SubstitutionView() {
       )}
       <div className="w-full max-w-5xl space-y-4">
         {!(isLoading || hasError) && hasFutureSubstitutions
-          ? allDates.map((date) => (
-              <SubsV
-                data={groupedData[date] || []}
-                key={date}
-                movedLessons={groupedMovedLessons[date] || []}
-              />
-            ))
+          ? allDates.flatMap((date) => renderDateCards(date))
           : !(isLoading || hasError) && (
               <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">
                 <div className="flex flex-col items-center gap-2">
