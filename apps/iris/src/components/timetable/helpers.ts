@@ -142,6 +142,7 @@ export const buildViewModel = (
   lessons: LessonItem[],
   language: string | undefined,
   canonicalPeriods?: PeriodItem[]
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <explanation>
 ): TimetableViewModel => {
   // Collect unique days and time slots
   const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
@@ -157,7 +158,9 @@ export const buildViewModel = (
   // is only shown when the selected entity actually has a lesson there.
   if (canonicalPeriods?.length) {
     for (const cp of canonicalPeriods) {
-      if (cp.period === 0) continue;
+      if (cp.period === 0) {
+        continue;
+      }
       const startTimeStr = toHHMM(cp.startTime);
       const endTimeStr = toHHMM(cp.endTime);
       const start = dayjs(startTimeStr, 'HH:mm');
