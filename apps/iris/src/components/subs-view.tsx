@@ -391,7 +391,7 @@ function SubsFilterBar({
         {renderSelect()}
         {selectedValue && onClear && (
           <Button
-            aria-label="Clear filter"
+            aria-label={t('timetable.clearFilter')}
             className="h-9 w-9 p-0"
             onClick={onClear}
             size="sm"
@@ -427,7 +427,7 @@ export function SubstitutionView() {
       }
       return res.data ?? [];
     },
-    queryKey: queryKeys.timetables(),
+    queryKey: queryKeys.timetables.all(),
   });
 
   const latestValidTimetableQuery = useQuery({
@@ -441,7 +441,7 @@ export function SubstitutionView() {
       }
       return res.data ?? null;
     },
-    queryKey: ['timetables', 'latestValid'] as const,
+    queryKey: queryKeys.timetables.latestValid(),
   });
 
   const latestTimetableId =

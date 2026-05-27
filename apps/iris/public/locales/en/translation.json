@@ -182,7 +182,8 @@
       "current": "Current",
       "past": "Past",
       "upcoming": "Upcoming"
-    }
+    },
+    "clearFilter": "Clear Filter"
   },
   "substitution": {
     "title": "Substitutions",

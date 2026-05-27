@@ -131,7 +131,7 @@ export function TimetableView() {
   const timetablesQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: fetchTimetables,
-    queryKey: queryKeys.timetables(),
+    queryKey: queryKeys.timetables.all(),
   });
 
   // Compute the latest valid timetable id from the list

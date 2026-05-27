@@ -197,6 +197,7 @@ export function SubstitutionDialog({
       substituteCandidatesQuery.data?.substituteCandidates ?? [];
 
     return candidates.map((candidate) => ({
+      isNearby: candidate.hasLessonBeforeOrAfter,
       label: `${candidate.teacher.firstName} ${candidate.teacher.lastName} (${candidate.teacher.short})${
         candidate.hasLessonBeforeOrAfter
           ? ` - ${t('substitution.nearbyTeacherTag')}`
@@ -208,12 +209,10 @@ export function SubstitutionDialog({
 
   const sortedSubstituteOptions = useMemo(() => {
     return [...substituteOptions].sort((a, b) => {
-      const aIsH1 = a.label.includes('H1');
-      const bIsH1 = b.label.includes('H1');
-      if (aIsH1 && !bIsH1) {
+      if (a.isNearby && !b.isNearby) {
         return -1;
       }
-      if (!aIsH1 && bIsH1) {
+      if (!a.isNearby && b.isNearby) {
         return 1;
       }
       return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });

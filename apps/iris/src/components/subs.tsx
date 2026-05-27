@@ -264,14 +264,14 @@ export function SubsV({
     return null;
   }
 
-  // Badge: count cohort-filtered lesson rows + future moved lessons
   const filteredLessonCount = cohortFilter
     ? data.flatMap((sub) =>
         sub.lessons.filter(
           (l): l is Lesson => !!l?.cohorts.includes(cohortFilter)
         )
       ).length
-    : data.filter((sub) => sub.lessons.some((l) => l !== null)).length;
+    : data.flatMap((sub) => sub.lessons.filter((l): l is Lesson => l !== null))
+        .length;
 
   const futureMovedCount = movedLessons.filter(
     (ml) => new Date(ml.movedLesson.date) >= today
