@@ -316,7 +316,10 @@ export function SubstitutionDialog({
                   !substituteCandidatesQuery.isLoading &&
                   availableLessons.length > 0 &&
                   [...availableLessons]
-                    .sort((a, b) => (a.period?.period ?? 0) - (b.period?.period ?? 0))
+                    .sort(
+                      (a, b) =>
+                        (a.period?.period ?? 0) - (b.period?.period ?? 0)
+                    )
                     .map((lesson) => (
                       <label
                         className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
