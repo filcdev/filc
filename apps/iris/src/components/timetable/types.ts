@@ -35,6 +35,11 @@ export type LessonsResponse = InferResponseType<
 >;
 export type LessonItem = NonNullable<LessonsResponse['data']>[number];
 
+export type PeriodsResponse = InferResponseType<
+  (typeof api.timetable.periods.getAll)['$get']
+>;
+export type PeriodItem = NonNullable<PeriodsResponse['data']>[number];
+
 export type DayColumn = {
   key: string;
   label: string;

@@ -5,6 +5,7 @@ import type {
   DayColumn,
   FilterType,
   LessonItem,
+  PeriodItem,
   TimetableViewModel,
 } from './types';
 
@@ -82,14 +83,17 @@ export const formatRooms = (rooms: LessonItem['classrooms']): string =>
 const processLesson = (
   lesson: LessonItem,
   dayMap: Map<string, { sortOrder: number; shortName?: string }>,
-  timeMap: Map<string, { start: dayjs.Dayjs; end: dayjs.Dayjs }>,
+  timeMap: Map<
+    string,
+    { start: dayjs.Dayjs; end: dayjs.Dayjs; period: number }
+  >,
   grid: Map<string, { lessons: LessonItem[] }>
 ) => {
   const dayName = lesson.day?.name ?? '';
   const dayShort = lesson.day?.short;
 
-  // Normalise to the 0-6 Mon–Sun scale used by getDayOrder so the sort order
-  // is consistent with WEEKDAY_STUBS regardless of the backend's raw index.
+  // Normalise to the 0-6 Mon-Sun scale used by getDayOrder so the sort order
+  // is consistent with WEEKDAY_STUBS regardless of the backend raw index.
   const dayOrder = getDayOrder(dayName, dayShort);
 
   const currentDay = dayMap.get(dayName);
@@ -100,6 +104,7 @@ const processLesson = (
   // Parse start and end times from lesson period
   const startTimeStr = toHHMM(lesson.period?.startTime);
   const endTimeStr = toHHMM(lesson.period?.endTime);
+  const periodNumber = lesson.period?.period ?? 0;
 
   const start = dayjs(startTimeStr, 'HH:mm');
   const end =
@@ -107,10 +112,10 @@ const processLesson = (
       ? dayjs(endTimeStr, 'HH:mm')
       : start.add(45, 'minute');
 
-  // Store time slot with actual end time
+  // Store time slot with actual end time and real period number
   const existing = timeMap.get(startTimeStr);
   if (!existing || end.isAfter(existing.end)) {
-    timeMap.set(startTimeStr, { end, start });
+    timeMap.set(startTimeStr, { end, period: periodNumber, start });
   }
 
   // Group lessons by day-time cell
@@ -121,8 +126,8 @@ const processLesson = (
 };
 
 /**
- * Canonical Mon–Fri stubs — sortOrders here are on the same 0-6 scale as
- * getDayOrder (0 = Monday … 6 = Sunday), matching what processLesson stores.
+ * Canonical Mon-Fri stubs - sortOrders here are on the same 0-6 scale as
+ * getDayOrder (0 = Monday ... 6 = Sunday), matching what processLesson stores.
  */
 const WEEKDAY_STUBS = [
   { dayName: 'Monday', dayShort: 'Mon', sortOrder: 0 },
@@ -135,12 +140,37 @@ const WEEKDAY_STUBS = [
 /** Build view model from lessons array */
 export const buildViewModel = (
   lessons: LessonItem[],
-  language: string | undefined
+  language: string | undefined,
+  canonicalPeriods?: PeriodItem[]
 ): TimetableViewModel => {
   // Collect unique days and time slots
   const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
-  const timeMap = new Map<string, { start: dayjs.Dayjs; end: dayjs.Dayjs }>();
+  const timeMap = new Map<
+    string,
+    { start: dayjs.Dayjs; end: dayjs.Dayjs; period: number }
+  >();
   const grid = new Map<string, { lessons: LessonItem[] }>();
+
+  // Pre-populate timeMap with canonical period definitions (period >= 1) so that
+  // regular periods without lessons for the current selection still appear as
+  // empty rows. Period 0 ("nulladik óra") is intentionally excluded here — it
+  // is only shown when the selected entity actually has a lesson there.
+  if (canonicalPeriods?.length) {
+    for (const cp of canonicalPeriods) {
+      if (cp.period === 0) continue;
+      const startTimeStr = toHHMM(cp.startTime);
+      const endTimeStr = toHHMM(cp.endTime);
+      const start = dayjs(startTimeStr, 'HH:mm');
+      const end =
+        endTimeStr && endTimeStr !== '00:00'
+          ? dayjs(endTimeStr, 'HH:mm')
+          : start.add(45, 'minute');
+      // Only add if not already present - lessons will override via processLesson
+      if (!timeMap.has(startTimeStr)) {
+        timeMap.set(startTimeStr, { end, period: cp.period, start });
+      }
+    }
+  }
 
   for (const lesson of lessons) {
     processLesson(lesson, dayMap, timeMap, grid);
@@ -155,7 +185,7 @@ export const buildViewModel = (
     })
   );
 
-  // Always show Mon–Fri: insert a synthetic column for any weekday that has
+  // Always show Mon-Fri: insert a synthetic column for any weekday that has
   // no lessons, using the same 0-4 scale so deduplication is reliable.
   const presentOrders = new Set(days.map((d) => d.sortOrder));
   for (const { dayName, dayShort, sortOrder } of WEEKDAY_STUBS) {
@@ -173,11 +203,13 @@ export const buildViewModel = (
       a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, language)
   );
 
+  // Use the actual period number from the DB (not the array index) so the
+  // label is correct even when early periods have no lessons.
   const timeSlots = Array.from(timeMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, times], index) => ({
+    .map(([, times]) => ({
       end: times.end,
-      index: index + 1,
+      index: times.period,
       start: times.start,
     }));
 
