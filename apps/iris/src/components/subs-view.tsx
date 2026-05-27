@@ -231,8 +231,11 @@ const filterMovedLessons = (
   activeFilter: FilterType,
   selectionId: string | null
 ): MovedLessonItem[] => {
-  if (activeFilter !== 'classroom' || !selectionId) {
+  if (!selectionId) {
     return data;
+  }
+  if (activeFilter !== 'classroom') {
+    return [];
   }
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
@@ -565,7 +568,12 @@ export function SubstitutionView() {
 
     if (cohorts.length === 0) {
       return [
-        <SubsV data={dateSubs} key={date} movedLessons={dateMovedLessons} />,
+        <SubsV
+          data={dateSubs}
+          date={date}
+          key={date}
+          movedLessons={dateMovedLessons}
+        />,
       ];
     }
 

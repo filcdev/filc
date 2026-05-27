@@ -37,6 +37,7 @@ export const getPeriodsForTimetable = timetableFactory.createHandlers(
         schema: {
           description:
             'Optional timetable id to scope periods to those used in that timetable.',
+          format: 'uuid',
           type: 'string',
         },
       },
