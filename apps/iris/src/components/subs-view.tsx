@@ -7,6 +7,7 @@ import {
   ChevronsUpDownIcon,
   GraduationCap,
   UserRound,
+  XIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -257,6 +258,7 @@ function SubsFilterBar({
   onSelectClass,
   onSelectTeacher,
   onSelectRoom,
+  onClear,
   selectorLoading,
 }: {
   activeFilter: FilterType;
@@ -268,6 +270,7 @@ function SubsFilterBar({
   onSelectClass: (value: string) => void;
   onSelectTeacher: (value: string) => void;
   onSelectRoom: (value: string) => void;
+  onClear?: () => void;
   selectorLoading: boolean;
 }) {
   const { t } = useTranslation();
@@ -384,7 +387,20 @@ function SubsFilterBar({
           <Building2 /> {t('timetable.filterByClassroom')}
         </Button>
       </ButtonGroup>
-      {renderSelect()}
+      <div className="flex items-center gap-1">
+        {renderSelect()}
+        {selectedValue && onClear && (
+          <Button
+            aria-label="Clear filter"
+            className="h-9 w-9 p-0"
+            onClick={onClear}
+            size="sm"
+            variant="ghost"
+          >
+            <XIcon className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -594,6 +610,11 @@ export function SubstitutionView() {
             activeFilter={activeFilter}
             classrooms={classroomsQuery.data}
             cohorts={cohortsQuery.data}
+            onClear={() =>
+              setSelections(
+                (s) => ({ ...s, [activeFilter]: null }) as SelectionsType
+              )
+            }
             onFilterChange={setActiveFilter}
             onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
             onSelectRoom={(id) =>
