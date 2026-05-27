@@ -315,22 +315,24 @@ export function SubstitutionDialog({
                 {selectedMissingTeacher &&
                   !substituteCandidatesQuery.isLoading &&
                   availableLessons.length > 0 &&
-                  availableLessons.map((lesson) => (
-                    <label
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                      htmlFor={`sub-lesson-${lesson.id}`}
-                      key={lesson.id}
-                    >
-                      <Checkbox
-                        checked={formLessonIds.includes(lesson.id)}
-                        id={`sub-lesson-${lesson.id}`}
-                        onCheckedChange={(checked) =>
-                          toggleLesson(lesson.id, !!checked)
-                        }
-                      />
-                      <span>{formatLessonLabel(lesson)}</span>
-                    </label>
-                  ))}
+                  [...availableLessons]
+                    .sort((a, b) => (a.period?.period ?? 0) - (b.period?.period ?? 0))
+                    .map((lesson) => (
+                      <label
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                        htmlFor={`sub-lesson-${lesson.id}`}
+                        key={lesson.id}
+                      >
+                        <Checkbox
+                          checked={formLessonIds.includes(lesson.id)}
+                          id={`sub-lesson-${lesson.id}`}
+                          onCheckedChange={(checked) =>
+                            toggleLesson(lesson.id, !!checked)
+                          }
+                        />
+                        <span>{formatLessonLabel(lesson)}</span>
+                      </label>
+                    ))}
               </div>
             </div>
 
