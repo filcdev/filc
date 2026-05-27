@@ -264,19 +264,6 @@ export function SubsV({
     return null;
   }
 
-  const filteredLessonCount = cohortFilter
-    ? data.flatMap((sub) =>
-        sub.lessons.filter(
-          (l): l is Lesson => !!l?.cohorts.includes(cohortFilter)
-        )
-      ).length
-    : data.flatMap((sub) => sub.lessons.filter((l): l is Lesson => l !== null))
-        .length;
-
-  const futureMovedCount = movedLessons.filter(
-    (ml) => new Date(ml.movedLesson.date) >= today
-  ).length;
-
   const lessonRows = LessonReturn(data, cohortFilter);
   const movedRows = MovedLessonReturn(movedLessons, lessonNameById);
 
@@ -302,9 +289,6 @@ export function SubsV({
               {t('substitution.affectedLessons')}
             </p>
           </div>
-          <Badge className="h-fit" variant="outline">
-            {filteredLessonCount + futureMovedCount}
-          </Badge>
         </div>
       </CardHeader>
       <CardContent>
