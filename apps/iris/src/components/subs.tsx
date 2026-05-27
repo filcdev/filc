@@ -271,15 +271,9 @@ export function SubsV({ data, movedLessons = [] }: TimetableProps) {
               {t('substitution.affectedLessons')}
             </p>
           </div>
-          <Badge className="h-fit" variant="outline">
-            {data.filter((sub) => sub.lessons.some((l) => l !== null)).length +
-              movedLessons.filter(
-                (ml) => new Date(ml.movedLesson.date) >= today
-              ).length}
-          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
+      <CardContent>
         <div className="overflow-x-auto rounded-lg border border-accent/20">
           <Table>
             <TableHeader>
