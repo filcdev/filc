@@ -214,11 +214,12 @@ function AnnouncementsPage() {
 
     return list;
   }, [
-    announcementsQuery.data, 
-    search, 
-    sortColumn, 
-    sortDirection, 
-    cohortsQuery.data, showPast
+    announcementsQuery.data,
+    search,
+    sortColumn,
+    sortDirection,
+    cohortsQuery.data,
+    showPast,
   ]);
 
   const handleSave = async (
