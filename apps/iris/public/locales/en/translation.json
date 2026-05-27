@@ -304,7 +304,8 @@
     "titlePlaceholder": "Announcement title",
     "contentPlaceholder": "Announcement content",
     "date": "Date",
-    "setDateRange": "Set date range"
+    "setDateRange": "Set date range",
+    "showPast": "Show past announcements"
   },
   "systemMessages": {
     "title": "System Messages",

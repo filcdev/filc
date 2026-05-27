@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -70,6 +71,7 @@ function AnnouncementsPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
     null
   );
+  const [showPast, setShowPast] = useState(false);
 
   const hasWritePermission = useHasPermission(
     'announcements:create',
@@ -80,7 +82,7 @@ function AnnouncementsPage() {
     queryFn: async (): Promise<AnnouncementItem[]> => {
       const res = await parseResponse(
         api.news.announcements.$get({
-          query: {},
+          query: { includeExpired: 'true' },
         })
       );
       if (!res.success) {
@@ -181,6 +183,12 @@ function AnnouncementsPage() {
 
   const filteredAnnouncements = useMemo(() => {
     let list = announcementsQuery.data ?? [];
+    const now = new Date();
+
+    if (!showPast) {
+      list = list.filter((ann) => new Date(ann.validUntil) >= now);
+    }
+
     const term = search.trim().toLowerCase();
 
     if (term) {
@@ -206,11 +214,11 @@ function AnnouncementsPage() {
 
     return list;
   }, [
-    announcementsQuery.data,
-    search,
-    sortColumn,
-    sortDirection,
-    cohortsQuery.data,
+    announcementsQuery.data, 
+    search, 
+    sortColumn, 
+    sortDirection, 
+    cohortsQuery.data, showPast
   ]);
 
   const handleSave = async (
@@ -280,6 +288,19 @@ function AnnouncementsPage() {
           placeholder={t('search')}
           value={search}
         />
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={showPast}
+            id="show-past"
+            onCheckedChange={(checked) => setShowPast(checked === true)}
+          />
+          <label
+            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor="show-past"
+          >
+            {t('announcements.showPast')}
+          </label>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <Button
             onClick={() => announcementsQuery.refetch()}
