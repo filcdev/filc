@@ -206,6 +206,20 @@ export function SubstitutionDialog({
     }));
   }, [substituteCandidatesQuery.data, t]);
 
+  const sortedSubstituteOptions = useMemo(() => {
+    return [...substituteOptions].sort((a, b) => {
+      const aIsH1 = a.label.includes('H1');
+      const bIsH1 = b.label.includes('H1');
+      if (aIsH1 && !bIsH1) {
+        return -1;
+      }
+      if (!aIsH1 && bIsH1) {
+        return 1;
+      }
+      return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
+    });
+  }, [substituteOptions]);
+
   const isCreate = !item;
 
   const isValid = !!formDate && formLessonIds.length > 0;
@@ -344,7 +358,7 @@ export function SubstitutionDialog({
                     label: `${t('substitution.merged')} - ${teacher.name}`,
                     value: `__merged__:${teacher.id}`,
                   })),
-                  ...substituteOptions,
+                  ...sortedSubstituteOptions,
                 ]}
                 placeholder={t('substitution.substituteTeacher')}
                 searchPlaceholder={t('search')}
