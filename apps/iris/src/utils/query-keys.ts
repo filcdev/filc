@@ -93,7 +93,10 @@ export const queryKeys = {
         teacherIds,
       ] as const,
   },
-  timetables: () => ['timetables'] as const,
+  timetables: {
+    all: () => ['timetables'] as const,
+    latestValid: () => ['timetables', 'latestValid'] as const,
+  },
   users: (page: number, search: string) => ['users', page, search] as const,
   usersAll: () => ['users'] as const,
 };

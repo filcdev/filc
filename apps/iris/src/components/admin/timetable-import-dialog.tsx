@@ -85,7 +85,7 @@ export function TimetableImportDialog({
         fileInputRef.current.value = '';
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
       queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
       onOpenChange(false);

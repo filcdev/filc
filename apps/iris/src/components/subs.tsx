@@ -16,6 +16,10 @@ import type { api } from '@/utils/hc';
 type TimetableProps = {
   data: Subs[];
   movedLessons?: MovedLessonItem[];
+  /** When set, only lessons for this cohort are shown in the table. */
+  cohortFilter?: string;
+  /** Explicit date string (ISO) used when `data` is empty (moved-lessons-only card). */
+  date?: string;
 };
 
 type SubstitutionsResponse = InferResponseType<
@@ -177,7 +181,7 @@ function MovedLessonRow({
   );
 }
 
-function LessonReturn(data: Subs[]) {
+function LessonReturn(data: Subs[], cohortFilter?: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -185,7 +189,10 @@ function LessonReturn(data: Subs[]) {
     .filter((sub) => new Date(sub.substitution.date) >= today)
     .flatMap((sub) =>
       sub.lessons
-        .filter((lesson) => lesson !== null)
+        .filter((lesson): lesson is Lesson => lesson !== null)
+        .filter(
+          (lesson) => !cohortFilter || lesson.cohorts.includes(cohortFilter)
+        )
         .map((lesson) => (
           <TableRow
             className="border-accent/10 transition-colors hover:bg-accent/5"
@@ -219,7 +226,12 @@ function MovedLessonReturn(
     ));
 }
 
-export function SubsV({ data, movedLessons = [] }: TimetableProps) {
+export function SubsV({
+  data,
+  movedLessons = [],
+  cohortFilter,
+  date: dateProp,
+}: TimetableProps) {
   const { i18n, t } = useTranslation();
 
   const lessonNameById = new Map<string, string>();
@@ -239,20 +251,21 @@ export function SubsV({ data, movedLessons = [] }: TimetableProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const hasFutureSubstitutions =
-    data &&
-    data.length > 0 &&
-    data[0]?.substitution.date &&
-    new Date(data[0].substitution.date) >= today;
+  // Prefer explicit date prop; fall back to first sub's date
+  const cardDate = dateProp ?? data[0]?.substitution.date;
 
-  if (!hasFutureSubstitutions) {
+  const hasContent =
+    !!cardDate &&
+    new Date(cardDate) >= today &&
+    (data.length > 0 ||
+      movedLessons.some((ml) => new Date(ml.movedLesson.date) >= today));
+
+  if (!hasContent) {
     return null;
   }
 
-  const firstSub = data[0];
-  if (!firstSub) {
-    return null;
-  }
+  const lessonRows = LessonReturn(data, cohortFilter);
+  const movedRows = MovedLessonReturn(movedLessons, lessonNameById);
 
   return (
     <Card className="w-full border-accent/50 bg-linear-to-br from-background to-accent/5 shadow-sm">
@@ -260,26 +273,25 @@ export function SubsV({ data, movedLessons = [] }: TimetableProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="font-semibold text-foreground text-lg">
-              {formatLocalizedDate(firstSub.substitution.date, i18n.language, {
+              {formatLocalizedDate(cardDate, i18n.language, {
                 day: '2-digit',
                 month: 'long',
                 weekday: 'long',
                 year: 'numeric',
               })}
             </CardTitle>
+            {cohortFilter && (
+              <Badge className="mt-1 w-fit" variant="secondary">
+                {cohortFilter}
+              </Badge>
+            )}
             <p className="mt-1 text-muted-foreground text-sm">
               {t('substitution.affectedLessons')}
             </p>
           </div>
-          <Badge className="h-fit" variant="outline">
-            {data.filter((sub) => sub.lessons.some((l) => l !== null)).length +
-              movedLessons.filter(
-                (ml) => new Date(ml.movedLesson.date) >= today
-              ).length}
-          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
+      <CardContent>
         <div className="overflow-x-auto rounded-lg border border-accent/20">
           <Table>
             <TableHeader>
@@ -305,11 +317,10 @@ export function SubsV({ data, movedLessons = [] }: TimetableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {LessonReturn(data).length > 0 ||
-              MovedLessonReturn(movedLessons, lessonNameById).length > 0 ? (
+              {lessonRows.length > 0 || movedRows.length > 0 ? (
                 <>
-                  {LessonReturn(data)}
-                  {MovedLessonReturn(movedLessons, lessonNameById)}
+                  {lessonRows}
+                  {movedRows}
                 </>
               ) : (
                 <TableRow>

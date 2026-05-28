@@ -157,7 +157,7 @@ function TimetableManagePage() {
       }
       return (res.data ?? []) as TimetableRow[];
     },
-    queryKey: queryKeys.timetables(),
+    queryKey: queryKeys.timetables.all(),
   });
 
   const previewQuery = useQuery({
@@ -205,7 +205,7 @@ function TimetableManagePage() {
       toast.success(t('timetable.updateSuccess'));
       setEditDialogOpen(false);
       setSelectedItem(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
     },
   });
 
@@ -226,7 +226,7 @@ function TimetableManagePage() {
       toast.success(t('timetable.deleteSuccess'));
       setDeleteDialogOpen(false);
       setItemToDelete(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
       queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
     },
