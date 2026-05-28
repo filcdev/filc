@@ -201,7 +201,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
 
     setLanguage(value);
-    void i18n.changeLanguage(value);
+    i18n.changeLanguage(value).catch(() => {
+      toast.error(t('preferences.languageChangeError'));
+    });
     setCookie('filc.language', value, { sameSite: 'lax' });
     if (typeof document !== 'undefined') {
       document.documentElement.lang = value;

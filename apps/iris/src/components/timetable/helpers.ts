@@ -142,7 +142,7 @@ export const buildViewModel = (
   lessons: LessonItem[],
   language: string | undefined,
   canonicalPeriods?: PeriodItem[]
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <explanation>
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: explanation
 ): TimetableViewModel => {
   // Collect unique days and time slots
   const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
