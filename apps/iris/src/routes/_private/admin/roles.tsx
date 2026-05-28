@@ -38,10 +38,10 @@ function AdminRolesPage() {
 
   const filteredRoles = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return allRoles;
-    return allRoles.filter((role) =>
-      role.name.toLowerCase().includes(term)
-    );
+    if (!term) {
+      return allRoles;
+    }
+    return allRoles.filter((role) => role.name.toLowerCase().includes(term));
   }, [allRoles, search]);
 
   const stats = useMemo(

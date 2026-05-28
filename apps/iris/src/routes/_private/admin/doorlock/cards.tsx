@@ -6,12 +6,20 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Ban, CreditCard, Lock, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import {
+  Ban,
+  CreditCard,
+  Lock,
+  Pen,
+  Plus,
+  RefreshCw,
+  Trash,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { CardDialog } from '@/components/doorlock/card-dialog';
 import { StatCard } from '@/components/admin/stat-card';
+import { CardDialog } from '@/components/doorlock/card-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -248,7 +256,9 @@ function CardsPage() {
         <h1 className="font-bold text-3xl tracking-tight">
           {t('doorlockCards.title')}
         </h1>
-        <p className="text-muted-foreground">{t('doorlockCards.description')}</p>
+        <p className="text-muted-foreground">
+          {t('doorlockCards.description')}
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -299,7 +309,8 @@ function CardsPage() {
         <Alert variant="destructive">
           <AlertTitle>{t('doorlockCards.loadError')}</AlertTitle>
           <AlertDescription>
-            {(cardsQuery.error as Error)?.message ?? t('doorlockCards.loadError')}
+            {(cardsQuery.error as Error)?.message ??
+              t('doorlockCards.loadError')}
           </AlertDescription>
         </Alert>
       )}

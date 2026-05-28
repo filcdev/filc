@@ -111,7 +111,8 @@ function AdminUsersPage() {
         <Alert variant="destructive">
           <AlertTitle>{t('users.loadError')}</AlertTitle>
           <AlertDescription>
-            {(usersQuery.error as Error)?.message ?? t('users.loadErrorMessage')}
+            {(usersQuery.error as Error)?.message ??
+              t('users.loadErrorMessage')}
           </AlertDescription>
         </Alert>
       )}

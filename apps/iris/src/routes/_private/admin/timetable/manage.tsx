@@ -2,13 +2,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import { Calendar, CalendarCheck, CalendarClock, FileUp, Pen, RefreshCw, Trash } from 'lucide-react';
+import {
+  Calendar,
+  CalendarCheck,
+  CalendarClock,
+  FileUp,
+  Pen,
+  RefreshCw,
+  Trash,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { StatCard } from '@/components/admin/stat-card';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
 import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
-import { StatCard } from '@/components/admin/stat-card';
 import type { TimetableItem } from '@/components/timetable/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -255,9 +263,11 @@ function TimetableManagePage() {
 
   const stats = useMemo(
     () => ({
-      current: data.filter((t) => getTimetableStatus(t) === 'current').length,
+      current: data.filter((item) => getTimetableStatus(item) === 'current')
+        .length,
       total: data.length,
-      upcoming: data.filter((t) => getTimetableStatus(t) === 'upcoming').length,
+      upcoming: data.filter((item) => getTimetableStatus(item) === 'upcoming')
+        .length,
     }),
     [data]
   );
@@ -275,10 +285,7 @@ function TimetableManagePage() {
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={() => timetablesQuery.refetch()}
-            variant="outline"
-          >
+          <Button onClick={() => timetablesQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
             {t('timetable.refresh')}
           </Button>
