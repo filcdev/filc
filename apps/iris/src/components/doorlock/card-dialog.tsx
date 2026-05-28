@@ -27,6 +27,7 @@ import type {
   DeviceOption,
   UserOption,
 } from './doorlock.types';
+import { getOwnerLabel } from './doorlock.utils';
 
 const initialState = (card?: CardLike | null): CardFormValues => ({
   authorizedDeviceIds: card?.authorizedDevices.map((device) => device.id) ?? [],
@@ -138,8 +139,7 @@ export function CardDialog<
                 <FieldLabel>Owner</FieldLabel>
                 <Select
                   items={users.map((user) => ({
-                    label:
-                      user.nickname ?? user.name ?? user.email ?? 'Unknown',
+                    label: getOwnerLabel(user),
                     value: user.id,
                   }))}
                   onValueChange={(value) => field.handleChange(value ?? null)}
@@ -151,7 +151,7 @@ export function CardDialog<
                   <SelectContent>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.nickname ?? user.name ?? user.email ?? 'Unknown'}
+                        {getOwnerLabel(user)}
                       </SelectItem>
                     ))}
                   </SelectContent>

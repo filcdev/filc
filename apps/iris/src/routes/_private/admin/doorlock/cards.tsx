@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
+import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -155,12 +156,9 @@ function CardsPage() {
 
     if (term) {
       filtered = filtered.filter((card) => {
-        const ownerLabel = (
-          card.owner?.nickname ||
-          card.owner?.name ||
-          card.owner?.email ||
-          ''
-        ).toLowerCase();
+        const ownerLabel = card.owner
+          ? getOwnerLabel(card.owner).toLowerCase()
+          : '';
         return (
           card.name.toLowerCase().includes(term) ||
           ownerLabel.includes(term) ||
@@ -369,10 +367,7 @@ function CardsPage() {
               <TableRow key={card.id}>
                 <TableCell className="font-medium">{card.name}</TableCell>
                 <TableCell>
-                  {card.owner?.nickname ||
-                    card.owner?.name ||
-                    card.owner?.email ||
-                    'Unknown user'}
+                  {card.owner ? getOwnerLabel(card.owner) : 'Unknown user'}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
@@ -481,9 +476,7 @@ function getCardSortValue(card: DoorlockCard, column: CardSortColumn) {
     case 'name':
       return card.name;
     case 'owner':
-      return (
-        card.owner?.nickname || card.owner?.name || card.owner?.email || ''
-      );
+      return card.owner ? getOwnerLabel(card.owner) : '';
     case 'status':
       if (!card.enabled) {
         return 2;
