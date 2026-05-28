@@ -336,6 +336,8 @@
     "error": {
       "returnToHome": "Return to home",
       "title": "Something went wrong",
+      "invalid_code": "An error occurred during authentication.",
+      "unauthorized": "You are not authorized to view this page.",
       "genericMessage": "An error occurred during authentication."
     }
   },
@@ -413,6 +415,8 @@
     "themeDark": "Dark",
     "themeSystem": "System",
     "timetableView": "Default timetable view",
+    "cohort": "Cohort",
+    "cohortDescription": "Choose the class or group associated with your account",
     "notifications": "Notifications",
     "notificationsDescription": "Choose which notifications you want to receive",
     "channelsEnabled": "Enable notifications",

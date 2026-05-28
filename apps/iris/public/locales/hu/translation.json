@@ -336,6 +336,8 @@
     "error": {
       "returnToHome": "Vissza a kezdőlapra",
       "title": "Hiba történt",
+      "invalid_code": "Hiba történt a hitelesítés során.",
+      "unauthorized": "Nincs jogosultságod az oldal megtekintéséhez.",
       "genericMessage": "Hiba történt a hitelesítés során."
     }
   },
@@ -413,6 +415,8 @@
     "themeDark": "Sötét",
     "themeSystem": "Rendszer szerint",
     "timetableView": "Alapértelmezett órarend nézet",
+    "cohort": "Osztály",
+    "cohortDescription": "Válaszd ki a fiókodhoz tartozó osztályt vagy csoportot",
     "notifications": "Értesítések",
     "notificationsDescription": "Válaszd ki, mely értesítéseket szeretnéd megkapni",
     "channelsEnabled": "Értesítések engedélyezése",
