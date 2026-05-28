@@ -71,6 +71,7 @@
     "cards": "Cards",
     "logs": "Logs",
     "manage-cards": "Manage Cards",
+    "unknownUser": "Unknown user",
     "selfCards": {
       "title": "My Access Cards",
       "loadError": "Failed to load your cards.",

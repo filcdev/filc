@@ -1,4 +1,4 @@
-import type { UserOption } from './doorlock.types';
+import type { UserOption } from '@/components/doorlock/doorlock.types';
 
 export function getOwnerLabel(user: UserOption) {
   if (user.nickname && user.name && user.nickname !== user.name) {
@@ -17,5 +17,5 @@ export function getOwnerLabel(user: UserOption) {
     return user.email;
   }
 
-  return 'Unknown';
+  return '';
 }

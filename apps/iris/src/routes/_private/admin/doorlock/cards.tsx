@@ -9,6 +9,7 @@ import {
 import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
@@ -55,6 +56,7 @@ type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
 function CardsPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -367,7 +369,9 @@ function CardsPage() {
               <TableRow key={card.id}>
                 <TableCell className="font-medium">{card.name}</TableCell>
                 <TableCell>
-                  {card.owner ? getOwnerLabel(card.owner) : 'Unknown user'}
+                  {card.owner
+                    ? getOwnerLabel(card.owner) || t('doorlock.unknownUser')
+                    : t('doorlock.unknownUser')}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

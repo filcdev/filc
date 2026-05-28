@@ -1,6 +1,8 @@
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -27,7 +29,6 @@ import type {
   DeviceOption,
   UserOption,
 } from './doorlock.types';
-import { getOwnerLabel } from './doorlock.utils';
 
 const initialState = (card?: CardLike | null): CardFormValues => ({
   authorizedDeviceIds: card?.authorizedDevices.map((device) => device.id) ?? [],
@@ -51,6 +52,7 @@ export function CardDialog<
   users,
 }: CardDialogProps<TCard, TDevice, TUser>) {
   const isCreate = !card;
+  const { t } = useTranslation();
 
   const form = useForm({
     defaultValues: initialState(card),
@@ -139,7 +141,7 @@ export function CardDialog<
                 <FieldLabel>Owner</FieldLabel>
                 <Select
                   items={users.map((user) => ({
-                    label: getOwnerLabel(user),
+                    label: getOwnerLabel(user) || t('doorlock.unknownUser'),
                     value: user.id,
                   }))}
                   onValueChange={(value) => field.handleChange(value ?? null)}
@@ -151,7 +153,7 @@ export function CardDialog<
                   <SelectContent>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {getOwnerLabel(user)}
+                        {getOwnerLabel(user) || t('doorlock.unknownUser')}
                       </SelectItem>
                     ))}
                   </SelectContent>
