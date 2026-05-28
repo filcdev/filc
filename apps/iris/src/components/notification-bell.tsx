@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -34,8 +35,11 @@ export function NotificationBell() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   const { data: unreadData } = useQuery({
+    enabled: !!user,
     queryFn: async () => {
       const res = await parseResponse(api.notifications['unread-count'].$get());
       if (!res.success) {
@@ -48,6 +52,7 @@ export function NotificationBell() {
   });
 
   const { data: recentData } = useQuery({
+    enabled: !!user,
     queryFn: async () => {
       const res = await parseResponse(
         api.notifications.index.$get({
