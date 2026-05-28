@@ -6,15 +6,15 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Ban, CreditCard, Lock, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
+import { StatCard } from '@/components/admin/stat-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -52,6 +52,7 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
 type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
 
 function CardsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
@@ -121,10 +122,14 @@ function CardsPage() {
       return parseResponse(api.doorlock.cards.$post({ json: payload }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to save card');
+      toast.error(error.message || t('doorlockCards.saveError'));
     },
     onSuccess: (_res, variables) => {
-      toast.success(variables.id ? 'Card updated' : 'Card created');
+      toast.success(
+        variables.id
+          ? t('doorlockCards.updateSuccess')
+          : t('doorlockCards.createSuccess')
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
       setDialogOpen(false);
       setSelectedCard(null);
@@ -140,10 +145,10 @@ function CardsPage() {
     mutationFn: async (id: string) =>
       parseResponse(api.doorlock.cards[':id'].$delete({ param: { id } })),
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete card');
+      toast.error(error.message || t('doorlockCards.deleteError'));
     },
     onSuccess: () => {
-      toast.success('Card deleted');
+      toast.success(t('doorlockCards.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
     },
   });
@@ -239,16 +244,24 @@ function CardsPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="font-bold text-3xl tracking-tight">
+          {t('doorlockCards.title')}
+        </h1>
+        <p className="text-muted-foreground">{t('doorlockCards.description')}</p>
+      </div>
+
       <div className="flex flex-wrap items-center gap-4">
         <Input
           className="max-w-sm"
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search cards..."
+          placeholder={t('doorlockCards.searchPlaceholder')}
           value={search}
         />
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => cardsQuery.refetch()} variant="outline">
-            Refresh
+            <RefreshCw className="h-4 w-4" />
+            {t('doorlockCards.refresh')}
           </Button>
           {hasWritePermission && (
             <Button
@@ -257,7 +270,8 @@ function CardsPage() {
                 setDialogOpen(true);
               }}
             >
-              <Plus /> Add card
+              <Plus className="h-4 w-4" />
+              {t('doorlockCards.addCard')}
             </Button>
           )}
         </div>
@@ -266,26 +280,26 @@ function CardsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={<CreditCard className="text-primary" />}
-          label="Total cards"
+          label={t('doorlockCards.totalCards')}
           value={totals.total}
         />
         <StatCard
           icon={<Lock className="text-primary" />}
-          label="Frozen cards"
+          label={t('doorlockCards.frozenCards')}
           value={totals.frozen}
         />
         <StatCard
           icon={<Ban className="text-primary" />}
-          label="Disabled cards"
+          label={t('doorlockCards.disabledCards')}
           value={totals.disabled}
         />
       </div>
 
       {hasError && (
         <Alert variant="destructive">
-          <AlertTitle>Unable to load cards</AlertTitle>
+          <AlertTitle>{t('doorlockCards.loadError')}</AlertTitle>
           <AlertDescription>
-            {(cardsQuery.error as Error)?.message ?? 'Please try again later.'}
+            {(cardsQuery.error as Error)?.message ?? t('doorlockCards.loadError')}
           </AlertDescription>
         </Alert>
       )}
@@ -293,146 +307,158 @@ function CardsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('name')}
-              >
-                <div className="flex items-center gap-2">
-                  Name
-                  <SortIcon
-                    column="name"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('owner')}
-              >
-                <div className="flex items-center gap-2">
-                  Owner
-                  <SortIcon
-                    column="owner"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('status')}
-              >
-                <div className="flex items-center gap-2">
-                  Status
-                  <SortIcon
-                    column="status"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('devices')}
-              >
-                <div className="flex items-center gap-2">
-                  Authorized devices
-                  <SortIcon
-                    column="devices"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('updated')}
-              >
-                <div className="flex items-center gap-2">
-                  Updated
-                  <SortIcon
-                    column="updated"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              {hasWritePermission && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCards.map((card) => (
-              <TableRow key={card.id}>
-                <TableCell className="font-medium">{card.name}</TableCell>
-                <TableCell>
-                  {card.owner?.nickname ||
-                    card.owner?.name ||
-                    card.owner?.email ||
-                    'Unknown user'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {!card.frozen && card.enabled && (
-                      <Badge variant="secondary">Active</Badge>
-                    )}
-                    {card.frozen && <Badge variant="outline">Frozen</Badge>}
-                    {!card.enabled && (
-                      <Badge variant="destructive">Disabled</Badge>
-                    )}
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('doorlockCards.name')}
+                    <SortIcon
+                      column="name"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
                   </div>
-                </TableCell>
-                <TableCell>
-                  {card.authorizedDevices.length
-                    ? card.authorizedDevices
-                        .map((device) => device.name)
-                        .join(', ')
-                    : 'No devices'}
-                </TableCell>
-                <TableCell>
-                  {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                </TableCell>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('owner')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('doorlockCards.owner')}
+                    <SortIcon
+                      column="owner"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('doorlockCards.status')}
+                    <SortIcon
+                      column="status"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('devices')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('doorlockCards.authorizedDevices')}
+                    <SortIcon
+                      column="devices"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('updated')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('doorlockCards.updatedAt')}
+                    <SortIcon
+                      column="updated"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
                 {hasWritePermission && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setSelectedCard(card);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleDelete(card)}
-                        size="icon"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableHead>{t('doorlockCards.actions')}</TableHead>
                 )}
               </TableRow>
-            ))}
-            {!(filteredCards.length || hasError) && (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground"
-                  colSpan={hasWritePermission ? 6 : 5}
-                >
-                  No cards found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredCards.map((card) => (
+                <TableRow key={card.id}>
+                  <TableCell className="font-medium">{card.name}</TableCell>
+                  <TableCell>
+                    {card.owner?.nickname ||
+                      card.owner?.name ||
+                      card.owner?.email ||
+                      t('doorlockCards.unknownUser')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {!card.frozen && card.enabled && (
+                        <Badge variant="secondary">
+                          {t('doorlockCards.active')}
+                        </Badge>
+                      )}
+                      {card.frozen && (
+                        <Badge variant="outline">
+                          {t('doorlockCards.frozen')}
+                        </Badge>
+                      )}
+                      {!card.enabled && (
+                        <Badge variant="destructive">
+                          {t('doorlockCards.disabled')}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {card.authorizedDevices.length
+                      ? card.authorizedDevices
+                          .map((device) => device.name)
+                          .join(', ')
+                      : t('doorlockCards.noDevices')}
+                  </TableCell>
+                  <TableCell>
+                    {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                  </TableCell>
+                  {hasWritePermission && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setSelectedCard(card);
+                            setDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pen className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          disabled={deleteMutation.isPending}
+                          onClick={() => handleDelete(card)}
+                          size="icon"
+                          variant="destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {!(filteredCards.length || hasError) && (
+                <TableRow>
+                  <TableCell
+                    className="text-muted-foreground"
+                    colSpan={hasWritePermission ? 6 : 5}
+                  >
+                    {t('doorlockCards.noCardsFound')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {hasWritePermission && (
@@ -451,28 +477,6 @@ function CardsPage() {
         />
       )}
     </div>
-  );
-}
-
-type StatCardProps = {
-  icon: ReactNode;
-  label: string;
-  value: number;
-};
-
-function StatCard({ icon, label, value }: StatCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-medium text-muted-foreground text-sm">
-          {label}
-        </CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="font-semibold text-3xl">{value}</div>
-      </CardContent>
-    </Card>
   );
 }
 

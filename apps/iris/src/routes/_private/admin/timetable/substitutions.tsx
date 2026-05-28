@@ -433,8 +433,9 @@ function SubstitutionsPage() {
                               <Badge key={l.id} variant="secondary">
                                 {l.subject?.short ?? '?'}
                                 {', '}
-                                {t('substitution.period')}{' '}
                                 {l.period?.period ?? '?'}
+                                {'. '}
+                                {t('substitution.period')}
                               </Badge>
                             ))
                         : t('substitution.noLessons')}

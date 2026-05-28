@@ -1,5 +1,6 @@
 import type { InferResponseType } from 'hono';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -28,6 +29,7 @@ export function UsersTable({
   limit,
   onPageChange,
 }: UsersTableProps) {
+  const { t } = useTranslation();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -35,17 +37,24 @@ export function UsersTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>{t('users.name')}</TableHead>
+              <TableHead>{t('users.email')}</TableHead>
+              <TableHead>{t('users.roles')}</TableHead>
+              <TableHead>{t('users.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
+            {users.length === 0 && (
+              <TableRow>
+                <TableCell className="text-muted-foreground" colSpan={4}>
+                  {t('users.noUsersFound')}
+                </TableCell>
+              </TableRow>
+            )}
             {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.name}</TableCell>
@@ -60,7 +69,7 @@ export function UsersTable({
                     size="sm"
                     variant="outline"
                   >
-                    Edit
+                    {t('roles.edit')}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -70,7 +79,7 @@ export function UsersTable({
       </div>
       <div className="flex items-center justify-between">
         <div className="text-muted-foreground text-sm">
-          Page {page} of {totalPages}
+          {t('users.currentPage')} {page} / {totalPages}
         </div>
         <div className="space-x-2">
           <Button
@@ -79,7 +88,7 @@ export function UsersTable({
             size="sm"
             variant="outline"
           >
-            Previous
+            {t('common.previous')}
           </Button>
           <Button
             disabled={page >= totalPages}
@@ -87,7 +96,7 @@ export function UsersTable({
             size="sm"
             variant="outline"
           >
-            Next
+            {t('common.next')}
           </Button>
         </div>
       </div>

@@ -61,15 +61,15 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
         param: { id: user.id },
       });
       if (!res.ok) {
-        toast.error('Failed to update user');
+        toast.error(t('users.updateError'));
       }
       return res.json();
     },
     onError: () => {
-      toast.error('Failed to update user');
+      toast.error(t('users.updateError'));
     },
     onSuccess: () => {
-      toast.success('User updated successfully');
+      toast.success(t('users.updateSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.usersAll() });
       onOpenChange(false);
     },
@@ -106,7 +106,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>{t('users.editTitle')}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4 py-4"
@@ -116,17 +116,19 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
           }}
         >
           <Field>
-            <FieldLabel htmlFor="user-name">Name</FieldLabel>
+            <FieldLabel htmlFor="user-name">{t('account.name')}</FieldLabel>
             <Input disabled id="user-name" value={user.name} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="user-email">Email</FieldLabel>
+            <FieldLabel htmlFor="user-email">{t('account.email')}</FieldLabel>
             <Input disabled id="user-email" value={user.email} />
           </Field>
           <form.Field name="nickname">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor={field.name}>Nickname</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  {t('account.nickname')}
+                </FieldLabel>
                 <Input
                   id={field.name}
                   onChange={(e) => field.handleChange(e.target.value)}
@@ -136,7 +138,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
             )}
           </form.Field>
           <Field>
-            <FieldLabel>{t('roles.permissions')}</FieldLabel>
+            <FieldLabel>{t('users.roles')}</FieldLabel>
             <div className="flex flex-wrap gap-1.5 pb-2">
               {selectedRoles.map((role: string) => (
                 <Badge key={role} variant="default">
@@ -145,7 +147,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
               ))}
               {selectedRoles.length === 0 && (
                 <span className="text-muted-foreground text-sm">
-                  {t('roles.noRoles')}
+                  {t('users.noRoles')}
                 </span>
               )}
             </div>
@@ -173,7 +175,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                 ))}
                 {availableRoles.length === 0 && (
                   <p className="text-muted-foreground text-sm">
-                    {t('roles.noRoles')}
+                    {t('users.noRoles')}
                   </p>
                 )}
               </div>
@@ -188,7 +190,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
               {t('common.cancel')}
             </Button>
             <Button disabled={!form.state.canSubmit} type="submit">
-              Save
+              {t('users.save')}
             </Button>
           </DialogFooter>
         </form>

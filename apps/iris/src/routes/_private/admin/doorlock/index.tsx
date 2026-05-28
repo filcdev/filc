@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { type InferResponseType, parseResponse } from 'hono/client';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { StatCard } from '@/components/admin/stat-card';
 import { DoorOpenChart } from '@/components/doorlock/door-open-chart';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,8 @@ export const Route = createFileRoute('/_private/admin/doorlock/')({
 });
 
 function DoorlockDashboard() {
+  const { t } = useTranslation();
+
   const statsQuery = useQuery({
     queryFn: async (): Promise<DoorlockStatsOverview> => {
       const res = await parseResponse(api.doorlock.stats.overview.$get());
@@ -34,39 +37,47 @@ function DoorlockDashboard() {
     queryKey: queryKeys.doorlock.stats(),
   });
 
-  if (statsQuery.isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Unable to load statistics</AlertTitle>
-        <AlertDescription>
-          {(statsQuery.error as Error)?.message ??
-            'Something went wrong while fetching the dashboard.'}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   const stats = statsQuery.data;
+  const isLoading = !stats && !statsQuery.isError;
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="font-bold text-3xl tracking-tight">
+          {t('doorlockDashboard.title')}
+        </h1>
+        <p className="text-muted-foreground">
+          {t('doorlockDashboard.description')}
+        </p>
+      </div>
+
+      {statsQuery.isError && (
+        <Alert variant="destructive">
+          <AlertTitle>{t('doorlockDashboard.loadError')}</AlertTitle>
+          <AlertDescription>
+            {(statsQuery.error as Error)?.message ??
+              t('doorlockDashboard.loadErrorMessage')}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={<IdCard className="text-primary" />}
-          isLoading={!stats}
-          label="Total cards"
+          isLoading={isLoading}
+          label={t('doorlockDashboard.totalCards')}
           value={stats?.totalCards ?? 0}
         />
         <StatCard
           icon={<Microchip className="text-primary" />}
-          isLoading={!stats}
-          label="Total devices"
+          isLoading={isLoading}
+          label={t('doorlockDashboard.totalDevices')}
           value={stats?.totalDevices ?? 0}
         />
         <StatCard
           icon={<DoorOpen className="text-primary" />}
-          isLoading={!stats}
-          label="Successful opens"
+          isLoading={isLoading}
+          label={t('doorlockDashboard.successfulOpens')}
           value={stats?.totalSuccessfulOpens ?? 0}
         />
       </div>
@@ -74,7 +85,7 @@ function DoorlockDashboard() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Door opens (last 7 days)</CardTitle>
+            <CardTitle>{t('doorlockDashboard.doorOpens')}</CardTitle>
           </CardHeader>
           <CardContent>
             {stats ? (
@@ -86,14 +97,14 @@ function DoorlockDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Top users</CardTitle>
+            <CardTitle>{t('doorlockDashboard.topUsers')}</CardTitle>
           </CardHeader>
           <CardContent>
             {stats ? (
               <ul className="space-y-3">
                 {stats.topUsers.length === 0 && (
                   <li className="text-muted-foreground text-sm">
-                    No activity recorded
+                    {t('unknown')}
                   </li>
                 )}
                 {stats.topUsers.map((user) => (
@@ -101,7 +112,7 @@ function DoorlockDashboard() {
                     className="flex items-center justify-between text-sm"
                     key={user.id}
                   >
-                    <span>{user.nickname ?? user.name ?? 'Unknown user'}</span>
+                    <span>{user.nickname ?? user.name ?? t('unknown')}</span>
                     <span className="font-semibold">{user.count}</span>
                   </li>
                 ))}
@@ -117,32 +128,5 @@ function DoorlockDashboard() {
         </Card>
       </div>
     </div>
-  );
-}
-
-type StatCardProps = {
-  icon: ReactNode;
-  isLoading: boolean;
-  label: string;
-  value: number;
-};
-
-function StatCard({ icon, isLoading, label, value }: StatCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-medium text-muted-foreground text-sm">
-          {label}
-        </CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-8 w-24" />
-        ) : (
-          <div className="font-bold text-3xl">{value}</div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
