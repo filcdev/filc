@@ -32,13 +32,20 @@ function AdminUsersPage() {
   const limit = 20;
 
   useEffect(() => {
+    setInputValue(search);
+  }, [search]);
+
+  useEffect(() => {
+    if (inputValue === search) {
+      return;
+    }
     const timer = setTimeout(() => {
       navigate({
         search: (prev) => ({ ...prev, page: 1, search: inputValue }),
       });
     }, 500);
     return () => clearTimeout(timer);
-  }, [inputValue, navigate]);
+  }, [inputValue, search, navigate]);
 
   const usersQuery = useQuery({
     queryFn: async () => {
