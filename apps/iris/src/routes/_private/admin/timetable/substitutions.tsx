@@ -425,7 +425,7 @@ function SubstitutionsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="jutify-center grid grid-cols-1 items-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
+                    <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
                       {sub.lessons.length > 0
                         ? sub.lessons
                             .filter((l) => l !== null && l !== undefined)
@@ -441,18 +441,18 @@ function SubstitutionsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="jutify-center grid grid-cols-1 items-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
+                    <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
                       {Array.from(
                         new Set(
                           sub.lessons
                             .filter((l) => l !== null && l !== undefined)
-                            .map((l) => (
-                              <Badge key={l.id} variant="secondary">
-                                {l.cohorts}
-                              </Badge>
-                            ))
+                            .flatMap((l) => l.cohorts)
                         )
-                      )}
+                      ).map((cohort) => (
+                        <Badge key={cohort} variant="secondary">
+                          {cohort}
+                        </Badge>
+                      ))}
                     </div>
                   </TableCell>
                   {hasWritePermission && (
