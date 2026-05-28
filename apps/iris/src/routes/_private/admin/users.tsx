@@ -50,7 +50,9 @@ function AdminUsersPage() {
   const cohortsQuery = useQuery({
     queryFn: async () => {
       const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) { throw new Error('Failed to load cohorts'); }
+      if (!res.success) {
+        throw new Error('Failed to load cohorts');
+      }
       return res.data ?? [];
     },
     queryKey: queryKeys.cohorts(),

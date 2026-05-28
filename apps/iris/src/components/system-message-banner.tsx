@@ -99,7 +99,9 @@ export function SystemMessageBanner() {
   }, [dismissedIds, systemMessagesQuery.data]);
 
   useEffect(() => {
-    if (!systemMessagesQuery.isSuccess) return;
+    if (!systemMessagesQuery.isSuccess) {
+      return;
+    }
 
     const idsInFeed = new Set(
       (systemMessagesQuery.data ?? []).map((item) => item.id)
