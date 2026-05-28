@@ -334,7 +334,7 @@ function TimetableManagePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(timetablesQuery.data ?? []).map((item) => {
+              {data.map((item) => {
                 const status = getTimetableStatus(item);
                 return (
                   <TableRow key={item.id}>

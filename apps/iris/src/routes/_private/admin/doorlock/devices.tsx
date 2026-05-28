@@ -117,6 +117,7 @@ function DevicesPage() {
           : t('doorlockDevices.createSuccess')
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
       setDialogOpen(false);
       setSelectedDevice(null);
     },
@@ -136,6 +137,7 @@ function DevicesPage() {
     onSuccess: () => {
       toast.success(t('doorlockDevices.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
     },
   });
 

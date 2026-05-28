@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -13,23 +14,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
+const searchSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  search: z.string().default(''),
+});
+
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
+  validateSearch: searchSchema,
 });
 
 function AdminUsersPage() {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { page, search } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const [inputValue, setInputValue] = useState(search);
   const limit = 20;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
+      navigate({
+        search: (prev) => ({ ...prev, page: 1, search: inputValue }),
+      });
     }, 500);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [inputValue, navigate]);
 
   const usersQuery = useQuery({
     queryFn: async () => {
@@ -38,7 +47,7 @@ function AdminUsersPage() {
           query: {
             limit: limit.toString(),
             offset: ((page - 1) * limit).toString(),
-            search: debouncedSearch,
+            search,
           },
         })
       );
@@ -47,7 +56,7 @@ function AdminUsersPage() {
       }
       return res.data;
     },
-    queryKey: queryKeys.users(page, debouncedSearch),
+    queryKey: queryKeys.users(page, search),
   });
 
   const total = usersQuery.data?.total ?? 0;
@@ -73,13 +82,10 @@ function AdminUsersPage() {
       <div className="flex flex-wrap items-center gap-4">
         <Input
           className="max-w-sm"
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => setInputValue(e.target.value)}
           placeholder={t('users.searchPlaceholder')}
           type="text"
-          value={search}
+          value={inputValue}
         />
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => usersQuery.refetch()} variant="outline">
@@ -123,7 +129,9 @@ function AdminUsersPage() {
         usersQuery.data && (
           <UsersTable
             limit={limit}
-            onPageChange={setPage}
+            onPageChange={(newPage) =>
+              navigate({ search: (prev) => ({ ...prev, page: newPage }) })
+            }
             page={page}
             total={usersQuery.data.total}
             users={usersQuery.data.users}

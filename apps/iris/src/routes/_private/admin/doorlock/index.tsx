@@ -38,7 +38,7 @@ function DoorlockDashboard() {
   });
 
   const stats = statsQuery.data;
-  const isLoading = !(stats || statsQuery.isError);
+  const isLoading = statsQuery.isLoading;
 
   return (
     <div className="space-y-6">

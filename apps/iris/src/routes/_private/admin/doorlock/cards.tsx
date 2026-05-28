@@ -139,6 +139,7 @@ function CardsPage() {
           : t('doorlockCards.createSuccess')
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
       setDialogOpen(false);
       setSelectedCard(null);
     },
@@ -158,6 +159,7 @@ function CardsPage() {
     onSuccess: () => {
       toast.success(t('doorlockCards.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
     },
   });
 

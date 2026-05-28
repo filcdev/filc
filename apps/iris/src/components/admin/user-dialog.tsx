@@ -61,7 +61,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
         param: { id: user.id },
       });
       if (!res.ok) {
-        toast.error(t('users.updateError'));
+        throw new Error(t('users.updateError'));
       }
       return res.json();
     },
