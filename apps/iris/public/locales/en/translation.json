@@ -300,7 +300,12 @@
     "deleteConfirm": "Delete Announcement",
     "deleteDescription": "Are you sure you want to delete this announcement? This action cannot be undone.",
     "loadError": "Unable to load announcements",
-    "loadErrorMessage": "Please try again later."
+    "loadErrorMessage": "Please try again later.",
+    "titlePlaceholder": "Announcement title",
+    "contentPlaceholder": "Announcement content",
+    "date": "Date",
+    "setDateRange": "Set date range",
+    "showPast": "Show past announcements"
   },
   "systemMessages": {
     "title": "System Messages",

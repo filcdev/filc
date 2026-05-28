@@ -75,6 +75,16 @@ const initialState = (item?: AnnouncementItem | null) => {
   };
 };
 
+const hasDateRange = (item?: AnnouncementItem | null): boolean => {
+  if (!item) {
+    return false;
+  }
+  return (
+    startOfDay(new Date(item.validFrom)).getTime() !==
+    startOfDay(new Date(item.validUntil)).getTime()
+  );
+};
+
 export function AnnouncementsDialog({
   cohorts,
   isSubmitting,
@@ -85,10 +95,14 @@ export function AnnouncementsDialog({
 }: AnnouncementDialogProps) {
   const { t } = useTranslation();
   const [formState, setFormState] = useState(initialState(item));
+  const [showDateRange, setShowDateRange] = useState(() => hasDateRange(item));
 
   useEffect(() => {
-    setFormState(initialState(item));
-  }, [item]);
+    if (open) {
+      setFormState(initialState(item));
+      setShowDateRange(hasDateRange(item));
+    }
+  }, [open, item]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -123,7 +137,7 @@ export function AnnouncementsDialog({
                 onChange={(e) =>
                   setFormState((prev) => ({ ...prev, title: e.target.value }))
                 }
-                placeholder="Announcement title"
+                placeholder={t('announcements.titlePlaceholder')}
                 value={formState.title}
               />
             </div>
@@ -139,37 +153,72 @@ export function AnnouncementsDialog({
                     content: [{ content: e.target.value, type: 'text' }],
                   }))
                 }
-                placeholder="Announcement content"
+                placeholder={t('announcements.contentPlaceholder')}
                 value={formState.content[0]?.content || ''}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="validFrom">{t('announcements.validFrom')}</Label>
+              <Label htmlFor="validFrom">
+                {showDateRange
+                  ? t('announcements.validFrom')
+                  : t('announcements.date')}
+              </Label>
               <DatePicker
                 date={formState.validFrom}
-                onDateChange={(date) =>
+                disabledDays={{ before: startOfDay(new Date()) }}
+                onDateChange={(date) => {
+                  const newFrom = startOfDay(date ?? new Date());
                   setFormState((prev) => ({
                     ...prev,
-                    validFrom: startOfDay(date ?? new Date()),
-                  }))
-                }
+                    validFrom: newFrom,
+                    validUntil:
+                      prev.validUntil < newFrom
+                        ? endOfDay(newFrom)
+                        : prev.validUntil,
+                  }));
+                }}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="validUntil">
-                {t('announcements.validUntil')}
-              </Label>
-              <DatePicker
-                date={formState.validUntil}
-                onDateChange={(date) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    validUntil: endOfDay(date ?? new Date()),
-                  }))
-                }
+            {showDateRange && (
+              <div className="space-y-2">
+                <Label htmlFor="validUntil">
+                  {t('announcements.validUntil')}
+                </Label>
+                <DatePicker
+                  date={formState.validUntil}
+                  disabledDays={{ before: formState.validFrom }}
+                  onDateChange={(date) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      validUntil: endOfDay(date ?? new Date()),
+                    }))
+                  }
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={showDateRange}
+                id="setDateRange"
+                onCheckedChange={(checked) => {
+                  setShowDateRange(!!checked);
+                  if (!checked) {
+                    setFormState((prev) => ({
+                      ...prev,
+                      validUntil: endOfDay(prev.validFrom),
+                    }));
+                  }
+                }}
               />
+              <label
+                className="cursor-pointer font-medium text-sm leading-none"
+                htmlFor="setDateRange"
+              >
+                {t('announcements.setDateRange')}
+              </label>
             </div>
 
             <div className="space-y-2">

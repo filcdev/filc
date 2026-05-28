@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import type { Matcher } from 'react-day-picker';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -13,6 +14,7 @@ import { getDateFnsLocale } from '@/utils/date-locale';
 
 type DatePickerProps = {
   date?: Date;
+  disabledDays?: Matcher | Matcher[];
   onDateChange?: (date: Date | undefined) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -32,6 +34,7 @@ function toLocalNoon(date: Date) {
 
 export function DatePicker({
   date,
+  disabledDays,
   onDateChange,
   placeholder = 'Pick a date',
   disabled = false,
@@ -63,6 +66,7 @@ export function DatePicker({
       <PopoverContent align="start" className="w-auto p-0">
         <Calendar
           autoFocus
+          disabled={disabledDays}
           locale={locale}
           mode="single"
           onSelect={(selectedDate) => {

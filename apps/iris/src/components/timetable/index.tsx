@@ -146,7 +146,7 @@ export function TimetableView() {
       }
       return res.data ?? null;
     },
-    queryKey: ['timetables', 'latestValid'] as const,
+    queryKey: queryKeys.timetables.latestValid(),
   });
 
   const latestValidTimetableId =

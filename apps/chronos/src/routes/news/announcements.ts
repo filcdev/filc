@@ -12,6 +12,7 @@ import { announcement, announcementCohortMtm } from '#database/schema/news';
 import { cohort } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
+import { userHasPermission } from '#utils/authorization';
 import {
   announcementQuerySchema,
   dateRangeBodySchema,
@@ -110,6 +111,12 @@ export const listAnnouncements = newsFactory.createHandlers(
     const currentUser = c.var.user;
     const userCohortId = currentUser.cohortId;
 
+    // Admins managing announcements should see all of them, unfiltered by cohort
+    const isAdmin = await userHasPermission(
+      currentUser.id,
+      'news:announcements'
+    );
+
     const now = new Date();
     const conditions: SQL[] = [];
 
@@ -119,8 +126,9 @@ export const listAnnouncements = newsFactory.createHandlers(
     }
 
     // Cohort filtering: show items that are global (no rows in M2M)
-    // or targeted to the user's cohort
-    if (userCohortId) {
+    // or targeted to the user's cohort.
+    // Admins bypass this filter so they can manage all announcements.
+    if (userCohortId && !isAdmin) {
       conditions.push(
         sql`(
           NOT EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id})
