@@ -236,7 +236,8 @@
     "yourClass": "a te osztályod",
     "cardTitle": "Helyettesítés ezen a napon: {{date}}",
     "notAvailable": "N/A",
-    "period": "Óra"
+    "period": "Óra",
+    "noCohorts": "Nincsen osztály"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",

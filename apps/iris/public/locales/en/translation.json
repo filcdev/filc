@@ -236,7 +236,8 @@
     "yourClass": "your class",
     "cardTitle": "Substitution on {{date}}",
     "notAvailable": "N/A",
-    "period": "Period"
+    "period": "Period",
+    "noCohorts": "No class"
   },
   "movedLesson": {
     "title": "Moved Lessons",
