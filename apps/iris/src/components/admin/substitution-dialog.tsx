@@ -206,6 +206,20 @@ export function SubstitutionDialog({
     }));
   }, [substituteCandidatesQuery.data, t]);
 
+  const sortedSubstituteOptions = useMemo(() => {
+    return [...substituteOptions].sort((a, b) => {
+      const aIsH1 = a.label.includes('H1');
+      const bIsH1 = b.label.includes('H1');
+      if (aIsH1 && !bIsH1) {
+        return -1;
+      }
+      if (!aIsH1 && bIsH1) {
+        return 1;
+      }
+      return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
+    });
+  }, [substituteOptions]);
+
   const isCreate = !item;
 
   const isValid = !!formDate && formLessonIds.length > 0;
@@ -301,22 +315,27 @@ export function SubstitutionDialog({
                 {selectedMissingTeacher &&
                   !substituteCandidatesQuery.isLoading &&
                   availableLessons.length > 0 &&
-                  availableLessons.map((lesson) => (
-                    <label
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                      htmlFor={`sub-lesson-${lesson.id}`}
-                      key={lesson.id}
-                    >
-                      <Checkbox
-                        checked={formLessonIds.includes(lesson.id)}
-                        id={`sub-lesson-${lesson.id}`}
-                        onCheckedChange={(checked) =>
-                          toggleLesson(lesson.id, !!checked)
-                        }
-                      />
-                      <span>{formatLessonLabel(lesson)}</span>
-                    </label>
-                  ))}
+                  [...availableLessons]
+                    .sort(
+                      (a, b) =>
+                        (a.period?.period ?? 0) - (b.period?.period ?? 0)
+                    )
+                    .map((lesson) => (
+                      <label
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                        htmlFor={`sub-lesson-${lesson.id}`}
+                        key={lesson.id}
+                      >
+                        <Checkbox
+                          checked={formLessonIds.includes(lesson.id)}
+                          id={`sub-lesson-${lesson.id}`}
+                          onCheckedChange={(checked) =>
+                            toggleLesson(lesson.id, !!checked)
+                          }
+                        />
+                        <span>{formatLessonLabel(lesson)}</span>
+                      </label>
+                    ))}
               </div>
             </div>
 
@@ -344,7 +363,7 @@ export function SubstitutionDialog({
                     label: `${t('substitution.merged')} - ${teacher.name}`,
                     value: `__merged__:${teacher.id}`,
                   })),
-                  ...substituteOptions,
+                  ...sortedSubstituteOptions,
                 ]}
                 placeholder={t('substitution.substituteTeacher')}
                 searchPlaceholder={t('search')}
