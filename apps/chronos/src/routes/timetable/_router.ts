@@ -26,6 +26,7 @@ import {
   getRelevantMovedLessonsForCohort,
   updateMovedLesson,
 } from '#routes/timetable/moved-lesson';
+import { getPeriodsForTimetable } from '#routes/timetable/period';
 import {
   createSubstitution,
   deleteSubstitution,
@@ -72,6 +73,8 @@ export const timetableRouter = timetableFactory
   .post('/lessons/getSubstitutionCandidates', ...getSubstitutionCandidates)
   .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
   .get('/lessons/getForId/:lessonId', ...getLessonForId)
+  // Period routes
+  .get('/periods/getAll', ...getPeriodsForTimetable)
   // Classroom routes
   .get('/classrooms/getAvailable', ...getAvailableClassrooms)
   .get('/classrooms/getAll', ...getClassrooms)

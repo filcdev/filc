@@ -77,6 +77,8 @@ export const queryKeys = {
     ) => ['lessons', filter, selectionId, timetableId] as const,
     lessonsByCohort: (cohortId: string | null | undefined) =>
       ['lessons', 'cohort', cohortId] as const,
+    periods: (timetableId: string | null | undefined) =>
+      ['timetable', 'periods', timetableId] as const,
     /** Used to broadly invalidate all timetable-related data after import */
     root: () => ['timetable'] as const,
     substituteCandidates: (
@@ -93,7 +95,10 @@ export const queryKeys = {
         teacherIds,
       ] as const,
   },
-  timetables: () => ['timetables'] as const,
+  timetables: {
+    all: () => ['timetables'] as const,
+    latestValid: () => ['timetables', 'latestValid'] as const,
+  },
   users: (page: number, search: string) => ['users', page, search] as const,
   usersAll: () => ['users'] as const,
 };

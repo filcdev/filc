@@ -171,7 +171,8 @@
       "current": "Aktuális",
       "past": "Lejárt",
       "upcoming": "Közelgő"
-    }
+    },
+    "clearFilter": "Szűrők törlése"
   },
   "common": {
     "cancel": "Mégsem",
@@ -299,7 +300,12 @@
     "deleteConfirm": "Bejelentés törlése",
     "deleteDescription": "Törölni akarod ezt a bejelentést? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni a bejelentéseket",
-    "loadErrorMessage": "Kérlek próbáld újra később."
+    "loadErrorMessage": "Kérlek próbáld újra később.",
+    "titlePlaceholder": "Bejelentés címe",
+    "contentPlaceholder": "Bejelentés tartalma",
+    "date": "Dátum",
+    "setDateRange": "Dátumtartomány beállítása",
+    "showPast": "Múltbeli bejelentések mutatása"
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",

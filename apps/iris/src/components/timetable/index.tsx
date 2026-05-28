@@ -15,6 +15,7 @@ import type {
   CohortItem,
   FilterType,
   LessonItem,
+  PeriodItem,
   SelectionsType,
   TeacherItem,
   TimetableItem,
@@ -69,6 +70,16 @@ const fetchClassrooms = async () => {
     throw new Error('Failed to load classrooms');
   }
   return (res.data ?? []) as ClassroomItem[];
+};
+
+const fetchPeriods = async (timetableId: string): Promise<PeriodItem[]> => {
+  const res = await parseResponse(
+    api.timetable.periods.getAll.$get({ query: { timetableId } })
+  );
+  if (!res.success) {
+    throw new Error('Failed to load periods');
+  }
+  return (res.data ?? []) as PeriodItem[];
 };
 
 const fetchLessonsForSelection = async (
@@ -131,7 +142,7 @@ export function TimetableView() {
   const timetablesQuery = useQuery({
     ...QUERY_OPTIONS,
     queryFn: fetchTimetables,
-    queryKey: queryKeys.timetables(),
+    queryKey: queryKeys.timetables.all(),
   });
 
   // Compute the latest valid timetable id from the list
@@ -146,7 +157,7 @@ export function TimetableView() {
       }
       return res.data ?? null;
     },
-    queryKey: ['timetables', 'latestValid'] as const,
+    queryKey: queryKeys.timetables.latestValid(),
   });
 
   const latestValidTimetableId =
@@ -185,6 +196,16 @@ export function TimetableView() {
     ...QUERY_OPTIONS,
     queryFn: fetchClassrooms,
     queryKey: queryKeys.classrooms(),
+  });
+
+  const periodsQuery = useQuery({
+    ...QUERY_OPTIONS,
+    enabled: !!selectedTimetableId,
+    queryFn: () =>
+      selectedTimetableId
+        ? fetchPeriods(selectedTimetableId)
+        : Promise.resolve([] as PeriodItem[]),
+    queryKey: queryKeys.timetable.periods(selectedTimetableId),
   });
 
   // State
@@ -361,8 +382,12 @@ export function TimetableView() {
 
   const model = useMemo(
     () =>
-      buildViewModel((lessonsQuery.data ?? []) as LessonItem[], i18n.language),
-    [lessonsQuery.data, i18n.language]
+      buildViewModel(
+        (lessonsQuery.data ?? []) as LessonItem[],
+        i18n.language,
+        (periodsQuery.data ?? []) as PeriodItem[]
+      ),
+    [lessonsQuery.data, periodsQuery.data, i18n.language]
   );
 
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
