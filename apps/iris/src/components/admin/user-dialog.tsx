@@ -16,6 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -43,18 +50,35 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     queryKey: queryKeys.roles(),
   });
 
+  const cohortsQuery = useQuery({
+    queryFn: async () => {
+      const res = await parseResponse(api.cohort.index.$get());
+      if (!res.success) { throw new Error('Failed to load cohorts'); }
+      return res.data ?? [];
+    },
+    queryKey: queryKeys.cohorts(),
+  });
+
+  const cohortItems = (cohortsQuery.data ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+
   const availableRoles = rolesQuery.data?.roles ?? [];
 
   const mutation = useMutation({
     mutationFn: async ({
+      cohortId,
       nickname,
       roles,
     }: {
+      cohortId: string | null;
       nickname: string;
       roles: string[];
     }) => {
       const res = await api.users[':id'].$patch({
         json: {
+          cohortId,
           nickname: nickname || undefined,
           roles,
         },
@@ -77,6 +101,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
 
   const form = useForm({
     defaultValues: {
+      cohortId: user.cohortId ?? null,
       nickname: user.nickname ?? '',
       roles: user.roles as string[],
     },
@@ -134,6 +159,35 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                   onChange={(e) => field.handleChange(e.target.value)}
                   value={field.state.value}
                 />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="cohortId">
+            {(field) => (
+              <Field>
+                <FieldLabel>{t('preferences.cohort')}</FieldLabel>
+                <Select
+                  items={cohortItems}
+                  onValueChange={(value) => field.handleChange(value ?? null)}
+                  value={field.state.value ?? ''}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        cohortItems.length > 0
+                          ? t('cohort.selectPlaceholder')
+                          : t('cohort.noneFound')
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cohortItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
             )}
           </form.Field>

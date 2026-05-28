@@ -47,6 +47,20 @@ function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [inputValue, search, navigate]);
 
+  const cohortsQuery = useQuery({
+    queryFn: async () => {
+      const res = await parseResponse(api.cohort.index.$get());
+      if (!res.success) { throw new Error('Failed to load cohorts'); }
+      return res.data ?? [];
+    },
+    queryKey: queryKeys.cohorts(),
+  });
+
+  const cohortMap = useMemo(
+    () => new Map((cohortsQuery.data ?? []).map((c) => [c.id, c.name])),
+    [cohortsQuery.data]
+  );
+
   const usersQuery = useQuery({
     queryFn: async () => {
       const res = await parseResponse(
@@ -135,6 +149,7 @@ function AdminUsersPage() {
       ) : (
         usersQuery.data && (
           <UsersTable
+            cohortMap={cohortMap}
             limit={limit}
             onPageChange={(newPage) =>
               navigate({ search: (prev) => ({ ...prev, page: newPage }) })
