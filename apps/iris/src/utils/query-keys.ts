@@ -52,9 +52,10 @@ export const queryKeys = {
     ) =>
       ['notifications', 'list', type, unread, page, dateFrom, dateTo] as const,
     preferences: () => ['notifications', 'preferences'] as const,
-    recent: () => ['notifications', 'recent'] as const,
+    recent: (userId: string) => ['notifications', 'recent', userId] as const,
     settings: () => ['notifications', 'settings'] as const,
-    unreadCount: () => ['notifications', 'unread-count'] as const,
+    unreadCount: (userId: string) =>
+      ['notifications', 'unread-count', userId] as const,
   },
   permissions: () => ['permissions'] as const,
   roles: () => ['roles'] as const,

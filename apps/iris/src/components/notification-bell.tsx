@@ -36,10 +36,10 @@ export function NotificationBell() {
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
   const { data: session } = authClient.useSession();
-  const user = session?.user;
+  const userId = session?.session.userId;
 
   const { data: unreadData } = useQuery({
-    enabled: !!user,
+    enabled: !!userId,
     queryFn: async () => {
       const res = await parseResponse(api.notifications['unread-count'].$get());
       if (!res.success) {
@@ -47,12 +47,12 @@ export function NotificationBell() {
       }
       return res.data as UnreadCountData;
     },
-    queryKey: queryKeys.notifications.unreadCount(),
+    queryKey: queryKeys.notifications.unreadCount(userId ?? ''),
     refetchInterval: 30_000,
   });
 
   const { data: recentData } = useQuery({
-    enabled: !!user,
+    enabled: !!userId,
     queryFn: async () => {
       const res = await parseResponse(
         api.notifications.index.$get({
@@ -64,7 +64,7 @@ export function NotificationBell() {
       }
       return (res.data ?? []) as NotificationItem[];
     },
-    queryKey: queryKeys.notifications.recent(),
+    queryKey: queryKeys.notifications.recent(userId ?? ''),
     refetchInterval: 30_000,
   });
 
