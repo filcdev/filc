@@ -15,7 +15,7 @@ import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
 const searchSchema = z.object({
-  page: z.number().int().min(1).default(1),
+  page: z.coerce.number().int().min(1).default(1),
   search: z.string().default(''),
 });
 

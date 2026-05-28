@@ -507,7 +507,9 @@
     "updateSuccess": "Card updated",
     "saveError": "Failed to save card",
     "deleteSuccess": "Card deleted",
-    "deleteError": "Failed to delete card"
+    "deleteError": "Failed to delete card",
+    "editCard": "Edit card",
+    "deleteCard": "Delete card"
   },
   "doorlockDevices": {
     "title": "Doorlock Devices",
@@ -541,6 +543,7 @@
     "doorOpens": "Door opens (last 7 days)",
     "topUsers": "Top Users",
     "loadError": "Unable to load statistics",
-    "loadErrorMessage": "Something went wrong while fetching the dashboard."
+    "loadErrorMessage": "Something went wrong while fetching the dashboard.",
+    "noTopUsers": "No data yet"
   }
 }

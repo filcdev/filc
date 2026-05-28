@@ -27,6 +27,17 @@ type UsersTableProps = PaginationProps & {
   users: User[];
 };
 
+function getAriaSortState(
+  column: string,
+  sortColumn: string | null,
+  sortDirection: 'asc' | 'desc' | null
+): 'ascending' | 'descending' | 'none' {
+  if (sortColumn !== column) {
+    return 'none';
+  }
+  return sortDirection === 'asc' ? 'ascending' : 'descending';
+}
+
 export function UsersTable({
   cohortMap,
   users,
@@ -43,7 +54,7 @@ export function UsersTable({
     null
   );
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
@@ -78,56 +89,76 @@ export function UsersTable({
           <TableHeader>
             <TableRow>
               <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('name')}
+                aria-sort={getAriaSortState('name', sortColumn, sortDirection)}
+                className="select-none"
               >
-                <div className="flex items-center gap-2">
+                <button
+                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  onClick={() => handleSort('name')}
+                  type="button"
+                >
                   {t('users.name')}
                   <SortIcon
                     column="name"
                     currentColumn={sortColumn}
                     direction={sortDirection}
                   />
-                </div>
+                </button>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('email')}
+                aria-sort={getAriaSortState('email', sortColumn, sortDirection)}
+                className="select-none"
               >
-                <div className="flex items-center gap-2">
+                <button
+                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  onClick={() => handleSort('email')}
+                  type="button"
+                >
                   {t('users.email')}
                   <SortIcon
                     column="email"
                     currentColumn={sortColumn}
                     direction={sortDirection}
                   />
-                </div>
+                </button>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('cohort')}
+                aria-sort={getAriaSortState(
+                  'cohort',
+                  sortColumn,
+                  sortDirection
+                )}
+                className="select-none"
               >
-                <div className="flex items-center gap-2">
+                <button
+                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  onClick={() => handleSort('cohort')}
+                  type="button"
+                >
                   {t('preferences.cohort')}
                   <SortIcon
                     column="cohort"
                     currentColumn={sortColumn}
                     direction={sortDirection}
                   />
-                </div>
+                </button>
               </TableHead>
               <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('roles')}
+                aria-sort={getAriaSortState('roles', sortColumn, sortDirection)}
+                className="select-none"
               >
-                <div className="flex items-center gap-2">
+                <button
+                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  onClick={() => handleSort('roles')}
+                  type="button"
+                >
                   {t('users.roles')}
                   <SortIcon
                     column="roles"
                     currentColumn={sortColumn}
                     direction={sortDirection}
                   />
-                </div>
+                </button>
               </TableHead>
               <TableHead>{t('users.actions')}</TableHead>
             </TableRow>

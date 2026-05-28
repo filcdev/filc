@@ -349,6 +349,7 @@ function TimetableManagePage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          aria-label={`${t('timetable.editTitle')}: ${item.name}`}
                           onClick={() => {
                             setSelectedItem(item);
                             setEditDialogOpen(true);
@@ -359,6 +360,7 @@ function TimetableManagePage() {
                           <Pen className="h-4 w-4" />
                         </Button>
                         <Button
+                          aria-label={`${t('timetable.deleteConfirm')}: ${item.name}`}
                           onClick={() => {
                             setItemToDelete(item);
                             setDeleteDialogOpen(true);

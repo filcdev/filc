@@ -61,26 +61,28 @@ function DoorlockDashboard() {
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          icon={<IdCard className="text-primary" />}
-          isLoading={isLoading}
-          label={t('doorlockDashboard.totalCards')}
-          value={stats?.totalCards ?? 0}
-        />
-        <StatCard
-          icon={<Microchip className="text-primary" />}
-          isLoading={isLoading}
-          label={t('doorlockDashboard.totalDevices')}
-          value={stats?.totalDevices ?? 0}
-        />
-        <StatCard
-          icon={<DoorOpen className="text-primary" />}
-          isLoading={isLoading}
-          label={t('doorlockDashboard.successfulOpens')}
-          value={stats?.totalSuccessfulOpens ?? 0}
-        />
-      </div>
+      {(isLoading || stats) && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            icon={<IdCard className="text-primary" />}
+            isLoading={isLoading}
+            label={t('doorlockDashboard.totalCards')}
+            value={stats?.totalCards ?? 0}
+          />
+          <StatCard
+            icon={<Microchip className="text-primary" />}
+            isLoading={isLoading}
+            label={t('doorlockDashboard.totalDevices')}
+            value={stats?.totalDevices ?? 0}
+          />
+          <StatCard
+            icon={<DoorOpen className="text-primary" />}
+            isLoading={isLoading}
+            label={t('doorlockDashboard.successfulOpens')}
+            value={stats?.totalSuccessfulOpens ?? 0}
+          />
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -104,7 +106,7 @@ function DoorlockDashboard() {
               <ul className="space-y-3">
                 {stats.topUsers.length === 0 && (
                   <li className="text-muted-foreground text-sm">
-                    {t('unknown')}
+                    {t('doorlockDashboard.noTopUsers')}
                   </li>
                 )}
                 {stats.topUsers.map((user) => (

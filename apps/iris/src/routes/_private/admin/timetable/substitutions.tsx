@@ -443,17 +443,23 @@ function SubstitutionsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
-                      {Array.from(
-                        new Set(
-                          sub.lessons
-                            .filter((l) => l !== null && l !== undefined)
-                            .flatMap((l) => l.cohorts)
-                        )
-                      ).map((cohort) => (
-                        <Badge key={cohort} variant="secondary">
-                          {cohort}
-                        </Badge>
-                      ))}
+                      {(() => {
+                        const cohorts = Array.from(
+                          new Set(
+                            sub.lessons
+                              .filter((l) => l !== null && l !== undefined)
+                              .flatMap((l) => l.cohorts)
+                          )
+                        );
+
+                        return cohorts.length > 0
+                          ? cohorts.map((cohort) => (
+                              <Badge key={cohort} variant="secondary">
+                                {cohort}
+                              </Badge>
+                            ))
+                          : t('substitution.noCohorts');
+                      })()}
                     </div>
                   </TableCell>
                   {hasWritePermission && (

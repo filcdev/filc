@@ -507,7 +507,9 @@
     "updateSuccess": "Kártya frissítve",
     "saveError": "Nem sikerült menteni a kártyát",
     "deleteSuccess": "Kártya törölve",
-    "deleteError": "Nem sikerült törölni a kártyát"
+    "deleteError": "Nem sikerült törölni a kártyát",
+    "editCard": "Kártya szerkesztése",
+    "deleteCard": "Kártya törlése"
   },
   "doorlockDevices": {
     "title": "Ajtózár eszközök",
@@ -541,6 +543,7 @@
     "doorOpens": "Ajtónyitások (elmúlt 7 nap)",
     "topUsers": "Legtöbbet nyitók",
     "loadError": "Nem sikerült betölteni a statisztikákat",
-    "loadErrorMessage": "Hiba történt az adatok betöltése közben."
+    "loadErrorMessage": "Hiba történt az adatok betöltése közben.",
+    "noTopUsers": "Még nincs adat"
   }
 }

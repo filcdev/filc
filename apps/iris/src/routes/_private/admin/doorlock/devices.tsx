@@ -56,6 +56,17 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
 
 type DeviceSortColumn = 'name' | 'location' | 'apiToken' | 'updated';
 
+function getAriaSortState(
+  column: string,
+  sortColumn: string | null,
+  sortDirection: 'asc' | 'desc' | null
+): 'ascending' | 'descending' | 'none' {
+  if (sortColumn !== column) {
+    return 'none';
+  }
+  return sortDirection === 'asc' ? 'ascending' : 'descending';
+}
+
 function DevicesPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -340,56 +351,88 @@ function DevicesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('name')}
+                  aria-sort={getAriaSortState(
+                    'name',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
                 >
-                  <div className="flex items-center gap-2">
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('name')}
+                    type="button"
+                  >
                     {t('doorlockDevices.name')}
                     <SortIcon
                       column="name"
                       currentColumn={sortColumn}
                       direction={sortDirection}
                     />
-                  </div>
+                  </button>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('location')}
+                  aria-sort={getAriaSortState(
+                    'location',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
                 >
-                  <div className="flex items-center gap-2">
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('location')}
+                    type="button"
+                  >
                     {t('doorlockDevices.location')}
                     <SortIcon
                       column="location"
                       currentColumn={sortColumn}
                       direction={sortDirection}
                     />
-                  </div>
+                  </button>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('apiToken')}
+                  aria-sort={getAriaSortState(
+                    'apiToken',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
                 >
-                  <div className="flex items-center gap-2">
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('apiToken')}
+                    type="button"
+                  >
                     {t('doorlockDevices.apiToken')}
                     <SortIcon
                       column="apiToken"
                       currentColumn={sortColumn}
                       direction={sortDirection}
                     />
-                  </div>
+                  </button>
                 </TableHead>
                 <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('updated')}
+                  aria-sort={getAriaSortState(
+                    'updated',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
                 >
-                  <div className="flex items-center gap-2">
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('updated')}
+                    type="button"
+                  >
                     {t('doorlockDevices.lastUpdated')}
                     <SortIcon
                       column="updated"
                       currentColumn={sortColumn}
                       direction={sortDirection}
                     />
-                  </div>
+                  </button>
                 </TableHead>
                 {hasWritePermission && (
                   <TableHead>{t('doorlockDevices.actions')}</TableHead>
