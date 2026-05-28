@@ -54,7 +54,7 @@ function LessonRow({
         {lesson.cohorts && lesson.cohorts.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {lesson.cohorts.map((cohort) => (
-              <Badge className="text-xs" key={cohort} variant="secondary">
+              <Badge className="text-xs" key={cohort} variant="outline">
                 {cohort}
               </Badge>
             ))}
@@ -68,6 +68,8 @@ function LessonRow({
           <span className="font-medium">
             {lesson.period.startTime.slice(0, 5)} –{' '}
             {lesson.period.endTime.slice(0, 5)}
+            {', '}
+            {lesson.period.period}. {t('substitution.period')}
           </span>
         ) : (
           <span className="text-muted-foreground">{notAvailable}</span>

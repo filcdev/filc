@@ -230,7 +230,8 @@
     "availableForClass": "Substitutions are available for {{className}}",
     "yourClass": "your class",
     "cardTitle": "Substitution on {{date}}",
-    "notAvailable": "N/A"
+    "notAvailable": "N/A",
+    "period": "Period"
   },
   "movedLesson": {
     "title": "Moved Lessons",

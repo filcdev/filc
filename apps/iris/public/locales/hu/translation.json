@@ -230,7 +230,8 @@
     "availableForClass": "Helyettesítések elérhetők ehhez: {{className}}",
     "yourClass": "a te osztályod",
     "cardTitle": "Helyettesítés ezen a napon: {{date}}",
-    "notAvailable": "N/A"
+    "notAvailable": "N/A",
+    "period": "Óra"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",
