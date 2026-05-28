@@ -128,12 +128,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       return;
     }
 
-    if (!cohortQuery.data) {
-      return;
-    }
-
     setSelectedCohortId(session?.user?.cohortId ?? null);
-  }, [open, cohortQuery.data, session?.user?.cohortId]);
+  }, [open, session?.user?.cohortId]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -152,7 +148,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
 
       const currentCohortId = session?.user?.cohortId ?? null;
-      if (selectedCohortId !== currentCohortId) {
+      if (cohortQuery.isSuccess && selectedCohortId !== currentCohortId) {
         try {
           await authClient.updateUser({ cohortId: selectedCohortId });
         } catch {
