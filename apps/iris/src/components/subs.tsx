@@ -191,7 +191,8 @@ function LessonReturn(data: Subs[], cohortFilter?: string) {
       sub.lessons
         .filter((lesson): lesson is Lesson => lesson !== null)
         .filter(
-          (lesson) => !cohortFilter || lesson.cohorts.includes(cohortFilter)
+          (lesson) =>
+            !cohortFilter || (lesson.cohorts?.includes(cohortFilter) ?? false)
         )
         .map((lesson) => (
           <TableRow
