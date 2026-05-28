@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseResponse } from 'hono/client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import type { CohortItem } from '@/components/timetable/types';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -73,11 +76,14 @@ type SettingsDialogProps = {
 };
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const [, setCookie] = useCookies(['filc.language']);
   const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
+  const [selectedCohortId, setSelectedCohortId] = useState<string | null>(null);
   const [prefs, setPrefs] = useState({
     announcement: true,
     blogPost: false,
@@ -105,6 +111,26 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     queryKey: queryKeys.notifications.settings(),
   });
 
+  const cohortQuery = useQuery({
+    enabled: open,
+    queryFn: async () => {
+      const res = await parseResponse(api.cohort.index.$get());
+      if (!res.success) {
+        throw new Error(t('cohort.fetchFailed'));
+      }
+      return (res.data ?? []) as CohortItem[];
+    },
+    queryKey: queryKeys.cohorts(),
+  });
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setSelectedCohortId(session?.user?.cohortId ?? null);
+  }, [open, session?.user?.cohortId]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const res = await parseResponse(
@@ -120,9 +146,26 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       if (!res.success) {
         throw new Error('Failed to save settings');
       }
+
+      const currentCohortId = session?.user?.cohortId ?? null;
+      if (cohortQuery.isSuccess && selectedCohortId !== currentCohortId) {
+        try {
+          await authClient.updateUser({ cohortId: selectedCohortId });
+        } catch {
+          throw new Error('Failed to update cohort');
+        }
+      }
+
       return res;
     },
-    onError: () => {
+    onError: (error) => {
+      if (
+        error instanceof Error &&
+        error.message === 'Failed to update cohort'
+      ) {
+        toast.error(t('welcome.cohortSaveFailed'));
+        return;
+      }
       toast.error(t('preferences.saveError'));
     },
     onSuccess: () => {
@@ -148,6 +191,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     };
   };
 
+  const handleLanguageChange = (value: string | null) => {
+    if (!value) {
+      return;
+    }
+
+    setLanguage(value);
+    i18n.changeLanguage(value).catch(() => {
+      toast.error(t('preferences.languageChangeError'));
+    });
+    setCookie('filc.language', value, { sameSite: 'lax' });
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = value;
+    }
+  };
+
   const languageItems = [
     { label: 'Magyar', value: 'hu' },
     { label: 'English', value: 'en' },
@@ -158,6 +216,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     { label: t('preferences.themeDark'), value: 'dark' },
     { label: t('preferences.themeSystem'), value: 'system' },
   ];
+
+  const cohortItems = (cohortQuery.data ?? []).map((cohort) => ({
+    label: cohort.name,
+    value: cohort.id,
+  }));
+
   const ready = !(isLoading || isError);
 
   return (
@@ -190,7 +254,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <span>{t('preferences.language')}</span>
                     <Select
                       items={languageItems}
-                      onValueChange={handleSelectChange(setLanguage)}
+                      onValueChange={handleLanguageChange}
                       value={language}
                     >
                       <SelectTrigger className="w-32">
@@ -223,6 +287,47 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <span>{t('preferences.cohort')}</span>
+                      {cohortQuery.isLoading ? (
+                        <Skeleton className="h-9 w-32" />
+                      ) : (
+                        <Select
+                          items={cohortItems}
+                          onValueChange={setSelectedCohortId}
+                          value={selectedCohortId}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue
+                              placeholder={
+                                cohortItems.length > 0
+                                  ? t('cohort.selectPlaceholder')
+                                  : t('cohort.noneFound')
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cohortItems.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    {cohortQuery.isError ? (
+                      <Alert variant="destructive">
+                        <AlertTitle>
+                          {t('cohort.errorLoading', {
+                            message: `${cohortQuery.error ?? ''}`,
+                          })}
+                        </AlertTitle>
+                      </Alert>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
