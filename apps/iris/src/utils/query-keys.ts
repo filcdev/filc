@@ -52,6 +52,7 @@ export const queryKeys = {
     ) =>
       ['notifications', 'list', type, unread, page, dateFrom, dateTo] as const,
     preferences: () => ['notifications', 'preferences'] as const,
+    recent: () => ['notifications', 'recent'] as const,
     settings: () => ['notifications', 'settings'] as const,
     unreadCount: () => ['notifications', 'unread-count'] as const,
   },

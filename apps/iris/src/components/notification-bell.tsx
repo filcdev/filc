@@ -64,7 +64,7 @@ export function NotificationBell() {
       }
       return (res.data ?? []) as NotificationItem[];
     },
-    queryKey: ['notifications', 'recent'] as const,
+    queryKey: queryKeys.notifications.recent(),
     refetchInterval: 30_000,
   });
 
