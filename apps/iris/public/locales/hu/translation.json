@@ -60,6 +60,7 @@
     "cards": "Kártyák",
     "logs": "Naplók",
     "manage-cards": "Kártyák kezelése",
+    "unknownUser": "Ismeretlen felhasználó",
     "selfCards": {
       "title": "Belépőkártyáim",
       "loadError": "Nem sikerült betölteni a kártyáidat.",
