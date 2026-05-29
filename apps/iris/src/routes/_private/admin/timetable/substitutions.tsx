@@ -415,7 +415,7 @@ function SubstitutionsPage() {
                   <TableCell className="font-medium">
                     {formatLocalizedDate(sub.substitution.date, i18n.language)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="truncate">
                     {sub.teacher ? (
                       `${sub.teacher.firstName} ${sub.teacher.lastName}`
                     ) : (
@@ -425,24 +425,35 @@ function SubstitutionsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {sub.lessons.length > 0
-                      ? sub.lessons
-                          .filter((l) => l !== null && l !== undefined)
-                          .map(
-                            (l) =>
-                              `${l.subject?.short ?? '?'} P${l.period?.period ?? '?'}`
-                          )
-                          .join(', ')
-                      : t('substitution.noLessons')}
+                    <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
+                      {sub.lessons.length > 0
+                        ? sub.lessons
+                            .filter((l) => l !== null && l !== undefined)
+                            .map((l) => (
+                              <Badge key={l.id} variant="secondary">
+                                {l.subject?.short ?? '?'}
+                                {', '}
+                                {t('substitution.period')}{' '}
+                                {l.period?.period ?? '?'}
+                              </Badge>
+                            ))
+                        : t('substitution.noLessons')}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {Array.from(
-                      new Set(
-                        sub.lessons
-                          .filter((l) => l !== null && l !== undefined)
-                          .flatMap((l) => l.cohorts)
-                      )
-                    ).join(', ') || '-'}
+                    <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
+                      {Array.from(
+                        new Set(
+                          sub.lessons
+                            .filter((l) => l !== null && l !== undefined)
+                            .flatMap((l) => l.cohorts)
+                        )
+                      ).map((cohort) => (
+                        <Badge key={cohort} variant="secondary">
+                          {cohort}
+                        </Badge>
+                      ))}
+                    </div>
                   </TableCell>
                   {hasWritePermission && (
                     <TableCell>
