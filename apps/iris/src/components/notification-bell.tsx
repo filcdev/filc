@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -34,8 +35,11 @@ export function NotificationBell() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const { data: session } = authClient.useSession();
+  const userId = session?.session.userId;
 
   const { data: unreadData } = useQuery({
+    enabled: !!userId,
     queryFn: async () => {
       const res = await parseResponse(api.notifications['unread-count'].$get());
       if (!res.success) {
@@ -43,11 +47,12 @@ export function NotificationBell() {
       }
       return res.data as UnreadCountData;
     },
-    queryKey: queryKeys.notifications.unreadCount(),
+    queryKey: queryKeys.notifications.unreadCount(userId ?? ''),
     refetchInterval: 30_000,
   });
 
   const { data: recentData } = useQuery({
+    enabled: !!userId,
     queryFn: async () => {
       const res = await parseResponse(
         api.notifications.index.$get({
@@ -59,7 +64,7 @@ export function NotificationBell() {
       }
       return (res.data ?? []) as NotificationItem[];
     },
-    queryKey: ['notifications', 'recent'] as const,
+    queryKey: queryKeys.notifications.recent(userId ?? ''),
     refetchInterval: 30_000,
   });
 

@@ -74,7 +74,7 @@ export function Navbar({
           )}
 
           <div className="ml-auto flex items-center gap-3">
-            <NotificationBell />
+            {data && <NotificationBell />}
 
             <LanguageSelector />
 
