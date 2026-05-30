@@ -2,10 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import { FileUp, Pen, Trash } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Calendar,
+  CalendarCheck,
+  CalendarClock,
+  FileUp,
+  Pen,
+  RefreshCw,
+  Trash,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { StatCard } from '@/components/admin/stat-card';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
 import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
 import type { TimetableItem } from '@/components/timetable/types';
@@ -250,21 +259,59 @@ function TimetableManagePage() {
     return dayjs(date).format('YYYY-MM-DD');
   };
 
+  const data = timetablesQuery.data ?? [];
+
+  const stats = useMemo(
+    () => ({
+      current: data.filter((item) => getTimetableStatus(item) === 'current')
+        .length,
+      total: data.length,
+      upcoming: data.filter((item) => getTimetableStatus(item) === 'upcoming')
+        .length,
+    }),
+    [data]
+  );
+
   return (
-    <div className="container mx-auto space-y-6 p-4 md:p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('timetable.manage')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('timetable.manageDescription')}
-          </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-bold text-3xl tracking-tight">
+          {t('timetable.manage')}
+        </h1>
+        <p className="text-muted-foreground">
+          {t('timetable.manageDescription')}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="ml-auto flex items-center gap-2">
+          <Button onClick={() => timetablesQuery.refetch()} variant="outline">
+            <RefreshCw className="h-4 w-4" />
+            {t('timetable.refresh')}
+          </Button>
+          <Button onClick={() => setImportDialogOpen(true)}>
+            <FileUp className="h-4 w-4" />
+            {t('timetable.import')}
+          </Button>
         </div>
-        <Button onClick={() => setImportDialogOpen(true)}>
-          <FileUp className="mr-2 h-4 w-4" />
-          {t('timetable.import')}
-        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          icon={<Calendar className="text-primary" />}
+          label={t('timetable.totalTimetables')}
+          value={stats.total}
+        />
+        <StatCard
+          icon={<CalendarCheck className="text-primary" />}
+          label={t('timetable.currentTimetables')}
+          value={stats.current}
+        />
+        <StatCard
+          icon={<CalendarClock className="text-primary" />}
+          label={t('timetable.upcomingTimetables')}
+          value={stats.upcoming}
+        />
       </div>
 
       {timetablesQuery.isLoading ? (
@@ -275,58 +322,62 @@ function TimetableManagePage() {
           ))}
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('timetable.nameLabel')}</TableHead>
-              <TableHead>{t('timetable.validFromLabel')}</TableHead>
-              <TableHead>{t('timetable.validToLabel')}</TableHead>
-              <TableHead>{t('timetable.statusLabel')}</TableHead>
-              <TableHead>{t('substitution.actions')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(timetablesQuery.data ?? []).map((item) => {
-              const status = getTimetableStatus(item);
-              return (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{formatDate(item.validFrom)}</TableCell>
-                  <TableCell>{formatDate(item.validTo)}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusBadgeVariant[status]}>
-                      {t(`timetable.status.${status}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setEditDialogOpen(true);
-                        }}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setItemToDelete(item);
-                          setDeleteDialogOpen(true);
-                        }}
-                        size="sm"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('timetable.nameLabel')}</TableHead>
+                <TableHead>{t('timetable.validFromLabel')}</TableHead>
+                <TableHead>{t('timetable.validToLabel')}</TableHead>
+                <TableHead>{t('timetable.statusLabel')}</TableHead>
+                <TableHead>{t('substitution.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((item) => {
+                const status = getTimetableStatus(item);
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell>{formatDate(item.validFrom)}</TableCell>
+                    <TableCell>{formatDate(item.validTo)}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusBadgeVariant[status]}>
+                        {t(`timetable.status.${status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          aria-label={`${t('timetable.editTitle')}: ${item.name}`}
+                          onClick={() => {
+                            setSelectedItem(item);
+                            setEditDialogOpen(true);
+                          }}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <Pen className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          aria-label={`${t('timetable.deleteConfirm')}: ${item.name}`}
+                          onClick={() => {
+                            setItemToDelete(item);
+                            setDeleteDialogOpen(true);
+                          }}
+                          size="sm"
+                          variant="destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <TimetableImportDialog

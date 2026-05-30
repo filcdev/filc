@@ -20,6 +20,7 @@ const listUsersQuerySchema = z.object({
 });
 
 const userUpdatePayload = z.object({
+  cohortId: z.string().nullable().optional(),
   nickname: z.string().optional(),
   roles: z.array(z.string()).optional(),
 });
@@ -139,11 +140,12 @@ export const updateUser = usersFactory.createHandlers(
         message: 'User ID is required',
       });
     }
-    const { nickname, roles } = c.req.valid('json');
+    const { cohortId, nickname, roles } = c.req.valid('json');
 
     const [updatedUser] = await db
       .update(user)
       .set({
+        ...(cohortId === undefined ? {} : { cohortId }),
         ...(nickname === undefined ? {} : { nickname }),
         ...(roles === undefined ? {} : { roles }),
       })

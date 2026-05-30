@@ -6,17 +6,24 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Ban, CreditCard, Lock, Pen, Plus, Trash } from 'lucide-react';
-import type { ReactNode } from 'react';
+import {
+  Ban,
+  CreditCard,
+  Lock,
+  Pen,
+  Plus,
+  RefreshCw,
+  Trash,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { StatCard } from '@/components/admin/stat-card';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -54,9 +61,9 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
 type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
 
 function CardsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
-  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -124,11 +131,16 @@ function CardsPage() {
       return parseResponse(api.doorlock.cards.$post({ json: payload }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to save card');
+      toast.error(error.message || t('doorlockCards.saveError'));
     },
     onSuccess: (_res, variables) => {
-      toast.success(variables.id ? 'Card updated' : 'Card created');
+      toast.success(
+        variables.id
+          ? t('doorlockCards.updateSuccess')
+          : t('doorlockCards.createSuccess')
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
       setDialogOpen(false);
       setSelectedCard(null);
     },
@@ -143,11 +155,12 @@ function CardsPage() {
     mutationFn: async (id: string) =>
       parseResponse(api.doorlock.cards[':id'].$delete({ param: { id } })),
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete card');
+      toast.error(error.message || t('doorlockCards.deleteError'));
     },
     onSuccess: () => {
-      toast.success('Card deleted');
+      toast.success(t('doorlockCards.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
     },
   });
 
@@ -239,16 +252,26 @@ function CardsPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="font-bold text-3xl tracking-tight">
+          {t('doorlockCards.title')}
+        </h1>
+        <p className="text-muted-foreground">
+          {t('doorlockCards.description')}
+        </p>
+      </div>
+
       <div className="flex flex-wrap items-center gap-4">
         <Input
           className="max-w-sm"
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search cards..."
+          placeholder={t('doorlockCards.searchPlaceholder')}
           value={search}
         />
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => cardsQuery.refetch()} variant="outline">
-            Refresh
+            <RefreshCw className="h-4 w-4" />
+            {t('doorlockCards.refresh')}
           </Button>
           {hasWritePermission && (
             <Button
@@ -257,7 +280,8 @@ function CardsPage() {
                 setDialogOpen(true);
               }}
             >
-              <Plus /> Add card
+              <Plus className="h-4 w-4" />
+              {t('doorlockCards.addCard')}
             </Button>
           )}
         </div>
@@ -266,26 +290,27 @@ function CardsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={<CreditCard className="text-primary" />}
-          label="Total cards"
+          label={t('doorlockCards.totalCards')}
           value={totals.total}
         />
         <StatCard
           icon={<Lock className="text-primary" />}
-          label="Frozen cards"
+          label={t('doorlockCards.frozenCards')}
           value={totals.frozen}
         />
         <StatCard
           icon={<Ban className="text-primary" />}
-          label="Disabled cards"
+          label={t('doorlockCards.disabledCards')}
           value={totals.disabled}
         />
       </div>
 
       {hasError && (
         <Alert variant="destructive">
-          <AlertTitle>Unable to load cards</AlertTitle>
+          <AlertTitle>{t('doorlockCards.loadError')}</AlertTitle>
           <AlertDescription>
-            {(cardsQuery.error as Error)?.message ?? 'Please try again later.'}
+            {(cardsQuery.error as Error)?.message ??
+              t('doorlockCards.loadError')}
           </AlertDescription>
         </Alert>
       )}
@@ -361,7 +386,9 @@ function CardsPage() {
                   />
                 </div>
               </TableHead>
-              {hasWritePermission && <TableHead>Actions</TableHead>}
+              {hasWritePermission && (
+                <TableHead>{t('doorlockCards.actions')}</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -370,17 +397,26 @@ function CardsPage() {
                 <TableCell className="font-medium">{card.name}</TableCell>
                 <TableCell>
                   {card.owner
-                    ? getOwnerLabel(card.owner) || t('doorlock.unknownUser')
-                    : t('doorlock.unknownUser')}
+                    ? getOwnerLabel(card.owner) ||
+                      t('doorlockCards.unknownUser')
+                    : t('doorlockCards.unknownUser')}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {!card.frozen && card.enabled && (
-                      <Badge variant="secondary">Active</Badge>
+                      <Badge variant="secondary">
+                        {t('doorlockCards.active')}
+                      </Badge>
                     )}
-                    {card.frozen && <Badge variant="outline">Frozen</Badge>}
+                    {card.frozen && (
+                      <Badge variant="outline">
+                        {t('doorlockCards.frozen')}
+                      </Badge>
+                    )}
                     {!card.enabled && (
-                      <Badge variant="destructive">Disabled</Badge>
+                      <Badge variant="destructive">
+                        {t('doorlockCards.disabled')}
+                      </Badge>
                     )}
                   </div>
                 </TableCell>
@@ -389,7 +425,7 @@ function CardsPage() {
                     ? card.authorizedDevices
                         .map((device) => device.name)
                         .join(', ')
-                    : 'No devices'}
+                    : t('doorlockCards.noDevices')}
                 </TableCell>
                 <TableCell>
                   {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
@@ -398,6 +434,7 @@ function CardsPage() {
                   <TableCell>
                     <div className="flex gap-2">
                       <Button
+                        aria-label={t('doorlockCards.editCard')}
                         onClick={() => {
                           setSelectedCard(card);
                           setDialogOpen(true);
@@ -408,6 +445,7 @@ function CardsPage() {
                         <Pen className="h-4 w-4" />
                       </Button>
                       <Button
+                        aria-label={t('doorlockCards.deleteCard')}
                         disabled={deleteMutation.isPending}
                         onClick={() => handleDelete(card)}
                         size="icon"
@@ -426,7 +464,7 @@ function CardsPage() {
                   className="text-muted-foreground"
                   colSpan={hasWritePermission ? 6 : 5}
                 >
-                  No cards found.
+                  {t('doorlockCards.noCardsFound')}
                 </TableCell>
               </TableRow>
             )}
@@ -450,28 +488,6 @@ function CardsPage() {
         />
       )}
     </div>
-  );
-}
-
-type StatCardProps = {
-  icon: ReactNode;
-  label: string;
-  value: number;
-};
-
-function StatCard({ icon, label, value }: StatCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-medium text-muted-foreground text-sm">
-          {label}
-        </CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="font-semibold text-3xl">{value}</div>
-      </CardContent>
-    </Card>
   );
 }
 
