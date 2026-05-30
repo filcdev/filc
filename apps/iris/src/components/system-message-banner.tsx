@@ -99,6 +99,10 @@ export function SystemMessageBanner() {
   }, [dismissedIds, systemMessagesQuery.data]);
 
   useEffect(() => {
+    if (!systemMessagesQuery.isSuccess) {
+      return;
+    }
+
     const idsInFeed = new Set(
       (systemMessagesQuery.data ?? []).map((item) => item.id)
     );
@@ -108,7 +112,7 @@ export function SystemMessageBanner() {
       setDismissedIds(nextDismissed);
       writeDismissedIds(nextDismissed);
     }
-  }, [dismissedIds, systemMessagesQuery.data]);
+  }, [dismissedIds, systemMessagesQuery.data, systemMessagesQuery.isSuccess]);
 
   const dismissMessage = (messageId: string) => {
     setDismissedIds((previous) => {

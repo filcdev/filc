@@ -16,6 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -43,33 +50,52 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     queryKey: queryKeys.roles(),
   });
 
+  const cohortsQuery = useQuery({
+    queryFn: async () => {
+      const res = await parseResponse(api.cohort.index.$get());
+      if (!res.success) {
+        throw new Error('Failed to load cohorts');
+      }
+      return res.data ?? [];
+    },
+    queryKey: queryKeys.cohorts(),
+  });
+
+  const cohortItems = (cohortsQuery.data ?? []).map((c) => ({
+    label: c.name,
+    value: c.id,
+  }));
+
   const availableRoles = rolesQuery.data?.roles ?? [];
 
   const mutation = useMutation({
     mutationFn: async ({
+      cohortId,
       nickname,
       roles,
     }: {
+      cohortId: string | null;
       nickname: string;
       roles: string[];
     }) => {
       const res = await api.users[':id'].$patch({
         json: {
+          cohortId,
           nickname: nickname || undefined,
           roles,
         },
         param: { id: user.id },
       });
       if (!res.ok) {
-        toast.error('Failed to update user');
+        throw new Error(t('users.updateError'));
       }
       return res.json();
     },
     onError: () => {
-      toast.error('Failed to update user');
+      toast.error(t('users.updateError'));
     },
     onSuccess: () => {
-      toast.success('User updated successfully');
+      toast.success(t('users.updateSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.usersAll() });
       onOpenChange(false);
     },
@@ -77,6 +103,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
 
   const form = useForm({
     defaultValues: {
+      cohortId: user.cohortId ?? null,
       nickname: user.nickname ?? '',
       roles: user.roles as string[],
     },
@@ -106,7 +133,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>{t('users.editTitle')}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4 py-4"
@@ -116,17 +143,19 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
           }}
         >
           <Field>
-            <FieldLabel htmlFor="user-name">Name</FieldLabel>
+            <FieldLabel htmlFor="user-name">{t('account.name')}</FieldLabel>
             <Input disabled id="user-name" value={user.name} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="user-email">Email</FieldLabel>
+            <FieldLabel htmlFor="user-email">{t('account.email')}</FieldLabel>
             <Input disabled id="user-email" value={user.email} />
           </Field>
           <form.Field name="nickname">
             {(field) => (
               <Field>
-                <FieldLabel htmlFor={field.name}>Nickname</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  {t('account.nickname')}
+                </FieldLabel>
                 <Input
                   id={field.name}
                   onChange={(e) => field.handleChange(e.target.value)}
@@ -135,8 +164,37 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
               </Field>
             )}
           </form.Field>
+          <form.Field name="cohortId">
+            {(field) => (
+              <Field>
+                <FieldLabel>{t('preferences.cohort')}</FieldLabel>
+                <Select
+                  items={cohortItems}
+                  onValueChange={(value) => field.handleChange(value ?? null)}
+                  value={field.state.value ?? ''}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        cohortItems.length > 0
+                          ? t('cohort.selectPlaceholder')
+                          : t('cohort.noneFound')
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cohortItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+          </form.Field>
           <Field>
-            <FieldLabel>{t('roles.permissions')}</FieldLabel>
+            <FieldLabel>{t('users.roles')}</FieldLabel>
             <div className="flex flex-wrap gap-1.5 pb-2">
               {selectedRoles.map((role: string) => (
                 <Badge key={role} variant="default">
@@ -145,7 +203,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
               ))}
               {selectedRoles.length === 0 && (
                 <span className="text-muted-foreground text-sm">
-                  {t('roles.noRoles')}
+                  {t('users.noRoles')}
                 </span>
               )}
             </div>
@@ -173,7 +231,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                 ))}
                 {availableRoles.length === 0 && (
                   <p className="text-muted-foreground text-sm">
-                    {t('roles.noRoles')}
+                    {t('users.noRoles')}
                   </p>
                 )}
               </div>
@@ -188,7 +246,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
               {t('common.cancel')}
             </Button>
             <Button disabled={!form.state.canSubmit} type="submit">
-              Save
+              {t('users.save')}
             </Button>
           </DialogFooter>
         </form>

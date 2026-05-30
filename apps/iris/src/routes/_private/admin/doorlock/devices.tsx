@@ -14,17 +14,18 @@ import {
   Microchip,
   Pen,
   Plus,
+  RefreshCw,
   Trash,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { StatCard } from '@/components/admin/stat-card';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
 import { OtaUpdateDialog } from '@/components/doorlock/ota-update-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -55,7 +56,19 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
 
 type DeviceSortColumn = 'name' | 'location' | 'apiToken' | 'updated';
 
+function getAriaSortState(
+  column: string,
+  sortColumn: string | null,
+  sortDirection: 'asc' | 'desc' | null
+): 'ascending' | 'descending' | 'none' {
+  if (sortColumn !== column) {
+    return 'none';
+  }
+  return sortDirection === 'asc' ? 'ascending' : 'descending';
+}
+
 function DevicesPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
@@ -106,11 +119,16 @@ function DevicesPage() {
       return parseResponse(api.doorlock.devices.$post({ json: payload }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to save device');
+      toast.error(error.message || t('doorlockDevices.saveError'));
     },
     onSuccess: (_res, variables) => {
-      toast.success(variables.id ? 'Device updated' : 'Device created');
+      toast.success(
+        variables.id
+          ? t('doorlockDevices.updateSuccess')
+          : t('doorlockDevices.createSuccess')
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
       setDialogOpen(false);
       setSelectedDevice(null);
     },
@@ -125,11 +143,12 @@ function DevicesPage() {
     mutationFn: async (id: string) =>
       parseResponse(api.doorlock.devices[':id'].$delete({ param: { id } })),
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete device');
+      toast.error(error.message || t('doorlockDevices.deleteError'));
     },
     onSuccess: () => {
-      toast.success('Device deleted');
+      toast.success(t('doorlockDevices.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
     },
   });
 
@@ -152,13 +171,13 @@ function DevicesPage() {
       );
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to trigger OTA update');
+      toast.error(error.message || t('doorlockDevices.saveError'));
     },
     onSuccess: (_res, variables) => {
       toast.success(
         variables.deviceId
-          ? 'OTA update triggered'
-          : 'OTA update triggered on all devices'
+          ? t('doorlockDevices.updateSuccess')
+          : t('doorlockDevices.updateSuccess')
       );
       setOtaDialogOpen(false);
       setOtaDevice(null);
@@ -249,16 +268,26 @@ function DevicesPage() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="font-bold text-3xl tracking-tight">
+          {t('doorlockDevices.title')}
+        </h1>
+        <p className="text-muted-foreground">
+          {t('doorlockDevices.description')}
+        </p>
+      </div>
+
       <div className="flex flex-wrap items-center gap-4">
         <Input
           className="max-w-sm"
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search devices..."
+          placeholder={t('doorlockDevices.searchPlaceholder')}
           value={search}
         />
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => devicesQuery.refetch()} variant="outline">
-            Refresh
+            <RefreshCw className="h-4 w-4" />
+            {t('doorlockDevices.refresh')}
           </Button>
           {hasWritePermission && (
             <>
@@ -269,7 +298,8 @@ function DevicesPage() {
                 }}
                 variant="outline"
               >
-                <Download /> Update all
+                <Download className="h-4 w-4" />
+                {t('doorlockDevices.updateAll')}
               </Button>
               <Button
                 onClick={() => {
@@ -277,7 +307,8 @@ function DevicesPage() {
                   setDialogOpen(true);
                 }}
               >
-                <Plus /> Add device
+                <Plus className="h-4 w-4" />
+                {t('doorlockDevices.addDevice')}
               </Button>
             </>
           )}
@@ -287,27 +318,27 @@ function DevicesPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={<Microchip className="text-primary" />}
-          label="Total devices"
+          label={t('doorlockDevices.totalDevices')}
           value={totalDevices}
         />
         <StatCard
           icon={<DoorOpen className="text-primary" />}
-          label="Active (last 24h)"
+          label={t('doorlockDevices.activeDevices')}
           value={activeDevices}
         />
         <StatCard
           icon={<Key className="text-primary" />}
-          label="API tokens"
+          label={t('doorlockDevices.apiTokens')}
           value={totalDevices}
         />
       </div>
 
       {hasError && (
         <Alert variant="destructive">
-          <AlertTitle>Unable to load devices</AlertTitle>
+          <AlertTitle>{t('doorlockDevices.loadError')}</AlertTitle>
           <AlertDescription>
             {(devicesQuery.error as Error)?.message ??
-              'Please try again later.'}
+              t('doorlockDevices.loadError')}
           </AlertDescription>
         </Alert>
       )}
@@ -315,133 +346,169 @@ function DevicesPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('name')}
-              >
-                <div className="flex items-center gap-2">
-                  Name
-                  <SortIcon
-                    column="name"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('location')}
-              >
-                <div className="flex items-center gap-2">
-                  Location
-                  <SortIcon
-                    column="location"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('apiToken')}
-              >
-                <div className="flex items-center gap-2">
-                  API token
-                  <SortIcon
-                    column="apiToken"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('updated')}
-              >
-                <div className="flex items-center gap-2">
-                  Last updated
-                  <SortIcon
-                    column="updated"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              {hasWritePermission && <TableHead>Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDevices.map((device) => (
-              <TableRow key={device.id}>
-                <TableCell className="font-medium">{device.name}</TableCell>
-                <TableCell>{device.location ?? '—'}</TableCell>
-                <TableCell className="font-mono text-xs">
-                  {device.apiToken}
-                </TableCell>
-                <TableCell>
-                  {dayjs(device.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                </TableCell>
+        <div className="overflow-x-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  aria-sort={getAriaSortState(
+                    'name',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
+                >
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('name')}
+                    type="button"
+                  >
+                    {t('doorlockDevices.name')}
+                    <SortIcon
+                      column="name"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead
+                  aria-sort={getAriaSortState(
+                    'location',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
+                >
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('location')}
+                    type="button"
+                  >
+                    {t('doorlockDevices.location')}
+                    <SortIcon
+                      column="location"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead
+                  aria-sort={getAriaSortState(
+                    'apiToken',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
+                >
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('apiToken')}
+                    type="button"
+                  >
+                    {t('doorlockDevices.apiToken')}
+                    <SortIcon
+                      column="apiToken"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead
+                  aria-sort={getAriaSortState(
+                    'updated',
+                    sortColumn,
+                    sortDirection
+                  )}
+                  className="select-none"
+                >
+                  <button
+                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                    onClick={() => handleSort('updated')}
+                    type="button"
+                  >
+                    {t('doorlockDevices.lastUpdated')}
+                    <SortIcon
+                      column="updated"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </button>
+                </TableHead>
                 {hasWritePermission && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setStatsDevice(device);
-                          setStatsDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <ChartArea className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setOtaDevice(device);
-                          setOtaDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setSelectedDevice(device);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleDelete(device)}
-                        size="icon"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableHead>{t('doorlockDevices.actions')}</TableHead>
                 )}
               </TableRow>
-            ))}
-            {!(filteredDevices.length || hasError) && (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground"
-                  colSpan={hasWritePermission ? 5 : 4}
-                >
-                  No devices found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredDevices.map((device) => (
+                <TableRow key={device.id}>
+                  <TableCell className="font-medium">{device.name}</TableCell>
+                  <TableCell>{device.location ?? '—'}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {device.apiToken}
+                  </TableCell>
+                  <TableCell>
+                    {dayjs(device.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                  </TableCell>
+                  {hasWritePermission && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setStatsDevice(device);
+                            setStatsDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <ChartArea className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setOtaDevice(device);
+                            setOtaDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setSelectedDevice(device);
+                            setDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pen className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          disabled={deleteMutation.isPending}
+                          onClick={() => handleDelete(device)}
+                          size="icon"
+                          variant="destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {!(filteredDevices.length || hasError) && (
+                <TableRow>
+                  <TableCell
+                    className="text-muted-foreground"
+                    colSpan={hasWritePermission ? 5 : 4}
+                  >
+                    {t('doorlockDevices.noDevicesFound')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <DeviceDialog<DoorlockDevice>
@@ -486,28 +553,6 @@ function DevicesPage() {
         open={otaDialogOpen}
       />
     </div>
-  );
-}
-
-type StatCardProps = {
-  icon: ReactNode;
-  label: string;
-  value: number;
-};
-
-function StatCard({ icon, label, value }: StatCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-medium text-muted-foreground text-sm">
-          {label}
-        </CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="font-semibold text-3xl">{value}</div>
-      </CardContent>
-    </Card>
   );
 }
 
