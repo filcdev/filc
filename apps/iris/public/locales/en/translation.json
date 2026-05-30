@@ -186,6 +186,10 @@
     },
     "clearFilter": "Clear Filter"
   },
+  "navigation": {
+    "title": "Navigation",
+    "mobileMenu": "Open navigation menu"
+  },
   "substitution": {
     "title": "Substitutions",
     "description": "Check out lesson substitutions and cancellations",

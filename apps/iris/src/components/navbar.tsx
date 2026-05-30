@@ -7,7 +7,9 @@ import {
   GraduationCap,
   LogIn,
   LogOut,
+  Menu,
   UserCog,
+  X,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -48,6 +50,12 @@ export function Navbar({
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const canSeeAdminUi = useHasPermission(
+    ADMIN_UI_PERMISSIONS,
+    data?.user?.permissions
+  );
 
   return (
     <>
@@ -55,6 +63,21 @@ export function Navbar({
         <div className="flex h-16 items-center px-6">
           <div className="flex items-center gap-3">
             {children}
+            {data && showLinks && (
+              <Button
+                aria-label={t('navigation.mobileMenu')}
+                className="flex md:hidden"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                size="icon"
+                variant="ghost"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            )}
             {showLogo && (
               <>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -189,6 +212,56 @@ export function Navbar({
           </div>
         </div>
       </nav>
+      {data && showLinks && (
+        <div
+          className={[
+            'grid border-border border-b bg-background/95 backdrop-blur transition-all duration-200 ease-in-out md:hidden',
+            mobileMenuOpen
+              ? 'grid-rows-[1fr] border-b'
+              : 'grid-rows-[0fr] border-b-0',
+          ].join(' ')}
+        >
+          <div className="overflow-hidden">
+            <div className="flex flex-col gap-1 px-4 py-3">
+              <Button
+                className="justify-start gap-3"
+                onClick={() => {
+                  navigate({ to: '/' });
+                  setMobileMenuOpen(false);
+                }}
+                variant="ghost"
+              >
+                <Calendar className="h-5 w-5" />
+                {t('schedule')}
+              </Button>
+              <Button
+                className="justify-start gap-3"
+                onClick={() => {
+                  navigate({ to: '/subs' });
+                  setMobileMenuOpen(false);
+                }}
+                variant="ghost"
+              >
+                <Book className="h-5 w-5" />
+                {t('substitutions')}
+              </Button>
+              {canSeeAdminUi && (
+                <Button
+                  className="justify-start gap-3"
+                  onClick={() => {
+                    navigate({ to: '/admin' });
+                    setMobileMenuOpen(false);
+                  }}
+                  variant="ghost"
+                >
+                  <UserCog className="h-5 w-5" />
+                  {t('adminDashboard')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <SettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
     </>
   );

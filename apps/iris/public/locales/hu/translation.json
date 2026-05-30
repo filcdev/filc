@@ -186,6 +186,10 @@
     "delete": "Törlés",
     "deleting": "Törlés..."
   },
+  "navigation": {
+    "title": "Navigáció",
+    "mobileMenu": "Navigációs menü megnyitása"
+  },
   "substitution": {
     "title": "Helyettesítések",
     "description": "Órahelyettesítések és elmaradó órák elérése",
