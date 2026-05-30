@@ -226,43 +226,45 @@ export function Navbar({
           ].join(' ')}
         >
           <div className="overflow-hidden">
-            <div className="flex flex-col gap-1 px-4 py-3">
-              <Button
-                className="justify-start gap-3"
-                onClick={() => {
-                  navigate({ to: '/' });
-                  setMobileMenuOpen(false);
-                }}
-                variant="ghost"
-              >
-                <Calendar className="h-5 w-5" />
-                {t('schedule')}
-              </Button>
-              <Button
-                className="justify-start gap-3"
-                onClick={() => {
-                  navigate({ to: '/subs' });
-                  setMobileMenuOpen(false);
-                }}
-                variant="ghost"
-              >
-                <Book className="h-5 w-5" />
-                {t('substitutions')}
-              </Button>
-              {canSeeAdminUi && (
+            {mobileMenuOpen && (
+              <div className="flex flex-col gap-1 px-4 py-3">
                 <Button
                   className="justify-start gap-3"
                   onClick={() => {
-                    navigate({ to: '/admin' });
+                    navigate({ to: '/' });
                     setMobileMenuOpen(false);
                   }}
                   variant="ghost"
                 >
-                  <UserCog className="h-5 w-5" />
-                  {t('adminDashboard')}
+                  <Calendar className="h-5 w-5" />
+                  {t('schedule')}
                 </Button>
-              )}
-            </div>
+                <Button
+                  className="justify-start gap-3"
+                  onClick={() => {
+                    navigate({ to: '/subs' });
+                    setMobileMenuOpen(false);
+                  }}
+                  variant="ghost"
+                >
+                  <Book className="h-5 w-5" />
+                  {t('substitutions')}
+                </Button>
+                {canSeeAdminUi && (
+                  <Button
+                    className="justify-start gap-3"
+                    onClick={() => {
+                      navigate({ to: '/admin' });
+                      setMobileMenuOpen(false);
+                    }}
+                    variant="ghost"
+                  >
+                    <UserCog className="h-5 w-5" />
+                    {t('adminDashboard')}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
