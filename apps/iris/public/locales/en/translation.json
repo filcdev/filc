@@ -191,6 +191,11 @@
     "currentTimetables": "Current",
     "upcomingTimetables": "Upcoming"
   },
+  "navigation": {
+    "title": "Navigation",
+    "mobileMenuOpen": "Open navigation menu",
+    "mobileMenuClose": "Close navigation menu"
+  },
   "substitution": {
     "title": "Substitutions",
     "description": "Check out lesson substitutions and cancellations",

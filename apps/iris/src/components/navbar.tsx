@@ -7,9 +7,11 @@ import {
   GraduationCap,
   LogIn,
   LogOut,
+  Menu,
   UserCog,
+  X,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NotificationBell } from '@/components/notification-bell';
@@ -31,6 +33,8 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
+import type { FileRoutesByTo } from '@/route-tree.gen';
+import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {
@@ -38,6 +42,19 @@ type NavbarProps = {
   showLinks?: boolean;
   showLogo?: boolean;
 };
+
+type NavItem = {
+  to: keyof FileRoutesByTo;
+  icon: ElementType;
+  labelKey: string;
+  adminOnly?: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { icon: Calendar, labelKey: 'schedule', to: '/' },
+  { icon: Book, labelKey: 'substitutions', to: '/subs' },
+  { adminOnly: true, icon: UserCog, labelKey: 'adminDashboard', to: '/admin' },
+];
 
 export function Navbar({
   children,
@@ -48,6 +65,12 @@ export function Navbar({
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const canSeeAdminUi = useHasPermission(
+    ADMIN_UI_PERMISSIONS,
+    data?.user?.permissions
+  );
 
   return (
     <>
@@ -55,6 +78,27 @@ export function Navbar({
         <div className="flex h-16 items-center px-6">
           <div className="flex items-center gap-3">
             {children}
+            {data && showLinks && (
+              <Button
+                aria-controls="mobile-nav"
+                aria-expanded={mobileMenuOpen}
+                aria-label={
+                  mobileMenuOpen
+                    ? t('navigation.mobileMenuClose')
+                    : t('navigation.mobileMenuOpen')
+                }
+                className="flex md:hidden"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                size="icon"
+                variant="ghost"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            )}
             {showLogo && (
               <>
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -189,6 +233,40 @@ export function Navbar({
           </div>
         </div>
       </nav>
+      {data && showLinks && (
+        <div
+          className={cn(
+            'grid border-border border-b bg-background/95 backdrop-blur transition-all duration-200 ease-in-out md:hidden',
+            mobileMenuOpen
+              ? 'grid-rows-[1fr] border-b'
+              : 'grid-rows-[0fr] border-b-0'
+          )}
+          id="mobile-nav"
+        >
+          <div className="overflow-hidden">
+            {mobileMenuOpen && (
+              <div className="flex flex-col gap-1 px-4 py-3">
+                {NAV_ITEMS.filter(
+                  (item) => !item.adminOnly || canSeeAdminUi
+                ).map((item) => (
+                  <Button
+                    className="justify-start gap-3"
+                    key={item.to}
+                    onClick={() => {
+                      navigate({ to: item.to });
+                      setMobileMenuOpen(false);
+                    }}
+                    variant="ghost"
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {t(item.labelKey)}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <SettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
     </>
   );
@@ -202,34 +280,19 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
 
   return (
     <div className="ml-8 hidden items-center gap-6 md:flex">
-      <Button
-        className="text-muted-foreground hover:text-foreground"
-        onClick={() => navigate({ to: '/' })}
-        size="sm"
-        variant="ghost"
-      >
-        <Calendar />
-        {t('schedule')}
-      </Button>
-      <Button
-        className="text-muted-foreground hover:text-foreground"
-        onClick={() => navigate({ to: '/subs' })}
-        size="sm"
-        variant="ghost"
-      >
-        <Book />
-        {t('substitutions')}
-      </Button>
-      {canSeeAdminUi && (
-        <Button
-          className="text-muted-foreground hover:text-foreground"
-          onClick={() => navigate({ to: '/admin' })}
-          size="sm"
-          variant="ghost"
-        >
-          <UserCog />
-          {t('adminDashboard')}
-        </Button>
+      {NAV_ITEMS.filter((item) => !item.adminOnly || canSeeAdminUi).map(
+        (item) => (
+          <Button
+            className="text-muted-foreground hover:text-foreground"
+            key={item.to}
+            onClick={() => navigate({ to: item.to })}
+            size="sm"
+            variant="ghost"
+          >
+            <item.icon />
+            {t(item.labelKey)}
+          </Button>
+        )
       )}
     </div>
   );
