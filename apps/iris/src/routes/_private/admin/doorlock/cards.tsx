@@ -60,22 +60,10 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
 
 type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
 
-function getAriaSortState(
-  column: string,
-  sortColumn: string | null,
-  sortDirection: 'asc' | 'desc' | null
-): 'ascending' | 'descending' | 'none' {
-  if (sortColumn !== column) {
-    return 'none';
-  }
-  return sortDirection === 'asc' ? 'ascending' : 'descending';
-}
-
 function CardsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
-  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -398,7 +386,9 @@ function CardsPage() {
                   />
                 </div>
               </TableHead>
-              {hasWritePermission && <TableHead>Actions</TableHead>}
+              {hasWritePermission && (
+                <TableHead>{t('doorlockCards.actions')}</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -407,17 +397,26 @@ function CardsPage() {
                 <TableCell className="font-medium">{card.name}</TableCell>
                 <TableCell>
                   {card.owner
-                    ? getOwnerLabel(card.owner) || t('doorlock.unknownUser')
-                    : t('doorlock.unknownUser')}
+                    ? getOwnerLabel(card.owner) ||
+                      t('doorlockCards.unknownUser')
+                    : t('doorlockCards.unknownUser')}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {!card.frozen && card.enabled && (
-                      <Badge variant="secondary">Active</Badge>
+                      <Badge variant="secondary">
+                        {t('doorlockCards.active')}
+                      </Badge>
                     )}
-                    {card.frozen && <Badge variant="outline">Frozen</Badge>}
+                    {card.frozen && (
+                      <Badge variant="outline">
+                        {t('doorlockCards.frozen')}
+                      </Badge>
+                    )}
                     {!card.enabled && (
-                      <Badge variant="destructive">Disabled</Badge>
+                      <Badge variant="destructive">
+                        {t('doorlockCards.disabled')}
+                      </Badge>
                     )}
                   </div>
                 </TableCell>
@@ -426,96 +425,51 @@ function CardsPage() {
                     ? card.authorizedDevices
                         .map((device) => device.name)
                         .join(', ')
-                    : 'No devices'}
+                    : t('doorlockCards.noDevices')}
                 </TableCell>
                 <TableCell>
                   {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
                 </TableCell>
                 {hasWritePermission && (
-                  <TableHead>{t('doorlockCards.actions')}</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCards.map((card) => (
-                <TableRow key={card.id}>
-                  <TableCell className="font-medium">{card.name}</TableCell>
                   <TableCell>
-                    {card.owner?.nickname ||
-                      card.owner?.name ||
-                      card.owner?.email ||
-                      t('doorlockCards.unknownUser')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {!card.frozen && card.enabled && (
-                        <Badge variant="secondary">
-                          {t('doorlockCards.active')}
-                        </Badge>
-                      )}
-                      {card.frozen && (
-                        <Badge variant="outline">
-                          {t('doorlockCards.frozen')}
-                        </Badge>
-                      )}
-                      {!card.enabled && (
-                        <Badge variant="destructive">
-                          {t('doorlockCards.disabled')}
-                        </Badge>
-                      )}
+                    <div className="flex gap-2">
+                      <Button
+                        aria-label={t('doorlockCards.editCard')}
+                        onClick={() => {
+                          setSelectedCard(card);
+                          setDialogOpen(true);
+                        }}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <Pen className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        aria-label={t('doorlockCards.deleteCard')}
+                        disabled={deleteMutation.isPending}
+                        onClick={() => handleDelete(card)}
+                        size="icon"
+                        variant="destructive"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {card.authorizedDevices.length
-                      ? card.authorizedDevices
-                          .map((device) => device.name)
-                          .join(', ')
-                      : t('doorlockCards.noDevices')}
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                  </TableCell>
-                  {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          aria-label={t('doorlockCards.editCard')}
-                          onClick={() => {
-                            setSelectedCard(card);
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          aria-label={t('doorlockCards.deleteCard')}
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(card)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {!(filteredCards.length || hasError) && (
-                <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 6 : 5}
-                  >
-                    {t('doorlockCards.noCardsFound')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                )}
+              </TableRow>
+            ))}
+            {!(filteredCards.length || hasError) && (
+              <TableRow>
+                <TableCell
+                  className="text-muted-foreground"
+                  colSpan={hasWritePermission ? 6 : 5}
+                >
+                  {t('doorlockCards.noCardsFound')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       )}
 
       {hasWritePermission && (
