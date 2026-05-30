@@ -41,6 +41,19 @@ type NavbarProps = {
   showLogo?: boolean;
 };
 
+type NavItem = {
+  to: string;
+  icon: React.ElementType;
+  labelKey: string;
+  adminOnly?: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { icon: Calendar, labelKey: 'schedule', to: '/' },
+  { icon: Book, labelKey: 'substitutions', to: '/subs' },
+  { adminOnly: true, icon: UserCog, labelKey: 'adminDashboard', to: '/admin' },
+];
+
 export function Navbar({
   children,
   showLinks = true,
@@ -65,6 +78,8 @@ export function Navbar({
             {children}
             {data && showLinks && (
               <Button
+                aria-controls="mobile-nav"
+                aria-expanded={mobileMenuOpen}
                 aria-label={
                   mobileMenuOpen
                     ? t('navigation.mobileMenuClose')
@@ -224,45 +239,27 @@ export function Navbar({
               ? 'grid-rows-[1fr] border-b'
               : 'grid-rows-[0fr] border-b-0',
           ].join(' ')}
+          id="mobile-nav"
         >
           <div className="overflow-hidden">
             {mobileMenuOpen && (
               <div className="flex flex-col gap-1 px-4 py-3">
-                <Button
-                  className="justify-start gap-3"
-                  onClick={() => {
-                    navigate({ to: '/' });
-                    setMobileMenuOpen(false);
-                  }}
-                  variant="ghost"
-                >
-                  <Calendar className="h-5 w-5" />
-                  {t('schedule')}
-                </Button>
-                <Button
-                  className="justify-start gap-3"
-                  onClick={() => {
-                    navigate({ to: '/subs' });
-                    setMobileMenuOpen(false);
-                  }}
-                  variant="ghost"
-                >
-                  <Book className="h-5 w-5" />
-                  {t('substitutions')}
-                </Button>
-                {canSeeAdminUi && (
+                {NAV_ITEMS.filter(
+                  (item) => !item.adminOnly || canSeeAdminUi
+                ).map((item) => (
                   <Button
                     className="justify-start gap-3"
+                    key={item.to}
                     onClick={() => {
-                      navigate({ to: '/admin' });
+                      navigate({ to: item.to });
                       setMobileMenuOpen(false);
                     }}
                     variant="ghost"
                   >
-                    <UserCog className="h-5 w-5" />
-                    {t('adminDashboard')}
+                    <item.icon className="h-5 w-5" />
+                    {t(item.labelKey)}
                   </Button>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -281,34 +278,19 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
 
   return (
     <div className="ml-8 hidden items-center gap-6 md:flex">
-      <Button
-        className="text-muted-foreground hover:text-foreground"
-        onClick={() => navigate({ to: '/' })}
-        size="sm"
-        variant="ghost"
-      >
-        <Calendar />
-        {t('schedule')}
-      </Button>
-      <Button
-        className="text-muted-foreground hover:text-foreground"
-        onClick={() => navigate({ to: '/subs' })}
-        size="sm"
-        variant="ghost"
-      >
-        <Book />
-        {t('substitutions')}
-      </Button>
-      {canSeeAdminUi && (
-        <Button
-          className="text-muted-foreground hover:text-foreground"
-          onClick={() => navigate({ to: '/admin' })}
-          size="sm"
-          variant="ghost"
-        >
-          <UserCog />
-          {t('adminDashboard')}
-        </Button>
+      {NAV_ITEMS.filter((item) => !item.adminOnly || canSeeAdminUi).map(
+        (item) => (
+          <Button
+            className="text-muted-foreground hover:text-foreground"
+            key={item.to}
+            onClick={() => navigate({ to: item.to })}
+            size="sm"
+            variant="ghost"
+          >
+            <item.icon />
+            {t(item.labelKey)}
+          </Button>
+        )
       )}
     </div>
   );
