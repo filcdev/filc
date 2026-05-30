@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { type LinkProps, useNavigate } from '@tanstack/react-router';
 import {
   Book,
   Calendar,
@@ -42,7 +42,7 @@ type NavbarProps = {
 };
 
 type NavItem = {
-  to: string;
+  to: LinkProps['to'];
   icon: React.ElementType;
   labelKey: string;
   adminOnly?: boolean;
