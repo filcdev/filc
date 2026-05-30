@@ -1,4 +1,4 @@
-import { type LinkProps, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import {
   Book,
   Calendar,
@@ -11,7 +11,7 @@ import {
   UserCog,
   X,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NotificationBell } from '@/components/notification-bell';
@@ -33,6 +33,7 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
+import type { FileRoutesByTo } from '@/route-tree.gen';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {
@@ -42,8 +43,8 @@ type NavbarProps = {
 };
 
 type NavItem = {
-  to: LinkProps['to'];
-  icon: React.ElementType;
+  to: keyof FileRoutesByTo;
+  icon: ElementType;
   labelKey: string;
   adminOnly?: boolean;
 };
