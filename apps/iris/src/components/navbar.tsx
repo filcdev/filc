@@ -34,6 +34,7 @@ import {
   useHasPermission,
 } from '@/hooks/use-has-permission';
 import type { FileRoutesByTo } from '@/route-tree.gen';
+import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {
@@ -234,12 +235,12 @@ export function Navbar({
       </nav>
       {data && showLinks && (
         <div
-          className={[
+          className={cn(
             'grid border-border border-b bg-background/95 backdrop-blur transition-all duration-200 ease-in-out md:hidden',
             mobileMenuOpen
               ? 'grid-rows-[1fr] border-b'
-              : 'grid-rows-[0fr] border-b-0',
-          ].join(' ')}
+              : 'grid-rows-[0fr] border-b-0'
+          )}
           id="mobile-nav"
         >
           <div className="overflow-hidden">
