@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/stat-card';
 import { CardDialog } from '@/components/doorlock/card-dialog';
+import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,7 @@ function CardsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -181,12 +183,9 @@ function CardsPage() {
 
     if (term) {
       filtered = filtered.filter((card) => {
-        const ownerLabel = (
-          card.owner?.nickname ||
-          card.owner?.name ||
-          card.owner?.email ||
-          ''
-        ).toLowerCase();
+        const ownerLabel = card.owner
+          ? getOwnerLabel(card.owner).toLowerCase()
+          : '';
         return (
           card.name.toLowerCase().includes(term) ||
           ownerLabel.includes(term) ||
@@ -331,115 +330,107 @@ function CardsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'name',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('name')}
-                    type="button"
-                  >
-                    {t('doorlockCards.name')}
-                    <SortIcon
-                      column="name"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'owner',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('owner')}
-                    type="button"
-                  >
-                    {t('doorlockCards.owner')}
-                    <SortIcon
-                      column="owner"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'status',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('status')}
-                    type="button"
-                  >
-                    {t('doorlockCards.status')}
-                    <SortIcon
-                      column="status"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'devices',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('devices')}
-                    type="button"
-                  >
-                    {t('doorlockCards.authorizedDevices')}
-                    <SortIcon
-                      column="devices"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'updated',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('updated')}
-                    type="button"
-                  >
-                    {t('doorlockCards.updatedAt')}
-                    <SortIcon
-                      column="updated"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center gap-2">
+                  Name
+                  <SortIcon
+                    column="name"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('owner')}
+              >
+                <div className="flex items-center gap-2">
+                  Owner
+                  <SortIcon
+                    column="owner"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center gap-2">
+                  Status
+                  <SortIcon
+                    column="status"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('devices')}
+              >
+                <div className="flex items-center gap-2">
+                  Authorized devices
+                  <SortIcon
+                    column="devices"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:bg-muted/50"
+                onClick={() => handleSort('updated')}
+              >
+                <div className="flex items-center gap-2">
+                  Updated
+                  <SortIcon
+                    column="updated"
+                    currentColumn={sortColumn}
+                    direction={sortDirection}
+                  />
+                </div>
+              </TableHead>
+              {hasWritePermission && <TableHead>Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredCards.map((card) => (
+              <TableRow key={card.id}>
+                <TableCell className="font-medium">{card.name}</TableCell>
+                <TableCell>
+                  {card.owner
+                    ? getOwnerLabel(card.owner) || t('doorlock.unknownUser')
+                    : t('doorlock.unknownUser')}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {!card.frozen && card.enabled && (
+                      <Badge variant="secondary">Active</Badge>
+                    )}
+                    {card.frozen && <Badge variant="outline">Frozen</Badge>}
+                    {!card.enabled && (
+                      <Badge variant="destructive">Disabled</Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {card.authorizedDevices.length
+                    ? card.authorizedDevices
+                        .map((device) => device.name)
+                        .join(', ')
+                    : 'No devices'}
+                </TableCell>
+                <TableCell>
+                  {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                </TableCell>
                 {hasWritePermission && (
                   <TableHead>{t('doorlockCards.actions')}</TableHead>
                 )}
@@ -551,9 +542,7 @@ function getCardSortValue(card: DoorlockCard, column: CardSortColumn) {
     case 'name':
       return card.name;
     case 'owner':
-      return (
-        card.owner?.nickname || card.owner?.name || card.owner?.email || ''
-      );
+      return card.owner ? getOwnerLabel(card.owner) : '';
     case 'status':
       if (!card.enabled) {
         return 2;
