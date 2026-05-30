@@ -188,7 +188,8 @@
   },
   "navigation": {
     "title": "Navigation",
-    "mobileMenu": "Open navigation menu"
+    "mobileMenuOpen": "Open navigation menu",
+    "mobileMenuClose": "Close navigation menu"
   },
   "substitution": {
     "title": "Substitutions",

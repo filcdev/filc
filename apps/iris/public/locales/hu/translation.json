@@ -188,7 +188,8 @@
   },
   "navigation": {
     "title": "Navigáció",
-    "mobileMenu": "Navigációs menü megnyitása"
+    "mobileMenuOpen": "Navigációs menü megnyitása",
+    "mobileMenuClose": "Navigációs menü bezárása"
   },
   "substitution": {
     "title": "Helyettesítések",

@@ -65,7 +65,11 @@ export function Navbar({
             {children}
             {data && showLinks && (
               <Button
-                aria-label={t('navigation.mobileMenu')}
+                aria-label={
+                  mobileMenuOpen
+                    ? t('navigation.mobileMenuClose')
+                    : t('navigation.mobileMenuOpen')
+                }
                 className="flex md:hidden"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
                 size="icon"
