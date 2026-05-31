@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { Loader2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -54,7 +55,7 @@ function buildRows(
   const rows: SubstitutionExportRow[] = [];
 
   for (const sub of substitutions) {
-    if (!dayjs(sub.substitution.date).format('YYYY-MM-DD').startsWith(target)) {
+    if (dayjs(sub.substitution.date).format('YYYY-MM-DD') !== target) {
       continue;
     }
     const substituteTeacher = sub.teacher
@@ -158,6 +159,12 @@ export function SubstitutionExportDialog({
       }
 
       onOpenChange(false);
+    } catch (error) {
+      toast.error(
+        t('error.generic', {
+          message: error instanceof Error ? error.message : 'Export failed',
+        })
+      );
     } finally {
       setLoading(false);
     }

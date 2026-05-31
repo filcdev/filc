@@ -127,10 +127,9 @@ export function SubstitutionPDF({ rows, date, labels }: Props) {
           ))}
           {rows.length === 0 && (
             <View style={styles.tableRow}>
-              <Text style={[styles.cell, styles.dash]}>—</Text>
-              <Text style={[styles.cell, styles.dash]}>—</Text>
-              <Text style={[styles.cell, styles.dash]}>—</Text>
-              <Text style={[styles.periodCell, styles.dash]}>—</Text>
+              <Text colSpan={4} style={[styles.cell, styles.dash]}>
+                No substitutions found for this date
+              </Text>
             </View>
           )}
         </View>
