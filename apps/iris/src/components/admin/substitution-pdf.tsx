@@ -1,3 +1,5 @@
+import notoSansRegular from '@expo-google-fonts/noto-sans/400Regular/NotoSans_400Regular.ttf?url';
+import notoSansBold from '@expo-google-fonts/noto-sans/700Bold/NotoSans_700Bold.ttf?url';
 import {
   Document,
   Font,
@@ -7,18 +9,11 @@ import {
   View,
 } from '@react-pdf/renderer';
 
-// @fontsource's WOFF/WOFF2 files are already glyph-subsetted; pdfkit double-subsets
-// them during PDF embedding which corrupts font tables (DataView bounds error).
-// Full non-subsetted TTF files from public/fonts/ avoid this.
-// new URL() converts the root-relative path to an absolute URL so @react-pdf/font's
-// isUrl() check passes and fetchFont() is used instead of the broken fontkit.open().
-const toFontUrl = (path: string) => new URL(path, import.meta.url).href;
-
 Font.register({
   family: 'NotoSans',
   fonts: [
-    { fontWeight: 400, src: toFontUrl('/fonts/NotoSans-Regular.ttf') },
-    { fontWeight: 700, src: toFontUrl('/fonts/NotoSans-Bold.ttf') },
+    { fontWeight: 400, src: notoSansRegular },
+    { fontWeight: 700, src: notoSansBold },
   ],
 });
 

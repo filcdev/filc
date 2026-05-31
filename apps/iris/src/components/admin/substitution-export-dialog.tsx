@@ -1,5 +1,6 @@
 import { pdf } from '@react-pdf/renderer';
 import dayjs from 'dayjs';
+import type { InferResponseType } from 'hono/client';
 import { Loader2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,25 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { api } from '@/utils/hc';
 import {
   type SubstitutionExportRow,
   SubstitutionPDF,
 } from './substitution-pdf';
 
-type SubstitutionItem = {
-  substitution: { id: string; date: string };
-  teacher: { firstName: string; lastName: string } | null;
-  lessons: Array<
-    | {
-        id: string;
-        teachers?: Array<{ id: string; name: string; short?: string }>;
-        period?: { period: number } | null;
-        cohorts?: string[];
-      }
-    | null
-    | undefined
-  >;
-};
+type SubstitutionItem = NonNullable<
+  InferResponseType<typeof api.timetable.substitutions.$get>['data']
+>[number];
 
 type Props = {
   open: boolean;
