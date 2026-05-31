@@ -243,7 +243,13 @@
     "cardTitle": "Substitution on {{date}}",
     "notAvailable": "N/A",
     "period": "Period",
-    "noCohorts": "No class"
+    "noCohorts": "No class",
+    "export": "Export",
+    "exportTitle": "Export Substitutions",
+    "exportFormat": "Format",
+    "exporting": "Exporting...",
+    "exportAbsentTeacher": "Absent Teacher",
+    "exportClass": "Class"
   },
   "movedLesson": {
     "title": "Moved Lessons",

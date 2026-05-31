@@ -6,11 +6,12 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import { FileDown, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
+import { SubstitutionExportDialog } from '@/components/admin/substitution-export-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,7 @@ function SubstitutionsPage() {
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SubstitutionItem | null>(
     null
   );
@@ -314,6 +316,10 @@ function SubstitutionsPage() {
           </label>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Button onClick={() => setExportDialogOpen(true)} variant="outline">
+            <FileDown className="h-4 w-4" />
+            {t('substitution.export')}
+          </Button>
           <Button
             onClick={() => substitutionsQuery.refetch()}
             variant="outline"
@@ -502,6 +508,12 @@ function SubstitutionsPage() {
           </Table>
         </div>
       )}
+
+      <SubstitutionExportDialog
+        onOpenChange={setExportDialogOpen}
+        open={exportDialogOpen}
+        substitutions={substitutionsQuery.data ?? []}
+      />
 
       {hasWritePermission && dialogOpen && (
         <SubstitutionDialog
