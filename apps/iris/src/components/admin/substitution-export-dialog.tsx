@@ -135,6 +135,7 @@ export function SubstitutionExportDialog({
   const labels = {
     class: t('substitution.exportClass'),
     missingTeacher: t('substitution.exportAbsentTeacher'),
+    noSubstitutions: t('substitution.noSubstitutions'),
     period: t('substitution.period'),
     substituteTeacher: t('substitution.substituteTeacher'),
   };
