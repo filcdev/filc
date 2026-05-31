@@ -88,9 +88,9 @@ function downloadCsv(
     period: string;
   }
 ) {
+  const dangerous = ['=', '+', '-', '@', '\t', '\r'];
   const escapeS = (v: string) => {
-    const dangerous = ['=', '+', '-', '@', '\t', '\r'];
-    const safe = dangerous.includes(v[0]) ? `'${v}` : v;
+    const safe = dangerous.some((c) => v.startsWith(c)) ? `'${v}` : v;
     return safe.includes(';') || safe.includes('"') || safe.includes('\n')
       ? `"${safe.replace(/"/g, '""')}"`
       : safe;
