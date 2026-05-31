@@ -88,10 +88,13 @@ function downloadCsv(
     period: string;
   }
 ) {
-  const escapeS = (v: string) =>
-    v.includes(';') || v.includes('"') || v.includes('\n')
-      ? `"${v.replace(/"/g, '""')}"`
-      : v;
+  const escapeS = (v: string) => {
+    const dangerous = ['=', '+', '-', '@', '\t', '\r'];
+    const safe = dangerous.includes(v[0]) ? `'${v}` : v;
+    return safe.includes(';') || safe.includes('"') || safe.includes('\n')
+      ? `"${safe.replace(/"/g, '""')}"`
+      : safe;
+  };
 
   const lines = [
     [
