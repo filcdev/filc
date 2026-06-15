@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -77,6 +78,7 @@ function formatLessonLabel(
 const initialState = (
   item?: SubstitutionItem | null
 ): InferRequestType<typeof api.timetable.substitutions.$post>['json'] => ({
+  comment: item?.substitution.comment ?? null,
   date: toUTCDate(
     item?.substitution.date ? new Date(item.substitution.date) : new Date()
   ),
@@ -114,6 +116,7 @@ export function SubstitutionDialog({
     form.store,
     (state) => state.values.substituter
   );
+  const formComment = useStore(form.store, (state) => state.values.comment);
 
   useEffect(() => {
     if (!open) {
@@ -376,6 +379,20 @@ export function SubstitutionDialog({
                   {t('substitution.loadingSubstituteTeachers')}
                 </p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="substitution-comment">
+                {t('substitution.comment')}
+              </Label>
+              <Textarea
+                id="substitution-comment"
+                onChange={(e) =>
+                  form.setFieldValue('comment', e.target.value || null)
+                }
+                placeholder={t('substitution.commentPlaceholder')}
+                value={formComment ?? ''}
+              />
             </div>
           </form>
         </div>

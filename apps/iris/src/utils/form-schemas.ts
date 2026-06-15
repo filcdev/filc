@@ -49,6 +49,7 @@ export const newsItemSchema = z.object({
 });
 
 export const substitutionSchema = z.object({
+  comment: z.string().nullable().optional(),
   date: z.date(),
   lessonIds: z.array(z.string()).min(1, 'Select at least one lesson'),
   substituter: z.string().nullable(),

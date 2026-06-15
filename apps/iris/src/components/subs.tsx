@@ -37,9 +37,11 @@ type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
 function LessonRow({
   lesson,
   substituter,
+  comment,
 }: {
   lesson: Lesson;
   substituter: string;
+  comment?: string | null;
 }) {
   const { t } = useTranslation();
   const notAvailable = t('substitution.notAvailable');
@@ -114,6 +116,13 @@ function LessonRow({
           <span className="text-muted-foreground">{notAvailable}</span>
         )}
       </TableCell>
+      <TableCell>
+        {comment ? (
+          <span className="text-sm">{comment}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
     </>
   );
 }
@@ -179,6 +188,9 @@ function MovedLessonRow({
       <TableCell>
         <span className="text-muted-foreground">—</span>
       </TableCell>
+      <TableCell>
+        <span className="text-muted-foreground">—</span>
+      </TableCell>
     </>
   );
 }
@@ -202,6 +214,7 @@ function LessonReturn(data: Subs[], cohortFilter?: string) {
             key={`${sub.substitution.id}-${lesson.id}`}
           >
             <LessonRow
+              comment={sub.substitution.comment}
               lesson={lesson}
               substituter={`${sub.teacher?.firstName ?? ''} ${sub.teacher?.lastName ?? ''}`.trim()}
             />
@@ -317,6 +330,9 @@ export function SubsV({
                 <TableHead className="font-semibold text-foreground">
                   {t('timetable.teacherFallback')}
                 </TableHead>
+                <TableHead className="font-semibold text-foreground">
+                  {t('substitution.comment')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -329,7 +345,7 @@ export function SubsV({
                 <TableRow>
                   <TableCell
                     className="text-center text-muted-foreground"
-                    colSpan={6}
+                    colSpan={7}
                   >
                     {t('substitution.noLessons')}
                   </TableCell>

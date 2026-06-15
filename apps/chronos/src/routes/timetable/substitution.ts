@@ -482,7 +482,7 @@ export const createSubstitution = timetableFactory.createHandlers(
   requireAuthorization('substitution:create'),
   zValidator('json', createSchema),
   async (c) => {
-    const { lessonIds, date, substituter } = c.req.valid('json');
+    const { lessonIds, date, substituter, comment } = c.req.valid('json');
 
     const lessonCount = await db.$count(lesson, inArray(lesson.id, lessonIds));
 
@@ -496,6 +496,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       const [insertedSubstitution] = await tx
         .insert(substitution)
         .values({
+          comment,
           date,
           id: crypto.randomUUID(),
           substituter,
@@ -615,6 +616,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         const [updated] = await tx
           .update(substitution)
           .set({
+            comment: body.comment,
             date: body.date ?? undefined,
             substituter: body.substituter,
           })

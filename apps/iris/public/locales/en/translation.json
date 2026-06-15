@@ -228,6 +228,8 @@
     "noTeachersFound": "No teacher found.",
     "noSubstitutions": "No substitutions found",
     "noSubstituter": "No class",
+    "comment": "Comment",
+    "commentPlaceholder": "Optional note about this substitution",
     "createSuccess": "Substitution created successfully",
     "createError": "Failed to create substitution",
     "updateSuccess": "Substitution updated successfully",
