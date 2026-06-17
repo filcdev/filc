@@ -229,7 +229,7 @@
     "noSubstitutions": "Nincsenek helyettesítések",
     "noSubstituter": "Elmaradó óra",
     "comment": "Megjegyzés",
-    "commentPlaceholder": "Opcionális komment a helyettesítéshez",
+    "commentPlaceholder": "Opcionális megjegyzés a helyettesítéshez",
     "createSuccess": "Helyettesítés sikeresen létrehozva",
     "createError": "Nem sikerült létrehozni a helyettesítést",
     "updateSuccess": "Helyettesítés sikeresen frissítve",
