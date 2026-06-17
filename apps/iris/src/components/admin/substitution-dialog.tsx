@@ -388,7 +388,7 @@ export function SubstitutionDialog({
               <Textarea
                 id="substitution-comment"
                 onChange={(e) =>
-                  form.setFieldValue('comment', e.target.value || null)
+                  form.setFieldValue('comment', e.target.value.trim() || null)
                 }
                 placeholder={t('substitution.commentPlaceholder')}
                 value={formComment ?? ''}
