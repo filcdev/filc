@@ -40,9 +40,11 @@ export function LessonCard({ lesson }: LessonCardProps) {
             )}
           >
             <div className="font-semibold text-sm leading-none">{short}</div>
-            <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
-              {teacher}
-            </div>
+            {teacher && (
+              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+                {teacher}
+              </div>
+            )}
             {room && (
               <div className="w-full truncate text-center text-muted-foreground text-xs">
                 {room}
