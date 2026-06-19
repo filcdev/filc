@@ -40,9 +40,16 @@ export function LessonCard({ lesson }: LessonCardProps) {
             )}
           >
             <div className="font-semibold text-sm leading-none">{short}</div>
-            <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
-              {teacher} {room && <>| {room}</>}
-            </div>
+            {teacher && (
+              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+                {teacher}
+              </div>
+            )}
+            {room && (
+              <div className="w-full truncate text-center text-muted-foreground text-xs">
+                {room}
+              </div>
+            )}
           </div>
         }
       />
@@ -66,14 +73,6 @@ export function LessonCard({ lesson }: LessonCardProps) {
           </div>
 
           <div className="space-y-2 text-xs">
-            {room && (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
-                  <MapPinIcon />
-                </span>
-                <span className="font-bold text-foreground">{room}</span>
-              </div>
-            )}
             {teacher && (
               <div className="flex items-center gap-1.5">
                 <span className="font-medium text-accent-foreground">
@@ -82,6 +81,14 @@ export function LessonCard({ lesson }: LessonCardProps) {
                 <span className="font-bold text-foreground">
                   {lesson.teachers.map((t) => t.name).join(', ')}
                 </span>
+              </div>
+            )}
+            {room && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-accent-foreground">
+                  <MapPinIcon />
+                </span>
+                <span className="font-bold text-foreground">{room}</span>
               </div>
             )}
           </div>
