@@ -347,7 +347,7 @@ function DevicesPage() {
         <Skeleton className="h-64 w-full" />
       ) : (
         <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-[768px]">
+          <Table className="w-full min-w-3xl">
             <TableHeader>
               <TableRow>
                 <TableHead

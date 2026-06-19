@@ -32,7 +32,7 @@ import type {
 
 const initialState = (card?: CardLike | null): CardFormValues => ({
   authorizedDeviceIds: card?.authorizedDevices.map((device) => device.id) ?? [],
-  cardData: '',
+  cardData: card?.cardData ?? '',
   enabled: card?.enabled ?? true,
   frozen: card?.frozen ?? false,
   name: card?.name ?? '',
@@ -51,7 +51,7 @@ export function CardDialog<
   open,
   users,
 }: CardDialogProps<TCard, TDevice, TUser>) {
-  const isCreate = !card;
+  const isCreate = !card?.id;
   const { t } = useTranslation();
 
   const form = useForm({

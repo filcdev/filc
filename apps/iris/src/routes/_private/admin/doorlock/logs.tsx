@@ -1,17 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import {
+  type InferRequestType,
+  type InferResponseType,
+  parseResponse,
+} from 'hono/client';
 import {
   Calendar as CalendarIcon,
   Check,
   ChevronDown,
+  CreditCard,
   DoorOpen,
   Filter,
   User,
 } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { CardDialog } from '@/components/doorlock/card-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -164,6 +171,60 @@ const buildLogsQuery = ({
   return query;
 };
 
+function useLogStats(
+  logs: DoorlockLogEntry[] | undefined,
+  eventFilter: EventFilter,
+  sortColumn: LogSortColumn | null,
+  sortDirection: 'asc' | 'desc' | null
+) {
+  const stats = useMemo(() => {
+    const data = logs ?? [];
+    const total = data.length;
+    const granted = data.filter((log) => log.result).length;
+    const virtualCount = data.filter(isVirtualLog).length;
+    const physicalCount = total - virtualCount;
+    const uniqueUsers = new Set(
+      data.map((log) => log.userId ?? log.owner?.id).filter(Boolean)
+    ).size;
+    return {
+      physicalCount,
+      successRate: total ? Math.round((granted / total) * 100) : 0,
+      total,
+      uniqueUsers,
+      virtualCount,
+    };
+  }, [logs]);
+
+  const filteredLogs = useMemo(() => {
+    const data = logs ?? [];
+    let filtered =
+      eventFilter === 'all'
+        ? data
+        : data.filter((log) =>
+            eventFilter === 'virtual' ? isVirtualLog(log) : !isVirtualLog(log)
+          );
+
+    if (sortColumn && sortDirection) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = getLogSortValue(a, sortColumn);
+        const bValue = getLogSortValue(b, sortColumn);
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        const comparison = String(aValue).localeCompare(String(bValue));
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return filtered;
+  }, [eventFilter, logs, sortColumn, sortDirection]);
+
+  return { filteredLogs, stats };
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: filter state and queries
 function LogsPage() {
   const { data: session } = authClient.useSession();
   const isMobile = useIsMobile();
@@ -186,6 +247,15 @@ function LogsPage() {
   });
 
   const deferredSearch = useDeferredValue(search.trim());
+
+  const queryClient = useQueryClient();
+  const [cardDialogOpen, setCardDialogOpen] = useState(false);
+  const [pendingCardData, setPendingCardData] = useState<string | null>(null);
+
+  const hasCardWritePermission = useHasPermission(
+    'doorlock:cards:write',
+    session?.user?.permissions
+  );
 
   const canReadDevices = useHasPermission(
     'doorlock:devices:read',
@@ -249,6 +319,45 @@ function LogsPage() {
     staleTime: 30_000,
   });
 
+  const usersQuery = useQuery({
+    enabled: hasCardWritePermission,
+    queryFn: async () => {
+      const res = await parseResponse(api.doorlock.cards.users.$get());
+      if (!(res.success && res.data?.users)) {
+        throw new Error('Failed to load users');
+      }
+      return res.data.users;
+    },
+    queryKey: queryKeys.doorlock.cardUsers(),
+  });
+
+  const $upsertCard = api.doorlock.cards.$post;
+  const upsertCardMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id?: string;
+      payload: InferRequestType<typeof $upsertCard>['json'];
+    }) => {
+      if (id) {
+        return parseResponse(
+          api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
+        );
+      }
+      return parseResponse(api.doorlock.cards.$post({ json: payload }));
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to save card');
+    },
+    onSuccess: () => {
+      toast.success('Card saved');
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
+      setCardDialogOpen(false);
+    },
+  });
+
   const deviceOptions = useOptions(
     devicesQuery.data,
     logsQuery.data?.flatMap((log) =>
@@ -278,49 +387,12 @@ function LogsPage() {
     return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
   }, [logsQuery.data]);
 
-  const stats = useMemo(() => {
-    const logs = logsQuery.data ?? [];
-    const total = logs.length;
-    const granted = logs.filter((log) => log.result).length;
-    const virtualCount = logs.filter(isVirtualLog).length;
-    const physicalCount = total - virtualCount;
-    const uniqueUsers = new Set(
-      logs.map((log) => log.userId ?? log.owner?.id).filter(Boolean)
-    ).size;
-    return {
-      physicalCount,
-      successRate: total ? Math.round((granted / total) * 100) : 0,
-      total,
-      uniqueUsers,
-      virtualCount,
-    };
-  }, [logsQuery.data]);
-
-  const filteredLogs = useMemo(() => {
-    const logs = logsQuery.data ?? [];
-    let filtered =
-      eventFilter === 'all'
-        ? logs
-        : logs.filter((log) =>
-            eventFilter === 'virtual' ? isVirtualLog(log) : !isVirtualLog(log)
-          );
-
-    if (sortColumn && sortDirection) {
-      filtered = [...filtered].sort((a, b) => {
-        const aValue = getLogSortValue(a, sortColumn);
-        const bValue = getLogSortValue(b, sortColumn);
-
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-
-        const comparison = String(aValue).localeCompare(String(bValue));
-        return sortDirection === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    return filtered;
-  }, [eventFilter, logsQuery.data, sortColumn, sortDirection]);
+  const { filteredLogs, stats } = useLogStats(
+    logsQuery.data,
+    eventFilter,
+    sortColumn,
+    sortDirection
+  );
 
   const handleSort = (column: LogSortColumn) => {
     if (sortColumn === column) {
@@ -445,7 +517,7 @@ function LogsPage() {
         <Skeleton className="h-64 w-full" />
       ) : (
         <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-[768px]">
+          <Table className="w-full min-w-3xl">
             <TableHeader>
               <TableRow>
                 <TableHead
@@ -539,15 +611,27 @@ function LogsPage() {
                     />
                   </div>
                 </TableHead>
+                <TableHead>{/* Actions */}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLogs.map((log) => (
-                <LogTableRow key={log.id} log={log} />
+                <LogTableRow
+                  key={log.id}
+                  log={log}
+                  onAddCard={
+                    hasCardWritePermission
+                      ? (cardData) => {
+                          setPendingCardData(cardData);
+                          setCardDialogOpen(true);
+                        }
+                      : undefined
+                  }
+                />
               ))}
               {!(filteredLogs.length || hasError) && (
                 <TableRow>
-                  <TableCell className="text-muted-foreground" colSpan={7}>
+                  <TableCell className="text-muted-foreground" colSpan={8}>
                     No logs found with the selected filters.
                   </TableCell>
                 </TableRow>
@@ -555,6 +639,33 @@ function LogsPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {hasCardWritePermission && (
+        <CardDialog
+          card={
+            pendingCardData
+              ? ({
+                  authorizedDevices: [],
+                  cardData: pendingCardData,
+                } as unknown as DoorlockCard)
+              : null
+          }
+          devices={devicesQuery.data ?? []}
+          onOpenChange={setCardDialogOpen}
+          onSubmit={async (payload) => {
+            await upsertCardMutation.mutateAsync({ payload });
+          }}
+          open={cardDialogOpen}
+          users={
+            (usersQuery.data ?? []) as Array<{
+              id: string;
+              name: string | null;
+              nickname: string | null;
+              email: string;
+            }>
+          }
+        />
       )}
     </div>
   );
@@ -683,9 +794,10 @@ function StatCard({ helper, icon, label, value }: StatCardProps) {
 
 type LogTableRowProps = {
   log: DoorlockLogEntry;
+  onAddCard?: (cardData: string | null) => void;
 };
 
-function LogTableRow({ log }: LogTableRowProps) {
+function LogTableRow({ log, onAddCard }: LogTableRowProps) {
   const buttonMeta = buildButtonMeta(log);
 
   return (
@@ -693,12 +805,9 @@ function LogTableRow({ log }: LogTableRowProps) {
       <TableCell>
         {dayjs(log.timestamp).format('YYYY/MM/DD HH:mm:ss')}
       </TableCell>
-      <TableCell>{log.device?.name ?? 'Unknown device'}</TableCell>
+      <TableCell>{log.device?.name ?? '—'}</TableCell>
       <TableCell>
-        {log.owner?.nickname ||
-          log.owner?.name ||
-          log.owner?.email ||
-          'Unknown user'}
+        {log.owner?.nickname || log.owner?.name || log.owner?.email || '—'}
       </TableCell>
       <TableCell>
         <div className="space-y-1">
@@ -718,6 +827,18 @@ function LogTableRow({ log }: LogTableRowProps) {
           <span className="text-red-600">Denied</span>
         )}
       </TableCell>
+      {onAddCard && (
+        <TableCell>
+          <Button
+            aria-label="Add card"
+            onClick={() => onAddCard(log.cardData ?? null)}
+            size="icon"
+            variant="ghost"
+          >
+            <CreditCard className="h-4 w-4" />
+          </Button>
+        </TableCell>
+      )}
     </TableRow>
   );
 }
