@@ -648,10 +648,13 @@ function LogsPage() {
               ? ({
                   authorizedDevices: [],
                   cardData: pendingCardData,
+                  createdAt: '',
                   enabled: true,
                   frozen: false,
                   id: '',
                   name: '',
+                  owner: null,
+                  updatedAt: '',
                   userId: null,
                 } satisfies DoorlockCard)
               : null
