@@ -243,7 +243,13 @@
     "cardTitle": "Helyettesítés ezen a napon: {{date}}",
     "notAvailable": "N/A",
     "period": "Óra",
-    "noCohorts": "Nincsen osztály"
+    "noCohorts": "Nincsen osztály",
+    "export": "Exportálás",
+    "exportTitle": "Helyettesítések exportálása",
+    "exportFormat": "Formátum",
+    "exporting": "Exportálás...",
+    "exportAbsentTeacher": "Hiányzó tanár",
+    "exportClass": "Osztály"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",

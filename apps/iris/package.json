@@ -10,6 +10,7 @@
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-rc.0",
     "@base-ui/react": "^1.4.1",
+    "@expo-google-fonts/noto-sans": "^0.4.2",
     "@fontsource-variable/outfit": "^5.2.8",
     "@react-pdf/renderer": "^4.5.1",
     "@sentry/react": "^10.53.1",
