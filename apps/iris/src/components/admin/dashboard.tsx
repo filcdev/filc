@@ -62,7 +62,7 @@ export function AdminDashboard() {
   });
 
   const stats = statsQuery.data;
-  const isLoading = statsQuery.isLoading;
+  const isLoading = statsQuery.isLoading || statsQuery.isError;
 
   const filteredChartData = useMemo(() => {
     if (!stats?.chartData) {

@@ -358,6 +358,24 @@ function LogsPage() {
     },
   });
 
+  const cardDialogCard = useMemo(() => {
+    if (!pendingCardData) {
+      return null;
+    }
+    return {
+      authorizedDevices: [] as Array<{ id: string; name: string }>,
+      cardData: pendingCardData,
+      createdAt: '',
+      enabled: true,
+      frozen: false,
+      id: '',
+      name: '',
+      owner: null,
+      updatedAt: '',
+      userId: null,
+    } satisfies DoorlockCard;
+  }, [pendingCardData]);
+
   const deviceOptions = useOptions(
     devicesQuery.data,
     logsQuery.data?.flatMap((log) =>
@@ -643,22 +661,7 @@ function LogsPage() {
 
       {hasCardWritePermission && (
         <CardDialog
-          card={
-            pendingCardData
-              ? ({
-                  authorizedDevices: [],
-                  cardData: pendingCardData,
-                  createdAt: '',
-                  enabled: true,
-                  frozen: false,
-                  id: '',
-                  name: '',
-                  owner: null,
-                  updatedAt: '',
-                  userId: null,
-                } satisfies DoorlockCard)
-              : null
-          }
+          card={cardDialogCard}
           devices={devicesQuery.data ?? []}
           onOpenChange={setCardDialogOpen}
           onSubmit={async (payload) => {
