@@ -1,4 +1,5 @@
 import type { cohortRouter } from '#routes/cohort/_router';
+import type { dashboardRouter } from '#routes/dashboard/_router';
 import type { doorlockRouter } from '#routes/doorlock/_router';
 import type { newsRouter } from '#routes/news/_router';
 import type { notificationsRouter } from '#routes/notifications/_router';
@@ -8,6 +9,7 @@ import type { timetableRouter } from '#routes/timetable/_router';
 import type { usersRouter } from '#routes/users/_router';
 
 export type CohortRouter = typeof cohortRouter;
+export type DashboardRouter = typeof dashboardRouter;
 export type DoorlockRouter = typeof doorlockRouter;
 export type NewsRouter = typeof newsRouter;
 export type NotificationsRouter = typeof notificationsRouter;

@@ -1,235 +1,127 @@
 import { useQuery } from '@tanstack/react-query';
 import { type InferResponseType, parseResponse } from 'hono/client';
 import {
+  ArrowLeftRight,
   ArrowRightLeft,
-  CalendarClock,
   GraduationCap,
   Shield,
   Users,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { StatCard } from '@/components/admin/stat-card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { formatLocalizedDate } from '@/utils/date-locale';
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
 
-type SubstitutionItem = NonNullable<
-  InferResponseType<typeof api.timetable.substitutions.$get>['data']
->[number];
+const chartConfig = {
+  movedLessons: {
+    color: 'var(--chart-2)',
+    label: 'Moved Lessons',
+  },
+  substitutions: {
+    color: 'var(--primary)',
+    label: 'Substitutions',
+  },
+} satisfies ChartConfig;
 
-function SubstitutionRow({
-  item,
-  language,
-}: {
-  item: SubstitutionItem;
-  language: string;
-}) {
-  const { t } = useTranslation();
-  const isCancelled = !item.substitution.substituter;
-  const lessonCount = item.lessons?.length ?? 0;
-  const cohortNames = [
-    ...new Set((item.lessons ?? []).flatMap((l) => l?.cohorts ?? [])),
-  ];
-  const isPast = new Date(item.substitution.date) < new Date();
-
-  let statusBadge: React.ReactNode;
-  if (isCancelled) {
-    statusBadge = (
-      <Badge variant="destructive">{t('substitution.cancelled')}</Badge>
-    );
-  } else if (isPast) {
-    statusBadge = <Badge variant="secondary">{t('dashboard.past')}</Badge>;
-  } else {
-    statusBadge = <Badge>{t('dashboard.upcoming')}</Badge>;
-  }
-
-  return (
-    <TableRow>
-      <TableCell className="font-medium">
-        {formatLocalizedDate(item.substitution.date, language)}
-      </TableCell>
-      <TableCell>
-        {item.teacher
-          ? `${item.teacher.firstName} ${item.teacher.lastName}`
-          : '—'}
-      </TableCell>
-      <TableCell>{lessonCount}</TableCell>
-      <TableCell>
-        <div className="flex flex-wrap gap-1">
-          {cohortNames.slice(0, 3).map((name) => (
-            <Badge key={name} variant="secondary">
-              {name}
-            </Badge>
-          ))}
-          {cohortNames.length > 3 && (
-            <Badge variant="outline">+{cohortNames.length - 3}</Badge>
-          )}
-        </div>
-      </TableCell>
-      <TableCell className="text-right">{statusBadge}</TableCell>
-    </TableRow>
-  );
-}
-
-function SubstitutionsTable({
-  substitutions,
-  isLoading,
-}: {
-  substitutions: SubstitutionItem[];
-  isLoading: boolean;
-}) {
-  const { t, i18n } = useTranslation();
-
-  if (isLoading) {
-    return <Skeleton className="h-64 w-full" />;
-  }
-
-  if (substitutions.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        {t('dashboard.noSubstitutions')}
-      </p>
-    );
-  }
-
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('substitution.date')}</TableHead>
-            <TableHead>{t('substitution.substituteTeacher')}</TableHead>
-            <TableHead>{t('dashboard.affectedLessons')}</TableHead>
-            <TableHead>{t('dashboard.cohorts')}</TableHead>
-            <TableHead className="text-right">
-              {t('dashboard.status')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {substitutions.slice(0, 20).map((item) => (
-            <SubstitutionRow
-              item={item}
-              key={item.substitution.id}
-              language={i18n.language}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
+type StatsResponse = InferResponseType<typeof api.dashboard.stats.$get>;
+type DashboardStats = NonNullable<StatsResponse['data']>['stats'];
 
 export function AdminDashboard() {
   const { t } = useTranslation();
+  const [days, setDays] = useState(30);
 
-  const usersQuery = useQuery({
-    queryFn: async () => {
+  const statsQuery = useQuery({
+    queryFn: async (): Promise<DashboardStats> => {
       const res = await parseResponse(
-        api.users.index.$get({
-          query: { limit: '1', offset: '0' },
-        })
+        api.dashboard.stats.$get({ query: { days } })
       );
-      if (!res.success) {
-        throw new Error('Failed to load users');
+      if (!(res.success && res.data?.stats)) {
+        throw new Error('Failed to load dashboard stats');
       }
-      return res.data;
+      return res.data.stats as DashboardStats;
     },
-    queryKey: queryKeys.usersAll(),
-    staleTime: 30_000,
+    queryKey: ['dashboard', 'stats', days] as const,
   });
 
-  const cohortsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data ?? [];
-    },
-    queryKey: queryKeys.cohorts(),
-    staleTime: 60_000,
-  });
+  const stats = statsQuery.data;
+  const isLoading = statsQuery.isLoading;
 
-  const rolesQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.roles.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load roles');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.roles(),
-    staleTime: 60_000,
-  });
+  const filteredChartData = useMemo(() => {
+    if (!stats?.chartData) {
+      return [];
+    }
+    if (days !== 7) {
+      return stats.chartData;
+    }
+    // For the week view, show only working days (Mon-Fri)
+    return stats.chartData.filter((point) => {
+      const d = new Date(point.date);
+      const day = d.getDay();
+      return day !== 0 && day !== 6;
+    });
+  }, [stats?.chartData, days]);
 
-  const substitutionsQuery = useQuery({
-    queryFn: async (): Promise<SubstitutionItem[]> => {
-      const res = await parseResponse(api.timetable.substitutions.$get());
-      if (!res.success) {
-        throw new Error('Failed to load substitutions');
-      }
-      return res.data as SubstitutionItem[];
-    },
-    queryKey: queryKeys.substitutions(),
-    staleTime: 30_000,
-  });
-
-  const relevantSubstitutionsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.substitutions.relevant.$get()
-      );
-      if (!res.success) {
-        throw new Error('Failed to load upcoming substitutions');
-      }
-      return res.data ?? [];
-    },
-    queryKey: [...queryKeys.substitutions(), 'relevant'] as const,
-    staleTime: 30_000,
-  });
-
-  const totalUsers = usersQuery.data?.total ?? 0;
-  const totalCohorts = cohortsQuery.data?.length ?? 0;
-  const totalRoles = rolesQuery.data?.roles?.length ?? 0;
-  const allSubstitutions = substitutionsQuery.data ?? [];
-  const upcomingSubstitutions = relevantSubstitutionsQuery.data ?? [];
-
-  const isLoading =
-    usersQuery.isLoading ||
-    cohortsQuery.isLoading ||
-    rolesQuery.isLoading ||
-    substitutionsQuery.isLoading ||
-    relevantSubstitutionsQuery.isLoading;
-
-  const hasError =
-    usersQuery.isError ||
-    cohortsQuery.isError ||
-    rolesQuery.isError ||
-    substitutionsQuery.isError ||
-    relevantSubstitutionsQuery.isError;
-
-  const sortedSubstitutions = useMemo(
-    () =>
-      [...allSubstitutions].sort((a, b) => {
-        const dateA = new Date(a.substitution.date);
-        const dateB = new Date(b.substitution.date);
-        return dateB.getTime() - dateA.getTime();
-      }),
-    [allSubstitutions]
-  );
+  let chartContent: React.ReactNode;
+  if (isLoading) {
+    chartContent = <Skeleton className="h-80 w-full" />;
+  } else if (!stats || filteredChartData.length === 0) {
+    chartContent = (
+      <p className="text-muted-foreground text-sm">
+        {t('dashboard.noActivity')}
+      </p>
+    );
+  } else {
+    chartContent = (
+      <ChartContainer className="h-80 w-full" config={chartConfig}>
+        <BarChart
+          data={filteredChartData}
+          margin={{ bottom: 8, left: 12, right: 12, top: 8 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            axisLine={false}
+            dataKey="date"
+            tickLine={false}
+            tickMargin={8}
+          />
+          <YAxis
+            allowDecimals={false}
+            tickLine={false}
+            tickMargin={8}
+            width={40}
+          />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          <Bar
+            dataKey="substitutions"
+            fill="var(--color-substitutions)"
+            radius={[4, 4, 0, 0]}
+          />
+          <Bar
+            dataKey="movedLessons"
+            fill="var(--color-movedLessons)"
+            radius={[4, 4, 0, 0]}
+          />
+        </BarChart>
+      </ChartContainer>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -244,53 +136,104 @@ export function AdminDashboard() {
           icon={<Users className="text-primary" />}
           isLoading={isLoading}
           label={t('dashboard.totalUsers')}
-          value={totalUsers}
+          value={stats?.totalUsers ?? 0}
         />
         <StatCard
           icon={<ArrowRightLeft className="text-primary" />}
           isLoading={isLoading}
           label={t('dashboard.totalSubstitutions')}
-          value={allSubstitutions.length}
+          value={stats?.totalSubstitutions ?? 0}
         />
         <StatCard
-          icon={<CalendarClock className="text-primary" />}
+          icon={<ArrowLeftRight className="text-primary" />}
           isLoading={isLoading}
-          label={t('dashboard.upcomingSubstitutions')}
-          value={upcomingSubstitutions.length}
+          label={t('dashboard.totalMovedLessons')}
+          value={stats?.totalMovedLessons ?? 0}
         />
         <StatCard
           icon={<GraduationCap className="text-primary" />}
           isLoading={isLoading}
           label={t('dashboard.totalCohorts')}
-          value={totalCohorts}
+          value={stats?.totalCohorts ?? 0}
         />
         <StatCard
           icon={<Shield className="text-primary" />}
           isLoading={isLoading}
           label={t('dashboard.totalRoles')}
-          value={totalRoles}
+          value={stats?.totalRoles ?? 0}
         />
       </div>
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('dashboard.loadError')}</AlertTitle>
-          <AlertDescription>
-            {t('dashboard.loadErrorDescription')}
-          </AlertDescription>
-        </Alert>
-      )}
-      <div>
-        <h2 className="font-semibold text-xl tracking-tight">
-          {t('dashboard.recentSubstitutions')}
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          {t('dashboard.recentSubstitutionsDescription')}
-        </p>
+      <Separator />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{t('dashboard.activityChart')}</CardTitle>
+            <Select
+              onValueChange={(v) => setDays(Number(v))}
+              value={String(days)}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">{t('dashboard.today')}</SelectItem>
+                <SelectItem value="7">{t('dashboard.last7Days')}</SelectItem>
+                <SelectItem value="30">{t('dashboard.last30Days')}</SelectItem>
+                <SelectItem value="90">{t('dashboard.last90Days')}</SelectItem>
+                <SelectItem value="365">{t('dashboard.lastYear')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>{chartContent}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('dashboard.summary')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>{t('dashboard.totalUsers')}</span>
+                  <span className="font-semibold">
+                    {stats?.totalUsers ?? 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>{t('dashboard.totalSubstitutions')}</span>
+                  <span className="font-semibold">
+                    {stats?.chartTotalSubstitutions ?? 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>{t('dashboard.totalMovedLessons')}</span>
+                  <span className="font-semibold">
+                    {stats?.chartTotalMovedLessons ?? 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>{t('dashboard.totalCohorts')}</span>
+                  <span className="font-semibold">
+                    {stats?.totalCohorts ?? 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>{t('dashboard.totalRoles')}</span>
+                  <span className="font-semibold">
+                    {stats?.totalRoles ?? 0}
+                  </span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-      <SubstitutionsTable
-        isLoading={isLoading}
-        substitutions={sortedSubstitutions}
-      />
     </div>
   );
 }

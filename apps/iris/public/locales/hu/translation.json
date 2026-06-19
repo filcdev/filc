@@ -12,6 +12,7 @@
     "totalUsers": "Regisztrált felhasználók",
     "totalSubstitutions": "Összes helyettesítés",
     "upcomingSubstitutions": "Közelgő",
+    "totalMovedLessons": "Áthelyezett órák",
     "totalCohorts": "Csoportok",
     "totalRoles": "Szerepkörök",
     "loadError": "Nem sikerült betölteni a vezérlőpultot",
@@ -23,7 +24,15 @@
     "cohorts": "Osztályok",
     "status": "Állapot",
     "past": "Lejárt",
-    "upcoming": "Közelgő"
+    "upcoming": "Közelgő",
+    "activityChart": "Aktivitás áttekintés",
+    "today": "Ma",
+    "last7Days": "Elmúlt 7 nap",
+    "last30Days": "Elmúlt 30 nap",
+    "last90Days": "Elmúlt 90 nap",
+    "lastYear": "Elmúlt év",
+    "noActivity": "Nincsenek közelgő helyettesítések vagy áthelyezett órák.",
+    "summary": "Összegzés"
   },
   "account": {
     "details": "Fiók adatai",
