@@ -118,7 +118,7 @@ function LessonRow({
       </TableCell>
       <TableCell>
         {comment ? (
-          <span className="text-sm">{comment}</span>
+          <span className="whitespace-pre-wrap text-sm">{comment}</span>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
