@@ -648,7 +648,12 @@ function LogsPage() {
               ? ({
                   authorizedDevices: [],
                   cardData: pendingCardData,
-                } as unknown as DoorlockCard)
+                  enabled: true,
+                  frozen: false,
+                  id: '',
+                  name: '',
+                  userId: null,
+                } satisfies DoorlockCard)
               : null
           }
           devices={devicesQuery.data ?? []}

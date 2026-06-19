@@ -96,7 +96,7 @@ export function CardDialog<
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{card ? 'Edit card' : 'Add card'}</DialogTitle>
+          <DialogTitle>{isCreate ? 'Add card' : 'Edit card'}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -229,7 +229,7 @@ export function CardDialog<
           <DialogFooter>
             <Button disabled={!form.state.canSubmit} type="submit">
               <Save />
-              {card ? 'Save changes' : 'Create card'}
+              {isCreate ? 'Create card' : 'Save changes'}
             </Button>
           </DialogFooter>
         </form>
