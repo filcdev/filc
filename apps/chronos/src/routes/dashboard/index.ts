@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import { and, count, desc, gte, lte } from 'drizzle-orm';
+import { and, count, desc, gte, isNotNull, lte } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -87,7 +87,8 @@ export const getDashboardStats = dashboardFactory.createHandlers(
             .where(
               and(
                 gte(substitution.date, fromDate),
-                lte(substitution.date, today)
+                lte(substitution.date, today),
+                isNotNull(substitution.substituter)
               )
             )
             .orderBy(desc(substitution.date)),
@@ -99,7 +100,12 @@ export const getDashboardStats = dashboardFactory.createHandlers(
         db
           .select({ count: count() })
           .from(substitution)
-          .where(gte(substitution.date, today)),
+          .where(
+            and(
+              gte(substitution.date, today),
+              isNotNull(substitution.substituter)
+            )
+          ),
         timetableId
           ? db
               .select({ count: count() })

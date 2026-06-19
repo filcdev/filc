@@ -43,6 +43,7 @@ const chartConfig = {
 type StatsResponse = InferResponseType<typeof api.dashboard.stats.$get>;
 type DashboardStats = NonNullable<StatsResponse['data']>['stats'];
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: chart + stat cards + selector
 export function AdminDashboard() {
   const { t } = useTranslation();
   const [days, setDays] = useState(30);
@@ -81,6 +82,10 @@ export function AdminDashboard() {
   let chartContent: React.ReactNode;
   if (isLoading) {
     chartContent = <Skeleton className="h-64 w-full sm:h-80" />;
+  } else if (statsQuery.isError) {
+    chartContent = (
+      <p className="text-destructive text-sm">{t('dashboard.loadError')}</p>
+    );
   } else if (!stats || filteredChartData.length === 0) {
     chartContent = (
       <p className="text-muted-foreground text-sm">
