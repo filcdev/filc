@@ -5,6 +5,7 @@ import {
   DoorOpen,
   GraduationCap,
   IdCard,
+  LayoutDashboard,
   List,
   Microchip,
   RefreshCw,
@@ -47,6 +48,16 @@ export function AdminSidebar() {
 
   const categories: MenuCategory[] = useMemo(
     () => [
+      {
+        items: [
+          {
+            icon: LayoutDashboard,
+            title: t('dashboard.title'),
+            url: '/admin',
+          },
+        ],
+        label: t('dashboard.overview'),
+      },
       {
         items: [
           {
