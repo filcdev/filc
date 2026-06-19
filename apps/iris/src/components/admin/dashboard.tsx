@@ -50,7 +50,7 @@ export function AdminDashboard() {
   const statsQuery = useQuery({
     queryFn: async (): Promise<DashboardStats> => {
       const res = await parseResponse(
-        api.dashboard.stats.$get({ query: { days } })
+        api.dashboard.stats.$get({ query: { days: String(days) } })
       );
       if (!(res.success && res.data?.stats)) {
         throw new Error('Failed to load dashboard stats');
@@ -80,7 +80,7 @@ export function AdminDashboard() {
 
   let chartContent: React.ReactNode;
   if (isLoading) {
-    chartContent = <Skeleton className="h-80 w-full" />;
+    chartContent = <Skeleton className="h-64 w-full sm:h-80" />;
   } else if (!stats || filteredChartData.length === 0) {
     chartContent = (
       <p className="text-muted-foreground text-sm">
@@ -89,7 +89,7 @@ export function AdminDashboard() {
     );
   } else {
     chartContent = (
-      <ChartContainer className="h-80 w-full" config={chartConfig}>
+      <ChartContainer className="h-64 w-full sm:h-80" config={chartConfig}>
         <BarChart
           data={filteredChartData}
           margin={{ bottom: 8, left: 12, right: 12, top: 8 }}
@@ -131,7 +131,7 @@ export function AdminDashboard() {
         </h1>
         <p className="text-muted-foreground">{t('dashboard.description')}</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           icon={<Users className="text-primary" />}
           isLoading={isLoading}

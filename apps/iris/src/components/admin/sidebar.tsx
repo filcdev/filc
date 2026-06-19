@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
   Bell,
@@ -25,6 +25,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { authClient } from '@/utils/authentication';
 
@@ -45,6 +46,15 @@ type MenuCategory = {
 export function AdminSidebar() {
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
+  const navigate = useNavigate();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleNavigate = (url: string) => {
+    navigate({ to: url });
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const categories: MenuCategory[] = useMemo(
     () => [
@@ -186,11 +196,12 @@ export function AdminSidebar() {
                 {category.items.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
+                      onClick={() => handleNavigate(item.url)}
                       render={
-                        <Link to={item.url}>
+                        <span className="flex items-center gap-2">
                           <item.icon />
                           <span>{item.title}</span>
-                        </Link>
+                        </span>
                       }
                     />
                   </SidebarMenuItem>

@@ -2,7 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { type InferResponseType, parseResponse } from 'hono/client';
-import { Calendar as CalendarIcon, Check, DoorOpen, User } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  Check,
+  ChevronDown,
+  DoorOpen,
+  Filter,
+  User,
+} from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -36,6 +43,7 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { cn } from '@/utils/index';
@@ -158,6 +166,8 @@ const buildLogsQuery = ({
 
 function LogsPage() {
   const { data: session } = authClient.useSession();
+  const isMobile = useIsMobile();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<LogSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -351,54 +361,76 @@ function LogsPage() {
         />
       </div>
 
-      <div className="flex flex-wrap space-x-4 space-y-3 md:justify-between">
-        <div className="space-y-2">
-          <Label>Search</Label>
-          <Input
-            className="w-full"
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search logs..."
-            value={search}
-          />
-        </div>
-        <SelectFilter
-          label="Device"
-          onValueChange={setDeviceFilter}
-          options={deviceOptions}
-          value={deviceFilter}
-        />
-        <SelectFilter
-          label="Card"
-          onValueChange={setCardFilter}
-          options={cardOptions}
-          value={cardFilter}
-        />
-        <SelectFilter
-          label="User"
-          onValueChange={setUserFilter}
-          options={userOptions}
-          value={userFilter}
-        />
-        <SelectFilter
-          label="Access"
-          onValueChange={setAccessFilter}
-          options={[
-            { id: 'granted', label: 'Access granted' },
-            { id: 'denied', label: 'Access denied' },
-          ]}
-          value={accessFilter}
-        />
-        <SelectFilter
-          label="Event"
-          onValueChange={setEventFilter}
-          options={[
-            { id: 'virtual', label: 'Virtual card' },
-            { id: 'physical', label: 'Physical button' },
-          ]}
-          value={eventFilter}
-        />
-        <DateRangePicker onChange={setDateRange} value={dateRange} />
+      <div className="flex items-center gap-2">
+        {isMobile && (
+          <Button
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((prev) => !prev)}
+            size="sm"
+            variant="outline"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 transition-transform',
+                filtersOpen && 'rotate-180'
+              )}
+            />
+          </Button>
+        )}
       </div>
+
+      {(!isMobile || filtersOpen) && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end xl:gap-4">
+          <div className="space-y-2">
+            <Label>Search</Label>
+            <Input
+              className="w-full"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search logs..."
+              value={search}
+            />
+          </div>
+          <SelectFilter
+            label="Device"
+            onValueChange={setDeviceFilter}
+            options={deviceOptions}
+            value={deviceFilter}
+          />
+          <SelectFilter
+            label="Card"
+            onValueChange={setCardFilter}
+            options={cardOptions}
+            value={cardFilter}
+          />
+          <SelectFilter
+            label="User"
+            onValueChange={setUserFilter}
+            options={userOptions}
+            value={userFilter}
+          />
+          <SelectFilter
+            label="Access"
+            onValueChange={setAccessFilter}
+            options={[
+              { id: 'granted', label: 'Access granted' },
+              { id: 'denied', label: 'Access denied' },
+            ]}
+            value={accessFilter}
+          />
+          <SelectFilter
+            label="Event"
+            onValueChange={setEventFilter}
+            options={[
+              { id: 'virtual', label: 'Virtual card' },
+              { id: 'physical', label: 'Physical button' },
+            ]}
+            value={eventFilter}
+          />
+          <DateRangePicker onChange={setDateRange} value={dateRange} />
+        </div>
+      )}
 
       {hasError && (
         <Alert variant="destructive">
@@ -412,115 +444,117 @@ function LogsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('timestamp')}
-              >
-                <div className="flex items-center gap-2">
-                  Timestamp
-                  <SortIcon
-                    column="timestamp"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('device')}
-              >
-                <div className="flex items-center gap-2">
-                  Device
-                  <SortIcon
-                    column="device"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('user')}
-              >
-                <div className="flex items-center gap-2">
-                  User
-                  <SortIcon
-                    column="user"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('card')}
-              >
-                <div className="flex items-center gap-2">
-                  Card
-                  <SortIcon
-                    column="card"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('cardData')}
-              >
-                <div className="flex items-center gap-2">
-                  Card UID
-                  <SortIcon
-                    column="cardData"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('triggeredBy')}
-              >
-                <div className="flex items-center gap-2">
-                  Triggered by
-                  <SortIcon
-                    column="triggeredBy"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('result')}
-              >
-                <div className="flex items-center gap-2">
-                  Result
-                  <SortIcon
-                    column="result"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredLogs.map((log) => (
-              <LogTableRow key={log.id} log={log} />
-            ))}
-            {!(filteredLogs.length || hasError) && (
+        <div className="w-full overflow-x-auto rounded-md border">
+          <Table className="w-full min-w-[768px]">
+            <TableHeader>
               <TableRow>
-                <TableCell className="text-muted-foreground" colSpan={7}>
-                  No logs found with the selected filters.
-                </TableCell>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('timestamp')}
+                >
+                  <div className="flex items-center gap-2">
+                    Timestamp
+                    <SortIcon
+                      column="timestamp"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('device')}
+                >
+                  <div className="flex items-center gap-2">
+                    Device
+                    <SortIcon
+                      column="device"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('user')}
+                >
+                  <div className="flex items-center gap-2">
+                    User
+                    <SortIcon
+                      column="user"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('card')}
+                >
+                  <div className="flex items-center gap-2">
+                    Card
+                    <SortIcon
+                      column="card"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('cardData')}
+                >
+                  <div className="flex items-center gap-2">
+                    Card UID
+                    <SortIcon
+                      column="cardData"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('triggeredBy')}
+                >
+                  <div className="flex items-center gap-2">
+                    Triggered by
+                    <SortIcon
+                      column="triggeredBy"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('result')}
+                >
+                  <div className="flex items-center gap-2">
+                    Result
+                    <SortIcon
+                      column="result"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredLogs.map((log) => (
+                <LogTableRow key={log.id} log={log} />
+              ))}
+              {!(filteredLogs.length || hasError) && (
+                <TableRow>
+                  <TableCell className="text-muted-foreground" colSpan={7}>
+                    No logs found with the selected filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );

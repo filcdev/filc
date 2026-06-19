@@ -318,158 +318,160 @@ function CardsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('name')}
-              >
-                <div className="flex items-center gap-2">
-                  Name
-                  <SortIcon
-                    column="name"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('owner')}
-              >
-                <div className="flex items-center gap-2">
-                  Owner
-                  <SortIcon
-                    column="owner"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('status')}
-              >
-                <div className="flex items-center gap-2">
-                  Status
-                  <SortIcon
-                    column="status"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('devices')}
-              >
-                <div className="flex items-center gap-2">
-                  Authorized devices
-                  <SortIcon
-                    column="devices"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer select-none hover:bg-muted/50"
-                onClick={() => handleSort('updated')}
-              >
-                <div className="flex items-center gap-2">
-                  Updated
-                  <SortIcon
-                    column="updated"
-                    currentColumn={sortColumn}
-                    direction={sortDirection}
-                  />
-                </div>
-              </TableHead>
-              {hasWritePermission && (
-                <TableHead>{t('doorlockCards.actions')}</TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCards.map((card) => (
-              <TableRow key={card.id}>
-                <TableCell className="font-medium">{card.name}</TableCell>
-                <TableCell>
-                  {card.owner
-                    ? getOwnerLabel(card.owner) ||
-                      t('doorlockCards.unknownUser')
-                    : t('doorlockCards.unknownUser')}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {!card.frozen && card.enabled && (
-                      <Badge variant="secondary">
-                        {t('doorlockCards.active')}
-                      </Badge>
-                    )}
-                    {card.frozen && (
-                      <Badge variant="outline">
-                        {t('doorlockCards.frozen')}
-                      </Badge>
-                    )}
-                    {!card.enabled && (
-                      <Badge variant="destructive">
-                        {t('doorlockCards.disabled')}
-                      </Badge>
-                    )}
+        <div className="w-full overflow-x-auto rounded-md border">
+          <Table className="w-full min-w-[768px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center gap-2">
+                    Name
+                    <SortIcon
+                      column="name"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
                   </div>
-                </TableCell>
-                <TableCell>
-                  {card.authorizedDevices.length
-                    ? card.authorizedDevices
-                        .map((device) => device.name)
-                        .join(', ')
-                    : t('doorlockCards.noDevices')}
-                </TableCell>
-                <TableCell>
-                  {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                </TableCell>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('owner')}
+                >
+                  <div className="flex items-center gap-2">
+                    Owner
+                    <SortIcon
+                      column="owner"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center gap-2">
+                    Status
+                    <SortIcon
+                      column="status"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('devices')}
+                >
+                  <div className="flex items-center gap-2">
+                    Authorized devices
+                    <SortIcon
+                      column="devices"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('updated')}
+                >
+                  <div className="flex items-center gap-2">
+                    Updated
+                    <SortIcon
+                      column="updated"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
                 {hasWritePermission && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        aria-label={t('doorlockCards.editCard')}
-                        onClick={() => {
-                          setSelectedCard(card);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="outline"
-                      >
-                        <Pen className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        aria-label={t('doorlockCards.deleteCard')}
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleDelete(card)}
-                        size="icon"
-                        variant="destructive"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  <TableHead>{t('doorlockCards.actions')}</TableHead>
                 )}
               </TableRow>
-            ))}
-            {!(filteredCards.length || hasError) && (
-              <TableRow>
-                <TableCell
-                  className="text-muted-foreground"
-                  colSpan={hasWritePermission ? 6 : 5}
-                >
-                  {t('doorlockCards.noCardsFound')}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredCards.map((card) => (
+                <TableRow key={card.id}>
+                  <TableCell className="font-medium">{card.name}</TableCell>
+                  <TableCell>
+                    {card.owner
+                      ? getOwnerLabel(card.owner) ||
+                        t('doorlockCards.unknownUser')
+                      : t('doorlockCards.unknownUser')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {!card.frozen && card.enabled && (
+                        <Badge variant="secondary">
+                          {t('doorlockCards.active')}
+                        </Badge>
+                      )}
+                      {card.frozen && (
+                        <Badge variant="outline">
+                          {t('doorlockCards.frozen')}
+                        </Badge>
+                      )}
+                      {!card.enabled && (
+                        <Badge variant="destructive">
+                          {t('doorlockCards.disabled')}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {card.authorizedDevices.length
+                      ? card.authorizedDevices
+                          .map((device) => device.name)
+                          .join(', ')
+                      : t('doorlockCards.noDevices')}
+                  </TableCell>
+                  <TableCell>
+                    {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                  </TableCell>
+                  {hasWritePermission && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          aria-label={t('doorlockCards.editCard')}
+                          onClick={() => {
+                            setSelectedCard(card);
+                            setDialogOpen(true);
+                          }}
+                          size="icon"
+                          variant="outline"
+                        >
+                          <Pen className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          aria-label={t('doorlockCards.deleteCard')}
+                          disabled={deleteMutation.isPending}
+                          onClick={() => handleDelete(card)}
+                          size="icon"
+                          variant="destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {!(filteredCards.length || hasError) && (
+                <TableRow>
+                  <TableCell
+                    className="text-muted-foreground"
+                    colSpan={hasWritePermission ? 6 : 5}
+                  >
+                    {t('doorlockCards.noCardsFound')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {hasWritePermission && (

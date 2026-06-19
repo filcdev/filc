@@ -32,7 +32,7 @@ function AppLayoutComponent() {
     <PermissionGuard permission={ADMIN_UI_PERMISSIONS}>
       <SidebarProvider>
         <AdminSidebar />
-        <main className="flex grow flex-col">
+        <main className="flex min-w-0 grow flex-col">
           <Navbar showLinks={false} showLogo={false}>
             <SidebarTrigger />
           </Navbar>

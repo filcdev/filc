@@ -51,8 +51,8 @@ export function RolesTable({ roles }: RolesTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
+      <div className="w-full overflow-x-auto rounded-md border">
+        <Table className="w-full min-w-[768px]">
           <TableHeader>
             <TableRow>
               <TableHead>{t('roles.name')}</TableHead>

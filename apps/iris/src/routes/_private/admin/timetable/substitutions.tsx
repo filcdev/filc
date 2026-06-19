@@ -293,9 +293,9 @@ function SubstitutionsPage() {
         <p className="text-muted-foreground">{t('substitution.description')}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('search')}
           value={search}
@@ -313,7 +313,7 @@ function SubstitutionsPage() {
             {t('substitution.showPast')}
           </label>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:ml-auto">
           <Button
             onClick={() => substitutionsQuery.refetch()}
             variant="outline"
@@ -348,8 +348,8 @@ function SubstitutionsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table className="table-fixed">
+        <div className="w-full overflow-x-auto rounded-md border">
+          <Table className="w-full min-w-[768px]">
             <TableHeader>
               <TableRow>
                 <TableHead
