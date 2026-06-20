@@ -29,17 +29,6 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/utils/hc';
 
-const chartConfig = {
-  movedLessons: {
-    color: 'var(--chart-2)',
-    label: 'Moved Lessons',
-  },
-  substitutions: {
-    color: 'var(--primary)',
-    label: 'Substitutions',
-  },
-} satisfies ChartConfig;
-
 type StatsResponse = InferResponseType<typeof api.dashboard.stats.$get>;
 type DashboardStats = NonNullable<StatsResponse['data']>['stats'];
 
@@ -92,6 +81,21 @@ export function AdminDashboard() {
     }
     return { movedLessons, substitutions };
   }, [filteredChartData]);
+
+  const chartConfig = useMemo(
+    () =>
+      ({
+        movedLessons: {
+          color: 'var(--chart-2)',
+          label: t('dashboard.totalMovedLessons'),
+        },
+        substitutions: {
+          color: 'var(--primary)',
+          label: t('dashboard.totalSubstitutions'),
+        },
+      }) satisfies ChartConfig,
+    [t]
+  );
 
   let chartContent: React.ReactNode;
   let summaryContent: React.ReactNode;
