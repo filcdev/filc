@@ -844,6 +844,7 @@ function LogTableRow({ log, onAddCard }: LogTableRowProps) {
         {onAddCard && (
           <Button
             aria-label="Add card"
+            disabled={!log.cardData}
             onClick={() => onAddCard(log.cardData ?? null)}
             size="icon"
             variant="ghost"

@@ -71,13 +71,27 @@ export function AdminDashboard() {
     if (days !== 7) {
       return stats.chartData;
     }
-    // For the week view, show only working days (Mon-Fri)
+    // For the week view, show only working days (Mon-Fri).
+    // Parse YYYY-MM-DD in UTC to avoid timezone-based day misclassification.
     return stats.chartData.filter((point) => {
-      const d = new Date(point.date);
-      const day = d.getDay();
+      const parts = point.date.split('-').map(Number);
+      const y = parts[0] ?? 0;
+      const m = parts[1] ?? 0;
+      const d = parts[2] ?? 0;
+      const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
       return day !== 0 && day !== 6;
     });
   }, [stats?.chartData, days]);
+
+  const summaryChartTotals = useMemo(() => {
+    let substitutions = 0;
+    let movedLessons = 0;
+    for (const point of filteredChartData) {
+      substitutions += point.substitutions;
+      movedLessons += point.movedLessons;
+    }
+    return { movedLessons, substitutions };
+  }, [filteredChartData]);
 
   let chartContent: React.ReactNode;
   let summaryContent: React.ReactNode;
@@ -151,13 +165,13 @@ export function AdminDashboard() {
         <div className="flex items-center justify-between">
           <span>{t('dashboard.totalSubstitutions')}</span>
           <span className="font-semibold">
-            {stats?.chartTotalSubstitutions ?? 0}
+            {summaryChartTotals.substitutions}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span>{t('dashboard.totalMovedLessons')}</span>
           <span className="font-semibold">
-            {stats?.chartTotalMovedLessons ?? 0}
+            {summaryChartTotals.movedLessons}
           </span>
         </div>
         <div className="flex items-center justify-between">
