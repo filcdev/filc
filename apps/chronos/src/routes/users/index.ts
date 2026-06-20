@@ -97,13 +97,13 @@ export const listUsers = usersFactory.createHandlers(
       }))
     );
 
-    const userCount = await db
+    const [countResult] = await db
       .select({ count: count() })
       .from(user)
       .where(whereClause);
 
     return c.json<SuccessResponse<{ users: typeof users; total: number }>>({
-      data: { total: Number(userCount), users },
+      data: { total: countResult?.count ?? 0, users },
       success: true,
     });
   }

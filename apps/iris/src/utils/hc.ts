@@ -1,5 +1,6 @@
 import type {
   CohortRouter,
+  DashboardRouter,
   DoorlockRouter,
   NewsRouter,
   NotificationsRouter,
@@ -18,6 +19,7 @@ const dOpts = {
 
 export const api = {
   cohort: hc<CohortRouter>('/api/cohort', dOpts),
+  dashboard: hc<DashboardRouter>('/api/dashboard', dOpts),
   doorlock: hc<DoorlockRouter>('/api/doorlock', dOpts),
   news: hc<NewsRouter>('/api/news', dOpts),
   notifications: hc<NotificationsRouter>('/api/notifications', dOpts),

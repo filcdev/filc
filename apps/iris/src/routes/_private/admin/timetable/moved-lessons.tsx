@@ -498,9 +498,9 @@ function MovedLessonsPage() {
         <p className="text-muted-foreground">{t('movedLesson.description')}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t('search')}
           value={search}
@@ -518,7 +518,7 @@ function MovedLessonsPage() {
             {t('movedLesson.showPast')}
           </label>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:ml-auto">
           <Button onClick={() => movedLessonsQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
             {t('movedLesson.refresh')}
@@ -550,8 +550,8 @@ function MovedLessonsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table className="table-fixed">
+        <div className="w-full overflow-x-auto rounded-md border">
+          <Table className="w-full min-w-3xl">
             <TableHeader>
               <TableRow>
                 <TableHead

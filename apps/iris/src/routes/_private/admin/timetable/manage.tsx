@@ -322,8 +322,8 @@ function TimetableManagePage() {
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table>
+        <div className="w-full overflow-x-auto rounded-md border">
+          <Table className="w-full min-w-3xl">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('timetable.nameLabel')}</TableHead>
