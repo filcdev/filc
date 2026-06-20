@@ -542,6 +542,7 @@
     "createSuccess": "Card created",
     "updateSuccess": "Card updated",
     "saveError": "Failed to save card",
+    "saveSuccess": "Card saved",
     "deleteSuccess": "Card deleted",
     "deleteError": "Failed to delete card",
     "editCard": "Edit card",

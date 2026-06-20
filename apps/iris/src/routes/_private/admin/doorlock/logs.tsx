@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -226,6 +227,7 @@ function useLogStats(
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: filter state and queries
 function LogsPage() {
+  const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -348,10 +350,10 @@ function LogsPage() {
       return parseResponse(api.doorlock.cards.$post({ json: payload }));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to save card');
+      toast.error(error.message || t('doorlockCards.saveError'));
     },
     onSuccess: () => {
-      toast.success('Card saved');
+      toast.success(t('doorlockCards.saveSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
       setCardDialogOpen(false);

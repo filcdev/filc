@@ -542,6 +542,7 @@
     "createSuccess": "Kártya létrehozva",
     "updateSuccess": "Kártya frissítve",
     "saveError": "Nem sikerült menteni a kártyát",
+    "saveSuccess": "Kártya mentve",
     "deleteSuccess": "Kártya törölve",
     "deleteError": "Nem sikerült törölni a kártyát",
     "editCard": "Kártya szerkesztése",

@@ -80,6 +80,7 @@ export function AdminDashboard() {
   }, [stats?.chartData, days]);
 
   let chartContent: React.ReactNode;
+  let summaryContent: React.ReactNode;
   if (isLoading) {
     chartContent = <Skeleton className="h-64 w-full sm:h-80" />;
   } else if (statsQuery.isError) {
@@ -128,6 +129,49 @@ export function AdminDashboard() {
     );
   }
 
+  if (isLoading) {
+    summaryContent = (
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    );
+  } else if (statsQuery.isError) {
+    summaryContent = (
+      <p className="text-destructive text-sm">{t('dashboard.loadError')}</p>
+    );
+  } else {
+    summaryContent = (
+      <div className="space-y-3 text-sm">
+        <div className="flex items-center justify-between">
+          <span>{t('dashboard.totalUsers')}</span>
+          <span className="font-semibold">{stats?.totalUsers ?? 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>{t('dashboard.totalSubstitutions')}</span>
+          <span className="font-semibold">
+            {stats?.chartTotalSubstitutions ?? 0}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>{t('dashboard.totalMovedLessons')}</span>
+          <span className="font-semibold">
+            {stats?.chartTotalMovedLessons ?? 0}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>{t('dashboard.totalCohorts')}</span>
+          <span className="font-semibold">{stats?.totalCohorts ?? 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>{t('dashboard.totalRoles')}</span>
+          <span className="font-semibold">{stats?.totalRoles ?? 0}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -137,36 +181,44 @@ export function AdminDashboard() {
         <p className="text-muted-foreground">{t('dashboard.description')}</p>
       </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard
-          icon={<Users className="text-primary" />}
-          isLoading={isLoading}
-          label={t('dashboard.totalUsers')}
-          value={stats?.totalUsers ?? 0}
-        />
-        <StatCard
-          icon={<ArrowRightLeft className="text-primary" />}
-          isLoading={isLoading}
-          label={t('dashboard.totalSubstitutions')}
-          value={stats?.totalSubstitutions ?? 0}
-        />
-        <StatCard
-          icon={<ArrowLeftRight className="text-primary" />}
-          isLoading={isLoading}
-          label={t('dashboard.totalMovedLessons')}
-          value={stats?.totalMovedLessons ?? 0}
-        />
-        <StatCard
-          icon={<GraduationCap className="text-primary" />}
-          isLoading={isLoading}
-          label={t('dashboard.totalCohorts')}
-          value={stats?.totalCohorts ?? 0}
-        />
-        <StatCard
-          icon={<Shield className="text-primary" />}
-          isLoading={isLoading}
-          label={t('dashboard.totalRoles')}
-          value={stats?.totalRoles ?? 0}
-        />
+        {statsQuery.isError ? (
+          <p className="col-span-full text-destructive text-sm">
+            {t('dashboard.loadError')}
+          </p>
+        ) : (
+          <>
+            <StatCard
+              icon={<Users className="text-primary" />}
+              isLoading={isLoading}
+              label={t('dashboard.totalUsers')}
+              value={stats?.totalUsers ?? 0}
+            />
+            <StatCard
+              icon={<ArrowRightLeft className="text-primary" />}
+              isLoading={isLoading}
+              label={t('dashboard.totalSubstitutions')}
+              value={stats?.totalSubstitutions ?? 0}
+            />
+            <StatCard
+              icon={<ArrowLeftRight className="text-primary" />}
+              isLoading={isLoading}
+              label={t('dashboard.totalMovedLessons')}
+              value={stats?.totalMovedLessons ?? 0}
+            />
+            <StatCard
+              icon={<GraduationCap className="text-primary" />}
+              isLoading={isLoading}
+              label={t('dashboard.totalCohorts')}
+              value={stats?.totalCohorts ?? 0}
+            />
+            <StatCard
+              icon={<Shield className="text-primary" />}
+              isLoading={isLoading}
+              label={t('dashboard.totalRoles')}
+              value={stats?.totalRoles ?? 0}
+            />
+          </>
+        )}
       </div>
       <Separator />
       <div className="grid gap-4 lg:grid-cols-3">
@@ -195,48 +247,7 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle>{t('dashboard.summary')}</CardTitle>
           </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ) : (
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>{t('dashboard.totalUsers')}</span>
-                  <span className="font-semibold">
-                    {stats?.totalUsers ?? 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{t('dashboard.totalSubstitutions')}</span>
-                  <span className="font-semibold">
-                    {stats?.chartTotalSubstitutions ?? 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{t('dashboard.totalMovedLessons')}</span>
-                  <span className="font-semibold">
-                    {stats?.chartTotalMovedLessons ?? 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{t('dashboard.totalCohorts')}</span>
-                  <span className="font-semibold">
-                    {stats?.totalCohorts ?? 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{t('dashboard.totalRoles')}</span>
-                  <span className="font-semibold">
-                    {stats?.totalRoles ?? 0}
-                  </span>
-                </div>
-              </div>
-            )}
-          </CardContent>
+          <CardContent>{summaryContent}</CardContent>
         </Card>
       </div>
     </div>
