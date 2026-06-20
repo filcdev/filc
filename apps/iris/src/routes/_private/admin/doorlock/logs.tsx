@@ -838,8 +838,8 @@ function LogTableRow({ log, onAddCard }: LogTableRowProps) {
           <span className="text-red-600">Denied</span>
         )}
       </TableCell>
-      {onAddCard && (
-        <TableCell>
+      <TableCell>
+        {onAddCard && (
           <Button
             aria-label="Add card"
             onClick={() => onAddCard(log.cardData ?? null)}
@@ -848,8 +848,8 @@ function LogTableRow({ log, onAddCard }: LogTableRowProps) {
           >
             <CreditCard className="h-4 w-4" />
           </Button>
-        </TableCell>
-      )}
+        )}
+      </TableCell>
     </TableRow>
   );
 }
