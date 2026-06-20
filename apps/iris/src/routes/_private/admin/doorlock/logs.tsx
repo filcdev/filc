@@ -354,6 +354,7 @@ function LogsPage() {
     },
     onSuccess: () => {
       toast.success(t('doorlockCards.saveSuccess'));
+      queryClient.invalidateQueries({ queryKey: ['doorlock', 'logs'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
       queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
       setCardDialogOpen(false);
@@ -675,7 +676,7 @@ function LogsPage() {
               id: string;
               name: string | null;
               nickname: string | null;
-              email: string;
+              email: string | null;
             }>
           }
         />
