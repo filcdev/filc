@@ -57,6 +57,13 @@
       "when": 1779276180652,
       "tag": "0007_talented_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782156800000,
+      "tag": "0008_classic_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

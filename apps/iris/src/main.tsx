@@ -1,4 +1,5 @@
 import { createRouter, RouterProvider } from '@tanstack/react-router';
+import { ThemeProvider } from 'next-themes';
 import { StrictMode } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import ReactDOM from 'react-dom/client';
@@ -49,9 +50,11 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <CookiesProvider>
         <QueryClientProvider client={queryClient}>
-          <I18nextProvider i18n={i18n}>
-            <RouterProvider router={router} />
-          </I18nextProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <I18nextProvider i18n={i18n}>
+              <RouterProvider router={router} />
+            </I18nextProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </CookiesProvider>
     </StrictMode>

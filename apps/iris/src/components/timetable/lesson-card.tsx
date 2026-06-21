@@ -5,6 +5,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/utils';
+import { ColorPicker } from './color-picker';
 import {
   formatRooms,
   formatTeachers,
@@ -15,14 +16,20 @@ import type { LessonItem } from './types';
 
 type LessonCardProps = {
   lesson: LessonItem;
+  userColors?: Record<string, number>;
+  onColorChange?: (subject: string, colorIndex: number) => void;
 };
 
-export function LessonCard({ lesson }: LessonCardProps) {
+export function LessonCard({
+  lesson,
+  userColors,
+  onColorChange,
+}: LessonCardProps) {
   const subject = lesson.subject?.name ?? '—';
   const short = lesson.subject?.short ?? subject;
   const teacher = formatTeachers(lesson.teachers);
   const room = formatRooms(lesson.classrooms);
-  const color = getSubjectColor(subject);
+  const color = getSubjectColor(subject, userColors);
 
   const startTime = toHHMM(lesson.period?.startTime);
   const endTime = toHHMM(lesson.period?.endTime);
@@ -34,11 +41,19 @@ export function LessonCard({ lesson }: LessonCardProps) {
         render={
           <div
             className={cn(
-              'relative flex h-full flex-col items-center justify-center overflow-hidden rounded-md border border-l-2 p-1 transition-colors hover:brightness-95',
+              'group relative flex h-full flex-col items-center justify-center overflow-hidden rounded-md border border-l-2 p-1 transition-colors hover:brightness-95',
               color.bg,
               color.border
             )}
           >
+            {onColorChange && subject !== '—' && (
+              <div className="absolute top-0.5 right-0.5 z-10">
+                <ColorPicker
+                  currentIndex={userColors?.[subject]}
+                  onSelect={(idx) => onColorChange(subject, idx)}
+                />
+              </div>
+            )}
             <div className="font-semibold text-sm leading-none">{short}</div>
             {teacher && (
               <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">

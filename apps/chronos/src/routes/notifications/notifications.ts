@@ -33,6 +33,7 @@ const updateSettingsSchema = z.object({
   language: z.string().optional(),
   notificationPreferences: z.record(z.string(), z.unknown()).optional(),
   theme: z.string().optional(),
+  timetableClassColors: z.record(z.string(), z.number()).optional(),
   timetableView: z.string().optional(),
 });
 
@@ -210,6 +211,9 @@ export const updateNotificationSettings = notificationsFactory.createHandlers(
     }
     if (body.notificationPreferences !== undefined) {
       values.notificationPreferences = body.notificationPreferences;
+    }
+    if (body.timetableClassColors !== undefined) {
+      values.timetableClassColors = body.timetableClassColors;
     }
 
     const [updated] = await db
