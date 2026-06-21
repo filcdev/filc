@@ -180,6 +180,7 @@ export const lessonCohortMTM = pgTable(
 );
 
 export const substitution = pgTable('substitution', {
+  comment: text('comment'),
   date: date('date', { mode: 'date' }).notNull(),
   id: text('id').primaryKey(),
   substituter: text('substituter').references(() => teacher.id), // If null, then cancelled.

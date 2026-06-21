@@ -1,0 +1,1 @@
+ALTER TABLE "substitution" ADD COLUMN "comment" text;
