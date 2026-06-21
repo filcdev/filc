@@ -723,7 +723,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
         });
       }
 
-      if (body.lessonIds) {
+      if (body.lessonIds?.length) {
         const lessonCount = await db.$count(
           lesson,
           inArray(lesson.id, body.lessonIds)
@@ -735,7 +735,6 @@ export const updateSubstitution = timetableFactory.createHandlers(
         }
       }
 
-      cancelPendingNotification(id, 'substitution');
       const updatedSubstitution = await db.transaction(
         async (tx) => {
           await validateUpdateTeacherConflict(tx, id, body, existing);
@@ -751,7 +750,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
             .returning();
 
           // If lessonIds were provided, update the many-to-many relationships
-          if (body.lessonIds) {
+          if (body.lessonIds?.length) {
             // Delete existing relationships
             await tx
               .delete(substitutionLessonMTM)
@@ -771,10 +770,18 @@ export const updateSubstitution = timetableFactory.createHandlers(
         { isolationLevel: 'serializable' }
       );
 
+      cancelPendingNotification(id, 'substitution');
       if (updatedSubstitution) {
+        // Fetch existing lesson IDs for notification fallback
+        const existingLessonRecords = await db
+          .select({ lessonId: substitutionLessonMTM.lessonId })
+          .from(substitutionLessonMTM)
+          .where(eq(substitutionLessonMTM.substitutionId, id));
+        const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
+
         dispatchPendingNotification(id, 'substitution', {
           date: body.date ?? existing.date,
-          lessonIds: body.lessonIds ?? [],
+          lessonIds: body.lessonIds ?? existingLessonIds,
           substituter: body.substituter ?? existing.substituter,
         });
       }
