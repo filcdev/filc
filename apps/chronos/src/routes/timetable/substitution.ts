@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -210,6 +210,121 @@ async function enrichLessons(lessonIds: string[]) {
       weeksDefinitionId: l.weeksDefinitionId,
     };
   });
+}
+
+// Type for both database and transaction instances used by helpers
+type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Check if a teacher already has a substitution in any of the same periods
+// on the same date. Throws 409 CONFLICT if an overlap is detected.
+async function checkTeacherSubstitutionConflict(
+  dbOrTx: TxOrDb,
+  date: Date,
+  substituter: string | null | undefined,
+  lessonIds: string[],
+  excludeSubstitutionId?: string
+): Promise<void> {
+  // Early return if substituter is null or undefined (no conflict possible)
+  if (substituter == null) {
+    return;
+  }
+
+  // Get period IDs for the incoming lessons
+  const incomingLessons = await dbOrTx
+    .select({ periodId: lesson.periodId })
+    .from(lesson)
+    .where(inArray(lesson.id, lessonIds));
+
+  const incomingPeriodIds = new Set(
+    incomingLessons
+      .map((l) => l.periodId)
+      .filter((id): id is string => id != null)
+  );
+
+  // Find existing substitutions for the same date and substituter
+  const conditions = [
+    eq(substitution.date, date),
+    eq(substitution.substituter, substituter),
+  ];
+  if (excludeSubstitutionId) {
+    conditions.push(ne(substitution.id, excludeSubstitutionId));
+  }
+
+  const existingSubstitutions = await dbOrTx
+    .select({ id: substitution.id })
+    .from(substitution)
+    .where(and(...conditions));
+
+  if (existingSubstitutions.length === 0) {
+    return;
+  }
+
+  const existingSubIds = existingSubstitutions.map((s) => s.id);
+
+  // Get lesson IDs linked to those existing substitutions
+  const existingLessons = await dbOrTx
+    .select({ lessonId: substitutionLessonMTM.lessonId })
+    .from(substitutionLessonMTM)
+    .where(inArray(substitutionLessonMTM.substitutionId, existingSubIds));
+
+  const existingLessonIds = existingLessons.map((l) => l.lessonId);
+
+  if (existingLessonIds.length === 0) {
+    return;
+  }
+
+  // Get period IDs for those linked lessons
+  const existingLessonPeriods = await dbOrTx
+    .select({ periodId: lesson.periodId })
+    .from(lesson)
+    .where(inArray(lesson.id, existingLessonIds));
+
+  const existingPeriodIds = new Set(
+    existingLessonPeriods
+      .map((l) => l.periodId)
+      .filter((id): id is string => id != null)
+  );
+
+  // Check for overlap
+  for (const periodId of incomingPeriodIds) {
+    if (existingPeriodIds.has(periodId)) {
+      throw new HTTPException(StatusCodes.CONFLICT, {
+        message:
+          'Teacher already has a substitution in the same period on this date',
+      });
+    }
+  }
+}
+
+// Resolve effective update values and delegate to checkTeacherSubstitutionConflict.
+async function validateUpdateTeacherConflict(
+  dbOrTx: TxOrDb,
+  id: string,
+  body: {
+    date?: Date | undefined;
+    substituter?: string | null | undefined;
+    lessonIds?: string[] | null | undefined;
+  },
+  existing: { date: Date; substituter: string | null }
+): Promise<void> {
+  const effectiveSubstituter = body.substituter ?? existing.substituter;
+  if (effectiveSubstituter == null) {
+    return;
+  }
+
+  const existingLessonRecords = await dbOrTx
+    .select({ lessonId: substitutionLessonMTM.lessonId })
+    .from(substitutionLessonMTM)
+    .where(eq(substitutionLessonMTM.substitutionId, id));
+  const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
+
+  await checkTeacherSubstitutionConflict(
+    dbOrTx,
+    body.date ?? existing.date,
+    effectiveSubstituter,
+    body.lessonIds ?? existingLessonIds,
+    id
+  );
 }
 
 const substitutionWithRelationsType =
@@ -492,37 +607,47 @@ export const createSubstitution = timetableFactory.createHandlers(
       });
     }
 
-    const result = await db.transaction(async (tx) => {
-      const [insertedSubstitution] = await tx
-        .insert(substitution)
-        .values({
-          comment,
+    const result = await db.transaction(
+      async (tx) => {
+        await checkTeacherSubstitutionConflict(
+          tx,
           date,
-          id: crypto.randomUUID(),
           substituter,
-        })
-        .returning();
+          lessonIds
+        );
 
-      if (!insertedSubstitution) {
-        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-          cause:
-            env.mode === 'development'
-              ? 'No substitution returned from insert query'
-              : undefined,
-          message: 'Failed to create substitution.',
-        });
-      }
+        const [insertedSubstitution] = await tx
+          .insert(substitution)
+          .values({
+            comment,
+            date,
+            id: crypto.randomUUID(),
+            substituter,
+          })
+          .returning();
 
-      // Insert the many-to-many relationships
-      const mtmValues = lessonIds.map((lessonId) => ({
-        lessonId,
-        substitutionId: insertedSubstitution.id,
-      }));
+        if (!insertedSubstitution) {
+          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+            cause:
+              env.mode === 'development'
+                ? 'No substitution returned from insert query'
+                : undefined,
+            message: 'Failed to create substitution.',
+          });
+        }
 
-      await tx.insert(substitutionLessonMTM).values(mtmValues);
+        // Insert the many-to-many relationships
+        const mtmValues = lessonIds.map((lessonId) => ({
+          lessonId,
+          substitutionId: insertedSubstitution.id,
+        }));
 
-      return insertedSubstitution;
-    });
+        await tx.insert(substitutionLessonMTM).values(mtmValues);
+
+        return insertedSubstitution;
+      },
+      { isolationLevel: 'serializable' }
+    );
 
     dispatchPendingNotification(result.id, 'substitution', {
       date: result.date,
@@ -586,13 +711,13 @@ export const updateSubstitution = timetableFactory.createHandlers(
       const { id } = c.req.valid('param');
       const body = c.req.valid('json');
 
-      const existingSubstitution = await db
+      const [existing] = await db
         .select()
         .from(substitution)
         .where(eq(substitution.id, id))
         .limit(1);
 
-      if (existingSubstitution.length === 0) {
+      if (!existing) {
         throw new HTTPException(StatusCodes.NOT_FOUND, {
           message: 'Substitution not found',
         });
@@ -610,43 +735,47 @@ export const updateSubstitution = timetableFactory.createHandlers(
         }
       }
 
-      // Use a transaction to update the substitution and the many-to-many relationships
       cancelPendingNotification(id, 'substitution');
-      const updatedSubstitution = await db.transaction(async (tx) => {
-        const [updated] = await tx
-          .update(substitution)
-          .set({
-            comment: body.comment,
-            date: body.date ?? undefined,
-            substituter: body.substituter,
-          })
-          .where(eq(substitution.id, id))
-          .returning();
+      const updatedSubstitution = await db.transaction(
+        async (tx) => {
+          await validateUpdateTeacherConflict(tx, id, body, existing);
 
-        // If lessonIds were provided, update the many-to-many relationships
-        if (body.lessonIds) {
-          // Delete existing relationships
-          await tx
-            .delete(substitutionLessonMTM)
-            .where(eq(substitutionLessonMTM.substitutionId, id));
+          const [updated] = await tx
+            .update(substitution)
+            .set({
+              comment: body.comment,
+              date: body.date ?? undefined,
+              substituter: body.substituter,
+            })
+            .where(eq(substitution.id, id))
+            .returning();
 
-          // Insert new relationships
-          const mtmValues = body.lessonIds.map((lessonId) => ({
-            lessonId,
-            substitutionId: id,
-          }));
+          // If lessonIds were provided, update the many-to-many relationships
+          if (body.lessonIds) {
+            // Delete existing relationships
+            await tx
+              .delete(substitutionLessonMTM)
+              .where(eq(substitutionLessonMTM.substitutionId, id));
 
-          await tx.insert(substitutionLessonMTM).values(mtmValues);
-        }
+            // Insert new relationships
+            const mtmValues = body.lessonIds.map((lessonId) => ({
+              lessonId,
+              substitutionId: id,
+            }));
 
-        return updated;
-      });
+            await tx.insert(substitutionLessonMTM).values(mtmValues);
+          }
+
+          return updated;
+        },
+        { isolationLevel: 'serializable' }
+      );
 
       if (updatedSubstitution) {
         dispatchPendingNotification(id, 'substitution', {
-          date: body.date ?? existingSubstitution[0]?.date,
+          date: body.date ?? existing.date,
           lessonIds: body.lessonIds ?? [],
-          substituter: body.substituter ?? existingSubstitution[0]?.substituter,
+          substituter: body.substituter ?? existing.substituter,
         });
       }
 
