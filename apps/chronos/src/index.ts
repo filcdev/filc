@@ -76,7 +76,9 @@ api.use(
       const session = c.get('session' as never) as Session | null;
       const anonymousId = c.get('anonymousId' as never) as string | null;
       const connInfo = getConnInfo(c);
-      const realIp = c.req.header(env.realIpHeader ?? 'X-Forwarded-For');
+      const realIp = env.realIpHeader
+        ? c.req.header(env.realIpHeader)
+        : undefined;
       const clientId = session?.id ?? anonymousId ?? 'unknown';
       const ip = realIp ?? connInfo.remote.address ?? 'unknown';
       return `${clientId}|${ip}`;
