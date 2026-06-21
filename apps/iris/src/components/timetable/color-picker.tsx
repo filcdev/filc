@@ -35,7 +35,7 @@ export function ColorPicker({ currentIndex, onSelect }: ColorPickerProps) {
       <DropdownMenuTrigger
         render={
           <Button
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
             size="sm"
             variant="ghost"
           />

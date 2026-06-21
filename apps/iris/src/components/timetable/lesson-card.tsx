@@ -20,7 +20,11 @@ type LessonCardProps = {
   onColorChange?: (subject: string, colorIndex: number) => void;
 };
 
-export function LessonCard({ lesson, userColors, onColorChange }: LessonCardProps) {
+export function LessonCard({
+  lesson,
+  userColors,
+  onColorChange,
+}: LessonCardProps) {
   const subject = lesson.subject?.name ?? '—';
   const short = lesson.subject?.short ?? subject;
   const teacher = formatTeachers(lesson.teachers);

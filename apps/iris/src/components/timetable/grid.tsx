@@ -10,7 +10,11 @@ type TimetableGridProps = {
   onColorChange?: (subject: string, colorIndex: number) => void;
 };
 
-export function TimetableGrid({ model, userColors, onColorChange }: TimetableGridProps) {
+export function TimetableGrid({
+  model,
+  userColors,
+  onColorChange,
+}: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
 
@@ -149,7 +153,11 @@ export function TimetableGrid({ model, userColors, onColorChange }: TimetableGri
                         key={cellKey}
                       >
                         <div className="grid h-full grid-cols-2 gap-0.5 overflow-hidden rounded-md bg-muted">
-                          <LessonCard lesson={firstLesson} userColors={userColors} onColorChange={onColorChange} />
+                          <LessonCard
+                            lesson={firstLesson}
+                            onColorChange={onColorChange}
+                            userColors={userColors}
+                          />
                           <div />
                         </div>
                       </div>
@@ -162,7 +170,11 @@ export function TimetableGrid({ model, userColors, onColorChange }: TimetableGri
                         className={cn('min-h-24 p-0.5', borderClass)}
                         key={cellKey}
                       >
-                        <LessonCard lesson={firstLesson} userColors={userColors} onColorChange={onColorChange} />
+                        <LessonCard
+                          lesson={firstLesson}
+                          onColorChange={onColorChange}
+                          userColors={userColors}
+                        />
                       </div>
                     );
                   }
@@ -179,7 +191,12 @@ export function TimetableGrid({ model, userColors, onColorChange }: TimetableGri
                         )}
                       >
                         {lessons.map((lesson, idx) => (
-                          <LessonCard key={lesson.id ?? idx} lesson={lesson} userColors={userColors} onColorChange={onColorChange} />
+                          <LessonCard
+                            key={lesson.id ?? idx}
+                            lesson={lesson}
+                            onColorChange={onColorChange}
+                            userColors={userColors}
+                          />
                         ))}
                       </div>
                     </div>

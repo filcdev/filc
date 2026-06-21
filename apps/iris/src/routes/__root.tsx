@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { useEffect } from 'react';
@@ -10,7 +11,6 @@ import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import { setSentryUser } from '@/utils/telemetry';
-import { useQuery } from '@tanstack/react-query';
 
 export const Route = createRootRoute({
   component: RootComponent,

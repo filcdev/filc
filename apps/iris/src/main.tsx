@@ -1,9 +1,9 @@
 import { createRouter, RouterProvider } from '@tanstack/react-router';
+import { ThemeProvider } from 'next-themes';
 import { StrictMode } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import ReactDOM from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
-import { ThemeProvider } from 'next-themes';
 
 // Import the generated route tree
 import { routeTree } from './route-tree.gen';

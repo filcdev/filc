@@ -154,7 +154,13 @@ export function TimetableView() {
 
   // Mutation to save class color
   const colorMutation = useMutation({
-    mutationFn: async ({ subject, colorIndex }: { subject: string; colorIndex: number }) => {
+    mutationFn: async ({
+      subject,
+      colorIndex,
+    }: {
+      subject: string;
+      colorIndex: number;
+    }) => {
       const newColors = { ...userColors, [subject]: colorIndex };
       const res = await parseResponse(
         api.notifications.settings.$patch({
@@ -175,7 +181,7 @@ export function TimetableView() {
 
   const handleColorChange = useCallback(
     (subject: string, colorIndex: number) => {
-      colorMutation.mutate({ subject, colorIndex });
+      colorMutation.mutate({ colorIndex, subject });
     },
     [colorMutation]
   );
@@ -539,7 +545,9 @@ export function TimetableView() {
         />
 
         {hasError && (
-          <div className="text-red-500 dark:text-red-400">Failed to load timetable.</div>
+          <div className="text-red-500 dark:text-red-400">
+            Failed to load timetable.
+          </div>
         )}
 
         {isLoading ? (
@@ -548,7 +556,11 @@ export function TimetableView() {
             <Skeleton className="h-130 w-full" />
           </div>
         ) : (
-          <TimetableGrid model={model} userColors={userColors} onColorChange={handleColorChange} />
+          <TimetableGrid
+            model={model}
+            onColorChange={handleColorChange}
+            userColors={userColors}
+          />
         )}
       </div>
     </div>
