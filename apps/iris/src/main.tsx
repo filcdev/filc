@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import ReactDOM from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
+import { ThemeProvider } from 'next-themes';
 
 // Import the generated route tree
 import { routeTree } from './route-tree.gen';
@@ -49,9 +50,11 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <CookiesProvider>
         <QueryClientProvider client={queryClient}>
-          <I18nextProvider i18n={i18n}>
-            <RouterProvider router={router} />
-          </I18nextProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <I18nextProvider i18n={i18n}>
+              <RouterProvider router={router} />
+            </I18nextProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </CookiesProvider>
     </StrictMode>

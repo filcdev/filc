@@ -6,9 +6,11 @@ import type { TimetableViewModel } from './types';
 
 type TimetableGridProps = {
   model: TimetableViewModel;
+  userColors?: Record<string, number>;
+  onColorChange?: (subject: string, colorIndex: number) => void;
 };
 
-export function TimetableGrid({ model }: TimetableGridProps) {
+export function TimetableGrid({ model, userColors, onColorChange }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
 
@@ -147,7 +149,7 @@ export function TimetableGrid({ model }: TimetableGridProps) {
                         key={cellKey}
                       >
                         <div className="grid h-full grid-cols-2 gap-0.5 overflow-hidden rounded-md bg-muted">
-                          <LessonCard lesson={firstLesson} />
+                          <LessonCard lesson={firstLesson} userColors={userColors} onColorChange={onColorChange} />
                           <div />
                         </div>
                       </div>
@@ -160,7 +162,7 @@ export function TimetableGrid({ model }: TimetableGridProps) {
                         className={cn('min-h-24 p-0.5', borderClass)}
                         key={cellKey}
                       >
-                        <LessonCard lesson={firstLesson} />
+                        <LessonCard lesson={firstLesson} userColors={userColors} onColorChange={onColorChange} />
                       </div>
                     );
                   }
@@ -177,7 +179,7 @@ export function TimetableGrid({ model }: TimetableGridProps) {
                         )}
                       >
                         {lessons.map((lesson, idx) => (
-                          <LessonCard key={lesson.id ?? idx} lesson={lesson} />
+                          <LessonCard key={lesson.id ?? idx} lesson={lesson} userColors={userColors} onColorChange={onColorChange} />
                         ))}
                       </div>
                     </div>

@@ -52,7 +52,7 @@ function RouteComponent() {
   if (error) {
     return (
       <main className="grow items-center justify-center">
-        <p className="text-red-500">
+        <p className="text-red-500 dark:text-red-400">
           {t('error.generic', { message: error.message })}
         </p>
       </main>
@@ -265,8 +265,8 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
 
         <Step>
           <div className="space-y-4 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10">
-              <Check className="h-10 w-10 text-green-500" />
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10 dark:bg-green-500/20">
+              <Check className="h-10 w-10 text-green-500 dark:text-green-400" />
             </div>
             <h2 className="font-bold text-2xl">{t('welcome.complete')}</h2>
             <p className="text-muted-foreground">
@@ -344,7 +344,7 @@ const CohortSelectorStep = (props: {
 
   if (cohortQuery.isError || !cohortQuery.data) {
     return (
-      <div className="text-red-500">
+      <div className="text-red-500 dark:text-red-400">
         {t('cohort.errorLoading', { message: `${cohortQuery.error ?? ''}` })}
       </div>
     );

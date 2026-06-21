@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseResponse } from 'hono/client';
+import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +38,7 @@ import { queryKeys } from '@/utils/query-keys';
 type PreferencesData = {
   language: string;
   theme: string;
+  timetableClassColors: Record<string, number>;
   timetableView: string;
   notificationPreferences: {
     substitution: boolean;
@@ -80,6 +82,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [, setCookie] = useCookies(['filc.language']);
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  const { setTheme: applyTheme } = useTheme();
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
@@ -169,6 +172,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       toast.error(t('preferences.saveError'));
     },
     onSuccess: () => {
+      applyTheme(theme);
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.settings(),
       });

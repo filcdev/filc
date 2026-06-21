@@ -836,9 +836,9 @@ function LogTableRow({ log, onAddCard }: LogTableRowProps) {
       </TableCell>
       <TableCell>
         {log.result ? (
-          <span className="text-green-600">Granted</span>
+          <span className="text-green-600 dark:text-green-400">Granted</span>
         ) : (
-          <span className="text-red-600">Denied</span>
+          <span className="text-red-600 dark:text-red-400">Denied</span>
         )}
       </TableCell>
       <TableCell>

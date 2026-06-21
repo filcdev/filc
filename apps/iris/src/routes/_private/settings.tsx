@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
+import { useTheme } from 'next-themes';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -69,6 +70,7 @@ export const Route = createFileRoute('/_private/settings')({
 function SettingsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { setTheme: applyTheme } = useTheme();
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
@@ -119,6 +121,7 @@ function SettingsPage() {
       toast.error(t('preferences.saveError'));
     },
     onSuccess: () => {
+      applyTheme(theme);
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.settings(),
       });

@@ -27,6 +27,10 @@ export const userPreferences = pgTable('user_preferences', {
       systemMessage: true,
     }),
   theme: text('theme').default('system').notNull(),
+  timetableClassColors: jsonb('timetable_class_colors')
+    .$type<Record<string, number>>()
+    .notNull()
+    .default({}),
   timetableView: text('timetable_view').default('class').notNull(),
   userId: uuid('user_id')
     .notNull()
