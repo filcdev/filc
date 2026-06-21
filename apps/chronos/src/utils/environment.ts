@@ -43,6 +43,9 @@ const envSchema = z.object({
     .min(MIN_PORT)
     .max(MAX_PORT)
     .default(DEFAULT_PORT),
+  CHRONOS_RATE_LIMIT_COOKIE_NAME: z.string().default('filc_rl_id'),
+  CHRONOS_RATE_LIMIT_MAX: z.coerce.number().default(180),
+  CHRONOS_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(30_000),
   CHRONOS_REAL_IP_HEADER: z.string().optional(),
   CHRONOS_SENTRY_DSN: z.url().optional(),
   CHRONOS_SENTRY_ENVIRONMENT: z.string().optional(),

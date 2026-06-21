@@ -15,7 +15,7 @@ dayjs.extend(customParseFormat);
 export const toHHMM = (t: string | undefined | null): string =>
   (t ?? '00:00:00').slice(0, 5);
 
-/** Color palette for subject-based coloring */
+/** Color palette for subject-based coloring — 12-color rainbow */
 const ACCENT_COLORS = [
   { bg: 'bg-blue-50/50 dark:bg-blue-900/20', border: 'border-blue-500/50' },
   {
@@ -29,12 +29,34 @@ const ACCENT_COLORS = [
   },
   { bg: 'bg-rose-50/50 dark:bg-rose-900/20', border: 'border-rose-500/50' },
   { bg: 'bg-cyan-50/50 dark:bg-cyan-900/20', border: 'border-cyan-500/50' },
+  { bg: 'bg-teal-50/50 dark:bg-teal-900/20', border: 'border-teal-500/50' },
+  {
+    bg: 'bg-orange-50/50 dark:bg-orange-900/20',
+    border: 'border-orange-500/50',
+  },
+  {
+    bg: 'bg-indigo-50/50 dark:bg-indigo-900/20',
+    border: 'border-indigo-500/50',
+  },
+  { bg: 'bg-pink-50/50 dark:bg-pink-900/20', border: 'border-pink-500/50' },
+  { bg: 'bg-lime-50/50 dark:bg-lime-900/20', border: 'border-lime-500/50' },
+  { bg: 'bg-sky-50/50 dark:bg-sky-900/20', border: 'border-sky-500/50' },
 ] as const;
 
 /** Get consistent color classes for a subject */
 export const getSubjectColor = (
-  name: string
+  name: string,
+  userColors?: Record<string, number>
 ): { bg: string; border: string } => {
+  // Check user preference first
+  if (userColors) {
+    const idx = userColors[name];
+    if (idx !== undefined && idx >= 0 && idx < ACCENT_COLORS.length) {
+      return ACCENT_COLORS[idx] ?? { bg: '', border: '' };
+    }
+  }
+
+  // Fall back to hash-based default
   let sum = 0;
   for (const ch of name) {
     sum += ch.codePointAt(0) ?? 0;

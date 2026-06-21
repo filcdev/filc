@@ -1,6 +1,11 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Outlet,
+  useRouterState,
+} from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AdminDashboard } from '@/components/admin/dashboard';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Navbar } from '@/components/navbar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -13,22 +18,27 @@ export const Route = createFileRoute('/_private/admin')({
 
 function AppLayoutComponent() {
   const { t } = useTranslation();
+  const routerState = useRouterState();
 
   useEffect(() => {
     document.title = t('PageTitles.adminPanel');
   }, [t]);
 
+  const isExactAdminPath =
+    routerState.matches.length > 0 &&
+    routerState.matches.at(-1)?.routeId === '/_private/admin';
+
   return (
     <PermissionGuard permission={ADMIN_UI_PERMISSIONS}>
       <SidebarProvider>
         <AdminSidebar />
-        <main className="flex grow flex-col">
+        <main className="flex min-w-0 grow flex-col">
           <Navbar showLinks={false} showLogo={false}>
             <SidebarTrigger />
           </Navbar>
 
           <div className="grow overflow-auto p-4">
-            <Outlet />
+            {isExactAdminPath ? <AdminDashboard /> : <Outlet />}
           </div>
         </main>
       </SidebarProvider>

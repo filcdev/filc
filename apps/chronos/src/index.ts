@@ -10,10 +10,12 @@ import { rateLimiter } from 'hono-rate-limiter';
 import { StatusCodes } from 'http-status-codes';
 import type { Context, ErrorResponse } from '#_types/globals';
 import { prepareDb } from '#database';
+import { anonymousIdMiddleware } from '#middleware/anonymous-id';
 import { authenticationMiddleware } from '#middleware/auth';
 import { corsMiddleware, securityMiddleware } from '#middleware/security';
 import { timingMiddleware } from '#middleware/timing';
 import { cohortRouter } from '#routes/cohort/_router';
+import { dashboardRouter } from '#routes/dashboard/_router';
 import { doorlockRouter } from '#routes/doorlock/_router';
 import { newsRouter } from '#routes/news/_router';
 import { notificationsRouter } from '#routes/notifications/_router';
@@ -47,6 +49,7 @@ initializeNotificationEngine();
 
 api.use('*', corsMiddleware);
 api.use('*', authenticationMiddleware);
+api.use('*', anonymousIdMiddleware);
 api.use('*', securityMiddleware);
 api.use('*', timingMiddleware);
 
@@ -71,14 +74,17 @@ api.use(
     },
     keyGenerator: (c) => {
       const session = c.get('session' as never) as Session | null;
-      const userAgent = c.req.header('User-Agent') ?? 'unknown';
+      const anonymousId = c.get('anonymousId' as never) as string | null;
       const connInfo = getConnInfo(c);
-      const realIp = c.req.header(env.realIpHeader ?? 'X-Forwarded-For');
-      const uuid = `|${userAgent}|${session ? session.id : 'none'}|${realIp ? realIp : (connInfo.remote.address ?? 'unknown')}`;
-      return uuid;
+      const realIp = env.realIpHeader
+        ? c.req.header(env.realIpHeader)
+        : undefined;
+      const clientId = session?.id ?? anonymousId ?? 'unknown';
+      const ip = realIp ?? connInfo.remote.address ?? 'unknown';
+      return `${clientId}|${ip}`;
     },
-    limit: 180,
-    windowMs: 60 * 1000,
+    limit: env.rateLimitMax,
+    windowMs: env.rateLimitWindowMs,
   })
 );
 
@@ -86,6 +92,7 @@ api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
 api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
+api.route('/dashboard', dashboardRouter);
 api.route('/doorlock', doorlockRouter);
 api.route('/users', usersRouter);
 api.route('/roles', rolesRouter);

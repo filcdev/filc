@@ -1,8 +1,8 @@
 import { pdf } from '@react-pdf/renderer';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
@@ -137,6 +137,54 @@ export function TimetableView() {
   const { i18n } = useTranslation();
   const { data: session, isPending } = authClient.useSession();
   const navigate = useNavigate({ from: Route.fullPath });
+  const queryClient = useQueryClient();
+
+  // Fetch user settings for class colors
+  const settingsQuery = useQuery({
+    queryFn: async () => {
+      const res = await parseResponse(api.notifications.settings.$get());
+      if (!res.success) {
+        throw new Error('Failed to load settings');
+      }
+      return res.data as { timetableClassColors?: Record<string, number> };
+    },
+    queryKey: queryKeys.notifications.settings(),
+  });
+  const userColors = settingsQuery.data?.timetableClassColors ?? {};
+
+  // Mutation to save class color
+  const colorMutation = useMutation({
+    mutationFn: async ({
+      subject,
+      colorIndex,
+    }: {
+      subject: string;
+      colorIndex: number;
+    }) => {
+      const newColors = { ...userColors, [subject]: colorIndex };
+      const res = await parseResponse(
+        api.notifications.settings.$patch({
+          json: { timetableClassColors: newColors },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to save color');
+      }
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.settings(),
+      });
+    },
+  });
+
+  const handleColorChange = useCallback(
+    (subject: string, colorIndex: number) => {
+      colorMutation.mutate({ colorIndex, subject });
+    },
+    [colorMutation]
+  );
 
   // Timetable query (all timetables for the selector)
   const timetablesQuery = useQuery({
@@ -497,7 +545,9 @@ export function TimetableView() {
         />
 
         {hasError && (
-          <div className="text-red-500">Failed to load timetable.</div>
+          <div className="text-red-500 dark:text-red-400">
+            Failed to load timetable.
+          </div>
         )}
 
         {isLoading ? (
@@ -506,7 +556,11 @@ export function TimetableView() {
             <Skeleton className="h-130 w-full" />
           </div>
         ) : (
-          <TimetableGrid model={model} />
+          <TimetableGrid
+            model={model}
+            onColorChange={handleColorChange}
+            userColors={userColors}
+          />
         )}
       </div>
     </div>

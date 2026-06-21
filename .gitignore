@@ -46,3 +46,7 @@ yarn-error.log*
 
 # Filthy vibecoders
 thoughts
+.reasonix
+reasonix.toml
+.codegraph
+.claude

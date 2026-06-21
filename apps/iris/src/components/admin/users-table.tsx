@@ -84,8 +84,8 @@ export function UsersTable({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto rounded-md border">
-        <Table>
+      <div className="w-full overflow-x-auto rounded-md border">
+        <Table className="w-full min-w-3xl">
           <TableHeader>
             <TableRow>
               <TableHead

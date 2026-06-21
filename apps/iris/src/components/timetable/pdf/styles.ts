@@ -1,7 +1,7 @@
 import { StyleSheet } from '@react-pdf/renderer';
 
 // Hex equivalents of the Tailwind ACCENT_COLORS palette in helpers.ts
-// Order must match: blue, emerald, amber, purple, rose, cyan
+// Order must match: blue, emerald, amber, purple, rose, cyan, teal, orange, indigo, pink, lime, sky
 const COLOR_PALETTE = [
   { bg: '#EFF6FF', border: '#3B82F6' }, // blue
   { bg: '#ECFDF5', border: '#10B981' }, // emerald
@@ -9,6 +9,12 @@ const COLOR_PALETTE = [
   { bg: '#F5F3FF', border: '#8B5CF6' }, // purple
   { bg: '#FFF1F2', border: '#F43F5E' }, // rose
   { bg: '#ECFEFF', border: '#06B6D4' }, // cyan
+  { bg: '#F0FDFA', border: '#14B8A6' }, // teal
+  { bg: '#FFF7ED', border: '#F97316' }, // orange
+  { bg: '#EEF2FF', border: '#6366F1' }, // indigo
+  { bg: '#FDF2F8', border: '#EC4899' }, // pink
+  { bg: '#F7FEE7', border: '#84CC16' }, // lime
+  { bg: '#F0F9FF', border: '#0EA5E9' }, // sky
 ] as const;
 
 const BW_COLOR = { bg: '#F3F4F6', border: '#9CA3AF' };

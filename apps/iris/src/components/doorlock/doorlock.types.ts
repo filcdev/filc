@@ -14,6 +14,7 @@ export type UserOption = {
 
 export type CardLike = {
   authorizedDevices: DeviceOption[];
+  cardData?: string;
   enabled: boolean;
   frozen: boolean;
   id: string;
