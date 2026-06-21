@@ -11,17 +11,25 @@ function sign(id: string): string {
 
 function verify(cookieValue: string): string | null {
   const dotIndex = cookieValue.lastIndexOf('.');
-  if (dotIndex === -1) return null;
+  if (dotIndex === -1) {
+    return null;
+  }
 
   const id = cookieValue.slice(0, dotIndex);
   const sig = cookieValue.slice(dotIndex + 1);
-  if (sig.length !== SIGNATURE_LENGTH) return null;
+  if (sig.length !== SIGNATURE_LENGTH) {
+    return null;
+  }
 
   const expected = sign(id);
   const sigBuf = Buffer.from(sig, 'hex');
   const expectedBuf = Buffer.from(expected, 'hex');
-  if (sigBuf.length !== expectedBuf.length) return null;
-  if (!timingSafeEqual(sigBuf, expectedBuf)) return null;
+  if (sigBuf.length !== expectedBuf.length) {
+    return null;
+  }
+  if (!timingSafeEqual(sigBuf, expectedBuf)) {
+    return null;
+  }
 
   return id;
 }
