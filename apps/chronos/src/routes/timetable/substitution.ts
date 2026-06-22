@@ -770,21 +770,26 @@ export const updateSubstitution = timetableFactory.createHandlers(
         { isolationLevel: 'serializable' }
       );
 
-      cancelPendingNotification(id, 'substitution');
-      if (updatedSubstitution) {
-        // Fetch existing lesson IDs for notification fallback
-        const existingLessonRecords = await db
-          .select({ lessonId: substitutionLessonMTM.lessonId })
-          .from(substitutionLessonMTM)
-          .where(eq(substitutionLessonMTM.substitutionId, id));
-        const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
-
-        dispatchPendingNotification(id, 'substitution', {
-          date: body.date ?? existing.date,
-          lessonIds: body.lessonIds ?? existingLessonIds,
-          substituter: body.substituter ?? existing.substituter,
+      if (!updatedSubstitution) {
+        throw new HTTPException(StatusCodes.NOT_FOUND, {
+          message: 'Substitution not found',
         });
       }
+
+      cancelPendingNotification(id, 'substitution');
+
+      // Fetch existing lesson IDs for notification fallback
+      const existingLessonRecords = await db
+        .select({ lessonId: substitutionLessonMTM.lessonId })
+        .from(substitutionLessonMTM)
+        .where(eq(substitutionLessonMTM.substitutionId, id));
+      const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
+
+      dispatchPendingNotification(id, 'substitution', {
+        date: body.date ?? existing.date,
+        lessonIds: body.lessonIds?.length ? body.lessonIds : existingLessonIds,
+        substituter: body.substituter ?? existing.substituter,
+      });
 
       return c.json<SuccessResponse<typeof updatedSubstitution>>({
         data: updatedSubstitution,
