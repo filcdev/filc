@@ -229,6 +229,11 @@ async function checkTeacherSubstitutionConflict(
     return;
   }
 
+  // Early return if no lessons to check (empty array would produce invalid SQL)
+  if (lessonIds.length === 0) {
+    return;
+  }
+
   // Get period IDs for the incoming lessons
   const incomingLessons = await dbOrTx
     .select({ periodId: lesson.periodId })
@@ -318,11 +323,14 @@ async function validateUpdateTeacherConflict(
     .where(eq(substitutionLessonMTM.substitutionId, id));
   const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
 
+  const effectiveLessonIds =
+    body.lessonIds == null ? existingLessonIds : body.lessonIds;
+
   await checkTeacherSubstitutionConflict(
     dbOrTx,
     body.date ?? existing.date,
     effectiveSubstituter,
-    body.lessonIds ?? existingLessonIds,
+    effectiveLessonIds,
     id
   );
 }
@@ -749,20 +757,22 @@ export const updateSubstitution = timetableFactory.createHandlers(
             .where(eq(substitution.id, id))
             .returning();
 
-          // If lessonIds were provided, update the many-to-many relationships
-          if (body.lessonIds?.length) {
+          // If lessonIds were explicitly provided, replace MTM relationships
+          if (body.lessonIds != null) {
             // Delete existing relationships
             await tx
               .delete(substitutionLessonMTM)
               .where(eq(substitutionLessonMTM.substitutionId, id));
 
-            // Insert new relationships
-            const mtmValues = body.lessonIds.map((lessonId) => ({
-              lessonId,
-              substitutionId: id,
-            }));
+            // Insert new relationships (if any — empty array clears all)
+            if (body.lessonIds.length > 0) {
+              const mtmValues = body.lessonIds.map((lessonId) => ({
+                lessonId,
+                substitutionId: id,
+              }));
 
-            await tx.insert(substitutionLessonMTM).values(mtmValues);
+              await tx.insert(substitutionLessonMTM).values(mtmValues);
+            }
           }
 
           return updated;
@@ -787,7 +797,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
 
       dispatchPendingNotification(id, 'substitution', {
         date: body.date ?? existing.date,
-        lessonIds: body.lessonIds?.length ? body.lessonIds : existingLessonIds,
+        lessonIds: body.lessonIds == null ? existingLessonIds : body.lessonIds,
         substituter:
           'substituter' in body ? body.substituter : existing.substituter,
       });
