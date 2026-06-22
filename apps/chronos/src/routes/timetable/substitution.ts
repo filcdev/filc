@@ -563,7 +563,7 @@ const createSchema = createInsertSchema(substitution)
   .omit({ id: true })
   .extend({
     date: z.coerce.date<Date>(),
-    lessonIds: z.string().array(),
+    lessonIds: z.string().array().min(1),
   });
 
 const createResponseSchema = z.object({
@@ -788,7 +788,8 @@ export const updateSubstitution = timetableFactory.createHandlers(
       dispatchPendingNotification(id, 'substitution', {
         date: body.date ?? existing.date,
         lessonIds: body.lessonIds?.length ? body.lessonIds : existingLessonIds,
-        substituter: body.substituter ?? existing.substituter,
+        substituter:
+          'substituter' in body ? body.substituter : existing.substituter,
       });
 
       return c.json<SuccessResponse<typeof updatedSubstitution>>({
