@@ -99,13 +99,11 @@ function compareSubOptions(
   if (!a.hasH1 && b.hasH1) {
     return 1;
   }
-  if (!(a.hasH1 || b.hasH1)) {
-    if (a.hasH2 && !b.hasH2) {
-      return -1;
-    }
-    if (!a.hasH2 && b.hasH2) {
-      return 1;
-    }
+  if (a.hasH2 && !b.hasH2) {
+    return -1;
+  }
+  if (!a.hasH2 && b.hasH2) {
+    return 1;
   }
   return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
 }

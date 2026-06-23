@@ -438,7 +438,10 @@ function computeCandidateFlags(
       hasH2 = true;
     }
 
-    if (!(hasH1AtPeriod || hasH2AtPeriod)) {
+    const hasConflictLesson = lessonsAtPeriod.some(
+      (l) => l.subjectShort !== 'H1' && l.subjectShort !== 'H2'
+    );
+    if (hasConflictLesson) {
       return { hasConflict: true, hasH1, hasH2 };
     }
   }
@@ -462,13 +465,11 @@ function compareSubstituteCandidates(
   if (!a.hasH1 && b.hasH1) {
     return 1;
   }
-  if (!(a.hasH1 || b.hasH1)) {
-    if (a.hasH2 && !b.hasH2) {
-      return -1;
-    }
-    if (!a.hasH2 && b.hasH2) {
-      return 1;
-    }
+  if (a.hasH2 && !b.hasH2) {
+    return -1;
+  }
+  if (!a.hasH2 && b.hasH2) {
+    return 1;
   }
   const aName = `${a.teacher.lastName} ${a.teacher.firstName}`;
   const bName = `${b.teacher.lastName} ${b.teacher.firstName}`;
