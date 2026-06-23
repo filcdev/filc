@@ -757,7 +757,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
           if (hasH2AtPeriod) hasH2 = true;
 
           // If none of the lessons at this period are H1 or H2, it's a real conflict
-          if (!hasH1AtPeriod && !hasH2AtPeriod) {
+          if (!(hasH1AtPeriod || hasH2AtPeriod)) {
             hasConflict = true;
             break;
           }
@@ -784,7 +784,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
         if (!a.hasH1 && b.hasH1) {
           return 1;
         }
-        if (!a.hasH1 && !b.hasH1) {
+        if (!(a.hasH1 || b.hasH1)) {
           if (a.hasH2 && !b.hasH2) {
             return -1;
           }
