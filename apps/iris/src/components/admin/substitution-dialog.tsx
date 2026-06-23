@@ -89,6 +89,27 @@ const initialState = (
   substituter: item?.substitution.substituter ?? null,
 });
 
+function compareSubOptions(
+  a: { hasH1: boolean; hasH2: boolean; label: string },
+  b: { hasH1: boolean; hasH2: boolean; label: string }
+): number {
+  if (a.hasH1 && !b.hasH1) {
+    return -1;
+  }
+  if (!a.hasH1 && b.hasH1) {
+    return 1;
+  }
+  if (!(a.hasH1 || b.hasH1)) {
+    if (a.hasH2 && !b.hasH2) {
+      return -1;
+    }
+    if (!a.hasH2 && b.hasH2) {
+      return 1;
+    }
+  }
+  return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
+}
+
 export function SubstitutionDialog({
   item,
   onOpenChange,
@@ -219,23 +240,7 @@ export function SubstitutionDialog({
   }, [substituteCandidatesQuery.data, t]);
 
   const sortedSubstituteOptions = useMemo(() => {
-    return [...substituteOptions].sort((a, b) => {
-      if (a.hasH1 && !b.hasH1) {
-        return -1;
-      }
-      if (!a.hasH1 && b.hasH1) {
-        return 1;
-      }
-      if (!(a.hasH1 || b.hasH1)) {
-        if (a.hasH2 && !b.hasH2) {
-          return -1;
-        }
-        if (!a.hasH2 && b.hasH2) {
-          return 1;
-        }
-      }
-      return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
-    });
+    return [...substituteOptions].sort(compareSubOptions);
   }, [substituteOptions]);
 
   const isCreate = !item;
