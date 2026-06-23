@@ -220,11 +220,19 @@ export function SubstitutionDialog({
 
   const sortedSubstituteOptions = useMemo(() => {
     return [...substituteOptions].sort((a, b) => {
-      if (a.hasH1 !== b.hasH1) {
-        return a.hasH1 ? -1 : 1;
+      if (a.hasH1 && !b.hasH1) {
+        return -1;
       }
-      if (a.hasH2 !== b.hasH2) {
-        return a.hasH2 ? -1 : 1;
+      if (!a.hasH1 && b.hasH1) {
+        return 1;
+      }
+      if (!a.hasH1 && !b.hasH1) {
+        if (a.hasH2 && !b.hasH2) {
+          return -1;
+        }
+        if (!a.hasH2 && b.hasH2) {
+          return 1;
+        }
       }
       return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
     });

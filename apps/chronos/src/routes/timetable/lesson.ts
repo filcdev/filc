@@ -652,9 +652,6 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       missingTeacherId
     );
 
-    const minPeriod = Math.min(...selectedPeriods);
-    const maxPeriod = Math.max(...selectedPeriods);
-
     const candidateTeacherIds = normalizedTeacherIds.filter(
       (teacherId) => teacherId !== missingTeacherId
     );
@@ -734,43 +731,40 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       .map((currentTeacher) => {
         const teacherLessons =
           candidateLessonsByTeacherId.get(currentTeacher.id) ?? [];
-        const occupiedPeriods = new Set(teacherLessons.map((l) => l.period));
-
-        const hasPeriodConflict = selectedPeriods.some((selectedPeriod) =>
-          occupiedPeriods.has(selectedPeriod)
-        );
-
-        if (hasPeriodConflict) {
-          return null;
-        }
 
         let hasH1 = false;
         let hasH2 = false;
-        for (const candidateLesson of teacherLessons) {
-          if (
-            candidateLesson.period === minPeriod - 1 &&
-            candidateLesson.subjectShort === 'H1'
-          ) {
-            hasH1 = true;
+        let hasConflict = false;
+
+        for (const selectedPeriod of selectedPeriods) {
+          const lessonsAtPeriod = teacherLessons.filter(
+            (l) => l.period === selectedPeriod
+          );
+
+          if (lessonsAtPeriod.length === 0) {
+            // Teacher is free at this period — no conflict
+            continue;
           }
-          if (
-            candidateLesson.period === minPeriod - 1 &&
-            candidateLesson.subjectShort === 'H2'
-          ) {
-            hasH2 = true;
+
+          const hasH1AtPeriod = lessonsAtPeriod.some(
+            (l) => l.subjectShort === 'H1'
+          );
+          const hasH2AtPeriod = lessonsAtPeriod.some(
+            (l) => l.subjectShort === 'H2'
+          );
+
+          if (hasH1AtPeriod) hasH1 = true;
+          if (hasH2AtPeriod) hasH2 = true;
+
+          // If none of the lessons at this period are H1 or H2, it's a real conflict
+          if (!hasH1AtPeriod && !hasH2AtPeriod) {
+            hasConflict = true;
+            break;
           }
-          if (
-            candidateLesson.period === maxPeriod + 1 &&
-            candidateLesson.subjectShort === 'H1'
-          ) {
-            hasH1 = true;
-          }
-          if (
-            candidateLesson.period === maxPeriod + 1 &&
-            candidateLesson.subjectShort === 'H2'
-          ) {
-            hasH2 = true;
-          }
+        }
+
+        if (hasConflict) {
+          return null;
         }
 
         return {
@@ -784,11 +778,19 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
           candidate !== null
       )
       .sort((a, b) => {
-        if (a.hasH1 !== b.hasH1) {
-          return a.hasH1 ? -1 : 1;
+        if (a.hasH1 && !b.hasH1) {
+          return -1;
         }
-        if (a.hasH2 !== b.hasH2) {
-          return a.hasH2 ? -1 : 1;
+        if (!a.hasH1 && b.hasH1) {
+          return 1;
+        }
+        if (!a.hasH1 && !b.hasH1) {
+          if (a.hasH2 && !b.hasH2) {
+            return -1;
+          }
+          if (!a.hasH2 && b.hasH2) {
+            return 1;
+          }
         }
 
         const aName = `${a.teacher.lastName} ${a.teacher.firstName}`;
