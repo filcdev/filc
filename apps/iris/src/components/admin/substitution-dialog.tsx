@@ -199,24 +199,32 @@ export function SubstitutionDialog({
     const candidates =
       substituteCandidatesQuery.data?.substituteCandidates ?? [];
 
-    return candidates.map((candidate) => ({
-      isNearby: candidate.hasLessonBeforeOrAfter,
-      label: `${candidate.teacher.firstName} ${candidate.teacher.lastName} (${candidate.teacher.short})${
-        candidate.hasLessonBeforeOrAfter
-          ? ` - ${t('substitution.nearbyTeacherTag')}`
-          : ''
-      }`,
-      value: candidate.teacher.id,
-    }));
+    return candidates.map((candidate) => {
+      let tag = '';
+      if (candidate.hasH1 && candidate.hasH2) {
+        tag = ` - ${t('substitution.nearbyTeacherTag')}`;
+      } else if (candidate.hasH1) {
+        tag = ` - ${t('substitution.h1Tag')}`;
+      } else if (candidate.hasH2) {
+        tag = ` - ${t('substitution.h2Tag')}`;
+      }
+
+      return {
+        hasH1: candidate.hasH1,
+        hasH2: candidate.hasH2,
+        label: `${candidate.teacher.firstName} ${candidate.teacher.lastName} (${candidate.teacher.short})${tag}`,
+        value: candidate.teacher.id,
+      };
+    });
   }, [substituteCandidatesQuery.data, t]);
 
   const sortedSubstituteOptions = useMemo(() => {
     return [...substituteOptions].sort((a, b) => {
-      if (a.isNearby && !b.isNearby) {
-        return -1;
+      if (a.hasH1 !== b.hasH1) {
+        return a.hasH1 ? -1 : 1;
       }
-      if (!a.isNearby && b.isNearby) {
-        return 1;
+      if (a.hasH2 !== b.hasH2) {
+        return a.hasH2 ? -1 : 1;
       }
       return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
     });

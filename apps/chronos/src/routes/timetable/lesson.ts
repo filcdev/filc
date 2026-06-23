@@ -385,7 +385,8 @@ const substitutionCandidatesRequestSchema = z.object({
 });
 
 const substitutionCandidateSchema = z.object({
-  hasLessonBeforeOrAfter: z.boolean(),
+  hasH1: z.boolean(),
+  hasH2: z.boolean(),
   teacher: z.object({
     firstName: z.string(),
     id: z.string(),
@@ -691,7 +692,10 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       .where(arrayOverlaps(lesson.teacherIds, candidateTeacherIds));
 
     const enrichedCandidateLessons = await enrichLessons(candidateLessons);
-    const candidateLessonsByTeacherId = new Map<string, number[]>();
+    const candidateLessonsByTeacherId = new Map<
+      string,
+      Array<{ period: number; subjectShort: string | null }>
+    >();
     const candidateTeacherIdSet = new Set(candidateTeacherIds);
 
     for (const candidateLesson of enrichedCandidateLessons) {
@@ -713,22 +717,24 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
         continue;
       }
 
+      const subjectShort = candidateLesson.subject?.short ?? null;
+
       for (const lessonTeacher of candidateLesson.teachers) {
         if (!candidateTeacherIdSet.has(lessonTeacher.id)) {
           continue;
         }
 
-        const periods = candidateLessonsByTeacherId.get(lessonTeacher.id) ?? [];
-        periods.push(currentPeriod);
-        candidateLessonsByTeacherId.set(lessonTeacher.id, periods);
+        const lessons = candidateLessonsByTeacherId.get(lessonTeacher.id) ?? [];
+        lessons.push({ period: currentPeriod, subjectShort });
+        candidateLessonsByTeacherId.set(lessonTeacher.id, lessons);
       }
     }
 
     const substituteCandidates = candidateTeachers
       .map((currentTeacher) => {
-        const occupiedPeriods = new Set(
-          candidateLessonsByTeacherId.get(currentTeacher.id) ?? []
-        );
+        const teacherLessons =
+          candidateLessonsByTeacherId.get(currentTeacher.id) ?? [];
+        const occupiedPeriods = new Set(teacherLessons.map((l) => l.period));
 
         const hasPeriodConflict = selectedPeriods.some((selectedPeriod) =>
           occupiedPeriods.has(selectedPeriod)
@@ -738,12 +744,38 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
           return null;
         }
 
-        const hasLessonBeforeOrAfter =
-          occupiedPeriods.has(minPeriod - 1) ||
-          occupiedPeriods.has(maxPeriod + 1);
+        let hasH1 = false;
+        let hasH2 = false;
+        for (const candidateLesson of teacherLessons) {
+          if (
+            candidateLesson.period === minPeriod - 1 &&
+            candidateLesson.subjectShort === 'H1'
+          ) {
+            hasH1 = true;
+          }
+          if (
+            candidateLesson.period === minPeriod - 1 &&
+            candidateLesson.subjectShort === 'H2'
+          ) {
+            hasH2 = true;
+          }
+          if (
+            candidateLesson.period === maxPeriod + 1 &&
+            candidateLesson.subjectShort === 'H1'
+          ) {
+            hasH1 = true;
+          }
+          if (
+            candidateLesson.period === maxPeriod + 1 &&
+            candidateLesson.subjectShort === 'H2'
+          ) {
+            hasH2 = true;
+          }
+        }
 
         return {
-          hasLessonBeforeOrAfter,
+          hasH1,
+          hasH2,
           teacher: currentTeacher,
         };
       })
@@ -752,8 +784,11 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
           candidate !== null
       )
       .sort((a, b) => {
-        if (a.hasLessonBeforeOrAfter !== b.hasLessonBeforeOrAfter) {
-          return a.hasLessonBeforeOrAfter ? -1 : 1;
+        if (a.hasH1 !== b.hasH1) {
+          return a.hasH1 ? -1 : 1;
+        }
+        if (a.hasH2 !== b.hasH2) {
+          return a.hasH2 ? -1 : 1;
         }
 
         const aName = `${a.teacher.lastName} ${a.teacher.firstName}`;
