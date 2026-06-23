@@ -22,6 +22,7 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
+import { cleanupOrphanedCohorts } from '#utils/timetable/cleanup';
 import { dateToYYYYMMDD } from '#utils/timetable/date';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -247,7 +248,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
     description:
-      'Delete a timetable and all its related data. Cohorts survive.',
+      'Delete a timetable and all its related data, including orphaned cohorts.',
     responses: {
       200: {
         content: {
@@ -330,6 +331,9 @@ export const deleteTimetable = timetableFactory.createHandlers(
             .where(inArray(user.id, userIds));
           notifiedUserIds.push(...userIds);
         }
+
+        // Delete orphaned cohorts that are no longer linked to any timetable
+        await tx.delete(cohort).where(inArray(cohort.id, orphanedCohortIds));
       }
 
       await tx.delete(timetable).where(eq(timetable.id, id));
@@ -374,7 +378,8 @@ const previewDeleteResponseSchema = z.object({
 export const previewDeleteTimetable = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
-    description: 'Preview the impact of deleting a timetable.',
+    description:
+      'Preview the impact of deleting a timetable. Orphaned cohorts will be deleted along with the timetable.',
     responses: {
       200: {
         content: {
@@ -511,5 +516,49 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       },
       success: true,
     });
+  }
+);
+
+const cleanupOrphanedCohortsResponseSchema = z.object({
+  data: z.object({
+    affectedUserCount: z.number().int(),
+    deletedCohortIds: z.array(z.string()),
+  }),
+  success: z.literal(true),
+});
+
+export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Timetable', '@unit Timetable', true),
+    description:
+      'Delete all cohorts that are no longer linked to any timetable (orphaned). Users referencing those cohorts will have their cohortId nullified.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(cleanupOrphanedCohortsResponseSchema),
+          },
+        },
+        description: 'Cleanup summary',
+      },
+    },
+    tags: ['Timetable'],
+  }),
+  requireAuthentication,
+  requireAuthorization('import:timetable'),
+  async (c) => {
+    try {
+      const summary = await cleanupOrphanedCohorts();
+
+      return c.json<SuccessResponse<typeof summary>>({
+        data: summary,
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Failed to cleanup orphaned cohorts: ', { error });
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to cleanup orphaned cohorts',
+      });
+    }
   }
 );
