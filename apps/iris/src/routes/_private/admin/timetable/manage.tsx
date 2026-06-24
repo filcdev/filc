@@ -156,6 +156,7 @@ function TimetableManagePage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TimetableRow | null>(null);
   const [itemToDelete, setItemToDelete] = useState<TimetableRow | null>(null);
 
@@ -307,7 +308,7 @@ function TimetableManagePage() {
       <div className="flex flex-wrap items-center gap-4">
         <Button
           disabled={cleanupMutation.isPending}
-          onClick={() => cleanupMutation.mutate()}
+          onClick={() => setCleanupDialogOpen(true)}
           size="sm"
           variant="outline"
         >
@@ -459,6 +460,37 @@ function TimetableManagePage() {
               {deleteMutation.isPending
                 ? t('common.deleting')
                 : t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setCleanupDialogOpen} open={cleanupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('timetable.cleanupConfirmTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('timetable.cleanupConfirmDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setCleanupDialogOpen(false)}
+              variant="outline"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={cleanupMutation.isPending}
+              onClick={() => {
+                cleanupMutation.mutate();
+                setCleanupDialogOpen(false);
+              }}
+              variant="destructive"
+            >
+              {cleanupMutation.isPending
+                ? t('common.deleting')
+                : t('timetable.clean')}
             </Button>
           </DialogFooter>
         </DialogContent>

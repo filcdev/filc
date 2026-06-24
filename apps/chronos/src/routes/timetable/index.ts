@@ -518,6 +518,10 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
 );
 
 const cleanupOrphanedCohortsResponseSchema = z.object({
+  data: z.object({
+    affectedUserCount: z.number(),
+    deletedCohortIds: z.array(z.string()),
+  }),
   success: z.literal(true),
 });
 
@@ -542,9 +546,12 @@ export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
   requireAuthorization('import:timetable'),
   async (c) => {
     try {
-      await cleanupOrphanedCohorts();
+      const result = await cleanupOrphanedCohorts();
 
-      return c.json({ success: true as const });
+      return c.json({
+        data: result,
+        success: true as const,
+      });
     } catch (error) {
       logger.error('Failed to cleanup orphaned cohorts: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {

@@ -28,7 +28,9 @@ export const setupCronJobs = () => {
   });
 
   baker.add({
-    callback: cleanupOrphanedCohorts,
+    callback: async () => {
+      await cleanupOrphanedCohorts();
+    },
     cron: '@daily',
     name: 'clean-up-orphaned-cohorts',
   });
