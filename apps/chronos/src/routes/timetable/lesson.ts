@@ -385,7 +385,8 @@ const substitutionCandidatesRequestSchema = z.object({
 });
 
 const substitutionCandidateSchema = z.object({
-  hasLessonBeforeOrAfter: z.boolean(),
+  hasH1: z.boolean(),
+  hasH2: z.boolean(),
   teacher: z.object({
     firstName: z.string(),
     id: z.string(),
@@ -405,6 +406,123 @@ const substitutionCandidatesResponseSchema = z.object({
 
 const substitutionCandidatesType =
   '@unit SubstitutionCandidatesResult @field(.availableLessons, List<EnrichedLesson>) @field(.parallelLessons, List<EnrichedLesson>) @field(.substituteCandidates, List<SubstitutionCandidate>)';
+
+type CandidateLessonEntry = {
+  period: number;
+  subjectShort: string | null;
+};
+
+function computeCandidateFlags(
+  teacherLessons: CandidateLessonEntry[],
+  selectedPeriods: number[]
+): { hasConflict: boolean; hasH1: boolean; hasH2: boolean } {
+  let hasH1 = false;
+  let hasH2 = false;
+
+  for (const selectedPeriod of selectedPeriods) {
+    const lessonsAtPeriod = teacherLessons.filter(
+      (l) => l.period === selectedPeriod
+    );
+
+    if (lessonsAtPeriod.length === 0) {
+      continue;
+    }
+
+    const hasH1AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H1');
+    const hasH2AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H2');
+
+    if (hasH1AtPeriod) {
+      hasH1 = true;
+    }
+    if (hasH2AtPeriod) {
+      hasH2 = true;
+    }
+
+    const hasConflictLesson = lessonsAtPeriod.some(
+      (l) => l.subjectShort !== 'H1' && l.subjectShort !== 'H2'
+    );
+    if (hasConflictLesson) {
+      return { hasConflict: true, hasH1, hasH2 };
+    }
+  }
+
+  return { hasConflict: false, hasH1, hasH2 };
+}
+
+type SubstitutionCandidate = {
+  hasH1: boolean;
+  hasH2: boolean;
+  teacher: { firstName: string; id: string; lastName: string; short: string };
+};
+
+function compareSubstituteCandidates(
+  a: SubstitutionCandidate,
+  b: SubstitutionCandidate
+): number {
+  if (a.hasH1 && !b.hasH1) {
+    return -1;
+  }
+  if (!a.hasH1 && b.hasH1) {
+    return 1;
+  }
+  if (a.hasH2 && !b.hasH2) {
+    return -1;
+  }
+  if (!a.hasH2 && b.hasH2) {
+    return 1;
+  }
+  const aName = `${a.teacher.lastName} ${a.teacher.firstName}`;
+  const bName = `${b.teacher.lastName} ${b.teacher.firstName}`;
+  return aName.localeCompare(bName);
+}
+
+async function buildCandidateLessonsMap(
+  candidateTeacherIds: string[],
+  weekday: number
+): Promise<Map<string, CandidateLessonEntry[]>> {
+  const candidateLessons = await db
+    .select()
+    .from(lesson)
+    .where(arrayOverlaps(lesson.teacherIds, candidateTeacherIds));
+
+  const enrichedCandidateLessons = await enrichLessons(candidateLessons);
+  const map = new Map<string, CandidateLessonEntry[]>();
+  const candidateTeacherIdSet = new Set(candidateTeacherIds);
+
+  for (const candidateLesson of enrichedCandidateLessons) {
+    if (
+      !(
+        candidateLesson.day &&
+        isMatchingWeekday(
+          weekday,
+          candidateLesson.day.name,
+          candidateLesson.day.short
+        )
+      )
+    ) {
+      continue;
+    }
+
+    const currentPeriod = candidateLesson.period?.period;
+    if (typeof currentPeriod !== 'number') {
+      continue;
+    }
+
+    const subjectShort = candidateLesson.subject?.short ?? null;
+
+    for (const lessonTeacher of candidateLesson.teachers) {
+      if (!candidateTeacherIdSet.has(lessonTeacher.id)) {
+        continue;
+      }
+
+      const lessons = map.get(lessonTeacher.id) ?? [];
+      lessons.push({ period: currentPeriod, subjectShort });
+      map.set(lessonTeacher.id, lessons);
+    }
+  }
+
+  return map;
+}
 
 async function getParallelLessons(
   selectedLessons: Awaited<ReturnType<typeof enrichLessons>>,
@@ -606,8 +724,10 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     const enrichedMissingTeacherLessons = await enrichLessons(
       missingTeacherLessons
     );
-    const availableLessons = enrichedMissingTeacherLessons.filter(
-      (currentLesson) =>
+    const EXCLUDED_SUBJECT_SHORTS = ['H1', 'H2'];
+
+    const availableLessons = enrichedMissingTeacherLessons
+      .filter((currentLesson) =>
         currentLesson.day
           ? isMatchingWeekday(
               weekday,
@@ -615,7 +735,14 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
               currentLesson.day.short
             )
           : false
-    );
+      )
+      .filter(
+        (currentLesson) =>
+          !(
+            currentLesson.subject?.short &&
+            EXCLUDED_SUBJECT_SHORTS.includes(currentLesson.subject.short)
+          )
+      );
 
     const selectedLessonIdsSet = new Set(selectedLessonIds);
     const selectedLessons = availableLessons.filter((currentLesson) =>
@@ -651,9 +778,6 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       missingTeacherId
     );
 
-    const minPeriod = Math.min(...selectedPeriods);
-    const maxPeriod = Math.max(...selectedPeriods);
-
     const candidateTeacherIds = normalizedTeacherIds.filter(
       (teacherId) => teacherId !== missingTeacherId
     );
@@ -685,65 +809,22 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       .from(teacher)
       .where(inArray(teacher.id, candidateTeacherIds));
 
-    const candidateLessons = await db
-      .select()
-      .from(lesson)
-      .where(arrayOverlaps(lesson.teacherIds, candidateTeacherIds));
-
-    const enrichedCandidateLessons = await enrichLessons(candidateLessons);
-    const candidateLessonsByTeacherId = new Map<string, number[]>();
-    const candidateTeacherIdSet = new Set(candidateTeacherIds);
-
-    for (const candidateLesson of enrichedCandidateLessons) {
-      if (
-        !(
-          candidateLesson.day &&
-          isMatchingWeekday(
-            weekday,
-            candidateLesson.day.name,
-            candidateLesson.day.short
-          )
-        )
-      ) {
-        continue;
-      }
-
-      const currentPeriod = candidateLesson.period?.period;
-      if (typeof currentPeriod !== 'number') {
-        continue;
-      }
-
-      for (const lessonTeacher of candidateLesson.teachers) {
-        if (!candidateTeacherIdSet.has(lessonTeacher.id)) {
-          continue;
-        }
-
-        const periods = candidateLessonsByTeacherId.get(lessonTeacher.id) ?? [];
-        periods.push(currentPeriod);
-        candidateLessonsByTeacherId.set(lessonTeacher.id, periods);
-      }
-    }
+    const candidateLessonsByTeacherId = await buildCandidateLessonsMap(
+      candidateTeacherIds,
+      weekday
+    );
 
     const substituteCandidates = candidateTeachers
       .map((currentTeacher) => {
-        const occupiedPeriods = new Set(
-          candidateLessonsByTeacherId.get(currentTeacher.id) ?? []
-        );
-
-        const hasPeriodConflict = selectedPeriods.some((selectedPeriod) =>
-          occupiedPeriods.has(selectedPeriod)
-        );
-
-        if (hasPeriodConflict) {
+        const teacherLessons =
+          candidateLessonsByTeacherId.get(currentTeacher.id) ?? [];
+        const flags = computeCandidateFlags(teacherLessons, selectedPeriods);
+        if (flags.hasConflict) {
           return null;
         }
-
-        const hasLessonBeforeOrAfter =
-          occupiedPeriods.has(minPeriod - 1) ||
-          occupiedPeriods.has(maxPeriod + 1);
-
         return {
-          hasLessonBeforeOrAfter,
+          hasH1: flags.hasH1,
+          hasH2: flags.hasH2,
           teacher: currentTeacher,
         };
       })
@@ -751,15 +832,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
         (candidate): candidate is NonNullable<typeof candidate> =>
           candidate !== null
       )
-      .sort((a, b) => {
-        if (a.hasLessonBeforeOrAfter !== b.hasLessonBeforeOrAfter) {
-          return a.hasLessonBeforeOrAfter ? -1 : 1;
-        }
-
-        const aName = `${a.teacher.lastName} ${a.teacher.firstName}`;
-        const bName = `${b.teacher.lastName} ${b.teacher.firstName}`;
-        return aName.localeCompare(bName);
-      });
+      .sort(compareSubstituteCandidates);
 
     return c.json<
       SuccessResponse<{

@@ -248,6 +248,8 @@
     "selectLessonsFirst": "Előbb válassz tanárt és órát.",
     "loadingSubstituteTeachers": "Helyettesítő tanárok szűrése…",
     "nearbyTeacherTag": "H1 / H2",
+    "h1Tag": "H1",
+    "h2Tag": "H2",
     "cancelled": "Elmarad",
     "merged": "Összevont óra",
     "lessons": "Érintett órák",
