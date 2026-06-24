@@ -2,6 +2,7 @@ import { timetableFactory } from '#routes/timetable/_factory';
 import { getCohortsForTimetable } from '#routes/timetable/cohort';
 import { importRoute } from '#routes/timetable/import';
 import {
+  cleanupOrphanedCohortsHandler,
   deleteTimetable,
   getAllTimetables,
   getAllValidTimetables,
@@ -47,6 +48,10 @@ export const timetableRouter = timetableFactory
   .patch('/timetables/:id', ...updateTimetable)
   .get('/timetables/:id/preview-delete', ...previewDeleteTimetable)
   .delete('/timetables/:id', ...deleteTimetable)
+  .post(
+    '/timetables/cleanup-orphaned-cohorts',
+    ...cleanupOrphanedCohortsHandler
+  )
   .post('/import', ...importRoute)
   // Substitution routes
   .get('/substitutions', ...getAllSubstitutions)

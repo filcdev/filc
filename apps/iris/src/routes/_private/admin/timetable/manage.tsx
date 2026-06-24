@@ -6,6 +6,7 @@ import {
   Calendar,
   CalendarCheck,
   CalendarClock,
+  Eraser,
   FileUp,
   Pen,
   RefreshCw,
@@ -155,6 +156,7 @@ function TimetableManagePage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TimetableRow | null>(null);
   const [itemToDelete, setItemToDelete] = useState<TimetableRow | null>(null);
 
@@ -241,6 +243,26 @@ function TimetableManagePage() {
     },
   });
 
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await parseResponse(
+        api.timetable.timetables['cleanup-orphaned-cohorts'].$post()
+      );
+      if (!res.success) {
+        throw new Error('Failed to clean up orphaned cohorts');
+      }
+      return res;
+    },
+    onError: () => {
+      toast.error(t('timetable.cleanupOrphanedCohortsError'));
+    },
+    onSuccess: () => {
+      toast.success(t('timetable.cleanupOrphanedCohortsSuccess'));
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
+    },
+  });
+
   const handleEditSubmit = async (payload: {
     name?: string;
     validFrom?: string;
@@ -284,6 +306,15 @@ function TimetableManagePage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
+        <Button
+          disabled={cleanupMutation.isPending}
+          onClick={() => setCleanupDialogOpen(true)}
+          size="sm"
+          variant="outline"
+        >
+          <Eraser className="h-4 w-4" />
+          {t('timetable.clean')}
+        </Button>
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => timetablesQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
@@ -429,6 +460,37 @@ function TimetableManagePage() {
               {deleteMutation.isPending
                 ? t('common.deleting')
                 : t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setCleanupDialogOpen} open={cleanupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('timetable.cleanupConfirmTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('timetable.cleanupConfirmDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setCleanupDialogOpen(false)}
+              variant="outline"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={cleanupMutation.isPending}
+              onClick={() => {
+                cleanupMutation.mutate();
+                setCleanupDialogOpen(false);
+              }}
+              variant="destructive"
+            >
+              {cleanupMutation.isPending
+                ? t('common.deleting')
+                : t('timetable.clean')}
             </Button>
           </DialogFooter>
         </DialogContent>

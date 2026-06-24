@@ -22,6 +22,7 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
+import { cleanupOrphanedCohorts } from '#utils/timetable/cleanup';
 import { dateToYYYYMMDD } from '#utils/timetable/date';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -247,7 +248,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
     description:
-      'Delete a timetable and all its related data. Cohorts survive.',
+      'Delete a timetable and all its related data, including orphaned cohorts.',
     responses: {
       200: {
         content: {
@@ -318,18 +319,19 @@ export const deleteTimetable = timetableFactory.createHandlers(
         .filter((cohortId) => !survivingSet.has(cohortId));
 
       if (orphanedCohortIds.length > 0) {
-        const affectedUsers = await tx
-          .select({ id: user.id })
-          .from(user)
-          .where(inArray(user.cohortId, orphanedCohortIds));
-        if (affectedUsers.length > 0) {
-          const userIds = affectedUsers.map((u) => u.id);
-          await tx
-            .update(user)
-            .set({ cohortId: null })
-            .where(inArray(user.id, userIds));
-          notifiedUserIds.push(...userIds);
+        // Nullify cohortId on users referencing orphaned cohorts in a single
+        // conditional update to avoid a race between select and update.
+        const updatedUsers = await tx
+          .update(user)
+          .set({ cohortId: null })
+          .where(inArray(user.cohortId, orphanedCohortIds))
+          .returning({ id: user.id });
+        if (updatedUsers.length > 0) {
+          notifiedUserIds.push(...updatedUsers.map((u) => u.id));
         }
+
+        // Delete orphaned cohorts that are no longer linked to any timetable
+        await tx.delete(cohort).where(inArray(cohort.id, orphanedCohortIds));
       }
 
       await tx.delete(timetable).where(eq(timetable.id, id));
@@ -374,7 +376,8 @@ const previewDeleteResponseSchema = z.object({
 export const previewDeleteTimetable = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
-    description: 'Preview the impact of deleting a timetable.',
+    description:
+      'Preview the impact of deleting a timetable. Orphaned cohorts will be deleted along with the timetable.',
     responses: {
       200: {
         content: {
@@ -511,5 +514,49 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       },
       success: true,
     });
+  }
+);
+
+const cleanupOrphanedCohortsResponseSchema = z.object({
+  data: z.object({
+    affectedUserCount: z.number(),
+    deletedCohortIds: z.array(z.string()),
+  }),
+  success: z.literal(true),
+});
+
+export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Timetable', '@unit Timetable', true),
+    description:
+      'Delete all cohorts that are no longer linked to any timetable (orphaned). Users referencing those cohorts will have their cohortId nullified.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(cleanupOrphanedCohortsResponseSchema),
+          },
+        },
+        description: 'Cleanup summary',
+      },
+    },
+    tags: ['Timetable'],
+  }),
+  requireAuthentication,
+  requireAuthorization('import:timetable'),
+  async (c) => {
+    try {
+      const result = await cleanupOrphanedCohorts();
+
+      return c.json({
+        data: result,
+        success: true as const,
+      });
+    } catch (error) {
+      logger.error('Failed to cleanup orphaned cohorts: ', { error });
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to cleanup orphaned cohorts',
+      });
+    }
   }
 );
