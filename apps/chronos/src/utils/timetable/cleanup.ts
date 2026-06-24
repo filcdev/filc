@@ -22,45 +22,45 @@ export type OrphanCleanupSummary = {
  * runs inside a single database transaction.
  */
 export async function cleanupOrphanedCohorts(): Promise<OrphanCleanupSummary> {
-  // Find all cohort IDs that are referenced in the MTM table
-  const linkedRows = await db
-    .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
-    .from(cohortTimetableMtm);
-
-  const linkedSet = new Set(linkedRows.map((r) => r.cohortId));
-
-  // Find all cohort IDs
-  const allCohortRows = await db.select({ id: cohort.id }).from(cohort);
-
-  // Cohorts whose ID does not appear in the MTM table are orphaned
-  const orphanedCohortIds = allCohortRows
-    .map((r) => r.id)
-    .filter((id) => !linkedSet.has(id));
-
-  if (orphanedCohortIds.length === 0) {
-    logger.info('No orphaned cohorts found.');
-    return { affectedUserCount: 0, deletedCohortIds: [] };
-  }
-
-  logger.info('Found orphaned cohorts', { count: orphanedCohortIds.length });
-
   let affectedUserCount = 0;
+  let deletedCohortIds: string[] = [];
 
   await db.transaction(async (tx) => {
-    // Nullify cohortId on users referencing orphaned cohorts
-    const affectedUsers = await tx
-      .select({ id: user.id })
-      .from(user)
-      .where(inArray(user.cohortId, orphanedCohortIds));
+    // Find all cohort IDs that are referenced in the MTM table
+    const linkedRows = await tx
+      .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
+      .from(cohortTimetableMtm);
 
-    if (affectedUsers.length > 0) {
-      const userIds = affectedUsers.map((u) => u.id);
-      await tx
-        .update(user)
-        .set({ cohortId: null })
-        .where(inArray(user.id, userIds));
-      affectedUserCount = userIds.length;
-      logger.info('Nullified cohortId for users', { count: userIds.length });
+    const linkedSet = new Set(linkedRows.map((r) => r.cohortId));
+
+    // Find all cohort IDs
+    const allCohortRows = await tx.select({ id: cohort.id }).from(cohort);
+
+    // Cohorts whose ID does not appear in the MTM table are orphaned
+    const orphanedCohortIds = allCohortRows
+      .map((r) => r.id)
+      .filter((id) => !linkedSet.has(id));
+
+    if (orphanedCohortIds.length === 0) {
+      logger.info('No orphaned cohorts found.');
+      return;
+    }
+
+    logger.info('Found orphaned cohorts', { count: orphanedCohortIds.length });
+
+    // Nullify cohortId on users referencing orphaned cohorts in a single
+    // conditional update to avoid a race between select and update.
+    const updatedUsers = await tx
+      .update(user)
+      .set({ cohortId: null })
+      .where(inArray(user.cohortId, orphanedCohortIds))
+      .returning({ id: user.id });
+
+    affectedUserCount = updatedUsers.length;
+    if (affectedUserCount > 0) {
+      logger.info('Nullified cohortId for users', {
+        count: affectedUserCount,
+      });
     }
 
     // Delete the orphaned cohort rows
@@ -68,7 +68,9 @@ export async function cleanupOrphanedCohorts(): Promise<OrphanCleanupSummary> {
     logger.info('Deleted orphaned cohorts', {
       count: orphanedCohortIds.length,
     });
+
+    deletedCohortIds = orphanedCohortIds;
   });
 
-  return { affectedUserCount, deletedCohortIds: orphanedCohortIds };
+  return { affectedUserCount, deletedCohortIds };
 }

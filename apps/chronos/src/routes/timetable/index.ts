@@ -319,17 +319,15 @@ export const deleteTimetable = timetableFactory.createHandlers(
         .filter((cohortId) => !survivingSet.has(cohortId));
 
       if (orphanedCohortIds.length > 0) {
-        const affectedUsers = await tx
-          .select({ id: user.id })
-          .from(user)
-          .where(inArray(user.cohortId, orphanedCohortIds));
-        if (affectedUsers.length > 0) {
-          const userIds = affectedUsers.map((u) => u.id);
-          await tx
-            .update(user)
-            .set({ cohortId: null })
-            .where(inArray(user.id, userIds));
-          notifiedUserIds.push(...userIds);
+        // Nullify cohortId on users referencing orphaned cohorts in a single
+        // conditional update to avoid a race between select and update.
+        const updatedUsers = await tx
+          .update(user)
+          .set({ cohortId: null })
+          .where(inArray(user.cohortId, orphanedCohortIds))
+          .returning({ id: user.id });
+        if (updatedUsers.length > 0) {
+          notifiedUserIds.push(...updatedUsers.map((u) => u.id));
         }
 
         // Delete orphaned cohorts that are no longer linked to any timetable
