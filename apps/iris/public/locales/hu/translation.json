@@ -206,7 +206,10 @@
     "refresh": "Frissítés",
     "totalTimetables": "Összesen",
     "currentTimetables": "Aktuális",
-    "upcomingTimetables": "Közelgő"
+    "upcomingTimetables": "Közelgő",
+    "clean": "Tisztítás",
+    "cleanupOrphanedCohortsSuccess": "Árva csoportok kitakarítva",
+    "cleanupOrphanedCohortsError": "Nem sikerült az árva csoportok tisztítása"
   },
   "common": {
     "cancel": "Mégsem",

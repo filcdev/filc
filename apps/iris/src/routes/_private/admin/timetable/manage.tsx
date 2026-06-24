@@ -6,6 +6,7 @@ import {
   Calendar,
   CalendarCheck,
   CalendarClock,
+  Eraser,
   FileUp,
   Pen,
   RefreshCw,
@@ -241,6 +242,26 @@ function TimetableManagePage() {
     },
   });
 
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await parseResponse(
+        api.timetable.timetables['cleanup-orphaned-cohorts'].$post()
+      );
+      if (!res.success) {
+        throw new Error('Failed to clean up orphaned cohorts');
+      }
+      return res;
+    },
+    onError: () => {
+      toast.error(t('timetable.cleanupOrphanedCohortsError'));
+    },
+    onSuccess: () => {
+      toast.success(t('timetable.cleanupOrphanedCohortsSuccess'));
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
+    },
+  });
+
   const handleEditSubmit = async (payload: {
     name?: string;
     validFrom?: string;
@@ -284,6 +305,15 @@ function TimetableManagePage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
+        <Button
+          disabled={cleanupMutation.isPending}
+          onClick={() => cleanupMutation.mutate()}
+          size="sm"
+          variant="outline"
+        >
+          <Eraser className="h-4 w-4" />
+          {t('timetable.clean')}
+        </Button>
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => timetablesQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />

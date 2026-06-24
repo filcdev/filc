@@ -6,13 +6,6 @@ import { cohort, cohortTimetableMtm } from '#database/schema/timetable';
 
 const logger = getLogger(['chronos', 'timetable', 'cleanup']);
 
-export type OrphanCleanupSummary = {
-  /** IDs of the deleted cohort rows. */
-  deletedCohortIds: string[];
-  /** Number of users whose cohortId was nullified. */
-  affectedUserCount: number;
-};
-
 /**
  * Find and delete cohorts that are not linked to any timetable via the
  * `cohort_timetable_mtm` table.  For each orphan, any user referencing that
@@ -21,9 +14,8 @@ export type OrphanCleanupSummary = {
  * The destructive part of the operation (user nullification + cohort deletion)
  * runs inside a single database transaction.
  */
-export async function cleanupOrphanedCohorts(): Promise<OrphanCleanupSummary> {
+export async function cleanupOrphanedCohorts(): Promise<void> {
   let affectedUserCount = 0;
-  let deletedCohortIds: string[] = [];
 
   await db.transaction(async (tx) => {
     // Find all cohort IDs that are referenced in the MTM table
@@ -68,9 +60,5 @@ export async function cleanupOrphanedCohorts(): Promise<OrphanCleanupSummary> {
     logger.info('Deleted orphaned cohorts', {
       count: orphanedCohortIds.length,
     });
-
-    deletedCohortIds = orphanedCohortIds;
   });
-
-  return { affectedUserCount, deletedCohortIds };
 }

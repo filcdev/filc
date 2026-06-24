@@ -218,7 +218,10 @@
     "refresh": "Refresh",
     "totalTimetables": "Total",
     "currentTimetables": "Current",
-    "upcomingTimetables": "Upcoming"
+    "upcomingTimetables": "Upcoming",
+    "clean": "Clean",
+    "cleanupOrphanedCohortsSuccess": "Orphaned cohorts cleaned up",
+    "cleanupOrphanedCohortsError": "Failed to clean up orphaned cohorts"
   },
   "navigation": {
     "title": "Navigation",
