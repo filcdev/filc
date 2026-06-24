@@ -26,8 +26,16 @@ const WEEKDAY_NAMES_HU = [
   'Szombat',
 ];
 
+function normalizeLocale(locale: string): string {
+  return locale.toLowerCase().split('-')[0] ?? locale;
+}
+
+function isHungarianLocale(locale: string): boolean {
+  return normalizeLocale(locale) === 'hu';
+}
+
 function dayName(day: string, locale: string): string {
-  const names = locale === 'hu' ? DAY_NAMES_HU : DAY_NAMES_EN;
+  const names = isHungarianLocale(locale) ? DAY_NAMES_HU : DAY_NAMES_EN;
   const num = Number.parseInt(day, 10);
   if (num >= 1 && num <= names.length) {
     return names[num - 1] ?? day;
@@ -39,11 +47,10 @@ function formatDate(date: Date, locale: string): string {
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  const weekday =
-    locale === 'hu'
-      ? WEEKDAY_NAMES_HU[date.getDay()]
-      : WEEKDAY_NAMES_EN[date.getDay()];
-  if (locale === 'hu') {
+  const weekday = isHungarianLocale(locale)
+    ? WEEKDAY_NAMES_HU[date.getDay()]
+    : WEEKDAY_NAMES_EN[date.getDay()];
+  if (isHungarianLocale(locale)) {
     return `${weekday}, ${year}. ${month}. ${day}.`;
   }
   return `${weekday}, ${year}-${month}-${day}`;
@@ -95,13 +102,13 @@ function buildSubstitutionContent(
   const dateStr = date ? formatDate(date, locale) : '';
   const subName = p.substituter ?? '';
   const lessonCount = p.lessonIds?.length ?? 0;
-  return locale === 'hu'
+  return isHungarianLocale(locale)
     ? substitutionContentHu(dateStr, subName, lessonCount)
     : substitutionContentEn(dateStr, subName, lessonCount);
 }
 
 function periodLabel(period: string, locale: string): string {
-  return locale === 'hu' ? `${period}. óra` : `Period ${period}`;
+  return isHungarianLocale(locale) ? `${period}. óra` : `Period ${period}`;
 }
 
 function movedLessonContentHu(
@@ -121,7 +128,10 @@ function movedLessonContentHu(
   const suffix = multiple
     ? ' Nézd meg az órarendedben a további változásokat!'
     : '';
-  return `Az órád át lett helyezve: ${timePart}${roomPart}.${suffix}`;
+  const location = timePart
+    ? `${timePart}${roomPart}`
+    : `másik időpontra${roomPart ? ` (${roomPart.slice(2)})` : ''}`;
+  return `Az órád át lett helyezve: ${location}.${suffix}`;
 }
 
 function movedLessonContentEn(
@@ -140,7 +150,10 @@ function movedLessonContentEn(
   const atPart =
     dayPart && periodPart ? `${dayPart}, ${periodPart}` : dayPart || periodPart;
   const suffix = multiple ? ' Check your timetable for all updates.' : '';
-  return `Your lesson has been moved to ${atPart}${roomPart}.${suffix}`;
+  const location = atPart
+    ? `${atPart}${roomPart}`
+    : `a new time slot${roomPart ? ` (${roomPart.slice(1)})` : ''}`;
+  return `Your lesson has been moved to ${location}.${suffix}`;
 }
 
 export function initializeNotificationEngine(): void {
@@ -155,7 +168,9 @@ export function initializeNotificationEngine(): void {
       };
       return {
         content: buildSubstitutionContent(p, locale),
-        title: locale === 'hu' ? 'Új helyettesítés' : 'New Substitution',
+        title: isHungarianLocale(locale)
+          ? 'Új helyettesítés'
+          : 'New Substitution',
       };
     },
     getAudience: async () => [],
@@ -173,13 +188,12 @@ export function initializeNotificationEngine(): void {
         startingPeriod?: string;
       };
       const multiple = (p.lessonIds?.length ?? 0) > 1;
-      const content =
-        locale === 'hu'
-          ? movedLessonContentHu(p, multiple)
-          : movedLessonContentEn(p, multiple);
+      const content = isHungarianLocale(locale)
+        ? movedLessonContentHu(p, multiple)
+        : movedLessonContentEn(p, multiple);
       return {
         content,
-        title: locale === 'hu' ? 'Áthelyezett óra' : 'Moved Lesson',
+        title: isHungarianLocale(locale) ? 'Áthelyezett óra' : 'Moved Lesson',
       };
     },
     getAudience: async () => [],
@@ -191,10 +205,12 @@ export function initializeNotificationEngine(): void {
     buildContent: (payload, locale) => {
       const p = payload as { title: string };
       const title = p.title || '';
-      const prefix = locale === 'hu' ? 'Új bejelentés' : 'New announcement';
+      const prefix = isHungarianLocale(locale)
+        ? 'Új bejelentés'
+        : 'New announcement';
       return {
         content: `${prefix}: ${title}`,
-        title: locale === 'hu' ? 'Új bejelentés' : 'New Announcement',
+        title: isHungarianLocale(locale) ? 'Új bejelentés' : 'New Announcement',
       };
     },
     getAudience: async () => [],
@@ -206,10 +222,12 @@ export function initializeNotificationEngine(): void {
     buildContent: (payload, locale) => {
       const p = payload as { title: string };
       const title = p.title || '';
-      const prefix = locale === 'hu' ? 'Rendszerüzenet' : 'System notice';
+      const prefix = isHungarianLocale(locale)
+        ? 'Rendszerüzenet'
+        : 'System notice';
       return {
         content: `${prefix}: ${title}`,
-        title: locale === 'hu' ? 'Rendszerüzenet' : 'System Message',
+        title: isHungarianLocale(locale) ? 'Rendszerüzenet' : 'System Message',
       };
     },
     getAudience: async () => [],
@@ -221,19 +239,18 @@ export function initializeNotificationEngine(): void {
     buildContent: (payload, locale) => {
       const p = payload as { title: string; slug?: string };
       const title = p.title || '';
-      const cta = locale === 'hu' ? 'koppints az olvasáshoz' : 'tap to read';
-      const prefix = locale === 'hu' ? 'Új bejegyzés' : 'New post';
-      const content =
-        locale === 'hu'
-          ? `${prefix}: ${title} — ${cta}`
-          : `${prefix}: ${title} — ${cta}`;
+      const cta = isHungarianLocale(locale)
+        ? 'koppints az olvasáshoz'
+        : 'tap to read';
+      const prefix = isHungarianLocale(locale) ? 'Új bejegyzés' : 'New post';
+      const content = `${prefix}: ${title} — ${cta}`;
       const result: {
         content: string;
         title: string;
         metadata?: Record<string, unknown>;
       } = {
         content,
-        title: locale === 'hu' ? 'Új blogbejegyzés' : 'New Blog Post',
+        title: isHungarianLocale(locale) ? 'Új blogbejegyzés' : 'New Blog Post',
       };
       if (p.slug) {
         result.metadata = { slug: p.slug };
@@ -248,14 +265,22 @@ export function initializeNotificationEngine(): void {
   registerHandler({
     buildContent: (payload, locale) => {
       const p = payload as { deviceName: string };
-      const device = p.deviceName || '';
-      const content =
-        locale === 'hu'
+      const device = p.deviceName;
+      let content: string;
+      if (device) {
+        content = isHungarianLocale(locale)
           ? `A belépőkártyád használatát észleltük: ${device}.`
           : `Your access card was just used at ${device}.`;
+      } else {
+        content = isHungarianLocale(locale)
+          ? 'A belépőkártyád használatát észleltük.'
+          : 'Your access card was just used.';
+      }
       return {
         content,
-        title: locale === 'hu' ? 'Belépőkártya használat' : 'Card Used',
+        title: isHungarianLocale(locale)
+          ? 'Belépőkártya használat'
+          : 'Card Used',
       };
     },
     getAudience: async () => [],
@@ -266,17 +291,15 @@ export function initializeNotificationEngine(): void {
   registerHandler({
     buildContent: (payload, locale) => {
       const p = payload as { userId: string };
-      const content =
-        locale === 'hu'
-          ? 'A csoportod már nem elérhető. Kérjük, válassz új csoportot a Beállítások menüben.'
-          : 'Your cohort is no longer available. Please go to Settings to select a new cohort.';
+      const content = isHungarianLocale(locale)
+        ? 'A csoportod már nem elérhető. Kérjük, válassz új csoportot a Beállítások menüben.'
+        : 'Your cohort is no longer available. Please go to Settings to select a new cohort.';
       return {
         content,
         metadata: { action: 'cohort_reselection', userId: p.userId },
-        title:
-          locale === 'hu'
-            ? 'Csoport újraválasztása szükséges'
-            : 'Cohort Reselection Required',
+        title: isHungarianLocale(locale)
+          ? 'Csoport újraválasztása szükséges'
+          : 'Cohort Reselection Required',
       };
     },
     getAudience: async () => [],
