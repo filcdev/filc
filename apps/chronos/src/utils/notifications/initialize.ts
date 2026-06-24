@@ -7,6 +7,24 @@ const logger = getLogger(['chronos', 'notifications', 'initialize']);
 
 const DAY_NAMES_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const DAY_NAMES_HU = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek'];
+const WEEKDAY_NAMES_EN = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+const WEEKDAY_NAMES_HU = [
+  'Vasárnap',
+  'Hétfő',
+  'Kedd',
+  'Szerda',
+  'Csütörtök',
+  'Péntek',
+  'Szombat',
+];
 
 function dayName(day: string, locale: string): string {
   const names = locale === 'hu' ? DAY_NAMES_HU : DAY_NAMES_EN;
@@ -17,22 +35,36 @@ function dayName(day: string, locale: string): string {
   return day;
 }
 
+function formatDate(date: Date, locale: string): string {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const weekday =
+    locale === 'hu'
+      ? WEEKDAY_NAMES_HU[date.getDay()]
+      : WEEKDAY_NAMES_EN[date.getDay()];
+  if (locale === 'hu') {
+    return `${weekday}, ${year}. ${month}. ${day}.`;
+  }
+  return `${weekday}, ${year}-${month}-${day}`;
+}
+
 function substitutionContentHu(
   dateStr: string,
   subName: string,
   lessonCount: number
 ): string {
-  const checkCta = lessonCount > 1 ? ' Nézd meg az órarendedben!' : '';
+  const timetableCta = ' Nézd meg az órarendedben a részletekért!';
   if (subName && lessonCount > 0) {
-    return `Helyettesítés ${dateStr}: ${subName} tart ${lessonCount} órát.${checkCta}`;
+    return `${subName} helyettesít ${dateStr}, ${lessonCount} órádat tartja meg.${lessonCount > 1 ? timetableCta : ''}`;
   }
   if (subName) {
-    return `Helyettesítés ${dateStr}: ${subName} fogja tartani az órá(ka)t. Nézd meg az órarendedben!`;
+    return `${subName} helyettesít ${dateStr}.${timetableCta}`;
   }
   if (lessonCount > 0) {
-    return `Helyettesítés ${dateStr}: ${lessonCount} órát érint.${checkCta}`;
+    return `Helyettesítés ${dateStr} — ${lessonCount} órádat érinti.${lessonCount > 1 ? timetableCta : ''}`;
   }
-  return `Új helyettesítés ${dateStr}. Nézd meg az órarendedben!`;
+  return `Új helyettesítés ${dateStr}.${timetableCta}`;
 }
 
 function substitutionContentEn(
@@ -40,25 +72,27 @@ function substitutionContentEn(
   subName: string,
   lessonCount: number
 ): string {
-  const lessonWord = lessonCount > 1 ? 'lessons' : 'lesson';
-  const checkCta = lessonCount > 1 ? ' Check your timetable for details.' : '';
+  const timetableCta = ' Check your timetable for details.';
   if (subName && lessonCount > 0) {
-    return `Substitution on ${dateStr}: ${subName} is covering ${lessonCount} ${lessonWord}.${checkCta}`;
+    const lessonWord = lessonCount > 1 ? 'lessons' : 'lesson';
+    return `${subName} is covering ${lessonCount} of your ${lessonWord} on ${dateStr}.${lessonCount > 1 ? timetableCta : ''}`;
   }
   if (subName) {
-    return `Substitution on ${dateStr}: ${subName} is covering your lesson(s). Check your timetable for details.`;
+    return `${subName} will be covering your lesson(s) on ${dateStr}.${timetableCta}`;
   }
   if (lessonCount > 0) {
-    return `Substitution on ${dateStr} affects ${lessonCount} ${lessonWord}.${checkCta}`;
+    const lessonWord = lessonCount > 1 ? 'lessons' : 'lesson';
+    return `A substitution on ${dateStr} affects ${lessonCount} of your ${lessonWord}.${lessonCount > 1 ? timetableCta : ''}`;
   }
-  return `New substitution for ${dateStr}. Check your timetable for details.`;
+  return `A new substitution has been posted for ${dateStr}.${timetableCta}`;
 }
 
 function buildSubstitutionContent(
   p: { date?: Date; substituter?: string | null; lessonIds?: string[] },
   locale: string
 ): string {
-  const dateStr = p.date ? new Date(p.date).toISOString().slice(0, 10) : '';
+  const date = p.date ? new Date(p.date) : null;
+  const dateStr = date ? formatDate(date, locale) : '';
   const subName = p.substituter ?? '';
   const lessonCount = p.lessonIds?.length ?? 0;
   return locale === 'hu'
@@ -83,8 +117,10 @@ function movedLessonContentHu(
   const periodPart = p.startingPeriod
     ? periodLabel(p.startingPeriod, 'hu')
     : '';
-  const timePart = [dayPart, periodPart].filter(Boolean).join(' ');
-  const suffix = multiple ? ' Nézd meg az órarendedben!' : '';
+  const timePart = [dayPart, periodPart].filter(Boolean).join(', ');
+  const suffix = multiple
+    ? ' Nézd meg az órarendedben a további változásokat!'
+    : '';
   return `Az órád át lett helyezve: ${timePart}${roomPart}.${suffix}`;
 }
 
@@ -102,10 +138,8 @@ function movedLessonContentEn(
     ? periodLabel(p.startingPeriod, 'en')
     : '';
   const atPart =
-    dayPart && periodPart
-      ? `${dayPart} at ${periodPart}`
-      : dayPart || periodPart;
-  const suffix = multiple ? ' Check your timetable for details.' : '';
+    dayPart && periodPart ? `${dayPart}, ${periodPart}` : dayPart || periodPart;
+  const suffix = multiple ? ' Check your timetable for all updates.' : '';
   return `Your lesson has been moved to ${atPart}${roomPart}.${suffix}`;
 }
 
@@ -157,10 +191,7 @@ export function initializeNotificationEngine(): void {
     buildContent: (payload, locale) => {
       const p = payload as { title: string };
       const title = p.title || '';
-      const prefix =
-        locale === 'hu'
-          ? 'Új bejelentés figyelmedbe'
-          : 'New announcement for your attention';
+      const prefix = locale === 'hu' ? 'Új bejelentés' : 'New announcement';
       return {
         content: `${prefix}: ${title}`,
         title: locale === 'hu' ? 'Új bejelentés' : 'New Announcement',
@@ -191,10 +222,11 @@ export function initializeNotificationEngine(): void {
       const p = payload as { title: string; slug?: string };
       const title = p.title || '';
       const cta = locale === 'hu' ? 'koppints az olvasáshoz' : 'tap to read';
+      const prefix = locale === 'hu' ? 'Új bejegyzés' : 'New post';
       const content =
         locale === 'hu'
-          ? `Új bejegyzés elérhető: ${title} — ${cta}`
-          : `New post available: ${title} — ${cta}`;
+          ? `${prefix}: ${title} — ${cta}`
+          : `${prefix}: ${title} — ${cta}`;
       const result: {
         content: string;
         title: string;
@@ -219,7 +251,7 @@ export function initializeNotificationEngine(): void {
       const device = p.deviceName || '';
       const content =
         locale === 'hu'
-          ? `A belépőkártyádat épp most használták itt: ${device}.`
+          ? `A belépőkártyád használatát észleltük: ${device}.`
           : `Your access card was just used at ${device}.`;
       return {
         content,
@@ -236,7 +268,7 @@ export function initializeNotificationEngine(): void {
       const p = payload as { userId: string };
       const content =
         locale === 'hu'
-          ? 'A csoportod már nem elérhető. Kérjük, válassz új csoportot a Beállításokban.'
+          ? 'A csoportod már nem elérhető. Kérjük, válassz új csoportot a Beállítások menüben.'
           : 'Your cohort is no longer available. Please go to Settings to select a new cohort.';
       return {
         content,
