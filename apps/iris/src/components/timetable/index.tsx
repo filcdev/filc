@@ -139,8 +139,11 @@ export function TimetableView() {
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
 
-  // Fetch user settings for class colors
+  const isAuthenticated = !isPending && !!session;
+
+  // Fetch user settings for class colors (authenticated users only)
   const settingsQuery = useQuery({
+    enabled: isAuthenticated,
     queryFn: async () => {
       const res = await parseResponse(api.notifications.settings.$get());
       if (!res.success) {
@@ -150,7 +153,9 @@ export function TimetableView() {
     },
     queryKey: queryKeys.notifications.settings(),
   });
-  const userColors = settingsQuery.data?.timetableClassColors ?? {};
+  const userColors = isAuthenticated
+    ? (settingsQuery.data?.timetableClassColors ?? {})
+    : {};
 
   // Mutation to save class color
   const colorMutation = useMutation({
@@ -558,7 +563,7 @@ export function TimetableView() {
         ) : (
           <TimetableGrid
             model={model}
-            onColorChange={handleColorChange}
+            onColorChange={isAuthenticated ? handleColorChange : undefined}
             userColors={userColors}
           />
         )}
