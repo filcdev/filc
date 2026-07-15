@@ -5,12 +5,12 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { role } from '#database/schema/authorization';
 import { cohort, movedLesson, substitution } from '#database/schema/timetable';
 import { dashboardFactory } from '#routes/dashboard/_factory';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 
@@ -147,22 +147,17 @@ export const getDashboardStats = dashboardFactory.createHandlers(
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, counts]) => ({ date, ...counts }));
 
-      return c.json<
-        SuccessResponse<z.infer<typeof dashboardStatsResponseSchema>['data']>
-      >({
-        data: {
-          stats: {
-            chartData,
-            chartTotalMovedLessons: movedLessonDates.length,
-            chartTotalSubstitutions: relevantSubs.length,
-            totalCohorts: cohortsRow?.count ?? 0,
-            totalMovedLessons: liveMovedRow?.count ?? 0,
-            totalRoles: rolesRow?.count ?? 0,
-            totalSubstitutions: liveSubsRow?.count ?? 0,
-            totalUsers: usersRow?.count ?? 0,
-          },
+      return ok(c, {
+        stats: {
+          chartData,
+          chartTotalMovedLessons: movedLessonDates.length,
+          chartTotalSubstitutions: relevantSubs.length,
+          totalCohorts: cohortsRow?.count ?? 0,
+          totalMovedLessons: liveMovedRow?.count ?? 0,
+          totalRoles: rolesRow?.count ?? 0,
+          totalSubstitutions: liveSubsRow?.count ?? 0,
+          totalUsers: usersRow?.count ?? 0,
         },
-        success: true,
       });
     } catch (error) {
       logger.error('Error while fetching dashboard stats', { error });

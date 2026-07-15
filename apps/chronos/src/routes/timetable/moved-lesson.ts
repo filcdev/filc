@@ -5,7 +5,6 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
@@ -17,7 +16,8 @@ import {
   period,
   subject,
 } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
+import { created, ok } from '#utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
@@ -227,10 +227,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         .leftJoin(subject, eq(lesson.subjectId, subject.id))
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse<typeof movedLessons>>({
-        data: movedLessons,
-        success: true,
-      });
+      return ok(c, movedLessons);
     } catch (error) {
       logger.error('Error while fetching all moved lessons', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -306,10 +303,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse<typeof movedLessons>>({
-        data: movedLessons,
-        success: true,
-      });
+      return ok(c, movedLessons);
     } catch (error) {
       logger.error('Error while fetching relevant moved lessons', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -381,10 +375,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         .where(eq(lessonCohortMTM.cohortId, cohortId))
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse<typeof movedLessons>>({
-        data: movedLessons,
-        success: true,
-      });
+      return ok(c, movedLessons);
     } catch (error) {
       logger.error('Error while fetching moved lessons for cohort', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -464,10 +455,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         )
         .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return c.json<SuccessResponse<typeof movedLessons>>({
-        data: movedLessons,
-        success: true,
-      });
+      return ok(c, movedLessons);
     } catch (error) {
       logger.error('Error while fetching relevant moved lessons for cohort', {
         error,
@@ -511,8 +499,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  requireAuthentication,
-  requireAuthorization('movedLesson:create'),
+  ...authRouter('movedLesson:create'),
   zValidator('json', createSchema),
   async (c) => {
     try {
@@ -567,13 +554,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
         });
       }
 
-      return c.json<SuccessResponse<typeof newMovedLesson>>(
-        {
-          data: newMovedLesson,
-          success: true,
-        },
-        StatusCodes.CREATED
-      );
+      return created(c, newMovedLesson);
     } catch (error) {
       logger.error(`Error while creating moved lesson: ${error}`, { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -624,8 +605,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  requireAuthentication,
-  requireAuthorization('movedLesson:update'),
+  ...authRouter('movedLesson:update'),
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', updateSchema),
   async (c) => {
@@ -684,10 +664,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
         startingPeriod,
       });
 
-      return c.json<SuccessResponse<typeof updatedMovedLesson>>({
-        data: updatedMovedLesson,
-        success: true,
-      });
+      return ok(c, updatedMovedLesson);
     } catch (error) {
       logger.error('Error while updating moved lesson', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -724,8 +701,7 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  requireAuthentication,
-  requireAuthorization('movedLesson:delete'),
+  ...authRouter('movedLesson:delete'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     try {
@@ -744,10 +720,7 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
 
       cancelPendingNotification(id, 'moved_lesson');
 
-      return c.json<SuccessResponse<typeof deletedMovedLesson>>({
-        data: deletedMovedLesson,
-        success: true,
-      });
+      return ok(c, deletedMovedLesson);
     } catch (error) {
       logger.error('Error while deleting moved lesson', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {

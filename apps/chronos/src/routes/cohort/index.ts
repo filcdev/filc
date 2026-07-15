@@ -1,9 +1,9 @@
 import { describeRoute, resolver } from 'hono-openapi';
 import { z } from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort } from '#database/schema/timetable';
 import { cohortFactory } from '#routes/cohort/_factory';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
@@ -31,9 +31,6 @@ export const listCohorts = cohortFactory.createHandlers(
   async (c) => {
     const cohorts = await db.select().from(cohort);
 
-    return c.json<SuccessResponse<typeof cohorts>>({
-      data: cohorts,
-      success: true,
-    });
+    return ok(c, cohorts);
   }
 );

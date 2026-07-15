@@ -2,11 +2,11 @@ import type { SQL } from 'drizzle-orm';
 import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
@@ -192,8 +192,7 @@ export const listLogsRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:logs:read'),
+  ...authRouter('doorlock:logs:read'),
   async (c) => {
     const url = new URL(c.req.url);
     const queryParams = Object.fromEntries(url.searchParams.entries());
@@ -228,9 +227,6 @@ export const listLogsRoute = doorlockFactory.createHandlers(
 
     const logs = mapRowsToLogs(rows);
 
-    return c.json<SuccessResponse<{ logs: DoorlockLogEntry[] }>>({
-      data: { logs },
-      success: true,
-    });
+    return ok(c, { logs });
   }
 );

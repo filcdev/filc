@@ -5,18 +5,14 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { auditLog, card } from '#database/schema/doorlock';
-import { requireAuthentication } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { cardWithRelationsSchema } from '#routes/doorlock/cards';
 import { sendMessage } from '#routes/doorlock/websocket-handler';
-import {
-  type DoorlockCardWithRelations,
-  fetchCardById,
-  fetchCards,
-} from '#utils/doorlock/cards';
+import { fetchCardById, fetchCards } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
+import { notFound, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
@@ -81,7 +77,7 @@ export const listSelfCardsRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
+  ...authRouter(),
   async (c) => {
     const session = c.var.session;
     if (!session) {
@@ -90,10 +86,7 @@ export const listSelfCardsRoute = doorlockFactory.createHandlers(
 
     const cards = await fetchCards(eq(card.userId, session.userId));
 
-    return c.json<SuccessResponse<{ cards: DoorlockCardWithRelations[] }>>({
-      data: { cards },
-      success: true,
-    });
+    return ok(c, { cards });
   }
 );
 
@@ -122,7 +115,7 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
+  ...authRouter(),
   zValidator('json', updateFrozenSchema),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
@@ -137,9 +130,7 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
       .returning({ id: card.id });
 
     if (!updated) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Card not found',
-      });
+      throw notFound('Card not found');
     }
 
     const updatedCard = await fetchCardById(cardId);
@@ -149,19 +140,14 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
         cardId,
         userId: session.userId,
       });
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Card not found',
-      });
+      throw notFound('Card not found');
     }
 
     await syncDevicesByIds(
       updatedCard.authorizedDevices.map((device) => device.id)
     );
 
-    return c.json<SuccessResponse<{ card: DoorlockCardWithRelations }>>({
-      data: { card: updatedCard },
-      success: true,
-    });
+    return ok(c, { card: updatedCard });
   }
 );
 
@@ -197,7 +183,7 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
+  ...authRouter(),
   zValidator('json', activateVirtualCardSchema),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
@@ -207,9 +193,7 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
 
     const cardRecord = await fetchCardById(cardId);
     if (!cardRecord || cardRecord.userId !== session.userId) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Card not found',
-      });
+      throw notFound('Card not found');
     }
 
     if (!cardRecord.enabled || cardRecord.frozen) {
@@ -249,9 +233,7 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
     const targetDevice = resolveTargetDevice();
 
     if (!targetDevice) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Target device not found',
-      });
+      throw notFound('Target device not found');
     }
 
     try {
@@ -278,10 +260,7 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
         })
         .returning();
 
-      return c.json<SuccessResponse<{ log: typeof logEntry }>>({
-        data: { log: logEntry },
-        success: true,
-      });
+      return ok(c, { log: logEntry });
     } catch (error) {
       logger.error('Failed to activate virtual card', {
         cardId,

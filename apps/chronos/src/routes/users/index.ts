@@ -4,12 +4,12 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { usersFactory } from '#routes/users/_factory';
 import { getUserPermissions } from '#utils/authorization';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 
@@ -67,8 +67,7 @@ export const listUsers = usersFactory.createHandlers(
     },
     tags: ['Users'],
   }),
-  requireAuthentication,
-  requireAuthorization('users:manage'),
+  ...authRouter('users:manage'),
   zValidator('query', listUsersQuerySchema),
   async (c) => {
     const { limit, offset, search } = c.req.valid('query');
@@ -102,10 +101,7 @@ export const listUsers = usersFactory.createHandlers(
       .from(user)
       .where(whereClause);
 
-    return c.json<SuccessResponse<{ users: typeof users; total: number }>>({
-      data: { total: countResult?.count ?? 0, users },
-      success: true,
-    });
+    return ok(c, { total: countResult?.count ?? 0, users });
   }
 );
 
@@ -130,8 +126,7 @@ export const updateUser = usersFactory.createHandlers(
     },
     tags: ['Users'],
   }),
-  requireAuthentication,
-  requireAuthorization('users:manage'),
+  ...authRouter('users:manage'),
   zValidator('json', userUpdatePayload),
   async (c) => {
     const userId = c.req.param('id');
@@ -158,9 +153,6 @@ export const updateUser = usersFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse<typeof updatedUser>>({
-      data: updatedUser,
-      success: true,
-    });
+    return ok(c, updatedUser);
   }
 );

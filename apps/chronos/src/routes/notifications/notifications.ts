@@ -3,7 +3,6 @@ import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import {
@@ -11,9 +10,10 @@ import {
   notification,
   userPreferences,
 } from '#database/schema/notifications';
-import { requireAuthentication } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { notificationsFactory } from '#routes/notifications/_factory';
 import { env } from '#utils/environment';
+import { created as createdResponse, notFound, ok } from '#utils/http';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
 
@@ -51,7 +51,7 @@ const getUser = (c: { var: { user: { id: string } | null } }) => {
 };
 
 export const listNotifications = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   zValidator('query', paginationSchema),
   async (c) => {
     const { id: userId } = getUser(c);
@@ -89,16 +89,14 @@ export const listNotifications = notificationsFactory.createHandlers(
         .where(and(...conditions)),
     ]);
 
-    return c.json<SuccessResponse<typeof items> & { total: number }>({
-      data: items,
-      success: true,
+    return ok(c, items, StatusCodes.OK, {
       total: totalResult[0]?.count ?? 0,
     });
   }
 );
 
 export const getUnreadCount = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   async (c) => {
     const { id: userId } = getUser(c);
 
@@ -109,15 +107,12 @@ export const getUnreadCount = notificationsFactory.createHandlers(
         sql`${notification.userId} = ${userId} AND ${notification.read} = false`
       );
 
-    return c.json<SuccessResponse<{ count: number }>>({
-      data: { count: result?.count ?? 0 },
-      success: true,
-    });
+    return ok(c, { count: result?.count ?? 0 });
   }
 );
 
 export const markAsRead = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id: userId } = getUser(c);
@@ -132,20 +127,15 @@ export const markAsRead = notificationsFactory.createHandlers(
       .returning();
 
     if (!updated) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Notification not found',
-      });
+      throw notFound('Notification not found');
     }
 
-    return c.json<SuccessResponse<typeof updated>>({
-      data: updated,
-      success: true,
-    });
+    return ok(c, updated);
   }
 );
 
 export const markAllAsRead = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   async (c) => {
     const { id: userId } = getUser(c);
 
@@ -156,14 +146,12 @@ export const markAllAsRead = notificationsFactory.createHandlers(
         sql`${notification.userId} = ${userId} AND ${notification.read} = false`
       );
 
-    return c.json<SuccessResponse>({
-      success: true,
-    });
+    return ok(c, undefined);
   }
 );
 
 export const getNotificationSettings = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   async (c) => {
     const { id: userId } = getUser(c);
 
@@ -173,10 +161,7 @@ export const getNotificationSettings = notificationsFactory.createHandlers(
       .where(eq(userPreferences.userId, userId));
 
     if (prefs) {
-      return c.json<SuccessResponse<typeof prefs>>({
-        data: prefs,
-        success: true,
-      });
+      return ok(c, prefs);
     }
 
     const [created] = await db
@@ -184,15 +169,12 @@ export const getNotificationSettings = notificationsFactory.createHandlers(
       .values({ userId })
       .returning();
 
-    return c.json<SuccessResponse<typeof created>>({
-      data: created,
-      success: true,
-    });
+    return ok(c, created);
   }
 );
 
 export const updateNotificationSettings = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   zValidator('json', updateSettingsSchema),
   async (c) => {
     const { id: userId } = getUser(c);
@@ -223,10 +205,7 @@ export const updateNotificationSettings = notificationsFactory.createHandlers(
       .returning();
 
     if (updated) {
-      return c.json<SuccessResponse<typeof updated>>({
-        data: updated,
-        success: true,
-      });
+      return ok(c, updated);
     }
 
     const [created] = await db
@@ -234,15 +213,12 @@ export const updateNotificationSettings = notificationsFactory.createHandlers(
       .values({ userId, ...values })
       .returning();
 
-    return c.json<SuccessResponse<typeof created>>({
-      data: created,
-      success: true,
-    });
+    return ok(c, created);
   }
 );
 
 export const registerFcmToken = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   zValidator('json', fcmTokenSchema),
   async (c) => {
     const { id: userId } = getUser(c);
@@ -264,12 +240,12 @@ export const registerFcmToken = notificationsFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse>({ success: true }, StatusCodes.CREATED);
+    return createdResponse(c, undefined);
   }
 );
 
 export const testNotification = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   async (c) => {
     if (env.mode !== 'development') {
       throw new HTTPException(StatusCodes.FORBIDDEN, {
@@ -318,10 +294,7 @@ export const testNotification = notificationsFactory.createHandlers(
       userId,
     });
 
-    return c.json<SuccessResponse<typeof notif>>({
-      data: notif,
-      success: true,
-    });
+    return ok(c, notif);
   }
 );
 
@@ -330,7 +303,7 @@ const tokenDeleteSchema = z.object({
 });
 
 export const unregisterFcmToken = notificationsFactory.createHandlers(
-  requireAuthentication,
+  ...authRouter(),
   zValidator('json', tokenDeleteSchema),
   async (c) => {
     const { id: userId } = getUser(c);
@@ -342,7 +315,7 @@ export const unregisterFcmToken = notificationsFactory.createHandlers(
         sql`${fcmToken.userId} = ${userId} AND ${fcmToken.token} = ${token}`
       );
 
-    return c.json<SuccessResponse>({ success: true });
+    return ok(c, undefined);
   }
 );
 

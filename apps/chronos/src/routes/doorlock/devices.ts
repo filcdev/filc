@@ -5,10 +5,10 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { device } from '#database/schema/doorlock';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
+import { created, notFound, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
@@ -86,18 +86,14 @@ export const listDevicesRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:devices:read'),
+  ...authRouter('doorlock:devices:read'),
   async (c) => {
     const devices = await db
       .select()
       .from(device)
       .orderBy(desc(device.updatedAt));
 
-    return c.json<SuccessResponse<{ devices: typeof devices }>>({
-      data: { devices },
-      success: true,
-    });
+    return ok(c, { devices });
   }
 );
 
@@ -128,8 +124,7 @@ export const createDeviceRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:devices:write'),
+  ...authRouter('doorlock:devices:write'),
   zValidator('json', devicePayloadSchema),
   async (c) => {
     const payload = c.req.valid('json');
@@ -140,13 +135,7 @@ export const createDeviceRoute = doorlockFactory.createHandlers(
         .values(mapDevicePayload(payload))
         .returning();
 
-      return c.json<SuccessResponse<{ device: typeof inserted }>>(
-        {
-          data: { device: inserted },
-          success: true,
-        },
-        StatusCodes.CREATED
-      );
+      return created(c, { device: inserted });
     } catch (error) {
       logger.error('Failed to create device', { error });
       const knownError = buildConstraintError(error);
@@ -188,8 +177,7 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:devices:write'),
+  ...authRouter('doorlock:devices:write'),
   zValidator('json', devicePayloadSchema),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
@@ -209,10 +197,7 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
         });
       }
 
-      return c.json<SuccessResponse<{ device: typeof updated }>>({
-        data: { device: updated },
-        success: true,
-      });
+      return ok(c, { device: updated });
     } catch (error) {
       logger.error('Failed to update device', { error });
       const knownError = buildConstraintError(error);
@@ -238,8 +223,7 @@ export const deleteDeviceRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:devices:write'),
+  ...authRouter('doorlock:devices:write'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -250,11 +234,9 @@ export const deleteDeviceRoute = doorlockFactory.createHandlers(
       .returning();
 
     if (!deleted) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Device not found',
-      });
+      throw notFound('Device not found');
     }
 
-    return c.json<SuccessResponse>({ success: true });
+    return ok(c, undefined);
   }
 );

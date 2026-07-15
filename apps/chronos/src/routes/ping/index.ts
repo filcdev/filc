@@ -1,7 +1,7 @@
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { pingFactory } from '#routes/ping/_factory';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 
 const pingResponseSchema = z.object({
@@ -27,9 +27,5 @@ export const ping = pingFactory.createHandlers(
     },
     tags: ['Ping'],
   }),
-  (c) =>
-    c.json<SuccessResponse<{ message: 'pong' }>>({
-      data: { message: 'pong' },
-      success: true,
-    })
+  (c) => ok(c, { message: 'pong' as const })
 );

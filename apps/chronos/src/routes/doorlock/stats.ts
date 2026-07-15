@@ -5,7 +5,6 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -14,7 +13,8 @@ import {
   device,
   deviceHealth,
 } from '#database/schema/doorlock';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { doorlockFactory } from './_factory';
 
@@ -105,8 +105,7 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:stats:read'),
+  ...authRouter('doorlock:stats:read'),
   async (c) => {
     try {
       const cardCount = count(card.id);
@@ -180,10 +179,7 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
         totalSuccessfulOpens: Number(totalSuccessfulOpensRow[0]?.count ?? 0),
       };
 
-      return c.json<SuccessResponse<{ stats: DoorlockStatsOverview }>>({
-        data: { stats },
-        success: true,
-      });
+      return ok(c, { stats });
     } catch (error) {
       logger.error('Failed to fetch doorlock stats', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -213,8 +209,7 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:stats:read'),
+  ...authRouter('doorlock:stats:read'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     const { id: deviceId } = c.req.valid('param');
@@ -244,9 +239,6 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
       },
     }));
 
-    return c.json<SuccessResponse<typeof formattedStats>>({
-      data: formattedStats,
-      success: true,
-    });
+    return ok(c, formattedStats);
   }
 );

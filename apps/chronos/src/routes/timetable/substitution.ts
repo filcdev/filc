@@ -5,7 +5,6 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
@@ -19,8 +18,9 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { env } from '#utils/environment';
+import { ok } from '#utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
@@ -417,10 +417,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         teacher: s.teacher,
       }));
 
-      return c.json<SuccessResponse<typeof result>>({
-        data: result,
-        success: true,
-      });
+      return ok(c, result);
     } catch (error) {
       logger.error('Error while fetching all substitutions', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -469,10 +466,7 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         .where(gte(substitution.date, today))
         .groupBy(substitution.id, teacher.id);
 
-      return c.json<SuccessResponse<typeof substitutions>>({
-        data: substitutions,
-        success: true,
-      });
+      return ok(c, substitutions);
     } catch (error) {
       logger.error('Error while fetching substitutions', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -544,17 +538,9 @@ export const getRelevantSubstitutionsForCohort =
           .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
           .groupBy(substitution.id, teacher.id);
 
-        return c.json<
-          SuccessResponse<{
-            cohortId: string;
-            substitutions: typeof substitutions;
-          }>
-        >({
-          data: {
-            cohortId,
-            substitutions,
-          },
-          success: true,
+        return ok(c, {
+          cohortId,
+          substitutions,
         });
       } catch (error) {
         logger.error('Error while fetching substitutions for cohort', {
@@ -601,8 +587,7 @@ export const createSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:create'),
+  ...authRouter('substitution:create'),
   zValidator('json', createSchema),
   async (c) => {
     const { lessonIds, date, substituter, comment } = c.req.valid('json');
@@ -663,10 +648,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       substituter,
     });
 
-    return c.json<SuccessResponse<typeof result>>({
-      data: result,
-      success: true,
-    });
+    return ok(c, result);
   }
 );
 
@@ -710,8 +692,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:update'),
+  ...authRouter('substitution:update'),
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', updateSchema),
   async (c) => {
@@ -802,10 +783,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
           'substituter' in body ? body.substituter : existing.substituter,
       });
 
-      return c.json<SuccessResponse<typeof updatedSubstitution>>({
-        data: updatedSubstitution,
-        success: true,
-      });
+      return ok(c, updatedSubstitution);
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error;
@@ -847,8 +825,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:delete'),
+  ...authRouter('substitution:delete'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     try {
@@ -874,10 +851,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
 
       cancelPendingNotification(id, 'substitution');
 
-      return c.json<SuccessResponse<typeof deletedSubstitution>>({
-        data: deletedSubstitution,
-        success: true,
-      });
+      return ok(c, deletedSubstitution);
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error;

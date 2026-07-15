@@ -11,7 +11,6 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
@@ -24,6 +23,7 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -318,15 +318,12 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const lessons = lessonRows.map((r) => r.lesson);
 
     if (lessons.length === 0) {
-      return c.json<SuccessResponse<[]>>({ data: [], success: true });
+      return ok(c, []);
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return c.json<SuccessResponse<typeof enriched>>({
-      data: enriched,
-      success: true,
-    });
+    return ok(c, enriched);
   }
 );
 
@@ -385,15 +382,12 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
-      return c.json<SuccessResponse<[]>>({ data: [], success: true });
+      return ok(c, []);
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return c.json<SuccessResponse<typeof enriched>>({
-      data: enriched,
-      success: true,
-    });
+    return ok(c, enriched);
   }
 );
 
@@ -666,7 +660,7 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
     const existingTeacherIds = existingTeachers.map((t) => t.id);
 
     if (existingTeacherIds.length === 0) {
-      return c.json<SuccessResponse<[]>>({ data: [], success: true });
+      return ok(c, []);
     }
 
     const lessons = await db
@@ -701,10 +695,7 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
       teacherId,
     }));
 
-    return c.json<SuccessResponse<typeof data>>({
-      data,
-      success: true,
-    });
+    return ok(c, data);
   }
 );
 
@@ -794,19 +785,10 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       );
 
     if (selectedPeriods.length === 0) {
-      return c.json<
-        SuccessResponse<{
-          availableLessons: typeof availableLessons;
-          parallelLessons: [];
-          substituteCandidates: [];
-        }>
-      >({
-        data: {
-          availableLessons,
-          parallelLessons: [],
-          substituteCandidates: [],
-        },
-        success: true,
+      return ok(c, {
+        availableLessons,
+        parallelLessons: [],
+        substituteCandidates: [],
       });
     }
 
@@ -820,19 +802,10 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     );
 
     if (candidateTeacherIds.length === 0) {
-      return c.json<
-        SuccessResponse<{
-          availableLessons: typeof availableLessons;
-          parallelLessons: typeof parallelLessons;
-          substituteCandidates: [];
-        }>
-      >({
-        data: {
-          availableLessons,
-          parallelLessons,
-          substituteCandidates: [],
-        },
-        success: true,
+      return ok(c, {
+        availableLessons,
+        parallelLessons,
+        substituteCandidates: [],
       });
     }
 
@@ -871,19 +844,10 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
       )
       .sort(compareSubstituteCandidates);
 
-    return c.json<
-      SuccessResponse<{
-        availableLessons: typeof availableLessons;
-        parallelLessons: typeof parallelLessons;
-        substituteCandidates: typeof substituteCandidates;
-      }>
-    >({
-      data: {
-        availableLessons,
-        parallelLessons,
-        substituteCandidates,
-      },
-      success: true,
+    return ok(c, {
+      availableLessons,
+      parallelLessons,
+      substituteCandidates,
     });
   }
 );
@@ -943,15 +907,12 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
-      return c.json<SuccessResponse<[]>>({ data: [], success: true });
+      return ok(c, []);
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return c.json<SuccessResponse<typeof enriched>>({
-      data: enriched,
-      success: true,
-    });
+    return ok(c, enriched);
   }
 );
 
@@ -1005,10 +966,7 @@ export const getLessonForId = timetableFactory.createHandlers(
       .limit(1);
 
     if (!lessonRow) {
-      return c.json({
-        data: null,
-        success: true,
-      });
+      return ok(c, null);
     }
 
     const substitutionCohortRow = await db
@@ -1024,15 +982,12 @@ export const getLessonForId = timetableFactory.createHandlers(
 
     const [enriched] = await enrichLessons(lessonRow);
 
-    return c.json({
-      data: {
-        ...enriched,
-        substitutionCohortName:
-          substitutionCohortRow.length > 0
-            ? (substitutionCohortRow[0]?.name ?? null)
-            : null,
-      },
-      success: true,
+    return ok(c, {
+      ...enriched,
+      substitutionCohortName:
+        substitutionCohortRow.length > 0
+          ? (substitutionCohortRow[0]?.name ?? null)
+          : null,
     });
   }
 );

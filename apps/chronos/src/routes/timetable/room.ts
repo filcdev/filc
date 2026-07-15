@@ -2,7 +2,6 @@ import { zValidator } from '@hono/zod-validator';
 import { and, eq, notInArray, sql } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
@@ -10,6 +9,7 @@ import {
   movedLesson,
   movedLessonLessonMTM,
 } from '#database/schema/timetable';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -53,10 +53,7 @@ export const getClassrooms = timetableFactory.createHandlers(
   }),
   async (c) => {
     const classrooms = await db.select().from(classroom);
-    return c.json<SuccessResponse<typeof classrooms>>({
-      data: classrooms,
-      success: true,
-    });
+    return ok(c, classrooms);
   }
 );
 
@@ -177,9 +174,6 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
         )
       );
 
-    return c.json<SuccessResponse<typeof availableClassrooms>>({
-      data: availableClassrooms,
-      success: true,
-    });
+    return ok(c, availableClassrooms);
   }
 );

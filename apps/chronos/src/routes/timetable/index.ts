@@ -5,7 +5,6 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -18,7 +17,8 @@ import {
   substitutionLessonMTM,
   timetable,
 } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
+import { ok } from '#utils/http';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
@@ -61,10 +61,7 @@ export const getAllTimetables = timetableFactory.createHandlers(
     try {
       const timetables = await db.select().from(timetable);
 
-      return c.json<SuccessResponse<typeof timetables>>({
-        data: timetables,
-        success: true,
-      });
+      return ok(c, timetables);
     } catch (error) {
       logger.error('Error while getting all timetables: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -111,10 +108,7 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
         });
       }
 
-      return c.json<SuccessResponse<typeof latestValidTimetable>>({
-        data: latestValidTimetable,
-        success: true,
-      });
+      return ok(c, latestValidTimetable);
     } catch (error) {
       if (error instanceof HTTPException) {
         throw error;
@@ -157,10 +151,7 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
           )
         );
 
-      return c.json<SuccessResponse<typeof timetables>>({
-        data: timetables,
-        success: true,
-      });
+      return ok(c, timetables);
     } catch (error) {
       logger.error('Error while getting all timetables: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
@@ -199,8 +190,7 @@ export const updateTimetable = timetableFactory.createHandlers(
   }),
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', updateTimetableSchema),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
     const body = c.req.valid('json');
@@ -233,10 +223,7 @@ export const updateTimetable = timetableFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse<typeof updated>>({
-      data: updated,
-      success: true,
-    });
+    return ok(c, updated);
   }
 );
 
@@ -275,8 +262,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   zValidator('param', z.object({ id: z.uuid() })),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
 
@@ -341,7 +327,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
       dispatchImmediateNotification('cohort_reselection_required', { userId });
     }
 
-    return c.json<SuccessResponse>({ success: true });
+    return ok(c, undefined);
   }
 );
 
@@ -391,8 +377,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   zValidator('param', z.object({ id: z.uuid() })),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
 
@@ -498,21 +483,18 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       .where(eq(lesson.timetableId, id));
     const substitutionIds = [...new Set(substitutionRows.map((r) => r.id))];
 
-    return c.json({
-      data: {
-        cohorts: cohortResults,
-        isCurrentTimetable,
-        targetTimetable,
-        totals: {
-          danglingUsersCleaned: affectedUserCount,
-          lessonsDeleted: lessonCount?.count ?? 0,
-          movedLessonsDeleted: movedLessonIds.length,
-          orphanedCohorts: orphanedCount,
-          substitutionsDeleted: substitutionIds.length,
-          survivingCohorts: cohortResults.length - orphanedCount,
-        },
+    return ok(c, {
+      cohorts: cohortResults,
+      isCurrentTimetable,
+      targetTimetable,
+      totals: {
+        danglingUsersCleaned: affectedUserCount,
+        lessonsDeleted: lessonCount?.count ?? 0,
+        movedLessonsDeleted: movedLessonIds.length,
+        orphanedCohorts: orphanedCount,
+        substitutionsDeleted: substitutionIds.length,
+        survivingCohorts: cohortResults.length - orphanedCount,
       },
-      success: true,
     });
   }
 );
@@ -542,16 +524,12 @@ export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     try {
       const result = await cleanupOrphanedCohorts();
 
-      return c.json({
-        data: result,
-        success: true as const,
-      });
+      return ok(c, result);
     } catch (error) {
       logger.error('Failed to cleanup orphaned cohorts: ', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {

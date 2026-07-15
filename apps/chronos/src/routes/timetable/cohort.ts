@@ -5,9 +5,9 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { cohort, cohortTimetableMtm } from '#database/schema/timetable';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -62,10 +62,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
 
       const cohorts = cohortRows.map((r) => r.cohort);
 
-      return c.json<SuccessResponse<typeof cohorts>>({
-        data: cohorts,
-        success: true,
-      });
+      return ok(c, cohorts);
     } catch (error) {
       logger.error('Error fetching cohorts for timetable', { error });
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {

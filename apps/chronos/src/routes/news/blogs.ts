@@ -4,12 +4,12 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { blogPost } from '#database/schema/news';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
+import { created, notFound, ok } from '#utils/http';
 import {
   blogCreateSchema,
   blogUpdateSchema,
@@ -17,6 +17,7 @@ import {
   generateSlug,
   paginationSchema,
 } from '#utils/news/schemas';
+import { successResponseSchema } from '#utils/news/shared';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
@@ -54,10 +55,6 @@ const blogDetailResponseSchema = z.object({
 
 const blogBaseDetailResponseSchema = z.object({
   data: blogSelectSchema,
-  success: z.literal(true),
-});
-
-const successResponseSchema = z.object({
   success: z.literal(true),
 });
 
@@ -123,9 +120,7 @@ export const listPublishedBlogs = newsFactory.createHandlers(
       db.select({ count: count() }).from(blogPost).where(where),
     ]);
 
-    return c.json<SuccessResponse<typeof items> & { total: number }>({
-      data: items,
-      success: true,
+    return ok(c, items, StatusCodes.OK, {
       total: totalResult[0]?.count ?? 0,
     });
   }
@@ -170,15 +165,10 @@ export const getBlogBySlug = newsFactory.createHandlers(
       .where(and(eq(blogPost.slug, slug), eq(blogPost.status, 'published')));
 
     if (!item) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Blog post not found',
-      });
+      throw notFound('Blog post not found');
     }
 
-    return c.json<SuccessResponse<typeof item>>({
-      data: item,
-      success: true,
-    });
+    return ok(c, item);
   }
 );
 
@@ -198,8 +188,7 @@ export const listDrafts = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('query', paginationSchema),
   async (c) => {
     const { limit, offset } = c.req.valid('query');
@@ -226,9 +215,7 @@ export const listDrafts = newsFactory.createHandlers(
       db.select({ count: count() }).from(blogPost),
     ]);
 
-    return c.json<SuccessResponse<typeof items> & { total: number }>({
-      data: items,
-      success: true,
+    return ok(c, items, StatusCodes.OK, {
       total: totalResult[0]?.count ?? 0,
     });
   }
@@ -252,8 +239,7 @@ export const getBlogById = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -276,15 +262,10 @@ export const getBlogById = newsFactory.createHandlers(
       .where(eq(blogPost.id, id));
 
     if (!item) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Blog post not found',
-      });
+      throw notFound('Blog post not found');
     }
 
-    return c.json<SuccessResponse<typeof item>>({
-      data: item,
-      success: true,
-    });
+    return ok(c, item);
   }
 );
 
@@ -312,8 +293,7 @@ export const createBlog = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('json', blogCreateSchema),
   async (c) => {
     const body = c.req.valid('json');
@@ -324,7 +304,7 @@ export const createBlog = newsFactory.createHandlers(
 
     const publishedAt = body.status === 'published' ? new Date() : null;
 
-    const [created] = await db
+    const [row] = await db
       .insert(blogPost)
       .values({
         authorId: currentUser.id,
@@ -336,13 +316,7 @@ export const createBlog = newsFactory.createHandlers(
       })
       .returning();
 
-    return c.json<SuccessResponse<typeof created>>(
-      {
-        data: created,
-        success: true,
-      },
-      StatusCodes.CREATED
-    );
+    return created(c, row);
   }
 );
 
@@ -370,8 +344,7 @@ export const updateBlog = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   zValidator('json', blogUpdateSchema),
   async (c) => {
@@ -384,9 +357,7 @@ export const updateBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id));
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Blog post not found',
-      });
+      throw notFound('Blog post not found');
     }
 
     const updateData: Record<string, unknown> = {};
@@ -410,10 +381,7 @@ export const updateBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id))
       .returning();
 
-    return c.json<SuccessResponse<typeof updated>>({
-      data: updated,
-      success: true,
-    });
+    return ok(c, updated);
   }
 );
 
@@ -435,8 +403,7 @@ export const publishBlog = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -447,9 +414,7 @@ export const publishBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id));
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Blog post not found',
-      });
+      throw notFound('Blog post not found');
     }
 
     if (existing.status === 'published') {
@@ -469,10 +434,7 @@ export const publishBlog = newsFactory.createHandlers(
       title: existing.title,
     });
 
-    return c.json<SuccessResponse<typeof updated>>({
-      data: updated,
-      success: true,
-    });
+    return ok(c, updated);
   }
 );
 
@@ -494,8 +456,7 @@ export const unpublishBlog = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -506,9 +467,7 @@ export const unpublishBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id));
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Blog post not found',
-      });
+      throw notFound('Blog post not found');
     }
 
     if (existing.status === 'draft') {
@@ -525,10 +484,7 @@ export const unpublishBlog = newsFactory.createHandlers(
 
     cancelPendingNotification(id, 'blog_post');
 
-    return c.json<SuccessResponse<typeof updated>>({
-      data: updated,
-      success: true,
-    });
+    return ok(c, updated);
   }
 );
 
@@ -549,8 +505,7 @@ export const deleteBlog = newsFactory.createHandlers(
     },
     tags: ['News / Blogs'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:blogs'),
+  ...authRouter('news:blogs'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -561,13 +516,9 @@ export const deleteBlog = newsFactory.createHandlers(
       .returning();
 
     if (!deleted) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Blog post not found',
-      });
+      throw notFound('Blog post not found');
     }
 
-    return c.json<SuccessResponse>({
-      success: true,
-    });
+    return ok(c, undefined);
   }
 );
