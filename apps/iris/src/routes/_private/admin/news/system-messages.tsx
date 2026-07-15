@@ -9,7 +9,10 @@ import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { NewsItemDialog } from '@/components/admin/news-item-dialog';
+import {
+  NewsItemDialog,
+  type NewsItemPayload,
+} from '@/components/admin/news-item-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -234,16 +237,17 @@ function SystemMessagesPage() {
     cohortsQuery.data,
   ]);
 
-  const handleSave = async (
-    payload: InferRequestType<typeof $create>['json']
-  ) => {
+  const handleSave = async (payload: NewsItemPayload) => {
+    const systemMessagePayload = payload as InferRequestType<
+      typeof $create
+    >['json'];
     if (selectedItem) {
       await updateMutation.mutateAsync({
         id: selectedItem.id,
-        payload,
+        payload: systemMessagePayload,
       });
     } else {
-      await createMutation.mutateAsync(payload);
+      await createMutation.mutateAsync(systemMessagePayload);
     }
   };
 

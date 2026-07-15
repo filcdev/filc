@@ -67,7 +67,7 @@ function filterNewsItemsInDateRange(
         items.push({
           content: announcement.content,
           id: announcement.id,
-          title: announcement.title,
+          title: announcement.title ?? 'Untitled',
           type: 'announcement',
           validFrom: announcement.validFrom,
           validUntil: announcement.validUntil,

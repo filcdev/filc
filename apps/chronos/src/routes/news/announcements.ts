@@ -14,9 +14,9 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
 import { userHasPermission } from '#utils/authorization';
 import {
+  announcementCreateSchema,
   announcementQuerySchema,
-  dateRangeBodySchema,
-  dateRangeUpdateBodySchema,
+  announcementUpdateSchema,
 } from '#utils/news/schemas';
 import {
   cancelPendingNotification,
@@ -44,6 +44,9 @@ const authorSelect = {
   image: user.image,
   name: user.name,
 };
+
+const resolveAnnouncementTitle = (title: string | null | undefined): string =>
+  title && title.length > 0 ? title : 'Untitled';
 
 const announcementSelectSchema = createSelectSchema(announcement);
 const authorSchema = z.object({
@@ -77,10 +80,11 @@ const successResponseSchema = z.object({
   success: z.literal(true),
 });
 
-const { schema: createRequestSchema } =
-  await resolver(dateRangeBodySchema).toOpenAPISchema();
+const { schema: createRequestSchema } = await resolver(
+  announcementCreateSchema
+).toOpenAPISchema();
 const { schema: updateRequestSchema } = await resolver(
-  dateRangeUpdateBodySchema
+  announcementUpdateSchema
 ).toOpenAPISchema();
 
 export const listAnnouncements = newsFactory.createHandlers(
@@ -274,7 +278,7 @@ export const createAnnouncement = newsFactory.createHandlers(
   }),
   requireAuthentication,
   requireAuthorization('news:announcements'),
-  zValidator('json', dateRangeBodySchema),
+  zValidator('json', announcementCreateSchema),
   async (c) => {
     const body = c.req.valid('json');
     const currentUser = c.var.user;
@@ -289,7 +293,7 @@ export const createAnnouncement = newsFactory.createHandlers(
       .values({
         authorId: currentUser.id,
         content: body.content,
-        title: body.title,
+        title: body.title ?? null,
         validFrom: body.validFrom,
         validUntil: body.validUntil,
       })
@@ -311,7 +315,7 @@ export const createAnnouncement = newsFactory.createHandlers(
 
     dispatchPendingNotification(created.id, 'announcement', {
       cohortIds: body.cohortIds ?? [],
-      title: body.title,
+      title: resolveAnnouncementTitle(body.title),
     });
 
     return c.json(
@@ -352,7 +356,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
   requireAuthentication,
   requireAuthorization('news:announcements'),
   zValidator('param', z.object({ id: z.string().uuid() })),
-  zValidator('json', dateRangeUpdateBodySchema),
+  zValidator('json', announcementUpdateSchema),
   async (c) => {
     const { id } = c.req.valid('param');
     const body = c.req.valid('json');
@@ -435,7 +439,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
 
     dispatchPendingNotification(id, 'announcement', {
       cohortIds,
-      title: updated.title,
+      title: resolveAnnouncementTitle(updated.title),
     });
 
     return c.json({

@@ -359,7 +359,8 @@
     "contentPlaceholder": "Bejelentés tartalma",
     "date": "Dátum",
     "setDateRange": "Dátumtartomány beállítása",
-    "showPast": "Múltbeli bejelentések mutatása"
+    "showPast": "Múltbeli bejelentések mutatása",
+    "untitled": "Cím nélkül"
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",

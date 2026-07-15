@@ -193,7 +193,7 @@ function AnnouncementsPage() {
 
     if (term) {
       list = list.filter((ann) => {
-        const titleMatches = ann.title.toLowerCase().includes(term);
+        const titleMatches = (ann.title ?? '').toLowerCase().includes(term);
         const cohortsMatch = ann.cohortIds.some((id) =>
           cohortsQuery.data?.some(
             (c) => c?.id === id && c?.name.toLowerCase().includes(term)
@@ -404,7 +404,8 @@ function AnnouncementsPage() {
               {filteredAnnouncements.map((announcement) => (
                 <TableRow key={announcement.id}>
                   <TableCell className="font-medium">
-                    {announcement.title}
+                    {announcement.title ??
+                      t('announcements.untitled', 'Untitled')}
                   </TableCell>
                   <TableCell>
                     {formatLocalizedDate(announcement.validFrom, i18n.language)}
@@ -551,7 +552,7 @@ function getSortValue(
 ): string | number {
   switch (sortColumn) {
     case 'title':
-      return a.title;
+      return a.title ?? '';
     case 'validFrom':
       return new Date(a.validFrom).getTime();
     case 'validUntil':
