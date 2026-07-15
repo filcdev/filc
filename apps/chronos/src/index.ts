@@ -14,6 +14,7 @@ import { anonymousIdMiddleware } from '#middleware/anonymous-id';
 import { authenticationMiddleware } from '#middleware/auth';
 import { corsMiddleware, securityMiddleware } from '#middleware/security';
 import { timingMiddleware } from '#middleware/timing';
+import { bugReportRouter } from '#routes/bug-report/_router';
 import { cohortRouter } from '#routes/cohort/_router';
 import { dashboardRouter } from '#routes/dashboard/_router';
 import { doorlockRouter } from '#routes/doorlock/_router';
@@ -98,6 +99,7 @@ api.route('/users', usersRouter);
 api.route('/roles', rolesRouter);
 api.route('/news', newsRouter);
 api.route('/notifications', notificationsRouter);
+api.route('/bug-report', bugReportRouter);
 
 api.onError((err, c) => {
   if (err instanceof HTTPException) {

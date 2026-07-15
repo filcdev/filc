@@ -1,3 +1,4 @@
+import type { bugReportRouter } from '#routes/bug-report/_router';
 import type { cohortRouter } from '#routes/cohort/_router';
 import type { dashboardRouter } from '#routes/dashboard/_router';
 import type { doorlockRouter } from '#routes/doorlock/_router';
@@ -8,6 +9,7 @@ import type { rolesRouter } from '#routes/roles/_router';
 import type { timetableRouter } from '#routes/timetable/_router';
 import type { usersRouter } from '#routes/users/_router';
 
+export type BugReportRouter = typeof bugReportRouter;
 export type CohortRouter = typeof cohortRouter;
 export type DashboardRouter = typeof dashboardRouter;
 export type DoorlockRouter = typeof doorlockRouter;

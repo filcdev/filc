@@ -14,6 +14,7 @@ import {
 import type { ElementType, ReactNode } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { BugReportDialog } from '@/components/bug-report-dialog';
 import { NotificationBell } from '@/components/notification-bell';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -119,6 +120,7 @@ export function Navbar({
 
           <div className="ml-auto flex items-center gap-3">
             {data && <NotificationBell />}
+            {data && <BugReportDialog />}
 
             <LanguageSelector />
 

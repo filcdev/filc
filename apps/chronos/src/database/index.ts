@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/bun-sql';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
+import { bugReportSchema } from '#database/schema/bug-report';
 import { doorlockSchema } from '#database/schema/doorlock';
 import { newsSchema } from '#database/schema/news';
 import { notificationsSchema } from '#database/schema/notifications';
@@ -38,6 +39,7 @@ if (env.mode === 'production') {
 const schema = {
   ...authenticationSchema,
   ...authorizationSchema,
+  ...bugReportSchema,
   ...doorlockSchema,
   ...newsSchema,
   ...notificationsSchema,

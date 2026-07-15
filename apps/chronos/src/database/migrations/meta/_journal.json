@@ -71,6 +71,13 @@
       "when": 1781556618306,
       "tag": "0009_optional_announcement_title",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784153927382,
+      "tag": "0012_bug_report",
+      "breakpoints": true
     }
   ]
 }
