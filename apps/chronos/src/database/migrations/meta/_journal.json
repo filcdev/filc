@@ -64,20 +64,6 @@
       "when": 1781556618305,
       "tag": "0008_calm_frank_castle",
       "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1782156800000,
-      "tag": "0009_classic_fantastic_four",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1782071833253,
-      "tag": "0010_mature_wallflower",
-      "breakpoints": true
     }
   ]
 }

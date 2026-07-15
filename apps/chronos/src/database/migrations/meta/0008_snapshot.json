@@ -2079,6 +2079,12 @@
       "name": "substitution",
       "schema": "",
       "columns": {
+        "comment": {
+          "name": "comment",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
         "date": {
           "name": "date",
           "type": "date",
