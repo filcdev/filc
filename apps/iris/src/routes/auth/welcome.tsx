@@ -25,11 +25,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import Stepper, { Step } from '@/components/ui/stepper';
-import { cn } from '@/utils';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
+import { cn } from '@/utils';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
@@ -374,57 +374,57 @@ const CohortSelectorStep = (props: {
   return (
     <>
       <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger
-        render={
-          <Button
-            aria-expanded={open}
-            className="w-full justify-between"
-            disabled={updating}
-            role="combobox"
-            variant="outline"
-          >
-            {props.selectedCohortId
-              ? cohortQuery.data.find(
-                  (cohort) => cohort.id === props.selectedCohortId
-                )?.name
-              : t('cohort.selectPlaceholder')}
-            <ChevronDown className="opacity-50" />
-          </Button>
-        }
-      />
-      <PopoverContent className="p-0">
-        <Command>
-          <CommandInput
-            className="h-9"
-            disabled={updating}
-            placeholder={t('search')}
-          />
-          <CommandList>
-            <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
-            <CommandGroup>
-              {cohortQuery.data.map((cohort) => (
-                <CommandItem
-                  key={cohort.id}
-                  onSelect={() => updateCohort(cohort.id)}
-                  value={cohort.name}
-                >
-                  {cohort.name}
-                  <Check
-                    className={cn(
-                      'ml-auto',
-                      props.selectedCohortId === cohort.id
-                        ? 'opacity-100'
-                        : 'opacity-0'
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-    <CohortSkipButton isStaff={props.isStaff} onSkip={props.onSkip} />
+        <PopoverTrigger
+          render={
+            <Button
+              aria-expanded={open}
+              className="w-full justify-between"
+              disabled={updating}
+              role="combobox"
+              variant="outline"
+            >
+              {props.selectedCohortId
+                ? cohortQuery.data.find(
+                    (cohort) => cohort.id === props.selectedCohortId
+                  )?.name
+                : t('cohort.selectPlaceholder')}
+              <ChevronDown className="opacity-50" />
+            </Button>
+          }
+        />
+        <PopoverContent className="p-0">
+          <Command>
+            <CommandInput
+              className="h-9"
+              disabled={updating}
+              placeholder={t('search')}
+            />
+            <CommandList>
+              <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
+              <CommandGroup>
+                {cohortQuery.data.map((cohort) => (
+                  <CommandItem
+                    key={cohort.id}
+                    onSelect={() => updateCohort(cohort.id)}
+                    value={cohort.name}
+                  >
+                    {cohort.name}
+                    <Check
+                      className={cn(
+                        'ml-auto',
+                        props.selectedCohortId === cohort.id
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <CohortSkipButton isStaff={props.isStaff} onSkip={props.onSkip} />
     </>
   );
 };
