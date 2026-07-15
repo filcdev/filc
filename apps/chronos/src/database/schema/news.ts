@@ -17,7 +17,7 @@ export const announcement = pgTable('announcement', {
     .references(() => user.id, { onDelete: 'set null' }),
   content: jsonb('content').notNull(),
   id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
+  title: text('title'),
   validFrom: timestamp('valid_from').notNull(),
   validUntil: timestamp('valid_until').notNull(),
   ...timestamps,

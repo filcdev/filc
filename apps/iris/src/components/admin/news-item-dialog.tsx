@@ -41,7 +41,7 @@ type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
 type Cohort = NonNullable<CohortApiResponse['data']>[number];
 
 type NewsItemLike = AnnouncementItem | SystemMessageItem;
-type NewsItemPayload = AnnouncementPayload | SystemMessagePayload;
+export type NewsItemPayload = AnnouncementPayload | SystemMessagePayload;
 
 type NewsItemDialogProps = BaseDialogProps & {
   cohorts: Cohort[];

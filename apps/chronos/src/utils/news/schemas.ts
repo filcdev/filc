@@ -53,6 +53,40 @@ export const dateRangeUpdateBodySchema = z
     }
   );
 
+export const announcementCreateSchema = z
+  .object({
+    cohortIds: z.array(z.string()).optional(),
+    content: blockContentSchema,
+    title: z.string().min(1).optional(),
+    validFrom: z.coerce.date(),
+    validUntil: z.coerce.date(),
+  })
+  .refine((data) => data.validUntil >= data.validFrom, {
+    message: 'validUntil must be on or after validFrom',
+    path: ['validUntil'],
+  });
+
+export const announcementUpdateSchema = z
+  .object({
+    cohortIds: z.array(z.string()).optional(),
+    content: blockContentSchema.optional(),
+    title: z.string().min(1).optional(),
+    validFrom: z.coerce.date().optional(),
+    validUntil: z.coerce.date().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.validFrom && data.validUntil) {
+        return data.validUntil >= data.validFrom;
+      }
+      return true;
+    },
+    {
+      message: 'validUntil must be on or after validFrom',
+      path: ['validUntil'],
+    }
+  );
+
 export const announcementQuerySchema = paginationSchema.extend({
   includeExpired: z.coerce.boolean().default(false),
 });
