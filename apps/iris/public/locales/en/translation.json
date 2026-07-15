@@ -297,7 +297,11 @@
     "cardTitle": "Substitution on {{date}}",
     "notAvailable": "N/A",
     "period": "Period",
-    "noCohorts": "No class"
+    "noCohorts": "No class",
+    "export": "Export",
+    "exportTitle": "Substitutions export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export substitutions"
   },
   "movedLesson": {
     "title": "Moved Lessons",
@@ -338,7 +342,11 @@
     "deleteConfirm": "Delete Moved Lesson",
     "deleteDescription": "Are you sure you want to delete this moved lesson? This action cannot be undone.",
     "loadError": "Unable to load moved lessons",
-    "loadErrorMessage": "Please try again later."
+    "loadErrorMessage": "Please try again later.",
+    "export": "Export",
+    "exportTitle": "Moved lessons export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export moved lessons"
   },
   "news": {
     "title": "News"
@@ -611,5 +619,13 @@
     "loadError": "Unable to load statistics",
     "loadErrorMessage": "Something went wrong while fetching the dashboard.",
     "noTopUsers": "No data yet"
+  },
+  "doorlockLogs": {
+    "export": "Export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export logs"
+  },
+  "export": {
+    "rangeLabel": "All time"
   }
 }

@@ -1,5 +1,9 @@
 import { timetableFactory } from '#routes/timetable/_factory';
 import { getCohortsForTimetable } from '#routes/timetable/cohort';
+import {
+  exportMovedLessonsRoute,
+  exportSubstitutionsRoute,
+} from '#routes/timetable/export';
 import { importRoute } from '#routes/timetable/import';
 import {
   cleanupOrphanedCohortsHandler,
@@ -58,6 +62,7 @@ export const timetableRouter = timetableFactory
   // Substitution routes
   .get('/substitutions', ...getAllSubstitutions)
   .get('/substitutions/relevant', ...getRelevantSubstitutions)
+  .get('/substitutions/export', ...exportSubstitutionsRoute)
   .get('/substitutions/cohort/:cohortId', ...getRelevantSubstitutionsForCohort)
   .post('/substitutions', ...createSubstitution)
   .post('/substitutions/manual', ...createManualSubstitution)
@@ -66,6 +71,7 @@ export const timetableRouter = timetableFactory
   // Moved lesson routes
   .get('/movedLessons', ...getAllMovedLessons)
   .get('/movedLessons/relevant', ...getRelevantMovedLessons)
+  .get('/movedLessons/export', ...exportMovedLessonsRoute)
   .get('/movedLessons/cohort/:cohortId', ...getMovedLessonsForCohort)
   .get(
     '/movedLessons/cohort/:cohortId/relevant',

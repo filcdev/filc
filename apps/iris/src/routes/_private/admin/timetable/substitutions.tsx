@@ -11,6 +11,11 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
+import { SubstitutionExportButton } from '@/components/admin/substitution-export';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/date-range-picker';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -78,6 +83,7 @@ function SubstitutionsPage() {
     null
   );
   const [showPast, setShowPast] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
   const hasWritePermission = useHasPermission(
     'substitution:create',
@@ -344,6 +350,8 @@ function SubstitutionsPage() {
           </label>
         </div>
         <div className="flex items-center gap-2 sm:ml-auto">
+          <DateRangePicker onChange={setDateRange} value={dateRange} />
+          <SubstitutionExportButton dateRange={dateRange} />
           <Button
             onClick={() => substitutionsQuery.refetch()}
             variant="outline"

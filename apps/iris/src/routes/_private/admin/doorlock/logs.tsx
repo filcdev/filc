@@ -20,6 +20,7 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
+import { ExportLogsButton } from '@/components/doorlock/export-logs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -455,6 +456,15 @@ function LogsPage() {
       </div>
 
       <div className="flex items-center gap-2">
+        <ExportLogsButton
+          accessFilter={accessFilter}
+          cardFilter={cardFilter}
+          dateRange={dateRange}
+          deviceFilter={deviceFilter}
+          eventFilter={eventFilter}
+          search={deferredSearch}
+          userFilter={userFilter}
+        />
         {isMobile && (
           <Button
             aria-expanded={filtersOpen}
