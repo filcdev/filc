@@ -26,6 +26,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import Stepper, { Step } from '@/components/ui/stepper';
 import { cn } from '@/utils';
+import {
+  ADMIN_UI_PERMISSIONS,
+  useHasPermission,
+} from '@/hooks/use-has-permission';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
@@ -105,6 +109,8 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     user.cohortId ?? null
   );
 
+  const isStaff = useHasPermission(ADMIN_UI_PERMISSIONS, user.permissions);
+
   const normalizedNickname = normalizeNickname(nicknameInput);
   const nicknameValid =
     normalizedNickname.length >= NICKNAME_MIN_LENGTH &&
@@ -148,6 +154,12 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     }
   };
 
+  const handleCohortSkip = async () => {
+    // Staff users are not required to pick a cohort.
+    setSelectedCohortId(null);
+    return true;
+  };
+
   const handleStepChange = async (newStep: number) => {
     // Save nickname when leaving step 2 if there's a valid nickname
     if (currentStep === 2 && newStep > 2 && normalizedNickname) {
@@ -171,6 +183,9 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const getNextButtonText = () => {
     if (currentStep === 2) {
       return normalizedNickname ? t('common.next') : t('common.skip');
+    }
+    if (currentStep === 3 && isStaff) {
+      return t('common.skip');
     }
     return t('common.next');
   };
@@ -256,7 +271,9 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
               {t('welcome.cohortDescription')}
             </p>
             <CohortSelectorStep
+              isStaff={isStaff}
               onCohortSelect={handleCohortSave}
+              onSkip={handleCohortSkip}
               selectedCohortId={selectedCohortId}
               userCohortId={user.cohortId ?? null}
             />
@@ -282,6 +299,8 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
 const CohortSelectorStep = (props: {
   selectedCohortId: string | null;
   onCohortSelect: (cohortId: string) => Promise<boolean>;
+  onSkip: () => Promise<boolean>;
+  isStaff: boolean;
   userCohortId: string | null;
 }) => {
   const { t } = useTranslation();
@@ -351,7 +370,8 @@ const CohortSelectorStep = (props: {
   }
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
+    <>
+      <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
         render={
           <Button
@@ -402,5 +422,39 @@ const CohortSelectorStep = (props: {
         </Command>
       </PopoverContent>
     </Popover>
+    <CohortSkipButton isStaff={props.isStaff} onSkip={props.onSkip} />
+    </>
+  );
+};
+
+const CohortSkipButton = (props: {
+  isStaff: boolean;
+  onSkip: () => Promise<boolean>;
+}) => {
+  const { t } = useTranslation();
+  const [skipping, setSkipping] = useState(false);
+
+  if (!props.isStaff) {
+    return null;
+  }
+
+  const handleSkip = async () => {
+    setSkipping(true);
+    try {
+      await props.onSkip();
+    } finally {
+      setSkipping(false);
+    }
+  };
+
+  return (
+    <Button
+      className="w-full"
+      disabled={skipping}
+      onClick={handleSkip}
+      variant="ghost"
+    >
+      {t('welcome.cohortSkip')}
+    </Button>
   );
 };

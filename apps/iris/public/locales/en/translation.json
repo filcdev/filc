@@ -69,6 +69,7 @@
     "cohortDescription": "Select the class or group you belong to.",
     "cohortSaved": "Cohort saved successfully",
     "cohortSaveFailed": "Failed to save cohort",
+    "cohortSkip": "Skip — I don't need a cohort",
     "complete": "All set!",
     "completeDescription": "You're all set up and ready to go. Click Complete to start using the app."
   },

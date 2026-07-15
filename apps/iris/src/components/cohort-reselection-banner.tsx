@@ -1,6 +1,7 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { ADMIN_UI_PERMISSIONS, useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 
 export function CohortReselectionBanner() {
@@ -11,12 +12,14 @@ export function CohortReselectionBanner() {
 
   const cohortId = data?.user?.cohortId;
   const isWelcomePage = router.state.location.pathname === '/auth/welcome';
+  const isStaff = useHasPermission(ADMIN_UI_PERMISSIONS, data?.user?.permissions);
 
   if (
     !(data?.session && data?.user) ||
     isPending ||
     cohortId ||
-    isWelcomePage
+    isWelcomePage ||
+    isStaff
   ) {
     return null;
   }

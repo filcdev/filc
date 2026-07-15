@@ -80,6 +80,7 @@
     "cohortDescription": "Válaszd ki az osztályodat vagy csoportodat.",
     "cohortSaved": "Csoport sikeresen mentve",
     "cohortSaveFailed": "A csoportot nem sikerült elmenteni",
+    "cohortSkip": "Kihagyás — nincs szükségem csoportra",
     "complete": "Minden kész!",
     "completeDescription": "Minden be van állítva, és készen állsz. Kattints a Befejezés gombra az alkalmazás használatának megkezdéséhez."
   },
