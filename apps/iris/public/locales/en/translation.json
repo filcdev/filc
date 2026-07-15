@@ -144,7 +144,8 @@
     "doorlock": "Doorlock",
     "management": "Management",
     "users": "Users",
-    "roles": "Roles"
+    "roles": "Roles",
+    "bugReports": "Bug reports"
   },
   "timetable": {
     "selectClass": "Select class",
@@ -609,5 +610,24 @@
     "loadError": "Unable to load statistics",
     "loadErrorMessage": "Something went wrong while fetching the dashboard.",
     "noTopUsers": "No data yet"
+  },
+  "bugReports": {
+    "title": "Bug reports",
+    "description": "Description",
+    "refresh": "Refresh",
+    "subject": "Subject",
+    "reporter": "Reporter",
+    "page": "Page",
+    "date": "Date",
+    "status": "Status",
+    "open": "Open",
+    "resolved": "Resolved",
+    "noReports": "No bug reports found.",
+    "loadError": "Failed to load bug reports",
+    "loadErrorMessage": "Please try again later.",
+    "details": "Details",
+    "close": "Close",
+    "anonymous": "Anonymous",
+    "listDescription": "Review bug reports submitted by users."
   }
 }

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { bugReport } from '#database/schema/bug-report';
-import { requireAuthentication } from '#middleware/auth';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { bugReportFactory } from '#routes/bug-report/_factory';
 
 const createBugReportSchema = z.object({
@@ -50,6 +50,7 @@ export const createBugReport = bugReportFactory.createHandlers(
 
 export const listBugReports = bugReportFactory.createHandlers(
   requireAuthentication,
+  requireAuthorization('bug-reports:read'),
   async (c) => {
     const reports = await db
       .select()

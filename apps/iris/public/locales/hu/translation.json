@@ -132,7 +132,8 @@
     "doorlock": "Ajtózár",
     "management": "Kezelés",
     "users": "Felhasználók",
-    "roles": "Szerepkörök"
+    "roles": "Szerepkörök",
+    "bugReports": "Hibajelentések"
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
@@ -609,5 +610,24 @@
     "loadError": "Nem sikerült betölteni a statisztikákat",
     "loadErrorMessage": "Hiba történt az adatok betöltése közben.",
     "noTopUsers": "Még nincs adat"
+  },
+  "bugReports": {
+    "title": "Hibajelentések",
+    "description": "Leírás",
+    "refresh": "Frissítés",
+    "subject": "Tárgy",
+    "reporter": "Jelentő",
+    "page": "Oldal",
+    "date": "Dátum",
+    "status": "Állapot",
+    "open": "Nyitott",
+    "resolved": "Megoldott",
+    "noReports": "Nem található hibajelentés.",
+    "loadError": "Nem sikerült betölteni a hibajelentéseket",
+    "loadErrorMessage": "Kérlek, próbáld újra később.",
+    "details": "Részletek",
+    "close": "Bezárás",
+    "anonymous": "Névtelen",
+    "listDescription": "A felhasználók által beküldött hibajelentések áttekintése."
   }
 }
