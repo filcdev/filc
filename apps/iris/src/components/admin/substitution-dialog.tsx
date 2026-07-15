@@ -5,7 +5,7 @@ import {
   type InferResponseType,
   parseResponse,
 } from 'hono/client';
-import { Save } from 'lucide-react';
+import { Hand, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -38,10 +38,47 @@ type TeacherLesson = NonNullable<
   NonNullable<TeacherLessonsApiResponse['data']>['availableLessons'][number]
 >;
 
+type SubjectApiResponse = InferResponseType<typeof api.timetable.subjects.$get>;
+type Subject = NonNullable<SubjectApiResponse['data']>[number];
+
+type DayDefinition = NonNullable<EnrichedLesson['day']>;
+type Period = NonNullable<EnrichedLesson['period']>;
+
+// Build unique day options from the available lessons of all teachers.
+function dedupeDays(lessons: TeacherLesson[]): DayDefinition[] {
+  const seen = new Map<string, DayDefinition>();
+  for (const lesson of lessons) {
+    const day = lesson.day;
+    if (day?.id && !seen.has(day.id)) {
+      seen.set(day.id, day);
+    }
+  }
+  return [...seen.values()];
+}
+
+// Build unique period options from the available lessons of all teachers.
+function dedupePeriods(lessons: TeacherLesson[]): Period[] {
+  const seen = new Map<string, Period>();
+  for (const lesson of lessons) {
+    const period = lesson.period;
+    if (period?.id && !seen.has(period.id)) {
+      seen.set(period.id, period);
+    }
+  }
+  return [...seen.values()];
+}
+
 type SubstitutionDialogProps = BaseDialogProps & {
   item?: SubstitutionItem | null;
+  manual?: boolean;
+  onManualChange?: (manual: boolean) => void;
   onSubmit: (
     payload: InferRequestType<typeof api.timetable.substitutions.$post>['json']
+  ) => Promise<void>;
+  onSubmitManual: (
+    payload: InferRequestType<
+      typeof api.timetable.substitutions.manual.$post
+    >['json']
   ) => Promise<void>;
   teachers: Teacher[];
 };
@@ -110,16 +147,374 @@ function compareSubOptions(
   return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
 }
 
+type ManualSubstitutionFieldsProps = {
+  cohorts: NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>;
+  days: DayDefinition[];
+  manualCohort: string;
+  manualDay: string;
+  manualPeriod: string;
+  manualSubject: string;
+  manualSubstituter: string;
+  manualTeacher: string;
+  periods: Period[];
+  subjects: Subject[];
+  teachers: Teacher[];
+  onCohortChange: (value: string) => void;
+  onDayChange: (value: string) => void;
+  onPeriodChange: (value: string) => void;
+  onSubjectChange: (value: string) => void;
+  onSubstituterChange: (value: string) => void;
+  onTeacherChange: (value: string) => void;
+};
+
+function ManualSubstitutionFields({
+  cohorts,
+  days,
+  manualCohort,
+  manualDay,
+  manualPeriod,
+  manualSubject,
+  manualSubstituter,
+  manualTeacher,
+  periods,
+  subjects,
+  teachers,
+  onCohortChange,
+  onDayChange,
+  onPeriodChange,
+  onSubjectChange,
+  onSubstituterChange,
+  onTeacherChange,
+}: ManualSubstitutionFieldsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>{t('substitution.missingTeacher')}</Label>
+        <Combobox
+          emptyMessage={t('substitution.noTeachersFound')}
+          onValueChange={onTeacherChange}
+          options={teachers.map((teacher) => ({
+            label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
+            value: teacher.id,
+          }))}
+          placeholder={t('substitution.missingTeacherPlaceholder')}
+          searchPlaceholder={t('search')}
+          value={manualTeacher}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>{t('substitution.day')}</Label>
+          <Combobox
+            emptyMessage={t('substitution.noDaysFound')}
+            onValueChange={onDayChange}
+            options={days.map((day) => ({
+              label: day.name,
+              value: day.id,
+            }))}
+            placeholder={t('substitution.dayPlaceholder')}
+            searchPlaceholder={t('search')}
+            value={manualDay}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>{t('substitution.period')}</Label>
+          <Combobox
+            emptyMessage={t('substitution.noPeriodsFound')}
+            onValueChange={onPeriodChange}
+            options={periods.map((period) => ({
+              label: `${period.period}. (${period.startTime.slice(0, 5)} - ${period.endTime.slice(0, 5)})`,
+              value: period.id,
+            }))}
+            placeholder={t('substitution.periodPlaceholder')}
+            searchPlaceholder={t('search')}
+            value={manualPeriod}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('substitution.subject')}</Label>
+        <Combobox
+          emptyMessage={t('substitution.noSubjectsFound')}
+          onValueChange={onSubjectChange}
+          options={subjects.map((subject) => ({
+            label: `${subject.name} (${subject.short})`,
+            value: subject.id,
+          }))}
+          placeholder={t('substitution.subjectPlaceholder')}
+          searchPlaceholder={t('search')}
+          value={manualSubject}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('substitution.cohort')}</Label>
+        <Combobox
+          emptyMessage={t('substitution.noCohortFound')}
+          onValueChange={onCohortChange}
+          options={cohorts.map((cohort) => ({
+            label: cohort.name,
+            value: cohort.id,
+          }))}
+          placeholder={t('substitution.cohortPlaceholder')}
+          searchPlaceholder={t('search')}
+          value={manualCohort}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('substitution.substituteTeacher')}</Label>
+        <Combobox
+          emptyMessage={t('substitution.selectLessonsFirst')}
+          onValueChange={onSubstituterChange}
+          options={[
+            {
+              label: t('substitution.cancelled'),
+              value: '__none__',
+            },
+            ...teachers
+              .filter((teacher) => teacher.id !== manualTeacher)
+              .map((teacher) => ({
+                label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
+                value: teacher.id,
+              })),
+          ]}
+          placeholder={t('substitution.substituteTeacher')}
+          searchPlaceholder={t('search')}
+          value={manualSubstituter || '__none__'}
+        />
+        <p className="text-muted-foreground text-xs">
+          {t('substitution.substituteTeacherHint')}
+        </p>
+      </div>
+    </>
+  );
+}
+
+type AutomaticSubstitutionFieldsProps = {
+  availableLessons: TeacherLesson[];
+  formDate: Date | undefined;
+  formLessonIds: string[];
+  formSubstituter: string | null | undefined;
+  parallelTeachers: { id: string; name: string }[];
+  selectedMissingTeacher: string;
+  sortedSubstituteOptions: {
+    hasH1: boolean;
+    hasH2: boolean;
+    label: string;
+    value: string;
+  }[];
+  substituteCandidatesLoading: boolean;
+  teachers: Teacher[];
+  onMissingTeacherChange: (value: string) => void;
+  onSubstituterChange: (value: string) => void;
+  onToggleLesson: (lessonId: string, checked: boolean) => void;
+};
+
+function AutomaticSubstitutionFields({
+  availableLessons,
+  formDate,
+  formLessonIds,
+  formSubstituter,
+  parallelTeachers,
+  selectedMissingTeacher,
+  sortedSubstituteOptions,
+  substituteCandidatesLoading,
+  teachers,
+  onMissingTeacherChange,
+  onSubstituterChange,
+  onToggleLesson,
+}: AutomaticSubstitutionFieldsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>{t('substitution.missingTeacher')}</Label>
+        <Combobox
+          emptyMessage={t('substitution.noTeachersFound')}
+          onValueChange={onMissingTeacherChange}
+          options={teachers.map((teacher) => ({
+            label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
+            value: teacher.id,
+          }))}
+          placeholder={t('substitution.missingTeacherPlaceholder')}
+          searchPlaceholder={t('search')}
+          value={selectedMissingTeacher}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('substitution.lessons')}</Label>
+        <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
+          {!selectedMissingTeacher && (
+            <p className="p-2 text-muted-foreground text-sm">
+              {t('substitution.missingTeacherPlaceholder')}
+            </p>
+          )}
+          {selectedMissingTeacher && substituteCandidatesLoading && (
+            <p className="p-2 text-muted-foreground text-sm">
+              {t('substitution.loadingLessons')}
+            </p>
+          )}
+          {selectedMissingTeacher &&
+            !substituteCandidatesLoading &&
+            availableLessons.length === 0 && (
+              <p className="p-2 text-muted-foreground text-sm">
+                {t('substitution.noLessons')}
+              </p>
+            )}
+          {selectedMissingTeacher &&
+            !substituteCandidatesLoading &&
+            availableLessons.length > 0 &&
+            [...availableLessons]
+              .sort((a, b) => (a.period?.period ?? 0) - (b.period?.period ?? 0))
+              .map((lesson) => (
+                <label
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                  htmlFor={`sub-lesson-${lesson.id}`}
+                  key={lesson.id}
+                >
+                  <Checkbox
+                    checked={formLessonIds.includes(lesson.id)}
+                    id={`sub-lesson-${lesson.id}`}
+                    onCheckedChange={(checked) =>
+                      onToggleLesson(lesson.id, !!checked)
+                    }
+                  />
+                  <span>{formatLessonLabel(lesson)}</span>
+                </label>
+              ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('substitution.substituteTeacher')}</Label>
+        <Combobox
+          emptyMessage={
+            selectedMissingTeacher && formLessonIds.length > 0
+              ? t('substitution.noAvailableSubstituteTeachers')
+              : t('substitution.selectLessonsFirst')
+          }
+          key={`substitute-${selectedMissingTeacher}-${formDate?.toISOString() ?? 'no-date'}-${[...formLessonIds].sort().join(',')}`}
+          onValueChange={onSubstituterChange}
+          options={[
+            {
+              label: t('substitution.cancelled'),
+              value: '__none__',
+            },
+            ...parallelTeachers.map((teacher) => ({
+              label: `${t('substitution.merged')} - ${teacher.name}`,
+              value: `__merged__:${teacher.id}`,
+            })),
+            ...sortedSubstituteOptions,
+          ]}
+          placeholder={t('substitution.substituteTeacher')}
+          searchPlaceholder={t('search')}
+          value={formSubstituter ?? '__none__'}
+        />
+        <p className="text-muted-foreground text-xs">
+          {t('substitution.substituteTeacherHint')}
+        </p>
+        {substituteCandidatesLoading && (
+          <p className="text-muted-foreground text-xs">
+            {t('substitution.loadingSubstituteTeachers')}
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+function isSubstitutionValid(params: {
+  formDate: Date | undefined;
+  formLessonIds: string[];
+  manual: boolean;
+  manualCohort: string;
+  manualDay: string;
+  manualPeriod: string;
+  manualSubject: string;
+  manualTeacher: string;
+}): boolean {
+  const {
+    formDate,
+    formLessonIds,
+    manual,
+    manualCohort,
+    manualDay,
+    manualPeriod,
+    manualSubject,
+    manualTeacher,
+  } = params;
+
+  if (manual) {
+    return (
+      !!formDate &&
+      !!manualTeacher &&
+      !!manualDay &&
+      !!manualPeriod &&
+      !!manualSubject &&
+      !!manualCohort
+    );
+  }
+
+  return !!formDate && formLessonIds.length > 0;
+}
+
+type ManualModeToggleProps = {
+  manual: boolean;
+  onToggle: () => void;
+};
+
+function ManualModeToggle({ manual, onToggle }: ManualModeToggleProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="mt-4 flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+      <Hand className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="flex-1">
+        <p className="font-medium text-sm">{t('substitution.manualMode')}</p>
+        <p className="text-muted-foreground text-xs">
+          {t('substitution.manualModeHint')}
+        </p>
+      </div>
+      <Button
+        onClick={onToggle}
+        size="sm"
+        variant={manual ? 'default' : 'outline'}
+      >
+        {manual
+          ? t('substitution.manualModeOn')
+          : t('substitution.manualModeOff')}
+      </Button>
+    </div>
+  );
+}
+
 export function SubstitutionDialog({
   item,
+  manual = false,
+  onManualChange,
   onOpenChange,
   onSubmit,
+  onSubmitManual,
   open,
   teachers,
 }: SubstitutionDialogProps) {
   const { t } = useTranslation();
   const [selectedMissingTeacher, setSelectedMissingTeacher] =
     useState<string>('');
+  const [manualTeacher, setManualTeacher] = useState<string>('');
+  const [manualDay, setManualDay] = useState<string>('');
+  const [manualPeriod, setManualPeriod] = useState<string>('');
+  const [manualSubject, setManualSubject] = useState<string>('');
+  const [manualCohort, setManualCohort] = useState<string>('');
+  const [manualSubstituter, setManualSubstituter] = useState<string>('');
   const defaultValues = useMemo(() => initialState(item), [item]);
   const form = useForm({
     defaultValues,
@@ -154,8 +549,33 @@ export function SubstitutionDialog({
     }
   }, [defaultValues, form, item, open]);
 
+  const subjectsQuery = useQuery({
+    enabled: manual,
+    queryFn: async (): Promise<Subject[]> => {
+      const res = await parseResponse(api.timetable.subjects.$get());
+      if (!res.success) {
+        throw new Error('Failed to load subjects');
+      }
+      return res.data as Subject[];
+    },
+    queryKey: ['subjects'],
+  });
+
+  const cohortsQuery = useQuery({
+    enabled: manual,
+    queryFn: async () => {
+      const res = await parseResponse(api.cohort.index.$get());
+      if (!res.success) {
+        throw new Error('Failed to load cohorts');
+      }
+      return res.data;
+    },
+    queryKey: queryKeys.cohorts(),
+  });
+
   const substituteCandidatesQuery = useQuery({
-    enabled: !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
+    enabled:
+      !manual && !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
     queryFn: async () => {
       const res = await parseResponse(
         api.timetable.lessons.getSubstitutionCandidates.$post({
@@ -245,7 +665,16 @@ export function SubstitutionDialog({
 
   const isCreate = !item;
 
-  const isValid = !!formDate && formLessonIds.length > 0;
+  const isValid = isSubstitutionValid({
+    formDate,
+    formLessonIds,
+    manual,
+    manualCohort,
+    manualDay,
+    manualPeriod,
+    manualSubject,
+    manualTeacher,
+  });
 
   const toggleLesson = (lessonId: string, checked: boolean) => {
     const current = form.getFieldValue('lessonIds');
@@ -263,6 +692,19 @@ export function SubstitutionDialog({
     form.setFieldValue('substituter', null);
   };
 
+  const handleManualSubmit = async () => {
+    await onSubmitManual({
+      cohortId: manualCohort,
+      comment: formComment || null,
+      date: formDate,
+      dayDefinitionId: manualDay,
+      periodId: manualPeriod,
+      subjectId: manualSubject,
+      substituter: manualSubstituter || null,
+      teacherId: manualTeacher,
+    });
+  };
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="flex max-h-[85vh] max-w-lg flex-col p-2">
@@ -272,12 +714,24 @@ export function SubstitutionDialog({
               {isCreate ? t('substitution.create') : t('substitution.edit')}
             </DialogTitle>
           </DialogHeader>
+
+          {isCreate && (
+            <ManualModeToggle
+              manual={manual}
+              onToggle={() => onManualChange?.(!manual)}
+            />
+          )}
+
           <form
             className="mt-4 space-y-4"
             id="substitutionForm"
             onSubmit={(e) => {
               e.preventDefault();
-              form.handleSubmit();
+              if (manual) {
+                handleManualSubmit();
+              } else {
+                form.handleSubmit();
+              }
             }}
           >
             <div className="space-y-2">
@@ -293,114 +747,61 @@ export function SubstitutionDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>{t('substitution.missingTeacher')}</Label>
-              <Combobox
-                emptyMessage={t('substitution.noTeachersFound')}
-                onValueChange={(value) => {
+            {manual ? (
+              <ManualSubstitutionFields
+                cohorts={cohortsQuery.data ?? []}
+                days={dedupeDays(
+                  (substituteCandidatesQuery.data?.availableLessons ??
+                    []) as TeacherLesson[]
+                )}
+                manualCohort={manualCohort}
+                manualDay={manualDay}
+                manualPeriod={manualPeriod}
+                manualSubject={manualSubject}
+                manualSubstituter={manualSubstituter}
+                manualTeacher={manualTeacher}
+                onCohortChange={setManualCohort}
+                onDayChange={setManualDay}
+                onPeriodChange={setManualPeriod}
+                onSubjectChange={setManualSubject}
+                onSubstituterChange={(value) =>
+                  setManualSubstituter(value || '')
+                }
+                onTeacherChange={setManualTeacher}
+                periods={dedupePeriods(
+                  (substituteCandidatesQuery.data?.availableLessons ??
+                    []) as TeacherLesson[]
+                )}
+                subjects={subjectsQuery.data ?? []}
+                teachers={teachers}
+              />
+            ) : (
+              <AutomaticSubstitutionFields
+                availableLessons={availableLessons}
+                formDate={formDate}
+                formLessonIds={formLessonIds}
+                formSubstituter={formSubstituter}
+                onMissingTeacherChange={(value) => {
                   setSelectedMissingTeacher(value);
                   form.setFieldValue('lessonIds', []);
                   form.setFieldValue('substituter', null);
                 }}
-                options={[
-                  ...teachers.map((teacher) => ({
-                    label: `${teacher.firstName} ${teacher.lastName} (${teacher.short})`,
-                    value: teacher.id,
-                  })),
-                ]}
-                placeholder={t('substitution.missingTeacherPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={selectedMissingTeacher}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('substitution.lessons')}</Label>
-              <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
-                {!selectedMissingTeacher && (
-                  <p className="p-2 text-muted-foreground text-sm">
-                    {t('substitution.missingTeacherPlaceholder')}
-                  </p>
-                )}
-                {selectedMissingTeacher &&
-                  substituteCandidatesQuery.isLoading && (
-                    <p className="p-2 text-muted-foreground text-sm">
-                      {t('substitution.loadingLessons')}
-                    </p>
-                  )}
-                {selectedMissingTeacher &&
-                  !substituteCandidatesQuery.isLoading &&
-                  availableLessons.length === 0 && (
-                    <p className="p-2 text-muted-foreground text-sm">
-                      {t('substitution.noLessons')}
-                    </p>
-                  )}
-                {selectedMissingTeacher &&
-                  !substituteCandidatesQuery.isLoading &&
-                  availableLessons.length > 0 &&
-                  [...availableLessons]
-                    .sort(
-                      (a, b) =>
-                        (a.period?.period ?? 0) - (b.period?.period ?? 0)
-                    )
-                    .map((lesson) => (
-                      <label
-                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                        htmlFor={`sub-lesson-${lesson.id}`}
-                        key={lesson.id}
-                      >
-                        <Checkbox
-                          checked={formLessonIds.includes(lesson.id)}
-                          id={`sub-lesson-${lesson.id}`}
-                          onCheckedChange={(checked) =>
-                            toggleLesson(lesson.id, !!checked)
-                          }
-                        />
-                        <span>{formatLessonLabel(lesson)}</span>
-                      </label>
-                    ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('substitution.substituteTeacher')}</Label>
-              <Combobox
-                emptyMessage={
-                  selectedMissingTeacher && formLessonIds.length > 0
-                    ? t('substitution.noAvailableSubstituteTeachers')
-                    : t('substitution.selectLessonsFirst')
-                }
-                key={`substitute-${selectedMissingTeacher}-${formDate?.toISOString() ?? 'no-date'}-${[...formLessonIds].sort().join(',')}`}
-                onValueChange={(value) =>
+                onSubstituterChange={(value) =>
                   form.setFieldValue(
                     'substituter',
                     value === '__none__' ? null : value || null
                   )
                 }
-                options={[
-                  {
-                    label: t('substitution.cancelled'),
-                    value: '__none__',
-                  },
-                  ...parallelTeachers.map((teacher) => ({
-                    label: `${t('substitution.merged')} - ${teacher.name}`,
-                    value: `__merged__:${teacher.id}`,
-                  })),
-                  ...sortedSubstituteOptions,
-                ]}
-                placeholder={t('substitution.substituteTeacher')}
-                searchPlaceholder={t('search')}
-                value={formSubstituter ?? '__none__'}
+                onToggleLesson={toggleLesson}
+                parallelTeachers={parallelTeachers}
+                selectedMissingTeacher={selectedMissingTeacher}
+                sortedSubstituteOptions={sortedSubstituteOptions}
+                substituteCandidatesLoading={
+                  substituteCandidatesQuery.isLoading
+                }
+                teachers={teachers}
               />
-              <p className="text-muted-foreground text-xs">
-                {t('substitution.substituteTeacherHint')}
-              </p>
-              {substituteCandidatesQuery.isLoading && (
-                <p className="text-muted-foreground text-xs">
-                  {t('substitution.loadingSubstituteTeachers')}
-                </p>
-              )}
-            </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="substitution-comment">

@@ -16,6 +16,7 @@ import {
   getLessonsForRoom,
   getLessonsForTeacher,
   getLessonsForTeachers,
+  getSubjects,
   getSubstitutionCandidates,
 } from '#routes/timetable/lesson';
 import {
@@ -29,6 +30,7 @@ import {
 } from '#routes/timetable/moved-lesson';
 import { getPeriodsForTimetable } from '#routes/timetable/period';
 import {
+  createManualSubstitution,
   createSubstitution,
   deleteSubstitution,
   getAllSubstitutions,
@@ -58,6 +60,7 @@ export const timetableRouter = timetableFactory
   .get('/substitutions/relevant', ...getRelevantSubstitutions)
   .get('/substitutions/cohort/:cohortId', ...getRelevantSubstitutionsForCohort)
   .post('/substitutions', ...createSubstitution)
+  .post('/substitutions/manual', ...createManualSubstitution)
   .put('/substitutions/:id', ...updateSubstitution)
   .delete('/substitutions/:id', ...deleteSubstitution)
   // Moved lesson routes
@@ -78,6 +81,7 @@ export const timetableRouter = timetableFactory
   .post('/lessons/getSubstitutionCandidates', ...getSubstitutionCandidates)
   .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
   .get('/lessons/getForId/:lessonId', ...getLessonForId)
+  .get('/subjects', ...getSubjects)
   // Period routes
   .get('/periods/getAll', ...getPeriodsForTimetable)
   // Classroom routes
