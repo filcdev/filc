@@ -106,23 +106,52 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
     )
   );
 
-  const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-    db.select().from(subject).where(inArray(subject.id, subjectIds)),
-    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-    db.select().from(period).where(inArray(period.id, periodIds)),
-    teacherIds.length
-      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-    classroomIds.length
-      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-  ]);
+  const lessonIds = lessons.map((l) => l.id);
+
+  const [subjects, days, periods, teachers, classrooms, cohortRows] =
+    await Promise.all([
+      db.select().from(subject).where(inArray(subject.id, subjectIds)),
+      db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
+      db.select().from(period).where(inArray(period.id, periodIds)),
+      teacherIds.length
+        ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
+        : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
+      classroomIds.length
+        ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
+        : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
+      lessonIds.length
+        ? db
+            .select({
+              cohortId: cohort.id,
+              cohortName: cohort.name,
+              cohortShort: cohort.short,
+              lessonId: lessonCohortMTM.lessonId,
+            })
+            .from(lessonCohortMTM)
+            .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+            .where(inArray(lessonCohortMTM.lessonId, lessonIds))
+        : Promise.resolve([] as never[]),
+    ]);
 
   const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
   const dayMap = new Map(days.map((d) => [d.id, d] as const));
   const periodMap = new Map(periods.map((p) => [p.id, p] as const));
   const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
   const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
+  const cohortMap = new Map<
+    string,
+    { id: string; name: string; short: string }[]
+  >(lessonIds.map((id) => [id, []]));
+  for (const row of cohortRows) {
+    const list = cohortMap.get(row.lessonId);
+    if (list) {
+      list.push({
+        id: row.cohortId,
+        name: row.cohortName,
+        short: row.cohortShort,
+      });
+    }
+  }
 
   return lessons.map((l) => {
     const tIds = (Array.isArray(l.teacherIds) ? l.teacherIds : []) as string[];
@@ -139,6 +168,11 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
           name: (cr as (typeof classrooms)[number]).name,
           short: (cr as (typeof classrooms)[number]).short,
         })),
+      cohorts: (cohortMap.get(l.id) ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        short: c.short,
+      })),
       day: (() => {
         const d = dayMap.get(l.dayDefinitionId);
         return d;
@@ -179,6 +213,9 @@ const enrichedLessonSchema = z.object({
   classrooms: z.array(
     z.object({ id: z.string(), name: z.string(), short: z.string() })
   ),
+  cohorts: z.array(
+    z.object({ id: z.string(), name: z.string(), short: z.string() })
+  ),
   day: createSelectSchema(dayDefinition).optional(),
   groupsIds: z.array(z.string()),
   id: z.string(),
@@ -207,7 +244,7 @@ const responseSchema = z.object({
 });
 
 const enrichedLessonType =
-  '@listof EnrichedLesson @field(.classrooms, List<Classroom>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)';
+  '@listof EnrichedLesson @field(.classrooms, List<Classroom>) @field(.cohorts, List<Cohort>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)';
 
 export const getLessonsForCohort = timetableFactory.createHandlers(
   describeRoute({

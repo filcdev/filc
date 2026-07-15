@@ -71,8 +71,12 @@ type MovedLessonDialogProps = BaseDialogProps & {
   periods: Period[];
 };
 
+type LessonWithCohorts = Omit<EnrichedLesson, 'cohorts'> & {
+  cohorts?: Array<string | { id: string; name: string; short: string }>;
+};
+
 function formatLessonLabel(
-  lesson: EnrichedLesson,
+  lesson: LessonWithCohorts,
   language: string | undefined
 ): string {
   const parts: string[] = [];
@@ -93,7 +97,10 @@ function formatLessonLabel(
     parts.push(`P${lesson.period.period}`);
   }
   if (lesson.cohorts && lesson.cohorts.length > 0) {
-    parts.push(`(${lesson.cohorts.join(', ')})`);
+    const cohortLabels = lesson.cohorts.map((c) =>
+      typeof c === 'string' ? c : (c.short ?? c.name)
+    );
+    parts.push(`(${cohortLabels.join(', ')})`);
   }
   return parts.join(' - ') || lesson.id;
 }

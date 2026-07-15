@@ -224,6 +224,23 @@ export function AnnouncementsDialog({
             <div className="space-y-2">
               <Label>{t('announcements.cohorts')}</Label>
               <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={formState.cohortIds.length === 0}
+                    id="cohort-everyone"
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setFormState((prev) => ({ ...prev, cohortIds: [] }));
+                      }
+                    }}
+                  />
+                  <label
+                    className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    htmlFor="cohort-everyone"
+                  >
+                    {t('announcements.everyone')}
+                  </label>
+                </div>
                 {cohorts.map((cohort) => (
                   <div className="flex items-center gap-2" key={cohort.id}>
                     <Checkbox
@@ -254,6 +271,11 @@ export function AnnouncementsDialog({
                   </div>
                 ))}
               </div>
+              <p className="text-muted-foreground text-xs">
+                {formState.cohortIds.length === 0
+                  ? t('announcements.everyoneHint')
+                  : t('announcements.cohortsHint')}
+              </p>
             </div>
           </form>
         </div>
