@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
@@ -10,12 +10,18 @@ const logger = getLogger(['chronos', 'api-keys']);
 
 const KEY_PREFIX_LENGTH = 8;
 const KEY_RANDOM_BYTES = 32;
+const SCRYPT_KEYLEN = 64;
+const SCRYPT_COST = 16_384;
+const SCRYPT_BLOCK_SIZE = 8;
+const SCRYPT_PARALLELIZATION = 1;
 const BEARER_REGEX = /^Bearer\s+(.+)$/i;
 
 /**
  * Generate a new API key. The returned `key` is the only time the raw secret
  * is available — callers must surface it to the user immediately. We store a
- * SHA-256 hash plus a short, non-secret prefix for later identification.
+ * scrypt-derived key (with a per-key random salt) plus a short, non-secret
+ * prefix for later identification. The stored value has the form
+ * `salt:keyHex` so the salt is persisted alongside the derived key.
  */
 export const generateApiKey = (): {
   hash: string;
@@ -29,14 +35,53 @@ export const generateApiKey = (): {
   const prefix = secret.slice(0, KEY_PREFIX_LENGTH);
   const key = `${prefix}.${secret}`;
 
-  const hashHex = hashApiKey(key);
+  const hash = hashApiKey(key);
 
-  return { hash: hashHex, key, prefix };
+  return { hash, key, prefix };
 };
 
-/** Hash an API key the same way it is stored, for validation. */
-export const hashApiKey = (key: string): string =>
-  createHash('sha256').update(key).digest('hex');
+/**
+ * Derive a stored representation of an API key using scrypt with a per-key
+ * random salt. Returns `salt:keyHex` where both halves are hex-encoded. The
+ * salt is required at validation time, so it is persisted with the derived
+ * key. Scrypt provides far more computational effort than a plain SHA-256
+ * hash, which is what makes it suitable for credential storage.
+ */
+export const hashApiKey = (key: string): string => {
+  const salt = randomBytes(16);
+  const derived = scryptSync(key, salt, SCRYPT_KEYLEN, {
+    N: SCRYPT_COST,
+    p: SCRYPT_PARALLELIZATION,
+    r: SCRYPT_BLOCK_SIZE,
+  });
+
+  return `${salt.toString('hex')}:${derived.toString('hex')}`;
+};
+
+/**
+ * Verify a raw API key against a stored `salt:keyHex` representation using a
+ * constant-time comparison to avoid timing side-channels.
+ */
+const verifyApiKey = (key: string, stored: string): boolean => {
+  const [saltHex, keyHex] = stored.split(':');
+  if (!(saltHex && keyHex)) {
+    return false;
+  }
+
+  const salt = Buffer.from(saltHex, 'hex');
+  const expected = Buffer.from(keyHex, 'hex');
+  const derived = scryptSync(key, salt, expected.length, {
+    N: SCRYPT_COST,
+    p: SCRYPT_PARALLELIZATION,
+    r: SCRYPT_BLOCK_SIZE,
+  });
+
+  if (derived.length !== expected.length) {
+    return false;
+  }
+
+  return timingSafeEqual(derived, expected);
+};
 
 export type ApiKeyUser = {
   id: string;
@@ -56,14 +101,21 @@ export type ApiKeyUser = {
 export const validateApiKey = async (
   key: string
 ): Promise<ApiKeyUser | null> => {
-  const keyHash = hashApiKey(key);
+  // Scrypt is non-reversible, so we cannot query by a recomputed hash. Load
+  // candidate keys for the prefix (a cheap, non-secret filter) and verify the
+  // raw key against each stored `salt:keyHex` value in constant time.
+  const prefix = key.split('.')[0]?.slice(0, KEY_PREFIX_LENGTH);
+  if (!prefix) {
+    return null;
+  }
 
-  const [record] = await db
+  const records = await db
     .select()
     .from(apiKey)
-    .where(eq(apiKey.keyHash, keyHash))
-    .limit(1);
+    .where(eq(apiKey.prefix, prefix))
+    .limit(20);
 
+  const record = records.find((r) => verifyApiKey(key, r.keyHash));
   if (!record) {
     return null;
   }

@@ -5,8 +5,10 @@ import { user } from './authentication';
 /**
  * API keys let users (or the aegis doorlock) authenticate against the backend
  * without a browser session cookie. The raw key is only ever returned once at
- * creation time; we persist a SHA-256 hash of it and a short, non-secret
- * prefix used purely for display/identification in listings.
+ * creation time; we persist a scrypt-derived key (with a per-key random salt)
+ * and a short, non-secret prefix used purely for display/identification in
+ * listings. The `keyHash` column stores `salt:keyHex` where both halves are
+ * hex-encoded.
  */
 export const apiKey = pgTable(
   'api_key',
