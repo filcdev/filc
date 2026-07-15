@@ -1,4 +1,5 @@
 export const queryKeys = {
+  bugReports: () => ['bugReports'] as const,
   classrooms: () => ['classrooms'] as const,
   cohorts: () => ['cohorts'] as const,
 

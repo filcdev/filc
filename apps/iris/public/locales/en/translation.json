@@ -2,6 +2,20 @@
   "settings": "Settings",
   "logout": "Log out",
   "sign_in": "Sign in",
+  "bugReport": {
+    "button": "Report a bug",
+    "title": "Report a bug",
+    "dialogDescription": "Found something broken? Let us know and we'll take a look.",
+    "subject": "Subject",
+    "subjectPlaceholder": "Short summary of the issue",
+    "subjectTooShort": "Please enter at least 3 characters",
+    "description": "Description",
+    "descriptionPlaceholder": "What happened? What did you expect to happen?",
+    "descriptionTooShort": "Please enter at least 10 characters",
+    "submit": "Send report",
+    "success": "Bug report sent. Thank you!",
+    "error": "Failed to send bug report. Please try again."
+  },
   "schedule": "Schedule",
   "substitutions": "Substitutions",
   "adminDashboard": "Admin Dashboard",
@@ -131,7 +145,8 @@
     "doorlock": "Doorlock",
     "management": "Management",
     "users": "Users",
-    "roles": "Roles"
+    "roles": "Roles",
+    "bugReports": "Bug reports"
   },
   "timetable": {
     "selectClass": "Select class",
@@ -627,5 +642,24 @@
   },
   "export": {
     "rangeLabel": "All time"
+  },
+  "bugReports": {
+    "title": "Bug reports",
+    "description": "Description",
+    "refresh": "Refresh",
+    "subject": "Subject",
+    "reporter": "Reporter",
+    "page": "Page",
+    "date": "Date",
+    "status": "Status",
+    "open": "Open",
+    "resolved": "Resolved",
+    "noReports": "No bug reports found.",
+    "loadError": "Failed to load bug reports",
+    "loadErrorMessage": "Please try again later.",
+    "details": "Details",
+    "close": "Close",
+    "anonymous": "Anonymous",
+    "listDescription": "Review bug reports submitted by users."
   }
 }

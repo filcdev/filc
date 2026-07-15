@@ -2,6 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
   Bell,
+  Bug,
   DoorOpen,
   GraduationCap,
   IdCard,
@@ -150,6 +151,12 @@ export function AdminSidebar() {
             permission: 'roles:read',
             title: t('admin.roles'),
             url: '/admin/roles',
+          },
+          {
+            icon: Bug,
+            permission: 'bug-reports:read',
+            title: t('admin.bugReports'),
+            url: '/admin/bug-reports',
           },
         ],
         label: t('admin.management'),

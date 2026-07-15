@@ -24,6 +24,7 @@ import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/r
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
 import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
+import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
 import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private/admin/doorlock/index'
 import { Route as PrivateAdminTimetableSubstitutionsRouteImport } from './routes/_private/admin/timetable/substitutions'
 import { Route as PrivateAdminTimetableMovedLessonsRouteImport } from './routes/_private/admin/timetable/moved-lessons'
@@ -108,6 +109,11 @@ const PrivateAdminRolesRoute = PrivateAdminRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PrivateAdminBugReportsRoute = PrivateAdminBugReportsRouteImport.update({
+  id: '/bug-reports',
+  path: '/bug-reports',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 const PrivateAdminDoorlockIndexRoute =
   PrivateAdminDoorlockIndexRouteImport.update({
     id: '/doorlock/',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
+  '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/cards/': typeof PrivateCardsIndexRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
+  '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/cards': typeof PrivateCardsIndexRoute
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/_public/': typeof PublicIndexRoute
+  '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
   '/_private/admin/users': typeof PrivateAdminUsersRoute
   '/_private/cards/': typeof PrivateCardsIndexRoute
@@ -260,6 +269,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
+    | '/admin/bug-reports'
     | '/admin/roles'
     | '/admin/users'
     | '/cards/'
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
+    | '/admin/bug-reports'
     | '/admin/roles'
     | '/admin/users'
     | '/cards'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/_public/'
+    | '/_private/admin/bug-reports'
     | '/_private/admin/roles'
     | '/_private/admin/users'
     | '/_private/cards/'
@@ -442,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminRolesRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/bug-reports': {
+      id: '/_private/admin/bug-reports'
+      path: '/bug-reports'
+      fullPath: '/admin/bug-reports'
+      preLoaderRoute: typeof PrivateAdminBugReportsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/doorlock/': {
       id: '/_private/admin/doorlock/'
       path: '/doorlock'
@@ -516,6 +535,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface PrivateAdminRouteRouteChildren {
+  PrivateAdminBugReportsRoute: typeof PrivateAdminBugReportsRoute
   PrivateAdminRolesRoute: typeof PrivateAdminRolesRoute
   PrivateAdminUsersRoute: typeof PrivateAdminUsersRoute
   PrivateAdminDoorlockCardsRoute: typeof PrivateAdminDoorlockCardsRoute
@@ -531,6 +551,7 @@ interface PrivateAdminRouteRouteChildren {
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
+  PrivateAdminBugReportsRoute: PrivateAdminBugReportsRoute,
   PrivateAdminRolesRoute: PrivateAdminRolesRoute,
   PrivateAdminUsersRoute: PrivateAdminUsersRoute,
   PrivateAdminDoorlockCardsRoute: PrivateAdminDoorlockCardsRoute,

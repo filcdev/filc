@@ -5,6 +5,7 @@ import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { apiKeySchema } from '#database/schema/api-keys';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
+import { bugReportSchema } from '#database/schema/bug-report';
 import { doorlockSchema } from '#database/schema/doorlock';
 import { newsSchema } from '#database/schema/news';
 import { notificationsSchema } from '#database/schema/notifications';
@@ -40,6 +41,7 @@ const schema = {
   ...apiKeySchema,
   ...authenticationSchema,
   ...authorizationSchema,
+  ...bugReportSchema,
   ...doorlockSchema,
   ...newsSchema,
   ...notificationsSchema,
