@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import { SQL, type sql } from 'bun';
 import { drizzle } from 'drizzle-orm/bun-sql';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
+import { apiKeySchema } from '#database/schema/api-keys';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#database/schema/doorlock';
@@ -36,6 +37,7 @@ if (env.mode === 'production') {
 }
 
 const schema = {
+  ...apiKeySchema,
   ...authenticationSchema,
   ...authorizationSchema,
   ...doorlockSchema,

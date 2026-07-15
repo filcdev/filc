@@ -14,6 +14,8 @@ import {
 } from '#database/schema/doorlock';
 import { server } from '#index';
 import { doorlockFactory } from '#routes/doorlock/_factory';
+import { extractApiKey, validateApiKey } from '#utils/api-keys';
+import { userHasPermission } from '#utils/authorization';
 import {
   incomingMessageSchema,
   type OutgoingMessage,
@@ -188,33 +190,83 @@ export const syncDatabase = async (deviceId: string) => {
 
 export const websocketHandler = doorlockFactory.createHandlers(
   async (c, next) => {
+    // Primary auth: the device's provisioned token.
     const gotToken = c.req.header('X-Aegis-Device-Token');
-    if (!gotToken) {
-      logger.warn('WebSocket connection attempt without device token');
-      throw new HTTPException(401, {
-        message: 'Device token is required in X-Aegis-Device-Token header',
+
+    if (gotToken) {
+      const [device] = await db
+        .select()
+        .from(lockDevice)
+        .where(eq(lockDevice.apiToken, gotToken))
+        .limit(1);
+
+      if (!device) {
+        logger.debug('WebSocket connection attempt with invalid device token', {
+          token: gotToken,
+        });
+        return c.status(401);
+      }
+
+      const d = { id: device.id, name: device.name };
+      logger.debug('WebSocket connection authorized via device token', {
+        device: d,
       });
+      c.set('device', d);
+      return next();
     }
 
-    const [device] = await db
-      .select()
-      .from(lockDevice)
-      .where(eq(lockDevice.apiToken, gotToken))
-      .limit(1);
+    // Alternative auth: a user-generated API key (Bearer / X-API-Key).
+    // The connecting client must also identify which device it represents.
+    const rawKey = extractApiKey(c.req.raw.headers);
+    if (rawKey) {
+      const apiUser = await validateApiKey(rawKey);
+      if (!apiUser) {
+        logger.debug('WebSocket connection attempt with invalid API key');
+        return c.status(401);
+      }
 
-    if (!device) {
-      logger.debug('WebSocket connection attempt with invalid device token', {
-        token: gotToken,
+      const canControl = await userHasPermission(
+        apiUser.id,
+        'doorlock:devices:read'
+      );
+      if (!canControl) {
+        logger.debug('WebSocket connection with insufficient API key scope', {
+          userId: apiUser.id,
+        });
+        return c.status(403);
+      }
+
+      const deviceId = c.req.query('deviceId');
+      if (!deviceId) {
+        throw new HTTPException(400, {
+          message: 'deviceId query parameter is required when using an API key',
+        });
+      }
+
+      const [device] = await db
+        .select()
+        .from(lockDevice)
+        .where(eq(lockDevice.id, deviceId))
+        .limit(1);
+
+      if (!device) {
+        throw new HTTPException(404, { message: 'Device not found' });
+      }
+
+      const d = { id: device.id, name: device.name };
+      logger.debug('WebSocket connection authorized via API key', {
+        device: d,
+        userId: apiUser.id,
       });
-      return c.status(401);
+      c.set('device', d);
+      return next();
     }
 
-    const d = { id: device.id, name: device.name };
-
-    logger.debug('WebSocket connection authorized', { device: d });
-
-    c.set('device', d);
-    return next();
+    logger.warn('WebSocket connection attempt without any credentials');
+    throw new HTTPException(401, {
+      message:
+        'Authentication required: provide X-Aegis-Device-Token or an API key',
+    });
   },
   upgradeWebSocket((c) => {
     const device = c.get('device') as { id: string; name: string } | undefined;
