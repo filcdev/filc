@@ -71,6 +71,20 @@
       "when": 1781556618306,
       "tag": "0009_optional_announcement_title",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784153927382,
+      "tag": "0010_api_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784153927383,
+      "tag": "0011_scrypt_api_key",
+      "breakpoints": true
     }
   ]
 }

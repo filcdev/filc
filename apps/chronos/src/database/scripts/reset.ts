@@ -2,6 +2,7 @@ import { confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import { getTableName, sql } from 'drizzle-orm';
 import { db } from '#database/index';
+import { apiKeySchema } from '#database/schema/api-keys';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#database/schema/doorlock';
@@ -34,6 +35,7 @@ const reset = async () => {
   const schema = {
     ...(nukeAuth ? authenticationSchema : {}),
     ...(nukeAuth ? authorizationSchema : {}),
+    ...(nukeAuth ? apiKeySchema : {}),
     ...doorlockSchema,
     ...timetableSchema,
   };
