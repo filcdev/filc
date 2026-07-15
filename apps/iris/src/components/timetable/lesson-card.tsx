@@ -1,4 +1,4 @@
-import { Clock, MapPinIcon, UserIcon } from 'lucide-react';
+import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -7,6 +7,7 @@ import {
 import { cn } from '@/utils';
 import { ColorPicker } from './color-picker';
 import {
+  formatCohorts,
   formatRooms,
   formatTeachers,
   getSubjectColor,
@@ -18,17 +19,21 @@ type LessonCardProps = {
   lesson: LessonItem;
   userColors?: Record<string, number>;
   onColorChange?: (subject: string, colorIndex: number) => void;
+  /** When set, cohorts are shown in the card (used for teacher/classroom filters). */
+  showCohorts?: boolean;
 };
 
 export function LessonCard({
   lesson,
   userColors,
   onColorChange,
+  showCohorts = false,
 }: LessonCardProps) {
   const subject = lesson.subject?.name ?? '—';
   const short = lesson.subject?.short ?? subject;
   const teacher = formatTeachers(lesson.teachers);
   const room = formatRooms(lesson.classrooms);
+  const cohort = showCohorts ? formatCohorts(lesson.cohorts) : '';
   const color = getSubjectColor(subject, userColors);
 
   const startTime = toHHMM(lesson.period?.startTime);
@@ -55,6 +60,11 @@ export function LessonCard({
               </div>
             )}
             <div className="font-semibold text-sm leading-none">{short}</div>
+            {cohort && (
+              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+                {cohort}
+              </div>
+            )}
             {teacher && (
               <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
                 {teacher}
@@ -88,6 +98,14 @@ export function LessonCard({
           </div>
 
           <div className="space-y-2 text-xs">
+            {cohort && (
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-accent-foreground">
+                  <GraduationCap />
+                </span>
+                <span className="font-bold text-foreground">{cohort}</span>
+              </div>
+            )}
             {teacher && (
               <div className="flex items-center gap-1.5">
                 <span className="font-medium text-accent-foreground">
