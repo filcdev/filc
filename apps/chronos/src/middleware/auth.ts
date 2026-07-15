@@ -54,3 +54,24 @@ export const requireAuthorization = (permission: string) => {
     await next();
   });
 };
+
+/**
+ * Compose the auth middlewares for a route. Pass a permission to also require
+ * authorization; omit it for authentication-only. Spread into `createHandlers`
+ * so handlers stop listing the guards individually:
+ *
+ *   export const listX = factory.createHandlers(
+ *     ...authRouter('x:read'),
+ *     zValidator('query', schema),
+ *     async (c) => ok(c, await listX()),
+ *   );
+ */
+export function authRouter(): [typeof requireAuthentication];
+export function authRouter(
+  permission: string
+): [typeof requireAuthentication, ReturnType<typeof requireAuthorization>];
+export function authRouter(permission?: string) {
+  return permission
+    ? [requireAuthentication, requireAuthorization(permission)]
+    : [requireAuthentication];
+}

@@ -8,7 +8,6 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@base-ui-components/react": "^1.0.0-rc.0",
     "@base-ui/react": "^1.4.1",
     "@fontsource-variable/outfit": "^5.2.8",
     "@react-pdf/renderer": "^4.5.1",

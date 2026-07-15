@@ -1,84 +1,35 @@
 import { zValidator } from '@hono/zod-validator';
-import type { SQL } from 'drizzle-orm';
-import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { announcement, announcementCohortMtm } from '#database/schema/news';
-import { cohort } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
 import { userHasPermission } from '#utils/authorization';
+import { ok } from '#utils/http';
+import { validateCohortIds } from '#utils/news/cohort';
 import {
   announcementCreateSchema,
   announcementQuerySchema,
   announcementUpdateSchema,
 } from '#utils/news/schemas';
 import {
+  announcementBaseDetailResponseSchema,
+  announcementDetailResponseSchema,
+  announcementListResponseSchema,
+  authorSelect,
+  resolveTitle,
+  successResponseSchema,
+} from '#utils/news/shared';
+import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-
-const validateCohortIds = async (cohortIds: string[]) => {
-  const existingCohorts = await db
-    .select({ id: cohort.id })
-    .from(cohort)
-    .where(sql`${cohort.id} IN ${cohortIds}`);
-  const existingIds = new Set(existingCohorts.map((co) => co.id));
-  const invalid = cohortIds.filter((cid) => !existingIds.has(cid));
-  if (invalid.length > 0) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `Invalid cohort IDs: ${invalid.join(', ')}`,
-    });
-  }
-};
-
-const authorSelect = {
-  id: user.id,
-  image: user.image,
-  name: user.name,
-};
-
-const resolveAnnouncementTitle = (title: string | null | undefined): string =>
-  title && title.length > 0 ? title : 'Untitled';
-
-const announcementSelectSchema = createSelectSchema(announcement);
-const authorSchema = z.object({
-  id: z.string(),
-  image: z.string().nullable(),
-  name: z.string(),
-});
-
-const announcementItemSchema = announcementSelectSchema.extend({
-  author: authorSchema.nullable().optional(),
-  cohortIds: z.array(z.string()),
-});
-
-const announcementListResponseSchema = z.object({
-  data: z.array(announcementItemSchema),
-  success: z.literal(true),
-  total: z.number(),
-});
-
-const announcementDetailResponseSchema = z.object({
-  data: announcementItemSchema,
-  success: z.literal(true),
-});
-
-const announcementBaseDetailResponseSchema = z.object({
-  data: announcementSelectSchema.extend({ cohortIds: z.array(z.string()) }),
-  success: z.literal(true),
-});
-
-const successResponseSchema = z.object({
-  success: z.literal(true),
-});
 
 const { schema: createRequestSchema } = await resolver(
   announcementCreateSchema
@@ -108,7 +59,7 @@ export const listAnnouncements = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  requireAuthentication,
+  ...authRouter(),
   zValidator('query', announcementQuerySchema),
   async (c) => {
     const { limit, offset, includeExpired } = c.req.valid('query');
@@ -182,11 +133,7 @@ export const listAnnouncements = newsFactory.createHandlers(
         .map((m) => m.cohortId),
     }));
 
-    return c.json<SuccessResponse<typeof data> & { total: number }>({
-      data,
-      success: true,
-      total: totalResult[0]?.count ?? 0,
-    });
+    return ok(c, data, StatusCodes.OK, { total: totalResult[0]?.count ?? 0 });
   }
 );
 
@@ -211,7 +158,7 @@ export const getAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  requireAuthentication,
+  ...authRouter(),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -245,10 +192,7 @@ export const getAnnouncement = newsFactory.createHandlers(
         .where(eq(announcementCohortMtm.announcementId, id))
     ).map((m) => m.cohortId);
 
-    return c.json<SuccessResponse<typeof item & { cohortIds: string[] }>>({
-      data: { ...item, cohortIds },
-      success: true,
-    });
+    return ok(c, { ...item, cohortIds });
   }
 );
 
@@ -276,8 +220,7 @@ export const createAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:announcements'),
+  ...authRouter('news:announcements'),
   zValidator('json', announcementCreateSchema),
   async (c) => {
     const body = c.req.valid('json');
@@ -288,7 +231,7 @@ export const createAnnouncement = newsFactory.createHandlers(
       await validateCohortIds(body.cohortIds);
     }
 
-    const rows = await db
+    const [created] = await db
       .insert(announcement)
       .values({
         authorId: currentUser.id,
@@ -298,7 +241,6 @@ export const createAnnouncement = newsFactory.createHandlers(
         validUntil: body.validUntil,
       })
       .returning();
-    const created = rows[0];
     if (!created) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         message: 'Failed to create announcement',
@@ -315,14 +257,12 @@ export const createAnnouncement = newsFactory.createHandlers(
 
     dispatchPendingNotification(created.id, 'announcement', {
       cohortIds: body.cohortIds ?? [],
-      title: resolveAnnouncementTitle(body.title),
+      title: resolveTitle(body.title),
     });
 
-    return c.json(
-      {
-        data: { ...created, cohortIds: body.cohortIds ?? [] },
-        success: true as const,
-      },
+    return ok(
+      c,
+      { ...created, cohortIds: body.cohortIds ?? [] },
       StatusCodes.CREATED
     );
   }
@@ -353,8 +293,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:announcements'),
+  ...authRouter('news:announcements'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   zValidator('json', announcementUpdateSchema),
   async (c) => {
@@ -402,12 +341,11 @@ export const updateAnnouncement = newsFactory.createHandlers(
       updateData.validUntil = body.validUntil;
     }
 
-    const updatedRows = await db
+    const [updated] = await db
       .update(announcement)
       .set(updateData)
       .where(eq(announcement.id, id))
       .returning();
-    const updated = updatedRows[0];
     if (!updated) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
         message: 'Announcement not found',
@@ -439,13 +377,10 @@ export const updateAnnouncement = newsFactory.createHandlers(
 
     dispatchPendingNotification(id, 'announcement', {
       cohortIds,
-      title: resolveAnnouncementTitle(updated.title),
+      title: resolveTitle(updated.title),
     });
 
-    return c.json({
-      data: { ...updated, cohortIds },
-      success: true as const,
-    });
+    return ok(c, { ...updated, cohortIds });
   }
 );
 
@@ -466,8 +401,7 @@ export const deleteAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  requireAuthentication,
-  requireAuthorization('news:announcements'),
+  ...authRouter('news:announcements'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -485,8 +419,6 @@ export const deleteAnnouncement = newsFactory.createHandlers(
 
     cancelPendingNotification(id, 'announcement');
 
-    return c.json<SuccessResponse>({
-      success: true,
-    });
+    return ok(c, undefined);
   }
 );

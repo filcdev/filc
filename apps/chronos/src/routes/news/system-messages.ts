@@ -1,80 +1,33 @@
 import { zValidator } from '@hono/zod-validator';
-import type { SQL } from 'drizzle-orm';
-import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { systemMessage, systemMessageCohortMtm } from '#database/schema/news';
-import { cohort } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
+import { ok } from '#utils/http';
+import { validateCohortIds } from '#utils/news/cohort';
 import {
   announcementQuerySchema,
   dateRangeBodySchema,
   dateRangeUpdateBodySchema,
 } from '#utils/news/schemas';
 import {
+  authorSelect,
+  successResponseSchema,
+  systemMessageBaseDetailResponseSchema,
+  systemMessageDetailResponseSchema,
+  systemMessageListResponseSchema,
+} from '#utils/news/shared';
+import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-
-const validateCohortIds = async (cohortIds: string[]) => {
-  const existingCohorts = await db
-    .select({ id: cohort.id })
-    .from(cohort)
-    .where(sql`${cohort.id} IN ${cohortIds}`);
-  const existingIds = new Set(existingCohorts.map((co) => co.id));
-  const invalid = cohortIds.filter((cid) => !existingIds.has(cid));
-  if (invalid.length > 0) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `Invalid cohort IDs: ${invalid.join(', ')}`,
-    });
-  }
-};
-
-const authorSelect = {
-  id: user.id,
-  image: user.image,
-  name: user.name,
-};
-
-const systemMessageSelectSchema = createSelectSchema(systemMessage);
-const authorSchema = z.object({
-  id: z.string(),
-  image: z.string().nullable(),
-  name: z.string(),
-});
-
-const systemMessageItemSchema = systemMessageSelectSchema.extend({
-  author: authorSchema.nullable().optional(),
-  cohortIds: z.array(z.string()),
-});
-
-const systemMessageListResponseSchema = z.object({
-  data: z.array(systemMessageItemSchema),
-  success: z.literal(true),
-  total: z.number(),
-});
-
-const systemMessageDetailResponseSchema = z.object({
-  data: systemMessageItemSchema,
-  success: z.literal(true),
-});
-
-const systemMessageBaseDetailResponseSchema = z.object({
-  data: systemMessageSelectSchema.extend({ cohortIds: z.array(z.string()) }),
-  success: z.literal(true),
-});
-
-const successResponseSchema = z.object({
-  success: z.literal(true),
-});
 
 const { schema: createRequestSchema } =
   await resolver(dateRangeBodySchema).toOpenAPISchema();
@@ -165,11 +118,7 @@ export const listSystemMessages = newsFactory.createHandlers(
         .map((m) => m.cohortId),
     }));
 
-    return c.json<SuccessResponse<typeof data> & { total: number }>({
-      data,
-      success: true,
-      total: totalResult[0]?.count ?? 0,
-    });
+    return ok(c, data, StatusCodes.OK, { total: totalResult[0]?.count ?? 0 });
   }
 );
 
@@ -227,10 +176,7 @@ export const getSystemMessage = newsFactory.createHandlers(
         .where(eq(systemMessageCohortMtm.systemMessageId, id))
     ).map((m) => m.cohortId);
 
-    return c.json<SuccessResponse<typeof item & { cohortIds: string[] }>>({
-      data: { ...item, cohortIds },
-      success: true,
-    });
+    return ok(c, { ...item, cohortIds });
   }
 );
 
@@ -258,8 +204,7 @@ export const createSystemMessage = newsFactory.createHandlers(
     },
     tags: ['News / System Messages'],
   }),
-  requireAuthentication,
-  requireAuthorization('system-messages:manage'),
+  ...authRouter('system-messages:manage'),
   zValidator('json', dateRangeBodySchema),
   async (c) => {
     const body = c.req.valid('json');
@@ -269,7 +214,7 @@ export const createSystemMessage = newsFactory.createHandlers(
       await validateCohortIds(body.cohortIds);
     }
 
-    const rows = await db
+    const [created] = await db
       .insert(systemMessage)
       .values({
         authorId: currentUser.id,
@@ -279,7 +224,6 @@ export const createSystemMessage = newsFactory.createHandlers(
         validUntil: body.validUntil,
       })
       .returning();
-    const created = rows[0];
     if (!created) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         message: 'Failed to create system message',
@@ -300,11 +244,9 @@ export const createSystemMessage = newsFactory.createHandlers(
       title: body.title,
     });
 
-    return c.json(
-      {
-        data: { ...created, cohortIds: body.cohortIds ?? [] },
-        success: true as const,
-      },
+    return ok(
+      c,
+      { ...created, cohortIds: body.cohortIds ?? [] },
       StatusCodes.CREATED
     );
   }
@@ -335,8 +277,7 @@ export const updateSystemMessage = newsFactory.createHandlers(
     },
     tags: ['News / System Messages'],
   }),
-  requireAuthentication,
-  requireAuthorization('system-messages:manage'),
+  ...authRouter('system-messages:manage'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   zValidator('json', dateRangeUpdateBodySchema),
   async (c) => {
@@ -382,12 +323,11 @@ export const updateSystemMessage = newsFactory.createHandlers(
       updateData.validUntil = body.validUntil;
     }
 
-    const updatedRows = await db
+    const [updated] = await db
       .update(systemMessage)
       .set(updateData)
       .where(eq(systemMessage.id, id))
       .returning();
-    const updated = updatedRows[0];
     if (!updated) {
       throw new HTTPException(StatusCodes.NOT_FOUND, {
         message: 'System message not found',
@@ -423,10 +363,7 @@ export const updateSystemMessage = newsFactory.createHandlers(
       title: updated.title,
     });
 
-    return c.json({
-      data: { ...updated, cohortIds },
-      success: true as const,
-    });
+    return ok(c, { ...updated, cohortIds });
   }
 );
 
@@ -447,8 +384,7 @@ export const deleteSystemMessage = newsFactory.createHandlers(
     },
     tags: ['News / System Messages'],
   }),
-  requireAuthentication,
-  requireAuthorization('system-messages:manage'),
+  ...authRouter('system-messages:manage'),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -466,8 +402,6 @@ export const deleteSystemMessage = newsFactory.createHandlers(
 
     cancelPendingNotification(id, 'system_message');
 
-    return c.json<SuccessResponse>({
-      success: true,
-    });
+    return ok(c, undefined);
   }
 );
