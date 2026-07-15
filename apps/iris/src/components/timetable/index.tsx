@@ -562,6 +562,7 @@ export function TimetableView() {
           </div>
         ) : (
           <TimetableGrid
+            activeFilter={activeFilter}
             model={model}
             onColorChange={isAuthenticated ? handleColorChange : undefined}
             userColors={userColors}

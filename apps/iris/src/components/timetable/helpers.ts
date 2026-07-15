@@ -101,6 +101,18 @@ const formatRoom = (room: LessonItem['classrooms'][number]): string => {
 export const formatRooms = (rooms: LessonItem['classrooms']): string =>
   (rooms ?? []).map(formatRoom).filter(Boolean).join(', ');
 
+/** Format cohort display */
+const formatCohort = (cohort: LessonItem['cohorts'][number]): string => {
+  if (!cohort) {
+    return '';
+  }
+  return cohort.short ?? cohort.name ?? '';
+};
+
+/** Format cohorts list */
+export const formatCohorts = (cohorts: LessonItem['cohorts']): string =>
+  (cohorts ?? []).map(formatCohort).filter(Boolean).join(', ');
+
 /** Process a single lesson into the grid structure */
 const processLesson = (
   lesson: LessonItem,

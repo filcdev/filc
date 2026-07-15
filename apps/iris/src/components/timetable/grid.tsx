@@ -2,21 +2,26 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/utils';
 import { LessonCard } from './lesson-card';
-import type { TimetableViewModel } from './types';
+import type { FilterType, TimetableViewModel } from './types';
 
 type TimetableGridProps = {
   model: TimetableViewModel;
   userColors?: Record<string, number>;
   onColorChange?: (subject: string, colorIndex: number) => void;
+  /** When 'teacher' or 'classroom', cohorts are shown on each lesson card. */
+  activeFilter?: FilterType;
 };
 
 export function TimetableGrid({
   model,
   userColors,
   onColorChange,
+  activeFilter = 'class',
 }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
+  const showCohorts =
+    activeFilter === 'teacher' || activeFilter === 'classroom';
 
   const emptyDayKeys = useMemo(
     () =>
@@ -156,6 +161,7 @@ export function TimetableGrid({
                           <LessonCard
                             lesson={firstLesson}
                             onColorChange={onColorChange}
+                            showCohorts={showCohorts}
                             userColors={userColors}
                           />
                           <div />
@@ -173,6 +179,7 @@ export function TimetableGrid({
                         <LessonCard
                           lesson={firstLesson}
                           onColorChange={onColorChange}
+                          showCohorts={showCohorts}
                           userColors={userColors}
                         />
                       </div>
@@ -195,6 +202,7 @@ export function TimetableGrid({
                             key={lesson.id ?? idx}
                             lesson={lesson}
                             onColorChange={onColorChange}
+                            showCohorts={showCohorts}
                             userColors={userColors}
                           />
                         ))}

@@ -29,7 +29,6 @@ type SubstitutionApiResponse = InferResponseType<
   typeof api.timetable.substitutions.$get
 >;
 type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
-type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
 type TeacherLessonsApiResponse = InferResponseType<
@@ -54,7 +53,7 @@ const toUTCDate = (d: Date): Date =>
   new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 
 function formatLessonLabel(
-  lesson: Partial<EnrichedLesson> & { id: string }
+  lesson: Partial<TeacherLesson> & { id: string }
 ): string {
   if (!lesson) {
     return '';
@@ -70,7 +69,10 @@ function formatLessonLabel(
     parts.push(`${lesson.period.period}. óra`);
   }
   if (lesson.cohorts && lesson.cohorts.length > 0) {
-    parts.push(`(${lesson.cohorts.join(', ')})`);
+    const cohortLabels = lesson.cohorts.map((c) =>
+      typeof c === 'string' ? c : (c.short ?? c.name)
+    );
+    parts.push(`(${cohortLabels.join(', ')})`);
   }
   return parts.join(' - ') || lesson.id;
 }
