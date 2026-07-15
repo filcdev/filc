@@ -154,9 +154,11 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     }
   };
 
-  const handleCohortSkip = () => {
-    // Staff users are not required to pick a cohort.
+  const handleCohortSkip = async () => {
+    // Staff users are not required to pick a cohort. Persist the null
+    // selection so the choice is remembered, then advance.
     setSelectedCohortId(null);
+    await authClient.updateUser({ cohortId: null });
     return true;
   };
 
