@@ -30,6 +30,7 @@ type SubstitutionApiResponse = InferResponseType<
 >;
 type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
 type Teacher = NonNullable<SubstitutionItem['teacher']>;
+type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 
 type TeacherLessonsApiResponse = InferResponseType<
   typeof api.timetable.lessons.getSubstitutionCandidates.$post
