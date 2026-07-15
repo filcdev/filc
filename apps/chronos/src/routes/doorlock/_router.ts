@@ -12,6 +12,7 @@ import {
   listDevicesRoute,
   updateDeviceRoute,
 } from '#routes/doorlock/devices';
+import { exportLogsRoute } from '#routes/doorlock/export';
 import { listLogsRoute } from '#routes/doorlock/logs';
 import {
   triggerBulkOtaRoute,
@@ -45,6 +46,7 @@ export const doorlockRouter = doorlockFactory
   .get('/cards/users', ...listDoorlockUsersRoute)
   // Logs & stats
   .get('/logs', ...listLogsRoute)
+  .get('/logs/export', ...exportLogsRoute)
   .get('/stats/overview', ...doorlockStatsRoute)
   // Self-service routes
   .get('/self/cards', ...listSelfCardsRoute)

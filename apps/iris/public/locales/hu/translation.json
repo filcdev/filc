@@ -591,5 +591,10 @@
     "loadError": "Nem sikerült betölteni a statisztikákat",
     "loadErrorMessage": "Hiba történt az adatok betöltése közben.",
     "noTopUsers": "Még nincs adat"
+  },
+  "doorlockLogs": {
+    "export": "Exportálás",
+    "exportSuccess": "Export sikeresen letöltve",
+    "exportError": "Nem sikerült exportálni a naplókat"
   }
 }

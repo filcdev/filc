@@ -591,5 +591,10 @@
     "loadError": "Unable to load statistics",
     "loadErrorMessage": "Something went wrong while fetching the dashboard.",
     "noTopUsers": "No data yet"
+  },
+  "doorlockLogs": {
+    "export": "Export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export logs"
   }
 }
