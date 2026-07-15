@@ -18,6 +18,8 @@ import {
   substitution,
   substitutionLessonMTM,
   teacher,
+  termDefinition,
+  weekDefinition,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { env } from '#utils/environment';
@@ -26,6 +28,7 @@ import {
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
+import { getActiveTimetableId } from '#utils/timetable/active';
 import {
   createInsertSchema,
   createSelectSchema,
@@ -660,6 +663,283 @@ export const createSubstitution = timetableFactory.createHandlers(
     dispatchPendingNotification(result.id, 'substitution', {
       date: result.date,
       lessonIds,
+      substituter,
+    });
+
+    return c.json<SuccessResponse<typeof result>>({
+      data: result,
+      success: true,
+    });
+  }
+);
+
+// Manual substitution creation.
+//
+// Unlike the regular create endpoint, this does not require the caller to know
+// the IDs of existing lessons. Instead the caller supplies the teacher being
+// replaced together with a manual lesson time (day + period), a subject and a
+// cohort. We then find-or-create a lesson that matches that combination inside
+// the active timetable and link the substitution to it.
+const manualCreateSchema = z.object({
+  cohortId: z.string().uuid(),
+  comment: z.string().nullable().optional(),
+  date: z.coerce.date<Date>(),
+  dayDefinitionId: z.string().uuid(),
+  periodId: z.string().uuid(),
+  subjectId: z.string().uuid(),
+  substituter: z.string().uuid().nullable(),
+  teacherId: z.string().uuid(),
+});
+
+const manualCreateResponseSchema = z.object({
+  data: substitutionSchema,
+  success: z.boolean(),
+});
+
+// Find an existing lesson that matches the manual substitution parameters, or
+// create one if none exists yet. Returns the lesson id.
+async function findOrCreateManualLesson(
+  tx: TxOrDb,
+  params: {
+    cohortId: string;
+    dayDefinitionId: string;
+    periodId: string;
+    subjectId: string;
+    teacherId: string;
+    timetableId: string;
+    weeksDefinitionId: string;
+    termDefinitionId: string | null;
+  }
+): Promise<string> {
+  const {
+    cohortId,
+    dayDefinitionId,
+    periodId,
+    subjectId,
+    teacherId,
+    timetableId,
+    weeksDefinitionId,
+    termDefinitionId,
+  } = params;
+
+  const existing = await tx
+    .select({ lessonId: lessonCohortMTM.lessonId })
+    .from(lessonCohortMTM)
+    .innerJoin(lesson, eq(lessonCohortMTM.lessonId, lesson.id))
+    .where(
+      and(
+        eq(lessonCohortMTM.cohortId, cohortId),
+        eq(lesson.timetableId, timetableId),
+        eq(lesson.dayDefinitionId, dayDefinitionId),
+        eq(lesson.periodId, periodId),
+        eq(lesson.subjectId, subjectId),
+        // teacherIds is a text array; check it contains exactly the teacher
+        sql`${lesson.teacherIds} @> ARRAY[${teacherId}]::text[]`
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    return existing[0]?.lessonId ?? '';
+  }
+
+  const lessonId = crypto.randomUUID();
+  await tx.insert(lesson).values({
+    classroomIds: [],
+    dayDefinitionId,
+    groupsIds: [],
+    id: lessonId,
+    periodId,
+    periodsPerWeek: 1,
+    subjectId,
+    teacherIds: [teacherId],
+    termDefinitionId,
+    timetableId,
+    weeksDefinitionId,
+  });
+  await tx.insert(lessonCohortMTM).values({ cohortId, lessonId });
+  return lessonId;
+}
+
+export const createManualSubstitution = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Substitution', '@unit Substitution', true),
+    description:
+      'Create a substitution manually by specifying the teacher, lesson time, subject and cohort directly.',
+    requestBody: {
+      content: {
+        'application/json':
+          await resolver(manualCreateSchema).toOpenAPISchema(),
+      },
+      description: 'The data for the manually created substitution.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(manualCreateResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Substitution'],
+  }),
+  requireAuthentication,
+  requireAuthorization('substitution:create'),
+  zValidator('json', manualCreateSchema),
+  async (c) => {
+    const {
+      cohortId,
+      comment,
+      date,
+      dayDefinitionId,
+      periodId,
+      subjectId,
+      substituter,
+      teacherId,
+    } = c.req.valid('json');
+
+    // Validate that all referenced entities exist.
+    const [[refTeacher], [refDay], [refPeriod], [refSubject], [refCohort]] =
+      await Promise.all([
+        db
+          .select({ id: teacher.id })
+          .from(teacher)
+          .where(eq(teacher.id, teacherId))
+          .limit(1),
+        db
+          .select({ id: dayDefinition.id })
+          .from(dayDefinition)
+          .where(eq(dayDefinition.id, dayDefinitionId))
+          .limit(1),
+        db
+          .select({ id: period.id })
+          .from(period)
+          .where(eq(period.id, periodId))
+          .limit(1),
+        db
+          .select({ id: subject.id })
+          .from(subject)
+          .where(eq(subject.id, subjectId))
+          .limit(1),
+        db
+          .select({ id: cohort.id })
+          .from(cohort)
+          .where(eq(cohort.id, cohortId))
+          .limit(1),
+      ]);
+
+    if (!refTeacher) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Invalid teacher provided',
+      });
+    }
+    if (!refDay) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Invalid day provided',
+      });
+    }
+    if (!refPeriod) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Invalid period provided',
+      });
+    }
+    if (!refSubject) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Invalid subject provided',
+      });
+    }
+    if (!refCohort) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Invalid cohort provided',
+      });
+    }
+
+    if (substituter) {
+      const [refSubstituter] = await db
+        .select({ id: teacher.id })
+        .from(teacher)
+        .where(eq(teacher.id, substituter))
+        .limit(1);
+      if (!refSubstituter) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: 'Invalid substituter provided',
+        });
+      }
+    }
+
+    const timetableId = await getActiveTimetableId();
+    if (!timetableId) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'No active timetable found',
+      });
+    }
+
+    const [[weekDef], [termDef]] = await Promise.all([
+      db.select({ id: weekDefinition.id }).from(weekDefinition).limit(1),
+      db.select({ id: termDefinition.id }).from(termDefinition).limit(1),
+    ]);
+
+    if (!weekDef) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'No week definition found',
+      });
+    }
+
+    let manualLessonId = '';
+    const result = await db.transaction(
+      async (tx) => {
+        const lessonId = await findOrCreateManualLesson(tx, {
+          cohortId,
+          dayDefinitionId,
+          periodId,
+          subjectId,
+          teacherId,
+          termDefinitionId: termDef?.id ?? null,
+          timetableId,
+          weeksDefinitionId: weekDef.id,
+        });
+
+        manualLessonId = lessonId;
+
+        await checkTeacherSubstitutionConflict(tx, date, substituter, [
+          lessonId,
+        ]);
+
+        const [insertedSubstitution] = await tx
+          .insert(substitution)
+          .values({
+            comment,
+            date,
+            id: crypto.randomUUID(),
+            substituter,
+          })
+          .returning();
+
+        if (!insertedSubstitution) {
+          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+            cause:
+              env.mode === 'development'
+                ? 'No substitution returned from insert query'
+                : undefined,
+            message: 'Failed to create substitution.',
+          });
+        }
+
+        await tx.insert(substitutionLessonMTM).values({
+          lessonId,
+          substitutionId: insertedSubstitution.id,
+        });
+
+        return insertedSubstitution;
+      },
+      { isolationLevel: 'serializable' }
+    );
+
+    dispatchPendingNotification(result.id, 'substitution', {
+      date: result.date,
+      lessonIds: [manualLessonId],
       substituter,
     });
 
