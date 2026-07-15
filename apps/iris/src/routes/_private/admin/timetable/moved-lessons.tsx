@@ -11,6 +11,11 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
+import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/date-range-picker';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -199,6 +204,7 @@ function MovedLessonsPage() {
     null
   );
   const [showPast, setShowPast] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
   const hasWritePermission = useHasPermission(
     'movedLesson:create',
@@ -519,6 +525,8 @@ function MovedLessonsPage() {
           </label>
         </div>
         <div className="flex items-center gap-2 sm:ml-auto">
+          <DateRangePicker onChange={setDateRange} value={dateRange} />
+          <MovedLessonExportButton dateRange={dateRange} />
           <Button onClick={() => movedLessonsQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
             {t('movedLesson.refresh')}

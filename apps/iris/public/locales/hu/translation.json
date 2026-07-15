@@ -281,7 +281,11 @@
     "cardTitle": "Helyettesítés ezen a napon: {{date}}",
     "notAvailable": "N/A",
     "period": "Óra",
-    "noCohorts": "Nincsen osztály"
+    "noCohorts": "Nincsen osztály",
+    "export": "Exportálás",
+    "exportTitle": "Helyettesítések exportálása",
+    "exportSuccess": "Export sikeresen letöltve",
+    "exportError": "Nem sikerült exportálni a helyettesítéseket"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",
@@ -322,7 +326,11 @@
     "deleteConfirm": "Áthelyezett óra törlése",
     "deleteDescription": "Biztosan törlöd ezt az áthelyezett órát? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni az áthelyezett órákat",
-    "loadErrorMessage": "Kérlek próbáld újra később."
+    "loadErrorMessage": "Kérlek próbáld újra később.",
+    "export": "Exportálás",
+    "exportTitle": "Áthelyezett órák exportálása",
+    "exportSuccess": "Export sikeresen letöltve",
+    "exportError": "Nem sikerült exportálni az áthelyezett órákat"
   },
   "news": {
     "title": "Hírek"
@@ -596,5 +604,8 @@
     "export": "Exportálás",
     "exportSuccess": "Export sikeresen letöltve",
     "exportError": "Nem sikerült exportálni a naplókat"
+  },
+  "export": {
+    "rangeLabel": "Teljes időszak"
   }
 }
