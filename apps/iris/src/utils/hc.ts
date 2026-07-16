@@ -1,4 +1,5 @@
 import type {
+  BugReportRouter,
   CohortRouter,
   DashboardRouter,
   DoorlockRouter,
@@ -18,6 +19,7 @@ const dOpts = {
 } as const;
 
 export const api = {
+  bugReport: hc<BugReportRouter>('/api/bug-report', dOpts),
   cohort: hc<CohortRouter>('/api/cohort', dOpts),
   dashboard: hc<DashboardRouter>('/api/dashboard', dOpts),
   doorlock: hc<DoorlockRouter>('/api/doorlock', dOpts),

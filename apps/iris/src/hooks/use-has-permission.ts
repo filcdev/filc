@@ -10,6 +10,7 @@ export const ADMIN_UI_PERMISSIONS = [
   'doorlock:logs:read',
   'users:read',
   'roles:read',
+  'bug-reports:read',
 ] as const;
 
 export function useHasPermission(

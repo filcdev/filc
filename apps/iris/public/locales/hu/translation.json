@@ -2,6 +2,20 @@
   "logout": "Kijelentkezés",
   "settings": "Beállítások",
   "sign_in": "Bejelentkezés",
+  "bugReport": {
+    "button": "Hiba jelentése",
+    "title": "Hiba jelentése",
+    "dialogDescription": "Találtál valami hibát? Írd meg nekünk, és utánanézünk.",
+    "subject": "Tárgy",
+    "subjectPlaceholder": "Rövid összefoglaló a problémáról",
+    "subjectTooShort": "Kérlek, adj meg legalább 3 karaktert",
+    "description": "Leírás",
+    "descriptionPlaceholder": "Mi történt? Mit vártál?",
+    "descriptionTooShort": "Kérlek, adj meg legalább 10 karaktert",
+    "submit": "Jelentés küldése",
+    "success": "Hiba jelentve. Köszönjük!",
+    "error": "Nem sikerült elküldeni a hibajelentést. Próbáld újra."
+  },
   "schedule": "Órarend",
   "substitutions": "Helyettesítések",
   "adminDashboard": "Adminisztrációs felület",
@@ -80,6 +94,7 @@
     "cohortDescription": "Válaszd ki az osztályodat vagy csoportodat.",
     "cohortSaved": "Csoport sikeresen mentve",
     "cohortSaveFailed": "A csoportot nem sikerült elmenteni",
+    "cohortSkip": "Kihagyás — nincs szükségem csoportra",
     "complete": "Minden kész!",
     "completeDescription": "Minden be van állítva, és készen állsz. Kattints a Befejezés gombra az alkalmazás használatának megkezdéséhez."
   },
@@ -118,7 +133,8 @@
     "doorlock": "Ajtózár",
     "management": "Kezelés",
     "users": "Felhasználók",
-    "roles": "Szerepkörök"
+    "roles": "Szerepkörök",
+    "bugReports": "Hibajelentések"
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
@@ -262,6 +278,21 @@
     "selectCohortPlaceholder": "Válassz egy osztályt az órák megtekintéséhez",
     "noCohortFound": "Nem található osztály.",
     "noTeachersFound": "Nem található tanár.",
+    "manualMode": "Kézi mód",
+    "manualModeHint": "Válassz egy tanárt és egy kézi óraidoőpontot a meglévő órák helyett.",
+    "manualModeOn": "Kézi",
+    "manualModeOff": "Automatikus",
+    "day": "Nap",
+    "dayPlaceholder": "Válassz egy napot",
+    "noDaysFound": "Nincsenek napok.",
+    "periodPlaceholder": "Válassz egy óraidoőpontot",
+    "noPeriodsFound": "Nincsenek óraidoőpontok.",
+    "subject": "Tantárgy",
+    "subjectPlaceholder": "Válassz egy tantárgyat",
+    "noSubjectsFound": "Nincsenek tantárgyak.",
+    "cohort": "Osztály",
+    "cohortPlaceholder": "Válassz egy osztályt",
+    "noCohortFoundManual": "Nem található osztály.",
     "noSubstitutions": "Nincsenek helyettesítések",
     "noSubstituter": "Elmaradó óra",
     "comment": "Megjegyzés",
@@ -281,7 +312,11 @@
     "cardTitle": "Helyettesítés ezen a napon: {{date}}",
     "notAvailable": "N/A",
     "period": "Óra",
-    "noCohorts": "Nincsen osztály"
+    "noCohorts": "Nincsen osztály",
+    "export": "Exportálás",
+    "exportTitle": "Helyettesítések exportálása",
+    "exportSuccess": "Export sikeresen letöltve",
+    "exportError": "Nem sikerült exportálni a helyettesítéseket"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",
@@ -322,7 +357,11 @@
     "deleteConfirm": "Áthelyezett óra törlése",
     "deleteDescription": "Biztosan törlöd ezt az áthelyezett órát? Ez a művelet nem vonható vissza.",
     "loadError": "Nem sikerült betölteni az áthelyezett órákat",
-    "loadErrorMessage": "Kérlek próbáld újra később."
+    "loadErrorMessage": "Kérlek próbáld újra később.",
+    "export": "Exportálás",
+    "exportTitle": "Áthelyezett órák exportálása",
+    "exportSuccess": "Export sikeresen letöltve",
+    "exportError": "Nem sikerült exportálni az áthelyezett órákat"
   },
   "news": {
     "title": "Hírek"
@@ -595,5 +634,32 @@
     "loadError": "Nem sikerült betölteni a statisztikákat",
     "loadErrorMessage": "Hiba történt az adatok betöltése közben.",
     "noTopUsers": "Még nincs adat"
+  },
+  "doorlockLogs": {
+    "export": "Exportálás",
+    "exportSuccess": "Export sikeresen letöltve",
+    "exportError": "Nem sikerült exportálni a naplókat"
+  },
+  "export": {
+    "rangeLabel": "Teljes időszak"
+  },
+  "bugReports": {
+    "title": "Hibajelentések",
+    "description": "Leírás",
+    "refresh": "Frissítés",
+    "subject": "Tárgy",
+    "reporter": "Jelentő",
+    "page": "Oldal",
+    "date": "Dátum",
+    "status": "Állapot",
+    "open": "Nyitott",
+    "resolved": "Megoldott",
+    "noReports": "Nem található hibajelentés.",
+    "loadError": "Nem sikerült betölteni a hibajelentéseket",
+    "loadErrorMessage": "Kérlek, próbáld újra később.",
+    "details": "Részletek",
+    "close": "Bezárás",
+    "anonymous": "Névtelen",
+    "listDescription": "A felhasználók által beküldött hibajelentések áttekintése."
   }
 }

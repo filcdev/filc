@@ -2,6 +2,20 @@
   "settings": "Settings",
   "logout": "Log out",
   "sign_in": "Sign in",
+  "bugReport": {
+    "button": "Report a bug",
+    "title": "Report a bug",
+    "dialogDescription": "Found something broken? Let us know and we'll take a look.",
+    "subject": "Subject",
+    "subjectPlaceholder": "Short summary of the issue",
+    "subjectTooShort": "Please enter at least 3 characters",
+    "description": "Description",
+    "descriptionPlaceholder": "What happened? What did you expect to happen?",
+    "descriptionTooShort": "Please enter at least 10 characters",
+    "submit": "Send report",
+    "success": "Bug report sent. Thank you!",
+    "error": "Failed to send bug report. Please try again."
+  },
   "schedule": "Schedule",
   "substitutions": "Substitutions",
   "adminDashboard": "Admin Dashboard",
@@ -69,6 +83,7 @@
     "cohortDescription": "Select the class or group you belong to.",
     "cohortSaved": "Cohort saved successfully",
     "cohortSaveFailed": "Failed to save cohort",
+    "cohortSkip": "Skip — I don't need a cohort",
     "complete": "All set!",
     "completeDescription": "You're all set up and ready to go. Click Complete to start using the app."
   },
@@ -130,7 +145,8 @@
     "doorlock": "Doorlock",
     "management": "Management",
     "users": "Users",
-    "roles": "Roles"
+    "roles": "Roles",
+    "bugReports": "Bug reports"
   },
   "timetable": {
     "selectClass": "Select class",
@@ -262,6 +278,21 @@
     "selectCohortPlaceholder": "Select a class to see lessons",
     "noCohortFound": "No class found.",
     "noTeachersFound": "No teacher found.",
+    "manualMode": "Manual mode",
+    "manualModeHint": "Select a teacher and a manual lesson time instead of picking from existing lessons.",
+    "manualModeOn": "Manual",
+    "manualModeOff": "Automatic",
+    "day": "Day",
+    "dayPlaceholder": "Select a day",
+    "noDaysFound": "No days found.",
+    "periodPlaceholder": "Select a period",
+    "noPeriodsFound": "No periods found.",
+    "subject": "Subject",
+    "subjectPlaceholder": "Select a subject",
+    "noSubjectsFound": "No subjects found.",
+    "cohort": "Class",
+    "cohortPlaceholder": "Select a class",
+    "noCohortFoundManual": "No class found.",
     "noSubstitutions": "No substitutions found",
     "noSubstituter": "No class",
     "comment": "Comment",
@@ -281,7 +312,11 @@
     "cardTitle": "Substitution on {{date}}",
     "notAvailable": "N/A",
     "period": "Period",
-    "noCohorts": "No class"
+    "noCohorts": "No class",
+    "export": "Export",
+    "exportTitle": "Substitutions export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export substitutions"
   },
   "movedLesson": {
     "title": "Moved Lessons",
@@ -322,7 +357,11 @@
     "deleteConfirm": "Delete Moved Lesson",
     "deleteDescription": "Are you sure you want to delete this moved lesson? This action cannot be undone.",
     "loadError": "Unable to load moved lessons",
-    "loadErrorMessage": "Please try again later."
+    "loadErrorMessage": "Please try again later.",
+    "export": "Export",
+    "exportTitle": "Moved lessons export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export moved lessons"
   },
   "news": {
     "title": "News"
@@ -595,5 +634,32 @@
     "loadError": "Unable to load statistics",
     "loadErrorMessage": "Something went wrong while fetching the dashboard.",
     "noTopUsers": "No data yet"
+  },
+  "doorlockLogs": {
+    "export": "Export",
+    "exportSuccess": "Export downloaded successfully",
+    "exportError": "Failed to export logs"
+  },
+  "export": {
+    "rangeLabel": "All time"
+  },
+  "bugReports": {
+    "title": "Bug reports",
+    "description": "Description",
+    "refresh": "Refresh",
+    "subject": "Subject",
+    "reporter": "Reporter",
+    "page": "Page",
+    "date": "Date",
+    "status": "Status",
+    "open": "Open",
+    "resolved": "Resolved",
+    "noReports": "No bug reports found.",
+    "loadError": "Failed to load bug reports",
+    "loadErrorMessage": "Please try again later.",
+    "details": "Details",
+    "close": "Close",
+    "anonymous": "Anonymous",
+    "listDescription": "Review bug reports submitted by users."
   }
 }

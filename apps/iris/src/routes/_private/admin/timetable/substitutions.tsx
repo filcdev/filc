@@ -11,6 +11,11 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
+import { SubstitutionExportButton } from '@/components/admin/substitution-export';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/date-range-picker';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +68,7 @@ function SubstitutionsPage() {
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SubstitutionItem | null>(
     null
@@ -77,6 +83,7 @@ function SubstitutionsPage() {
     null
   );
   const [showPast, setShowPast] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
   const hasWritePermission = useHasPermission(
     'substitution:create',
@@ -175,6 +182,35 @@ function SubstitutionsPage() {
     onSuccess: () => {
       toast.success(t('substitution.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
+    },
+  });
+
+  const $createManual = api.timetable.substitutions.manual.$post;
+  const createManualMutation = useMutation<
+    InferResponseType<typeof $createManual>,
+    Error,
+    InferRequestType<typeof $createManual>['json']
+  >({
+    mutationFn: async (payload) => {
+      const res = await parseResponse(
+        api.timetable.substitutions.manual.$post({
+          json: payload,
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to create manual substitution');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('substitution.createError'));
+    },
+    onSuccess: () => {
+      toast.success(t('substitution.createSuccess'));
+      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
+      setDialogOpen(false);
+      setSelectedItem(null);
+      setManualMode(false);
     },
   });
 
@@ -314,6 +350,8 @@ function SubstitutionsPage() {
           </label>
         </div>
         <div className="flex items-center gap-2 sm:ml-auto">
+          <DateRangePicker onChange={setDateRange} value={dateRange} />
+          <SubstitutionExportButton dateRange={dateRange} />
           <Button
             onClick={() => substitutionsQuery.refetch()}
             variant="outline"
@@ -506,13 +544,19 @@ function SubstitutionsPage() {
       {hasWritePermission && dialogOpen && (
         <SubstitutionDialog
           item={selectedItem}
+          manual={manualMode}
+          onManualChange={setManualMode}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
               setSelectedItem(null);
+              setManualMode(false);
             }
           }}
           onSubmit={handleSave}
+          onSubmitManual={async (payload) => {
+            await createManualMutation.mutateAsync(payload);
+          }}
           open={dialogOpen}
           teachers={teachersQuery.data ?? []}
         />

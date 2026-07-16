@@ -1,4 +1,5 @@
 import { zValidator } from '@hono/zod-validator';
+import { getLogger } from '@logtape/logtape';
 import {
   and,
   arrayContains,
@@ -27,6 +28,8 @@ import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
+
+const logger = getLogger(['chronos', 'lesson']);
 
 const normalizeDayText = (value: string): string =>
   value
@@ -989,5 +992,42 @@ export const getLessonForId = timetableFactory.createHandlers(
           ? (substitutionCohortRow[0]?.name ?? null)
           : null,
     });
+  }
+);
+
+const getSubjectsResponseSchema = z.object({
+  data: createSelectSchema(subject).array(),
+  success: z.boolean(),
+});
+
+export const getSubjects = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Subject', '@listof Subject', true),
+    description: 'Get all subjects from the database.',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(getSubjectsResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Subject'],
+  }),
+  async (c) => {
+    try {
+      const subjects = await db.select().from(subject);
+      return c.json<SuccessResponse<typeof subjects>>({
+        data: subjects,
+        success: true,
+      });
+    } catch (error) {
+      logger.error('Error while fetching subjects', { error });
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Failed to fetch subjects',
+      });
+    }
   }
 );
