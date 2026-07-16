@@ -6,10 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -82,9 +81,6 @@ function AdminUsersPage() {
     [page, total, totalPages]
   );
 
-  const isLoading = usersQuery.isLoading;
-  const hasError = usersQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -128,20 +124,8 @@ function AdminUsersPage() {
         />
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('users.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(usersQuery.error as Error)?.message ??
-              t('users.loadErrorMessage')}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        usersQuery.data && (
+      <QueryBoundary data={usersQuery.data} query={usersQuery}>
+        {(data) => (
           <UsersTable
             cohortMap={cohortMap}
             limit={limit}
@@ -149,11 +133,11 @@ function AdminUsersPage() {
               navigate({ search: (prev) => ({ ...prev, page: newPage }) })
             }
             page={page}
-            total={usersQuery.data.total}
-            users={usersQuery.data.users}
+            total={data.total}
+            users={data.users}
           />
-        )
-      )}
+        )}
+      </QueryBoundary>
     </div>
   );
 }

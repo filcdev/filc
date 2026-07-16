@@ -20,10 +20,8 @@ import { StatCard } from '@/components/admin/stat-card';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
 import { OtaUpdateDialog } from '@/components/doorlock/ota-update-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -33,6 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
@@ -244,7 +243,6 @@ function DevicesPage() {
     setSortDirection('asc');
   };
 
-  const isLoading = devicesQuery.isLoading;
   const hasError = devicesQuery.isError;
 
   return (
@@ -314,183 +312,173 @@ function DevicesPage() {
         />
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('doorlockDevices.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(devicesQuery.error as Error)?.message ??
-              t('doorlockDevices.loadError')}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'name',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('name')}
-                    type="button"
-                  >
-                    {t('doorlockDevices.name')}
-                    <SortIcon
-                      column="name"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'location',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('location')}
-                    type="button"
-                  >
-                    {t('doorlockDevices.location')}
-                    <SortIcon
-                      column="location"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'apiToken',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('apiToken')}
-                    type="button"
-                  >
-                    {t('doorlockDevices.apiToken')}
-                    <SortIcon
-                      column="apiToken"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  aria-sort={getAriaSortState(
-                    'updated',
-                    sortColumn,
-                    sortDirection
-                  )}
-                  className="select-none"
-                >
-                  <button
-                    className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                    onClick={() => handleSort('updated')}
-                    type="button"
-                  >
-                    {t('doorlockDevices.lastUpdated')}
-                    <SortIcon
-                      column="updated"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </button>
-                </TableHead>
-                {hasWritePermission && (
-                  <TableHead>{t('doorlockDevices.actions')}</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDevices.map((device) => (
-                <TableRow key={device.id}>
-                  <TableCell className="font-medium">{device.name}</TableCell>
-                  <TableCell>{device.location ?? '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {device.apiToken}
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(device.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                  </TableCell>
-                  {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setStatsDevice(device);
-                            setStatsDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <ChartArea className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setOtaDevice(device);
-                            setOtaDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setSelectedDevice(device);
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(device)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {!(filteredDevices.length || hasError) && (
+      <QueryBoundary data={devicesQuery.data} query={devicesQuery}>
+        {() => (
+          <div className="w-full overflow-x-auto rounded-md border">
+            <Table className="w-full min-w-3xl">
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 5 : 4}
+                  <TableHead
+                    aria-sort={getAriaSortState(
+                      'name',
+                      sortColumn,
+                      sortDirection
+                    )}
+                    className="select-none"
                   >
-                    {t('doorlockDevices.noDevicesFound')}
-                  </TableCell>
+                    <button
+                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      onClick={() => handleSort('name')}
+                      type="button"
+                    >
+                      {t('doorlockDevices.name')}
+                      <SortIcon
+                        column="name"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead
+                    aria-sort={getAriaSortState(
+                      'location',
+                      sortColumn,
+                      sortDirection
+                    )}
+                    className="select-none"
+                  >
+                    <button
+                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      onClick={() => handleSort('location')}
+                      type="button"
+                    >
+                      {t('doorlockDevices.location')}
+                      <SortIcon
+                        column="location"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead
+                    aria-sort={getAriaSortState(
+                      'apiToken',
+                      sortColumn,
+                      sortDirection
+                    )}
+                    className="select-none"
+                  >
+                    <button
+                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      onClick={() => handleSort('apiToken')}
+                      type="button"
+                    >
+                      {t('doorlockDevices.apiToken')}
+                      <SortIcon
+                        column="apiToken"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead
+                    aria-sort={getAriaSortState(
+                      'updated',
+                      sortColumn,
+                      sortDirection
+                    )}
+                    className="select-none"
+                  >
+                    <button
+                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      onClick={() => handleSort('updated')}
+                      type="button"
+                    >
+                      {t('doorlockDevices.lastUpdated')}
+                      <SortIcon
+                        column="updated"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </button>
+                  </TableHead>
+                  {hasWritePermission && (
+                    <TableHead>{t('doorlockDevices.actions')}</TableHead>
+                  )}
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredDevices.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell className="font-medium">{device.name}</TableCell>
+                    <TableCell>{device.location ?? '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {device.apiToken}
+                    </TableCell>
+                    <TableCell>
+                      {dayjs(device.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                    </TableCell>
+                    {hasWritePermission && (
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setStatsDevice(device);
+                              setStatsDialogOpen(true);
+                            }}
+                            size="icon"
+                            variant="outline"
+                          >
+                            <ChartArea className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setOtaDevice(device);
+                              setOtaDialogOpen(true);
+                            }}
+                            size="icon"
+                            variant="outline"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setSelectedDevice(device);
+                              setDialogOpen(true);
+                            }}
+                            size="icon"
+                            variant="outline"
+                          >
+                            <Pen className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            disabled={deleteMutation.isPending}
+                            onClick={() => handleDelete(device)}
+                            size="icon"
+                            variant="destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+                {!(filteredDevices.length || hasError) && (
+                  <TableRow>
+                    <TableCell
+                      className="text-muted-foreground"
+                      colSpan={hasWritePermission ? 5 : 4}
+                    >
+                      {t('doorlockDevices.noDevicesFound')}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </QueryBoundary>
 
       <DeviceDialog<DoorlockDevice>
         device={selectedDevice}

@@ -6,10 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { RoleDialog } from '@/components/admin/role-dialog';
 import { RolesTable } from '@/components/admin/roles-table';
 import { StatCard } from '@/components/admin/stat-card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -47,9 +46,6 @@ function AdminRolesPage() {
     }),
     [allRoles]
   );
-
-  const isLoading = rolesQuery.isLoading;
-  const hasError = rolesQuery.isError;
 
   return (
     <div className="space-y-6">
@@ -96,20 +92,9 @@ function AdminRolesPage() {
         />
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('roles.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(rolesQuery.error as Error)?.message}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <RolesTable roles={filteredRoles} />
-      )}
+      <QueryBoundary data={rolesQuery.data} query={rolesQuery}>
+        {() => <RolesTable roles={filteredRoles} />}
+      </QueryBoundary>
 
       <RoleDialog
         editingRole={null}

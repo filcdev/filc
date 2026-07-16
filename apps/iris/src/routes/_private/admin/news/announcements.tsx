@@ -6,7 +6,6 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -18,7 +17,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -28,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { useApiMutation, useApiQuery } from '@/utils/api';
@@ -237,7 +236,6 @@ function AnnouncementsPage() {
     setItemToDelete(null);
   };
 
-  const isLoading = announcementsQuery.isLoading;
   const hasError = announcementsQuery.isError;
 
   return (
@@ -293,148 +291,141 @@ function AnnouncementsPage() {
         </div>
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('announcements.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(announcementsQuery.error as Error)?.message ||
-              t('announcements.loadErrorMessage')}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="w-[30%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('title')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.title')}
-                    <SortIcon
-                      column="title"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('validFrom')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.validFrom')}
-                    <SortIcon
-                      column="validFrom"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('validUntil')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.validUntil')}
-                    <SortIcon
-                      column="validUntil"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="w-[20%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('cohorts')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.cohorts')}
-                    <SortIcon
-                      column="cohorts"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                {hasWritePermission && (
-                  <TableHead className="w-[20%]">
-                    {t('announcements.actions')}
+      <QueryBoundary data={announcementsQuery.data} query={announcementsQuery}>
+        {() => (
+          <div className="w-full overflow-x-auto rounded-md border">
+            <Table className="w-full min-w-3xl">
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="w-[30%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('title')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.title')}
+                      <SortIcon
+                        column="title"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
                   </TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAnnouncements.map((announcement) => (
-                <TableRow key={announcement.id}>
-                  <TableCell className="font-medium">
-                    {announcement.title ??
-                      t('announcements.untitled', 'Untitled')}
-                  </TableCell>
-                  <TableCell>
-                    {formatLocalizedDate(announcement.validFrom, i18n.language)}
-                  </TableCell>
-                  <TableCell>
-                    {formatLocalizedDate(
-                      announcement.validUntil,
-                      i18n.language
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {announcement.cohortIds.length > 0
-                      ? cohortsQuery.data
-                          ?.filter((c) =>
-                            announcement.cohortIds.includes(c?.id || '')
-                          )
-                          .map((c) => c?.name)
-                          .join(', ')
-                      : t('announcements.noCohorts')}
-                  </TableCell>
+                  <TableHead
+                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('validFrom')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.validFrom')}
+                      <SortIcon
+                        column="validFrom"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('validUntil')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.validUntil')}
+                      <SortIcon
+                        column="validUntil"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="w-[20%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('cohorts')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.cohorts')}
+                      <SortIcon
+                        column="cohorts"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
                   {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedItem(announcement);
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(announcement)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableHead className="w-[20%]">
+                      {t('announcements.actions')}
+                    </TableHead>
                   )}
                 </TableRow>
-              ))}
-              {!(filteredAnnouncements.length || hasError) && (
-                <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 5 : 4}
-                  >
-                    {t('announcements.noAnnouncements')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredAnnouncements.map((announcement) => (
+                  <TableRow key={announcement.id}>
+                    <TableCell className="font-medium">
+                      {announcement.title ??
+                        t('announcements.untitled', 'Untitled')}
+                    </TableCell>
+                    <TableCell>
+                      {formatLocalizedDate(
+                        announcement.validFrom,
+                        i18n.language
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatLocalizedDate(
+                        announcement.validUntil,
+                        i18n.language
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {announcement.cohortIds.length > 0
+                        ? cohortsQuery.data
+                            ?.filter((c) =>
+                              announcement.cohortIds.includes(c?.id || '')
+                            )
+                            .map((c) => c?.name)
+                            .join(', ')
+                        : t('announcements.noCohorts')}
+                    </TableCell>
+                    {hasWritePermission && (
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setSelectedItem(announcement);
+                              setDialogOpen(true);
+                            }}
+                            size="icon"
+                            variant="outline"
+                          >
+                            <Pen className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            disabled={deleteMutation.isPending}
+                            onClick={() => handleDelete(announcement)}
+                            size="icon"
+                            variant="destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+                {!(filteredAnnouncements.length || hasError) && (
+                  <TableRow>
+                    <TableCell
+                      className="text-muted-foreground"
+                      colSpan={hasWritePermission ? 5 : 4}
+                    >
+                      {t('announcements.noAnnouncements')}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </QueryBoundary>
 
       {hasWritePermission && (
         <>

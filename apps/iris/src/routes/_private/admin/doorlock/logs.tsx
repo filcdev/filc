@@ -16,7 +16,6 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -35,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -45,6 +43,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -222,7 +221,6 @@ function useLogStats(
   return { filteredLogs, stats };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: filter state and queries
 function LogsPage() {
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
@@ -415,7 +413,6 @@ function LogsPage() {
   };
 
   const hasError = logsQuery.isError;
-  const isLoading = logsQuery.isLoading;
 
   return (
     <div className="space-y-6">
@@ -509,142 +506,133 @@ function LogsPage() {
         </div>
       )}
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load logs</AlertTitle>
-          <AlertDescription>
-            {(logsQuery.error as Error)?.message ?? 'Please try again later.'}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('timestamp')}
-                >
-                  <div className="flex items-center gap-2">
-                    Timestamp
-                    <SortIcon
-                      column="timestamp"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('device')}
-                >
-                  <div className="flex items-center gap-2">
-                    Device
-                    <SortIcon
-                      column="device"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('user')}
-                >
-                  <div className="flex items-center gap-2">
-                    User
-                    <SortIcon
-                      column="user"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('card')}
-                >
-                  <div className="flex items-center gap-2">
-                    Card
-                    <SortIcon
-                      column="card"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('cardData')}
-                >
-                  <div className="flex items-center gap-2">
-                    Card UID
-                    <SortIcon
-                      column="cardData"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('triggeredBy')}
-                >
-                  <div className="flex items-center gap-2">
-                    Triggered by
-                    <SortIcon
-                      column="triggeredBy"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('result')}
-                >
-                  <div className="flex items-center gap-2">
-                    Result
-                    <SortIcon
-                      column="result"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead>{/* Actions */}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map((log) => (
-                <LogTableRow
-                  key={log.id}
-                  log={log}
-                  onAddCard={
-                    hasCardWritePermission
-                      ? (cardData) => {
-                          setPendingCardData(cardData);
-                          setCardDialogOpen(true);
-                        }
-                      : undefined
-                  }
-                />
-              ))}
-              {!(filteredLogs.length || hasError) && (
+      <QueryBoundary data={logsQuery.data} query={logsQuery}>
+        {() => (
+          <div className="w-full overflow-x-auto rounded-md border">
+            <Table className="w-full min-w-3xl">
+              <TableHeader>
                 <TableRow>
-                  <TableCell className="text-muted-foreground" colSpan={8}>
-                    No logs found with the selected filters.
-                  </TableCell>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('timestamp')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Timestamp
+                      <SortIcon
+                        column="timestamp"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('device')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Device
+                      <SortIcon
+                        column="device"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('user')}
+                  >
+                    <div className="flex items-center gap-2">
+                      User
+                      <SortIcon
+                        column="user"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('card')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Card
+                      <SortIcon
+                        column="card"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('cardData')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Card UID
+                      <SortIcon
+                        column="cardData"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('triggeredBy')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Triggered by
+                      <SortIcon
+                        column="triggeredBy"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('result')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Result
+                      <SortIcon
+                        column="result"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead>{/* Actions */}</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((log) => (
+                  <LogTableRow
+                    key={log.id}
+                    log={log}
+                    onAddCard={
+                      hasCardWritePermission
+                        ? (cardData) => {
+                            setPendingCardData(cardData);
+                            setCardDialogOpen(true);
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+                {!(filteredLogs.length || hasError) && (
+                  <TableRow>
+                    <TableCell className="text-muted-foreground" colSpan={8}>
+                      No logs found with the selected filters.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </QueryBoundary>
 
       {hasCardWritePermission && (
         <CardDialog
