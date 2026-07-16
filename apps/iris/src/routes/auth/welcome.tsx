@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +29,7 @@ import {
   useHasPermission,
 } from '@/hooks/use-has-permission';
 import { cn } from '@/utils';
+import { useApiQuery } from '@/utils/api';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
@@ -309,44 +309,29 @@ const CohortSelectorStep = (props: {
   const [updating, setIsUpdating] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const activeTimetableQuery = useQuery({
+  const activeTimetableQuery = useApiQuery<
+    InferResponseType<typeof api.timetable.timetables.latestValid.$get>['data']
+  >(() => api.timetable.timetables.latestValid.$get(), {
     enabled: !props.userCohortId,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.timetables.latestValid.$get()
-      );
-      if (!res.success) {
-        throw new Error('Failed to fetch active timetable');
-      }
-      return res.data;
-    },
     queryKey: ['timetables', 'latestValid'] as const,
   });
 
-  const cohortQuery = useQuery({
-    enabled: !!(props.userCohortId || activeTimetableQuery.data?.id),
-    queryFn: async () => {
-      if (!props.userCohortId && activeTimetableQuery.data?.id) {
-        const res = await parseResponse(
-          api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-            param: { timetableId: activeTimetableQuery.data.id },
-          })
-        );
-        if (!res.success) {
-          throw new Error(t('cohort.fetchFailed'));
-        }
-        return res.data ?? [];
-      }
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error(t('cohort.fetchFailed'));
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.timetable.cohorts(
-      props.userCohortId ?? activeTimetableQuery.data?.id ?? null
-    ),
-  });
+  const cohortQuery = useApiQuery<
+    InferResponseType<typeof api.cohort.index.$get>['data']
+  >(
+    () =>
+      props.userCohortId
+        ? api.cohort.index.$get()
+        : api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+            param: { timetableId: activeTimetableQuery.data?.id as string },
+          }),
+    {
+      enabled: !!(props.userCohortId || activeTimetableQuery.data?.id),
+      queryKey: queryKeys.timetable.cohorts(
+        props.userCohortId ?? activeTimetableQuery.data?.id ?? null
+      ),
+    }
+  );
 
   const updateCohort = async (cohortId: string) => {
     setIsUpdating(true);

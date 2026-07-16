@@ -1,6 +1,5 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +16,7 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { useApiMutation } from '@/utils/api';
 import { timetableImportSchema } from '@/utils/form-schemas';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -44,30 +44,16 @@ export function TimetableImportDialog({
   const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const $import = api.timetable.import.$post;
-  const importMutation = useMutation<
-    InferResponseType<typeof $import>,
-    Error,
-    ImportPayload
-  >({
-    mutationFn: async ({ file, name, validFrom, validTo }: ImportPayload) => {
-      const res = await parseResponse(
-        api.timetable.import.$post({
-          form: {
-            name,
-            omanXml: file,
-            validFrom: validFrom.toISOString(),
-            ...(validTo && { validTo: validTo.toISOString() }),
-          },
-        })
-      );
-
-      if (!res.success) {
-        throw new Error('Failed to import timetable');
-      }
-
-      return res;
-    },
+  const importMutation = useApiMutation({
+    mutationFn: ({ file, name, validFrom, validTo }: ImportPayload) =>
+      api.timetable.import.$post({
+        form: {
+          name,
+          omanXml: file,
+          validFrom: validFrom.toISOString(),
+          ...(validTo && { validTo: validTo.toISOString() }),
+        },
+      }),
     onError: (error: Error) => {
       setImportStatus('error');
       setErrorMessage(error.message);

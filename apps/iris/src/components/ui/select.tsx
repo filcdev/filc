@@ -1,9 +1,44 @@
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/utils';
 
-const Select = SelectPrimitive.Root;
+type SelectItemOption = {
+  disabled?: boolean;
+  label: ReactNode;
+  value: string;
+};
+
+type SelectProps = SelectPrimitive.Root.Props<string | null> & {
+  items?: SelectItemOption[];
+};
+
+function Select({ items, children, ...props }: SelectProps) {
+  if (items && items.length > 0) {
+    return (
+      <SelectPrimitive.Root items={items} {...props}>
+        {children}
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem
+              disabled={item.disabled}
+              key={item.value}
+              value={item.value}
+            >
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </SelectPrimitive.Root>
+    );
+  }
+
+  return (
+    <SelectPrimitive.Root items={items} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  );
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

@@ -1,8 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Alert, AlertTitle } from '@/components/ui/alert';
@@ -15,15 +14,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -84,39 +78,34 @@ function SettingsPage() {
     systemMessage: true,
   });
 
-  const { isLoading, isError } = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications.settings.$get());
-      if (!res.success) {
-        throw new Error('Failed to load settings');
-      }
-      const data = res.data as PreferencesData;
-      setLanguage(data.language);
-      setTheme(data.theme);
-      setTimetableView(data.timetableView);
-      setPrefs(data.notificationPreferences);
-      return data;
-    },
+  const {
+    data: settings,
+    isLoading,
+    isError,
+  } = useApiQuery<PreferencesData>(() => api.notifications.settings.$get(), {
     queryKey: queryKeys.notifications.settings(),
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const res = await parseResponse(
-        api.notifications.settings.$patch({
-          json: {
-            language,
-            notificationPreferences: prefs,
-            theme,
-            timetableView,
-          },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save settings');
-      }
-      return res;
-    },
+  useEffect(() => {
+    if (!settings) {
+      return;
+    }
+    setLanguage(settings.language);
+    setTheme(settings.theme);
+    setTimetableView(settings.timetableView);
+    setPrefs(settings.notificationPreferences);
+  }, [settings]);
+
+  const saveMutation = useApiMutation({
+    mutationFn: () =>
+      api.notifications.settings.$patch({
+        json: {
+          language,
+          notificationPreferences: prefs,
+          theme,
+          timetableView,
+        },
+      }),
     onError: () => {
       toast.error(t('preferences.saveError'));
     },
@@ -163,6 +152,17 @@ function SettingsPage() {
     );
   }
 
+  const languageItems = [
+    { label: 'Magyar', value: 'hu' },
+    { label: 'English', value: 'en' },
+  ];
+
+  const themeItems = [
+    { label: t('preferences.themeLight'), value: 'light' },
+    { label: t('preferences.themeDark'), value: 'dark' },
+    { label: t('preferences.themeSystem'), value: 'system' },
+  ];
+
   return (
     <div className="container mx-auto max-w-2xl space-y-6 p-6">
       <div>
@@ -178,35 +178,25 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <span>{t('preferences.language')}</span>
             <Select
+              items={languageItems}
               onValueChange={handleSelectChange(setLanguage)}
               value={language}
             >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hu">Magyar</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
             </Select>
           </div>
           <div className="flex items-center justify-between">
             <span>{t('preferences.theme')}</span>
-            <Select onValueChange={handleSelectChange(setTheme)} value={theme}>
+            <Select
+              items={themeItems}
+              onValueChange={handleSelectChange(setTheme)}
+              value={theme}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">
-                  {t('preferences.themeLight')}
-                </SelectItem>
-                <SelectItem value="dark">
-                  {t('preferences.themeDark')}
-                </SelectItem>
-                <SelectItem value="system">
-                  {t('preferences.themeSystem')}
-                </SelectItem>
-              </SelectContent>
             </Select>
           </div>
         </CardContent>
@@ -221,17 +211,29 @@ function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <span>{t('preferences.channelsEnabled')}</span>
+            <label
+              className="cursor-pointer font-medium text-sm leading-none"
+              htmlFor="channelsEnabled"
+            >
+              {t('preferences.channelsEnabled')}
+            </label>
             <Checkbox
               checked={prefs.channelsEnabled}
+              id="channelsEnabled"
               onCheckedChange={() => togglePref('channelsEnabled')}
             />
           </div>
           {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
             <div className="flex items-center justify-between" key={key}>
-              <span>{t(labelKey)}</span>
+              <label
+                className="cursor-pointer font-medium text-sm leading-none"
+                htmlFor={`pref-${key}`}
+              >
+                {t(labelKey)}
+              </label>
               <Checkbox
                 checked={prefs[key as keyof typeof prefs]}
+                id={`pref-${key}`}
                 onCheckedChange={() => togglePref(key)}
               />
             </div>

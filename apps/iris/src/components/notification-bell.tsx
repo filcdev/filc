@@ -1,5 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Bell, MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -38,39 +38,30 @@ export function NotificationBell() {
   const { data: session } = authClient.useSession();
   const userId = session?.session.userId;
 
-  const { data: unreadData } = useQuery({
-    enabled: !!userId,
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications['unread-count'].$get());
-      if (!res.success) {
-        throw new Error('Failed to load unread count');
-      }
-      return res.data as UnreadCountData;
-    },
-    queryKey: queryKeys.notifications.unreadCount(userId ?? ''),
-    refetchInterval: 30_000,
-  });
+  const { data: unreadData } = useApiQuery<UnreadCountData>(
+    () => api.notifications['unread-count'].$get(),
+    {
+      enabled: !!userId,
+      queryKey: queryKeys.notifications.unreadCount(userId ?? ''),
+      refetchInterval: 30_000,
+    }
+  );
 
-  const { data: recentData } = useQuery({
-    enabled: !!userId,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.notifications.index.$get({
-          query: { limit: '5', offset: '0', unread: 'true' },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load recent notifications');
-      }
-      return (res.data ?? []) as NotificationItem[];
-    },
-    queryKey: queryKeys.notifications.recent(userId ?? ''),
-    refetchInterval: 30_000,
-  });
+  const { data: recentData } = useApiQuery<NotificationItem[]>(
+    () =>
+      api.notifications.index.$get({
+        query: { limit: '5', offset: '0', unread: 'true' },
+      }),
+    {
+      enabled: !!userId,
+      queryKey: queryKeys.notifications.recent(userId ?? ''),
+      refetchInterval: 30_000,
+    }
+  );
 
-  const markAsReadMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(api.notifications[':id'].read.$patch({ param: { id } })),
+  const markAsReadMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.notifications[':id'].read.$patch({ param: { id } }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),
@@ -78,9 +69,8 @@ export function NotificationBell() {
     },
   });
 
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () =>
-      parseResponse(api.notifications['read-all'].$patch()),
+  const markAllAsReadMutation = useApiMutation({
+    mutationFn: () => api.notifications['read-all'].$patch(),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),

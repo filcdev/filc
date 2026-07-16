@@ -3,10 +3,10 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { rolesFactory } from '#routes/roles/_factory';
 import { rbac } from '#utils/authorization';
+import { created, ok } from '#utils/http';
 
 export const listPermissions = rolesFactory.createHandlers(
   describeRoute({
@@ -18,13 +18,8 @@ export const listPermissions = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  requireAuthentication,
-  requireAuthorization('roles:read'),
-  (c) =>
-    c.json<SuccessResponse<{ permissions: string[] }>>({
-      data: { permissions: rbac.getAllPermissions() },
-      success: true,
-    })
+  ...authRouter('roles:read'),
+  (c) => ok(c, { permissions: rbac.getAllPermissions() })
 );
 
 export const listRoles = rolesFactory.createHandlers(
@@ -37,8 +32,7 @@ export const listRoles = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  requireAuthentication,
-  requireAuthorization('roles:read'),
+  ...authRouter('roles:read'),
   (c) => {
     const allRoles = rbac.getAllRoles();
 
@@ -47,10 +41,7 @@ export const listRoles = rolesFactory.createHandlers(
       name,
     }));
 
-    return c.json<SuccessResponse<{ roles: typeof roles }>>({
-      data: { roles },
-      success: true,
-    });
+    return ok(c, { roles });
   }
 );
 
@@ -76,8 +67,7 @@ export const createRole = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  requireAuthentication,
-  requireAuthorization('roles:manage'),
+  ...authRouter('roles:manage'),
   zValidator('json', createRoleSchema),
   async (c) => {
     const { name, permissions } = c.req.valid('json');
@@ -98,13 +88,7 @@ export const createRole = rolesFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse<{ name: string; can: string[] }>>(
-      {
-        data: { can: permissions, name },
-        success: true,
-      },
-      StatusCodes.CREATED
-    );
+    return created(c, { can: permissions, name });
   }
 );
 
@@ -122,8 +106,7 @@ export const updateRole = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  requireAuthentication,
-  requireAuthorization('roles:manage'),
+  ...authRouter('roles:manage'),
   zValidator('json', updateRoleSchema),
   zValidator('param', z.object({ name: z.string() })),
   async (c) => {
@@ -144,10 +127,7 @@ export const updateRole = rolesFactory.createHandlers(
     const { permissions } = c.req.valid('json');
     await rbac.setPermissions(roleName, permissions);
 
-    return c.json<SuccessResponse<{ name: string; can: string[] }>>({
-      data: { can: permissions, name: roleName },
-      success: true,
-    });
+    return ok(c, { can: permissions, name: roleName });
   }
 );
 
@@ -161,8 +141,7 @@ export const deleteRole = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  requireAuthentication,
-  requireAuthorization('roles:manage'),
+  ...authRouter('roles:manage'),
   zValidator('param', z.object({ name: z.string() })),
   async (c) => {
     const { name: roleName } = c.req.valid('param');
@@ -176,8 +155,6 @@ export const deleteRole = rolesFactory.createHandlers(
 
     await rbac.deleteRole(roleName);
 
-    return c.json<SuccessResponse>({
-      success: true,
-    });
+    return ok(c, undefined);
   }
 );

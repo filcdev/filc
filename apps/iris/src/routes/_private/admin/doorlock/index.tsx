@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
@@ -9,6 +8,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -26,19 +27,12 @@ export const Route = createFileRoute('/_private/admin/doorlock/')({
 function DoorlockDashboard() {
   const { t } = useTranslation();
 
-  const statsQuery = useQuery({
-    queryFn: async (): Promise<DoorlockStatsOverview> => {
-      const res = await parseResponse(api.doorlock.stats.overview.$get());
-      if (!(res.success && res.data?.stats)) {
-        throw new Error('Failed to load stats');
-      }
-      return res.data.stats as DoorlockStatsOverview;
-    },
-    queryKey: queryKeys.doorlock.stats(),
-  });
-
-  const stats = statsQuery.data;
-  const isLoading = statsQuery.isLoading;
+  const statsQuery = useApiQuery<NonNullable<StatsResponse['data']>>(
+    () => api.doorlock.stats.overview.$get(),
+    {
+      queryKey: queryKeys.doorlock.stats(),
+    }
+  );
 
   return (
     <div className="space-y-6">
@@ -51,38 +45,58 @@ function DoorlockDashboard() {
         </p>
       </div>
 
-      {statsQuery.isError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('doorlockDashboard.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(statsQuery.error as Error)?.message ??
-              t('doorlockDashboard.loadErrorMessage')}
-          </AlertDescription>
-        </Alert>
-      )}
+      <QueryBoundary
+        data={statsQuery.data}
+        error={(message) => (
+          <Alert variant="destructive">
+            <AlertTitle>{t('doorlockDashboard.loadError')}</AlertTitle>
+            <AlertDescription>
+              {message ?? t('doorlockDashboard.loadErrorMessage')}
+            </AlertDescription>
+          </Alert>
+        )}
+        loading={<DashboardContent isLoading={true} stats={undefined} t={t} />}
+        query={statsQuery}
+      >
+        {(data) => (
+          <DashboardContent isLoading={false} stats={data.stats} t={t} />
+        )}
+      </QueryBoundary>
+    </div>
+  );
+}
 
-      {(isLoading || stats) && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            icon={<IdCard className="text-primary" />}
-            isLoading={isLoading}
-            label={t('doorlockDashboard.totalCards')}
-            value={stats?.totalCards ?? 0}
-          />
-          <StatCard
-            icon={<Microchip className="text-primary" />}
-            isLoading={isLoading}
-            label={t('doorlockDashboard.totalDevices')}
-            value={stats?.totalDevices ?? 0}
-          />
-          <StatCard
-            icon={<DoorOpen className="text-primary" />}
-            isLoading={isLoading}
-            label={t('doorlockDashboard.successfulOpens')}
-            value={stats?.totalSuccessfulOpens ?? 0}
-          />
-        </div>
-      )}
+function DashboardContent({
+  isLoading,
+  stats,
+  t,
+}: {
+  isLoading: boolean;
+  stats: DoorlockStatsOverview | undefined;
+  t: (key: string) => string;
+}) {
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          icon={<IdCard className="text-primary" />}
+          isLoading={isLoading}
+          label={t('doorlockDashboard.totalCards')}
+          value={stats?.totalCards ?? 0}
+        />
+        <StatCard
+          icon={<Microchip className="text-primary" />}
+          isLoading={isLoading}
+          label={t('doorlockDashboard.totalDevices')}
+          value={stats?.totalDevices ?? 0}
+        />
+        <StatCard
+          icon={<DoorOpen className="text-primary" />}
+          isLoading={isLoading}
+          label={t('doorlockDashboard.successfulOpens')}
+          value={stats?.totalSuccessfulOpens ?? 0}
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -129,6 +143,6 @@ function DoorlockDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,7 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import type { InferResponseType } from 'hono/client';
-import { parseResponse } from 'hono/client';
 import {
   ArrowLeft,
   CreditCard,
@@ -34,6 +33,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/utils';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -53,25 +53,16 @@ function CardsPage() {
     data: cards,
     isLoading,
     isError,
-  } = useQuery({
-    queryFn: async (): Promise<SelfCard[]> => {
-      const res = await parseResponse(api.doorlock.self.cards.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cards');
-      }
-      return res.data.cards as SelfCard[];
-    },
+  } = useApiQuery<SelfCard[]>(() => api.doorlock.self.cards.$get(), {
     queryKey: queryKeys.doorlock.selfCards(),
   });
 
-  const freezeMutation = useMutation({
-    mutationFn: async ({ id, frozen }: { id: string; frozen: boolean }) =>
-      parseResponse(
-        api.doorlock.self.cards[':id'].frozen.$put({
-          json: { frozen },
-          param: { id },
-        })
-      ),
+  const freezeMutation = useApiMutation({
+    mutationFn: ({ id, frozen }: { id: string; frozen: boolean }) =>
+      api.doorlock.self.cards[':id'].frozen.$put({
+        json: { frozen },
+        param: { id },
+      }),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlock.selfCards.freezeError'));
     },
@@ -88,20 +79,12 @@ function CardsPage() {
     },
   });
 
-  const activateMutation = useMutation({
-    mutationFn: async ({
-      cardId,
-      deviceId,
-    }: {
-      cardId: string;
-      deviceId: string;
-    }) =>
-      parseResponse(
-        api.doorlock.self.cards[':id'].activate.$post({
-          json: { deviceId },
-          param: { id: cardId },
-        })
-      ),
+  const activateMutation = useApiMutation({
+    mutationFn: ({ cardId, deviceId }: { cardId: string; deviceId: string }) =>
+      api.doorlock.self.cards[':id'].activate.$post({
+        json: { deviceId },
+        param: { id: cardId },
+      }),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlock.selfCards.activateError'));
     },

@@ -18,7 +18,6 @@ import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscribe'
 import { Route as PublicSubsRouteImport } from './routes/_public/subs'
 import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
-import { Route as PrivateProbaRouteImport } from './routes/_private/proba'
 import { Route as PrivateNotificationsRouteImport } from './routes/_private/notifications'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
@@ -77,11 +76,6 @@ const PublicSubsRoute = PublicSubsRouteImport.update({
 const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => PrivateRouteRoute,
-} as any)
-const PrivateProbaRoute = PrivateProbaRouteImport.update({
-  id: '/proba',
-  path: '/proba',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateNotificationsRoute = PrivateNotificationsRouteImport.update({
@@ -179,7 +173,6 @@ export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/notifications': typeof PrivateNotificationsRoute
-  '/proba': typeof PrivateProbaRoute
   '/settings': typeof PrivateSettingsRoute
   '/subs': typeof PublicSubsRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
@@ -205,7 +198,6 @@ export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/notifications': typeof PrivateNotificationsRoute
-  '/proba': typeof PrivateProbaRoute
   '/settings': typeof PrivateSettingsRoute
   '/subs': typeof PublicSubsRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
@@ -233,7 +225,6 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteRouteWithChildren
   '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
   '/_private/notifications': typeof PrivateNotificationsRoute
-  '/_private/proba': typeof PrivateProbaRoute
   '/_private/settings': typeof PrivateSettingsRoute
   '/_public/subs': typeof PublicSubsRoute
   '/_public/unsubscribe': typeof PublicUnsubscribeRoute
@@ -262,7 +253,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/notifications'
-    | '/proba'
     | '/settings'
     | '/subs'
     | '/unsubscribe'
@@ -288,7 +278,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/notifications'
-    | '/proba'
     | '/settings'
     | '/subs'
     | '/unsubscribe'
@@ -315,7 +304,6 @@ export interface FileRouteTypes {
     | '/_public'
     | '/_private/admin'
     | '/_private/notifications'
-    | '/_private/proba'
     | '/_private/settings'
     | '/_public/subs'
     | '/_public/unsubscribe'
@@ -410,13 +398,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof PrivateSettingsRouteImport
-      parentRoute: typeof PrivateRouteRoute
-    }
-    '/_private/proba': {
-      id: '/_private/proba'
-      path: '/proba'
-      fullPath: '/proba'
-      preLoaderRoute: typeof PrivateProbaRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
     '/_private/notifications': {
@@ -574,7 +555,6 @@ const PrivateAdminRouteRouteWithChildren =
 interface PrivateRouteRouteChildren {
   PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
   PrivateNotificationsRoute: typeof PrivateNotificationsRoute
-  PrivateProbaRoute: typeof PrivateProbaRoute
   PrivateSettingsRoute: typeof PrivateSettingsRoute
   PrivateCardsIndexRoute: typeof PrivateCardsIndexRoute
 }
@@ -582,7 +562,6 @@ interface PrivateRouteRouteChildren {
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
   PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
   PrivateNotificationsRoute: PrivateNotificationsRoute,
-  PrivateProbaRoute: PrivateProbaRoute,
   PrivateSettingsRoute: PrivateSettingsRoute,
   PrivateCardsIndexRoute: PrivateCardsIndexRoute,
 }

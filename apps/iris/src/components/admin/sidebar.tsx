@@ -203,14 +203,12 @@ export function AdminSidebar() {
                 {category.items.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
+                      className="flex items-center gap-2"
                       onClick={() => handleNavigate(item.url)}
-                      render={
-                        <span className="flex items-center gap-2">
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </span>
-                      }
-                    />
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

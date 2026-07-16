@@ -6,10 +6,10 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { decode } from 'iconv-lite';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
+import { ok } from '#utils/http';
 import { importTimetableXML } from '#utils/timetable/imports';
 import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
@@ -50,8 +50,7 @@ export const importRoute = timetableFactory.createHandlers(
     tags: ['Timetable', 'Import'],
   }),
   zValidator('form', importSchema),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     // const body = (await c.req.parseBody()) as {
     //   omanXml?: File;
@@ -103,9 +102,7 @@ export const importRoute = timetableFactory.createHandlers(
         durationMs: end - start,
       });
 
-      return c.json<SuccessResponse>({
-        success: true,
-      });
+      return ok(c, undefined);
     } catch (e) {
       logger.error('Failed to parse XML', { error: e });
       throw new HTTPException(StatusCodes.BAD_REQUEST, {

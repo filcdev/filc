@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { MailCheck, MailX } from 'lucide-react';
@@ -10,16 +10,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useApiMutation } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
+
+type NotificationListResult = {
+  data: NotificationItem[];
+  success: boolean;
+  total?: number;
+};
 
 type NotificationItem = {
   id: string;
@@ -63,10 +64,24 @@ function NotificationsPage() {
   const [unreadFilter, setUnreadFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  const typeItems = [
+    { label: t('notifications.history.filterAll'), value: 'all' },
+    ...NOTIFICATION_TYPES.map((type) => ({
+      label: typeLabel(type, t),
+      value: type,
+    })),
+  ];
+
+  const statusItems = [
+    { label: t('notifications.history.filterAll'), value: 'all' },
+    { label: t('notifications.history.unread'), value: 'true' },
+    { label: t('notifications.history.read'), value: 'false' },
+  ];
   const pageSize = 20;
 
-  const { data, isLoading, isError } = useQuery({
-    queryFn: async () => {
+  const { data, isLoading, isError } = useQuery<NotificationListResult>({
+    queryFn: () => {
       const query: Record<string, string | undefined> = {
         limit: String(pageSize),
         offset: String(page * pageSize),
@@ -85,14 +100,9 @@ function NotificationsPage() {
       if (dateTo) {
         query.dateTo = dateTo;
       }
-      const res = await parseResponse(api.notifications.index.$get({ query }));
-      if (!res.success) {
-        throw new Error('Failed to load notifications');
-      }
-      return {
-        items: (res.data ?? []) as NotificationItem[],
-        total: (res as { total?: number }).total ?? 0,
-      };
+      return parseResponse(
+        api.notifications.index.$get({ query })
+      ) as unknown as NotificationListResult;
     },
     queryKey: [
       ...queryKeys.notifications.list(
@@ -106,9 +116,9 @@ function NotificationsPage() {
     ],
   });
 
-  const markReadMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(api.notifications[':id'].read.$patch({ param: { id } })),
+  const markReadMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.notifications[':id'].read.$patch({ param: { id } }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),
@@ -116,9 +126,8 @@ function NotificationsPage() {
     },
   });
 
-  const markAllReadMutation = useMutation({
-    mutationFn: async () =>
-      parseResponse(api.notifications['read-all'].$patch()),
+  const markAllReadMutation = useApiMutation({
+    mutationFn: () => api.notifications['read-all'].$patch(),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),
@@ -139,7 +148,7 @@ function NotificationsPage() {
     };
   };
 
-  const items = data?.items ?? [];
+  const items = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
 
@@ -152,6 +161,7 @@ function NotificationsPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <Select
+              items={typeItems}
               onValueChange={handleSelectChange(setTypeFilter)}
               value={typeFilter}
             >
@@ -160,29 +170,15 @@ function NotificationsPage() {
                   placeholder={t('notifications.history.filterType')}
                 />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t('notifications.history.filterAll')}
-                </SelectItem>
-                {NOTIFICATION_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {typeLabel(type, t)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
             </Select>
             <Select
+              items={statusItems}
               onValueChange={handleSelectChange(setUnreadFilter)}
               value={unreadFilter}
             >
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="true">Unread</SelectItem>
-                <SelectItem value="false">Read</SelectItem>
-              </SelectContent>
             </Select>
             <Input
               className="w-36"

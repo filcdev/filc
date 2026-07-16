@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import { useMemo } from 'react';
 import {
   Area,
@@ -33,8 +32,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
+
+type DeviceStatsResponse = InferResponseType<
+  (typeof api.doorlock.devices)[':id']['stats']['$get']
+>;
+type DeviceStat = NonNullable<DeviceStatsResponse['data']>[number];
 
 type DeviceStatsDialogProps = {
   deviceId: string | null;
@@ -63,25 +68,20 @@ export function DeviceStatsDialog({
   onOpenChange,
   open,
 }: DeviceStatsDialogProps) {
-  const statsQuery = useQuery({
-    enabled: !!deviceId && open,
-    queryFn: async () => {
-      if (!deviceId) {
-        return [];
-      }
-      const res = await parseResponse(
-        api.doorlock.devices[':id'].stats.$get({
-          param: { id: deviceId },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load stats');
-      }
-      return res.data;
+  const statsQuery = useApiQuery<DeviceStat[]>(
+    () => {
+      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
+      const id = deviceId!;
+      return api.doorlock.devices[':id'].stats.$get({
+        param: { id },
+      });
     },
-    queryKey: queryKeys.doorlock.deviceStats(deviceId ?? ''),
-    refetchInterval: 30_000, // Refresh every 30s
-  });
+    {
+      enabled: !!deviceId && open,
+      queryKey: queryKeys.doorlock.deviceStats(deviceId ?? ''),
+      refetchInterval: 30_000, // Refresh every 30s
+    }
+  );
 
   const chartData = useMemo(() => {
     if (!statsQuery.data) {

@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import type { Matcher } from 'react-day-picker';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +9,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/utils';
-import { getDateFnsLocale } from '@/utils/date-locale';
+import { formatLocalizedDate, getIntlLocale } from '@/utils/date-locale';
 
 type DatePickerProps = {
   date?: Date;
@@ -40,7 +39,7 @@ export function DatePicker({
   disabled = false,
 }: DatePickerProps) {
   const { i18n } = useTranslation();
-  const locale = getDateFnsLocale(i18n.language);
+  const locale = { code: getIntlLocale(i18n.language) } as const;
 
   return (
     <Popover>
@@ -56,7 +55,11 @@ export function DatePicker({
           >
             <CalendarIcon />
             {date ? (
-              format(date, 'PPP', { locale })
+              formatLocalizedDate(date, i18n.language, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })
             ) : (
               <span>{placeholder}</span>
             )}

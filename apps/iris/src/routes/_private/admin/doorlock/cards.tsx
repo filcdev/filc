@@ -1,11 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   Ban,
   CreditCard,
@@ -21,11 +17,9 @@ import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/stat-card';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -35,8 +29,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
@@ -81,54 +77,45 @@ function CardsPage() {
     session?.user?.permissions
   );
 
-  const cardsQuery = useQuery({
-    queryFn: async (): Promise<DoorlockCard[]> => {
-      const res = await parseResponse(api.doorlock.cards.$get());
-      if (!(res.success && res.data?.cards)) {
-        throw new Error('Failed to load cards');
-      }
-      return res.data.cards as DoorlockCard[];
-    },
-    queryKey: queryKeys.doorlock.cards(),
-  });
+  const cardsQuery = useApiQuery<NonNullable<CardsResponse['data']>>(
+    () => api.doorlock.cards.$get(),
+    {
+      queryKey: queryKeys.doorlock.cards(),
+    }
+  );
+  const cards: DoorlockCard[] | undefined = cardsQuery.data?.cards;
 
-  const devicesQuery = useQuery({
-    enabled: hasDeviceReadPermission && hasWritePermission,
-    queryFn: async (): Promise<DoorlockDevice[]> => {
-      const res = await parseResponse(api.doorlock.devices.$get());
-      if (!(res.success && res.data?.devices)) {
-        throw new Error('Failed to load devices');
-      }
-      return res.data.devices as DoorlockDevice[];
-    },
-    queryKey: queryKeys.doorlock.devices(),
-  });
+  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
+    () => api.doorlock.devices.$get(),
+    {
+      enabled: hasDeviceReadPermission && hasWritePermission,
+      queryKey: queryKeys.doorlock.devices(),
+    }
+  );
+  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const usersQuery = useQuery({
-    enabled: hasWritePermission,
-    queryFn: async (): Promise<DoorlockUser[]> => {
-      const res = await parseResponse(api.doorlock.cards.users.$get());
-      if (!(res.success && res.data?.users)) {
-        throw new Error('Failed to load users');
-      }
-      return res.data.users as DoorlockUser[];
-    },
-    queryKey: queryKeys.doorlock.cardUsers(),
-  });
+  const usersQuery = useApiQuery<NonNullable<UsersResponse['data']>>(
+    () => api.doorlock.cards.users.$get(),
+    {
+      enabled: hasWritePermission,
+      queryKey: queryKeys.doorlock.cardUsers(),
+    }
+  );
+  const users: DoorlockUser[] | undefined = usersQuery.data?.users;
 
   const $upsertCard = api.doorlock.cards.$post;
-  const upsertMutation = useMutation<
-    InferResponseType<typeof $upsertCard>,
-    Error,
-    { id?: string; payload: InferRequestType<typeof $upsertCard>['json'] }
-  >({
-    mutationFn: ({ id, payload }) => {
+  const upsertMutation = useApiMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id?: string;
+      payload: InferRequestType<typeof $upsertCard>['json'];
+    }) => {
       if (id) {
-        return parseResponse(
-          api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
-        );
+        return api.doorlock.cards[':id'].$put({ json: payload, param: { id } });
       }
-      return parseResponse(api.doorlock.cards.$post({ json: payload }));
+      return api.doorlock.cards.$post({ json: payload });
     },
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockCards.saveError'));
@@ -146,14 +133,9 @@ function CardsPage() {
     },
   });
 
-  const $deleteCard = api.doorlock.cards[':id'].$delete;
-  const deleteMutation = useMutation<
-    InferResponseType<typeof $deleteCard>,
-    Error,
-    string
-  >({
-    mutationFn: async (id: string) =>
-      parseResponse(api.doorlock.cards[':id'].$delete({ param: { id } })),
+  const deleteMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.doorlock.cards[':id'].$delete({ param: { id } }),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockCards.deleteError'));
     },
@@ -165,7 +147,7 @@ function CardsPage() {
   });
 
   const filteredCards = useMemo(() => {
-    const list = cardsQuery.data ?? [];
+    const list = cards ?? [];
     const term = search.trim().toLowerCase();
     let filtered = list;
 
@@ -199,16 +181,16 @@ function CardsPage() {
     }
 
     return filtered;
-  }, [cardsQuery.data, search, sortColumn, sortDirection]);
+  }, [cards, search, sortColumn, sortDirection]);
 
   const totals = useMemo(() => {
-    const cards = cardsQuery.data ?? [];
+    const list = cards ?? [];
     return {
-      disabled: cards.filter((card) => !card.enabled).length,
-      frozen: cards.filter((card) => card.frozen).length,
-      total: cards.length,
+      disabled: list.filter((card) => !card.enabled).length,
+      frozen: list.filter((card) => card.frozen).length,
+      total: list.length,
     };
-  }, [cardsQuery.data]);
+  }, [cards]);
 
   const handleSave = async (
     payload: InferRequestType<typeof $upsertCard>['json']
@@ -247,7 +229,6 @@ function CardsPage() {
     setSortDirection('asc');
   };
 
-  const isLoading = cardsQuery.isLoading;
   const hasError = cardsQuery.isError;
 
   return (
@@ -305,179 +286,169 @@ function CardsPage() {
         />
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('doorlockCards.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(cardsQuery.error as Error)?.message ??
-              t('doorlockCards.loadError')}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('name')}
-                >
-                  <div className="flex items-center gap-2">
-                    Name
-                    <SortIcon
-                      column="name"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('owner')}
-                >
-                  <div className="flex items-center gap-2">
-                    Owner
-                    <SortIcon
-                      column="owner"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('status')}
-                >
-                  <div className="flex items-center gap-2">
-                    Status
-                    <SortIcon
-                      column="status"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('devices')}
-                >
-                  <div className="flex items-center gap-2">
-                    Authorized devices
-                    <SortIcon
-                      column="devices"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('updated')}
-                >
-                  <div className="flex items-center gap-2">
-                    Updated
-                    <SortIcon
-                      column="updated"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                {hasWritePermission && (
-                  <TableHead>{t('doorlockCards.actions')}</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCards.map((card) => (
-                <TableRow key={card.id}>
-                  <TableCell className="font-medium">{card.name}</TableCell>
-                  <TableCell>
-                    {card.owner
-                      ? getOwnerLabel(card.owner) ||
-                        t('doorlockCards.unknownUser')
-                      : t('doorlockCards.unknownUser')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {!card.frozen && card.enabled && (
-                        <Badge variant="secondary">
-                          {t('doorlockCards.active')}
-                        </Badge>
-                      )}
-                      {card.frozen && (
-                        <Badge variant="outline">
-                          {t('doorlockCards.frozen')}
-                        </Badge>
-                      )}
-                      {!card.enabled && (
-                        <Badge variant="destructive">
-                          {t('doorlockCards.disabled')}
-                        </Badge>
-                      )}
+      <QueryBoundary data={cardsQuery.data} query={cardsQuery}>
+        {() => (
+          <div className="w-full overflow-x-auto rounded-md border">
+            <Table className="w-full min-w-3xl">
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Name
+                      <SortIcon
+                        column="name"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {card.authorizedDevices.length
-                      ? card.authorizedDevices
-                          .map((device) => device.name)
-                          .join(', ')
-                      : t('doorlockCards.noDevices')}
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                  </TableCell>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('owner')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Owner
+                      <SortIcon
+                        column="owner"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Status
+                      <SortIcon
+                        column="status"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('devices')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Authorized devices
+                      <SortIcon
+                        column="devices"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('updated')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Updated
+                      <SortIcon
+                        column="updated"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
                   {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          aria-label={t('doorlockCards.editCard')}
-                          onClick={() => {
-                            setSelectedCard(card);
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          aria-label={t('doorlockCards.deleteCard')}
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(card)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableHead>{t('doorlockCards.actions')}</TableHead>
                   )}
                 </TableRow>
-              ))}
-              {!(filteredCards.length || hasError) && (
-                <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 6 : 5}
-                  >
-                    {t('doorlockCards.noCardsFound')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredCards.map((card) => (
+                  <TableRow key={card.id}>
+                    <TableCell className="font-medium">{card.name}</TableCell>
+                    <TableCell>
+                      {card.owner
+                        ? getOwnerLabel(card.owner) ||
+                          t('doorlockCards.unknownUser')
+                        : t('doorlockCards.unknownUser')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {!card.frozen && card.enabled && (
+                          <Badge variant="secondary">
+                            {t('doorlockCards.active')}
+                          </Badge>
+                        )}
+                        {card.frozen && (
+                          <Badge variant="outline">
+                            {t('doorlockCards.frozen')}
+                          </Badge>
+                        )}
+                        {!card.enabled && (
+                          <Badge variant="destructive">
+                            {t('doorlockCards.disabled')}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {card.authorizedDevices.length
+                        ? card.authorizedDevices
+                            .map((device) => device.name)
+                            .join(', ')
+                        : t('doorlockCards.noDevices')}
+                    </TableCell>
+                    <TableCell>
+                      {dayjs(card.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                    </TableCell>
+                    {hasWritePermission && (
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            aria-label={t('doorlockCards.editCard')}
+                            onClick={() => {
+                              setSelectedCard(card);
+                              setDialogOpen(true);
+                            }}
+                            size="icon"
+                            variant="outline"
+                          >
+                            <Pen className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            aria-label={t('doorlockCards.deleteCard')}
+                            disabled={deleteMutation.isPending}
+                            onClick={() => handleDelete(card)}
+                            size="icon"
+                            variant="destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+                {!(filteredCards.length || hasError) && (
+                  <TableRow>
+                    <TableCell
+                      className="text-muted-foreground"
+                      colSpan={hasWritePermission ? 6 : 5}
+                    >
+                      {t('doorlockCards.noCardsFound')}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </QueryBoundary>
 
       {hasWritePermission && (
         <CardDialog<DoorlockCard, DoorlockDevice, DoorlockUser>
           card={selectedCard}
-          devices={devicesQuery.data ?? []}
+          devices={devices ?? []}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
@@ -486,7 +457,7 @@ function CardsPage() {
           }}
           onSubmit={handleSave}
           open={dialogOpen}
-          users={usersQuery.data ?? []}
+          users={users ?? []}
         />
       )}
     </div>

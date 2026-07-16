@@ -1,11 +1,9 @@
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { and, count, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -18,7 +16,8 @@ import {
   substitutionLessonMTM,
   timetable,
 } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
+import { ok } from '#utils/http';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
@@ -26,8 +25,6 @@ import { cleanupOrphanedCohorts } from '#utils/timetable/cleanup';
 import { dateToYYYYMMDD } from '#utils/timetable/date';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'timetable']);
 
 const timetableSelectSchema = createSelectSchema(timetable);
 
@@ -58,19 +55,9 @@ export const getAllTimetables = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   async (c) => {
-    try {
-      const timetables = await db.select().from(timetable);
+    const timetables = await db.select().from(timetable);
 
-      return c.json<SuccessResponse<typeof timetables>>({
-        data: timetables,
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Error while getting all timetables: ', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all timetables',
-      });
-    }
+    return ok(c, timetables);
   }
 );
 
@@ -91,39 +78,26 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   async (c) => {
-    try {
-      const activeId = await getActiveTimetableId();
-      if (!activeId) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'No valid timetable found.',
-        });
-      }
-
-      const [latestValidTimetable] = await db
-        .select()
-        .from(timetable)
-        .where(eq(timetable.id, activeId))
-        .limit(1);
-
-      if (!latestValidTimetable) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'No valid timetable found.',
-        });
-      }
-
-      return c.json<SuccessResponse<typeof latestValidTimetable>>({
-        data: latestValidTimetable,
-        success: true,
-      });
-    } catch (error) {
-      if (error instanceof HTTPException) {
-        throw error;
-      }
-      logger.error('Failed to get latest valid timetable: ', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to get latest valid template.',
+    const activeId = await getActiveTimetableId();
+    if (!activeId) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'No valid timetable found.',
       });
     }
+
+    const [latestValidTimetable] = await db
+      .select()
+      .from(timetable)
+      .where(eq(timetable.id, activeId))
+      .limit(1);
+
+    if (!latestValidTimetable) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'No valid timetable found.',
+      });
+    }
+
+    return ok(c, latestValidTimetable);
   }
 );
 
@@ -144,29 +118,19 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   async (c) => {
-    try {
-      const today = dateToYYYYMMDD(new Date());
+    const today = dateToYYYYMMDD(new Date());
 
-      const timetables = await db
-        .select()
-        .from(timetable)
-        .where(
-          and(
-            lte(timetable.validFrom, today),
-            or(isNull(timetable.validTo), gte(timetable.validTo, today))
-          )
-        );
+    const timetables = await db
+      .select()
+      .from(timetable)
+      .where(
+        and(
+          lte(timetable.validFrom, today),
+          or(isNull(timetable.validTo), gte(timetable.validTo, today))
+        )
+      );
 
-      return c.json<SuccessResponse<typeof timetables>>({
-        data: timetables,
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Error while getting all timetables: ', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all timetables',
-      });
-    }
+    return ok(c, timetables);
   }
 );
 
@@ -199,8 +163,7 @@ export const updateTimetable = timetableFactory.createHandlers(
   }),
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', updateTimetableSchema),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
     const body = c.req.valid('json');
@@ -233,10 +196,7 @@ export const updateTimetable = timetableFactory.createHandlers(
       });
     }
 
-    return c.json<SuccessResponse<typeof updated>>({
-      data: updated,
-      success: true,
-    });
+    return ok(c, updated);
   }
 );
 
@@ -275,8 +235,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   zValidator('param', z.object({ id: z.uuid() })),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
 
@@ -341,7 +300,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
       dispatchImmediateNotification('cohort_reselection_required', { userId });
     }
 
-    return c.json<SuccessResponse>({ success: true });
+    return ok(c, undefined);
   }
 );
 
@@ -391,8 +350,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
     tags: ['Timetable'],
   }),
   zValidator('param', z.object({ id: z.uuid() })),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
 
@@ -498,21 +456,18 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       .where(eq(lesson.timetableId, id));
     const substitutionIds = [...new Set(substitutionRows.map((r) => r.id))];
 
-    return c.json({
-      data: {
-        cohorts: cohortResults,
-        isCurrentTimetable,
-        targetTimetable,
-        totals: {
-          danglingUsersCleaned: affectedUserCount,
-          lessonsDeleted: lessonCount?.count ?? 0,
-          movedLessonsDeleted: movedLessonIds.length,
-          orphanedCohorts: orphanedCount,
-          substitutionsDeleted: substitutionIds.length,
-          survivingCohorts: cohortResults.length - orphanedCount,
-        },
+    return ok(c, {
+      cohorts: cohortResults,
+      isCurrentTimetable,
+      targetTimetable,
+      totals: {
+        danglingUsersCleaned: affectedUserCount,
+        lessonsDeleted: lessonCount?.count ?? 0,
+        movedLessonsDeleted: movedLessonIds.length,
+        orphanedCohorts: orphanedCount,
+        substitutionsDeleted: substitutionIds.length,
+        survivingCohorts: cohortResults.length - orphanedCount,
       },
-      success: true,
     });
   }
 );
@@ -542,21 +497,10 @@ export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  requireAuthentication,
-  requireAuthorization('import:timetable'),
+  ...authRouter('import:timetable'),
   async (c) => {
-    try {
-      const result = await cleanupOrphanedCohorts();
+    const result = await cleanupOrphanedCohorts();
 
-      return c.json({
-        data: result,
-        success: true as const,
-      });
-    } catch (error) {
-      logger.error('Failed to cleanup orphaned cohorts: ', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to cleanup orphaned cohorts',
-      });
-    }
+    return ok(c, result);
   }
 );

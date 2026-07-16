@@ -1,11 +1,6 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useApiQuery } from '@/utils/api';
 import {
   formatLocalizedDate,
   getDayOrder,
@@ -224,26 +220,20 @@ export function MovedLessonDialog({
     });
   }, [formDate, i18n.language]);
 
-  const cohortLessonsQuery = useQuery({
-    enabled: !!selectedCohort,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.lessons.getForCohort[':cohortId'].$get({
-          param: { cohortId: selectedCohort },
-          query: {},
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load lessons');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.timetable.lessonsByCohort(selectedCohort),
-  });
+  const cohortLessonsQuery = useApiQuery<EnrichedLesson[]>(
+    () =>
+      api.timetable.lessons.getForCohort[':cohortId'].$get({
+        param: { cohortId: selectedCohort },
+        query: {},
+      }),
+    {
+      enabled: !!selectedCohort,
+      queryKey: queryKeys.timetable.lessonsByCohort(selectedCohort),
+    }
+  );
 
-  const availableClassroomsQuery = useQuery({
-    enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
-    queryFn: async () => {
+  const availableClassroomsQuery = useApiQuery<Classroom[]>(
+    () => {
       const dateParam =
         formDate instanceof Date
           ? formDate.toISOString().split('T')[0]
@@ -253,29 +243,26 @@ export function MovedLessonDialog({
       const sp = formStartingPeriod;
 
       if (!(sd && sp)) {
-        return [];
+        return [] as never;
       }
 
-      const res = await parseResponse(
-        api.timetable.classrooms.getAvailable.$get({
-          query: {
-            date: dateParam as string,
-            startingDay: sd,
-            startingPeriod: sp,
-          },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load available classrooms');
-      }
-      return res.data;
+      return api.timetable.classrooms.getAvailable.$get({
+        query: {
+          date: dateParam as string,
+          startingDay: sd,
+          startingPeriod: sp,
+        },
+      });
     },
-    queryKey: queryKeys.timetable.availableClassrooms(
-      formDate,
-      formStartingDay,
-      formStartingPeriod
-    ),
-  });
+    {
+      enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
+      queryKey: queryKeys.timetable.availableClassrooms(
+        formDate,
+        formStartingDay,
+        formStartingPeriod
+      ),
+    }
+  );
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex filtering and mapping logic
   const availableLessons = useMemo(() => {

@@ -1,16 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -22,7 +17,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -32,8 +26,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
@@ -78,50 +74,29 @@ function AnnouncementsPage() {
     session?.user?.permissions
   );
 
-  const announcementsQuery = useQuery({
-    queryFn: async (): Promise<AnnouncementItem[]> => {
-      const res = await parseResponse(
-        api.news.announcements.$get({
-          query: { includeExpired: 'true' },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load announcements');
-      }
-      return res.data as AnnouncementItem[];
-    },
-    queryKey: queryKeys.news.announcements(),
-  });
+  const announcementsQuery = useApiQuery<AnnouncementItem[]>(
+    () =>
+      api.news.announcements.$get({
+        query: { includeExpired: 'true' },
+      }),
+    {
+      queryKey: queryKeys.news.announcements(),
+    }
+  );
 
-  const cohortsQuery = useQuery({
+  const cohortsQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
+  >(() => api.cohort.index.$get(), {
     enabled: hasWritePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data;
-    },
     queryKey: queryKeys.cohorts(),
   });
 
   const $create = api.news.announcements.$post;
-  const createMutation = useMutation<
-    InferResponseType<typeof $create>,
-    Error,
-    InferRequestType<typeof $create>['json']
-  >({
-    mutationFn: async (payload) => {
-      const res = await parseResponse(
-        api.news.announcements.$post({
-          json: payload,
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create announcement');
-      }
-      return res;
-    },
+  const createMutation = useApiMutation({
+    mutationFn: (payload: InferRequestType<typeof $create>['json']) =>
+      api.news.announcements.$post({
+        json: payload,
+      }),
     onError: (error: Error) => {
       toast.error(error.message || t('announcements.createError'));
     },
@@ -135,25 +110,18 @@ function AnnouncementsPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({
+  const updateMutation = useApiMutation({
+    mutationFn: ({
       id,
       payload,
     }: {
       id: string;
       payload: InferRequestType<typeof $create>['json'];
-    }) => {
-      const res = await parseResponse(
-        api.news.announcements[':id'].$patch({
-          json: payload,
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update announcement');
-      }
-      return res;
-    },
+    }) =>
+      api.news.announcements[':id'].$patch({
+        json: payload,
+        param: { id },
+      }),
     onError: (error: Error) => {
       toast.error(error.message || t('announcements.updateError'));
     },
@@ -167,9 +135,9 @@ function AnnouncementsPage() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(api.news.announcements[':id'].$delete({ param: { id } })),
+  const deleteMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.news.announcements[':id'].$delete({ param: { id } }),
     onError: (error: Error) => {
       toast.error(error.message || t('announcements.deleteError'));
     },
@@ -268,7 +236,6 @@ function AnnouncementsPage() {
     setItemToDelete(null);
   };
 
-  const isLoading = announcementsQuery.isLoading;
   const hasError = announcementsQuery.isError;
 
   return (
@@ -324,148 +291,141 @@ function AnnouncementsPage() {
         </div>
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('announcements.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(announcementsQuery.error as Error)?.message ||
-              t('announcements.loadErrorMessage')}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="w-[30%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('title')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.title')}
-                    <SortIcon
-                      column="title"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('validFrom')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.validFrom')}
-                    <SortIcon
-                      column="validFrom"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('validUntil')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.validUntil')}
-                    <SortIcon
-                      column="validUntil"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="w-[20%] cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('cohorts')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('announcements.cohorts')}
-                    <SortIcon
-                      column="cohorts"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                {hasWritePermission && (
-                  <TableHead className="w-[20%]">
-                    {t('announcements.actions')}
+      <QueryBoundary data={announcementsQuery.data} query={announcementsQuery}>
+        {() => (
+          <div className="w-full overflow-x-auto rounded-md border">
+            <Table className="w-full min-w-3xl">
+              <TableHeader>
+                <TableRow>
+                  <TableHead
+                    className="w-[30%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('title')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.title')}
+                      <SortIcon
+                        column="title"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
                   </TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAnnouncements.map((announcement) => (
-                <TableRow key={announcement.id}>
-                  <TableCell className="font-medium">
-                    {announcement.title ??
-                      t('announcements.untitled', 'Untitled')}
-                  </TableCell>
-                  <TableCell>
-                    {formatLocalizedDate(announcement.validFrom, i18n.language)}
-                  </TableCell>
-                  <TableCell>
-                    {formatLocalizedDate(
-                      announcement.validUntil,
-                      i18n.language
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {announcement.cohortIds.length > 0
-                      ? cohortsQuery.data
-                          ?.filter((c) =>
-                            announcement.cohortIds.includes(c?.id || '')
-                          )
-                          .map((c) => c?.name)
-                          .join(', ')
-                      : t('announcements.noCohorts')}
-                  </TableCell>
+                  <TableHead
+                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('validFrom')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.validFrom')}
+                      <SortIcon
+                        column="validFrom"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('validUntil')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.validUntil')}
+                      <SortIcon
+                        column="validUntil"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="w-[20%] cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('cohorts')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t('announcements.cohorts')}
+                      <SortIcon
+                        column="cohorts"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
                   {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedItem(announcement);
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(announcement)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableHead className="w-[20%]">
+                      {t('announcements.actions')}
+                    </TableHead>
                   )}
                 </TableRow>
-              ))}
-              {!(filteredAnnouncements.length || hasError) && (
-                <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 5 : 4}
-                  >
-                    {t('announcements.noAnnouncements')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredAnnouncements.map((announcement) => (
+                  <TableRow key={announcement.id}>
+                    <TableCell className="font-medium">
+                      {announcement.title ??
+                        t('announcements.untitled', 'Untitled')}
+                    </TableCell>
+                    <TableCell>
+                      {formatLocalizedDate(
+                        announcement.validFrom,
+                        i18n.language
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatLocalizedDate(
+                        announcement.validUntil,
+                        i18n.language
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {announcement.cohortIds.length > 0
+                        ? cohortsQuery.data
+                            ?.filter((c) =>
+                              announcement.cohortIds.includes(c?.id || '')
+                            )
+                            .map((c) => c?.name)
+                            .join(', ')
+                        : t('announcements.noCohorts')}
+                    </TableCell>
+                    {hasWritePermission && (
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setSelectedItem(announcement);
+                              setDialogOpen(true);
+                            }}
+                            size="icon"
+                            variant="outline"
+                          >
+                            <Pen className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            disabled={deleteMutation.isPending}
+                            onClick={() => handleDelete(announcement)}
+                            size="icon"
+                            variant="destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+                {!(filteredAnnouncements.length || hasError) && (
+                  <TableRow>
+                    <TableCell
+                      className="text-muted-foreground"
+                      colSpan={hasWritePermission ? 5 : 4}
+                    >
+                      {t('announcements.noAnnouncements')}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </QueryBoundary>
 
       {hasWritePermission && (
         <>

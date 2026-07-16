@@ -1,8 +1,8 @@
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { teacher } from '#database/schema/timetable';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -31,9 +31,6 @@ export const getTeachers = timetableFactory.createHandlers(
   async (c) => {
     const teachers = await db.select().from(teacher);
 
-    return c.json<SuccessResponse<typeof teachers>>({
-      data: teachers,
-      success: true,
-    });
+    return ok(c, teachers);
   }
 );

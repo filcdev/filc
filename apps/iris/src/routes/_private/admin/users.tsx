@@ -1,16 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+import { QueryBoundary } from '@/components/util/query-boundary';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -47,14 +46,9 @@ function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [inputValue, search, navigate]);
 
-  const cohortsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data ?? [];
-    },
+  const cohortsQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
+  >(() => api.cohort.index.$get(), {
     queryKey: queryKeys.cohorts(),
   });
 
@@ -63,24 +57,21 @@ function AdminUsersPage() {
     [cohortsQuery.data]
   );
 
-  const usersQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.users.index.$get({
-          query: {
-            limit: limit.toString(),
-            offset: ((page - 1) * limit).toString(),
-            search,
-          },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load users');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.users(page, search),
-  });
+  const usersQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.users.index.$get>['data']>
+  >(
+    () =>
+      api.users.index.$get({
+        query: {
+          limit: limit.toString(),
+          offset: ((page - 1) * limit).toString(),
+          search,
+        },
+      }),
+    {
+      queryKey: queryKeys.users(page, search),
+    }
+  );
 
   const total = usersQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);
@@ -89,9 +80,6 @@ function AdminUsersPage() {
     () => ({ currentPage: page, total, totalPages }),
     [page, total, totalPages]
   );
-
-  const isLoading = usersQuery.isLoading;
-  const hasError = usersQuery.isError;
 
   return (
     <div className="space-y-6">
@@ -136,20 +124,8 @@ function AdminUsersPage() {
         />
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>{t('users.loadError')}</AlertTitle>
-          <AlertDescription>
-            {(usersQuery.error as Error)?.message ??
-              t('users.loadErrorMessage')}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        usersQuery.data && (
+      <QueryBoundary data={usersQuery.data} query={usersQuery}>
+        {(data) => (
           <UsersTable
             cohortMap={cohortMap}
             limit={limit}
@@ -157,11 +133,11 @@ function AdminUsersPage() {
               navigate({ search: (prev) => ({ ...prev, page: newPage }) })
             }
             page={page}
-            total={usersQuery.data.total}
-            users={usersQuery.data.users}
+            total={data.total}
+            users={data.users}
           />
-        )
-      )}
+        )}
+      </QueryBoundary>
     </div>
   );
 }

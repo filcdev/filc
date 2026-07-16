@@ -1,5 +1,4 @@
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -21,8 +20,9 @@ import {
   termDefinition,
   weekDefinition,
 } from '#database/schema/timetable';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { env } from '#utils/environment';
+import { ok } from '#utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
@@ -35,8 +35,6 @@ import {
   createUpdateSchema,
 } from '#utils/zod';
 import { timetableFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'substitutions']);
 
 const substitutionSchema = createSelectSchema(substitution);
 
@@ -358,78 +356,68 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
     tags: ['Substitution'],
   }),
   async (c) => {
-    try {
-      // First get all substitutions with their lesson IDs
-      const substitutions = await db
-        .select({
-          lessonIds: sql<string[]>`COALESCE(
-            ARRAY_AGG(DISTINCT ${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessonIds'),
-          substitution,
-          // teacher: sql`
-          //   CASE
-          //     WHEN ${teacher.id} IS NOT NULL THEN
-          //       jsonb_build_object(
-          //         'id', ${teacher.id},
-          //         'firstName', ${teacher.firstName},
-          //         'lastName', ${teacher.lastName},
-          //         'short', ${teacher.short},
-          //         'gender', ${teacher.gender},
-          //         'userId', ${teacher.userId}
-          //       )
-          //     ELSE NULL
-          //   END
-          // `.as('teacher'),
-          teacher: {
-            firstName: teacher.firstName,
-            id: teacher.id,
-            lastName: teacher.lastName,
-            short: teacher.short,
-          },
-        })
-        .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-        .leftJoin(
-          substitutionLessonMTM,
-          eq(substitution.id, substitutionLessonMTM.substitutionId)
-        )
-        .groupBy(
-          substitution.id,
-          teacher.id,
-          teacher.firstName,
-          teacher.lastName,
-          teacher.short,
-          teacher.gender,
-          teacher.userId
-        );
-
-      // Collect all unique lesson IDs
-      const allLessonIds = Array.from(
-        new Set(substitutions.flatMap((s) => s.lessonIds))
+    // First get all substitutions with their lesson IDs
+    const substitutions = await db
+      .select({
+        lessonIds: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessonIds'),
+        substitution,
+        // teacher: sql`
+        //   CASE
+        //     WHEN ${teacher.id} IS NOT NULL THEN
+        //       jsonb_build_object(
+        //         'id', ${teacher.id},
+        //         'firstName', ${teacher.firstName},
+        //         'lastName', ${teacher.lastName},
+        //         'short', ${teacher.short},
+        //         'gender', ${teacher.gender},
+        //         'userId', ${teacher.userId}
+        //       )
+        //     ELSE NULL
+        //   END
+        // `.as('teacher'),
+        teacher: {
+          firstName: teacher.firstName,
+          id: teacher.id,
+          lastName: teacher.lastName,
+          short: teacher.short,
+        },
+      })
+      .from(substitution)
+      .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+      .leftJoin(
+        substitutionLessonMTM,
+        eq(substitution.id, substitutionLessonMTM.substitutionId)
+      )
+      .groupBy(
+        substitution.id,
+        teacher.id,
+        teacher.firstName,
+        teacher.lastName,
+        teacher.short,
+        teacher.gender,
+        teacher.userId
       );
 
-      // Enrich lessons in one batch
-      const enrichedLessons = await enrichLessons(allLessonIds);
-      const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
+    // Collect all unique lesson IDs
+    const allLessonIds = Array.from(
+      new Set(substitutions.flatMap((s) => s.lessonIds))
+    );
 
-      // Map lessons back to substitutions
-      const result = substitutions.map((s) => ({
-        lessons: s.lessonIds.map((id) => lessonMap.get(id)).filter(Boolean),
-        substitution: s.substitution,
-        teacher: s.teacher,
-      }));
+    // Enrich lessons in one batch
+    const enrichedLessons = await enrichLessons(allLessonIds);
+    const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
 
-      return c.json<SuccessResponse<typeof result>>({
-        data: result,
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Error while fetching all substitutions', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all substitutions',
-      });
-    }
+    // Map lessons back to substitutions
+    const result = substitutions.map((s) => ({
+      lessons: s.lessonIds.map((id) => lessonMap.get(id)).filter(Boolean),
+      substitution: s.substitution,
+      teacher: s.teacher,
+    }));
+
+    return ok(c, result);
   }
 );
 
@@ -450,38 +438,28 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
     tags: ['Substitution'],
   }),
   async (c) => {
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const substitutions = await db
-        .select({
-          lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessons'),
-          substitution,
-          teacher,
-        })
-        .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-        .leftJoin(
-          substitutionLessonMTM,
-          eq(substitution.id, substitutionLessonMTM.substitutionId)
-        )
-        .where(gte(substitution.date, today))
-        .groupBy(substitution.id, teacher.id);
+    const substitutions = await db
+      .select({
+        lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+        substitution,
+        teacher,
+      })
+      .from(substitution)
+      .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+      .leftJoin(
+        substitutionLessonMTM,
+        eq(substitution.id, substitutionLessonMTM.substitutionId)
+      )
+      .where(gte(substitution.date, today))
+      .groupBy(substitution.id, teacher.id);
 
-      return c.json<SuccessResponse<typeof substitutions>>({
-        data: substitutions,
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Error while fetching substitutions', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch substitutions',
-      });
-    }
+    return ok(c, substitutions);
   }
 );
 
@@ -525,48 +503,31 @@ export const getRelevantSubstitutionsForCohort =
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      try {
-        const substitutions = await db
-          .select({
-            lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessons'),
-            substitution,
-            teacher,
-          })
-          .from(substitution)
-          .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-          .leftJoin(
-            substitutionLessonMTM,
-            eq(substitution.id, substitutionLessonMTM.substitutionId)
-          )
-          .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
-          .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-          .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-          .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
-          .groupBy(substitution.id, teacher.id);
+      const substitutions = await db
+        .select({
+          lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+          substitution,
+          teacher,
+        })
+        .from(substitution)
+        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+        .leftJoin(
+          substitutionLessonMTM,
+          eq(substitution.id, substitutionLessonMTM.substitutionId)
+        )
+        .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+        .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
+        .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+        .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
+        .groupBy(substitution.id, teacher.id);
 
-        return c.json<
-          SuccessResponse<{
-            cohortId: string;
-            substitutions: typeof substitutions;
-          }>
-        >({
-          data: {
-            cohortId,
-            substitutions,
-          },
-          success: true,
-        });
-      } catch (error) {
-        logger.error('Error while fetching substitutions for cohort', {
-          error,
-        });
-        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-          message: 'Failed to fetch substitutions for cohort',
-        });
-      }
+      return ok(c, {
+        cohortId,
+        substitutions,
+      });
     }
   );
 
@@ -604,8 +565,7 @@ export const createSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:create'),
+  ...authRouter('substitution:create'),
   zValidator('json', createSchema),
   async (c) => {
     const { lessonIds, date, substituter, comment } = c.req.valid('json');
@@ -666,10 +626,7 @@ export const createSubstitution = timetableFactory.createHandlers(
       substituter,
     });
 
-    return c.json<SuccessResponse<typeof result>>({
-      data: result,
-      success: true,
-    });
+    return ok(c, result);
   }
 );
 
@@ -785,8 +742,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:create'),
+  ...authRouter('substitution:create'),
   zValidator('json', manualCreateSchema),
   async (c) => {
     const {
@@ -990,113 +946,97 @@ export const updateSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:update'),
+  ...authRouter('substitution:update'),
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', updateSchema),
   async (c) => {
-    try {
-      const { id } = c.req.valid('param');
-      const body = c.req.valid('json');
+    const { id } = c.req.valid('param');
+    const body = c.req.valid('json');
 
-      const [existing] = await db
-        .select()
-        .from(substitution)
-        .where(eq(substitution.id, id))
-        .limit(1);
+    const [existing] = await db
+      .select()
+      .from(substitution)
+      .where(eq(substitution.id, id))
+      .limit(1);
 
-      if (!existing) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Substitution not found',
-        });
-      }
-
-      if (body.lessonIds?.length) {
-        const lessonCount = await db.$count(
-          lesson,
-          inArray(lesson.id, body.lessonIds)
-        );
-        if (lessonCount !== body.lessonIds.length) {
-          throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message: `Some lessons don't exist, wanted: ${body.lessonIds.length}, found: ${lessonCount}`,
-          });
-        }
-      }
-
-      const updatedSubstitution = await db.transaction(
-        async (tx) => {
-          await validateUpdateTeacherConflict(tx, id, body, existing);
-
-          const [updated] = await tx
-            .update(substitution)
-            .set({
-              comment: body.comment,
-              date: body.date ?? undefined,
-              substituter: body.substituter,
-            })
-            .where(eq(substitution.id, id))
-            .returning();
-
-          // If lessonIds were explicitly provided, replace MTM relationships
-          if (body.lessonIds != null) {
-            // Delete existing relationships
-            await tx
-              .delete(substitutionLessonMTM)
-              .where(eq(substitutionLessonMTM.substitutionId, id));
-
-            // Insert new relationships (if any — empty array clears all)
-            if (body.lessonIds.length > 0) {
-              const mtmValues = body.lessonIds.map((lessonId) => ({
-                lessonId,
-                substitutionId: id,
-              }));
-
-              await tx.insert(substitutionLessonMTM).values(mtmValues);
-            }
-          }
-
-          return updated;
-        },
-        { isolationLevel: 'serializable' }
-      );
-
-      if (!updatedSubstitution) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Substitution not found',
-        });
-      }
-
-      cancelPendingNotification(id, 'substitution');
-
-      // Fetch existing lesson IDs for notification fallback
-      const existingLessonRecords = await db
-        .select({ lessonId: substitutionLessonMTM.lessonId })
-        .from(substitutionLessonMTM)
-        .where(eq(substitutionLessonMTM.substitutionId, id));
-      const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
-
-      dispatchPendingNotification(id, 'substitution', {
-        date: body.date ?? existing.date,
-        lessonIds: body.lessonIds == null ? existingLessonIds : body.lessonIds,
-        substituter:
-          'substituter' in body ? body.substituter : existing.substituter,
-      });
-
-      return c.json<SuccessResponse<typeof updatedSubstitution>>({
-        data: updatedSubstitution,
-        success: true,
-      });
-    } catch (error) {
-      if (error instanceof HTTPException) {
-        throw error;
-      }
-      logger.error('Error while updating substitution', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause:
-          env.mode === 'development' ? (error as Error).message : undefined,
-        message: 'Failed to update substitution',
+    if (!existing) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Substitution not found',
       });
     }
+
+    if (body.lessonIds?.length) {
+      const lessonCount = await db.$count(
+        lesson,
+        inArray(lesson.id, body.lessonIds)
+      );
+      if (lessonCount !== body.lessonIds.length) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: `Some lessons don't exist, wanted: ${body.lessonIds.length}, found: ${lessonCount}`,
+        });
+      }
+    }
+
+    const updatedSubstitution = await db.transaction(
+      async (tx) => {
+        await validateUpdateTeacherConflict(tx, id, body, existing);
+
+        const [updated] = await tx
+          .update(substitution)
+          .set({
+            comment: body.comment,
+            date: body.date ?? undefined,
+            substituter: body.substituter,
+          })
+          .where(eq(substitution.id, id))
+          .returning();
+
+        // If lessonIds were explicitly provided, replace MTM relationships
+        if (body.lessonIds != null) {
+          // Delete existing relationships
+          await tx
+            .delete(substitutionLessonMTM)
+            .where(eq(substitutionLessonMTM.substitutionId, id));
+
+          // Insert new relationships (if any — empty array clears all)
+          if (body.lessonIds.length > 0) {
+            const mtmValues = body.lessonIds.map((lessonId) => ({
+              lessonId,
+              substitutionId: id,
+            }));
+
+            await tx.insert(substitutionLessonMTM).values(mtmValues);
+          }
+        }
+
+        return updated;
+      },
+      { isolationLevel: 'serializable' }
+    );
+
+    if (!updatedSubstitution) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Substitution not found',
+      });
+    }
+
+    cancelPendingNotification(id, 'substitution');
+
+    // Fetch existing lesson IDs for notification fallback
+    const existingLessonRecords = await db
+      .select({ lessonId: substitutionLessonMTM.lessonId })
+      .from(substitutionLessonMTM)
+      .where(eq(substitutionLessonMTM.substitutionId, id));
+    const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
+
+    dispatchPendingNotification(id, 'substitution', {
+      date: body.date ?? existing.date,
+      lessonIds: body.lessonIds == null ? existingLessonIds : body.lessonIds,
+      substituter:
+        'substituter' in body ? body.substituter : existing.substituter,
+    });
+
+    return ok(c, updatedSubstitution);
   }
 );
 
@@ -1127,47 +1067,31 @@ export const deleteSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:delete'),
+  ...authRouter('substitution:delete'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    try {
-      const { id } = c.req.valid('param');
+    const { id } = c.req.valid('param');
 
-      const [existingSubstitution] = await db
-        .select()
-        .from(substitution)
-        .where(eq(substitution.id, id))
-        .limit(1);
+    const [existingSubstitution] = await db
+      .select()
+      .from(substitution)
+      .where(eq(substitution.id, id))
+      .limit(1);
 
-      if (!existingSubstitution) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Substitution not found',
-        });
-      }
-
-      // The many-to-many relationships will be automatically deleted due to the CASCADE constraint
-      const [deletedSubstitution] = await db
-        .delete(substitution)
-        .where(eq(substitution.id, id))
-        .returning();
-
-      cancelPendingNotification(id, 'substitution');
-
-      return c.json<SuccessResponse<typeof deletedSubstitution>>({
-        data: deletedSubstitution,
-        success: true,
-      });
-    } catch (error) {
-      if (error instanceof HTTPException) {
-        throw error;
-      }
-      logger.error('Error while deleting substitution', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        cause:
-          env.mode === 'development' ? (error as Error).message : undefined,
-        message: 'Failed to delete substitution',
+    if (!existingSubstitution) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Substitution not found',
       });
     }
+
+    // The many-to-many relationships will be automatically deleted due to the CASCADE constraint
+    const [deletedSubstitution] = await db
+      .delete(substitution)
+      .where(eq(substitution.id, id))
+      .returning();
+
+    cancelPendingNotification(id, 'substitution');
+
+    return ok(c, deletedSubstitution);
   }
 );

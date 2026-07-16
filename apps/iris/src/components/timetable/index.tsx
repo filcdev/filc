@@ -1,7 +1,6 @@
 import { pdf } from '@react-pdf/renderer';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
@@ -23,6 +22,7 @@ import type {
 } from '@/components/timetable/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Route, type searchSchema } from '@/routes/_public/index';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -33,85 +33,6 @@ const QUERY_OPTIONS = {
   refetchOnMount: false,
   refetchOnWindowFocus: false,
   staleTime: Number.POSITIVE_INFINITY,
-};
-
-// API Calls
-const fetchTimetables = async () => {
-  const res = await parseResponse(api.timetable.timetables.$get());
-  if (!res.success) {
-    throw new Error('Failed to load timetables');
-  }
-  return (res.data ?? []) as TimetableItem[];
-};
-
-const fetchCohortsForTimetable = async (timetableId: string) => {
-  const res = await parseResponse(
-    api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-      param: { timetableId },
-    })
-  );
-  if (!res.success) {
-    throw new Error('Failed to load cohorts');
-  }
-  return (res.data ?? []) as CohortItem[];
-};
-
-const fetchTeachers = async () => {
-  const res = await parseResponse(api.timetable.teachers.getAll.$get());
-  if (!res.success) {
-    throw new Error('Failed to load teachers');
-  }
-  return (res.data ?? []) as TeacherItem[];
-};
-
-const fetchClassrooms = async () => {
-  const res = await parseResponse(api.timetable.classrooms.getAll.$get());
-  if (!res.success) {
-    throw new Error('Failed to load classrooms');
-  }
-  return (res.data ?? []) as ClassroomItem[];
-};
-
-const fetchPeriods = async (timetableId: string): Promise<PeriodItem[]> => {
-  const res = await parseResponse(
-    api.timetable.periods.getAll.$get({ query: { timetableId } })
-  );
-  if (!res.success) {
-    throw new Error('Failed to load periods');
-  }
-  return (res.data ?? []) as PeriodItem[];
-};
-
-const fetchLessonsForSelection = async (
-  filter: FilterType,
-  selectionId: string,
-  timetableId?: string
-): Promise<LessonItem[]> => {
-  const endpoints = {
-    class: () =>
-      api.timetable.lessons.getForCohort[':cohortId'].$get({
-        param: { cohortId: selectionId },
-        query: timetableId ? { timetableId } : {},
-      }),
-    classroom: () =>
-      api.timetable.lessons.getForRoom[':classroomId'].$get({
-        param: { classroomId: selectionId },
-        query: timetableId ? { timetableId } : {},
-      }),
-    teacher: () =>
-      api.timetable.lessons.getForTeacher[':teacherId'].$get({
-        param: { teacherId: selectionId },
-        query: timetableId ? { timetableId } : {},
-      }),
-  };
-
-  const res = await parseResponse(
-    endpoints[filter]() as ReturnType<(typeof endpoints)['class']>
-  );
-  if (!res.success) {
-    throw new Error('Failed to load lessons');
-  }
-  return (res.data ?? []) as LessonItem[];
 };
 
 // Helpers
@@ -142,15 +63,10 @@ export function TimetableView() {
   const isAuthenticated = !isPending && !!session;
 
   // Fetch user settings for class colors (authenticated users only)
-  const settingsQuery = useQuery({
+  const settingsQuery = useApiQuery<{
+    timetableClassColors?: Record<string, number>;
+  }>(() => api.notifications.settings.$get(), {
     enabled: isAuthenticated,
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications.settings.$get());
-      if (!res.success) {
-        throw new Error('Failed to load settings');
-      }
-      return res.data as { timetableClassColors?: Record<string, number> };
-    },
     queryKey: queryKeys.notifications.settings(),
   });
   const userColors = isAuthenticated
@@ -158,7 +74,7 @@ export function TimetableView() {
     : {};
 
   // Mutation to save class color
-  const colorMutation = useMutation({
+  const colorMutation = useApiMutation({
     mutationFn: async ({
       subject,
       colorIndex,
@@ -167,12 +83,10 @@ export function TimetableView() {
       colorIndex: number;
     }) => {
       const newColors = { ...userColors, [subject]: colorIndex };
-      const res = await parseResponse(
-        api.notifications.settings.$patch({
-          json: { timetableClassColors: newColors },
-        })
-      );
-      if (!res.success) {
+      const res = await api.notifications.settings.$patch({
+        json: { timetableClassColors: newColors },
+      });
+      if (!res) {
         throw new Error('Failed to save color');
       }
       return res;
@@ -192,26 +106,16 @@ export function TimetableView() {
   );
 
   // Timetable query (all timetables for the selector)
-  const timetablesQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: fetchTimetables,
-    queryKey: queryKeys.timetables.all(),
-  });
+  const timetablesQuery = useApiQuery<TimetableItem[]>(
+    () => api.timetable.timetables.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.all() }
+  );
 
   // Compute the latest valid timetable id from the list
-  const latestValidTimetableQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.timetables.latestValid.$get()
-      );
-      if (!res.success) {
-        throw new Error('Failed to fetch latest valid timetable');
-      }
-      return res.data ?? null;
-    },
-    queryKey: queryKeys.timetables.latestValid(),
-  });
+  const latestValidTimetableQuery = useApiQuery<TimetableItem | null>(
+    () => api.timetable.timetables.latestValid.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.latestValid() }
+  );
 
   const latestValidTimetableId =
     latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
@@ -229,37 +133,45 @@ export function TimetableView() {
   }, [selectedTimetableId, latestValidTimetableId]);
 
   // Queries
-  const cohortsQuery = useQuery({
-    ...QUERY_OPTIONS,
-    enabled: !!selectedTimetableId,
-    queryFn: () =>
-      selectedTimetableId
-        ? fetchCohortsForTimetable(selectedTimetableId)
-        : Promise.resolve([] as CohortItem[]),
-    queryKey: queryKeys.timetable.cohorts(selectedTimetableId),
-  });
+  const cohortsQuery = useApiQuery<CohortItem[]>(
+    () => {
+      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
+      const timetableId = selectedTimetableId!;
+      return api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+        param: { timetableId },
+      });
+    },
+    {
+      ...QUERY_OPTIONS,
+      enabled: !!selectedTimetableId,
+      queryKey: queryKeys.timetable.cohorts(selectedTimetableId),
+    }
+  );
 
-  const teachersQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: fetchTeachers,
-    queryKey: queryKeys.teachers(),
-  });
+  const teachersQuery = useApiQuery<TeacherItem[]>(
+    () => api.timetable.teachers.getAll.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.teachers() }
+  );
 
-  const classroomsQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: fetchClassrooms,
-    queryKey: queryKeys.classrooms(),
-  });
+  const classroomsQuery = useApiQuery<ClassroomItem[]>(
+    () => api.timetable.classrooms.getAll.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.classrooms() }
+  );
 
-  const periodsQuery = useQuery({
-    ...QUERY_OPTIONS,
-    enabled: !!selectedTimetableId,
-    queryFn: () =>
-      selectedTimetableId
-        ? fetchPeriods(selectedTimetableId)
-        : Promise.resolve([] as PeriodItem[]),
-    queryKey: queryKeys.timetable.periods(selectedTimetableId),
-  });
+  const periodsQuery = useApiQuery<PeriodItem[]>(
+    () => {
+      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
+      const timetableId = selectedTimetableId!;
+      return api.timetable.periods.getAll.$get({
+        query: { timetableId },
+      });
+    },
+    {
+      ...QUERY_OPTIONS,
+      enabled: !!selectedTimetableId,
+      queryKey: queryKeys.timetable.periods(selectedTimetableId),
+    }
+  );
 
   // State
   const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
@@ -284,23 +196,39 @@ export function TimetableView() {
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
   // Fetch lessons
-  const lessonsQuery = useQuery({
-    ...QUERY_OPTIONS,
-    enabled: !!activeSelectionId,
-    queryFn: () =>
-      activeSelectionId
-        ? fetchLessonsForSelection(
-            activeFilter,
-            activeSelectionId,
-            selectedTimetableId ?? undefined
-          )
-        : Promise.resolve([] as LessonItem[]),
-    queryKey: queryKeys.timetable.lessons(
-      activeFilter,
-      activeSelectionId,
-      selectedTimetableId
-    ),
-  });
+  const lessonsQuery = useApiQuery<LessonItem[]>(
+    () => {
+      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
+      const selectionId = activeSelectionId!;
+      const timetableId = selectedTimetableId;
+      const query = timetableId ? { timetableId } : {};
+      if (activeFilter === 'class') {
+        return api.timetable.lessons.getForCohort[':cohortId'].$get({
+          param: { cohortId: selectionId },
+          query,
+        });
+      }
+      if (activeFilter === 'classroom') {
+        return api.timetable.lessons.getForRoom[':classroomId'].$get({
+          param: { classroomId: selectionId },
+          query,
+        });
+      }
+      return api.timetable.lessons.getForTeacher[':teacherId'].$get({
+        param: { teacherId: selectionId },
+        query,
+      });
+    },
+    {
+      ...QUERY_OPTIONS,
+      enabled: !!activeSelectionId,
+      queryKey: queryKeys.timetable.lessons(
+        activeFilter,
+        activeSelectionId,
+        selectedTimetableId
+      ),
+    }
+  );
 
   // Initialize from URL or defaults
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
@@ -558,7 +486,7 @@ export function TimetableView() {
         {isLoading ? (
           <div className="w-full">
             <Skeleton className="mb-2 h-8 w-64" />
-            <Skeleton className="h-130 w-full" />
+            <Skeleton className="h-[130px] w-full" />
           </div>
         ) : (
           <TimetableGrid

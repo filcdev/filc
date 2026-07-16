@@ -1,15 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { card, device } from '#database/schema/doorlock';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
@@ -18,16 +16,10 @@ import {
   replaceCardDevices,
 } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
+import { created, notFound, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'doorlock', 'cards']);
-
-type DoorlockUserSummary = Pick<
-  typeof user.$inferSelect,
-  'id' | 'name' | 'email' | 'nickname'
->;
 
 const cardSelectSchema = createSelectSchema(card);
 const deviceSummarySchema = createSelectSchema(device).pick({
@@ -89,9 +81,7 @@ const { schema: updateCardRequestSchema } =
 
 const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
   if (!cardRecord) {
-    throw new HTTPException(StatusCodes.NOT_FOUND, {
-      message: 'Card not found',
-    });
+    throw notFound('Card not found');
   }
   return cardRecord;
 };
@@ -116,15 +106,11 @@ export const listCardsRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:cards:read'),
+  ...authRouter('doorlock:cards:read'),
   async (c) => {
     const cards = await fetchCards();
 
-    return c.json<SuccessResponse<{ cards: DoorlockCardWithRelations[] }>>({
-      data: { cards },
-      success: true,
-    });
+    return ok(c, { cards });
   }
 );
 
@@ -148,8 +134,7 @@ export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:cards:write'),
+  ...authRouter('doorlock:cards:write'),
   async (c) => {
     const usersList = await db
       .select({
@@ -161,10 +146,7 @@ export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
       .from(user)
       .orderBy(sql`coalesce(${user.nickname}, ${user.name})`);
 
-    return c.json<SuccessResponse<{ users: DoorlockUserSummary[] }>>({
-      data: { users: usersList },
-      success: true,
-    });
+    return ok(c, { users: usersList });
   }
 );
 
@@ -191,64 +173,50 @@ export const createCardRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:cards:write'),
+  ...authRouter('doorlock:cards:write'),
   zValidator('json', createCardSchema),
   async (c) => {
     const payload = c.req.valid('json');
 
-    try {
-      const cardId = await db.transaction(async (tx) => {
-        const [created] = await tx
-          .insert(card)
-          .values({
-            cardData: payload.cardData,
-            enabled: payload.enabled,
-            frozen: payload.frozen,
-            name: payload.name,
-            userId: payload.userId ?? null,
-          })
-          .returning({ id: card.id });
+    const cardId = await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(card)
+        .values({
+          cardData: payload.cardData,
+          enabled: payload.enabled,
+          frozen: payload.frozen,
+          name: payload.name,
+          userId: payload.userId ?? null,
+        })
+        .returning({ id: card.id });
 
-        if (!created) {
-          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-            message: 'Failed to create card',
-          });
-        }
+      if (!inserted) {
+        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+          message: 'Failed to create card',
+        });
+      }
 
-        await replaceCardDevices(tx, created.id, payload.authorizedDeviceIds);
-        if (payload.userId) {
-          await migrateAuditLogsForNewCard(
-            tx,
-            created.id,
-            payload.userId,
-            payload.cardData
-          );
-        }
-        return created.id;
-      });
+      await replaceCardDevices(tx, inserted.id, payload.authorizedDeviceIds);
+      if (payload.userId) {
+        await migrateAuditLogsForNewCard(
+          tx,
+          inserted.id,
+          payload.userId,
+          payload.cardData
+        );
+      }
+      return inserted.id;
+    });
 
-      const createdCard = assertCardExists(await fetchCardById(cardId));
+    const createdCard = assertCardExists(await fetchCardById(cardId));
 
-      await syncDevicesByIds(
-        createdCard.authorizedDevices.map(
-          (authorizedDevice) => authorizedDevice.id
-        )
-      );
+    await syncDevicesByIds(
+      createdCard.authorizedDevices.map(
+        (authorizedDevice) => authorizedDevice.id
+      )
+    );
 
-      return c.json<SuccessResponse<{ card: DoorlockCardWithRelations }>>(
-        {
-          data: { card: createdCard },
-          success: true,
-        },
-        StatusCodes.CREATED
-      );
-    } catch (error) {
-      logger.error('Failed to create card', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to create card',
-      });
-    }
+    return created(c, { card: createdCard });
   }
 );
 
@@ -276,57 +244,43 @@ export const updateCardRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:cards:write'),
+  ...authRouter('doorlock:cards:write'),
   zValidator('json', updateCardSchema),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     const { id: cardId } = c.req.valid('param');
     const payload = c.req.valid('json');
 
-    try {
-      await db.transaction(async (tx) => {
-        const [updated] = await tx
-          .update(card)
-          .set({
-            enabled: payload.enabled,
-            frozen: payload.frozen,
-            name: payload.name,
-            userId: payload.userId ?? null,
-          })
-          .where(eq(card.id, cardId))
-          .returning({ id: card.id });
+    await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(card)
+        .set({
+          enabled: payload.enabled,
+          frozen: payload.frozen,
+          name: payload.name,
+          userId: payload.userId ?? null,
+        })
+        .where(eq(card.id, cardId))
+        .returning({ id: card.id });
 
-        if (!updated) {
-          throw new HTTPException(StatusCodes.NOT_FOUND, {
-            message: 'Card not found',
-          });
-        }
-
-        await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
-      });
-
-      const updatedCard = assertCardExists(await fetchCardById(cardId));
-
-      await syncDevicesByIds(
-        updatedCard.authorizedDevices.map(
-          (authorizedDevice) => authorizedDevice.id
-        )
-      );
-
-      return c.json<SuccessResponse<{ card: DoorlockCardWithRelations }>>({
-        data: { card: updatedCard },
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Failed to update card', { error });
-      if (error instanceof HTTPException) {
-        throw error;
+      if (!updated) {
+        throw new HTTPException(StatusCodes.NOT_FOUND, {
+          message: 'Card not found',
+        });
       }
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to update card',
-      });
-    }
+
+      await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
+    });
+
+    const updatedCard = assertCardExists(await fetchCardById(cardId));
+
+    await syncDevicesByIds(
+      updatedCard.authorizedDevices.map(
+        (authorizedDevice) => authorizedDevice.id
+      )
+    );
+
+    return ok(c, { card: updatedCard });
   }
 );
 
@@ -340,17 +294,14 @@ export const deleteCardRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:cards:write'),
+  ...authRouter('doorlock:cards:write'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
     const { id: cardId } = c.req.valid('param');
 
     const existingCard = await fetchCardById(cardId);
     if (!existingCard) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Card not found',
-      });
+      throw notFound('Card not found');
     }
     const [deleted] = await db
       .delete(card)
@@ -358,9 +309,7 @@ export const deleteCardRoute = doorlockFactory.createHandlers(
       .returning({ id: card.id });
 
     if (!deleted) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Card not found',
-      });
+      throw notFound('Card not found');
     }
 
     await syncDevicesByIds(
@@ -369,6 +318,6 @@ export const deleteCardRoute = doorlockFactory.createHandlers(
       )
     );
 
-    return c.json<SuccessResponse>({ success: true });
+    return ok(c, undefined);
   }
 );

@@ -1,15 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
 import { describeRoute } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { device as lockDevice } from '#database/schema/doorlock';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { authRouter } from '#middleware/auth';
 import { sendMessage } from '#routes/doorlock/websocket-handler';
+import { notFound, ok } from '#utils/http';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'ota']);
@@ -34,8 +32,7 @@ export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:devices:write'),
+  ...authRouter('doorlock:devices:write'),
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', otaPayloadSchema),
   async (c) => {
@@ -49,9 +46,7 @@ export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
       .limit(1);
 
     if (!dev) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Device not found',
-      });
+      throw notFound('Device not found');
     }
 
     logger.info('Triggering OTA update for device', {
@@ -61,7 +56,7 @@ export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
 
     sendMessage({ type: 'update', url }, dev.id);
 
-    return c.json<SuccessResponse>({ success: true });
+    return ok(c, undefined);
   }
 );
 
@@ -80,8 +75,7 @@ export const triggerBulkOtaRoute = doorlockFactory.createHandlers(
     },
     tags: ['Doorlock'],
   }),
-  requireAuthentication,
-  requireAuthorization('doorlock:devices:write'),
+  ...authRouter('doorlock:devices:write'),
   zValidator('json', otaPayloadSchema),
   async (c) => {
     const { url } = c.req.valid('json');
@@ -99,9 +93,6 @@ export const triggerBulkOtaRoute = doorlockFactory.createHandlers(
       sendMessage({ type: 'update', url }, dev.id);
     }
 
-    return c.json<SuccessResponse<{ count: number }>>({
-      data: { count: devices.length },
-      success: true,
-    });
+    return ok(c, { count: devices.length });
   }
 );

@@ -1,11 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   Calendar as CalendarIcon,
   Check,
@@ -21,7 +17,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { ExportLogsButton } from '@/components/doorlock/export-logs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,14 +28,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -50,9 +38,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { cn } from '@/utils/index';
@@ -226,7 +216,6 @@ function useLogStats(
   return { filteredLogs, stats };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: filter state and queries
 function LogsPage() {
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
@@ -269,32 +258,26 @@ function LogsPage() {
     session?.user?.permissions
   );
 
-  const devicesQuery = useQuery({
-    enabled: canReadDevices,
-    queryFn: async (): Promise<DoorlockDevice[]> => {
-      const res = await parseResponse(api.doorlock.devices.$get());
-      if (!(res.success && res.data?.devices)) {
-        throw new Error('Failed to load devices');
-      }
-      return res.data.devices as DoorlockDevice[];
-    },
-    queryKey: queryKeys.doorlock.devices(),
-  });
+  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
+    () => api.doorlock.devices.$get(),
+    {
+      enabled: canReadDevices,
+      queryKey: queryKeys.doorlock.devices(),
+    }
+  );
+  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const cardsQuery = useQuery({
-    enabled: canReadCards,
-    queryFn: async (): Promise<DoorlockCard[]> => {
-      const res = await parseResponse(api.doorlock.cards.$get());
-      if (!(res.success && res.data?.cards)) {
-        throw new Error('Failed to load cards');
-      }
-      return res.data.cards as DoorlockCard[];
-    },
-    queryKey: queryKeys.doorlock.cards(),
-  });
+  const cardsQuery = useApiQuery<NonNullable<CardsResponse['data']>>(
+    () => api.doorlock.cards.$get(),
+    {
+      enabled: canReadCards,
+      queryKey: queryKeys.doorlock.cards(),
+    }
+  );
+  const cards: DoorlockCard[] | undefined = cardsQuery.data?.cards;
 
-  const logsQuery = useQuery({
-    queryFn: async (): Promise<DoorlockLogEntry[]> => {
+  const logsQuery = useApiQuery<NonNullable<LogsResponse['data']>>(
+    () => {
       const query = buildLogsQuery({
         accessFilter,
         cardFilter,
@@ -304,38 +287,33 @@ function LogsPage() {
         userFilter,
       });
 
-      const res = await parseResponse(api.doorlock.logs.$get({ query }));
-      if (!(res.success && res.data?.logs)) {
-        throw new Error('Failed to load logs');
-      }
-      return res.data.logs as DoorlockLogEntry[];
+      return api.doorlock.logs.$get({ query });
     },
-    queryKey: queryKeys.doorlock.logs(
-      deviceFilter,
-      cardFilter,
-      userFilter,
-      accessFilter,
-      dateRange.from?.toISOString() ?? 'none',
-      dateRange.to?.toISOString() ?? 'none',
-      deferredSearch
-    ),
-    staleTime: 30_000,
-  });
+    {
+      queryKey: queryKeys.doorlock.logs(
+        deviceFilter,
+        cardFilter,
+        userFilter,
+        accessFilter,
+        dateRange.from?.toISOString() ?? 'none',
+        dateRange.to?.toISOString() ?? 'none',
+        deferredSearch
+      ),
+      staleTime: 30_000,
+    }
+  );
+  const logs: DoorlockLogEntry[] | undefined = logsQuery.data?.logs;
 
-  const usersQuery = useQuery({
+  const usersQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.doorlock.cards.users.$get>['data']>
+  >(() => api.doorlock.cards.users.$get(), {
     enabled: hasCardWritePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.doorlock.cards.users.$get());
-      if (!(res.success && res.data?.users)) {
-        throw new Error('Failed to load users');
-      }
-      return res.data.users;
-    },
     queryKey: queryKeys.doorlock.cardUsers(),
   });
+  const users = usersQuery.data?.users;
 
   const $upsertCard = api.doorlock.cards.$post;
-  const upsertCardMutation = useMutation({
+  const upsertCardMutation = useApiMutation({
     mutationFn: ({
       id,
       payload,
@@ -344,11 +322,9 @@ function LogsPage() {
       payload: InferRequestType<typeof $upsertCard>['json'];
     }) => {
       if (id) {
-        return parseResponse(
-          api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
-        );
+        return api.doorlock.cards[':id'].$put({ json: payload, param: { id } });
       }
-      return parseResponse(api.doorlock.cards.$post({ json: payload }));
+      return api.doorlock.cards.$post({ json: payload });
     },
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockCards.saveError'));
@@ -381,8 +357,8 @@ function LogsPage() {
   }, [pendingCardData]);
 
   const deviceOptions = useOptions(
-    devicesQuery.data,
-    logsQuery.data?.flatMap((log) =>
+    devices,
+    logs?.flatMap((log) =>
       log.device
         ? [{ id: log.device.id, label: log.device.name ?? 'Device' }]
         : []
@@ -390,15 +366,15 @@ function LogsPage() {
   );
 
   const cardOptions = useOptions(
-    cardsQuery.data,
-    logsQuery.data?.flatMap((log) =>
+    cards,
+    logs?.flatMap((log) =>
       log.card ? [{ id: log.card.id, label: log.card.name ?? 'Card' }] : []
     ) ?? []
   );
 
   const userOptions = useMemo<FilterOption[]>(() => {
     const seen = new Map<string, string>();
-    for (const log of logsQuery.data ?? []) {
+    for (const log of logs ?? []) {
       if (log.owner?.id) {
         seen.set(
           log.owner.id,
@@ -407,10 +383,10 @@ function LogsPage() {
       }
     }
     return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
-  }, [logsQuery.data]);
+  }, [logs]);
 
   const { filteredLogs, stats } = useLogStats(
-    logsQuery.data,
+    logs,
     eventFilter,
     sortColumn,
     sortDirection
@@ -432,7 +408,6 @@ function LogsPage() {
   };
 
   const hasError = logsQuery.isError;
-  const isLoading = logsQuery.isLoading;
 
   return (
     <div className="space-y-6">
@@ -535,154 +510,145 @@ function LogsPage() {
         </div>
       )}
 
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to load logs</AlertTitle>
-          <AlertDescription>
-            {(logsQuery.error as Error)?.message ?? 'Please try again later.'}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('timestamp')}
-                >
-                  <div className="flex items-center gap-2">
-                    Timestamp
-                    <SortIcon
-                      column="timestamp"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('device')}
-                >
-                  <div className="flex items-center gap-2">
-                    Device
-                    <SortIcon
-                      column="device"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('user')}
-                >
-                  <div className="flex items-center gap-2">
-                    User
-                    <SortIcon
-                      column="user"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('card')}
-                >
-                  <div className="flex items-center gap-2">
-                    Card
-                    <SortIcon
-                      column="card"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('cardData')}
-                >
-                  <div className="flex items-center gap-2">
-                    Card UID
-                    <SortIcon
-                      column="cardData"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('triggeredBy')}
-                >
-                  <div className="flex items-center gap-2">
-                    Triggered by
-                    <SortIcon
-                      column="triggeredBy"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('result')}
-                >
-                  <div className="flex items-center gap-2">
-                    Result
-                    <SortIcon
-                      column="result"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead>{/* Actions */}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map((log) => (
-                <LogTableRow
-                  key={log.id}
-                  log={log}
-                  onAddCard={
-                    hasCardWritePermission
-                      ? (cardData) => {
-                          setPendingCardData(cardData);
-                          setCardDialogOpen(true);
-                        }
-                      : undefined
-                  }
-                />
-              ))}
-              {!(filteredLogs.length || hasError) && (
+      <QueryBoundary data={logsQuery.data} query={logsQuery}>
+        {() => (
+          <div className="w-full overflow-x-auto rounded-md border">
+            <Table className="w-full min-w-3xl">
+              <TableHeader>
                 <TableRow>
-                  <TableCell className="text-muted-foreground" colSpan={8}>
-                    No logs found with the selected filters.
-                  </TableCell>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('timestamp')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Timestamp
+                      <SortIcon
+                        column="timestamp"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('device')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Device
+                      <SortIcon
+                        column="device"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('user')}
+                  >
+                    <div className="flex items-center gap-2">
+                      User
+                      <SortIcon
+                        column="user"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('card')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Card
+                      <SortIcon
+                        column="card"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('cardData')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Card UID
+                      <SortIcon
+                        column="cardData"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('triggeredBy')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Triggered by
+                      <SortIcon
+                        column="triggeredBy"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => handleSort('result')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Result
+                      <SortIcon
+                        column="result"
+                        currentColumn={sortColumn}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead>{/* Actions */}</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((log) => (
+                  <LogTableRow
+                    key={log.id}
+                    log={log}
+                    onAddCard={
+                      hasCardWritePermission
+                        ? (cardData) => {
+                            setPendingCardData(cardData);
+                            setCardDialogOpen(true);
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+                {!(filteredLogs.length || hasError) && (
+                  <TableRow>
+                    <TableCell className="text-muted-foreground" colSpan={8}>
+                      No logs found with the selected filters.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </QueryBoundary>
 
       {hasCardWritePermission && (
         <CardDialog
           card={cardDialogCard}
-          devices={devicesQuery.data ?? []}
+          devices={devices ?? []}
           onOpenChange={setCardDialogOpen}
           onSubmit={async (payload) => {
             await upsertCardMutation.mutateAsync({ payload });
           }}
           open={cardDialogOpen}
           users={
-            (usersQuery.data ?? []) as Array<{
+            (users ?? []) as Array<{
               id: string;
               name: string | null;
               nickname: string | null;
@@ -767,26 +733,17 @@ function SelectFilter<T extends string>({
 }: SelectFilterProps<T>) {
   const handleChange = (next: string | null) =>
     onValueChange((next ?? 'all') as T);
-  const selectedLabel =
-    options.find((option) => option.id === value)?.label ??
-    (value === 'all' ? 'All' : undefined);
+  const items = [
+    { label: `All ${label.toLowerCase()}`, value: 'all' },
+    ...options.map((option) => ({ label: option.label, value: option.id })),
+  ];
   return (
     <div className="grow space-y-2">
       <Label>{label}</Label>
-      <Select onValueChange={handleChange} value={value}>
+      <Select items={items} onValueChange={handleChange} value={value}>
         <SelectTrigger className="w-full min-w-24">
-          <SelectValue data-placeholder={`Filter by ${label.toLowerCase()}`}>
-            {selectedLabel}
-          </SelectValue>
+          <SelectValue data-placeholder={`Filter by ${label.toLowerCase()}`} />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All {label.toLowerCase()}</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
       </Select>
     </div>
   );

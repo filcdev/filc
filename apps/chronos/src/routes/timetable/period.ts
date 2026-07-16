@@ -2,9 +2,9 @@ import { zValidator } from '@hono/zod-validator';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { lesson, period } from '#database/schema/timetable';
+import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { timetableFactory } from './_factory';
 
@@ -70,7 +70,7 @@ export const getPeriodsForTimetable = timetableFactory.createHandlers(
       const ids = usedPeriodIds.map((r) => r.periodId);
 
       if (ids.length === 0) {
-        return c.json<SuccessResponse<[]>>({ data: [], success: true });
+        return ok(c, []);
       }
 
       periods = await db
@@ -89,6 +89,6 @@ export const getPeriodsForTimetable = timetableFactory.createHandlers(
       startTime: String(p.startTime),
     }));
 
-    return c.json<SuccessResponse<typeof data>>({ data, success: true });
+    return ok(c, data);
   }
 );
