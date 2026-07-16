@@ -31,5 +31,8 @@
       "better-auth": "^1.6.23",
       "zod": "^4.4.3"
     }
+  },
+  "dependencies": {
+    "firebase-admin": "14.1.0"
   }
 }

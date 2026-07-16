@@ -1,13 +1,16 @@
 import { getLogger } from '@logtape/logtape';
 import { eq, inArray } from 'drizzle-orm';
-import type { messaging as FirebaseMessaging } from 'firebase-admin';
+import type {
+  Messaging as FirebaseMessaging,
+  MulticastMessage,
+} from 'firebase-admin/messaging';
 import { db } from '#database';
 import { fcmToken } from '#database/schema/notifications';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'notifications', 'fcm']);
 
-let fcmMessaging: FirebaseMessaging.Messaging | null = null;
+let fcmMessaging: FirebaseMessaging | null = null;
 
 export function initializeFcm(): boolean {
   if (!env.fcmCredentials) {
@@ -61,7 +64,7 @@ export async function sendPush(
       return false;
     }
 
-    const message: FirebaseMessaging.MulticastMessage = {
+    const message: MulticastMessage = {
       data: {
         type: 'notification',
       },
