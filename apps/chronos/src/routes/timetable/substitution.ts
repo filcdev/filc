@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
@@ -741,8 +742,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     },
     tags: ['Substitution'],
   }),
-  requireAuthentication,
-  requireAuthorization('substitution:create'),
+  ...authRouter('substitution:create'),
   zValidator('json', manualCreateSchema),
   async (c) => {
     const {

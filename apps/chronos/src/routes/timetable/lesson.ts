@@ -12,6 +12,7 @@ import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
+import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
