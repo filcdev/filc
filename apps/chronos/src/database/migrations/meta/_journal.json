@@ -71,6 +71,13 @@
       "when": 1781556618306,
       "tag": "0009_optional_announcement_title",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784172586218,
+      "tag": "0010_salty_firebrand",
+      "breakpoints": true
     }
   ]
 }
