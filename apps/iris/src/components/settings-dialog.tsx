@@ -21,13 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { useApiMutation, useApiQuery } from '@/utils/api';
@@ -259,13 +253,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        {languageItems.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center justify-between">
@@ -278,13 +265,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        {themeItems.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
                     </Select>
                   </div>
 
@@ -308,13 +288,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                               }
                             />
                           </SelectTrigger>
-                          <SelectContent>
-                            {cohortItems.map((item) => (
-                              <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
                         </Select>
                       )}
                     </div>
@@ -340,9 +313,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>{t('preferences.channelsEnabled')}</span>
+                    <label
+                      className="cursor-pointer font-medium text-sm leading-none"
+                      htmlFor="channelsEnabled"
+                    >
+                      {t('preferences.channelsEnabled')}
+                    </label>
                     <Checkbox
                       checked={prefs.channelsEnabled}
+                      id="channelsEnabled"
                       onCheckedChange={() => togglePref('channelsEnabled')}
                     />
                   </div>
@@ -351,9 +330,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       className="flex items-center justify-between"
                       key={key}
                     >
-                      <span>{t(labelKey)}</span>
+                      <label
+                        className="cursor-pointer font-medium text-sm leading-none"
+                        htmlFor={`pref-${key}`}
+                      >
+                        {t(labelKey)}
+                      </label>
                       <Checkbox
                         checked={prefs[key as keyof typeof prefs]}
+                        id={`pref-${key}`}
                         onCheckedChange={() => togglePref(key)}
                       />
                     </div>

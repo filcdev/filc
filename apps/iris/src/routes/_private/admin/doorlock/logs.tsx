@@ -27,13 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -729,26 +723,17 @@ function SelectFilter<T extends string>({
 }: SelectFilterProps<T>) {
   const handleChange = (next: string | null) =>
     onValueChange((next ?? 'all') as T);
-  const selectedLabel =
-    options.find((option) => option.id === value)?.label ??
-    (value === 'all' ? 'All' : undefined);
+  const items = [
+    { label: `All ${label.toLowerCase()}`, value: 'all' },
+    ...options.map((option) => ({ label: option.label, value: option.id })),
+  ];
   return (
     <div className="grow space-y-2">
       <Label>{label}</Label>
-      <Select onValueChange={handleChange} value={value}>
+      <Select items={items} onValueChange={handleChange} value={value}>
         <SelectTrigger className="w-full min-w-24">
-          <SelectValue data-placeholder={`Filter by ${label.toLowerCase()}`}>
-            {selectedLabel}
-          </SelectValue>
+          <SelectValue data-placeholder={`Filter by ${label.toLowerCase()}`} />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All {label.toLowerCase()}</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
       </Select>
     </div>
   );

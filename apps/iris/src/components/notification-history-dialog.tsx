@@ -13,13 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useApiMutation } from '@/utils/api';
 import { api } from '@/utils/hc';
@@ -158,13 +152,6 @@ export function NotificationHistoryDialog({
                   placeholder={t('notifications.history.filterType')}
                 />
               </SelectTrigger>
-              <SelectContent>
-                {typeItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
             </Select>
 
             <Button

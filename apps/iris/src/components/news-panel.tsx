@@ -120,10 +120,7 @@ export function NewsPanel() {
     <div className="w-full max-w-5xl">
       <Collapsible onOpenChange={setIsOpen} open={isOpen}>
         <div className="rounded-lg border bg-card">
-          <CollapsibleTrigger
-            className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50"
-            onClick={() => setIsOpen(!isOpen)}
-          >
+          <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50">
             <div className="flex items-center gap-2">
               <h2 className="font-semibold text-lg">
                 {t('news.title', 'Hírek')}

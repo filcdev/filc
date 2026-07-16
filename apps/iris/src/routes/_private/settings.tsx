@@ -14,13 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { useApiMutation, useApiQuery } from '@/utils/api';
@@ -158,6 +152,17 @@ function SettingsPage() {
     );
   }
 
+  const languageItems = [
+    { label: 'Magyar', value: 'hu' },
+    { label: 'English', value: 'en' },
+  ];
+
+  const themeItems = [
+    { label: t('preferences.themeLight'), value: 'light' },
+    { label: t('preferences.themeDark'), value: 'dark' },
+    { label: t('preferences.themeSystem'), value: 'system' },
+  ];
+
   return (
     <div className="container mx-auto max-w-2xl space-y-6 p-6">
       <div>
@@ -173,35 +178,25 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <span>{t('preferences.language')}</span>
             <Select
+              items={languageItems}
               onValueChange={handleSelectChange(setLanguage)}
               value={language}
             >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hu">Magyar</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
             </Select>
           </div>
           <div className="flex items-center justify-between">
             <span>{t('preferences.theme')}</span>
-            <Select onValueChange={handleSelectChange(setTheme)} value={theme}>
+            <Select
+              items={themeItems}
+              onValueChange={handleSelectChange(setTheme)}
+              value={theme}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">
-                  {t('preferences.themeLight')}
-                </SelectItem>
-                <SelectItem value="dark">
-                  {t('preferences.themeDark')}
-                </SelectItem>
-                <SelectItem value="system">
-                  {t('preferences.themeSystem')}
-                </SelectItem>
-              </SelectContent>
             </Select>
           </div>
         </CardContent>
@@ -216,17 +211,29 @@ function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <span>{t('preferences.channelsEnabled')}</span>
+            <label
+              className="cursor-pointer font-medium text-sm leading-none"
+              htmlFor="channelsEnabled"
+            >
+              {t('preferences.channelsEnabled')}
+            </label>
             <Checkbox
               checked={prefs.channelsEnabled}
+              id="channelsEnabled"
               onCheckedChange={() => togglePref('channelsEnabled')}
             />
           </div>
           {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
             <div className="flex items-center justify-between" key={key}>
-              <span>{t(labelKey)}</span>
+              <label
+                className="cursor-pointer font-medium text-sm leading-none"
+                htmlFor={`pref-${key}`}
+              >
+                {t(labelKey)}
+              </label>
               <Checkbox
                 checked={prefs[key as keyof typeof prefs]}
+                id={`pref-${key}`}
                 onCheckedChange={() => togglePref(key)}
               />
             </div>

@@ -486,7 +486,7 @@ export function TimetableView() {
         {isLoading ? (
           <div className="w-full">
             <Skeleton className="mb-2 h-8 w-64" />
-            <Skeleton className="h-130 w-full" />
+            <Skeleton className="h-[130px] w-full" />
           </div>
         ) : (
           <TimetableGrid

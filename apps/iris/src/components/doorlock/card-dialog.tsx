@@ -14,13 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createCardSchema, updateCardSchema } from '@/utils/form-schemas';
 import type {
   CardDialogProps,
@@ -150,13 +144,6 @@ export function CardDialog<
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {getOwnerLabel(user) || t('doorlock.unknownUser')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
                 </Select>
               </Field>
             )}

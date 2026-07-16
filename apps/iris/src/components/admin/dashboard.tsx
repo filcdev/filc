@@ -17,13 +17,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useApiQuery } from '@/utils/api';
@@ -36,6 +30,14 @@ type DashboardStats = NonNullable<StatsResponse['data']>['stats'];
 export function AdminDashboard() {
   const { t } = useTranslation();
   const [days, setDays] = useState(30);
+
+  const dayItems = [
+    { label: t('dashboard.today'), value: '1' },
+    { label: t('dashboard.last7Days'), value: '7' },
+    { label: t('dashboard.last30Days'), value: '30' },
+    { label: t('dashboard.last90Days'), value: '90' },
+    { label: t('dashboard.lastYear'), value: '365' },
+  ];
 
   const statsQuery = useApiQuery<DashboardStats>(
     () => api.dashboard.stats.$get({ query: { days: String(days) } }),
@@ -238,19 +240,13 @@ export function AdminDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('dashboard.activityChart')}</CardTitle>
             <Select
+              items={dayItems}
               onValueChange={(v) => setDays(Number(v))}
               value={String(days)}
             >
               <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">{t('dashboard.today')}</SelectItem>
-                <SelectItem value="7">{t('dashboard.last7Days')}</SelectItem>
-                <SelectItem value="30">{t('dashboard.last30Days')}</SelectItem>
-                <SelectItem value="90">{t('dashboard.last90Days')}</SelectItem>
-                <SelectItem value="365">{t('dashboard.lastYear')}</SelectItem>
-              </SelectContent>
             </Select>
           </CardHeader>
           <CardContent>{chartContent}</CardContent>
