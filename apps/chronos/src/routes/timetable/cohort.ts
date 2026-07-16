@@ -1,9 +1,6 @@
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { cohort, cohortTimetableMtm } from '#database/schema/timetable';
@@ -11,8 +8,6 @@ import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'cohort']);
 
 const getForTimetableResponseSchema = z.object({
   data: createSelectSchema(cohort).array(),
@@ -48,26 +43,16 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
   }),
   zValidator('param', z.object({ timetableId: z.uuid() })),
   async (c) => {
-    try {
-      const { timetableId } = c.req.valid('param');
+    const { timetableId } = c.req.valid('param');
 
-      const cohortRows = await db
-        .select()
-        .from(cohort)
-        .innerJoin(
-          cohortTimetableMtm,
-          eq(cohort.id, cohortTimetableMtm.cohortId)
-        )
-        .where(eq(cohortTimetableMtm.timetableId, timetableId));
+    const cohortRows = await db
+      .select()
+      .from(cohort)
+      .innerJoin(cohortTimetableMtm, eq(cohort.id, cohortTimetableMtm.cohortId))
+      .where(eq(cohortTimetableMtm.timetableId, timetableId));
 
-      const cohorts = cohortRows.map((r) => r.cohort);
+    const cohorts = cohortRows.map((r) => r.cohort);
 
-      return ok(c, cohorts);
-    } catch (error) {
-      logger.error('Error fetching cohorts for timetable', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all cohorts for timetable.',
-      });
-    }
+    return ok(c, cohorts);
   }
 );

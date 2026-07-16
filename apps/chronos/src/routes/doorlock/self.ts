@@ -236,40 +236,29 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
       throw notFound('Target device not found');
     }
 
-    try {
-      sendMessage(
-        {
-          name:
-            cardRecord.owner?.nickname ??
-            cardRecord.owner?.name ??
-            cardRecord.name,
-          type: 'open-door',
-        },
-        targetDevice.id
-      );
+    sendMessage(
+      {
+        name:
+          cardRecord.owner?.nickname ??
+          cardRecord.owner?.name ??
+          cardRecord.name,
+        type: 'open-door',
+      },
+      targetDevice.id
+    );
 
-      const [logEntry] = await db
-        .insert(auditLog)
-        .values({
-          buttonPressed: true,
-          cardData: cardRecord.cardData,
-          cardId: cardRecord.id,
-          deviceId: targetDevice.id,
-          result: true,
-          userId: session.userId,
-        })
-        .returning();
-
-      return ok(c, { log: logEntry });
-    } catch (error) {
-      logger.error('Failed to activate virtual card', {
-        cardId,
+    const [logEntry] = await db
+      .insert(auditLog)
+      .values({
+        buttonPressed: true,
+        cardData: cardRecord.cardData,
+        cardId: cardRecord.id,
         deviceId: targetDevice.id,
-        error,
-      });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to activate virtual card',
-      });
-    }
+        result: true,
+        userId: session.userId,
+      })
+      .returning();
+
+    return ok(c, { log: logEntry });
   }
 );

@@ -1,5 +1,3 @@
-import { enUS, hu } from 'date-fns/locale';
-
 type DateInput = Date | number | string;
 
 function getLanguageCode(language: string | undefined): string {
@@ -11,10 +9,6 @@ export function getIntlLocale(language: string | undefined): string {
 }
 
 type WeekdayFormat = 'long' | 'short' | 'narrow';
-
-export function getDateFnsLocale(language: string | undefined) {
-  return getLanguageCode(language) === 'en' ? enUS : hu;
-}
 
 function toDate(value: DateInput): Date {
   return value instanceof Date ? value : new Date(value);

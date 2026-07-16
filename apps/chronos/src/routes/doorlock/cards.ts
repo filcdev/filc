@@ -1,5 +1,4 @@
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -21,8 +20,6 @@ import { created, notFound, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
 import { doorlockFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'doorlock', 'cards']);
 
 const cardSelectSchema = createSelectSchema(card);
 const deviceSummarySchema = createSelectSchema(device).pick({
@@ -181,52 +178,45 @@ export const createCardRoute = doorlockFactory.createHandlers(
   async (c) => {
     const payload = c.req.valid('json');
 
-    try {
-      const cardId = await db.transaction(async (tx) => {
-        const [inserted] = await tx
-          .insert(card)
-          .values({
-            cardData: payload.cardData,
-            enabled: payload.enabled,
-            frozen: payload.frozen,
-            name: payload.name,
-            userId: payload.userId ?? null,
-          })
-          .returning({ id: card.id });
+    const cardId = await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(card)
+        .values({
+          cardData: payload.cardData,
+          enabled: payload.enabled,
+          frozen: payload.frozen,
+          name: payload.name,
+          userId: payload.userId ?? null,
+        })
+        .returning({ id: card.id });
 
-        if (!inserted) {
-          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-            message: 'Failed to create card',
-          });
-        }
+      if (!inserted) {
+        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+          message: 'Failed to create card',
+        });
+      }
 
-        await replaceCardDevices(tx, inserted.id, payload.authorizedDeviceIds);
-        if (payload.userId) {
-          await migrateAuditLogsForNewCard(
-            tx,
-            inserted.id,
-            payload.userId,
-            payload.cardData
-          );
-        }
-        return inserted.id;
-      });
+      await replaceCardDevices(tx, inserted.id, payload.authorizedDeviceIds);
+      if (payload.userId) {
+        await migrateAuditLogsForNewCard(
+          tx,
+          inserted.id,
+          payload.userId,
+          payload.cardData
+        );
+      }
+      return inserted.id;
+    });
 
-      const createdCard = assertCardExists(await fetchCardById(cardId));
+    const createdCard = assertCardExists(await fetchCardById(cardId));
 
-      await syncDevicesByIds(
-        createdCard.authorizedDevices.map(
-          (authorizedDevice) => authorizedDevice.id
-        )
-      );
+    await syncDevicesByIds(
+      createdCard.authorizedDevices.map(
+        (authorizedDevice) => authorizedDevice.id
+      )
+    );
 
-      return created(c, { card: createdCard });
-    } catch (error) {
-      logger.error('Failed to create card', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to create card',
-      });
-    }
+    return created(c, { card: createdCard });
   }
 );
 
@@ -261,46 +251,36 @@ export const updateCardRoute = doorlockFactory.createHandlers(
     const { id: cardId } = c.req.valid('param');
     const payload = c.req.valid('json');
 
-    try {
-      await db.transaction(async (tx) => {
-        const [updated] = await tx
-          .update(card)
-          .set({
-            enabled: payload.enabled,
-            frozen: payload.frozen,
-            name: payload.name,
-            userId: payload.userId ?? null,
-          })
-          .where(eq(card.id, cardId))
-          .returning({ id: card.id });
+    await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(card)
+        .set({
+          enabled: payload.enabled,
+          frozen: payload.frozen,
+          name: payload.name,
+          userId: payload.userId ?? null,
+        })
+        .where(eq(card.id, cardId))
+        .returning({ id: card.id });
 
-        if (!updated) {
-          throw new HTTPException(StatusCodes.NOT_FOUND, {
-            message: 'Card not found',
-          });
-        }
-
-        await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
-      });
-
-      const updatedCard = assertCardExists(await fetchCardById(cardId));
-
-      await syncDevicesByIds(
-        updatedCard.authorizedDevices.map(
-          (authorizedDevice) => authorizedDevice.id
-        )
-      );
-
-      return ok(c, { card: updatedCard });
-    } catch (error) {
-      logger.error('Failed to update card', { error });
-      if (error instanceof HTTPException) {
-        throw error;
+      if (!updated) {
+        throw new HTTPException(StatusCodes.NOT_FOUND, {
+          message: 'Card not found',
+        });
       }
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to update card',
-      });
-    }
+
+      await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
+    });
+
+    const updatedCard = assertCardExists(await fetchCardById(cardId));
+
+    await syncDevicesByIds(
+      updatedCard.authorizedDevices.map(
+        (authorizedDevice) => authorizedDevice.id
+      )
+    );
+
+    return ok(c, { card: updatedCard });
   }
 );
 

@@ -1,5 +1,4 @@
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -25,8 +24,6 @@ import {
 import { filcExt } from '#utils/openapi';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'substitutions']);
 
 const ensurePeriodExists = async (periodId: string) => {
   const [existingPeriod] = await db
@@ -199,41 +196,34 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   async (c) => {
-    try {
-      const movedLessons = await db
-        .select({
-          classroom,
-          dayDefinition,
-          lessonNames: sql<string[]>`COALESCE(
-            ARRAY_AGG(${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessonNames'),
-          lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessons'),
-          movedLesson,
-          period,
-        })
-        .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
-        .leftJoin(classroom, eq(movedLesson.room, classroom.id))
-        .leftJoin(
-          movedLessonLessonMTM,
-          eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
-        )
-        .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-        .leftJoin(subject, eq(lesson.subjectId, subject.id))
-        .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
+    const movedLessons = await db
+      .select({
+        classroom,
+        dayDefinition,
+        lessonNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessonNames'),
+        lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+        movedLesson,
+        period,
+      })
+      .from(movedLesson)
+      .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
+      .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+      .leftJoin(classroom, eq(movedLesson.room, classroom.id))
+      .leftJoin(
+        movedLessonLessonMTM,
+        eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+      )
+      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+      .leftJoin(subject, eq(lesson.subjectId, subject.id))
+      .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return ok(c, movedLessons);
-    } catch (error) {
-      logger.error('Error while fetching all moved lessons', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch all moved lessons',
-      });
-    }
+    return ok(c, movedLessons);
   }
 );
 
@@ -267,49 +257,42 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
   }),
   zValidator('param', z.object({ timetableId: z.uuid() })),
   async (c) => {
-    try {
-      const { timetableId } = c.req.valid('param');
+    const { timetableId } = c.req.valid('param');
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const movedLessons = await db
-        .select({
-          classroom,
-          dayDefinition,
-          lessonNames: sql<string[]>`COALESCE(
-            ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessonNames'),
-          lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessons'),
-          movedLesson,
-          period,
-        })
-        .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
-        .leftJoin(classroom, eq(movedLesson.room, classroom.id))
-        .leftJoin(
-          movedLessonLessonMTM,
-          eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
-        )
-        .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-        .leftJoin(subject, eq(lesson.subjectId, subject.id))
-        .where(
-          and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
-        )
-        .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
+    const movedLessons = await db
+      .select({
+        classroom,
+        dayDefinition,
+        lessonNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessonNames'),
+        lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+        movedLesson,
+        period,
+      })
+      .from(movedLesson)
+      .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
+      .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+      .leftJoin(classroom, eq(movedLesson.room, classroom.id))
+      .leftJoin(
+        movedLessonLessonMTM,
+        eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+      )
+      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+      .leftJoin(subject, eq(lesson.subjectId, subject.id))
+      .where(
+        and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
+      )
+      .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return ok(c, movedLessons);
-    } catch (error) {
-      logger.error('Error while fetching relevant moved lessons', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch relevant moved lessons',
-      });
-    }
+    return ok(c, movedLessons);
   }
 );
 
@@ -343,45 +326,38 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
   }),
   zValidator('param', z.object({ cohortId: z.uuid() })),
   async (c) => {
-    try {
-      const { cohortId } = c.req.valid('param');
+    const { cohortId } = c.req.valid('param');
 
-      const movedLessons = await db
-        .select({
-          classroom,
-          dayDefinition,
-          lessonNames: sql<string[]>`COALESCE(
-            ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessonNames'),
-          lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessons'),
-          movedLesson,
-          period,
-        })
-        .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
-        .leftJoin(classroom, eq(movedLesson.room, classroom.id))
-        .leftJoin(
-          movedLessonLessonMTM,
-          eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
-        )
-        .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-        .leftJoin(subject, eq(lesson.subjectId, subject.id))
-        .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-        .where(eq(lessonCohortMTM.cohortId, cohortId))
-        .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
+    const movedLessons = await db
+      .select({
+        classroom,
+        dayDefinition,
+        lessonNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessonNames'),
+        lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+        movedLesson,
+        period,
+      })
+      .from(movedLesson)
+      .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
+      .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+      .leftJoin(classroom, eq(movedLesson.room, classroom.id))
+      .leftJoin(
+        movedLessonLessonMTM,
+        eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+      )
+      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+      .leftJoin(subject, eq(lesson.subjectId, subject.id))
+      .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
+      .where(eq(lessonCohortMTM.cohortId, cohortId))
+      .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return ok(c, movedLessons);
-    } catch (error) {
-      logger.error('Error while fetching moved lessons for cohort', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch moved lessons for cohort',
-      });
-    }
+    return ok(c, movedLessons);
   }
 );
 
@@ -415,55 +391,46 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   }),
   zValidator('param', z.object({ cohortId: z.uuid() })),
   async (c) => {
-    try {
-      const { cohortId } = c.req.valid('param');
+    const { cohortId } = c.req.valid('param');
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const movedLessons = await db
-        .select({
-          classroom,
-          dayDefinition,
-          lessonNames: sql<string[]>`COALESCE(
-            ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessonNames'),
-          lessons: sql<string[]>`COALESCE(
-            ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
-            ARRAY[]::text[]
-          )`.as('lessons'),
-          movedLesson,
-          period,
-        })
-        .from(movedLesson)
-        .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
-        .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
-        .leftJoin(classroom, eq(movedLesson.room, classroom.id))
-        .leftJoin(
-          movedLessonLessonMTM,
-          eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+    const movedLessons = await db
+      .select({
+        classroom,
+        dayDefinition,
+        lessonNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessonNames'),
+        lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+        movedLesson,
+        period,
+      })
+      .from(movedLesson)
+      .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
+      .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+      .leftJoin(classroom, eq(movedLesson.room, classroom.id))
+      .leftJoin(
+        movedLessonLessonMTM,
+        eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+      )
+      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+      .leftJoin(subject, eq(lesson.subjectId, subject.id))
+      .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
+      .where(
+        and(
+          eq(lessonCohortMTM.cohortId, cohortId),
+          gte(movedLesson.date, today)
         )
-        .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-        .leftJoin(subject, eq(lesson.subjectId, subject.id))
-        .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-        .where(
-          and(
-            eq(lessonCohortMTM.cohortId, cohortId),
-            gte(movedLesson.date, today)
-          )
-        )
-        .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
+      )
+      .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-      return ok(c, movedLessons);
-    } catch (error) {
-      logger.error('Error while fetching relevant moved lessons for cohort', {
-        error,
-      });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch relevant moved lessons for cohort',
-      });
-    }
+    return ok(c, movedLessons);
   }
 );
 
@@ -502,65 +469,58 @@ export const createMovedLesson = timetableFactory.createHandlers(
   ...authRouter('movedLesson:create'),
   zValidator('json', createSchema),
   async (c) => {
-    try {
-      const body = c.req.valid('json');
-      const { startingPeriod, startingDay, room, date, lessonIds } = body;
+    const body = c.req.valid('json');
+    const { startingPeriod, startingDay, room, date, lessonIds } = body;
 
-      if (!date) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Date is required',
-        });
-      }
+    if (!date) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Date is required',
+      });
+    }
 
-      await validateMovedLessonReferences({
-        lessonIds,
+    await validateMovedLessonReferences({
+      lessonIds,
+      room,
+      startingDay,
+      startingPeriod,
+    });
+
+    const [newMovedLesson] = await db
+      .insert(movedLesson)
+      .values({
+        date,
+        id: crypto.randomUUID(),
+        room,
+        startingDay,
+        startingPeriod,
+      })
+      .returning();
+
+    if (
+      lessonIds &&
+      Array.isArray(lessonIds) &&
+      lessonIds.length > 0 &&
+      newMovedLesson
+    ) {
+      await db.insert(movedLessonLessonMTM).values(
+        lessonIds.map((lessonId: string) => ({
+          lessonId,
+          movedLessonId: newMovedLesson.id,
+        }))
+      );
+    }
+
+    if (newMovedLesson) {
+      dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
+        date: body.date,
+        lessonIds: lessonIds ?? [],
         room,
         startingDay,
         startingPeriod,
       });
-
-      const [newMovedLesson] = await db
-        .insert(movedLesson)
-        .values({
-          date,
-          id: crypto.randomUUID(),
-          room,
-          startingDay,
-          startingPeriod,
-        })
-        .returning();
-
-      if (
-        lessonIds &&
-        Array.isArray(lessonIds) &&
-        lessonIds.length > 0 &&
-        newMovedLesson
-      ) {
-        await db.insert(movedLessonLessonMTM).values(
-          lessonIds.map((lessonId: string) => ({
-            lessonId,
-            movedLessonId: newMovedLesson.id,
-          }))
-        );
-      }
-
-      if (newMovedLesson) {
-        dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
-          date: body.date,
-          lessonIds: lessonIds ?? [],
-          room,
-          startingDay,
-          startingPeriod,
-        });
-      }
-
-      return created(c, newMovedLesson);
-    } catch (error) {
-      logger.error(`Error while creating moved lesson: ${error}`, { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to create moved lesson',
-      });
     }
+
+    return created(c, newMovedLesson);
   }
 );
 
@@ -609,68 +569,61 @@ export const updateMovedLesson = timetableFactory.createHandlers(
   zValidator('param', z.object({ id: z.uuid() })),
   zValidator('json', updateSchema),
   async (c) => {
-    try {
-      const { id } = c.req.valid('param');
-      const { startingPeriod, startingDay, room, date, lessonIds } =
-        c.req.valid('json');
+    const { id } = c.req.valid('param');
+    const { startingPeriod, startingDay, room, date, lessonIds } =
+      c.req.valid('json');
 
-      await validateMovedLessonReferences({
-        lessonIds,
-        room,
-        startingDay,
-        startingPeriod,
-      });
+    await validateMovedLessonReferences({
+      lessonIds,
+      room,
+      startingDay,
+      startingPeriod,
+    });
 
-      cancelPendingNotification(id, 'moved_lesson');
+    cancelPendingNotification(id, 'moved_lesson');
 
-      const [updatedMovedLesson] = await db
-        .update(movedLesson)
-        .set({
-          date,
-          room: room === undefined ? undefined : room,
-          startingDay: startingDay === undefined ? undefined : startingDay,
-          startingPeriod:
-            startingPeriod === undefined ? undefined : startingPeriod,
-        })
-        .where(eq(movedLesson.id, id))
-        .returning();
-
-      if (!updatedMovedLesson) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Moved lesson not found',
-        });
-      }
-
-      if (lessonIds !== undefined && Array.isArray(lessonIds)) {
-        await db
-          .delete(movedLessonLessonMTM)
-          .where(eq(movedLessonLessonMTM.movedLessonId, id));
-
-        if (lessonIds.length > 0) {
-          await db.insert(movedLessonLessonMTM).values(
-            lessonIds.map((lessonId: string) => ({
-              lessonId,
-              movedLessonId: id,
-            }))
-          );
-        }
-      }
-
-      dispatchPendingNotification(id, 'moved_lesson', {
+    const [updatedMovedLesson] = await db
+      .update(movedLesson)
+      .set({
         date,
-        lessonIds: lessonIds ?? [],
-        room,
-        startingDay,
-        startingPeriod,
-      });
+        room: room === undefined ? undefined : room,
+        startingDay: startingDay === undefined ? undefined : startingDay,
+        startingPeriod:
+          startingPeriod === undefined ? undefined : startingPeriod,
+      })
+      .where(eq(movedLesson.id, id))
+      .returning();
 
-      return ok(c, updatedMovedLesson);
-    } catch (error) {
-      logger.error('Error while updating moved lesson', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to update moved lesson',
+    if (!updatedMovedLesson) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Moved lesson not found',
       });
     }
+
+    if (lessonIds !== undefined && Array.isArray(lessonIds)) {
+      await db
+        .delete(movedLessonLessonMTM)
+        .where(eq(movedLessonLessonMTM.movedLessonId, id));
+
+      if (lessonIds.length > 0) {
+        await db.insert(movedLessonLessonMTM).values(
+          lessonIds.map((lessonId: string) => ({
+            lessonId,
+            movedLessonId: id,
+          }))
+        );
+      }
+    }
+
+    dispatchPendingNotification(id, 'moved_lesson', {
+      date,
+      lessonIds: lessonIds ?? [],
+      room,
+      startingDay,
+      startingPeriod,
+    });
+
+    return ok(c, updatedMovedLesson);
   }
 );
 
@@ -704,28 +657,21 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
   ...authRouter('movedLesson:delete'),
   zValidator('param', z.object({ id: z.uuid() })),
   async (c) => {
-    try {
-      const { id } = c.req.valid('param');
+    const { id } = c.req.valid('param');
 
-      const [deletedMovedLesson] = await db
-        .delete(movedLesson)
-        .where(eq(movedLesson.id, id))
-        .returning();
+    const [deletedMovedLesson] = await db
+      .delete(movedLesson)
+      .where(eq(movedLesson.id, id))
+      .returning();
 
-      if (!deletedMovedLesson) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Moved lesson not found',
-        });
-      }
-
-      cancelPendingNotification(id, 'moved_lesson');
-
-      return ok(c, deletedMovedLesson);
-    } catch (error) {
-      logger.error('Error while deleting moved lesson', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to delete moved lesson',
+    if (!deletedMovedLesson) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Moved lesson not found',
       });
     }
+
+    cancelPendingNotification(id, 'moved_lesson');
+
+    return ok(c, deletedMovedLesson);
   }
 );
