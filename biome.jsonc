@@ -211,7 +211,6 @@
         "useJsxKeyInIterable": "error"
       },
       "nursery": {
-        "noShadow": "error",
         "useSortedClasses": {
           "fix": "safe",
           "level": "error",
@@ -220,7 +219,6 @@
             "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
           }
         },
-        "noUnnecessaryConditions": "off",
         "useExplicitType": "off",
         "noFloatingPromises": "off",
         "noMisusedPromises": "off",
@@ -443,7 +441,9 @@
         "noDuplicateJsxProps": "error",
         "noSuspiciousSemicolonInJsx": "error",
 
-        "noReactSpecificProps": "off"
+        "noReactSpecificProps": "off",
+        "noShadow": "error",
+        "noUnnecessaryConditions": "off"
       }
     }
   },
