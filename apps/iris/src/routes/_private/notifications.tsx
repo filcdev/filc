@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseResponse } from 'hono/client';
 import { MailCheck, MailX } from 'lucide-react';
@@ -18,8 +18,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useApiMutation } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
+
+type NotificationListResult = {
+  data: NotificationItem[];
+  success: boolean;
+  total?: number;
+};
 
 type NotificationItem = {
   id: string;
@@ -65,8 +72,8 @@ function NotificationsPage() {
   const [dateTo, setDateTo] = useState('');
   const pageSize = 20;
 
-  const { data, isLoading, isError } = useQuery({
-    queryFn: async () => {
+  const { data, isLoading, isError } = useQuery<NotificationListResult>({
+    queryFn: () => {
       const query: Record<string, string | undefined> = {
         limit: String(pageSize),
         offset: String(page * pageSize),
@@ -85,14 +92,9 @@ function NotificationsPage() {
       if (dateTo) {
         query.dateTo = dateTo;
       }
-      const res = await parseResponse(api.notifications.index.$get({ query }));
-      if (!res.success) {
-        throw new Error('Failed to load notifications');
-      }
-      return {
-        items: (res.data ?? []) as NotificationItem[],
-        total: (res as { total?: number }).total ?? 0,
-      };
+      return parseResponse(
+        api.notifications.index.$get({ query })
+      ) as unknown as NotificationListResult;
     },
     queryKey: [
       ...queryKeys.notifications.list(
@@ -106,9 +108,9 @@ function NotificationsPage() {
     ],
   });
 
-  const markReadMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(api.notifications[':id'].read.$patch({ param: { id } })),
+  const markReadMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.notifications[':id'].read.$patch({ param: { id } }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),
@@ -116,9 +118,8 @@ function NotificationsPage() {
     },
   });
 
-  const markAllReadMutation = useMutation({
-    mutationFn: async () =>
-      parseResponse(api.notifications['read-all'].$patch()),
+  const markAllReadMutation = useApiMutation({
+    mutationFn: () => api.notifications['read-all'].$patch(),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),
@@ -139,7 +140,7 @@ function NotificationsPage() {
     };
   };
 
-  const items = data?.items ?? [];
+  const items = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
 

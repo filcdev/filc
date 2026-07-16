@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseResponse } from 'hono/client';
 import { MailCheck, MailX } from 'lucide-react';
 import { useState } from 'react';
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useApiMutation } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -94,9 +95,9 @@ export function NotificationHistoryDialog({
     ],
   });
 
-  const markReadMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(api.notifications[':id'].read.$patch({ param: { id } })),
+  const markReadMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.notifications[':id'].read.$patch({ param: { id } }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),
@@ -104,9 +105,8 @@ export function NotificationHistoryDialog({
     },
   });
 
-  const markAllReadMutation = useMutation({
-    mutationFn: async () =>
-      parseResponse(api.notifications['read-all'].$patch()),
+  const markAllReadMutation = useApiMutation({
+    mutationFn: () => api.notifications['read-all'].$patch(),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.notifications.all(),

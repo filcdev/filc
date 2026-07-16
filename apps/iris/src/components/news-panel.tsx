@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
-import { parseResponse } from 'hono/client';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +9,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
@@ -86,21 +85,13 @@ export function NewsPanel() {
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
-  const announcementsQuery = useQuery({
-    enabled: !isPending,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.news.announcements.$get({
-          query: {},
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load announcements');
-      }
-      return res.data as AnnouncementItem[];
-    },
-    queryKey: queryKeys.news.announcementsPanel(),
-  });
+  const announcementsQuery = useApiQuery<AnnouncementItem[]>(
+    () => api.news.announcements.$get({ query: {} }),
+    {
+      enabled: !isPending,
+      queryKey: queryKeys.news.announcementsPanel(),
+    }
+  );
 
   const newsItems = useMemo<NewsItem[]>(() => {
     const today = new Date();

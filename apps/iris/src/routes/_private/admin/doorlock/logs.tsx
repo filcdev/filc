@@ -1,11 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   Calendar as CalendarIcon,
   Check,
@@ -52,6 +48,7 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { cn } from '@/utils/index';
@@ -268,32 +265,26 @@ function LogsPage() {
     session?.user?.permissions
   );
 
-  const devicesQuery = useQuery({
-    enabled: canReadDevices,
-    queryFn: async (): Promise<DoorlockDevice[]> => {
-      const res = await parseResponse(api.doorlock.devices.$get());
-      if (!(res.success && res.data?.devices)) {
-        throw new Error('Failed to load devices');
-      }
-      return res.data.devices as DoorlockDevice[];
-    },
-    queryKey: queryKeys.doorlock.devices(),
-  });
+  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
+    () => api.doorlock.devices.$get(),
+    {
+      enabled: canReadDevices,
+      queryKey: queryKeys.doorlock.devices(),
+    }
+  );
+  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const cardsQuery = useQuery({
-    enabled: canReadCards,
-    queryFn: async (): Promise<DoorlockCard[]> => {
-      const res = await parseResponse(api.doorlock.cards.$get());
-      if (!(res.success && res.data?.cards)) {
-        throw new Error('Failed to load cards');
-      }
-      return res.data.cards as DoorlockCard[];
-    },
-    queryKey: queryKeys.doorlock.cards(),
-  });
+  const cardsQuery = useApiQuery<NonNullable<CardsResponse['data']>>(
+    () => api.doorlock.cards.$get(),
+    {
+      enabled: canReadCards,
+      queryKey: queryKeys.doorlock.cards(),
+    }
+  );
+  const cards: DoorlockCard[] | undefined = cardsQuery.data?.cards;
 
-  const logsQuery = useQuery({
-    queryFn: async (): Promise<DoorlockLogEntry[]> => {
+  const logsQuery = useApiQuery<NonNullable<LogsResponse['data']>>(
+    () => {
       const query = buildLogsQuery({
         accessFilter,
         cardFilter,
@@ -303,38 +294,33 @@ function LogsPage() {
         userFilter,
       });
 
-      const res = await parseResponse(api.doorlock.logs.$get({ query }));
-      if (!(res.success && res.data?.logs)) {
-        throw new Error('Failed to load logs');
-      }
-      return res.data.logs as DoorlockLogEntry[];
+      return api.doorlock.logs.$get({ query });
     },
-    queryKey: queryKeys.doorlock.logs(
-      deviceFilter,
-      cardFilter,
-      userFilter,
-      accessFilter,
-      dateRange.from?.toISOString() ?? 'none',
-      dateRange.to?.toISOString() ?? 'none',
-      deferredSearch
-    ),
-    staleTime: 30_000,
-  });
+    {
+      queryKey: queryKeys.doorlock.logs(
+        deviceFilter,
+        cardFilter,
+        userFilter,
+        accessFilter,
+        dateRange.from?.toISOString() ?? 'none',
+        dateRange.to?.toISOString() ?? 'none',
+        deferredSearch
+      ),
+      staleTime: 30_000,
+    }
+  );
+  const logs: DoorlockLogEntry[] | undefined = logsQuery.data?.logs;
 
-  const usersQuery = useQuery({
+  const usersQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.doorlock.cards.users.$get>['data']>
+  >(() => api.doorlock.cards.users.$get(), {
     enabled: hasCardWritePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.doorlock.cards.users.$get());
-      if (!(res.success && res.data?.users)) {
-        throw new Error('Failed to load users');
-      }
-      return res.data.users;
-    },
     queryKey: queryKeys.doorlock.cardUsers(),
   });
+  const users = usersQuery.data?.users;
 
   const $upsertCard = api.doorlock.cards.$post;
-  const upsertCardMutation = useMutation({
+  const upsertCardMutation = useApiMutation({
     mutationFn: ({
       id,
       payload,
@@ -343,11 +329,9 @@ function LogsPage() {
       payload: InferRequestType<typeof $upsertCard>['json'];
     }) => {
       if (id) {
-        return parseResponse(
-          api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
-        );
+        return api.doorlock.cards[':id'].$put({ json: payload, param: { id } });
       }
-      return parseResponse(api.doorlock.cards.$post({ json: payload }));
+      return api.doorlock.cards.$post({ json: payload });
     },
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockCards.saveError'));
@@ -380,8 +364,8 @@ function LogsPage() {
   }, [pendingCardData]);
 
   const deviceOptions = useOptions(
-    devicesQuery.data,
-    logsQuery.data?.flatMap((log) =>
+    devices,
+    logs?.flatMap((log) =>
       log.device
         ? [{ id: log.device.id, label: log.device.name ?? 'Device' }]
         : []
@@ -389,15 +373,15 @@ function LogsPage() {
   );
 
   const cardOptions = useOptions(
-    cardsQuery.data,
-    logsQuery.data?.flatMap((log) =>
+    cards,
+    logs?.flatMap((log) =>
       log.card ? [{ id: log.card.id, label: log.card.name ?? 'Card' }] : []
     ) ?? []
   );
 
   const userOptions = useMemo<FilterOption[]>(() => {
     const seen = new Map<string, string>();
-    for (const log of logsQuery.data ?? []) {
+    for (const log of logs ?? []) {
       if (log.owner?.id) {
         seen.set(
           log.owner.id,
@@ -406,10 +390,10 @@ function LogsPage() {
       }
     }
     return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
-  }, [logsQuery.data]);
+  }, [logs]);
 
   const { filteredLogs, stats } = useLogStats(
-    logsQuery.data,
+    logs,
     eventFilter,
     sortColumn,
     sortDirection
@@ -665,14 +649,14 @@ function LogsPage() {
       {hasCardWritePermission && (
         <CardDialog
           card={cardDialogCard}
-          devices={devicesQuery.data ?? []}
+          devices={devices ?? []}
           onOpenChange={setCardDialogOpen}
           onSubmit={async (payload) => {
             await upsertCardMutation.mutateAsync({ payload });
           }}
           open={cardDialogOpen}
           users={
-            (usersQuery.data ?? []) as Array<{
+            (users ?? []) as Array<{
               id: string;
               name: string | null;
               nickname: string | null;

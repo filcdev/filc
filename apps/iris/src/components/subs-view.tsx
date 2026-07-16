@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
-import { parseResponse } from 'hono/client';
 import {
   Building2,
   CheckIcon,
@@ -18,6 +16,7 @@ import type {
   FilterType,
   SelectionsType,
   TeacherItem,
+  TimetableItem,
 } from '@/components/timetable/types';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -36,6 +35,7 @@ import {
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/utils';
+import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -421,102 +421,53 @@ export function SubstitutionView() {
     teacher: null,
   });
 
-  const timetablesQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.timetables.$get());
-      if (!res.success) {
-        throw new Error('Failed to load timetables');
-      }
-      return res.data ?? [];
-    },
-    queryKey: queryKeys.timetables.all(),
-  });
+  const timetablesQuery = useApiQuery<TimetableItem[]>(
+    () => api.timetable.timetables.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.all() }
+  );
 
-  const latestValidTimetableQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.timetables.latestValid.$get()
-      );
-      if (!res.success) {
-        throw new Error('Failed to fetch latest valid timetable');
-      }
-      return res.data ?? null;
-    },
-    queryKey: queryKeys.timetables.latestValid(),
-  });
+  const latestValidTimetableQuery = useApiQuery<TimetableItem | null>(
+    () => api.timetable.timetables.latestValid.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.latestValid() }
+  );
 
   const latestTimetableId =
     latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
 
-  const cohortsQuery = useQuery({
-    ...QUERY_OPTIONS,
-    enabled: !!latestTimetableId,
-    queryFn: async () => {
-      if (!latestTimetableId) {
-        return [] as CohortItem[];
-      }
-      const res = await parseResponse(
-        api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-          param: { timetableId: latestTimetableId },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return (res.data ?? []) as CohortItem[];
+  const cohortsQuery = useApiQuery<CohortItem[]>(
+    () => {
+      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
+      const timetableId = latestTimetableId!;
+      return api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+        param: { timetableId },
+      });
     },
-    queryKey: queryKeys.timetable.cohorts(latestTimetableId),
-  });
+    {
+      ...QUERY_OPTIONS,
+      enabled: !!latestTimetableId,
+      queryKey: queryKeys.timetable.cohorts(latestTimetableId),
+    }
+  );
 
-  const teachersQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.teachers.getAll.$get());
-      if (!res.success) {
-        throw new Error('Failed to load teachers');
-      }
-      return (res.data ?? []) as TeacherItem[];
-    },
-    queryKey: queryKeys.teachers(),
-  });
+  const teachersQuery = useApiQuery<TeacherItem[]>(
+    () => api.timetable.teachers.getAll.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.teachers() }
+  );
 
-  const classroomsQuery = useQuery({
-    ...QUERY_OPTIONS,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.classrooms.getAll.$get());
-      if (!res.success) {
-        throw new Error('Failed to load classrooms');
-      }
-      return (res.data ?? []) as ClassroomItem[];
-    },
-    queryKey: queryKeys.classrooms(),
-  });
+  const classroomsQuery = useApiQuery<ClassroomItem[]>(
+    () => api.timetable.classrooms.getAll.$get(),
+    { ...QUERY_OPTIONS, queryKey: queryKeys.classrooms() }
+  );
 
-  const substitutionsQuery = useQuery({
-    enabled: !isPending,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.substitutions.$get());
-      if (!res.success) {
-        throw new Error('Failed to load substitutions');
-      }
-      return res.data as Subs[];
-    },
-    queryKey: queryKeys.substitutions(),
-  });
+  const substitutionsQuery = useApiQuery<Subs[]>(
+    () => api.timetable.substitutions.$get(),
+    { enabled: !isPending, queryKey: queryKeys.substitutions() }
+  );
 
-  const movedLessonsQuery = useQuery({
-    enabled: !isPending,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.movedLessons.$get());
-      if (!res.success) {
-        throw new Error('Failed to load moved lessons');
-      }
-      return res.data as MovedLessonItem[];
-    },
-    queryKey: queryKeys.movedLessons(),
-  });
+  const movedLessonsQuery = useApiQuery<MovedLessonItem[]>(
+    () => api.timetable.movedLessons.$get(),
+    { enabled: !isPending, queryKey: queryKeys.movedLessons() }
+  );
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 

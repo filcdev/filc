@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import {
   ArrowLeftRight,
   ArrowRightLeft,
@@ -27,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 
 type StatsResponse = InferResponseType<typeof api.dashboard.stats.$get>;
@@ -37,18 +37,12 @@ export function AdminDashboard() {
   const { t } = useTranslation();
   const [days, setDays] = useState(30);
 
-  const statsQuery = useQuery({
-    queryFn: async (): Promise<DashboardStats> => {
-      const res = await parseResponse(
-        api.dashboard.stats.$get({ query: { days: String(days) } })
-      );
-      if (!(res.success && res.data?.stats)) {
-        throw new Error('Failed to load dashboard stats');
-      }
-      return res.data.stats as DashboardStats;
-    },
-    queryKey: ['dashboard', 'stats', days] as const,
-  });
+  const statsQuery = useApiQuery<DashboardStats>(
+    () => api.dashboard.stats.$get({ query: { days: String(days) } }),
+    {
+      queryKey: ['dashboard', 'stats', days] as const,
+    }
+  );
 
   const stats = statsQuery.data;
   const isLoading = statsQuery.isLoading;

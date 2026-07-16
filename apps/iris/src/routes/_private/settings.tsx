@@ -1,8 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Alert, AlertTitle } from '@/components/ui/alert';
@@ -24,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -84,39 +84,34 @@ function SettingsPage() {
     systemMessage: true,
   });
 
-  const { isLoading, isError } = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications.settings.$get());
-      if (!res.success) {
-        throw new Error('Failed to load settings');
-      }
-      const data = res.data as PreferencesData;
-      setLanguage(data.language);
-      setTheme(data.theme);
-      setTimetableView(data.timetableView);
-      setPrefs(data.notificationPreferences);
-      return data;
-    },
+  const {
+    data: settings,
+    isLoading,
+    isError,
+  } = useApiQuery<PreferencesData>(() => api.notifications.settings.$get(), {
     queryKey: queryKeys.notifications.settings(),
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const res = await parseResponse(
-        api.notifications.settings.$patch({
-          json: {
-            language,
-            notificationPreferences: prefs,
-            theme,
-            timetableView,
-          },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save settings');
-      }
-      return res;
-    },
+  useEffect(() => {
+    if (!settings) {
+      return;
+    }
+    setLanguage(settings.language);
+    setTheme(settings.theme);
+    setTimetableView(settings.timetableView);
+    setPrefs(settings.notificationPreferences);
+  }, [settings]);
+
+  const saveMutation = useApiMutation({
+    mutationFn: () =>
+      api.notifications.settings.$patch({
+        json: {
+          language,
+          notificationPreferences: prefs,
+          theme,
+          timetableView,
+        },
+      }),
     onError: () => {
       toast.error(t('preferences.saveError'));
     },

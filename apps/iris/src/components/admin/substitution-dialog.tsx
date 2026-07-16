@@ -1,10 +1,5 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import { useQuery } from '@tanstack/react-query';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -154,36 +150,31 @@ export function SubstitutionDialog({
     }
   }, [defaultValues, form, item, open]);
 
-  const substituteCandidatesQuery = useQuery({
-    enabled: !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.lessons.getSubstitutionCandidates.$post({
-          json: {
-            date: formDate,
-            missingTeacherId: selectedMissingTeacher,
-            selectedLessonIds: formLessonIds,
-            teacherIds: teachers.map((teacher) => teacher.id),
-          },
-        })
-      );
-
-      if (!res.success) {
-        throw new Error('Failed to load substitution candidates');
-      }
-
-      return res.data;
-    },
-    queryKey: queryKeys.timetable.substituteCandidates(
-      selectedMissingTeacher,
-      formDate?.toISOString(),
-      [...formLessonIds].sort().join(','),
-      teachers
-        .map((teacher) => teacher.id)
-        .sort()
-        .join(',')
-    ),
-  });
+  const substituteCandidatesQuery = useApiQuery<
+    TeacherLessonsApiResponse['data']
+  >(
+    () =>
+      api.timetable.lessons.getSubstitutionCandidates.$post({
+        json: {
+          date: formDate,
+          missingTeacherId: selectedMissingTeacher,
+          selectedLessonIds: formLessonIds,
+          teacherIds: teachers.map((teacher) => teacher.id),
+        },
+      }),
+    {
+      enabled: !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
+      queryKey: queryKeys.timetable.substituteCandidates(
+        selectedMissingTeacher,
+        formDate?.toISOString(),
+        [...formLessonIds].sort().join(','),
+        teachers
+          .map((teacher) => teacher.id)
+          .sort()
+          .join(',')
+      ),
+    }
+  );
 
   const availableLessons = useMemo(() => {
     if (!selectedMissingTeacher) {

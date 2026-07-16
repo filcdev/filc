@@ -1,10 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +32,7 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
@@ -79,51 +76,30 @@ function SystemMessagesPage() {
     session?.user?.permissions
   );
 
-  const systemMessagesQuery = useQuery({
-    enabled: hasManagePermission,
-    queryFn: async (): Promise<SystemMessageItem[]> => {
-      const res = await parseResponse(
-        api.news['system-messages'].$get({
-          query: {},
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load system messages');
-      }
-      return res.data as SystemMessageItem[];
-    },
-    queryKey: queryKeys.news.adminSystemMessages(),
-  });
+  const systemMessagesQuery = useApiQuery<SystemMessageItem[]>(
+    () =>
+      api.news['system-messages'].$get({
+        query: {},
+      }),
+    {
+      enabled: hasManagePermission,
+      queryKey: queryKeys.news.adminSystemMessages(),
+    }
+  );
 
-  const cohortsQuery = useQuery({
+  const cohortsQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
+  >(() => api.cohort.index.$get(), {
     enabled: hasManagePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data;
-    },
     queryKey: queryKeys.cohorts(),
   });
 
   const $create = api.news['system-messages'].$post;
-  const createMutation = useMutation<
-    InferResponseType<typeof $create>,
-    Error,
-    InferRequestType<typeof $create>['json']
-  >({
-    mutationFn: async (payload) => {
-      const res = await parseResponse(
-        api.news['system-messages'].$post({
-          json: payload,
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create system message');
-      }
-      return res;
-    },
+  const createMutation = useApiMutation({
+    mutationFn: (payload: InferRequestType<typeof $create>['json']) =>
+      api.news['system-messages'].$post({
+        json: payload,
+      }),
     onError: (error: Error) => {
       toast.error(error.message || t('systemMessages.createError'));
     },
@@ -143,25 +119,18 @@ function SystemMessagesPage() {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({
+  const updateMutation = useApiMutation({
+    mutationFn: ({
       id,
       payload,
     }: {
       id: string;
       payload: InferRequestType<typeof $create>['json'];
-    }) => {
-      const res = await parseResponse(
-        api.news['system-messages'][':id'].$patch({
-          json: payload,
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update system message');
-      }
-      return res;
-    },
+    }) =>
+      api.news['system-messages'][':id'].$patch({
+        json: payload,
+        param: { id },
+      }),
     onError: (error: Error) => {
       toast.error(error.message || t('systemMessages.updateError'));
     },
@@ -181,16 +150,9 @@ function SystemMessagesPage() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.news['system-messages'][':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete system message');
-      }
-      return res;
-    },
+  const deleteMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.news['system-messages'][':id'].$delete({ param: { id } }),
     onError: (error: Error) => {
       toast.error(error.message || t('systemMessages.deleteError'));
     },

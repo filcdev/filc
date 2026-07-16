@@ -1,10 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import type { InferResponseType } from 'hono/client';
-import { parseResponse } from 'hono/client';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
@@ -76,21 +75,13 @@ export function SystemMessageBanner() {
     setDismissedIds(readDismissedIds());
   }, []);
 
-  const systemMessagesQuery = useQuery({
-    enabled: !isPending,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.news['system-messages'].$get({
-          query: {},
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load system messages');
-      }
-      return res.data as SystemMessageItem[];
-    },
-    queryKey: queryKeys.news.systemMessagesBanner(),
-  });
+  const systemMessagesQuery = useApiQuery<SystemMessageItem[]>(
+    () => api.news['system-messages'].$get({ query: {} }),
+    {
+      enabled: !isPending,
+      queryKey: queryKeys.news.systemMessagesBanner(),
+    }
+  );
 
   const visibleMessages = useMemo(() => {
     const dismissed = new Set(dismissedIds);

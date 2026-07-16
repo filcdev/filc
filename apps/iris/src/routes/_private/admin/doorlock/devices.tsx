@@ -1,11 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   ChartArea,
   DoorOpen,
@@ -38,6 +34,7 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 import { api } from '@/utils/hc';
@@ -90,33 +87,30 @@ function DevicesPage() {
     return perms.includes('*') || perms.includes('doorlock:devices:write');
   }, [session?.user?.permissions]);
 
-  const devicesQuery = useQuery({
-    queryFn: async (): Promise<DoorlockDevice[]> => {
-      const res = await parseResponse(api.doorlock.devices.$get());
-      if (!(res.success && res.data?.devices)) {
-        throw new Error('Failed to load devices');
-      }
-      return res.data.devices as DoorlockDevice[];
-    },
-    queryKey: queryKeys.doorlock.devices(),
-  });
+  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
+    () => api.doorlock.devices.$get(),
+    {
+      queryKey: queryKeys.doorlock.devices(),
+    }
+  );
+  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
   const $upsertDevice = api.doorlock.devices.$post;
-  const upsertMutation = useMutation<
-    InferResponseType<typeof $upsertDevice>,
-    Error,
-    { id?: string; payload: InferRequestType<typeof $upsertDevice>['json'] }
-  >({
-    mutationFn: ({ id, payload }) => {
+  const upsertMutation = useApiMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id?: string;
+      payload: InferRequestType<typeof $upsertDevice>['json'];
+    }) => {
       if (id) {
-        return parseResponse(
-          api.doorlock.devices[':id'].$put({
-            json: payload,
-            param: { id },
-          })
-        );
+        return api.doorlock.devices[':id'].$put({
+          json: payload,
+          param: { id },
+        });
       }
-      return parseResponse(api.doorlock.devices.$post({ json: payload }));
+      return api.doorlock.devices.$post({ json: payload });
     },
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockDevices.saveError'));
@@ -134,14 +128,9 @@ function DevicesPage() {
     },
   });
 
-  const $deleteDevice = api.doorlock.devices[':id'].$delete;
-  const deleteMutation = useMutation<
-    InferResponseType<typeof $deleteDevice>,
-    Error,
-    string
-  >({
-    mutationFn: async (id: string) =>
-      parseResponse(api.doorlock.devices[':id'].$delete({ param: { id } })),
+  const deleteMutation = useApiMutation({
+    mutationFn: (id: string) =>
+      api.doorlock.devices[':id'].$delete({ param: { id } }),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockDevices.deleteError'));
     },
@@ -152,23 +141,15 @@ function DevicesPage() {
     },
   });
 
-  const otaMutation = useMutation<
-    unknown,
-    Error,
-    { deviceId?: string; url: string }
-  >({
-    mutationFn: ({ deviceId, url }) => {
+  const otaMutation = useApiMutation({
+    mutationFn: ({ deviceId, url }: { deviceId?: string; url: string }) => {
       if (deviceId) {
-        return parseResponse(
-          api.doorlock.devices[':id'].update.$post({
-            json: { url },
-            param: { id: deviceId },
-          })
-        );
+        return api.doorlock.devices[':id'].update.$post({
+          json: { url },
+          param: { id: deviceId },
+        });
       }
-      return parseResponse(
-        api.doorlock.devices.update.$post({ json: { url } })
-      );
+      return api.doorlock.devices.update.$post({ json: { url } });
     },
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockDevices.saveError'));
@@ -185,7 +166,7 @@ function DevicesPage() {
   });
 
   const filteredDevices = useMemo(() => {
-    const items = devicesQuery.data ?? [];
+    const items = devices ?? [];
     const term = search.trim().toLowerCase();
     let filtered = items;
 
@@ -213,18 +194,18 @@ function DevicesPage() {
     }
 
     return filtered;
-  }, [devicesQuery.data, search, sortColumn, sortDirection]);
+  }, [devices, search, sortColumn, sortDirection]);
 
-  const totalDevices = devicesQuery.data?.length ?? 0;
+  const totalDevices = devices?.length ?? 0;
   const activeDevices = useMemo(() => {
-    if (!devicesQuery.data) {
+    if (!devices) {
       return 0;
     }
-    return devicesQuery.data.filter((device) => {
+    return devices.filter((device) => {
       const hoursSinceUpdate = dayjs().diff(dayjs(device.updatedAt), 'hour');
       return hoursSinceUpdate < 24;
     }).length;
-  }, [devicesQuery.data]);
+  }, [devices]);
 
   const handleSave = async (
     payload: InferRequestType<typeof $upsertDevice>['json']

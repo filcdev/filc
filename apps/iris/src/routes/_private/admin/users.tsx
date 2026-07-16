@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -47,14 +47,9 @@ function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [inputValue, search, navigate]);
 
-  const cohortsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data ?? [];
-    },
+  const cohortsQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
+  >(() => api.cohort.index.$get(), {
     queryKey: queryKeys.cohorts(),
   });
 
@@ -63,24 +58,21 @@ function AdminUsersPage() {
     [cohortsQuery.data]
   );
 
-  const usersQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.users.index.$get({
-          query: {
-            limit: limit.toString(),
-            offset: ((page - 1) * limit).toString(),
-            search,
-          },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load users');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.users(page, search),
-  });
+  const usersQuery = useApiQuery<
+    NonNullable<InferResponseType<typeof api.users.index.$get>['data']>
+  >(
+    () =>
+      api.users.index.$get({
+        query: {
+          limit: limit.toString(),
+          offset: ((page - 1) * limit).toString(),
+          search,
+        },
+      }),
+    {
+      queryKey: queryKeys.users(page, search),
+    }
+  );
 
   const total = usersQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);

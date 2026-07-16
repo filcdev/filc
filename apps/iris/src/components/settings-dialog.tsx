@@ -1,5 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
@@ -31,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -97,33 +97,30 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     systemMessage: true,
   });
 
-  const { isLoading, isError } = useQuery({
+  const {
+    data: settingsData,
+    isLoading,
+    isError,
+    isSuccess,
+  } = useApiQuery<PreferencesData>(() => api.notifications.settings.$get(), {
     enabled: open,
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications.settings.$get());
-      if (!res.success) {
-        throw new Error('Failed to load settings');
-      }
-      const data = res.data as PreferencesData;
-      setLanguage(data.language);
-      setTheme(data.theme);
-      setTimetableView(data.timetableView);
-      setPrefs(data.notificationPreferences);
-      return data;
-    },
     queryKey: queryKeys.notifications.settings(),
   });
 
-  const cohortQuery = useQuery({
+  useEffect(() => {
+    if (!(isSuccess && settingsData)) {
+      return;
+    }
+    setLanguage(settingsData.language);
+    setTheme(settingsData.theme);
+    setTimetableView(settingsData.timetableView);
+    setPrefs(settingsData.notificationPreferences);
+  }, [isSuccess, settingsData]);
+
+  const cohortQuery = useApiQuery<CohortItem[]>(() => api.cohort.index.$get(), {
     enabled: open,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error(t('cohort.fetchFailed'));
-      }
-      return (res.data ?? []) as CohortItem[];
-    },
     queryKey: queryKeys.cohorts(),
+    select: (data) => data ?? [],
   });
 
   useEffect(() => {
@@ -134,19 +131,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setSelectedCohortId(session?.user?.cohortId ?? null);
   }, [open, session?.user?.cohortId]);
 
-  const saveMutation = useMutation({
+  const saveMutation = useApiMutation({
     mutationFn: async () => {
-      const res = await parseResponse(
-        api.notifications.settings.$patch({
-          json: {
-            language,
-            notificationPreferences: prefs,
-            theme,
-            timetableView,
-          },
-        })
-      );
-      if (!res.success) {
+      const res = await api.notifications.settings.$patch({
+        json: {
+          language,
+          notificationPreferences: prefs,
+          theme,
+          timetableView,
+        },
+      });
+      if (!res) {
         throw new Error('Failed to save settings');
       }
 

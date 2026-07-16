@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { type InferResponseType, parseResponse } from 'hono/client';
+import type { InferResponseType } from 'hono/client';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
@@ -9,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -26,18 +26,14 @@ export const Route = createFileRoute('/_private/admin/doorlock/')({
 function DoorlockDashboard() {
   const { t } = useTranslation();
 
-  const statsQuery = useQuery({
-    queryFn: async (): Promise<DoorlockStatsOverview> => {
-      const res = await parseResponse(api.doorlock.stats.overview.$get());
-      if (!(res.success && res.data?.stats)) {
-        throw new Error('Failed to load stats');
-      }
-      return res.data.stats as DoorlockStatsOverview;
-    },
-    queryKey: queryKeys.doorlock.stats(),
-  });
+  const statsQuery = useApiQuery<NonNullable<StatsResponse['data']>>(
+    () => api.doorlock.stats.overview.$get(),
+    {
+      queryKey: queryKeys.doorlock.stats(),
+    }
+  );
 
-  const stats = statsQuery.data;
+  const stats: DoorlockStatsOverview | undefined = statsQuery.data?.stats;
   const isLoading = statsQuery.isLoading;
 
   return (
