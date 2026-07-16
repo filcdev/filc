@@ -16,7 +16,7 @@ type SelectProps = SelectPrimitive.Root.Props<string | null> & {
 function Select({ items, children, ...props }: SelectProps) {
   if (items && items.length > 0) {
     return (
-      <SelectPrimitive.Root {...props}>
+      <SelectPrimitive.Root items={items} {...props}>
         {children}
         <SelectContent>
           {items.map((item) => (
@@ -33,7 +33,11 @@ function Select({ items, children, ...props }: SelectProps) {
     );
   }
 
-  return <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>;
+  return (
+    <SelectPrimitive.Root items={items} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  );
 }
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
