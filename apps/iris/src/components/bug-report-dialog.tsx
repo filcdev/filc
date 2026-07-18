@@ -66,14 +66,17 @@ export function BugReportDialog() {
     },
     validators: {
       onSubmit: ({ value }) => {
-        const errors: Record<string, string[]> = {};
+        const errors: { description?: string; subject?: string } = {};
         if (value.subject.trim().length < 3) {
-          errors.subject = [t('bugReport.subjectTooShort')];
+          errors.subject = t('bugReport.subjectTooShort');
         }
         if (value.description.trim().length < 10) {
-          errors.description = [t('bugReport.descriptionTooShort')];
+          errors.description = t('bugReport.descriptionTooShort');
         }
-        return errors;
+        if (Object.keys(errors).length === 0) {
+          return undefined;
+        }
+        return { fields: errors };
       },
     },
   });
