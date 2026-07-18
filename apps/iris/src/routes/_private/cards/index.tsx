@@ -38,6 +38,7 @@ import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
 type SelfCardsResponse = InferResponseType<typeof api.doorlock.self.cards.$get>;
+type SelfCardsData = NonNullable<SelfCardsResponse['data']>;
 type SelfCard = NonNullable<SelfCardsResponse['data']>['cards'][number];
 
 export const Route = createFileRoute('/_private/cards/')({
@@ -50,12 +51,14 @@ function CardsPage() {
   const [activateCard, setActivateCard] = useState<SelfCard | null>(null);
 
   const {
-    data: cards,
+    data: cardsResponse,
     isLoading,
     isError,
-  } = useApiQuery<SelfCard[]>(() => api.doorlock.self.cards.$get(), {
+  } = useApiQuery<SelfCardsData>(() => api.doorlock.self.cards.$get(), {
     queryKey: queryKeys.doorlock.selfCards(),
   });
+
+  const cards = cardsResponse?.cards;
 
   const freezeMutation = useApiMutation({
     mutationFn: ({ id, frozen }: { id: string; frozen: boolean }) =>
