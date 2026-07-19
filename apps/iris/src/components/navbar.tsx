@@ -76,8 +76,8 @@ export function Navbar({
   return (
     <>
       <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <div className="flex h-16 items-center px-6">
-          <div className="flex items-center gap-3">
+        <div className="flex h-16 min-w-0 items-center px-6">
+          <div className="flex min-w-0 items-center gap-3">
             {children}
             {data && showLinks && (
               <Button
@@ -105,7 +105,7 @@ export function Navbar({
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                   <GraduationCap className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="font-semibold text-foreground text-xl">
+                <span className="truncate font-semibold text-foreground text-xl">
                   filc
                 </span>
               </>
@@ -118,7 +118,7 @@ export function Navbar({
             />
           )}
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex min-w-0 items-center gap-3">
             {data && <NotificationBell />}
             {data && <BugReportDialog />}
 

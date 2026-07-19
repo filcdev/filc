@@ -448,7 +448,7 @@ export function TimetableView() {
 
   return (
     <div className="flex grow flex-col items-center p-4">
-      <div className="flex w-full max-w-7xl flex-col gap-4">
+      <div className="flex w-full min-w-0 max-w-7xl flex-col gap-4">
         <FilterBar
           activeFilter={activeFilter}
           classrooms={classroomsQuery.data}
