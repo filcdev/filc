@@ -9,6 +9,7 @@ Use this file for repo-wide rules only. Prefer the scoped instruction files for 
 
 - This is a Bun + Turborepo monorepo. Shared scripts live in [package.json](../package.json), task wiring lives in [turbo.json](../turbo.json), and lint rules live in [biome.jsonc](../biome.jsonc).
 - [apps/chronos](../apps/chronos) is the Hono + Drizzle backend.
+- [packages/api](../packages/api) is the shared API contract package (`@filcdev/api`): zod wire schemas per domain, envelope/error types, permission constants, and a typed client factory consumed by Chronos and Iris alike.
 - [apps/iris](../apps/iris) is the React + Vite frontend.
 
 ## Commands
