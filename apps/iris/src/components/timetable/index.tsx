@@ -10,30 +10,28 @@ import { buildViewModel } from '@/components/timetable/helpers';
 import { TimetablePDF } from '@/components/timetable/pdf/document';
 import { PrintDialog } from '@/components/timetable/print-dialog';
 import type {
-  ClassroomItem,
-  CohortItem,
   FilterType,
   LessonItem,
   PeriodItem,
   SelectionsType,
-  TeacherItem,
-  TimetableItem,
   TimetableViewModel,
 } from '@/components/timetable/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  useClassrooms,
+  useLatestValidTimetable,
+  useTeachers,
+  useTimetableCohorts,
+  useTimetableLessons,
+  useTimetablePeriods,
+  useTimetables,
+  useTimetableUserSettings,
+} from '@/hooks/timetable-public';
 import { Route, type searchSchema } from '@/routes/_public/index';
-import { useApiMutation, useApiQuery } from '@/utils/api';
+import { useApiMutation } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
-
-// Constants
-const QUERY_OPTIONS = {
-  gcTime: Number.POSITIVE_INFINITY,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  staleTime: Number.POSITIVE_INFINITY,
-};
 
 // Helpers
 const getActiveSelectionId = (
@@ -63,12 +61,7 @@ export function TimetableView() {
   const isAuthenticated = !isPending && !!session;
 
   // Fetch user settings for class colors (authenticated users only)
-  const settingsQuery = useApiQuery<{
-    timetableClassColors?: Record<string, number>;
-  }>(() => api.notifications.settings.$get(), {
-    enabled: isAuthenticated,
-    queryKey: queryKeys.notifications.settings(),
-  });
+  const settingsQuery = useTimetableUserSettings(isAuthenticated);
   const userColors = isAuthenticated
     ? (settingsQuery.data?.timetableClassColors ?? {})
     : {};
@@ -106,16 +99,10 @@ export function TimetableView() {
   );
 
   // Timetable query (all timetables for the selector)
-  const timetablesQuery = useApiQuery<TimetableItem[]>(
-    () => api.timetable.timetables.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.all() }
-  );
+  const timetablesQuery = useTimetables();
 
   // Compute the latest valid timetable id from the list
-  const latestValidTimetableQuery = useApiQuery<TimetableItem | null>(
-    () => api.timetable.timetables.latestValid.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.latestValid() }
-  );
+  const latestValidTimetableQuery = useLatestValidTimetable();
 
   const latestValidTimetableId =
     latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
@@ -133,45 +120,13 @@ export function TimetableView() {
   }, [selectedTimetableId, latestValidTimetableId]);
 
   // Queries
-  const cohortsQuery = useApiQuery<CohortItem[]>(
-    () => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const timetableId = selectedTimetableId!;
-      return api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-        param: { timetableId },
-      });
-    },
-    {
-      ...QUERY_OPTIONS,
-      enabled: !!selectedTimetableId,
-      queryKey: queryKeys.timetable.cohorts(selectedTimetableId),
-    }
-  );
+  const cohortsQuery = useTimetableCohorts(selectedTimetableId);
 
-  const teachersQuery = useApiQuery<TeacherItem[]>(
-    () => api.timetable.teachers.getAll.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.teachers() }
-  );
+  const teachersQuery = useTeachers();
 
-  const classroomsQuery = useApiQuery<ClassroomItem[]>(
-    () => api.timetable.classrooms.getAll.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.classrooms() }
-  );
+  const classroomsQuery = useClassrooms();
 
-  const periodsQuery = useApiQuery<PeriodItem[]>(
-    () => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const timetableId = selectedTimetableId!;
-      return api.timetable.periods.getAll.$get({
-        query: { timetableId },
-      });
-    },
-    {
-      ...QUERY_OPTIONS,
-      enabled: !!selectedTimetableId,
-      queryKey: queryKeys.timetable.periods(selectedTimetableId),
-    }
-  );
+  const periodsQuery = useTimetablePeriods(selectedTimetableId);
 
   // State
   const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
@@ -196,38 +151,10 @@ export function TimetableView() {
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
   // Fetch lessons
-  const lessonsQuery = useApiQuery<LessonItem[]>(
-    () => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const selectionId = activeSelectionId!;
-      const timetableId = selectedTimetableId;
-      const query = timetableId ? { timetableId } : {};
-      if (activeFilter === 'class') {
-        return api.timetable.lessons.getForCohort[':cohortId'].$get({
-          param: { cohortId: selectionId },
-          query,
-        });
-      }
-      if (activeFilter === 'classroom') {
-        return api.timetable.lessons.getForRoom[':classroomId'].$get({
-          param: { classroomId: selectionId },
-          query,
-        });
-      }
-      return api.timetable.lessons.getForTeacher[':teacherId'].$get({
-        param: { teacherId: selectionId },
-        query,
-      });
-    },
-    {
-      ...QUERY_OPTIONS,
-      enabled: !!activeSelectionId,
-      queryKey: queryKeys.timetable.lessons(
-        activeFilter,
-        activeSelectionId,
-        selectedTimetableId
-      ),
-    }
+  const lessonsQuery = useTimetableLessons(
+    activeFilter,
+    activeSelectionId,
+    selectedTimetableId
   );
 
   // Initialize from URL or defaults
