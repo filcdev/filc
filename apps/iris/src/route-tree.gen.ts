@@ -9,73 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as PrivateRouteRouteImport } from './routes/_private/route'
-import { Route as PublicIndexRouteImport } from './routes/_public/index'
-import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
-import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as AuthErrorRouteImport } from './routes/auth/error'
-import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscribe'
-import { Route as PublicSubsRouteImport } from './routes/_public/subs'
-import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
-import { Route as PrivateNotificationsRouteImport } from './routes/_private/notifications'
+import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
-import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
-import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
-import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
+import { Route as PrivateNotificationsRouteImport } from './routes/_private/notifications'
+import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
+import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as PublicSubsRouteImport } from './routes/_public/subs'
+import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscribe'
+import { Route as AuthErrorRouteImport } from './routes/auth/error'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
+import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
+import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
+import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
 import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private/admin/doorlock/index'
-import { Route as PrivateAdminTimetableSubstitutionsRouteImport } from './routes/_private/admin/timetable/substitutions'
-import { Route as PrivateAdminTimetableMovedLessonsRouteImport } from './routes/_private/admin/timetable/moved-lessons'
-import { Route as PrivateAdminTimetableManageRouteImport } from './routes/_private/admin/timetable/manage'
-import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
-import { Route as PrivateAdminNewsSystemMessagesRouteImport } from './routes/_private/admin/news/system-messages'
-import { Route as PrivateAdminNewsAnnouncementsRouteImport } from './routes/_private/admin/news/announcements'
-import { Route as PrivateAdminDoorlockLogsRouteImport } from './routes/_private/admin/doorlock/logs'
-import { Route as PrivateAdminDoorlockDevicesRouteImport } from './routes/_private/admin/doorlock/devices'
 import { Route as PrivateAdminDoorlockCardsRouteImport } from './routes/_private/admin/doorlock/cards'
+import { Route as PrivateAdminDoorlockDevicesRouteImport } from './routes/_private/admin/doorlock/devices'
+import { Route as PrivateAdminDoorlockLogsRouteImport } from './routes/_private/admin/doorlock/logs'
+import { Route as PrivateAdminNewsAnnouncementsRouteImport } from './routes/_private/admin/news/announcements'
+import { Route as PrivateAdminNewsSystemMessagesRouteImport } from './routes/_private/admin/news/system-messages'
+import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
+import { Route as PrivateAdminTimetableManageRouteImport } from './routes/_private/admin/timetable/manage'
+import { Route as PrivateAdminTimetableMovedLessonsRouteImport } from './routes/_private/admin/timetable/moved-lessons'
+import { Route as PrivateAdminTimetableSubstitutionsRouteImport } from './routes/_private/admin/timetable/substitutions'
 
-const PublicRouteRoute = PublicRouteRouteImport.update({
-  id: '/_public',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PrivateRouteRoute = PrivateRouteRouteImport.update({
   id: '/_private',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PublicIndexRoute = PublicIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PublicRouteRoute,
-} as any)
-const AuthWelcomeRoute = AuthWelcomeRouteImport.update({
-  id: '/auth/welcome',
-  path: '/auth/welcome',
+const PublicRouteRoute = PublicRouteRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/auth/login',
-  path: '/auth/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthErrorRoute = AuthErrorRouteImport.update({
-  id: '/auth/error',
-  path: '/auth/error',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PublicUnsubscribeRoute = PublicUnsubscribeRouteImport.update({
-  id: '/unsubscribe',
-  path: '/unsubscribe',
-  getParentRoute: () => PublicRouteRoute,
-} as any)
-const PublicSubsRoute = PublicSubsRouteImport.update({
-  id: '/subs',
-  path: '/subs',
-  getParentRoute: () => PublicRouteRoute,
-} as any)
-const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateNotificationsRoute = PrivateNotificationsRouteImport.update({
@@ -83,19 +53,44 @@ const PrivateNotificationsRoute = PrivateNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
-const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
-const PrivateCardsIndexRoute = PrivateCardsIndexRouteImport.update({
-  id: '/cards/',
-  path: '/cards/',
-  getParentRoute: () => PrivateRouteRoute,
+const PublicIndexRoute = PublicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicRouteRoute,
 } as any)
-const PrivateAdminUsersRoute = PrivateAdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
+const PublicSubsRoute = PublicSubsRouteImport.update({
+  id: '/subs',
+  path: '/subs',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const PublicUnsubscribeRoute = PublicUnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const AuthErrorRoute = AuthErrorRouteImport.update({
+  id: '/auth/error',
+  path: '/auth/error',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthWelcomeRoute = AuthWelcomeRouteImport.update({
+  id: '/auth/welcome',
+  path: '/auth/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivateAdminBugReportsRoute = PrivateAdminBugReportsRouteImport.update({
+  id: '/bug-reports',
+  path: '/bug-reports',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
 const PrivateAdminRolesRoute = PrivateAdminRolesRouteImport.update({
@@ -103,10 +98,15 @@ const PrivateAdminRolesRoute = PrivateAdminRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
-const PrivateAdminBugReportsRoute = PrivateAdminBugReportsRouteImport.update({
-  id: '/bug-reports',
-  path: '/bug-reports',
+const PrivateAdminUsersRoute = PrivateAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateCardsIndexRoute = PrivateCardsIndexRouteImport.update({
+  id: '/cards/',
+  path: '/cards/',
+  getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateAdminDoorlockIndexRoute =
   PrivateAdminDoorlockIndexRouteImport.update({
@@ -114,46 +114,10 @@ const PrivateAdminDoorlockIndexRoute =
     path: '/doorlock/',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
-const PrivateAdminTimetableSubstitutionsRoute =
-  PrivateAdminTimetableSubstitutionsRouteImport.update({
-    id: '/timetable/substitutions',
-    path: '/timetable/substitutions',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminTimetableMovedLessonsRoute =
-  PrivateAdminTimetableMovedLessonsRouteImport.update({
-    id: '/timetable/moved-lessons',
-    path: '/timetable/moved-lessons',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminTimetableManageRoute =
-  PrivateAdminTimetableManageRouteImport.update({
-    id: '/timetable/manage',
-    path: '/timetable/manage',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminTimetableImportRoute =
-  PrivateAdminTimetableImportRouteImport.update({
-    id: '/timetable/import',
-    path: '/timetable/import',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminNewsSystemMessagesRoute =
-  PrivateAdminNewsSystemMessagesRouteImport.update({
-    id: '/news/system-messages',
-    path: '/news/system-messages',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminNewsAnnouncementsRoute =
-  PrivateAdminNewsAnnouncementsRouteImport.update({
-    id: '/news/announcements',
-    path: '/news/announcements',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminDoorlockLogsRoute =
-  PrivateAdminDoorlockLogsRouteImport.update({
-    id: '/doorlock/logs',
-    path: '/doorlock/logs',
+const PrivateAdminDoorlockCardsRoute =
+  PrivateAdminDoorlockCardsRouteImport.update({
+    id: '/doorlock/cards',
+    path: '/doorlock/cards',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
 const PrivateAdminDoorlockDevicesRoute =
@@ -162,10 +126,46 @@ const PrivateAdminDoorlockDevicesRoute =
     path: '/doorlock/devices',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
-const PrivateAdminDoorlockCardsRoute =
-  PrivateAdminDoorlockCardsRouteImport.update({
-    id: '/doorlock/cards',
-    path: '/doorlock/cards',
+const PrivateAdminDoorlockLogsRoute =
+  PrivateAdminDoorlockLogsRouteImport.update({
+    id: '/doorlock/logs',
+    path: '/doorlock/logs',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNewsAnnouncementsRoute =
+  PrivateAdminNewsAnnouncementsRouteImport.update({
+    id: '/news/announcements',
+    path: '/news/announcements',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNewsSystemMessagesRoute =
+  PrivateAdminNewsSystemMessagesRouteImport.update({
+    id: '/news/system-messages',
+    path: '/news/system-messages',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminTimetableImportRoute =
+  PrivateAdminTimetableImportRouteImport.update({
+    id: '/timetable/import',
+    path: '/timetable/import',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminTimetableManageRoute =
+  PrivateAdminTimetableManageRouteImport.update({
+    id: '/timetable/manage',
+    path: '/timetable/manage',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminTimetableMovedLessonsRoute =
+  PrivateAdminTimetableMovedLessonsRouteImport.update({
+    id: '/timetable/moved-lessons',
+    path: '/timetable/moved-lessons',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminTimetableSubstitutionsRoute =
+  PrivateAdminTimetableSubstitutionsRouteImport.update({
+    id: '/timetable/substitutions',
+    path: '/timetable/substitutions',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
 
@@ -337,13 +337,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_public': {
-      id: '/_public'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PublicRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_private': {
       id: '/_private'
       path: ''
@@ -351,53 +344,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_public/': {
-      id: '/_public/'
-      path: '/'
+    '/_public': {
+      id: '/_public'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof PublicIndexRouteImport
-      parentRoute: typeof PublicRouteRoute
-    }
-    '/auth/welcome': {
-      id: '/auth/welcome'
-      path: '/auth/welcome'
-      fullPath: '/auth/welcome'
-      preLoaderRoute: typeof AuthWelcomeRouteImport
+      preLoaderRoute: typeof PublicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/auth/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/error': {
-      id: '/auth/error'
-      path: '/auth/error'
-      fullPath: '/auth/error'
-      preLoaderRoute: typeof AuthErrorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_public/unsubscribe': {
-      id: '/_public/unsubscribe'
-      path: '/unsubscribe'
-      fullPath: '/unsubscribe'
-      preLoaderRoute: typeof PublicUnsubscribeRouteImport
-      parentRoute: typeof PublicRouteRoute
-    }
-    '/_public/subs': {
-      id: '/_public/subs'
-      path: '/subs'
-      fullPath: '/subs'
-      preLoaderRoute: typeof PublicSubsRouteImport
-      parentRoute: typeof PublicRouteRoute
-    }
-    '/_private/settings': {
-      id: '/_private/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof PrivateSettingsRouteImport
+    '/_private/admin': {
+      id: '/_private/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof PrivateAdminRouteRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
     '/_private/notifications': {
@@ -407,25 +365,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateNotificationsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
-    '/_private/admin': {
-      id: '/_private/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof PrivateAdminRouteRouteImport
+    '/_private/settings': {
+      id: '/_private/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof PrivateSettingsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
-    '/_private/cards/': {
-      id: '/_private/cards/'
-      path: '/cards'
-      fullPath: '/cards/'
-      preLoaderRoute: typeof PrivateCardsIndexRouteImport
-      parentRoute: typeof PrivateRouteRoute
+    '/_public/': {
+      id: '/_public/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
     }
-    '/_private/admin/users': {
-      id: '/_private/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof PrivateAdminUsersRouteImport
+    '/_public/subs': {
+      id: '/_public/subs'
+      path: '/subs'
+      fullPath: '/subs'
+      preLoaderRoute: typeof PublicSubsRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/unsubscribe': {
+      id: '/_public/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof PublicUnsubscribeRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/auth/error': {
+      id: '/auth/error'
+      path: '/auth/error'
+      fullPath: '/auth/error'
+      preLoaderRoute: typeof AuthErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/welcome': {
+      id: '/auth/welcome'
+      path: '/auth/welcome'
+      fullPath: '/auth/welcome'
+      preLoaderRoute: typeof AuthWelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_private/admin/bug-reports': {
+      id: '/_private/admin/bug-reports'
+      path: '/bug-reports'
+      fullPath: '/admin/bug-reports'
+      preLoaderRoute: typeof PrivateAdminBugReportsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/roles': {
@@ -435,12 +428,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminRolesRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
-    '/_private/admin/bug-reports': {
-      id: '/_private/admin/bug-reports'
-      path: '/bug-reports'
-      fullPath: '/admin/bug-reports'
-      preLoaderRoute: typeof PrivateAdminBugReportsRouteImport
+    '/_private/admin/users': {
+      id: '/_private/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof PrivateAdminUsersRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/cards/': {
+      id: '/_private/cards/'
+      path: '/cards'
+      fullPath: '/cards/'
+      preLoaderRoute: typeof PrivateCardsIndexRouteImport
+      parentRoute: typeof PrivateRouteRoute
     }
     '/_private/admin/doorlock/': {
       id: '/_private/admin/doorlock/'
@@ -449,53 +449,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminDoorlockIndexRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
-    '/_private/admin/timetable/substitutions': {
-      id: '/_private/admin/timetable/substitutions'
-      path: '/timetable/substitutions'
-      fullPath: '/admin/timetable/substitutions'
-      preLoaderRoute: typeof PrivateAdminTimetableSubstitutionsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/timetable/moved-lessons': {
-      id: '/_private/admin/timetable/moved-lessons'
-      path: '/timetable/moved-lessons'
-      fullPath: '/admin/timetable/moved-lessons'
-      preLoaderRoute: typeof PrivateAdminTimetableMovedLessonsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/timetable/manage': {
-      id: '/_private/admin/timetable/manage'
-      path: '/timetable/manage'
-      fullPath: '/admin/timetable/manage'
-      preLoaderRoute: typeof PrivateAdminTimetableManageRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/timetable/import': {
-      id: '/_private/admin/timetable/import'
-      path: '/timetable/import'
-      fullPath: '/admin/timetable/import'
-      preLoaderRoute: typeof PrivateAdminTimetableImportRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/news/system-messages': {
-      id: '/_private/admin/news/system-messages'
-      path: '/news/system-messages'
-      fullPath: '/admin/news/system-messages'
-      preLoaderRoute: typeof PrivateAdminNewsSystemMessagesRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/news/announcements': {
-      id: '/_private/admin/news/announcements'
-      path: '/news/announcements'
-      fullPath: '/admin/news/announcements'
-      preLoaderRoute: typeof PrivateAdminNewsAnnouncementsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/doorlock/logs': {
-      id: '/_private/admin/doorlock/logs'
-      path: '/doorlock/logs'
-      fullPath: '/admin/doorlock/logs'
-      preLoaderRoute: typeof PrivateAdminDoorlockLogsRouteImport
+    '/_private/admin/doorlock/cards': {
+      id: '/_private/admin/doorlock/cards'
+      path: '/doorlock/cards'
+      fullPath: '/admin/doorlock/cards'
+      preLoaderRoute: typeof PrivateAdminDoorlockCardsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/doorlock/devices': {
@@ -505,11 +463,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminDoorlockDevicesRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
-    '/_private/admin/doorlock/cards': {
-      id: '/_private/admin/doorlock/cards'
-      path: '/doorlock/cards'
-      fullPath: '/admin/doorlock/cards'
-      preLoaderRoute: typeof PrivateAdminDoorlockCardsRouteImport
+    '/_private/admin/doorlock/logs': {
+      id: '/_private/admin/doorlock/logs'
+      path: '/doorlock/logs'
+      fullPath: '/admin/doorlock/logs'
+      preLoaderRoute: typeof PrivateAdminDoorlockLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/news/announcements': {
+      id: '/_private/admin/news/announcements'
+      path: '/news/announcements'
+      fullPath: '/admin/news/announcements'
+      preLoaderRoute: typeof PrivateAdminNewsAnnouncementsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/news/system-messages': {
+      id: '/_private/admin/news/system-messages'
+      path: '/news/system-messages'
+      fullPath: '/admin/news/system-messages'
+      preLoaderRoute: typeof PrivateAdminNewsSystemMessagesRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/timetable/import': {
+      id: '/_private/admin/timetable/import'
+      path: '/timetable/import'
+      fullPath: '/admin/timetable/import'
+      preLoaderRoute: typeof PrivateAdminTimetableImportRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/timetable/manage': {
+      id: '/_private/admin/timetable/manage'
+      path: '/timetable/manage'
+      fullPath: '/admin/timetable/manage'
+      preLoaderRoute: typeof PrivateAdminTimetableManageRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/timetable/moved-lessons': {
+      id: '/_private/admin/timetable/moved-lessons'
+      path: '/timetable/moved-lessons'
+      fullPath: '/admin/timetable/moved-lessons'
+      preLoaderRoute: typeof PrivateAdminTimetableMovedLessonsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/timetable/substitutions': {
+      id: '/_private/admin/timetable/substitutions'
+      path: '/timetable/substitutions'
+      fullPath: '/admin/timetable/substitutions'
+      preLoaderRoute: typeof PrivateAdminTimetableSubstitutionsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
   }
