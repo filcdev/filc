@@ -1,3 +1,8 @@
+import {
+  type DevicePayloadInput,
+  devicePayloadSchema,
+  idParamSchema,
+} from '@filcdev/api/domains/doorlock/devices';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { desc, eq } from 'drizzle-orm';
@@ -17,17 +22,8 @@ const logger = getLogger(['chronos', 'doorlock', 'devices']);
 
 const deviceSelectSchema = createSelectSchema(device);
 
-const devicePayloadSchema = z.object({
-  apiToken: z.string().min(1, 'API token is required'),
-  lastResetReason: z.string().trim().optional().nullable(),
-  location: z.string().trim().optional().nullable(),
-  name: z.string().min(1, 'Device name is required'),
-});
-
 const { schema: devicePayloadRequestSchema } =
   await resolver(devicePayloadSchema).toOpenAPISchema();
-
-type DevicePayload = z.infer<typeof devicePayloadSchema>;
 
 const devicesResponseSchema = z.object({
   data: z.object({
@@ -43,7 +39,7 @@ const deviceResponseSchema = z.object({
   success: z.literal(true),
 });
 
-function mapDevicePayload(payload: DevicePayload) {
+function mapDevicePayload(payload: DevicePayloadInput) {
   return {
     apiToken: payload.apiToken,
     lastResetReason: payload.lastResetReason ?? null,
@@ -179,7 +175,7 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
   }),
   ...authRouter('doorlock:devices:write'),
   zValidator('json', devicePayloadSchema),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const { id } = c.req.valid('param');
     const payload = c.req.valid('json');
@@ -224,7 +220,7 @@ export const deleteDeviceRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   ...authRouter('doorlock:devices:write'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const { id } = c.req.valid('param');
 

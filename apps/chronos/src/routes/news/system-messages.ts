@@ -1,3 +1,8 @@
+import { announcementQuerySchema } from '@filcdev/api/domains/news/announcements';
+import {
+  dateRangeBodySchema,
+  dateRangeUpdateBodySchema,
+} from '@filcdev/api/domains/news/system-messages';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -11,11 +16,6 @@ import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
 import { ok } from '#utils/http';
 import { validateCohortIds } from '#utils/news/cohort';
-import {
-  announcementQuerySchema,
-  dateRangeBodySchema,
-  dateRangeUpdateBodySchema,
-} from '#utils/news/schemas';
 import {
   authorSelect,
   successResponseSchema,

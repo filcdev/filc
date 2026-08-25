@@ -1,6 +1,10 @@
+import {
+  type DateRangeQueryInput,
+  dateRangeQuerySchema,
+} from '@filcdev/api/domains/timetable/export';
+import { permissions } from '@filcdev/api/permissions';
 import { and, desc, eq, gte, inArray, lte, type SQL } from 'drizzle-orm';
 import { describeRoute } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import {
   classroom,
@@ -20,16 +24,9 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { filcExt } from '#utils/openapi';
 import { timetableFactory } from './_factory';
 
-const dateRangeQuerySchema = z.object({
-  from: z.iso.date().optional(),
-  to: z.iso.date().optional(),
-});
-
-type DateRangeQuery = z.infer<typeof dateRangeQuerySchema>;
-
 const buildDateFilters = (
   filters: SQL<unknown>[],
-  query: DateRangeQuery,
+  query: DateRangeQueryInput,
   column: SQL<unknown>
 ) => {
   if (query.from) {
@@ -82,7 +79,7 @@ export const exportSubstitutionsRoute = timetableFactory.createHandlers(
     tags: ['Substitution'],
   }),
   requireAuthentication,
-  requireAuthorization('substitution:create'),
+  requireAuthorization(permissions.substitutionCreate),
   async (c) => {
     const url = new URL(c.req.url);
     const queryParams = Object.fromEntries(url.searchParams.entries());
@@ -218,7 +215,7 @@ export const exportMovedLessonsRoute = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   requireAuthentication,
-  requireAuthorization('movedLesson:create'),
+  requireAuthorization(permissions.movedLessonCreate),
   async (c) => {
     const url = new URL(c.req.url);
     const queryParams = Object.fromEntries(url.searchParams.entries());

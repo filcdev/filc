@@ -1,3 +1,8 @@
+import { paginationSchema } from '@filcdev/api/domains/news/announcements';
+import {
+  blogCreateSchema,
+  blogUpdateSchema,
+} from '@filcdev/api/domains/news/blogs';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -10,13 +15,7 @@ import { blogPost } from '#database/schema/news';
 import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
 import { created, notFound, ok } from '#utils/http';
-import {
-  blogCreateSchema,
-  blogUpdateSchema,
-  ensureUniqueSlug,
-  generateSlug,
-  paginationSchema,
-} from '#utils/news/schemas';
+import { ensureUniqueSlug, generateSlug } from '#utils/news/schemas';
 import { successResponseSchema } from '#utils/news/shared';
 import {
   cancelPendingNotification,

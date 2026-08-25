@@ -1,3 +1,7 @@
+import {
+  listUsersQuerySchema,
+  userUpdatePayload,
+} from '@filcdev/api/domains/users';
 import { zValidator } from '@hono/zod-validator';
 import { count, desc, eq, ilike, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -12,18 +16,6 @@ import { getUserPermissions } from '#utils/authorization';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
-
-const listUsersQuerySchema = z.object({
-  limit: z.coerce.number().min(1).max(100).default(20),
-  offset: z.coerce.number().min(0).default(0),
-  search: z.string().optional(),
-});
-
-const userUpdatePayload = z.object({
-  cohortId: z.string().nullable().optional(),
-  nickname: z.string().optional(),
-  roles: z.array(z.string()).optional(),
-});
 
 const updateUserBodySchema = (
   await resolver(userUpdatePayload).toOpenAPISchema()

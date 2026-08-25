@@ -1,3 +1,4 @@
+import { unwrapResponse } from '@filcdev/api/client';
 import {
   type UseMutationOptions,
   type UseMutationResult,
@@ -6,30 +7,16 @@ import {
   useMutation,
   useQuery,
 } from '@tanstack/react-query';
-import { type ClientResponse, parseResponse } from 'hono/client';
-
-type ApiEnvelope = {
-  success: boolean;
-  data?: unknown;
-  error?: unknown;
-};
+import type { ClientResponse } from 'hono/client';
 
 /**
- * Runs a hono `hc` request through `parseResponse` and unwraps the
- * `{ data, success }` envelope the chronos backend returns. `T` is the type of
- * `data` (not the full envelope). Throws with the backend `error` message on
- * failure so React Query surfaces it as `error`.
+ * Runs a hono `hc` request through the shared `unwrapResponse` helper, which
+ * unwraps the `{ data, success }` envelope and throws a structured `ApiError`
+ * on failure so React Query surfaces code/status instead of message strings.
+ * `T` is the type of `data` (not the full envelope).
  */
-async function unwrap<T>(
-  call: () => Promise<ClientResponse<unknown>>
-): Promise<T> {
-  const res = (await parseResponse(call())) as unknown as ApiEnvelope;
-  if (!res.success) {
-    throw new Error(
-      typeof res.error === 'string' ? res.error : 'Request failed'
-    );
-  }
-  return res.data as T;
+function unwrap<T>(call: () => Promise<ClientResponse<unknown>>): Promise<T> {
+  return unwrapResponse<T>(call() as never);
 }
 
 export type ApiQueryOptions<T> = Omit<

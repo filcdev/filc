@@ -1,32 +1,34 @@
+import { permissions } from '@filcdev/api/permissions';
+
 export const ADMIN_UI_PERMISSIONS = [
-  'import:timetable',
-  'substitution:create',
-  'movedLesson:create',
-  'announcements:create',
-  'system-messages:manage',
-  'doorlock:stats:read',
-  'doorlock:devices:read',
-  'doorlock:cards:read',
-  'doorlock:logs:read',
-  'users:read',
-  'roles:read',
-  'bug-reports:read',
+  permissions.importTimetable,
+  permissions.substitutionCreate,
+  permissions.movedLessonCreate,
+  permissions.announcementsCreate,
+  permissions.systemMessagesManage,
+  permissions.doorlockStatsRead,
+  permissions.doorlockDevicesRead,
+  permissions.doorlockCardsRead,
+  permissions.doorlockLogsRead,
+  permissions.usersRead,
+  permissions.rolesRead,
+  permissions.bugReportsRead,
 ] as const;
 
 export function useHasPermission(
   permission: string | readonly string[],
-  permissions?: string[] | null
+  userPermissions?: string[] | null
 ): boolean {
-  if (!permissions) {
+  if (!userPermissions) {
     return false;
   }
-  if (permissions.includes('*')) {
+  if (userPermissions.includes('*')) {
     return true;
   }
 
   if (typeof permission !== 'string') {
-    return permission.some((item) => permissions.includes(item));
+    return permission.some((item) => userPermissions.includes(item));
   }
 
-  return permissions.includes(permission);
+  return userPermissions.includes(permission);
 }

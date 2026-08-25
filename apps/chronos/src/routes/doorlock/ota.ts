@@ -1,8 +1,9 @@
+import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
+import { otaPayloadSchema } from '@filcdev/api/domains/doorlock/ota';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 import { describeRoute } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { device as lockDevice } from '#database/schema/doorlock';
 import { authRouter } from '#middleware/auth';
@@ -11,10 +12,6 @@ import { notFound, ok } from '#utils/http';
 import { doorlockFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'doorlock', 'ota']);
-
-const otaPayloadSchema = z.object({
-  url: z.url('A valid firmware URL is required'),
-});
 
 export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
   describeRoute({
@@ -33,7 +30,7 @@ export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   ...authRouter('doorlock:devices:write'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   zValidator('json', otaPayloadSchema),
   async (c) => {
     const { id } = c.req.valid('param');

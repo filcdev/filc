@@ -1,6 +1,7 @@
+import { unwrapResponse } from '@filcdev/api/client';
+import { createBugReportSchema } from '@filcdev/api/domains/bug-report';
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
 import { Bug, Send } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,19 +42,15 @@ export function BugReportDialog() {
     onSubmit: async ({ value }) => {
       setSubmitting(true);
       try {
-        const res = await parseResponse(
+        await unwrapResponse<{ id: string }>(
           api.bugReport.index.$post({
             json: {
               description: value.description,
               page: router.state.location.pathname,
               subject: value.subject,
             },
-          })
+          }) as never
         );
-
-        if (!res.success) {
-          throw new Error('Failed to submit bug report');
-        }
 
         toast.success(t('bugReport.success'));
         form.reset(initialState);
@@ -66,12 +63,21 @@ export function BugReportDialog() {
     },
     validators: {
       onSubmit: ({ value }) => {
-        const errors: { description?: string; subject?: string } = {};
-        if (value.subject.trim().length < 3) {
-          errors.subject = t('bugReport.subjectTooShort');
+        const result = createBugReportSchema.safeParse({
+          description: value.description,
+          subject: value.subject,
+        });
+        if (result.success) {
+          return undefined;
         }
-        if (value.description.trim().length < 10) {
-          errors.description = t('bugReport.descriptionTooShort');
+        const errors: { description?: string; subject?: string } = {};
+        for (const issue of result.error.issues) {
+          if (issue.path[0] === 'description') {
+            errors.description = t('bugReport.descriptionTooShort');
+          }
+          if (issue.path[0] === 'subject') {
+            errors.subject = t('bugReport.subjectTooShort');
+          }
         }
         if (Object.keys(errors).length === 0) {
           return undefined;

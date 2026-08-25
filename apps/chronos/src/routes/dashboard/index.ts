@@ -1,7 +1,10 @@
+import {
+  dashboardStatsResponseSchema,
+  statsQuerySchema,
+} from '@filcdev/api/domains/dashboard';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, desc, gte, isNotNull, lte } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { role } from '#database/schema/authorization';
@@ -10,32 +13,6 @@ import { dashboardFactory } from '#routes/dashboard/_factory';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
-
-const statsQuerySchema = z.object({
-  days: z.coerce.number().int().min(1).max(365).default(30),
-});
-
-const chartPointSchema = z.object({
-  date: z.string(),
-  movedLessons: z.number().int(),
-  substitutions: z.number().int(),
-});
-
-const dashboardStatsResponseSchema = z.object({
-  data: z.object({
-    stats: z.object({
-      chartData: z.array(chartPointSchema),
-      chartTotalMovedLessons: z.number().int(),
-      chartTotalSubstitutions: z.number().int(),
-      totalCohorts: z.number().int(),
-      totalMovedLessons: z.number().int(),
-      totalRoles: z.number().int(),
-      totalSubstitutions: z.number().int(),
-      totalUsers: z.number().int(),
-    }),
-  }),
-  success: z.literal(true),
-});
 
 function fmtDate(d: Date): string {
   const y = d.getFullYear();

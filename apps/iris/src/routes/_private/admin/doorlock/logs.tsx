@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -245,16 +247,16 @@ function LogsPage() {
   const [pendingCardData, setPendingCardData] = useState<string | null>(null);
 
   const hasCardWritePermission = useHasPermission(
-    'doorlock:cards:write',
+    permissions.doorlockCardsWrite,
     session?.user?.permissions
   );
 
   const canReadDevices = useHasPermission(
-    'doorlock:devices:read',
+    permissions.doorlockDevicesRead,
     session?.user?.permissions
   );
   const canReadCards = useHasPermission(
-    'doorlock:cards:read',
+    permissions.doorlockCardsRead,
     session?.user?.permissions
   );
 

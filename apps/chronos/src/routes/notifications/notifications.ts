@@ -1,8 +1,15 @@
+import {
+  fcmTokenSchema,
+  notificationIdParamsSchema,
+  paginationSchema,
+  tokenDeleteSchema,
+  unsubscribeSchema,
+  updateSettingsSchema,
+} from '@filcdev/api/domains/notifications';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import {
@@ -16,31 +23,6 @@ import { env } from '#utils/environment';
 import { created as createdResponse, notFound, ok } from '#utils/http';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
-
-const paginationSchema = z.object({
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  limit: z.coerce.number().min(1).max(100).default(20),
-  offset: z.coerce.number().min(0).default(0),
-  type: z.string().optional(),
-  unread: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((v) => v === 'true'),
-});
-
-const updateSettingsSchema = z.object({
-  language: z.string().optional(),
-  notificationPreferences: z.record(z.string(), z.unknown()).optional(),
-  theme: z.string().optional(),
-  timetableClassColors: z.record(z.string(), z.number()).optional(),
-  timetableView: z.string().optional(),
-});
-
-const fcmTokenSchema = z.object({
-  deviceInfo: z.string().optional(),
-  token: z.string(),
-});
 
 const getUser = (c: { var: { user: { id: string } | null } }) => {
   const user = c.var.user;
@@ -113,7 +95,7 @@ export const getUnreadCount = notificationsFactory.createHandlers(
 
 export const markAsRead = notificationsFactory.createHandlers(
   ...authRouter(),
-  zValidator('param', z.object({ id: z.string().uuid() })),
+  zValidator('param', notificationIdParamsSchema),
   async (c) => {
     const { id: userId } = getUser(c);
     const { id } = c.req.valid('param');
@@ -298,10 +280,6 @@ export const testNotification = notificationsFactory.createHandlers(
   }
 );
 
-const tokenDeleteSchema = z.object({
-  token: z.string(),
-});
-
 export const unregisterFcmToken = notificationsFactory.createHandlers(
   ...authRouter(),
   zValidator('json', tokenDeleteSchema),
@@ -320,10 +298,7 @@ export const unregisterFcmToken = notificationsFactory.createHandlers(
 );
 
 export const getUnsubscribePage = notificationsFactory.createHandlers(
-  zValidator(
-    'query',
-    z.object({ token: z.string(), userId: z.string().uuid() })
-  ),
+  zValidator('query', unsubscribeSchema),
   (c) => {
     const { token, userId } = c.req.valid('query');
 
@@ -358,10 +333,7 @@ export const getUnsubscribePage = notificationsFactory.createHandlers(
 );
 
 export const processUnsubscribe = notificationsFactory.createHandlers(
-  zValidator(
-    'form',
-    z.object({ token: z.string(), userId: z.string().uuid() })
-  ),
+  zValidator('form', unsubscribeSchema),
   async (c) => {
     const { token, userId } = c.req.valid('form');
 

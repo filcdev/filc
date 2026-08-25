@@ -1,3 +1,8 @@
+import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
+import {
+  activateVirtualCardSchema,
+  updateFrozenSchema,
+} from '@filcdev/api/domains/doorlock/self';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
@@ -8,7 +13,10 @@ import z from 'zod';
 import { db } from '#database';
 import { auditLog, card } from '#database/schema/doorlock';
 import { authRouter } from '#middleware/auth';
-import { cardWithRelationsSchema } from '#routes/doorlock/cards';
+import {
+  cardResponseSchema,
+  cardsResponseSchema,
+} from '#routes/doorlock/cards';
 import { sendMessage } from '#routes/doorlock/websocket-handler';
 import { fetchCardById, fetchCards } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
@@ -21,30 +29,8 @@ const logger = getLogger(['chronos', 'doorlock', 'self']);
 
 const auditLogSelectSchema = createSelectSchema(auditLog);
 
-const cardsResponseSchema = z.object({
-  data: z.object({
-    cards: z.array(cardWithRelationsSchema),
-  }),
-  success: z.literal(true),
-});
-
-const updateFrozenSchema = z.object({
-  frozen: z.boolean(),
-});
-
 const { schema: updateFrozenRequestSchema } =
   await resolver(updateFrozenSchema).toOpenAPISchema();
-
-const cardResponseSchema = z.object({
-  data: z.object({
-    card: cardWithRelationsSchema,
-  }),
-  success: z.literal(true),
-});
-
-const activateVirtualCardSchema = z.object({
-  deviceId: z.uuid().optional(),
-});
 
 const { schema: activateVirtualCardRequestSchema } = await resolver(
   activateVirtualCardSchema
@@ -117,7 +103,7 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
   }),
   ...authRouter(),
   zValidator('json', updateFrozenSchema),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const session = c.var.session;
     const { id: cardId } = c.req.valid('param');
@@ -185,7 +171,7 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
   }),
   ...authRouter(),
   zValidator('json', activateVirtualCardSchema),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const session = c.var.session;
     const { id: cardId } = c.req.valid('param');

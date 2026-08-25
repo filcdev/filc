@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -86,7 +88,7 @@ function SubstitutionsPage() {
   const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
   const hasWritePermission = useHasPermission(
-    'substitution:create',
+    permissions.substitutionCreate,
     session?.user?.permissions
   );
 

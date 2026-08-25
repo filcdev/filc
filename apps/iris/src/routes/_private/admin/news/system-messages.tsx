@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import type { InferRequestType, InferResponseType } from 'hono/client';
@@ -71,7 +73,7 @@ function SystemMessagesPage() {
   );
 
   const hasManagePermission = useHasPermission(
-    'system-messages:manage',
+    permissions.systemMessagesManage,
     session?.user?.permissions
   );
 

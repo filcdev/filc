@@ -16,6 +16,7 @@
       "name": "@filcdev/chronos",
       "dependencies": {
         "@better-auth/drizzle-adapter": "^1.7.1",
+        "@filcdev/api": "workspace:*",
         "@hono/standard-validator": "^0.4.0",
         "@hono/swagger-ui": "^0.6.1",
         "@hono/zod-validator": "^0.9.0",
@@ -93,6 +94,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@filcdev/api": "workspace:*",
         "@filcdev/chronos": "workspace:*",
         "@tanstack/devtools-vite": "^0.8.5",
         "@tsconfig/strictest": "^2.0.8",
@@ -103,6 +105,19 @@
         "shadcn": "^4.19.0",
         "typescript": "catalog:",
         "vite": "^8.2.2",
+      },
+    },
+    "packages/api": {
+      "name": "@filcdev/api",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@tsconfig/strictest": "^2.0.8",
+        "@types/bun": "catalog:",
+        "hono": "catalog:",
+        "typescript": "catalog:",
       },
     },
   },
@@ -289,6 +304,8 @@
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
 
     "@fastify/busboy": ["@fastify/busboy@3.2.2", "", {}, "sha512-yXSS27qPExaXeuLvMRMXOLtpipzfQYNjG3FkunDWKGfMYjKuhFXko9CVzqxm8jcF+lmtS9Fd89QNdh9XDjnbNg=="],
+
+    "@filcdev/api": ["@filcdev/api@workspace:packages/api"],
 
     "@filcdev/chronos": ["@filcdev/chronos@workspace:apps/chronos"],
 

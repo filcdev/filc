@@ -1,20 +1,14 @@
+import { createBugReportSchema } from '@filcdev/api/domains/bug-report';
+import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
 import { desc } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { StatusCodes } from 'http-status-codes';
-import { z } from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import { bugReport } from '#database/schema/bug-report';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { bugReportFactory } from '#routes/bug-report/_factory';
-
-const createBugReportSchema = z.object({
-  description: z.string().min(10).max(5000),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-  page: z.string().max(255).optional(),
-  subject: z.string().min(3).max(200),
-});
 
 export const createBugReport = bugReportFactory.createHandlers(
   requireAuthentication,
@@ -50,7 +44,7 @@ export const createBugReport = bugReportFactory.createHandlers(
 
 export const listBugReports = bugReportFactory.createHandlers(
   requireAuthentication,
-  requireAuthorization('bug-reports:read'),
+  requireAuthorization(permissions.bugReportsRead),
   async (c) => {
     const reports = await db
       .select()

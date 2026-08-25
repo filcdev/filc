@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import type { InferRequestType, InferResponseType } from 'hono/client';
@@ -70,7 +72,7 @@ function AnnouncementsPage() {
   const [showPast, setShowPast] = useState(false);
 
   const hasWritePermission = useHasPermission(
-    'announcements:create',
+    permissions.announcementsCreate,
     session?.user?.permissions
   );
 

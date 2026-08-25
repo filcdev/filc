@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -207,7 +209,7 @@ function MovedLessonsPage() {
   const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
   const hasWritePermission = useHasPermission(
-    'movedLesson:create',
+    permissions.movedLessonCreate,
     session?.user?.permissions
   );
 

@@ -1,3 +1,8 @@
+import {
+  announcementCreateSchema,
+  announcementQuerySchema,
+  announcementUpdateSchema,
+} from '@filcdev/api/domains/news/announcements';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -12,11 +17,6 @@ import { newsFactory } from '#routes/news/_factory';
 import { userHasPermission } from '#utils/authorization';
 import { ok } from '#utils/http';
 import { validateCohortIds } from '#utils/news/cohort';
-import {
-  announcementCreateSchema,
-  announcementQuerySchema,
-  announcementUpdateSchema,
-} from '#utils/news/schemas';
 import {
   announcementBaseDetailResponseSchema,
   announcementDetailResponseSchema,

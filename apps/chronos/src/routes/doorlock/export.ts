@@ -1,7 +1,11 @@
+import {
+  type ExportQueryInput,
+  exportQuerySchema,
+} from '@filcdev/api/domains/doorlock/export';
+import { permissions } from '@filcdev/api/permissions';
 import type { SQL } from 'drizzle-orm';
 import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { describeRoute } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
@@ -9,22 +13,10 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { filcExt } from '#utils/openapi';
 import { doorlockFactory } from './_factory';
 
-const exportQuerySchema = z.object({
-  cardId: z.uuid().optional(),
-  deviceId: z.uuid().optional(),
-  from: z.iso.datetime().optional(),
-  granted: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((val) => (val === undefined ? undefined : val === 'true')),
-  search: z.string().optional(),
-  to: z.iso.datetime().optional(),
-  userId: z.uuid().optional(),
-});
-
-type ExportQuery = z.infer<typeof exportQuerySchema>;
-
-const appendBaseFilters = (filters: SQL<unknown>[], query: ExportQuery) => {
+const appendBaseFilters = (
+  filters: SQL<unknown>[],
+  query: ExportQueryInput
+) => {
   if (query.cardId) {
     filters.push(eq(auditLog.cardId, query.cardId));
   }
@@ -45,7 +37,7 @@ const appendBaseFilters = (filters: SQL<unknown>[], query: ExportQuery) => {
   }
 };
 
-const appendSearchFilters = (query: ExportQuery) => {
+const appendSearchFilters = (query: ExportQueryInput) => {
   const { search: searchTerm } = query;
   if (!searchTerm) {
     return;
@@ -62,7 +54,9 @@ const appendSearchFilters = (query: ExportQuery) => {
   );
 };
 
-const buildWhereClause = (query: ExportQuery): SQL<unknown> | undefined => {
+const buildWhereClause = (
+  query: ExportQueryInput
+): SQL<unknown> | undefined => {
   const filters: SQL<unknown>[] = [];
 
   appendBaseFilters(filters, query);
@@ -166,7 +160,7 @@ export const exportLogsRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   requireAuthentication,
-  requireAuthorization('doorlock:logs:read'),
+  requireAuthorization(permissions.doorlockLogsRead),
   async (c) => {
     const url = new URL(c.req.url);
     const queryParams = Object.fromEntries(url.searchParams.entries());

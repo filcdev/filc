@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
@@ -73,19 +75,19 @@ export function AdminSidebar() {
         items: [
           {
             icon: List,
-            permission: 'import:timetable',
+            permission: permissions.importTimetable,
             title: t('timetable.manage'),
             url: '/admin/timetable/manage',
           },
           {
             icon: RefreshCw,
-            permission: 'substitution:create',
+            permission: permissions.substitutionCreate,
             title: t('substitution.title'),
             url: '/admin/timetable/substitutions',
           },
           {
             icon: ArrowRightLeft,
-            permission: 'movedLesson:create',
+            permission: permissions.movedLessonCreate,
             title: t('movedLesson.title'),
             url: '/admin/timetable/moved-lessons',
           },
@@ -96,13 +98,13 @@ export function AdminSidebar() {
         items: [
           {
             icon: Bell,
-            permission: 'announcements:create',
+            permission: permissions.announcementsCreate,
             title: t('announcements.title'),
             url: '/admin/news/announcements',
           },
           {
             icon: Bell,
-            permission: 'system-messages:manage',
+            permission: permissions.systemMessagesManage,
             title: t('systemMessages.title'),
             url: '/admin/news/system-messages',
           },
@@ -113,25 +115,25 @@ export function AdminSidebar() {
         items: [
           {
             icon: DoorOpen,
-            permission: 'doorlock:stats:read',
+            permission: permissions.doorlockStatsRead,
             title: t('doorlock.dashboard'),
             url: '/admin/doorlock',
           },
           {
             icon: Microchip,
-            permission: 'doorlock:devices:read',
+            permission: permissions.doorlockDevicesRead,
             title: t('doorlock.devices'),
             url: '/admin/doorlock/devices',
           },
           {
             icon: IdCard,
-            permission: 'doorlock:cards:read',
+            permission: permissions.doorlockCardsRead,
             title: t('doorlock.cards'),
             url: '/admin/doorlock/cards',
           },
           {
             icon: List,
-            permission: 'doorlock:logs:read',
+            permission: permissions.doorlockLogsRead,
             title: t('doorlock.logs'),
             url: '/admin/doorlock/logs',
           },
@@ -142,19 +144,19 @@ export function AdminSidebar() {
         items: [
           {
             icon: Users,
-            permission: 'users:read',
+            permission: permissions.usersRead,
             title: t('admin.users'),
             url: '/admin/users',
           },
           {
             icon: Shield,
-            permission: 'roles:read',
+            permission: permissions.rolesRead,
             title: t('admin.roles'),
             url: '/admin/roles',
           },
           {
             icon: Bug,
-            permission: 'bug-reports:read',
+            permission: permissions.bugReportsRead,
             title: t('admin.bugReports'),
             url: '/admin/bug-reports',
           },

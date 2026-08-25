@@ -1,28 +1,15 @@
+import {
+  getPeriodsQuerySchema,
+  getPeriodsResponseSchema,
+} from '@filcdev/api/domains/timetable/period';
 import { zValidator } from '@hono/zod-validator';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { lesson, period } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { timetableFactory } from './_factory';
-
-const getPeriodsResponseSchema = z.object({
-  data: z
-    .object({
-      endTime: z.string(),
-      id: z.string(),
-      period: z.number(),
-      startTime: z.string(),
-    })
-    .array(),
-  success: z.boolean(),
-});
-
-const getPeriodsQuerySchema = z.object({
-  timetableId: z.string().uuid().optional(),
-});
 
 export const getPeriodsForTimetable = timetableFactory.createHandlers(
   describeRoute({

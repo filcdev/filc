@@ -1,3 +1,7 @@
+import {
+  type LogsQueryInput,
+  logsQuerySchema,
+} from '@filcdev/api/domains/doorlock/logs';
 import type { SQL } from 'drizzle-orm';
 import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -53,23 +57,7 @@ const logsResponseSchema = z.object({
   success: z.literal(true),
 });
 
-const logsQuerySchema = z.object({
-  cardId: z.uuid().optional(),
-  deviceId: z.uuid().optional(),
-  from: z.iso.datetime().optional(),
-  granted: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((val) => (val === undefined ? undefined : val === 'true')),
-  limit: z.coerce.number().int().min(1).max(1000).default(500),
-  search: z.string().optional(),
-  to: z.iso.datetime().optional(),
-  userId: z.uuid().optional(),
-});
-
-type LogQuery = z.infer<typeof logsQuerySchema>;
-
-const appendBaseFilters = (filters: SQL<unknown>[], query: LogQuery) => {
+const appendBaseFilters = (filters: SQL<unknown>[], query: LogsQueryInput) => {
   if (query.cardId) {
     filters.push(eq(auditLog.cardId, query.cardId));
   }
@@ -90,7 +78,7 @@ const appendBaseFilters = (filters: SQL<unknown>[], query: LogQuery) => {
   }
 };
 
-const appendSearchFilters = (query: LogQuery) => {
+const appendSearchFilters = (query: LogsQueryInput) => {
   const { search: searchTerm } = query;
   if (!searchTerm) {
     return;
@@ -107,7 +95,7 @@ const appendSearchFilters = (query: LogQuery) => {
   );
 };
 
-const buildWhereClause = (query: LogQuery): SQL<unknown> | undefined => {
+const buildWhereClause = (query: LogsQueryInput): SQL<unknown> | undefined => {
   const filters: SQL<unknown>[] = [];
 
   appendBaseFilters(filters, query);

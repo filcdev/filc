@@ -47,6 +47,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@filcdev/api": "workspace:*",
     "@filcdev/chronos": "workspace:*",
     "@tanstack/devtools-vite": "^0.8.5",
     "@tsconfig/strictest": "^2.0.8",

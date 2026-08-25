@@ -1,0 +1,24 @@
+{
+  "name": "@filcdev/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./client": "./src/client/index.ts",
+    "./domains/*": "./src/domains/*.ts",
+    "./domains/*/*": "./src/domains/*/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/bun": "catalog:",
+    "hono": "catalog:",
+    "typescript": "catalog:"
+  }
+}

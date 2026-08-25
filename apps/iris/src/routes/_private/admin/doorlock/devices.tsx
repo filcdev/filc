@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -83,7 +85,9 @@ function DevicesPage() {
 
   const hasWritePermission = useMemo(() => {
     const perms = session?.user?.permissions ?? [];
-    return perms.includes('*') || perms.includes('doorlock:devices:write');
+    return (
+      perms.includes('*') || perms.includes(permissions.doorlockDevicesWrite)
+    );
   }, [session?.user?.permissions]);
 
   const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
