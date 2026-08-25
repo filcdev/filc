@@ -1,4 +1,5 @@
 import z from 'zod';
+import { ERROR_CODES, type ErrorCode } from './errors';
 
 /**
  * Success envelope returned by every Chronos endpoint: `{ data, success }`.
@@ -11,11 +12,12 @@ export type SuccessEnvelope<T = undefined> = [T] extends [undefined]
 
 /**
  * Error envelope returned by Chronos when a handler fails. `error` is a
- * human-readable message; `code` is the machine-readable ErrorCode (absent
- * on legacy error paths — treat missing as `'UNKNOWN'`).
+ * human-readable message; `code` is the machine-readable ErrorCode derived
+ * from the HTTP status unless the handler specified one explicitly.
  */
 export type ErrorEnvelope = {
   cause?: unknown;
+  code: ErrorCode;
   data?: unknown;
   error: string;
   success: false;
@@ -24,7 +26,7 @@ export type ErrorEnvelope = {
 export type ApiEnvelope<T> = SuccessEnvelope<T> | ErrorEnvelope;
 
 /** Schema for validating a success envelope whose payload is `data`. */
-export const successEnvelopeSchema = <T extends z.ZodType>(data: T) =>
+export const successEnvelopeSchema = (data: z.ZodType) =>
   z.object({
     data,
     success: z.boolean(),
@@ -33,6 +35,7 @@ export const successEnvelopeSchema = <T extends z.ZodType>(data: T) =>
 /** Schema for validating an error envelope. */
 export const errorEnvelopeSchema = z.object({
   cause: z.unknown().optional(),
+  code: z.enum(ERROR_CODES),
   error: z.string(),
   success: z.literal(false),
 });

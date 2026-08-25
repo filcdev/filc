@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
 import { hc } from 'hono/client';
-import type { ApiEnvelope } from '../envelope';
+import { errorEnvelopeSchema } from '../envelope';
 import { ApiError } from '../errors';
 
 export type ClientOptions = {
@@ -37,10 +37,9 @@ type UnwrappableResponse = {
 };
 
 /**
- * Parse a Chronos response: asserts HTTP success via the response object and
- * unwraps the `{ data, success }` envelope. Throws {@link ApiError} with the
- * structured failure details so callers can branch on `code`/`status`
- * instead of parsing message strings.
+ * Parse a Chronos response and unwrap the `{ data, success }` envelope.
+ * Throws {@link ApiError} with the structured failure details so callers can
+ * branch on `code`/`status` instead of parsing message strings.
  *
  * When `schema` is provided the unwrapped payload is validated against it,
  * turning backend shape drift into a loud client-side failure.
@@ -68,19 +67,27 @@ export async function unwrapResponse<T>(
     });
   }
 
-  const envelope = body as ApiEnvelope<T>;
-  if (!envelope.success) {
-    throw new ApiError('UNKNOWN', {
-      details: envelope.cause ?? envelope.data,
-      message:
-        typeof envelope.error === 'string' ? envelope.error : 'Request failed',
-      status: response.status,
-    });
+  if (
+    typeof body === 'object' &&
+    body !== null &&
+    'success' in body &&
+    body.success === false
+  ) {
+    // Error envelopes are validated, not trusted: a malformed one still
+    // produces an ApiError instead of a silent wrong-shape success.
+    const parsed = errorEnvelopeSchema.safeParse(body);
+    const code = parsed.success ? parsed.data.code : 'UNKNOWN';
+    const message = parsed.success
+      ? parsed.data.error
+      : 'Malformed error response';
+    const details = parsed.success ? parsed.data.cause : body;
+    throw new ApiError(code, { details, message, status: response.status });
   }
 
-  const payload = envelope.data as T;
-  if (schema) {
-    return schema.parse(payload);
-  }
-  return payload;
+  const payload =
+    typeof body === 'object' && body !== null && 'data' in body
+      ? body.data
+      : undefined;
+
+  return schema ? schema.parse(payload) : (payload as T);
 }

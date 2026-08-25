@@ -28,6 +28,7 @@ import { authRouter } from '#utils/authentication';
 import { initializeRBAC } from '#utils/authorization';
 import { setupCronJobs } from '#utils/cron';
 import { env } from '#utils/environment';
+import { errorCodeOf } from '#utils/http';
 import { configureLogger } from '#utils/logger';
 import { initializeNotificationEngine } from '#utils/notifications/initialize';
 import { initSentry } from '#utils/telemetry';
@@ -64,6 +65,7 @@ api.use(
       // Return custom response
       return c.json<ErrorResponse>(
         {
+          code: 'RATE_LIMITED',
           data: {
             retryAfter: c.res.headers.get('Retry-After'),
           },
@@ -108,6 +110,7 @@ api.onError((err, c) => {
       c.json<ErrorResponse>(
         {
           cause: env.mode === 'production' ? undefined : err.cause,
+          code: errorCodeOf(err),
           error: err.message,
           success: false,
         },
@@ -124,6 +127,7 @@ api.onError((err, c) => {
   return c.json<ErrorResponse>(
     {
       cause: err instanceof Error ? err.cause : undefined,
+      code: 'INTERNAL',
       error:
         env.mode === 'production'
           ? 'Internal Server Error'

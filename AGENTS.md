@@ -22,6 +22,7 @@
 - Backend commands that need auth or database configuration rely on [apps/chronos/.env.example](apps/chronos/.env.example).
 - If a change crosses backend and frontend, keep the API contract and client usage aligned before finishing.
 - Bun 1.4.0 ignores `[run] bun = true` from bunfig.toml when spawning package binaries. Scripts that need the Bun runtime (vite, drizzle-kit) must invoke them via `bun --bun <binary>`; see the `dev`, `build`, and `db:*` scripts.
+- Every API error response carries a machine-readable `code` (`@filcdev/api/errors`): derived from the HTTP status unless a handler opts out via an explicit override. Throw through the helpers in Chronos' `#utils/http` (or `ApiHttpError` with `{ code }`) when the status default is ambiguous; clients receive it typed as `ErrorCode` on `ApiError`.
 
 ## Shared API Contracts (`@filcdev/api`)
 

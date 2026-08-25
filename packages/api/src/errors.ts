@@ -6,12 +6,37 @@
 export const ERROR_CODES = [
   'CONFLICT',
   'FORBIDDEN',
+  'INTERNAL',
   'NOT_FOUND',
   'RATE_LIMITED',
   'UNAUTHORIZED',
   'UNKNOWN',
   'VALIDATION',
 ] as const;
+
+/**
+ * Default error code for an HTTP status. Every API error response carries a
+ * code — handlers that need finer granularity throw with an explicit one,
+ * everything else derives it from the status.
+ */
+export function errorCodeForStatus(status: number): ErrorCode {
+  switch (status) {
+    case 400:
+      return 'VALIDATION';
+    case 401:
+      return 'UNAUTHORIZED';
+    case 403:
+      return 'FORBIDDEN';
+    case 404:
+      return 'NOT_FOUND';
+    case 409:
+      return 'CONFLICT';
+    case 429:
+      return 'RATE_LIMITED';
+    default:
+      return status >= 500 ? 'INTERNAL' : 'UNKNOWN';
+  }
+}
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
