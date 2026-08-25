@@ -1,17 +1,10 @@
 import { permissions } from '@filcdev/api/permissions';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
 import { SubstitutionExportButton } from '@/components/admin/substitution-export';
 import {
@@ -42,17 +35,14 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
+import {
+  type SubstitutionItem,
+  useDeleteSubstitution,
+  useSubstitutions,
+} from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type SubstitutionApiResponse = InferResponseType<
-  typeof api.timetable.substitutions.$get
->;
-type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
-type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
 export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
   {
@@ -66,7 +56,6 @@ export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
 
 function SubstitutionsPage() {
   const { i18n, t } = useTranslation();
-  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -92,127 +81,11 @@ function SubstitutionsPage() {
     session?.user?.permissions
   );
 
-  const substitutionsQuery = useQuery({
-    queryFn: async (): Promise<SubstitutionItem[]> => {
-      const res = await parseResponse(api.timetable.substitutions.$get());
-      if (!res.success) {
-        throw new Error('Failed to load substitutions');
-      }
-      return res.data as SubstitutionItem[];
-    },
-    queryKey: queryKeys.substitutions(),
-  });
-
-  const teachersQuery = useQuery({
-    enabled: hasWritePermission,
-    queryFn: async (): Promise<Teacher[]> => {
-      const res = await parseResponse(api.timetable.teachers.getAll.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load teachers');
-      }
-      return res.data as Teacher[];
-    },
-    queryKey: queryKeys.teachers(),
-  });
-
-  const $create = api.timetable.substitutions.$post;
-  const createMutation = useMutation<
-    InferResponseType<typeof $create>,
-    Error,
-    InferRequestType<typeof $create>['json']
-  >({
-    mutationFn: async (payload) => {
-      const res = await parseResponse(
-        api.timetable.substitutions.$post({
-          json: payload,
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create substitution');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('substitution.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('substitution.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InferRequestType<typeof $create>['json'];
-    }) => {
-      const res = await parseResponse(
-        api.timetable.substitutions[':id'].$put({
-          json: payload,
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update substitution');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('substitution.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('substitution.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) =>
-      parseResponse(
-        api.timetable.substitutions[':id'].$delete({ param: { id } })
-      ),
-    onError: (error: Error) => {
-      toast.error(error.message || t('substitution.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('substitution.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
-    },
-  });
-
-  const $createManual = api.timetable.substitutions.manual.$post;
-  const createManualMutation = useMutation<
-    InferResponseType<typeof $createManual>,
-    Error,
-    InferRequestType<typeof $createManual>['json']
-  >({
-    mutationFn: async (payload) => {
-      const res = await parseResponse(
-        api.timetable.substitutions.manual.$post({
-          json: payload,
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create manual substitution');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('substitution.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('substitution.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
-      setDialogOpen(false);
-      setSelectedItem(null);
-      setManualMode(false);
+  const substitutionsQuery = useSubstitutions();
+  const deleteMutation = useDeleteSubstitution({
+    onSaved: () => {
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     },
   });
 
@@ -273,19 +146,6 @@ function SubstitutionsPage() {
     return list;
   }, [substitutionsQuery.data, search, sortColumn, sortDirection, showPast]);
 
-  const handleSave = async (
-    payload: InferRequestType<typeof $create>['json']
-  ) => {
-    if (selectedItem) {
-      await updateMutation.mutateAsync({
-        id: selectedItem.substitution.id,
-        payload,
-      });
-    } else {
-      await createMutation.mutateAsync(payload);
-    }
-  };
-
   const handleSort = (column: 'date' | 'teacher' | 'lessons' | 'cohorts') => {
     if (sortColumn === column) {
       // Ugyanaz az oszlop: asc -> desc -> null
@@ -310,13 +170,10 @@ function SubstitutionsPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) {
-      return;
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutateAsync(itemToDelete.substitution.id);
     }
-    await deleteMutation.mutateAsync(itemToDelete.substitution.id);
-    setDeleteDialogOpen(false);
-    setItemToDelete(null);
   };
 
   const isLoading = substitutionsQuery.isLoading;
@@ -555,12 +412,7 @@ function SubstitutionsPage() {
               setManualMode(false);
             }
           }}
-          onSubmit={handleSave}
-          onSubmitManual={async (payload) => {
-            await createManualMutation.mutateAsync(payload);
-          }}
           open={dialogOpen}
-          teachers={teachersQuery.data ?? []}
         />
       )}
 

@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
 import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +8,7 @@ import { UsersTable } from '@/components/admin/users-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QueryBoundary } from '@/components/util/query-boundary';
-import { useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { USERS_PAGE_SIZE, useCohorts, useUsers } from '@/hooks/admin-users';
 
 const searchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -28,7 +25,7 @@ function AdminUsersPage() {
   const { page, search } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const [inputValue, setInputValue] = useState(search);
-  const limit = 20;
+  const limit = USERS_PAGE_SIZE;
 
   useEffect(() => {
     setInputValue(search);
@@ -46,32 +43,14 @@ function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [inputValue, search, navigate]);
 
-  const cohortsQuery = useApiQuery<
-    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
-  >(() => api.cohort.index.$get(), {
-    queryKey: queryKeys.cohorts(),
-  });
+  const cohortsQuery = useCohorts();
 
   const cohortMap = useMemo(
     () => new Map((cohortsQuery.data ?? []).map((c) => [c.id, c.name])),
     [cohortsQuery.data]
   );
 
-  const usersQuery = useApiQuery<
-    NonNullable<InferResponseType<typeof api.users.index.$get>['data']>
-  >(
-    () =>
-      api.users.index.$get({
-        query: {
-          limit: limit.toString(),
-          offset: ((page - 1) * limit).toString(),
-          search,
-        },
-      }),
-    {
-      queryKey: queryKeys.users(page, search),
-    }
-  );
+  const usersQuery = useUsers(page, search);
 
   const total = usersQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);

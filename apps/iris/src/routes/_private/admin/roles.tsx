@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
 import { RefreshCw, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +8,7 @@ import { StatCard } from '@/components/admin/stat-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QueryBoundary } from '@/components/util/query-boundary';
-import { useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { useRoles } from '@/hooks/admin-users';
 
 export const Route = createFileRoute('/_private/admin/roles')({
   component: AdminRolesPage,
@@ -22,11 +19,7 @@ function AdminRolesPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const rolesQuery = useApiQuery<
-    NonNullable<InferResponseType<typeof api.roles.index.$get>['data']>
-  >(() => api.roles.index.$get(), {
-    queryKey: queryKeys.roles(),
-  });
+  const rolesQuery = useRoles();
 
   const allRoles = rolesQuery.data?.roles ?? [];
 

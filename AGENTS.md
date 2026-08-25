@@ -62,17 +62,18 @@
 
 ### Data Flow
 
-- Follow route composition from files like [apps/iris/src/routes/_private/admin/news/system-messages.tsx](apps/iris/src/routes/_private/admin/news/system-messages.tsx): `createFileRoute(...)` at the top, then permission gating, then queries and mutations grouped near the owning component.
-- Always use centralized keys from [apps/iris/src/utils/query-keys.ts](apps/iris/src/utils/query-keys.ts); no inline array query keys for existing domains.
-- When a mutation changes server state, invalidate every affected query family, not just the page-local list.
+- Domain data access lives in hook modules at [apps/iris/src/hooks](apps/iris/src/hooks) (one file per domain, e.g. `substitutions.ts`): `use<X>` query hooks plus individual `useCreateX`/`useUpdateX`/`useDeleteX` mutation hooks. Hooks own the API call, translated success/error toasts, and invalidation of every affected query family. Mutation hooks accept `{ onSaved?: () => void }` for callers that need to react to success (e.g. closing a dialog).
+- Routes contain no inline `parseResponse`/`useMutation` blocks; they consume the domain hooks and keep only UI state (sort, filters, dialog open/close, selection). Reference shape: [apps/iris/src/routes/_private/admin/timetable/substitutions.tsx](apps/iris/src/routes/_private/admin/timetable/substitutions.tsx).
+- Always use centralized keys from [apps/iris/src/utils/query-keys.ts](apps/iris/src/utils/query-keys.ts); no inline array query keys for existing domains. Multi-parameter keys take a single object argument (e.g. `doorlock.logs({ deviceFilter, search, ... })`) so React Query partial matching works.
 - Reuse [apps/iris/src/hooks/use-has-permission.ts](apps/iris/src/hooks/use-has-permission.ts) and existing permission guard components instead of duplicating permission logic in views.
 
 ### Dialogs And Forms
 
-- Follow the dialog structure of [apps/iris/src/components/admin/user-dialog.tsx](apps/iris/src/components/admin/user-dialog.tsx): form near the top of the component, reactive slices via `useStore(form.store, selector)`, fields via `<form.Field>`.
+- Dialogs are self-contained: they call domain mutation hooks directly and close themselves via `onOpenChange(false)` from their `onSaved` callback. Do not pass payload-submit callbacks (`onSubmit`) into dialogs. Reference shape: [apps/iris/src/components/admin/substitution-dialog.tsx](apps/iris/src/components/admin/substitution-dialog.tsx).
+- Follow the form idiom of [apps/iris/src/components/admin/user-dialog.tsx](apps/iris/src/components/admin/user-dialog.tsx): form near the top of the component, reactive slices via `useStore(form.store, selector)`, fields via `<form.Field>`. Plain `useState`+`onChange` forms are not acceptable for new or migrated code.
 - Reuse validation schemas from [apps/iris/src/utils/form-schemas.ts](apps/iris/src/utils/form-schemas.ts) when available, or the shared domain contracts from `@filcdev/api` when validating against backend wire shapes. If a schema becomes shared by multiple dialogs, move it there instead of copying validation logic.
 - Extend shared dialog prop types ([apps/iris/src/components/admin/admin.types.ts](apps/iris/src/components/admin/admin.types.ts), [apps/iris/src/components/doorlock/doorlock.types.ts](apps/iris/src/components/doorlock/doorlock.types.ts)) instead of defining near-duplicate props.
-- Keep submit side effects together: mutation success closes the dialog, invalidates affected query keys, and surfaces translated success/failure feedback.
+
 
 ## Reuse And DRY
 

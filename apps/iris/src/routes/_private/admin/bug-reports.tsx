@@ -1,7 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono';
-import { parseResponse } from 'hono/client';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,12 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type BugReport = NonNullable<
-  InferResponseType<typeof api.bugReport.index.$get>['data']
->[number];
+import type { BugReportItem as BugReport } from '@/hooks/bug-reports';
+import { useBugReports } from '@/hooks/bug-reports';
 
 export const Route = createFileRoute('/_private/admin/bug-reports')({
   component: AdminBugReportsPage,
@@ -48,16 +41,7 @@ function AdminBugReportsPage() {
   const [selected, setSelected] = useState<BugReport | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const reportsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.bugReport.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load bug reports');
-      }
-      return res.data ?? [];
-    },
-    queryKey: queryKeys.bugReports(),
-  });
+  const reportsQuery = useBugReports();
 
   const isLoading = reportsQuery.isLoading;
   const hasError = reportsQuery.isError;

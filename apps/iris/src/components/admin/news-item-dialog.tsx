@@ -1,5 +1,4 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Save } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,39 +15,22 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  type AnnouncementItem,
+  type AnnouncementPayload,
+  type SystemMessageItem,
+  type SystemMessagePayload,
+  useCohorts,
+  useCreateAnnouncement,
+  useCreateSystemMessage,
+  useUpdateAnnouncement,
+  useUpdateSystemMessage,
+} from '@/hooks/news';
 import { newsItemSchema } from '@/utils/form-schemas';
-import type { api } from '@/utils/hc';
+
 import type { BaseDialogProps } from './admin.types';
 
-type AnnouncementApiResponse = InferResponseType<
-  typeof api.news.announcements.$get
->;
-type AnnouncementItem = NonNullable<AnnouncementApiResponse['data']>[number];
-
-type SystemMessageApiResponse = InferResponseType<
-  (typeof api.news)['system-messages']['$get']
->;
-type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
-
-type AnnouncementPayload = InferRequestType<
-  typeof api.news.announcements.$post
->['json'];
-type SystemMessagePayload = InferRequestType<
-  (typeof api.news)['system-messages']['$post']
->['json'];
-
-type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
-type Cohort = NonNullable<CohortApiResponse['data']>[number];
-
 type NewsItemLike = AnnouncementItem | SystemMessageItem;
-export type NewsItemPayload = AnnouncementPayload | SystemMessagePayload;
-
-type NewsItemDialogProps = BaseDialogProps & {
-  cohorts: Cohort[];
-  item?: NewsItemLike | null;
-  mode: 'announcements' | 'system-messages';
-  onSubmit: (payload: NewsItemPayload) => Promise<void>;
-};
 
 const startOfDay = (d: Date): Date => {
   const out = new Date(d);
@@ -82,26 +64,47 @@ const initialState = (item?: NewsItemLike | null) => {
   };
 };
 
+type NewsItemDialogProps = BaseDialogProps & {
+  item?: NewsItemLike | null;
+  mode: 'announcements' | 'system-messages';
+};
+
 export function NewsItemDialog({
-  cohorts,
   item,
   mode,
   onOpenChange,
-  onSubmit,
   open,
 }: NewsItemDialogProps) {
   const { t } = useTranslation();
+  const close = () => onOpenChange(false);
+  const createAnnouncement = useCreateAnnouncement({ onSaved: close });
+  const updateAnnouncement = useUpdateAnnouncement({ onSaved: close });
+  const createSystemMessage = useCreateSystemMessage({ onSaved: close });
+  const updateSystemMessage = useUpdateSystemMessage({ onSaved: close });
+  const { data: cohorts = [] } = useCohorts(open);
+
+  const isAnnouncement = mode === 'announcements';
 
   const form = useForm({
     defaultValues: initialState(item),
     onSubmit: async ({ value }) => {
-      await onSubmit({
-        cohortIds: value.cohortIds,
-        content: value.content,
-        title: value.title,
-        validFrom: value.validFrom,
-        validUntil: value.validUntil,
-      } as NewsItemPayload);
+      if (isAnnouncement) {
+        if (item) {
+          await updateAnnouncement.mutateAsync({
+            id: item.id,
+            payload: value as AnnouncementPayload,
+          });
+        } else {
+          await createAnnouncement.mutateAsync(value as AnnouncementPayload);
+        }
+      } else if (item) {
+        await updateSystemMessage.mutateAsync({
+          id: item.id,
+          payload: value as SystemMessagePayload,
+        });
+      } else {
+        await createSystemMessage.mutateAsync(value as SystemMessagePayload);
+      }
     },
     validators: { onSubmit: newsItemSchema },
   });

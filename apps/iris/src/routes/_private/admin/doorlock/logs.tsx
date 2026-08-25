@@ -1,9 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   Calendar as CalendarIcon,
   Check,
@@ -15,8 +13,6 @@ import {
 } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { ExportLogsButton } from '@/components/doorlock/export-logs';
 import { Badge } from '@/components/ui/badge';
@@ -42,21 +38,20 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
+import {
+  type DoorlockCard,
+  type DoorlockDevice,
+  type DoorlockLogEntry,
+  useCardUsers,
+  useDoorlockCards,
+  useDoorlockDevices,
+  useDoorlockLogs,
+  useUpsertCardFromLog,
+} from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
 import { cn } from '@/utils/index';
-import { queryKeys } from '@/utils/query-keys';
-
-type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
-type CardsResponse = InferResponseType<typeof api.doorlock.cards.$get>;
-type LogsResponse = InferResponseType<typeof api.doorlock.logs.$get>;
-
-type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
-type DoorlockCard = NonNullable<CardsResponse['data']>['cards'][number];
-type DoorlockLogEntry = NonNullable<LogsResponse['data']>['logs'][number];
 
 type EventFilter = 'all' | 'virtual' | 'physical';
 type LogSortColumn =
@@ -107,8 +102,6 @@ export const Route = createFileRoute('/_private/admin/doorlock/logs')({
   ),
 });
 
-const DEFAULT_LIMIT = '500';
-
 type DateRange = {
   from?: Date;
   to?: Date;
@@ -117,52 +110,6 @@ type DateRange = {
 type FilterOption = {
   id: string;
   label: string;
-};
-
-type BuildQueryArgs = {
-  accessFilter: 'all' | 'granted' | 'denied';
-  cardFilter: 'all' | string;
-  dateRange: DateRange;
-  deviceFilter: 'all' | string;
-  search: string;
-  userFilter: 'all' | string;
-};
-
-const buildLogsQuery = ({
-  accessFilter,
-  cardFilter,
-  dateRange,
-  deviceFilter,
-  search,
-  userFilter,
-}: BuildQueryArgs) => {
-  const query: Record<string, string> = { limit: DEFAULT_LIMIT };
-
-  if (deviceFilter !== 'all') {
-    query.deviceId = deviceFilter;
-  }
-  if (cardFilter !== 'all') {
-    query.cardId = cardFilter;
-  }
-  if (userFilter !== 'all') {
-    query.userId = userFilter;
-  }
-  if (accessFilter === 'granted') {
-    query.granted = 'true';
-  } else if (accessFilter === 'denied') {
-    query.granted = 'false';
-  }
-  if (dateRange.from) {
-    query.from = dateRange.from.toISOString();
-  }
-  if (dateRange.to) {
-    query.to = dateRange.to.toISOString();
-  }
-  if (search) {
-    query.search = search;
-  }
-
-  return query;
 };
 
 function useLogStats(
@@ -219,7 +166,6 @@ function useLogStats(
 }
 
 function LogsPage() {
-  const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -242,7 +188,6 @@ function LogsPage() {
 
   const deferredSearch = useDeferredValue(search.trim());
 
-  const queryClient = useQueryClient();
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
   const [pendingCardData, setPendingCardData] = useState<string | null>(null);
 
@@ -260,82 +205,27 @@ function LogsPage() {
     session?.user?.permissions
   );
 
-  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
-    () => api.doorlock.devices.$get(),
-    {
-      enabled: canReadDevices,
-      queryKey: queryKeys.doorlock.devices(),
-    }
-  );
+  const devicesQuery = useDoorlockDevices({ enabled: canReadDevices });
   const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const cardsQuery = useApiQuery<NonNullable<CardsResponse['data']>>(
-    () => api.doorlock.cards.$get(),
-    {
-      enabled: canReadCards,
-      queryKey: queryKeys.doorlock.cards(),
-    }
-  );
+  const cardsQuery = useDoorlockCards({ enabled: canReadCards });
   const cards: DoorlockCard[] | undefined = cardsQuery.data?.cards;
 
-  const logsQuery = useApiQuery<NonNullable<LogsResponse['data']>>(
-    () => {
-      const query = buildLogsQuery({
-        accessFilter,
-        cardFilter,
-        dateRange,
-        deviceFilter,
-        search: deferredSearch,
-        userFilter,
-      });
-
-      return api.doorlock.logs.$get({ query });
-    },
-    {
-      queryKey: queryKeys.doorlock.logs(
-        deviceFilter,
-        cardFilter,
-        userFilter,
-        accessFilter,
-        dateRange.from?.toISOString() ?? 'none',
-        dateRange.to?.toISOString() ?? 'none',
-        deferredSearch
-      ),
-      staleTime: 30_000,
-    }
-  );
+  const logsQuery = useDoorlockLogs({
+    accessFilter,
+    cardFilter,
+    dateRange,
+    deviceFilter,
+    search: deferredSearch,
+    userFilter,
+  });
   const logs: DoorlockLogEntry[] | undefined = logsQuery.data?.logs;
 
-  const usersQuery = useApiQuery<
-    NonNullable<InferResponseType<typeof api.doorlock.cards.users.$get>['data']>
-  >(() => api.doorlock.cards.users.$get(), {
-    enabled: hasCardWritePermission,
-    queryKey: queryKeys.doorlock.cardUsers(),
-  });
+  const usersQuery = useCardUsers({ enabled: hasCardWritePermission });
   const users = usersQuery.data?.users;
 
-  const $upsertCard = api.doorlock.cards.$post;
-  const upsertCardMutation = useApiMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id?: string;
-      payload: InferRequestType<typeof $upsertCard>['json'];
-    }) => {
-      if (id) {
-        return api.doorlock.cards[':id'].$put({ json: payload, param: { id } });
-      }
-      return api.doorlock.cards.$post({ json: payload });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockCards.saveError'));
-    },
-    onSuccess: () => {
-      toast.success(t('doorlockCards.saveSuccess'));
-      queryClient.invalidateQueries({ queryKey: ['doorlock', 'logs'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
+  const upsertCardMutation = useUpsertCardFromLog({
+    onSaved: () => {
       setCardDialogOpen(false);
     },
   });

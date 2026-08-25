@@ -1,17 +1,10 @@
 import { permissions } from '@filcdev/api/permissions';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
 import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
 import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
 import {
@@ -41,37 +34,22 @@ import {
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
+import {
+  type DayDefinition,
+  type EnrichedLesson,
+  type MovedLessonItem,
+  type Period,
+  useCohortLessonsForCohorts,
+  useDeleteMovedLesson,
+  useMovedLessonClassrooms,
+  useMovedLessonCohorts,
+  useMovedLessonSubstitutions,
+  useMovedLessons,
+} from '@/hooks/moved-lessons';
+import type { SubstitutionItem } from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type MovedLessonApiResponse = InferResponseType<
-  typeof api.timetable.movedLessons.$get
->;
-type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
-type Classroom = Omit<
-  NonNullable<MovedLessonItem['classroom']>,
-  'createdAt' | 'updatedAt'
->;
-type Period = Omit<
-  NonNullable<MovedLessonItem['period']>,
-  'createdAt' | 'updatedAt'
->;
-type DayDefinition = Omit<
-  NonNullable<MovedLessonItem['dayDefinition']>,
-  'createdAt' | 'updatedAt'
->;
-
-type SubstitutionApiResponse = InferResponseType<
-  typeof api.timetable.substitutions.$get
->;
-type SubstitutionData = NonNullable<SubstitutionApiResponse['data']>[number];
-type EnrichedLesson = Omit<
-  NonNullable<SubstitutionData['lessons'][number]>,
-  'createdAt' | 'updatedAt'
->;
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -99,7 +77,7 @@ function extractFromMovedLessons(
 }
 
 function extractFromSubstitutions(
-  subs: SubstitutionData[],
+  subs: SubstitutionItem[],
   periodMap: Map<string, Period>,
   dayMap: Map<string, DayDefinition>,
   lessonMap: Map<string, EnrichedLesson>
@@ -128,7 +106,7 @@ function extractFromSubstitutions(
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex extraction logic for reference data
 function extractReferenceData(
   movedLessons: MovedLessonItem[],
-  subs: SubstitutionData[],
+  subs: SubstitutionItem[],
   cohortLessonsLists: Array<{ lessons: EnrichedLesson[] }>
 ) {
   const periodMap = new Map<string, Period>();
@@ -188,7 +166,6 @@ function extractReferenceData(
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex form with multiple queries and state
 function MovedLessonsPage() {
   const { i18n, t } = useTranslation();
-  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -213,77 +190,20 @@ function MovedLessonsPage() {
     session?.user?.permissions
   );
 
-  const movedLessonsQuery = useQuery({
-    queryFn: async (): Promise<MovedLessonItem[]> => {
-      const res = await parseResponse(api.timetable.movedLessons.$get());
-      if (!res.success) {
-        throw new Error('Failed to load moved lessons');
-      }
-      return res.data as MovedLessonItem[];
-    },
-    queryKey: queryKeys.movedLessons(),
-  });
+  const movedLessonsQuery = useMovedLessons();
 
-  const classroomsQuery = useQuery({
-    enabled: hasWritePermission,
-    queryFn: async (): Promise<Classroom[]> => {
-      const res = await parseResponse(api.timetable.classrooms.getAll.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load classrooms');
-      }
-      return res.data as Classroom[];
-    },
-    queryKey: queryKeys.classrooms(),
-  });
+  const classroomsQuery = useMovedLessonClassrooms(hasWritePermission);
 
-  const cohortsQuery = useQuery({
-    enabled: hasWritePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.cohorts(),
-  });
+  const cohortsQuery = useMovedLessonCohorts(hasWritePermission);
 
   // Fetch substitutions to get enriched lessons list for the picker
-  const substitutionsQuery = useQuery({
-    enabled: hasWritePermission,
-    queryFn: async () => {
-      const res = await parseResponse(api.timetable.substitutions.$get());
-      if (!res.success) {
-        throw new Error('Failed to load substitutions');
-      }
-      return res.data as SubstitutionData[];
-    },
-    queryKey: queryKeys.substitutions(),
-  });
+  const substitutionsQuery = useMovedLessonSubstitutions(hasWritePermission);
 
   // Fetch lessons from all cohorts to ensure we have all periods
-  const cohortLessonsQueries = useQuery({
-    enabled: hasWritePermission && (cohortsQuery.data?.length ?? 0) > 0,
-    queryFn: async () => {
-      const cohorts = cohortsQuery.data ?? [];
-      const results = await Promise.all(
-        cohorts.map(async (cohort) => {
-          const res = await parseResponse(
-            api.timetable.lessons.getForCohort[':cohortId'].$get({
-              param: { cohortId: cohort.id },
-              query: {},
-            })
-          );
-          if (!res.success) {
-            return { lessons: [] };
-          }
-          return { lessons: (res.data ?? []) as unknown as EnrichedLesson[] };
-        })
-      );
-      return results;
-    },
-    queryKey: queryKeys.timetable.cohortLessons(cohortsQuery.data),
-  });
+  const cohortLessonsQueries = useCohortLessonsForCohorts(
+    cohortsQuery.data ?? [],
+    hasWritePermission
+  );
 
   // Extract unique periods and day definitions from moved lessons data
   const { allLessons, days, periods } = useMemo(
@@ -296,78 +216,7 @@ function MovedLessonsPage() {
     [movedLessonsQuery.data, substitutionsQuery.data, cohortLessonsQueries.data]
   );
 
-  const $createMovedLesson = api.timetable.movedLessons.$post;
-  const createMutation = useMutation<
-    InferResponseType<typeof $createMovedLesson>,
-    Error,
-    InferRequestType<typeof $createMovedLesson>['json']
-  >({
-    mutationFn: async (payload) => {
-      const res = await parseResponse(
-        $createMovedLesson({
-          json: payload,
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create moved lesson');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('movedLesson.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('movedLesson.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.movedLessons() });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const $updateMovedLesson = api.timetable.movedLessons[':id'].$put;
-  const updateMutation = useMutation<
-    InferResponseType<typeof $updateMovedLesson>,
-    Error,
-    { id: string; payload: InferRequestType<typeof $updateMovedLesson>['json'] }
-  >({
-    mutationFn: async ({ id, payload }) => {
-      const res = await parseResponse(
-        api.timetable.movedLessons[':id'].$put({ json: payload, param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update moved lesson');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('movedLesson.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('movedLesson.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.movedLessons() });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const $deleteMovedLesson = api.timetable.movedLessons[':id'].$delete;
-  const deleteMutation = useMutation<
-    InferResponseType<typeof $deleteMovedLesson>,
-    Error,
-    string
-  >({
-    mutationFn: async (id: string) =>
-      parseResponse(
-        api.timetable.movedLessons[':id'].$delete({ param: { id } })
-      ),
-    onError: (error: Error) => {
-      toast.error(error.message || t('movedLesson.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('movedLesson.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.movedLessons() });
-    },
-  });
+  const deleteMutation = useDeleteMovedLesson();
 
   const filteredMovedLessons = useMemo(() => {
     let list = movedLessonsQuery.data ?? [];
@@ -443,37 +292,6 @@ function MovedLessonsPage() {
       // Új oszlop: kezdjük asc-vel
       setSortColumn(column);
       setSortDirection('asc');
-    }
-  };
-
-  const create = api.timetable.movedLessons.$post;
-  const upd = api.timetable.movedLessons[':id'].$put;
-  type MovedLessonPayload = InferRequestType<typeof create>['json'];
-
-  const handleSave = async (payload: MovedLessonPayload) => {
-    if (selectedItem) {
-      // For updates, ensure all required fields are present
-      const hasAllFields =
-        Boolean(payload.room) &&
-        Boolean(payload.startingDay) &&
-        Boolean(payload.startingPeriod);
-      if (!hasAllFields) {
-        throw new Error('All fields are required for updates');
-      }
-      // At this point TypeScript knows these fields are defined
-      const updatePayload: InferRequestType<typeof upd>['json'] = {
-        date: payload.date,
-        lessonIds: payload.lessonIds ?? [],
-        room: payload.room as string,
-        startingDay: payload.startingDay as string,
-        startingPeriod: payload.startingPeriod as string,
-      };
-      await updateMutation.mutateAsync({
-        id: selectedItem.movedLesson.id,
-        payload: updatePayload,
-      });
-    } else {
-      await createMutation.mutateAsync(payload);
     }
   };
 
@@ -714,7 +532,6 @@ function MovedLessonsPage() {
               setSelectedItem(null);
             }
           }}
-          onSubmit={handleSave}
           open={dialogOpen}
           periods={periods}
         />

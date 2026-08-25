@@ -84,7 +84,13 @@ export function NotificationHistoryDialog({
       };
     },
     queryKey: [
-      ...queryKeys.notifications.list(typeFilter, 'all', page, '', ''),
+      ...queryKeys.notifications.list({
+        dateFrom: '',
+        dateTo: '',
+        page,
+        type: typeFilter,
+        unread: 'all',
+      }),
       pageSize,
     ],
   });

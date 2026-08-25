@@ -1,9 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   Ban,
   CreditCard,
@@ -15,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/stat-card';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
@@ -33,20 +30,20 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
+import {
+  type CardPayload,
+  type DoorlockCard,
+  type DoorlockDevice,
+  type DoorlockUser,
+  useCardUsers,
+  useDeleteDoorlockCard,
+  useDoorlockCards,
+  useDoorlockDevices,
+  useUpsertDoorlockCard,
+} from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type CardsResponse = InferResponseType<typeof api.doorlock.cards.$get>;
-type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
-type UsersResponse = InferResponseType<typeof api.doorlock.cards.users.$get>;
-
-type DoorlockCard = NonNullable<CardsResponse['data']>['cards'][number];
-type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
-type DoorlockUser = NonNullable<UsersResponse['data']>['users'][number];
 
 export const Route = createFileRoute('/_private/admin/doorlock/cards')({
   component: () => (
@@ -60,7 +57,6 @@ type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
 
 function CardsPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
@@ -79,74 +75,25 @@ function CardsPage() {
     session?.user?.permissions
   );
 
-  const cardsQuery = useApiQuery<NonNullable<CardsResponse['data']>>(
-    () => api.doorlock.cards.$get(),
-    {
-      queryKey: queryKeys.doorlock.cards(),
-    }
-  );
+  const cardsQuery = useDoorlockCards();
   const cards: DoorlockCard[] | undefined = cardsQuery.data?.cards;
 
-  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
-    () => api.doorlock.devices.$get(),
-    {
-      enabled: hasDeviceReadPermission && hasWritePermission,
-      queryKey: queryKeys.doorlock.devices(),
-    }
-  );
+  const devicesQuery = useDoorlockDevices({
+    enabled: hasDeviceReadPermission && hasWritePermission,
+  });
   const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const usersQuery = useApiQuery<NonNullable<UsersResponse['data']>>(
-    () => api.doorlock.cards.users.$get(),
-    {
-      enabled: hasWritePermission,
-      queryKey: queryKeys.doorlock.cardUsers(),
-    }
-  );
+  const usersQuery = useCardUsers({ enabled: hasWritePermission });
   const users: DoorlockUser[] | undefined = usersQuery.data?.users;
 
-  const $upsertCard = api.doorlock.cards.$post;
-  const upsertMutation = useApiMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id?: string;
-      payload: InferRequestType<typeof $upsertCard>['json'];
-    }) => {
-      if (id) {
-        return api.doorlock.cards[':id'].$put({ json: payload, param: { id } });
-      }
-      return api.doorlock.cards.$post({ json: payload });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockCards.saveError'));
-    },
-    onSuccess: (_res, variables) => {
-      toast.success(
-        variables.id
-          ? t('doorlockCards.updateSuccess')
-          : t('doorlockCards.createSuccess')
-      );
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
+  const upsertMutation = useUpsertDoorlockCard({
+    onSaved: () => {
       setDialogOpen(false);
       setSelectedCard(null);
     },
   });
 
-  const deleteMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.doorlock.cards[':id'].$delete({ param: { id } }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockCards.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('doorlockCards.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
-    },
-  });
+  const deleteMutation = useDeleteDoorlockCard();
 
   const filteredCards = useMemo(() => {
     const list = cards ?? [];
@@ -194,9 +141,7 @@ function CardsPage() {
     };
   }, [cards]);
 
-  const handleSave = async (
-    payload: InferRequestType<typeof $upsertCard>['json']
-  ) => {
+  const handleSave = async (payload: CardPayload) => {
     await upsertMutation.mutateAsync({
       ...(selectedCard?.id && { id: selectedCard.id }),
       payload,

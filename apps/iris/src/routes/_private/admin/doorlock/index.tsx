@@ -1,7 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
 
 import { createFileRoute } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
@@ -11,12 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
-import { useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type StatsResponse = InferResponseType<typeof api.doorlock.stats.overview.$get>;
-type DoorlockStatsOverview = NonNullable<StatsResponse['data']>['stats'];
+import {
+  type DoorlockStatsOverview,
+  useDoorlockStatsOverview,
+} from '@/hooks/doorlock-admin';
 
 export const Route = createFileRoute('/_private/admin/doorlock/')({
   component: () => (
@@ -29,12 +26,7 @@ export const Route = createFileRoute('/_private/admin/doorlock/')({
 function DoorlockDashboard() {
   const { t } = useTranslation();
 
-  const statsQuery = useApiQuery<NonNullable<StatsResponse['data']>>(
-    () => api.doorlock.stats.overview.$get(),
-    {
-      queryKey: queryKeys.doorlock.stats(),
-    }
-  );
+  const statsQuery = useDoorlockStatsOverview();
 
   return (
     <div className="space-y-6">

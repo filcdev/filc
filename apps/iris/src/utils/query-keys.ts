@@ -9,26 +9,15 @@ export const queryKeys = {
     deviceStats: (deviceId: string) =>
       ['doorlock', 'devices', deviceId, 'stats'] as const,
     devices: () => ['doorlock', 'devices'] as const,
-    logs: (
-      deviceFilter: string,
-      cardFilter: string,
-      userFilter: string,
-      accessFilter: string,
-      dateFrom: string,
-      dateTo: string,
-      search: string
-    ) =>
-      [
-        'doorlock',
-        'logs',
-        deviceFilter,
-        cardFilter,
-        userFilter,
-        accessFilter,
-        dateFrom,
-        dateTo,
-        search,
-      ] as const,
+    logs: (filters: {
+      accessFilter: string;
+      cardFilter: string;
+      dateFrom: string;
+      dateTo: string;
+      deviceFilter: string;
+      search: string;
+      userFilter: string;
+    }) => ['doorlock', 'logs', filters] as const,
     selfCards: () => ['doorlock', 'self-cards'] as const,
     stats: () => ['doorlock', 'stats'] as const,
   },
@@ -44,14 +33,13 @@ export const queryKeys = {
   },
   notifications: {
     all: () => ['notifications'] as const,
-    list: (
-      type: string,
-      unread: string,
-      page: number,
-      dateFrom: string,
-      dateTo: string
-    ) =>
-      ['notifications', 'list', type, unread, page, dateFrom, dateTo] as const,
+    list: (filters: {
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      type: string;
+      unread: string;
+    }) => ['notifications', 'list', filters] as const,
     preferences: () => ['notifications', 'preferences'] as const,
     recent: (userId: string) => ['notifications', 'recent', userId] as const,
     settings: () => ['notifications', 'settings'] as const,
@@ -60,6 +48,7 @@ export const queryKeys = {
   },
   permissions: () => ['permissions'] as const,
   roles: () => ['roles'] as const,
+  subjects: () => ['subjects'] as const,
   substitutions: () => ['substitutions'] as const,
   teachers: () => ['teachers'] as const,
 

@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import type { InferResponseType } from 'hono/client';
 import { useMemo } from 'react';
 import {
   Area,
@@ -32,14 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type DeviceStatsResponse = InferResponseType<
-  (typeof api.doorlock.devices)[':id']['stats']['$get']
->;
-type DeviceStat = NonNullable<DeviceStatsResponse['data']>[number];
+import { useDoorlockDeviceStats } from '@/hooks/doorlock-admin';
 
 type DeviceStatsDialogProps = {
   deviceId: string | null;
@@ -68,20 +60,7 @@ export function DeviceStatsDialog({
   onOpenChange,
   open,
 }: DeviceStatsDialogProps) {
-  const statsQuery = useApiQuery<DeviceStat[]>(
-    () => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const id = deviceId!;
-      return api.doorlock.devices[':id'].stats.$get({
-        param: { id },
-      });
-    },
-    {
-      enabled: !!deviceId && open,
-      queryKey: queryKeys.doorlock.deviceStats(deviceId ?? ''),
-      refetchInterval: 30_000, // Refresh every 30s
-    }
-  );
+  const statsQuery = useDoorlockDeviceStats(deviceId, open);
 
   const chartData = useMemo(() => {
     if (!statsQuery.data) {
