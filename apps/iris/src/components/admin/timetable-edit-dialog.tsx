@@ -1,7 +1,6 @@
 import { Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TimetableItem } from '@/components/timetable/types';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -13,25 +12,20 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  type TimetableRow,
+  useUpdateTimetable,
+} from '@/hooks/timetables-admin';
+import type { BaseDialogProps } from './admin.types';
 
-type TimetableEditDialogProps = {
-  item?: TimetableItem | null;
-  isSubmitting: boolean;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: {
-    name?: string;
-    validFrom?: string;
-    validTo?: string | null;
-  }) => Promise<void>;
+type TimetableEditDialogProps = BaseDialogProps & {
+  item?: TimetableRow | null;
 };
 
 export function TimetableEditDialog({
   item,
-  isSubmitting,
-  open,
   onOpenChange,
-  onSubmit,
+  open,
 }: TimetableEditDialogProps) {
   const { t } = useTranslation();
 
@@ -51,12 +45,22 @@ export function TimetableEditDialog({
     }
   }, [open, item]);
 
+  const updateMutation = useUpdateTimetable({
+    onSaved: () => onOpenChange(false),
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit({
-      name: name.trim() || undefined,
-      validFrom: validFrom?.toISOString().slice(0, 10),
-      validTo: validTo ? validTo.toISOString().slice(0, 10) : null,
+    if (!item) {
+      return;
+    }
+    await updateMutation.mutateAsync({
+      id: item.id,
+      payload: {
+        name: name.trim() || undefined,
+        validFrom: validFrom?.toISOString().slice(0, 10),
+        validTo: validTo ? validTo.toISOString().slice(0, 10) : null,
+      },
     });
   };
 
@@ -99,7 +103,7 @@ export function TimetableEditDialog({
             </p>
           </div>
           <DialogFooter>
-            <Button disabled={isSubmitting} type="submit">
+            <Button disabled={updateMutation.isPending} type="submit">
               <Save className="mr-2 h-4 w-4" />
               {t('substitution.save')}
             </Button>

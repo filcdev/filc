@@ -46,7 +46,6 @@ import {
   useDoorlockCards,
   useDoorlockDevices,
   useDoorlockLogs,
-  useUpsertCardFromLog,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -223,12 +222,6 @@ function LogsPage() {
 
   const usersQuery = useCardUsers({ enabled: hasCardWritePermission });
   const users = usersQuery.data?.users;
-
-  const upsertCardMutation = useUpsertCardFromLog({
-    onSaved: () => {
-      setCardDialogOpen(false);
-    },
-  });
 
   const cardDialogCard = useMemo(() => {
     if (!pendingCardData) {
@@ -533,11 +526,9 @@ function LogsPage() {
       {hasCardWritePermission && (
         <CardDialog
           card={cardDialogCard}
+          context="logs"
           devices={devices ?? []}
           onOpenChange={setCardDialogOpen}
-          onSubmit={async (payload) => {
-            await upsertCardMutation.mutateAsync({ payload });
-          }}
           open={cardDialogOpen}
           users={
             (users ?? []) as Array<{

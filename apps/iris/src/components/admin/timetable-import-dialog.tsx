@@ -1,7 +1,6 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import { useQueryClient } from '@tanstack/react-query';
 import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
-import { type ChangeEvent, useRef, useState } from 'react';
+import { type ChangeEvent, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -16,18 +15,8 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { useApiMutation } from '@/utils/api';
+import { useImportTimetable } from '@/hooks/timetables-admin';
 import { timetableImportSchema } from '@/utils/form-schemas';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type ImportStatus = 'idle' | 'uploading' | 'success' | 'error';
-type ImportPayload = {
-  file: File;
-  name: string;
-  validFrom: Date;
-  validTo?: Date;
-};
 
 type TimetableImportDialogProps = {
   open: boolean;
@@ -39,41 +28,14 @@ export function TimetableImportDialog({
   onOpenChange,
 }: TimetableImportDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const importMutation = useApiMutation({
-    mutationFn: ({ file, name, validFrom, validTo }: ImportPayload) =>
-      api.timetable.import.$post({
-        form: {
-          name,
-          omanXml: file,
-          validFrom: validFrom.toISOString(),
-          ...(validTo && { validTo: validTo.toISOString() }),
-        },
-      }),
-    onError: (error: Error) => {
-      setImportStatus('error');
-      setErrorMessage(error.message);
-      toast.error(t('timetable.importError'));
-    },
-    onMutate: () => {
-      setImportStatus('uploading');
-      setErrorMessage(null);
-    },
-    onSuccess: () => {
-      setImportStatus('success');
-      toast.success(t('timetable.importSuccess'));
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importMutation = useImportTimetable({
+    onSaved: () => {
       form.reset();
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
       onOpenChange(false);
     },
   });
@@ -119,8 +81,7 @@ export function TimetableImportDialog({
       return;
     }
     form.setFieldValue('file', f);
-    setImportStatus('idle');
-    setErrorMessage(null);
+    importMutation.reset();
   };
 
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
@@ -133,8 +94,7 @@ export function TimetableImportDialog({
   const handleOpenChange = (value: boolean) => {
     if (!value) {
       form.reset();
-      setImportStatus('idle');
-      setErrorMessage(null);
+      importMutation.reset();
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -143,7 +103,7 @@ export function TimetableImportDialog({
   };
 
   const canImport =
-    form.state.canSubmit && selectedFile && importStatus !== 'uploading';
+    form.state.canSubmit && selectedFile && !importMutation.isPending;
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
@@ -264,7 +224,7 @@ export function TimetableImportDialog({
                   onClick={(e) => {
                     e.stopPropagation();
                     form.setFieldValue('file', null);
-                    setImportStatus('idle');
+                    importMutation.reset();
                     if (fileInputRef.current) {
                       fileInputRef.current.value = '';
                     }
@@ -288,7 +248,7 @@ export function TimetableImportDialog({
             )}
           </div>
 
-          {importStatus === 'success' && (
+          {importMutation.isSuccess && (
             <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
               <CircleCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertTitle>{t('timetable.importSuccessTitle')}</AlertTitle>
@@ -298,14 +258,16 @@ export function TimetableImportDialog({
             </Alert>
           )}
 
-          {importStatus === 'error' && errorMessage && (
+          {importMutation.isError && (
             <Alert
               className="border-red-500 bg-red-50 dark:bg-red-950"
               variant="destructive"
             >
               <CircleAlert className="h-4 w-4" />
               <AlertTitle>{t('timetable.importErrorTitle')}</AlertTitle>
-              <AlertDescription>{errorMessage}</AlertDescription>
+              <AlertDescription>
+                {importMutation.error?.message}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -315,7 +277,7 @@ export function TimetableImportDialog({
               disabled={!canImport}
               onClick={() => form.handleSubmit()}
             >
-              {importStatus === 'uploading' ? (
+              {importMutation.isPending ? (
                 <>
                   <Spinner className="mr-2" />
                   {t('timetable.importing')}

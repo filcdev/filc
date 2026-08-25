@@ -152,3 +152,50 @@ export function useCleanupOrphanedCohorts() {
     },
   });
 }
+
+type ImportTimetablePayload = {
+  file: File;
+  name: string;
+  validFrom: Date;
+  validTo?: Date;
+};
+
+/** Import an Oman XML timetable export; replaces the whole timetable graph. */
+export function useImportTimetable({ onSaved }: MutationCallbacks = {}) {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidateTimetableGraph();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({
+      file,
+      name,
+      validFrom,
+      validTo,
+    }: ImportTimetablePayload) => {
+      const res = await parseResponse(
+        api.timetable.import.$post({
+          form: {
+            name,
+            omanXml: file,
+            validFrom: validFrom.toISOString(),
+            ...(validTo && { validTo: validTo.toISOString() }),
+          },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to import timetable');
+      }
+      return res;
+    },
+    onError: () => {
+      toast.error(t('timetable.importError'));
+    },
+    onSuccess: () => {
+      toast.success(t('timetable.importSuccess'));
+      // An import replaces every timetable-derived query, so sweep broadly.
+      queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
+      invalidate();
+      onSaved?.();
+    },
+  });
+}

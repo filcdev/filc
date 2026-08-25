@@ -31,7 +31,6 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import {
-  type CardPayload,
   type DoorlockCard,
   type DoorlockDevice,
   type DoorlockUser,
@@ -39,7 +38,6 @@ import {
   useDeleteDoorlockCard,
   useDoorlockCards,
   useDoorlockDevices,
-  useUpsertDoorlockCard,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
@@ -85,13 +83,6 @@ function CardsPage() {
 
   const usersQuery = useCardUsers({ enabled: hasWritePermission });
   const users: DoorlockUser[] | undefined = usersQuery.data?.users;
-
-  const upsertMutation = useUpsertDoorlockCard({
-    onSaved: () => {
-      setDialogOpen(false);
-      setSelectedCard(null);
-    },
-  });
 
   const deleteMutation = useDeleteDoorlockCard();
 
@@ -140,13 +131,6 @@ function CardsPage() {
       total: list.length,
     };
   }, [cards]);
-
-  const handleSave = async (payload: CardPayload) => {
-    await upsertMutation.mutateAsync({
-      ...(selectedCard?.id && { id: selectedCard.id }),
-      payload,
-    });
-  };
 
   const handleDelete = async (card: DoorlockCard) => {
     if (!hasWritePermission) {
@@ -395,6 +379,7 @@ function CardsPage() {
       {hasWritePermission && (
         <CardDialog<DoorlockCard, DoorlockDevice, DoorlockUser>
           card={selectedCard}
+          context="cards"
           devices={devices ?? []}
           onOpenChange={(open) => {
             setDialogOpen(open);
@@ -402,7 +387,6 @@ function CardsPage() {
               setSelectedCard(null);
             }
           }}
-          onSubmit={handleSave}
           open={dialogOpen}
           users={users ?? []}
         />

@@ -17,7 +17,6 @@ import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
 import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
-import type { TimetableItem } from '@/components/timetable/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +43,6 @@ import {
   useDeletePreview,
   useDeleteTimetable,
   useTimetables,
-  useUpdateTimetable,
 } from '@/hooks/timetables-admin';
 
 export const Route = createFileRoute('/_private/admin/timetable/manage')({
@@ -162,13 +160,6 @@ function TimetableManagePage() {
 
   const previewQuery = useDeletePreview(itemToDelete?.id);
 
-  const updateMutation = useUpdateTimetable({
-    onSaved: () => {
-      setEditDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
   const deleteMutation = useDeleteTimetable({
     onSaved: () => {
       setDeleteDialogOpen(false);
@@ -177,17 +168,6 @@ function TimetableManagePage() {
   });
 
   const cleanupMutation = useCleanupOrphanedCohorts();
-
-  const handleEditSubmit = async (payload: {
-    name?: string;
-    validFrom?: string;
-    validTo?: string | null;
-  }) => {
-    if (!selectedItem) {
-      return;
-    }
-    await updateMutation.mutateAsync({ id: selectedItem.id, payload });
-  };
 
   const formatDate = (date: string | null) => {
     if (!date) {
@@ -332,10 +312,8 @@ function TimetableManagePage() {
       />
 
       <TimetableEditDialog
-        isSubmitting={updateMutation.isPending}
-        item={selectedItem as TimetableItem | null}
+        item={selectedItem}
         onOpenChange={setEditDialogOpen}
-        onSubmit={handleEditSubmit}
         open={editDialogOpen}
       />
 

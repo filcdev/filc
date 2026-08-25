@@ -1,5 +1,3 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
 import { MailCheck, MailX } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,18 +13,11 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useApiMutation } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type NotificationItem = {
-  id: string;
-  type: string;
-  title: string;
-  content: string;
-  read: boolean;
-  createdAt: string;
-};
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+} from '@/hooks/notifications';
 
 const NOTIFICATION_TYPES = [
   'substitution',
@@ -59,60 +50,25 @@ export function NotificationHistoryDialog({
   onOpenChange,
 }: NotificationHistoryDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [typeFilter, setTypeFilter] = useState('all');
   const pageSize = 20;
 
-  const { data, isLoading, isError } = useQuery({
-    enabled: open,
-    queryFn: async () => {
-      const query: Record<string, string | undefined> = {
-        limit: String(pageSize),
-        offset: String(page * pageSize),
-      };
-      if (typeFilter !== 'all') {
-        query.type = typeFilter;
-      }
-      const res = await parseResponse(api.notifications.index.$get({ query }));
-      if (!res.success) {
-        throw new Error('Failed to load notifications');
-      }
-      return {
-        items: (res.data ?? []) as NotificationItem[],
-        total: (res as { total?: number }).total ?? 0,
-      };
-    },
-    queryKey: [
-      ...queryKeys.notifications.list({
-        dateFrom: '',
-        dateTo: '',
-        page,
-        type: typeFilter,
-        unread: 'all',
-      }),
+  const { data, isLoading, isError } = useNotifications(
+    {
+      dateFrom: '',
+      dateTo: '',
+      page,
       pageSize,
-    ],
-  });
-
-  const markReadMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.notifications[':id'].read.$patch({ param: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
+      type: typeFilter,
+      unread: 'all',
     },
-  });
+    { enabled: open }
+  );
 
-  const markAllReadMutation = useApiMutation({
-    mutationFn: () => api.notifications['read-all'].$patch(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-    },
-  });
+  const markReadMutation = useMarkNotificationRead();
+
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
   const handleSelectChange = (
     setter: (v: string) => void
@@ -126,7 +82,7 @@ export function NotificationHistoryDialog({
     };
   };
 
-  const items = data?.items ?? [];
+  const items = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
   const ready = !(isLoading || isError);

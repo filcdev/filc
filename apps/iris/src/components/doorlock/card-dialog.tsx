@@ -15,6 +15,10 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  useUpsertCardFromLog,
+  useUpsertDoorlockCard,
+} from '@/hooks/doorlock-admin';
 import { createCardSchema, updateCardSchema } from '@/utils/form-schemas';
 import type {
   CardDialogProps,
@@ -39,23 +43,37 @@ export function CardDialog<
   TUser extends UserOption = UserOption,
 >({
   card,
+  context,
   devices,
   onOpenChange,
-  onSubmit,
   open,
   users,
 }: CardDialogProps<TCard, TDevice, TUser>) {
   const isCreate = !card?.id;
   const { t } = useTranslation();
 
+  const upsertCardMutation = useUpsertDoorlockCard({
+    onSaved: () => onOpenChange(false),
+  });
+  const upsertFromLogMutation = useUpsertCardFromLog({
+    onSaved: () => onOpenChange(false),
+  });
   const form = useForm({
     defaultValues: initialState(card),
     onSubmit: async ({ value }) => {
-      await onSubmit({
+      const payload = {
         ...value,
         cardData: value.cardData.trim(),
         name: value.name.trim(),
-      });
+      };
+      if (context === 'logs') {
+        await upsertFromLogMutation.mutateAsync({ payload });
+      } else {
+        await upsertCardMutation.mutateAsync({
+          ...(card?.id && { id: card.id }),
+          payload,
+        });
+      }
     },
     validators: {
       onSubmit: isCreate ? createCardSchema : updateCardSchema,

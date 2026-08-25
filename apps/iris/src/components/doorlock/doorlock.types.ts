@@ -39,13 +39,15 @@ export type CardDialogProps<
   card?: TCard | null;
   devices: TDevice[];
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: CardFormValues) => Promise<void>;
+  /** Which mutation flow backs this dialog ('cards' admin page vs 'logs' quick-add). */
+  context: 'cards' | 'logs';
   open: boolean;
   users: TUser[];
 };
 
 export type DeviceLike = {
   apiToken: string;
+  id?: string;
   lastResetReason?: string | null;
   location?: string | null;
   name: string;
@@ -61,6 +63,5 @@ export type DeviceFormValues = {
 export type DeviceDialogProps<TDevice extends DeviceLike = DeviceLike> = {
   device?: TDevice | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: DeviceFormValues) => Promise<void>;
   open: boolean;
 };

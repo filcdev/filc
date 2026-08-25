@@ -11,23 +11,29 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useUpdateDeviceFirmware } from '@/hooks/doorlock-admin';
 
 type OtaUpdateDialogProps = {
+  deviceId?: string | null;
   deviceName?: string | null;
-  isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (url: string) => Promise<void>;
   open: boolean;
 };
 
 export function OtaUpdateDialog({
+  deviceId,
   deviceName,
-  isSubmitting,
   onOpenChange,
-  onSubmit,
   open,
 }: OtaUpdateDialogProps) {
   const [url, setUrl] = useState('');
+
+  const { isPending, mutateAsync } = useUpdateDeviceFirmware({
+    onSaved: () => {
+      setUrl('');
+      onOpenChange(false);
+    },
+  });
 
   const isValid = url.trim().length > 0;
 
@@ -36,8 +42,7 @@ export function OtaUpdateDialog({
     if (!isValid) {
       return;
     }
-    await onSubmit(url.trim());
-    setUrl('');
+    await mutateAsync({ ...(deviceId && { deviceId }), url: url.trim() });
   };
 
   return (
@@ -66,7 +71,7 @@ export function OtaUpdateDialog({
             />
           </div>
           <DialogFooter>
-            <Button disabled={!isValid || isSubmitting} type="submit">
+            <Button disabled={!isValid || isPending} type="submit">
               <Save />
               {deviceName ? 'Update device' : 'Update all devices'}
             </Button>

@@ -33,12 +33,9 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import {
-  type DevicePayload,
   type DoorlockDevice,
   useDeleteDoorlockDevice,
   useDoorlockDevices,
-  useUpdateDeviceFirmware,
-  useUpsertDoorlockDevice,
 } from '@/hooks/doorlock-admin';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
@@ -91,22 +88,7 @@ function DevicesPage() {
   const devicesQuery = useDoorlockDevices();
   const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const upsertMutation = useUpsertDoorlockDevice({
-    onSaved: () => {
-      setDialogOpen(false);
-      setSelectedDevice(null);
-    },
-  });
-
   const deleteMutation = useDeleteDoorlockDevice();
-
-  const otaMutation = useUpdateDeviceFirmware({
-    onSaved: () => {
-      setOtaDialogOpen(false);
-      setOtaDevice(null);
-    },
-  });
-
   const filteredDevices = useMemo(() => {
     const items = devices ?? [];
     const term = search.trim().toLowerCase();
@@ -148,14 +130,6 @@ function DevicesPage() {
       return hoursSinceUpdate < 24;
     }).length;
   }, [devices]);
-
-  const handleSave = async (payload: DevicePayload) => {
-    await upsertMutation.mutateAsync({
-      ...(selectedDevice?.id && { id: selectedDevice.id }),
-      payload,
-    });
-  };
-
   const handleDelete = async (device: DoorlockDevice) => {
     if (!hasWritePermission) {
       return;
@@ -429,7 +403,6 @@ function DevicesPage() {
             setSelectedDevice(null);
           }
         }}
-        onSubmit={handleSave}
         open={dialogOpen}
       />
 
@@ -446,19 +419,13 @@ function DevicesPage() {
       />
 
       <OtaUpdateDialog
+        deviceId={otaDevice?.id ?? null}
         deviceName={otaDevice?.name}
-        isSubmitting={otaMutation.isPending}
         onOpenChange={(open) => {
           setOtaDialogOpen(open);
           if (!open) {
             setOtaDevice(null);
           }
-        }}
-        onSubmit={async (url) => {
-          await otaMutation.mutateAsync({
-            ...(otaDevice?.id && { deviceId: otaDevice.id }),
-            url,
-          });
         }}
         open={otaDialogOpen}
       />
