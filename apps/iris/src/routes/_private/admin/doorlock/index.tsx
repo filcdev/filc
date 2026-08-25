@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { createFileRoute } from '@tanstack/react-router';
 import type { InferResponseType } from 'hono/client';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
@@ -18,7 +20,7 @@ type DoorlockStatsOverview = NonNullable<StatsResponse['data']>['stats'];
 
 export const Route = createFileRoute('/_private/admin/doorlock/')({
   component: () => (
-    <PermissionGuard permission="doorlock:stats:read">
+    <PermissionGuard permission={permissions.doorlockStatsRead}>
       <DoorlockDashboard />
     </PermissionGuard>
   ),

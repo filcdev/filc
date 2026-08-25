@@ -46,7 +46,7 @@ type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
 
 export const Route = createFileRoute('/_private/admin/news/system-messages')({
   component: () => (
-    <PermissionGuard permission="system-messages:manage">
+    <PermissionGuard permission={permissions.systemMessagesManage}>
       <SystemMessagesPage />
     </PermissionGuard>
   ),

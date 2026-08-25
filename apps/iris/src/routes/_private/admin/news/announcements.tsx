@@ -44,7 +44,7 @@ type AnnouncementItem = NonNullable<AnnouncementApiResponse['data']>[number];
 
 export const Route = createFileRoute('/_private/admin/news/announcements')({
   component: () => (
-    <PermissionGuard permission="announcements:create">
+    <PermissionGuard permission={permissions.announcementsCreate}>
       <AnnouncementsPage />
     </PermissionGuard>
   ),

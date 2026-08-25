@@ -101,7 +101,7 @@ const buildButtonMeta = (log: DoorlockLogEntry): ButtonMeta => {
 
 export const Route = createFileRoute('/_private/admin/doorlock/logs')({
   component: () => (
-    <PermissionGuard permission="doorlock:logs:read">
+    <PermissionGuard permission={permissions.doorlockLogsRead}>
       <LogsPage />
     </PermissionGuard>
   ),

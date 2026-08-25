@@ -1,3 +1,5 @@
+import { permissions } from '@filcdev/api/permissions';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -44,7 +46,7 @@ import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/_private/admin/timetable/manage')({
   component: () => (
-    <PermissionGuard permission="import:timetable">
+    <PermissionGuard permission={permissions.importTimetable}>
       <TimetableManagePage />
     </PermissionGuard>
   ),

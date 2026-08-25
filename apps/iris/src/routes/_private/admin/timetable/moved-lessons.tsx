@@ -76,7 +76,7 @@ type EnrichedLesson = Omit<
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
     component: () => (
-      <PermissionGuard permission="movedLesson:create">
+      <PermissionGuard permission={permissions.movedLessonCreate}>
         <MovedLessonsPage />
       </PermissionGuard>
     ),

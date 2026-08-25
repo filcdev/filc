@@ -57,7 +57,7 @@ type Teacher = NonNullable<SubstitutionItem['teacher']>;
 export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
   {
     component: () => (
-      <PermissionGuard permission="substitution:create">
+      <PermissionGuard permission={permissions.substitutionCreate}>
         <SubstitutionsPage />
       </PermissionGuard>
     ),

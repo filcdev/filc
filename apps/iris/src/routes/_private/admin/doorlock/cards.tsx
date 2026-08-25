@@ -50,7 +50,7 @@ type DoorlockUser = NonNullable<UsersResponse['data']>['users'][number];
 
 export const Route = createFileRoute('/_private/admin/doorlock/cards')({
   component: () => (
-    <PermissionGuard permission="doorlock:cards:read">
+    <PermissionGuard permission={permissions.doorlockCardsRead}>
       <CardsPage />
     </PermissionGuard>
   ),

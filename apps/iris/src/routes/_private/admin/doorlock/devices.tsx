@@ -46,7 +46,7 @@ type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
 
 export const Route = createFileRoute('/_private/admin/doorlock/devices')({
   component: () => (
-    <PermissionGuard permission="doorlock:devices:read">
+    <PermissionGuard permission={permissions.doorlockDevicesRead}>
       <DevicesPage />
     </PermissionGuard>
   ),
