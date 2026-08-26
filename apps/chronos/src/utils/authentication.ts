@@ -16,6 +16,7 @@ const authOptions = {
     accountLinking: {
       allowUnlinkingAll: true,
       enabled: true,
+      trustedProviders: ['microsoft'],
       updateUserInfoOnLink: true,
     },
   },
