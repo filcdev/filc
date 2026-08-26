@@ -1,3 +1,9 @@
+import {
+  cohortIdParamsSchema,
+  movedLessonIdParamsSchema,
+  timetableIdParamsSchema,
+  updateSchema,
+} from '@filcdev/api/domains/timetable/moved-lesson';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -255,7 +261,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  zValidator('param', z.object({ timetableId: z.uuid() })),
+  zValidator('param', timetableIdParamsSchema),
   async (c) => {
     const { timetableId } = c.req.valid('param');
 
@@ -324,7 +330,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  zValidator('param', z.object({ cohortId: z.uuid() })),
+  zValidator('param', cohortIdParamsSchema),
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
@@ -389,7 +395,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  zValidator('param', z.object({ cohortId: z.uuid() })),
+  zValidator('param', cohortIdParamsSchema),
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
@@ -524,14 +530,6 @@ export const createMovedLesson = timetableFactory.createHandlers(
   }
 );
 
-const updateSchema = z.object({
-  date: z.coerce.date(),
-  lessonIds: z.uuid().array(),
-  room: z.string(),
-  startingDay: z.uuid(),
-  startingPeriod: z.uuid(),
-});
-
 export const updateMovedLesson = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('MovedLesson', '@unit MovedLesson', true),
@@ -566,7 +564,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   ...authRouter('movedLesson:update'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', movedLessonIdParamsSchema),
   zValidator('json', updateSchema),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -655,7 +653,7 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   ...authRouter('movedLesson:delete'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', movedLessonIdParamsSchema),
   async (c) => {
     const { id } = c.req.valid('param');
 

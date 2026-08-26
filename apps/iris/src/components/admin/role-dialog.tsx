@@ -1,10 +1,7 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type InferResponseType, parseResponse } from 'hono/client';
 import { CheckIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,13 +21,14 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  type Role,
+  useCreateRole,
+  usePermissions,
+  useUpdateRole,
+} from '@/hooks/admin-users';
 import { cn } from '@/utils';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
-
-type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
-type Role = NonNullable<RolesApiResponse['data']>['roles'][number];
 
 type RoleDialogProps = BaseDialogProps & {
   editingRole: Role | null;
@@ -47,18 +45,7 @@ export function RoleDialog({
   const isEditing = editingRole !== null;
   const [permissionInput, setPermissionInput] = useState('');
   const [permissions, setPermissions] = useState<string[]>([]);
-  const queryClient = useQueryClient();
-
-  const permissionsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.roles.permissions.$get());
-      if (!res.success) {
-        throw new Error('Failed to load permissions');
-      }
-      return res.data.permissions as string[];
-    },
-    queryKey: queryKeys.permissions(),
-  });
+  const permissionsQuery = usePermissions();
 
   const knownPermissions = permissionsQuery.data ?? [];
 
@@ -66,9 +53,9 @@ export function RoleDialog({
     defaultValues: { name: editingRole?.name ?? '' },
     onSubmit: ({ value }) => {
       if (isEditing) {
-        updateMutation.mutate({ permissions });
+        updateRole.mutate({ name: editingRole.name, permissions });
       } else {
-        createMutation.mutate({ name: value.name, permissions });
+        createRole.mutate({ name: value.name, permissions });
       }
     },
   });
@@ -81,52 +68,8 @@ export function RoleDialog({
     }
   }, [open, editingRole, form.reset]);
 
-  const createMutation = useMutation({
-    mutationFn: async ({
-      name,
-      permissions: perms,
-    }: {
-      name: string;
-      permissions: string[];
-    }) => {
-      const res = await api.roles.index.$post({
-        json: { name, permissions: perms },
-      });
-      if (!res.ok) {
-        throw new Error('Failed to create role');
-      }
-      return res.json();
-    },
-    onError: () => {
-      toast.error(t('roles.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('roles.createSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
-      onOpenChange(false);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ permissions: perms }: { permissions: string[] }) => {
-      const res = await api.roles[':name'].$patch({
-        json: { permissions: perms },
-        param: { name: editingRole?.name ?? '' },
-      });
-      if (!res.ok) {
-        throw new Error('Failed to update role');
-      }
-      return res.json();
-    },
-    onError: () => {
-      toast.error(t('roles.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('roles.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
-      onOpenChange(false);
-    },
-  });
+  const createRole = useCreateRole({ onSaved: () => onOpenChange(false) });
+  const updateRole = useUpdateRole({ onSaved: () => onOpenChange(false) });
 
   const handleAddPermission = () => {
     const trimmed = permissionInput.trim();
@@ -147,7 +90,7 @@ export function RoleDialog({
     }
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createRole.isPending || updateRole.isPending;
 
   const nameValue = useStore(form.store, (state) => state.values.name);
   const isNameValid = ROLE_NAME_REGEX.test(nameValue) && nameValue.length > 0;

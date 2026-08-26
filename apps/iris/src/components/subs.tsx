@@ -1,4 +1,3 @@
-import type { InferResponseType } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,8 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import type { MovedLessonItem } from '@/hooks/moved-lessons';
+import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import type { api } from '@/utils/hc';
 
 type TimetableProps = {
   data: Subs[];
@@ -22,17 +22,7 @@ type TimetableProps = {
   date?: string;
 };
 
-type SubstitutionsResponse = InferResponseType<
-  typeof api.timetable.substitutions.$get
->;
-
-type Subs = NonNullable<SubstitutionsResponse['data']>[number];
 type Lesson = NonNullable<Subs['lessons'][number]>;
-
-type MovedLessonApiResponse = InferResponseType<
-  typeof api.timetable.movedLessons.$get
->;
-type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
 
 function LessonRow({
   lesson,

@@ -22,7 +22,7 @@ const authOptions = {
   advanced: {
     cookiePrefix: 'filc',
     database: {
-      generateId: false,
+      generateId: 'uuid',
     },
   },
   baseURL: env.baseUrl,
@@ -79,6 +79,7 @@ const authOptions = {
         type: 'string',
       },
       roles: {
+        defaultValue: ['user'],
         input: false,
         required: true,
         type: 'string[]',

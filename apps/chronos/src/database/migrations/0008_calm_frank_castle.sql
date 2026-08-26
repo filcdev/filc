@@ -1,1 +1,1 @@
-ALTER TABLE "substitution" ADD COLUMN "comment" text;
+ALTER TABLE "substitution" ADD COLUMN IF NOT EXISTS "comment" text;

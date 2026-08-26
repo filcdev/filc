@@ -1,6 +1,11 @@
 import { useForm } from '@tanstack/react-form';
 import { RotateCw, Save } from 'lucide-react';
 import { useEffect } from 'react';
+import type {
+  DeviceDialogProps,
+  DeviceFormValues,
+  DeviceLike,
+} from '@/components/doorlock/doorlock.types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,12 +16,8 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { useUpsertDoorlockDevice } from '@/hooks/doorlock-admin';
 import { deviceSchema } from '@/utils/form-schemas';
-import type {
-  DeviceDialogProps,
-  DeviceFormValues,
-  DeviceLike,
-} from './doorlock.types';
 
 const initialState = (device?: DeviceLike | null): DeviceFormValues => ({
   apiToken: device?.apiToken ?? crypto.randomUUID(),
@@ -28,17 +29,22 @@ const initialState = (device?: DeviceLike | null): DeviceFormValues => ({
 export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
   device,
   onOpenChange,
-  onSubmit,
   open,
 }: DeviceDialogProps<TDevice>) {
+  const upsertMutation = useUpsertDoorlockDevice({
+    onSaved: () => onOpenChange(false),
+  });
   const form = useForm({
     defaultValues: initialState(device),
     onSubmit: async ({ value }) => {
-      await onSubmit({
-        ...value,
-        lastResetReason: value.lastResetReason?.trim() || null,
-        location: value.location?.trim() || null,
-        name: value.name.trim(),
+      await upsertMutation.mutateAsync({
+        ...(device?.id && { id: device.id }),
+        payload: {
+          ...value,
+          lastResetReason: value.lastResetReason?.trim() || null,
+          location: value.location?.trim() || null,
+          name: value.name.trim(),
+        },
       });
     },
     validators: { onSubmit: deviceSchema },

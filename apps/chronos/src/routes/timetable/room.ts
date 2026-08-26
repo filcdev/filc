@@ -1,3 +1,4 @@
+import { getAvailableClassroomsQuerySchema } from '@filcdev/api/domains/timetable/room';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq, notInArray, sql } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -26,13 +27,6 @@ const getAvailableClassroomsResponseSchema = z.object({
     buildingId: z.string().nullable(),
   }).array(),
   success: z.boolean(),
-});
-
-const getAvailableClassroomsQuerySchema = z.object({
-  date: z.coerce.date(),
-  startingDay: z.string().uuid(),
-  startingPeriod: z.string().uuid(),
-  timetableId: z.string().uuid().optional(),
 });
 
 export const getClassrooms = timetableFactory.createHandlers(

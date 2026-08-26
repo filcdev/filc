@@ -1,3 +1,8 @@
+import {
+  createCardSchema,
+  updateCardSchema,
+} from '@filcdev/api/domains/doorlock/cards';
+import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
 import { zValidator } from '@hono/zod-validator';
 import { eq, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -38,14 +43,14 @@ export const cardWithRelationsSchema = cardSelectSchema.extend({
   owner: userSummarySchema.nullable().optional(),
 });
 
-const cardsResponseSchema = z.object({
+export const cardsResponseSchema = z.object({
   data: z.object({
     cards: z.array(cardWithRelationsSchema),
   }),
   success: z.literal(true),
 });
 
-const cardResponseSchema = z.object({
+export const cardResponseSchema = z.object({
   data: z.object({
     card: cardWithRelationsSchema,
   }),
@@ -59,21 +64,6 @@ const usersResponseSchema = z.object({
   success: z.literal(true),
 });
 
-const baseCardPayloadSchema = z.object({
-  authorizedDeviceIds: z.array(z.uuid()).default([]),
-  enabled: z.boolean().default(true),
-  frozen: z.boolean().default(false),
-  name: z.string().min(1, 'Card name is required'),
-});
-
-const createCardSchema = baseCardPayloadSchema.extend({
-  cardData: z.string().min(1, 'Card UID is required'),
-  userId: z.uuid().nullable(),
-});
-
-const updateCardSchema = baseCardPayloadSchema.extend({
-  userId: z.uuid().nullable(),
-});
 const { schema: createCardRequestSchema } =
   await resolver(createCardSchema).toOpenAPISchema();
 const { schema: updateCardRequestSchema } =
@@ -246,7 +236,7 @@ export const updateCardRoute = doorlockFactory.createHandlers(
   }),
   ...authRouter('doorlock:cards:write'),
   zValidator('json', updateCardSchema),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const { id: cardId } = c.req.valid('param');
     const payload = c.req.valid('json');
@@ -295,7 +285,7 @@ export const deleteCardRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   ...authRouter('doorlock:cards:write'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const { id: cardId } = c.req.valid('param');
 

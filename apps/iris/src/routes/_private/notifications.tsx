@@ -1,10 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { parseResponse } from 'hono/client';
 import { MailCheck, MailX } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,24 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useApiMutation } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type NotificationListResult = {
-  data: NotificationItem[];
-  success: boolean;
-  total?: number;
-};
-
-type NotificationItem = {
-  id: string;
-  type: string;
-  title: string;
-  content: string;
-  read: boolean;
-  createdAt: string;
-};
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+} from '@/hooks/notifications';
 
 const NOTIFICATION_TYPES = [
   'substitution',
@@ -58,7 +42,6 @@ export const Route = createFileRoute('/_private/notifications')({
 
 function NotificationsPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [typeFilter, setTypeFilter] = useState('all');
   const [unreadFilter, setUnreadFilter] = useState('all');
@@ -80,61 +63,23 @@ function NotificationsPage() {
   ];
   const pageSize = 20;
 
-  const { data, isLoading, isError } = useQuery<NotificationListResult>({
-    queryFn: () => {
-      const query: Record<string, string | undefined> = {
-        limit: String(pageSize),
-        offset: String(page * pageSize),
-      };
-      if (typeFilter !== 'all') {
-        query.type = typeFilter;
-      }
-      if (unreadFilter === 'true') {
-        query.unread = 'true';
-      } else if (unreadFilter === 'false') {
-        query.unread = 'false';
-      }
-      if (dateFrom) {
-        query.dateFrom = dateFrom;
-      }
-      if (dateTo) {
-        query.dateTo = dateTo;
-      }
-      return parseResponse(
-        api.notifications.index.$get({ query })
-      ) as unknown as NotificationListResult;
-    },
-    queryKey: [
-      ...queryKeys.notifications.list(
-        typeFilter,
-        unreadFilter,
-        page,
-        dateFrom,
-        dateTo
-      ),
-      pageSize,
-    ],
+  const notificationsQuery = useNotifications({
+    dateFrom,
+    dateTo,
+    page,
+    pageSize,
+    type: typeFilter,
+    unread: unreadFilter,
   });
+  const { data, isLoading, isError } = {
+    data: notificationsQuery.data,
+    isError: notificationsQuery.isError,
+    isLoading: notificationsQuery.isLoading,
+  };
 
-  const markReadMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.notifications[':id'].read.$patch({ param: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-    },
-  });
+  const markReadMutation = useMarkNotificationRead();
 
-  const markAllReadMutation = useApiMutation({
-    mutationFn: () => api.notifications['read-all'].$patch(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-      toast.success(t('notifications.history.markRead'));
-    },
-  });
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
   const handleSelectChange = (
     setter: (v: string) => void

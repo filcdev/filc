@@ -1,6 +1,6 @@
-import type { InferRequestType, InferResponseType } from 'hono/client';
+import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,27 +14,17 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { api } from '@/utils/hc';
+import {
+  type SystemMessageItem,
+  type SystemMessagePayload,
+  useCohorts,
+  useCreateSystemMessage,
+  useUpdateSystemMessage,
+} from '@/hooks/news';
+import type { BaseDialogProps } from './admin.types';
 
-type SystemMessageApiResponse = InferResponseType<
-  (typeof api.news)['system-messages']['$get']
->;
-type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
-
-type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
-type Cohort = NonNullable<CohortApiResponse['data']>[number];
-
-type SystemMessagePayload = InferRequestType<
-  (typeof api.news)['system-messages']['$post']
->['json'];
-
-type SystemMessagesDialogProps = {
-  cohorts: Cohort[];
-  isSubmitting: boolean;
+type SystemMessagesDialogProps = BaseDialogProps & {
   item?: SystemMessageItem | null;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: SystemMessagePayload) => Promise<void>;
-  open: boolean;
 };
 
 const startOfDay = (d: Date): Date => {
@@ -49,7 +39,17 @@ const endOfDay = (d: Date): Date => {
   return out;
 };
 
-const initialState = (item?: SystemMessageItem | null) => {
+type SystemMessageFormValues = {
+  cohortIds: string[];
+  content: Array<{ content: string; type: string }>;
+  title: string;
+  validFrom: Date;
+  validUntil: Date;
+};
+
+const initialState = (
+  item?: SystemMessageItem | null
+): SystemMessageFormValues => {
   const defaultContent: Array<{ content: string; type: string }> = [
     {
       content: '',
@@ -76,29 +76,50 @@ const initialState = (item?: SystemMessageItem | null) => {
 };
 
 export function SystemMessagesDialog({
-  cohorts,
-  isSubmitting,
   item,
   onOpenChange,
-  onSubmit,
   open,
 }: SystemMessagesDialogProps) {
   const { t } = useTranslation();
-  const [formState, setFormState] = useState(initialState(item));
+  const close = () => onOpenChange(false);
+  const createMutation = useCreateSystemMessage({ onSaved: close });
+  const updateMutation = useUpdateSystemMessage({ onSaved: close });
+  const { data: cohorts = [] } = useCohorts(open);
+
+  const form = useForm({
+    defaultValues: initialState(item),
+    onSubmit: async ({ value }) => {
+      const payload = {
+        cohortIds: value.cohortIds,
+        content: value.content,
+        title: value.title,
+        validFrom: value.validFrom,
+        validUntil: value.validUntil,
+      } as SystemMessagePayload;
+      if (item) {
+        await updateMutation.mutateAsync({ id: item.id, payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+    },
+  });
 
   useEffect(() => {
-    setFormState(initialState(item));
-  }, [item]);
+    form.reset(initialState(item));
+  }, [item, form.reset]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await onSubmit({
-      cohortIds: formState.cohortIds,
-      content: formState.content,
-      title: formState.title,
-      validFrom: formState.validFrom,
-      validUntil: formState.validUntil,
-    });
+  const cohortIds = useStore(form.store, (state) => state.values.cohortIds);
+
+  const toggleCohort = (cohortId: string, checked: boolean) => {
+    const current = form.getFieldValue('cohortIds');
+    if (checked) {
+      form.setFieldValue('cohortIds', [...current, cohortId]);
+    } else {
+      form.setFieldValue(
+        'cohortIds',
+        current.filter((id) => id !== cohortId)
+      );
+    }
   };
 
   return (
@@ -114,63 +135,77 @@ export function SystemMessagesDialog({
           <form
             className="mt-4 space-y-4"
             id="systemMessageForm"
-            onSubmit={handleSubmit}
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
           >
-            <div className="space-y-2">
-              <Label htmlFor="title">{t('systemMessages.title')}</Label>
-              <Input
-                id="title"
-                onChange={(e) =>
-                  setFormState((prev) => ({ ...prev, title: e.target.value }))
-                }
-                placeholder={t('systemMessages.titlePlaceholder')}
-                value={formState.title}
-              />
-            </div>
+            <form.Field name="title">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor={field.name}>
+                    {t('systemMessages.title')}
+                  </Label>
+                  <Input
+                    id={field.name}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder={t('systemMessages.titlePlaceholder')}
+                    value={field.state.value}
+                  />
+                </div>
+              )}
+            </form.Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="content">{t('systemMessages.content')}</Label>
-              <textarea
-                className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                id="content"
-                onChange={(e) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    content: [{ content: e.target.value, type: 'text' }],
-                  }))
-                }
-                placeholder={t('systemMessages.contentPlaceholder')}
-                value={formState.content[0]?.content || ''}
-              />
-            </div>
+            <form.Field name="content">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="content">{t('systemMessages.content')}</Label>
+                  <textarea
+                    className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                    id="content"
+                    onChange={(e) =>
+                      field.handleChange([
+                        { content: e.target.value, type: 'text' },
+                      ])
+                    }
+                    placeholder={t('systemMessages.contentPlaceholder')}
+                    value={field.state.value[0]?.content || ''}
+                  />
+                </div>
+              )}
+            </form.Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="validFrom">{t('systemMessages.validFrom')}</Label>
-              <DatePicker
-                date={formState.validFrom}
-                onDateChange={(date) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    validFrom: startOfDay(date ?? new Date()),
-                  }))
-                }
-              />
-            </div>
+            <form.Field name="validFrom">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="validFrom">
+                    {t('systemMessages.validFrom')}
+                  </Label>
+                  <DatePicker
+                    date={field.state.value}
+                    onDateChange={(date) =>
+                      field.handleChange(startOfDay(date ?? new Date()))
+                    }
+                  />
+                </div>
+              )}
+            </form.Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="validUntil">
-                {t('systemMessages.validUntil')}
-              </Label>
-              <DatePicker
-                date={formState.validUntil}
-                onDateChange={(date) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    validUntil: endOfDay(date ?? new Date()),
-                  }))
-                }
-              />
-            </div>
+            <form.Field name="validUntil">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="validUntil">
+                    {t('systemMessages.validUntil')}
+                  </Label>
+                  <DatePicker
+                    date={field.state.value}
+                    onDateChange={(date) =>
+                      field.handleChange(endOfDay(date ?? new Date()))
+                    }
+                  />
+                </div>
+              )}
+            </form.Field>
 
             <div className="space-y-2">
               <Label>{t('systemMessages.cohorts')}</Label>
@@ -178,23 +213,11 @@ export function SystemMessagesDialog({
                 {cohorts.map((cohort) => (
                   <div className="flex items-center gap-2" key={cohort.id}>
                     <Checkbox
-                      checked={formState.cohortIds.includes(cohort.id)}
+                      checked={cohortIds.includes(cohort.id)}
                       id={`cohort-${cohort.id}`}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFormState((prev) => ({
-                            ...prev,
-                            cohortIds: [...prev.cohortIds, cohort.id],
-                          }));
-                        } else {
-                          setFormState((prev) => ({
-                            ...prev,
-                            cohortIds: prev.cohortIds.filter(
-                              (id) => id !== cohort.id
-                            ),
-                          }));
-                        }
-                      }}
+                      onCheckedChange={(checked) =>
+                        toggleCohort(cohort.id, Boolean(checked))
+                      }
                     />
                     <label
                       className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -218,7 +241,11 @@ export function SystemMessagesDialog({
             {t('common.cancel')}
           </Button>
           <Button
-            disabled={isSubmitting}
+            disabled={
+              !form.state.canSubmit ||
+              createMutation.isPending ||
+              updateMutation.isPending
+            }
             form="systemMessageForm"
             type="submit"
           >

@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { Bell, MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,69 +13,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useApiMutation, useApiQuery } from '@/utils/api';
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useRecentNotifications,
+  useUnreadNotificationCount,
+} from '@/hooks/notifications';
 import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type NotificationItem = {
-  id: string;
-  type: string;
-  title: string;
-  content: string;
-  read: boolean;
-  createdAt: string;
-  metadata: Record<string, unknown> | null;
-};
-
-type UnreadCountData = { count: number };
 
 export function NotificationBell() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
   const { data: session } = authClient.useSession();
   const userId = session?.session.userId;
 
-  const { data: unreadData } = useApiQuery<UnreadCountData>(
-    () => api.notifications['unread-count'].$get(),
-    {
-      enabled: !!userId,
-      queryKey: queryKeys.notifications.unreadCount(userId ?? ''),
-      refetchInterval: 30_000,
-    }
-  );
+  const { data: unreadData } = useUnreadNotificationCount(userId);
 
-  const { data: recentData } = useApiQuery<NotificationItem[]>(
-    () =>
-      api.notifications.index.$get({
-        query: { limit: '5', offset: '0', unread: 'true' },
-      }),
-    {
-      enabled: !!userId,
-      queryKey: queryKeys.notifications.recent(userId ?? ''),
-      refetchInterval: 30_000,
-    }
-  );
+  const { data: recentData } = useRecentNotifications(userId);
 
-  const markAsReadMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.notifications[':id'].read.$patch({ param: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-    },
-  });
+  const markAsReadMutation = useMarkNotificationRead();
 
-  const markAllAsReadMutation = useApiMutation({
-    mutationFn: () => api.notifications['read-all'].$patch(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-    },
-  });
+  const markAllAsReadMutation = useMarkAllNotificationsRead();
 
   const unreadCount = unreadData?.count ?? 0;
   const recent = recentData ?? [];

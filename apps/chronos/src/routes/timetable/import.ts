@@ -1,3 +1,7 @@
+import {
+  importResponseSchema,
+  importSchema,
+} from '@filcdev/api/domains/timetable/import';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { XMLParser } from 'fast-xml-parser';
@@ -14,17 +18,6 @@ import { importTimetableXML } from '#utils/timetable/imports';
 import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
 const logger = getLogger(['chronos', 'timetable']);
-
-const importResponseSchema = z.object({
-  success: z.literal(true),
-});
-
-const importSchema = z.object({
-  name: z.string(),
-  omanXml: z.file(),
-  validFrom: z.coerce.date(),
-  validTo: z.coerce.date().optional(),
-});
 
 export const importRoute = timetableFactory.createHandlers(
   describeRoute({

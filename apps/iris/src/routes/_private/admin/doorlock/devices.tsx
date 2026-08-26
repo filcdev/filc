@@ -1,7 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { permissions } from '@filcdev/api/permissions';
+
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import type { InferRequestType, InferResponseType } from 'hono/client';
 import {
   ChartArea,
   DoorOpen,
@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/stat-card';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
@@ -33,18 +32,17 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
-import { useApiMutation, useApiQuery } from '@/utils/api';
+import {
+  type DoorlockDevice,
+  useDeleteDoorlockDevice,
+  useDoorlockDevices,
+} from '@/hooks/doorlock-admin';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type DevicesResponse = InferResponseType<typeof api.doorlock.devices.$get>;
-type DoorlockDevice = NonNullable<DevicesResponse['data']>['devices'][number];
 
 export const Route = createFileRoute('/_private/admin/doorlock/devices')({
   component: () => (
-    <PermissionGuard permission="doorlock:devices:read">
+    <PermissionGuard permission={permissions.doorlockDevicesRead}>
       <DevicesPage />
     </PermissionGuard>
   ),
@@ -65,7 +63,6 @@ function getAriaSortState(
 
 function DevicesPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<DeviceSortColumn | null>(null);
@@ -83,87 +80,15 @@ function DevicesPage() {
 
   const hasWritePermission = useMemo(() => {
     const perms = session?.user?.permissions ?? [];
-    return perms.includes('*') || perms.includes('doorlock:devices:write');
+    return (
+      perms.includes('*') || perms.includes(permissions.doorlockDevicesWrite)
+    );
   }, [session?.user?.permissions]);
 
-  const devicesQuery = useApiQuery<NonNullable<DevicesResponse['data']>>(
-    () => api.doorlock.devices.$get(),
-    {
-      queryKey: queryKeys.doorlock.devices(),
-    }
-  );
+  const devicesQuery = useDoorlockDevices();
   const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
 
-  const $upsertDevice = api.doorlock.devices.$post;
-  const upsertMutation = useApiMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id?: string;
-      payload: InferRequestType<typeof $upsertDevice>['json'];
-    }) => {
-      if (id) {
-        return api.doorlock.devices[':id'].$put({
-          json: payload,
-          param: { id },
-        });
-      }
-      return api.doorlock.devices.$post({ json: payload });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockDevices.saveError'));
-    },
-    onSuccess: (_res, variables) => {
-      toast.success(
-        variables.id
-          ? t('doorlockDevices.updateSuccess')
-          : t('doorlockDevices.createSuccess')
-      );
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
-      setDialogOpen(false);
-      setSelectedDevice(null);
-    },
-  });
-
-  const deleteMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.doorlock.devices[':id'].$delete({ param: { id } }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockDevices.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('doorlockDevices.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.devices() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
-    },
-  });
-
-  const otaMutation = useApiMutation({
-    mutationFn: ({ deviceId, url }: { deviceId?: string; url: string }) => {
-      if (deviceId) {
-        return api.doorlock.devices[':id'].update.$post({
-          json: { url },
-          param: { id: deviceId },
-        });
-      }
-      return api.doorlock.devices.update.$post({ json: { url } });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockDevices.saveError'));
-    },
-    onSuccess: (_res, variables) => {
-      toast.success(
-        variables.deviceId
-          ? t('doorlockDevices.updateSuccess')
-          : t('doorlockDevices.updateSuccess')
-      );
-      setOtaDialogOpen(false);
-      setOtaDevice(null);
-    },
-  });
-
+  const deleteMutation = useDeleteDoorlockDevice();
   const filteredDevices = useMemo(() => {
     const items = devices ?? [];
     const term = search.trim().toLowerCase();
@@ -205,16 +130,6 @@ function DevicesPage() {
       return hoursSinceUpdate < 24;
     }).length;
   }, [devices]);
-
-  const handleSave = async (
-    payload: InferRequestType<typeof $upsertDevice>['json']
-  ) => {
-    await upsertMutation.mutateAsync({
-      ...(selectedDevice?.id && { id: selectedDevice.id }),
-      payload,
-    });
-  };
-
   const handleDelete = async (device: DoorlockDevice) => {
     if (!hasWritePermission) {
       return;
@@ -488,7 +403,6 @@ function DevicesPage() {
             setSelectedDevice(null);
           }
         }}
-        onSubmit={handleSave}
         open={dialogOpen}
       />
 
@@ -505,19 +419,13 @@ function DevicesPage() {
       />
 
       <OtaUpdateDialog
+        deviceId={otaDevice?.id ?? null}
         deviceName={otaDevice?.name}
-        isSubmitting={otaMutation.isPending}
         onOpenChange={(open) => {
           setOtaDialogOpen(open);
           if (!open) {
             setOtaDevice(null);
           }
-        }}
-        onSubmit={async (url) => {
-          await otaMutation.mutateAsync({
-            ...(otaDevice?.id && { deviceId: otaDevice.id }),
-            url,
-          });
         }}
         open={otaDialogOpen}
       />

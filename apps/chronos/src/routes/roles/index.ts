@@ -1,8 +1,12 @@
+import {
+  createRoleSchema,
+  roleNameParamsSchema,
+  updateRoleSchema,
+} from '@filcdev/api/domains/roles';
 import { zValidator } from '@hono/zod-validator';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { authRouter } from '#middleware/auth';
 import { rolesFactory } from '#routes/roles/_factory';
 import { rbac } from '#utils/authorization';
@@ -45,18 +49,6 @@ export const listRoles = rolesFactory.createHandlers(
   }
 );
 
-const createRoleSchema = z.object({
-  name: z
-    .string()
-    .min(1)
-    .max(50)
-    .regex(
-      /^[a-z0-9_-]+$/,
-      'Role name must be lowercase alphanumeric with dashes or underscores'
-    ),
-  permissions: z.array(z.string()).default([]),
-});
-
 export const createRole = rolesFactory.createHandlers(
   describeRoute({
     description: 'Create a new role',
@@ -92,10 +84,6 @@ export const createRole = rolesFactory.createHandlers(
   }
 );
 
-const updateRoleSchema = z.object({
-  permissions: z.array(z.string()),
-});
-
 export const updateRole = rolesFactory.createHandlers(
   describeRoute({
     description: 'Update permissions for a role',
@@ -108,7 +96,7 @@ export const updateRole = rolesFactory.createHandlers(
   }),
   ...authRouter('roles:manage'),
   zValidator('json', updateRoleSchema),
-  zValidator('param', z.object({ name: z.string() })),
+  zValidator('param', roleNameParamsSchema),
   async (c) => {
     const { name: roleName } = c.req.valid('param');
     if (!roleName) {
@@ -142,7 +130,7 @@ export const deleteRole = rolesFactory.createHandlers(
     tags: ['Roles'],
   }),
   ...authRouter('roles:manage'),
-  zValidator('param', z.object({ name: z.string() })),
+  zValidator('param', roleNameParamsSchema),
   async (c) => {
     const { name: roleName } = c.req.valid('param');
 

@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/style/noNestedTernary: b-but muh nested ternarey */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { checkbox, confirm } from '@inquirer/prompts';
@@ -496,6 +497,7 @@ const seedUsers = async (): Promise<
   ];
 
   const usersToCreate = sampleUsers.map((u) => ({
+    createdAt: new Date(),
     email: u.email,
     emailVerified: true,
     id: crypto.randomUUID(),

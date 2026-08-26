@@ -1,15 +1,8 @@
+import { pingResponseSchema } from '@filcdev/api/domains/ping';
 import { describeRoute, resolver } from 'hono-openapi';
-import z from 'zod';
 import { pingFactory } from '#routes/ping/_factory';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
-
-const pingResponseSchema = z.object({
-  data: z.object({
-    message: z.string(),
-  }),
-  success: z.boolean(),
-});
 
 export const ping = pingFactory.createHandlers(
   describeRoute({

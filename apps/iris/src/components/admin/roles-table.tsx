@@ -1,8 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { InferResponseType } from 'hono/client';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,12 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { type Role, useDeleteRole } from '@/hooks/admin-users';
 import { RoleDialog } from './role-dialog';
-
-type RolesApiResponse = InferResponseType<typeof api.roles.index.$get>;
-type Role = NonNullable<RolesApiResponse['data']>['roles'][number];
 
 type RolesTableProps = {
   roles: Role[];
@@ -26,28 +19,9 @@ type RolesTableProps = {
 
 export function RolesTable({ roles }: RolesTableProps) {
   const { t } = useTranslation();
+  const deleteRole = useDeleteRole();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const queryClient = useQueryClient();
-
-  const deleteMutation = useMutation({
-    mutationFn: async (roleName: string) => {
-      const res = await api.roles[':name'].$delete({
-        param: { name: roleName },
-      });
-      if (!res.ok) {
-        throw new Error('Failed to delete role');
-      }
-      return res.json();
-    },
-    onError: () => {
-      toast.error(t('roles.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('roles.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.roles() });
-    },
-  });
 
   return (
     <div className="space-y-4">
@@ -99,8 +73,8 @@ export function RolesTable({ roles }: RolesTableProps) {
                       {t('roles.edit')}
                     </Button>
                     <Button
-                      disabled={deleteMutation.isPending}
-                      onClick={() => deleteMutation.mutate(role.name)}
+                      disabled={deleteRole.isPending}
+                      onClick={() => deleteRole.mutate(role.name)}
                       size="sm"
                       variant="destructive"
                     >

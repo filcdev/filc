@@ -1,3 +1,5 @@
+import type { ErrorCode } from '@filcdev/api/errors';
+
 import type { auth } from '#utils/authentication';
 
 export type Context = {
@@ -18,10 +20,10 @@ export type AuthenticatedContext = {
 export type SuccessResponse<T = undefined> = [T] extends [undefined]
   ? { success: true; data?: T }
   : { success: true; data: T };
-
 export type ErrorResponse = {
-  success: false;
+  cause?: unknown;
+  code: ErrorCode;
   data?: unknown;
   error: string;
-  cause?: unknown;
+  success: false;
 };

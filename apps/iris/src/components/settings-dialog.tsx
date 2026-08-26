@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
@@ -24,26 +23,14 @@ import {
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import { useApiMutation, useApiQuery } from '@/utils/api';
+import {
+  useNotificationSettings,
+  useUpdateNotificationSettings,
+} from '@/hooks/notifications';
+import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
-
-type PreferencesData = {
-  language: string;
-  theme: string;
-  timetableClassColors: Record<string, number>;
-  timetableView: string;
-  notificationPreferences: {
-    substitution: boolean;
-    movedLesson: boolean;
-    announcement: boolean;
-    systemMessage: boolean;
-    blogPost: boolean;
-    doorlockCardUsed: boolean;
-    channelsEnabled: boolean;
-  };
-};
 
 const NOTIFICATION_TYPES = [
   {
@@ -74,9 +61,8 @@ type SettingsDialogProps = {
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { i18n, t } = useTranslation();
   const [, setCookie] = useCookies(['filc.language']);
-  const queryClient = useQueryClient();
-  const { data: session } = authClient.useSession();
   const { setTheme: applyTheme } = useTheme();
+  const { data: session } = authClient.useSession();
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
@@ -96,10 +82,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     isLoading,
     isError,
     isSuccess,
-  } = useApiQuery<PreferencesData>(() => api.notifications.settings.$get(), {
-    enabled: open,
-    queryKey: queryKeys.notifications.settings(),
-  });
+  } = useNotificationSettings(open);
 
   useEffect(() => {
     if (!(isSuccess && settingsData)) {
@@ -125,20 +108,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setSelectedCohortId(session?.user?.cohortId ?? null);
   }, [open, session?.user?.cohortId]);
 
-  const saveMutation = useApiMutation({
-    mutationFn: async () => {
-      const res = await api.notifications.settings.$patch({
-        json: {
-          language,
-          notificationPreferences: prefs,
-          theme,
-          timetableView,
-        },
-      });
-      if (!res) {
-        throw new Error('Failed to save settings');
-      }
-
+  const updateSettingsMutation = useUpdateNotificationSettings({
+    onSaved: () => {
+      applyTheme(theme);
+      onOpenChange(false);
+    },
+    updateCohort: async () => {
       const currentCohortId = session?.user?.cohortId ?? null;
       if (cohortQuery.isSuccess && selectedCohortId !== currentCohortId) {
         try {
@@ -147,28 +122,16 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           throw new Error('Failed to update cohort');
         }
       }
-
-      return res;
-    },
-    onError: (error) => {
-      if (
-        error instanceof Error &&
-        error.message === 'Failed to update cohort'
-      ) {
-        toast.error(t('welcome.cohortSaveFailed'));
-        return;
-      }
-      toast.error(t('preferences.saveError'));
-    },
-    onSuccess: () => {
-      applyTheme(theme);
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.settings(),
-      });
-      toast.success(t('preferences.saveSuccess'));
-      onOpenChange(false);
     },
   });
+
+  const saveSettings = () =>
+    updateSettingsMutation.mutate({
+      language,
+      notificationPreferences: prefs,
+      theme,
+      timetableView,
+    });
 
   const togglePref = (key: string) => {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
@@ -348,10 +311,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
               <Button
                 className="w-full"
-                disabled={saveMutation.isPending}
-                onClick={() => saveMutation.mutate(undefined)}
+                disabled={updateSettingsMutation.isPending}
+                onClick={saveSettings}
               >
-                {saveMutation.isPending && <Spinner className="mr-2 h-4 w-4" />}
+                {updateSettingsMutation.isPending && (
+                  <Spinner className="mr-2 h-4 w-4" />
+                )}
                 {t('common.accept')}
               </Button>
             </>

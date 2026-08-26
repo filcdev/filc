@@ -1,9 +1,5 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { InferResponseType } from 'hono';
-import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,13 +13,13 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import {
+  type User,
+  useCohorts,
+  useRoles,
+  useUpdateUser,
+} from '@/hooks/admin-users';
 import type { BaseDialogProps } from './admin.types';
-
-type User = NonNullable<
-  InferResponseType<typeof api.users.index.$get>['data']
->['users'][number];
 
 type UserDialogProps = BaseDialogProps & {
   user: User;
@@ -31,29 +27,9 @@ type UserDialogProps = BaseDialogProps & {
 
 export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
 
-  const rolesQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.roles.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load roles');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.roles(),
-  });
-
-  const cohortsQuery = useQuery({
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return res.data ?? [];
-    },
-    queryKey: queryKeys.cohorts(),
-  });
+  const rolesQuery = useRoles();
+  const cohortsQuery = useCohorts();
 
   const cohortItems = (cohortsQuery.data ?? []).map((c) => ({
     label: c.name,
@@ -62,38 +38,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
 
   const availableRoles = rolesQuery.data?.roles ?? [];
 
-  const mutation = useMutation({
-    mutationFn: async ({
-      cohortId,
-      nickname,
-      roles,
-    }: {
-      cohortId: string | null;
-      nickname: string;
-      roles: string[];
-    }) => {
-      const res = await api.users[':id'].$patch({
-        json: {
-          cohortId,
-          nickname: nickname || undefined,
-          roles,
-        },
-        param: { id: user.id },
-      });
-      if (!res.ok) {
-        throw new Error(t('users.updateError'));
-      }
-      return res.json();
-    },
-    onError: () => {
-      toast.error(t('users.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('users.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.usersAll() });
-      onOpenChange(false);
-    },
-  });
+  const updateUser = useUpdateUser({ onSaved: () => onOpenChange(false) });
 
   const form = useForm({
     defaultValues: {
@@ -101,8 +46,8 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
       nickname: user.nickname ?? '',
       roles: user.roles as string[],
     },
-    onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+    onSubmit: ({ value }) => {
+      updateUser.mutate({ id: user.id, ...value });
     },
   });
 

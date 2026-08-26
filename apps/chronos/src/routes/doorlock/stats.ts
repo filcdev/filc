@@ -1,7 +1,12 @@
+import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
+import {
+  type DoorlockStatsOverview,
+  deviceStatsResponseSchema,
+  statsResponseSchema,
+} from '@filcdev/api/domains/doorlock/stats';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -14,65 +19,6 @@ import { authRouter } from '#middleware/auth';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { doorlockFactory } from './_factory';
-
-const statsResponseSchema = z.object({
-  data: z.object({
-    stats: z.object({
-      doorOpenSeries: z.array(
-        z.object({
-          count: z.number().int(),
-          date: z.string(),
-        })
-      ),
-      topUsers: z.array(
-        z.object({
-          count: z.number().int(),
-          id: z.string(),
-          name: z.string().nullable(),
-          nickname: z.string().nullable(),
-        })
-      ),
-      totalCards: z.number().int(),
-      totalDevices: z.number().int(),
-      totalSuccessfulOpens: z.number().int(),
-    }),
-  }),
-  success: z.literal(true),
-});
-
-const deviceStatsResponseSchema = z.object({
-  data: z.object({
-    stats: z.array(
-      z.object({
-        debug: z.object({
-          deviceState: z.enum(['booting', 'error', 'idle', 'updating']),
-          errors: z.object({
-            db: z.boolean(),
-            nfc: z.boolean(),
-            ota: z.boolean(),
-            sd: z.boolean(),
-            wifi: z.boolean(),
-          }),
-          lastResetReason: z.string(),
-        }),
-        fwVersion: z.string(),
-        id: z.number(),
-        ramFree: z.number(),
-        storage: z.object({
-          total: z.number(),
-          used: z.number(),
-        }),
-        timestamp: z.date(),
-        uptime: z.number(),
-      })
-    ),
-  }),
-  success: z.literal(true),
-});
-
-type DoorlockStatsOverview = z.infer<
-  typeof statsResponseSchema
->['data']['stats'];
 
 const sevenDaysAgo = () => {
   const date = new Date();
@@ -195,7 +141,7 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
     tags: ['Doorlock'],
   }),
   ...authRouter('doorlock:stats:read'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', idParamSchema),
   async (c) => {
     const { id: deviceId } = c.req.valid('param');
 

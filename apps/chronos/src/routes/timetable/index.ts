@@ -1,3 +1,10 @@
+import {
+  cleanupOrphanedCohortsResponseSchema,
+  deleteTimetableResponseSchema,
+  previewDeleteResponseSchema,
+  timetableIdParamsSchema,
+  updateTimetableSchema,
+} from '@filcdev/api/domains/timetable/timetables';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -134,12 +141,6 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
   }
 );
 
-const updateTimetableSchema = z.object({
-  name: z.string().optional(),
-  validFrom: z.string().optional(),
-  validTo: z.string().nullable().optional(),
-});
-
 const updateTimetableResponseSchema = z.object({
   data: timetableSelectSchema,
   success: z.literal(true),
@@ -161,7 +162,7 @@ export const updateTimetable = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', timetableIdParamsSchema),
   zValidator('json', updateTimetableSchema),
   ...authRouter('import:timetable'),
   async (c) => {
@@ -200,10 +201,6 @@ export const updateTimetable = timetableFactory.createHandlers(
   }
 );
 
-const deleteTimetableResponseSchema = z.object({
-  success: z.literal(true),
-});
-
 export const deleteTimetable = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
@@ -234,7 +231,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', timetableIdParamsSchema),
   ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -304,34 +301,6 @@ export const deleteTimetable = timetableFactory.createHandlers(
   }
 );
 
-const previewDeleteResponseSchema = z.object({
-  data: z.object({
-    cohorts: z.array(
-      z.object({
-        becomesOrphaned: z.boolean(),
-        id: z.string(),
-        name: z.string(),
-      })
-    ),
-    isCurrentTimetable: z.boolean(),
-    targetTimetable: z
-      .object({
-        id: z.string(),
-        name: z.string(),
-      })
-      .nullable(),
-    totals: z.object({
-      danglingUsersCleaned: z.number(),
-      lessonsDeleted: z.number(),
-      movedLessonsDeleted: z.number(),
-      orphanedCohorts: z.number(),
-      substitutionsDeleted: z.number(),
-      survivingCohorts: z.number(),
-    }),
-  }),
-  success: z.literal(true),
-});
-
 export const previewDeleteTimetable = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
@@ -349,7 +318,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
     },
     tags: ['Timetable'],
   }),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', timetableIdParamsSchema),
   ...authRouter('import:timetable'),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -471,14 +440,6 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
     });
   }
 );
-
-const cleanupOrphanedCohortsResponseSchema = z.object({
-  data: z.object({
-    affectedUserCount: z.number(),
-    deletedCohortIds: z.array(z.string()),
-  }),
-  success: z.literal(true),
-});
 
 export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
   describeRoute({

@@ -1,10 +1,9 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { permissions } from '@filcdev/api/permissions';
+
 import { createFileRoute } from '@tanstack/react-router';
-import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,21 +27,20 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
+import {
+  type AnnouncementItem,
+  type Cohort,
+  useAnnouncements,
+  useCohorts,
+  useDeleteAnnouncement,
+} from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type AnnouncementApiResponse = InferResponseType<
-  typeof api.news.announcements.$get
->;
-type AnnouncementItem = NonNullable<AnnouncementApiResponse['data']>[number];
 
 export const Route = createFileRoute('/_private/admin/news/announcements')({
   component: () => (
-    <PermissionGuard permission="announcements:create">
+    <PermissionGuard permission={permissions.announcementsCreate}>
       <AnnouncementsPage />
     </PermissionGuard>
   ),
@@ -50,7 +48,6 @@ export const Route = createFileRoute('/_private/admin/news/announcements')({
 
 function AnnouncementsPage() {
   const { i18n, t } = useTranslation();
-  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,82 +67,17 @@ function AnnouncementsPage() {
   const [showPast, setShowPast] = useState(false);
 
   const hasWritePermission = useHasPermission(
-    'announcements:create',
+    permissions.announcementsCreate,
     session?.user?.permissions
   );
 
-  const announcementsQuery = useApiQuery<AnnouncementItem[]>(
-    () =>
-      api.news.announcements.$get({
-        query: { includeExpired: 'true' },
-      }),
-    {
-      queryKey: queryKeys.news.announcements(),
-    }
-  );
+  const announcementsQuery = useAnnouncements();
+  const { data: cohortsData } = useCohorts(hasWritePermission);
 
-  const cohortsQuery = useApiQuery<
-    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
-  >(() => api.cohort.index.$get(), {
-    enabled: hasWritePermission,
-    queryKey: queryKeys.cohorts(),
-  });
-
-  const $create = api.news.announcements.$post;
-  const createMutation = useApiMutation({
-    mutationFn: (payload: InferRequestType<typeof $create>['json']) =>
-      api.news.announcements.$post({
-        json: payload,
-      }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('announcements.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('announcements.createSuccess'));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.announcements(),
-      });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const updateMutation = useApiMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InferRequestType<typeof $create>['json'];
-    }) =>
-      api.news.announcements[':id'].$patch({
-        json: payload,
-        param: { id },
-      }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('announcements.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('announcements.updateSuccess'));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.announcements(),
-      });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const deleteMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.news.announcements[':id'].$delete({ param: { id } }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('announcements.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('announcements.deleteSuccess'));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.announcements(),
-      });
+  const deleteMutation = useDeleteAnnouncement({
+    onSaved: () => {
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     },
   });
 
@@ -163,7 +95,7 @@ function AnnouncementsPage() {
       list = list.filter((ann) => {
         const titleMatches = (ann.title ?? '').toLowerCase().includes(term);
         const cohortsMatch = ann.cohortIds.some((id) =>
-          cohortsQuery.data?.some(
+          cohortsData?.some(
             (c) => c?.id === id && c?.name.toLowerCase().includes(term)
           )
         );
@@ -172,12 +104,7 @@ function AnnouncementsPage() {
     }
 
     if (sortColumn && sortDirection) {
-      list = sortAnnouncements(
-        list,
-        sortColumn,
-        sortDirection,
-        cohortsQuery.data
-      );
+      list = sortAnnouncements(list, sortColumn, sortDirection, cohortsData);
     }
 
     return list;
@@ -186,22 +113,9 @@ function AnnouncementsPage() {
     search,
     sortColumn,
     sortDirection,
-    cohortsQuery.data,
+    cohortsData,
     showPast,
   ]);
-
-  const handleSave = async (
-    payload: InferRequestType<typeof $create>['json']
-  ) => {
-    if (selectedItem) {
-      await updateMutation.mutateAsync({
-        id: selectedItem.id,
-        payload,
-      });
-    } else {
-      await createMutation.mutateAsync(payload);
-    }
-  };
 
   const handleSort = (
     column: 'title' | 'validFrom' | 'validUntil' | 'cohorts'
@@ -227,13 +141,10 @@ function AnnouncementsPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) {
-      return;
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutateAsync(itemToDelete.id);
     }
-    await deleteMutation.mutateAsync(itemToDelete.id);
-    setDeleteDialogOpen(false);
-    setItemToDelete(null);
   };
 
   const hasError = announcementsQuery.isError;
@@ -377,7 +288,7 @@ function AnnouncementsPage() {
                     </TableCell>
                     <TableCell>
                       {announcement.cohortIds.length > 0
-                        ? cohortsQuery.data
+                        ? cohortsData
                             ?.filter((c) =>
                               announcement.cohortIds.includes(c?.id || '')
                             )
@@ -430,8 +341,6 @@ function AnnouncementsPage() {
       {hasWritePermission && (
         <>
           <AnnouncementsDialog
-            cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
             item={selectedItem}
             onOpenChange={(open) => {
               setDialogOpen(open);
@@ -439,7 +348,6 @@ function AnnouncementsPage() {
                 setSelectedItem(null);
               }
             }}
-            onSubmit={handleSave}
             open={dialogOpen}
           />
           <Dialog
@@ -487,9 +395,7 @@ function sortAnnouncements(
   list: AnnouncementItem[],
   column: 'title' | 'validFrom' | 'validUntil' | 'cohorts',
   direction: 'asc' | 'desc',
-  _cohorts?: NonNullable<
-    InferResponseType<typeof api.cohort.index.$get>['data']
-  >
+  _cohorts?: Cohort[]
 ): AnnouncementItem[] {
   return [...list].sort((a, b) => {
     const aVal = getSortValue(a, column);

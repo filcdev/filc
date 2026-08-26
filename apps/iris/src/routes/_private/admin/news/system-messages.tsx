@@ -1,14 +1,10 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { permissions } from '@filcdev/api/permissions';
+
 import { createFileRoute } from '@tanstack/react-router';
-import type { InferRequestType, InferResponseType } from 'hono/client';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import {
-  NewsItemDialog,
-  type NewsItemPayload,
-} from '@/components/admin/news-item-dialog';
+import { NewsItemDialog } from '@/components/admin/news-item-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -30,21 +26,19 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
+import {
+  type SystemMessageItem,
+  useAdminSystemMessages,
+  useCohorts,
+  useDeleteSystemMessage,
+} from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { useApiMutation, useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type SystemMessageApiResponse = InferResponseType<
-  (typeof api.news)['system-messages']['$get']
->;
-type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
 
 export const Route = createFileRoute('/_private/admin/news/system-messages')({
   component: () => (
-    <PermissionGuard permission="system-messages:manage">
+    <PermissionGuard permission={permissions.systemMessagesManage}>
       <SystemMessagesPage />
     </PermissionGuard>
   ),
@@ -52,7 +46,6 @@ export const Route = createFileRoute('/_private/admin/news/system-messages')({
 
 function SystemMessagesPage() {
   const { i18n, t } = useTranslation();
-  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -71,101 +64,17 @@ function SystemMessagesPage() {
   );
 
   const hasManagePermission = useHasPermission(
-    'system-messages:manage',
+    permissions.systemMessagesManage,
     session?.user?.permissions
   );
 
-  const systemMessagesQuery = useApiQuery<SystemMessageItem[]>(
-    () =>
-      api.news['system-messages'].$get({
-        query: {},
-      }),
-    {
-      enabled: hasManagePermission,
-      queryKey: queryKeys.news.adminSystemMessages(),
-    }
-  );
+  const systemMessagesQuery = useAdminSystemMessages(hasManagePermission);
+  const { data: cohortsData } = useCohorts(hasManagePermission);
 
-  const cohortsQuery = useApiQuery<
-    NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>
-  >(() => api.cohort.index.$get(), {
-    enabled: hasManagePermission,
-    queryKey: queryKeys.cohorts(),
-  });
-
-  const $create = api.news['system-messages'].$post;
-  const createMutation = useApiMutation({
-    mutationFn: (payload: InferRequestType<typeof $create>['json']) =>
-      api.news['system-messages'].$post({
-        json: payload,
-      }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('systemMessages.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('systemMessages.createSuccess'));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.adminSystemMessages(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.systemMessagesBanner(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.systemMessagesPanel(),
-      });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const updateMutation = useApiMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InferRequestType<typeof $create>['json'];
-    }) =>
-      api.news['system-messages'][':id'].$patch({
-        json: payload,
-        param: { id },
-      }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('systemMessages.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('systemMessages.updateSuccess'));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.adminSystemMessages(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.systemMessagesBanner(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.systemMessagesPanel(),
-      });
-      setDialogOpen(false);
-      setSelectedItem(null);
-    },
-  });
-
-  const deleteMutation = useApiMutation({
-    mutationFn: (id: string) =>
-      api.news['system-messages'][':id'].$delete({ param: { id } }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('systemMessages.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('systemMessages.deleteSuccess'));
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.adminSystemMessages(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.systemMessagesBanner(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.news.systemMessagesPanel(),
-      });
+  const deleteMutation = useDeleteSystemMessage({
+    onSaved: () => {
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     },
   });
 
@@ -177,7 +86,7 @@ function SystemMessagesPage() {
       list = list.filter((message) => {
         const titleMatches = message.title.toLowerCase().includes(term);
         const cohortsMatch = message.cohortIds.some((id) =>
-          cohortsQuery.data?.some(
+          cohortsData?.some(
             (c) => c?.id === id && c?.name.toLowerCase().includes(term)
           )
         );
@@ -195,22 +104,8 @@ function SystemMessagesPage() {
     search,
     sortColumn,
     sortDirection,
-    cohortsQuery.data,
+    cohortsData,
   ]);
-
-  const handleSave = async (payload: NewsItemPayload) => {
-    const systemMessagePayload = payload as InferRequestType<
-      typeof $create
-    >['json'];
-    if (selectedItem) {
-      await updateMutation.mutateAsync({
-        id: selectedItem.id,
-        payload: systemMessagePayload,
-      });
-    } else {
-      await createMutation.mutateAsync(systemMessagePayload);
-    }
-  };
 
   const handleSort = (
     column: 'title' | 'validFrom' | 'validUntil' | 'cohorts'
@@ -236,13 +131,10 @@ function SystemMessagesPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) {
-      return;
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutateAsync(itemToDelete.id);
     }
-    await deleteMutation.mutateAsync(itemToDelete.id);
-    setDeleteDialogOpen(false);
-    setItemToDelete(null);
   };
 
   const hasError = systemMessagesQuery.isError;
@@ -369,7 +261,7 @@ function SystemMessagesPage() {
                     </TableCell>
                     <TableCell>
                       {message.cohortIds.length > 0
-                        ? cohortsQuery.data
+                        ? cohortsData
                             ?.filter((c) =>
                               message.cohortIds.includes(c?.id || '')
                             )
@@ -422,7 +314,6 @@ function SystemMessagesPage() {
       {hasManagePermission && (
         <>
           <NewsItemDialog
-            cohorts={cohortsQuery.data?.filter((c) => c !== undefined) ?? []}
             item={selectedItem}
             mode="system-messages"
             onOpenChange={(open) => {
@@ -431,7 +322,6 @@ function SystemMessagesPage() {
                 setSelectedItem(null);
               }
             }}
-            onSubmit={handleSave}
             open={dialogOpen}
           />
           <Dialog

@@ -1,4 +1,3 @@
-import type { InferResponseType } from 'hono/client';
 import {
   Building2,
   CheckIcon,
@@ -16,7 +15,6 @@ import type {
   FilterType,
   SelectionsType,
   TeacherItem,
-  TimetableItem,
 } from '@/components/timetable/types';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
@@ -34,30 +32,20 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { MovedLessonItem } from '@/hooks/moved-lessons';
+import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
+import {
+  useClassrooms,
+  useLatestValidTimetable,
+  usePublicMovedLessons,
+  usePublicSubstitutions,
+  useTeachers,
+  useTimetableCohorts,
+  useTimetables,
+} from '@/hooks/timetable-public';
 import { cn } from '@/utils';
-import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
 import { SubsV } from './subs';
-
-type SubstitutionsResponse = InferResponseType<
-  typeof api.timetable.substitutions.$get
->;
-
-type Subs = NonNullable<SubstitutionsResponse['data']>[number];
-
-type MovedLessonApiResponse = InferResponseType<
-  typeof api.timetable.movedLessons.$get
->;
-type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
-
-const QUERY_OPTIONS = {
-  gcTime: Number.POSITIVE_INFINITY,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  staleTime: Number.POSITIVE_INFINITY,
-};
 
 const groupByDate = (data: Subs[]) =>
   data.reduce(
@@ -421,53 +409,22 @@ export function SubstitutionView() {
     teacher: null,
   });
 
-  const timetablesQuery = useApiQuery<TimetableItem[]>(
-    () => api.timetable.timetables.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.all() }
-  );
+  const timetablesQuery = useTimetables();
 
-  const latestValidTimetableQuery = useApiQuery<TimetableItem | null>(
-    () => api.timetable.timetables.latestValid.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.timetables.latestValid() }
-  );
+  const latestValidTimetableQuery = useLatestValidTimetable();
 
   const latestTimetableId =
     latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
 
-  const cohortsQuery = useApiQuery<CohortItem[]>(
-    () => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const timetableId = latestTimetableId!;
-      return api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-        param: { timetableId },
-      });
-    },
-    {
-      ...QUERY_OPTIONS,
-      enabled: !!latestTimetableId,
-      queryKey: queryKeys.timetable.cohorts(latestTimetableId),
-    }
-  );
+  const cohortsQuery = useTimetableCohorts(latestTimetableId);
 
-  const teachersQuery = useApiQuery<TeacherItem[]>(
-    () => api.timetable.teachers.getAll.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.teachers() }
-  );
+  const teachersQuery = useTeachers();
 
-  const classroomsQuery = useApiQuery<ClassroomItem[]>(
-    () => api.timetable.classrooms.getAll.$get(),
-    { ...QUERY_OPTIONS, queryKey: queryKeys.classrooms() }
-  );
+  const classroomsQuery = useClassrooms();
 
-  const substitutionsQuery = useApiQuery<Subs[]>(
-    () => api.timetable.substitutions.$get(),
-    { enabled: !isPending, queryKey: queryKeys.substitutions() }
-  );
+  const substitutionsQuery = usePublicSubstitutions(!isPending);
 
-  const movedLessonsQuery = useApiQuery<MovedLessonItem[]>(
-    () => api.timetable.movedLessons.$get(),
-    { enabled: !isPending, queryKey: queryKeys.movedLessons() }
-  );
+  const movedLessonsQuery = usePublicMovedLessons(!isPending);
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 

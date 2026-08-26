@@ -1,3 +1,7 @@
+import {
+  apiKeyIdParamsSchema,
+  createApiKeySchema,
+} from '@filcdev/api/domains/api-keys';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { and, desc, eq } from 'drizzle-orm';
@@ -19,11 +23,6 @@ const logger = getLogger(['chronos', 'users', 'api-keys']);
 // Never leak the hash or the raw key in listings.
 const apiKeySelectSchema = createSelectSchema(apiKey).omit({
   keyHash: true,
-});
-
-const createApiKeySchema = z.object({
-  expiresAt: z.coerce.date().optional(),
-  name: z.string().min(1, 'Name is required').max(64),
 });
 
 const { schema: createApiKeyRequestSchema } =
@@ -167,7 +166,7 @@ export const revokeApiKeyRoute = usersFactory.createHandlers(
     tags: ['Users'],
   }),
   requireAuthentication,
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', apiKeyIdParamsSchema),
   async (c) => {
     const session = c.var.session;
     if (!session) {

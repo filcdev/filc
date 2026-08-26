@@ -1,3 +1,8 @@
+import {
+  cohortIdParamsSchema,
+  manualCreateSchema,
+  substitutionIdParamsSchema,
+} from '@filcdev/api/domains/timetable/substitution';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -496,7 +501,7 @@ export const getRelevantSubstitutionsForCohort =
       },
       tags: ['Substitution'],
     }),
-    zValidator('param', z.object({ cohortId: z.uuid() })),
+    zValidator('param', cohortIdParamsSchema),
     async (c) => {
       const { cohortId } = c.req.valid('param');
 
@@ -637,16 +642,6 @@ export const createSubstitution = timetableFactory.createHandlers(
 // replaced together with a manual lesson time (day + period), a subject and a
 // cohort. We then find-or-create a lesson that matches that combination inside
 // the active timetable and link the substitution to it.
-const manualCreateSchema = z.object({
-  cohortId: z.string().uuid(),
-  comment: z.string().nullable().optional(),
-  date: z.coerce.date<Date>(),
-  dayDefinitionId: z.string().uuid(),
-  periodId: z.string().uuid(),
-  subjectId: z.string().uuid(),
-  substituter: z.string().uuid().nullable(),
-  teacherId: z.string().uuid(),
-});
 
 const manualCreateResponseSchema = z.object({
   data: substitutionSchema,
@@ -947,7 +942,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     tags: ['Substitution'],
   }),
   ...authRouter('substitution:update'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', substitutionIdParamsSchema),
   zValidator('json', updateSchema),
   async (c) => {
     const { id } = c.req.valid('param');
@@ -1068,7 +1063,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
     tags: ['Substitution'],
   }),
   ...authRouter('substitution:delete'),
-  zValidator('param', z.object({ id: z.uuid() })),
+  zValidator('param', substitutionIdParamsSchema),
   async (c) => {
     const { id } = c.req.valid('param');
 

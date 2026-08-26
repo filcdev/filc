@@ -1,6 +1,6 @@
 import { useForm, useStore } from '@tanstack/react-form';
 import dayjs from 'dayjs';
-import type { InferRequestType, InferResponseType } from 'hono/client';
+import type { InferRequestType } from 'hono/client';
 import { Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  type Classroom,
+  type Cohort,
+  type DayDefinition,
+  type EnrichedLesson,
+  type MovedLessonItem,
+  type Period,
+  useCreateMovedLesson,
+  useUpdateMovedLesson,
+} from '@/hooks/moved-lessons';
 import { useApiQuery } from '@/utils/api';
 import {
   formatLocalizedDate,
@@ -27,35 +37,6 @@ import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
 
-type MovedLessonApiResponse = InferResponseType<
-  typeof api.timetable.movedLessons.$get
->;
-type MovedLessonItem = NonNullable<MovedLessonApiResponse['data']>[number];
-type Classroom = Omit<
-  NonNullable<MovedLessonItem['classroom']>,
-  'createdAt' | 'updatedAt'
->;
-type Period = Omit<
-  NonNullable<MovedLessonItem['period']>,
-  'createdAt' | 'updatedAt'
->;
-type DayDefinition = Omit<
-  NonNullable<MovedLessonItem['dayDefinition']>,
-  'createdAt' | 'updatedAt'
->;
-
-type SubstitutionApiResponse = InferResponseType<
-  typeof api.timetable.substitutions.$get
->;
-type SubstitutionItem = NonNullable<SubstitutionApiResponse['data']>[number];
-type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
-
-type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
-type Cohort = NonNullable<CohortApiResponse['data']>[number];
-
-const create = api.timetable.movedLessons.$post;
-type MovedLessonCreatePayload = InferRequestType<typeof create>['json'];
-
 type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
   classrooms: Classroom[];
@@ -63,7 +44,6 @@ type MovedLessonDialogProps = BaseDialogProps & {
   cohortLessonsData?: Array<{ lessons: EnrichedLesson[] }>;
   days: DayDefinition[];
   item?: MovedLessonItem | null;
-  onSubmit: (payload: MovedLessonCreatePayload) => Promise<void>;
   periods: Period[];
 };
 
@@ -103,7 +83,7 @@ function formatLessonLabel(
 
 const initialState = (
   item?: MovedLessonItem | null
-): MovedLessonCreatePayload => ({
+): InferRequestType<typeof api.timetable.movedLessons.$post>['json'] => ({
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons ?? [],
   room: item?.movedLesson.room || undefined,
@@ -146,18 +126,41 @@ export function MovedLessonDialog({
   days,
   item,
   onOpenChange,
-  onSubmit,
   open,
   periods,
 }: MovedLessonDialogProps) {
   const { i18n, t } = useTranslation();
+  const close = () => onOpenChange(false);
+  const createMutation = useCreateMovedLesson({ onSaved: close });
+  const updateMutation = useUpdateMovedLesson({ onSaved: close });
   const [selectedCohort, setSelectedCohort] = useState<string>('');
   const defaultValues = useMemo(() => initialState(item), [item]);
 
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
-      await onSubmit(value);
+      if (item) {
+        // For updates, ensure all required fields are present
+        const hasAllFields =
+          Boolean(value.room) &&
+          Boolean(value.startingDay) &&
+          Boolean(value.startingPeriod);
+        if (!hasAllFields) {
+          throw new Error('All fields are required for updates');
+        }
+        await updateMutation.mutateAsync({
+          id: item.movedLesson.id,
+          payload: {
+            date: value.date,
+            lessonIds: value.lessonIds ?? [],
+            room: value.room as string,
+            startingDay: value.startingDay as string,
+            startingPeriod: value.startingPeriod as string,
+          },
+        });
+      } else {
+        await createMutation.mutateAsync(value);
+      }
     },
   });
 

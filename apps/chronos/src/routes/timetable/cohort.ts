@@ -1,3 +1,4 @@
+import { getCohortsForTimetableParamsSchema } from '@filcdev/api/domains/timetable/cohort';
 import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
@@ -41,7 +42,7 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
     },
     tags: ['Cohort'],
   }),
-  zValidator('param', z.object({ timetableId: z.uuid() })),
+  zValidator('param', getCohortsForTimetableParamsSchema),
   async (c) => {
     const { timetableId } = c.req.valid('param');
 

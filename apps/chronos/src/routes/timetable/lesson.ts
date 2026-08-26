@@ -1,3 +1,13 @@
+import {
+  getLessonForIdParamsSchema,
+  getLessonsForCohortParamsSchema,
+  getLessonsForRoomParamsSchema,
+  getLessonsForTeacherParamsSchema,
+  getLessonsQuerySchema,
+  substitutionCandidateSchema,
+  substitutionCandidatesRequestSchema,
+  teacherLessonsBatchRequestSchema,
+} from '@filcdev/api/domains/timetable/lesson';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import {
@@ -288,8 +298,8 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
-  zValidator('param', z.object({ cohortId: z.uuid() })),
-  zValidator('query', z.object({ timetableId: z.uuid().optional() })),
+  zValidator('param', getLessonsForCohortParamsSchema),
+  zValidator('query', getLessonsQuerySchema),
   async (c) => {
     const { cohortId } = c.req.valid('param');
     const { timetableId } = c.req.valid('query');
@@ -358,8 +368,8 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
-  zValidator('param', z.object({ teacherId: z.uuid() })),
-  zValidator('query', z.object({ timetableId: z.uuid().optional() })),
+  zValidator('param', getLessonsForTeacherParamsSchema),
+  zValidator('query', getLessonsQuerySchema),
   async (c) => {
     const { teacherId } = c.req.valid('param');
     const { timetableId } = c.req.valid('query');
@@ -395,10 +405,6 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
   }
 );
 
-const teacherLessonsBatchRequestSchema = z.object({
-  teacherIds: z.array(z.uuid()).min(1),
-});
-
 const teacherLessonsBatchResponseSchema = z.object({
   data: z.array(
     z.object({
@@ -411,24 +417,6 @@ const teacherLessonsBatchResponseSchema = z.object({
 
 const teacherLessonBatchType =
   '@listof TeacherLessonsBatchResult @field(.teacherId, String) @field(.lessons, List<EnrichedLesson>)';
-
-const substitutionCandidatesRequestSchema = z.object({
-  date: z.coerce.date(),
-  missingTeacherId: z.uuid(),
-  selectedLessonIds: z.array(z.string().min(1)).default([]),
-  teacherIds: z.array(z.uuid()).min(1),
-});
-
-const substitutionCandidateSchema = z.object({
-  hasH1: z.boolean(),
-  hasH2: z.boolean(),
-  teacher: z.object({
-    firstName: z.string(),
-    id: z.string(),
-    lastName: z.string(),
-    short: z.string(),
-  }),
-});
 
 const substitutionCandidatesResponseSchema = z.object({
   data: z.object({
@@ -883,8 +871,8 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
-  zValidator('param', z.object({ classroomId: z.uuid() })),
-  zValidator('query', z.object({ timetableId: z.uuid().optional() })),
+  zValidator('param', getLessonsForRoomParamsSchema),
+  zValidator('query', getLessonsQuerySchema),
   async (c) => {
     const { classroomId } = c.req.valid('param');
     const { timetableId } = c.req.valid('query');
@@ -959,7 +947,7 @@ export const getLessonForId = timetableFactory.createHandlers(
     },
     tags: ['Lesson'],
   }),
-  zValidator('param', z.object({ lessonId: z.uuid() })),
+  zValidator('param', getLessonForIdParamsSchema),
   async (c) => {
     const { lessonId } = c.req.valid('param');
 

@@ -1,7 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { permissions } from '@filcdev/api/permissions';
+
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { type InferResponseType, parseResponse } from 'hono/client';
 import {
   Calendar,
   CalendarCheck,
@@ -14,11 +14,9 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/stat-card';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
 import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
-import type { TimetableItem } from '@/components/timetable/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,21 +37,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import {
+  type TimetableRow,
+  useCleanupOrphanedCohorts,
+  useDeletePreview,
+  useDeleteTimetable,
+  useTimetables,
+} from '@/hooks/timetables-admin';
 
 export const Route = createFileRoute('/_private/admin/timetable/manage')({
   component: () => (
-    <PermissionGuard permission="import:timetable">
+    <PermissionGuard permission={permissions.importTimetable}>
       <TimetableManagePage />
     </PermissionGuard>
   ),
 });
-
-type TimetableApiResponse = InferResponseType<
-  typeof api.timetable.timetables.$get
->;
-type TimetableRow = NonNullable<TimetableApiResponse['data']>[number];
 
 type TimetableStatus = 'current' | 'past' | 'upcoming';
 
@@ -151,8 +149,6 @@ function DeletePreviewContent({
 
 function TimetableManagePage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
-
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -160,119 +156,18 @@ function TimetableManagePage() {
   const [selectedItem, setSelectedItem] = useState<TimetableRow | null>(null);
   const [itemToDelete, setItemToDelete] = useState<TimetableRow | null>(null);
 
-  const timetablesQuery = useQuery({
-    queryFn: async (): Promise<TimetableRow[]> => {
-      const res = await parseResponse(api.timetable.timetables.$get());
-      if (!res.success) {
-        throw new Error('Failed to load timetables');
-      }
-      return (res.data ?? []) as TimetableRow[];
-    },
-    queryKey: queryKeys.timetables.all(),
-  });
+  const timetablesQuery = useTimetables();
 
-  const previewQuery = useQuery({
-    enabled: !!itemToDelete,
-    queryFn: async () => {
-      if (!itemToDelete) {
-        return null;
-      }
-      const res = await parseResponse(
-        api.timetable.timetables[':id']['preview-delete'].$get({
-          param: { id: itemToDelete.id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load preview');
-      }
-      return res.data;
-    },
-    queryKey: ['timetables', 'preview-delete', itemToDelete?.id] as const,
-  });
+  const previewQuery = useDeletePreview(itemToDelete?.id);
 
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: { name?: string; validFrom?: string; validTo?: string | null };
-    }) => {
-      const res = await parseResponse(
-        api.timetable.timetables[':id'].$patch({
-          json: payload,
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update timetable');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.updateSuccess'));
-      setEditDialogOpen(false);
-      setSelectedItem(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.timetable.timetables[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete timetable');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.deleteSuccess'));
+  const deleteMutation = useDeleteTimetable({
+    onSaved: () => {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
     },
   });
 
-  const cleanupMutation = useMutation({
-    mutationFn: async () => {
-      const res = await parseResponse(
-        api.timetable.timetables['cleanup-orphaned-cohorts'].$post()
-      );
-      if (!res.success) {
-        throw new Error('Failed to clean up orphaned cohorts');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.cleanupOrphanedCohortsError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.cleanupOrphanedCohortsSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
-    },
-  });
-
-  const handleEditSubmit = async (payload: {
-    name?: string;
-    validFrom?: string;
-    validTo?: string | null;
-  }) => {
-    if (!selectedItem) {
-      return;
-    }
-    await updateMutation.mutateAsync({ id: selectedItem.id, payload });
-  };
+  const cleanupMutation = useCleanupOrphanedCohorts();
 
   const formatDate = (date: string | null) => {
     if (!date) {
@@ -417,10 +312,8 @@ function TimetableManagePage() {
       />
 
       <TimetableEditDialog
-        isSubmitting={updateMutation.isPending}
-        item={selectedItem as TimetableItem | null}
+        item={selectedItem}
         onOpenChange={setEditDialogOpen}
-        onSubmit={handleEditSubmit}
         open={editDialogOpen}
       />
 
