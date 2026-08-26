@@ -39,14 +39,14 @@ export function AdminDashboard() {
     { label: t('dashboard.lastYear'), value: '365' },
   ];
 
-  const statsQuery = useApiQuery<DashboardStats>(
+  const statsQuery = useApiQuery<NonNullable<StatsResponse['data']>>(
     () => api.dashboard.stats.$get({ query: { days: String(days) } }),
     {
       queryKey: ['dashboard', 'stats', days] as const,
     }
   );
 
-  const stats = statsQuery.data;
+  const stats: DashboardStats | undefined = statsQuery.data?.stats;
   const isLoading = statsQuery.isLoading;
 
   const filteredChartData = useMemo(() => {
