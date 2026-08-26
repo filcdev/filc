@@ -4,7 +4,7 @@
     "@biomejs/biome": "^2.5.10",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
-    "turbo": "^2.10.11",
+    "turbo": "^2.10.12",
     "typescript": "catalog:"
   },
   "lint-staged": {
@@ -27,7 +27,7 @@
     "catalog": {
       "@types/bun": "^1.4.0",
       "typescript": "^7.0.2",
-      "hono": "^4.13.4",
+      "hono": "^4.13.5",
       "better-auth": "^1.7.1",
       "zod": "^4.4.3"
     }

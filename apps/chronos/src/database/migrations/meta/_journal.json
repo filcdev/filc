@@ -61,14 +61,14 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1781556618305,
+      "when": 1784172586219,
       "tag": "0008_calm_frank_castle",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1781556618306,
+      "when": 1784172586220,
       "tag": "0009_optional_announcement_title",
       "breakpoints": true
     },
@@ -98,6 +98,13 @@
       "version": "7",
       "when": 1784172586218,
       "tag": "0013_salty_firebrand",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787755097251,
+      "tag": "0014_bizarre_sugar_man",
       "breakpoints": true
     }
   ]

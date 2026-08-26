@@ -1,6 +1,6 @@
 {
-  "id": "b9ec5556-f5eb-4fb2-b693-c940f8a70e77",
-  "prevId": "04f72c1b-d9a8-40cc-ba39-4776ee0e6907",
+  "id": "35dce39e-2c45-4e60-9dc0-3e1677d2461e",
+  "prevId": "5822531f-8d14-4bda-8bb4-0a3fc5028013",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2167,116 +2167,6 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false
-    },
-    "public.api_key": {
-      "name": "api_key",
-      "schema": "",
-      "columns": {
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "last_used_at": {
-          "name": "last_used_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "prefix": {
-          "name": "prefix",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "key_hash": {
-          "name": "key_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "api_key_user_id_idx": {
-          "name": "api_key_user_id_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops",
-              "isExpression": false
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "api_key_user_id_user_id_fk": {
-          "name": "api_key_user_id_user_id_fk",
-          "tableFrom": "api_key",
-          "tableTo": "user",
-          "schemaTo": "public",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "api_key_key_hash_unique": {
-          "columns": [
-            "key_hash"
-          ],
-          "nullsNotDistinct": false,
-          "name": "api_key_key_hash_unique"
-        }
-      },
       "checkConstraints": {},
       "policies": {},
       "isRLSEnabled": false
