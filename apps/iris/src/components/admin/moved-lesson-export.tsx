@@ -41,6 +41,7 @@ export function MovedLessonExportButton({
       errorKey="movedLesson.exportError"
       fetchCsv={fetchCsv}
       filenamePrefix="moved-lessons"
+      hideLabelOnMobile
       labelKey="movedLesson.export"
       pdfTitle={t('movedLesson.exportTitle')}
       successKey="movedLesson.exportSuccess"
