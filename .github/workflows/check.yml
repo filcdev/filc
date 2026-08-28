@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repo
@@ -24,9 +24,9 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
+            ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install
@@ -34,26 +34,8 @@ jobs:
       - name: Lint code
         run: bun biome check .
 
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v7
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - uses: actions/cache@v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
-
-      - name: Install dependencies
-        run: bun install
-
       - name: Typecheck code
         run: bun typecheck
+
+      - name: Build
+        run: bun run build
