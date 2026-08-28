@@ -80,3 +80,20 @@ export function useUpdateBugReportStatus() {
     }
   );
 }
+
+/** Delete a bug report (DELETE /:id). */
+export function useDeleteBugReport({ onSaved }: { onSaved?: () => void } = {}) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useApiMutation<void, string>({
+    mutationFn: (id) => api.bugReport[':id'].$delete({ param: { id } }),
+    onError: () => {
+      toast.error(t('bugReports.deleteError'));
+    },
+    onSuccess: () => {
+      toast.success(t('bugReports.deleteSuccess'));
+      queryClient.invalidateQueries({ queryKey: queryKeys.bugReports.all() });
+      onSaved?.();
+    },
+  });
+}

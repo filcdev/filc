@@ -226,3 +226,40 @@ export const updateBugReportStatus = bugReportFactory.createHandlers(
     return ok(c, updated);
   }
 );
+
+export const deleteBugReport = bugReportFactory.createHandlers(
+  describeRoute({
+    ...filcExt('BugReport', '@nodata', true),
+    description: 'Delete a bug report',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(z.object({ success: z.literal(true) })),
+          },
+        },
+        description: 'Bug report deleted',
+      },
+      404: { description: 'Bug report not found' },
+    },
+    tags: ['Bug Reports'],
+  }),
+  ...authRouter(permissions.bugReportsWrite),
+  zValidator('param', z.object({ id: z.string().uuid() })),
+  async (c) => {
+    const { id } = c.req.valid('param');
+
+    const [deleted] = await db
+      .delete(bugReport)
+      .where(eq(bugReport.id, id))
+      .returning();
+
+    if (!deleted) {
+      throw new HTTPException(StatusCodes.NOT_FOUND, {
+        message: 'Bug report not found',
+      });
+    }
+
+    return ok(c, undefined);
+  }
+);

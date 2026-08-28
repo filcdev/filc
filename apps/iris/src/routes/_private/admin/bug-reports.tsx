@@ -35,10 +35,12 @@ import {
   type BugReportStatus,
   bugReportStatuses,
   useBugReports,
+  useDeleteBugReport,
   useUpdateBugReportStatus,
 } from '@/hooks/bug-reports';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
+import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute('/_private/admin/bug-reports')({
   component: AdminBugReportsPage,
@@ -127,6 +129,12 @@ function AdminBugReportsPage() {
   });
 
   const updateStatus = useUpdateBugReportStatus();
+  const deleteReport = useDeleteBugReport({
+    onSaved: () => {
+      setIsDialogOpen(false);
+      setSelected(null);
+    },
+  });
 
   const reports = reportsQuery.data?.reports ?? [];
   const total = reportsQuery.data?.total ?? 0;
@@ -421,6 +429,21 @@ function AdminBugReportsPage() {
             </div>
 
             <DialogFooter className="border-t p-4">
+              {hasWritePermission && (
+                <Button
+                  disabled={deleteReport.isPending}
+                  onClick={() => {
+                    if (
+                      confirmDestructiveAction(t('bugReports.deleteConfirm'))
+                    ) {
+                      deleteReport.mutate(selected.id);
+                    }
+                  }}
+                  variant="destructive"
+                >
+                  {t('common.delete')}
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   setIsDialogOpen(false);
