@@ -5,6 +5,7 @@ import {
   Cog,
   DoorOpen,
   GraduationCap,
+  KeyRound,
   LogIn,
   LogOut,
   Menu,
@@ -201,6 +202,12 @@ export function Navbar({
                       >
                         <DoorOpen />
                         <span>{t('doorlock.manage-cards')}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: '/api-keys' })}
+                      >
+                        <KeyRound />
+                        <span>{t('apiKeys.menuItem')}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                         <Cog />
