@@ -76,5 +76,5 @@ export const nicknameSchema = z.object({
 
 export const createApiKeySchema = z.object({
   expiresAt: z.date().optional(),
-  name: z.string().min(1, 'Name is required').max(64),
+  name: z.string().trim().min(1, 'Name is required').max(64),
 });

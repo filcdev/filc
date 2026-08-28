@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Book,
@@ -38,6 +39,7 @@ import {
 import type { FileRoutesByTo } from '@/route-tree.gen';
 import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
+import { queryKeys } from '@/utils/query-keys';
 
 type NavbarProps = {
   children?: ReactNode;
@@ -64,6 +66,7 @@ export function Navbar({
   showLogo = false,
 }: NavbarProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { data, isPending } = authClient.useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -218,6 +221,9 @@ export function Navbar({
                         className="text-destructive"
                         onClick={async () => {
                           await authClient.signOut();
+                          queryClient.removeQueries({
+                            queryKey: queryKeys.apiKeys.list(),
+                          });
                         }}
                       >
                         <LogOut />

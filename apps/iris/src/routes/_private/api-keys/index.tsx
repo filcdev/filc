@@ -46,7 +46,10 @@ export const Route = createFileRoute('/_private/api-keys/')({
   component: ApiKeysPage,
 });
 
-function formatDate(value: string | Date | null | undefined): string {
+function formatDate(
+  value: string | Date | null | undefined,
+  locale: string
+): string {
   if (!value) {
     return '—';
   }
@@ -54,7 +57,7 @@ function formatDate(value: string | Date | null | undefined): string {
   if (Number.isNaN(date.getTime())) {
     return String(value);
   }
-  return date.toLocaleString();
+  return date.toLocaleString(locale);
 }
 
 function isExpired(expiresAt: string | Date | null | undefined): boolean {
@@ -65,7 +68,7 @@ function isExpired(expiresAt: string | Date | null | undefined): boolean {
 }
 
 function ApiKeysPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [rawKey, setRawKey] = useState<string | null>(null);
@@ -165,13 +168,13 @@ function ApiKeysPage() {
                     {key.prefix}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(key.createdAt)}
+                    {formatDate(key.createdAt, i18n.language)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(key.lastUsedAt)}
+                    {formatDate(key.lastUsedAt, i18n.language)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(key.expiresAt)}
+                    {formatDate(key.expiresAt, i18n.language)}
                   </TableCell>
                   <TableCell>
                     {isExpired(key.expiresAt) ? (
