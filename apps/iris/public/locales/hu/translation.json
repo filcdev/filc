@@ -653,7 +653,7 @@
     "date": "Dátum",
     "status": "Állapot",
     "open": "Nyitott",
-    "solved": "Megoldva",
+    "resolved": "Megoldva",
     "inProgress": "Folyamatban",
     "closed": "Lezárva",
     "all": "Összes",

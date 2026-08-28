@@ -9,7 +9,7 @@ import { queryKeys } from '@/utils/query-keys';
 export const bugReportStatuses = [
   'open',
   'in_progress',
-  'solved',
+  'resolved',
   'closed',
 ] as const;
 

@@ -54,7 +54,7 @@ const STATUS_LABEL_KEYS: Record<BugReportStatus, string> = {
   closed: 'closed',
   in_progress: 'inProgress',
   open: 'open',
-  solved: 'solved',
+  resolved: 'resolved',
 };
 
 const STATUS_BADGE_VARIANTS: Record<
@@ -64,7 +64,7 @@ const STATUS_BADGE_VARIANTS: Record<
   closed: 'destructive',
   in_progress: 'secondary',
   open: 'default',
-  solved: 'outline',
+  resolved: 'outline',
 };
 
 function formatDate(value: string | Date): string {

@@ -653,7 +653,7 @@
     "date": "Date",
     "status": "Status",
     "open": "Open",
-    "solved": "Solved",
+    "resolved": "Resolved",
     "inProgress": "In progress",
     "closed": "Closed",
     "all": "All",
