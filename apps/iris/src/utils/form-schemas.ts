@@ -73,3 +73,8 @@ export const timetableImportSchema = z.object({
 export const nicknameSchema = z.object({
   nickname: z.string().min(NICKNAME_MIN_LENGTH).max(NICKNAME_MAX_LENGTH),
 });
+
+export const createApiKeySchema = z.object({
+  expiresAt: z.date().optional(),
+  name: z.string().trim().min(1, 'Name is required').max(64),
+});

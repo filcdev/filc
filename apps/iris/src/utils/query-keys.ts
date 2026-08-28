@@ -1,4 +1,7 @@
 export const queryKeys = {
+  apiKeys: {
+    list: () => ['apiKeys'] as const,
+  },
   bugReports: () => ['bugReports'] as const,
   classrooms: () => ['classrooms'] as const,
   cohorts: () => ['cohorts'] as const,
