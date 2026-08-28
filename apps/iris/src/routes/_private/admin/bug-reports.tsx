@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -40,7 +41,6 @@ import {
 } from '@/hooks/bug-reports';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute('/_private/admin/bug-reports')({
   component: AdminBugReportsPage,
@@ -117,6 +117,7 @@ function AdminBugReportsPage() {
 
   const [selected, setSelected] = useState<BugReportItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const deferredSearch = useDeferredValue(search.trim());
 
@@ -131,6 +132,7 @@ function AdminBugReportsPage() {
   const updateStatus = useUpdateBugReportStatus();
   const deleteReport = useDeleteBugReport({
     onSaved: () => {
+      setDeleteConfirmOpen(false);
       setIsDialogOpen(false);
       setSelected(null);
     },
@@ -431,14 +433,7 @@ function AdminBugReportsPage() {
             <DialogFooter className="border-t p-4">
               {hasWritePermission && (
                 <Button
-                  disabled={deleteReport.isPending}
-                  onClick={() => {
-                    if (
-                      confirmDestructiveAction(t('bugReports.deleteConfirm'))
-                    ) {
-                      deleteReport.mutate(selected.id);
-                    }
-                  }}
+                  onClick={() => setDeleteConfirmOpen(true)}
                   variant="destructive"
                 >
                   {t('common.delete')}
@@ -457,6 +452,38 @@ function AdminBugReportsPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog onOpenChange={setDeleteConfirmOpen} open={deleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('bugReports.deleteConfirm')}</DialogTitle>
+            <DialogDescription>
+              {t('bugReports.deleteDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setDeleteConfirmOpen(false)}
+              variant="outline"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={deleteReport.isPending}
+              onClick={() => {
+                if (selected) {
+                  deleteReport.mutate(selected.id);
+                }
+              }}
+              variant="destructive"
+            >
+              {deleteReport.isPending
+                ? t('common.deleting')
+                : t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
