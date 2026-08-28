@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
@@ -59,6 +60,7 @@ type SettingsDialogProps = {
 };
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+  const navigate = useNavigate();
   const { i18n, t } = useTranslation();
   const [, setCookie] = useCookies(['filc.language']);
   const { setTheme: applyTheme } = useTheme();
@@ -306,6 +308,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       />
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('apiKeys.title')}</CardTitle>
+                  <CardDescription>{t('apiKeys.description')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      onOpenChange(false);
+                      navigate({ to: '/api-keys' });
+                    }}
+                    variant="outline"
+                  >
+                    {t('apiKeys.title')}
+                  </Button>
                 </CardContent>
               </Card>
 
