@@ -1,5 +1,14 @@
 export const queryKeys = {
-  bugReports: () => ['bugReports'] as const,
+  bugReports: {
+    all: () => ['bugReports'] as const,
+    list: (filters: {
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+      search: string;
+      status: string;
+    }) => ['bugReports', 'list', filters] as const,
+  },
   classrooms: () => ['classrooms'] as const,
   cohorts: () => ['cohorts'] as const,
 
