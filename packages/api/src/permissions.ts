@@ -9,6 +9,7 @@
 export const permissions = {
   announcementsCreate: 'announcements:create',
   bugReportsRead: 'bug-reports:read',
+  bugReportsWrite: 'bug-reports:write',
   doorlockCardsRead: 'doorlock:cards:read',
   doorlockCardsWrite: 'doorlock:cards:write',
   doorlockDevicesRead: 'doorlock:devices:read',

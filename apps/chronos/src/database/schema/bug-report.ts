@@ -23,3 +23,12 @@ export const bugReport = pgTable(
 export const bugReportSchema = {
   bugReport,
 };
+
+export const bugReportStatuses = [
+  'open',
+  'in_progress',
+  'solved',
+  'closed',
+] as const;
+
+export type BugReportStatus = (typeof bugReportStatuses)[number];
