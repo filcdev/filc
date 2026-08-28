@@ -208,25 +208,33 @@ function SubstitutionsPage() {
             {t('substitution.showPast')}
           </label>
         </div>
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <DateRangePicker onChange={setDateRange} value={dateRange} />
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+          <div className="w-fit">
+            <DateRangePicker onChange={setDateRange} value={dateRange} />
+          </div>
           <SubstitutionExportButton dateRange={dateRange} />
           <Button
+            aria-label={t('substitution.refresh')}
             onClick={() => substitutionsQuery.refetch()}
             variant="outline"
           >
             <RefreshCw className="h-4 w-4" />
-            {t('substitution.refresh')}
+            <span className="hidden sm:inline">
+              {t('substitution.refresh')}
+            </span>
           </Button>
           {hasWritePermission && (
             <Button
+              aria-label={t('substitution.create')}
               onClick={() => {
                 setSelectedItem(null);
                 setDialogOpen(true);
               }}
             >
               <Plus className="h-4 w-4" />
-              {t('substitution.create')}
+              <span className="hidden sm:inline">
+                {t('substitution.create')}
+              </span>
             </Button>
           )}
         </div>

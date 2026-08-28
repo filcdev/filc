@@ -580,6 +580,8 @@
     "disabledCards": "Letiltott kártyák",
     "name": "Név",
     "owner": "Tulajdonos",
+    "selectOwnerPlaceholder": "Tulajdonos kiválasztása",
+    "noUsersFound": "Nem található felhasználó.",
     "status": "Állapot",
     "authorizedDevices": "Engedélyezett eszközök",
     "updatedAt": "Frissítve",

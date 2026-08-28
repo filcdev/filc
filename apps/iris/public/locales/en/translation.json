@@ -580,6 +580,8 @@
     "disabledCards": "Disabled Cards",
     "name": "Name",
     "owner": "Owner",
+    "selectOwnerPlaceholder": "Select owner",
+    "noUsersFound": "No users found.",
     "status": "Status",
     "authorizedDevices": "Authorized Devices",
     "updatedAt": "Updated",
