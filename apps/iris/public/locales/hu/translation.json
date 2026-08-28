@@ -59,6 +59,7 @@
     "errorLoading": "Hiba a csoportok betöltése közben: {{message}}",
     "fetchFailed": "A csoportok lekérése nem sikerült",
     "noneFound": "Nem található csoport",
+    "noClass": "Nincs osztály",
     "selectPlaceholder": "Csoport kiválasztása",
     "select": "Válaszd ki a csoportodat"
   },

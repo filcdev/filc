@@ -341,6 +341,14 @@ const CohortSelectorStep = (props: {
     return success;
   };
 
+  const clearCohort = async () => {
+    setIsUpdating(true);
+    setOpen(false);
+    const success = await props.onSkip();
+    setIsUpdating(false);
+    return success;
+  };
+
   if (
     cohortQuery.isLoading ||
     (!props.userCohortId && activeTimetableQuery.isLoading)
@@ -387,6 +395,20 @@ const CohortSelectorStep = (props: {
             <CommandList>
               <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
               <CommandGroup>
+                <CommandItem
+                  onSelect={() => clearCohort()}
+                  value={t('cohort.noClass')}
+                >
+                  {t('cohort.noClass')}
+                  <Check
+                    className={cn(
+                      'ml-auto',
+                      props.selectedCohortId === null
+                        ? 'opacity-100'
+                        : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
                 {cohortQuery.data.map((cohort) => (
                   <CommandItem
                     key={cohort.id}

@@ -92,6 +92,7 @@
     "errorLoading": "Error loading cohorts: {{message}}",
     "selectPlaceholder": "Select cohort",
     "noneFound": "No cohorts found",
+    "noClass": "No class",
     "select": "Select your cohort"
   },
   "search": "Search",
