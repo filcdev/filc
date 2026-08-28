@@ -205,6 +205,7 @@ function ApiKeysPage() {
       )}
 
       <ApiKeyDialog
+        isPending={createMutation.isPending}
         onOpenChange={setCreateOpen}
         onSubmit={(values) => createMutation.mutate(values)}
         open={createOpen}

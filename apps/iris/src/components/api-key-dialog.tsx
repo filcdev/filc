@@ -20,6 +20,7 @@ export type CreateApiKeyValues = {
 };
 
 type ApiKeyDialogProps = {
+  isPending: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: CreateApiKeyValues) => void;
   open: boolean;
@@ -31,6 +32,7 @@ const initialState: CreateApiKeyValues = {
 };
 
 export function ApiKeyDialog({
+  isPending,
   onOpenChange,
   onSubmit,
   open,
@@ -43,7 +45,7 @@ export function ApiKeyDialog({
       onSubmit({ expiresAt: value.expiresAt, name: value.name.trim() });
     },
     validators: {
-      onSubmit: createApiKeySchema,
+      onSubmit: createApiKeySchema(t),
     },
   });
 
@@ -86,9 +88,12 @@ export function ApiKeyDialog({
           <form.Field name="expiresAt">
             {(field) => (
               <Field>
-                <FieldLabel>{t('apiKeys.expiresLabel')}</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  {t('apiKeys.expiresLabel')}
+                </FieldLabel>
                 <DatePicker
                   date={field.state.value}
+                  id={field.name}
                   onDateChange={field.handleChange}
                   placeholder={t('apiKeys.expiresPlaceholder')}
                 />
@@ -104,7 +109,7 @@ export function ApiKeyDialog({
             >
               {t('common.cancel')}
             </Button>
-            <Button disabled={!form.state.canSubmit} type="submit">
+            <Button disabled={!form.state.canSubmit || isPending} type="submit">
               {t('apiKeys.create')}
             </Button>
           </DialogFooter>

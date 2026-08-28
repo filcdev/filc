@@ -17,6 +17,7 @@ type DatePickerProps = {
   onDateChange?: (date: Date | undefined) => void;
   placeholder?: string;
   disabled?: boolean;
+  id?: string;
 };
 
 function toLocalNoon(date: Date) {
@@ -37,6 +38,7 @@ export function DatePicker({
   onDateChange,
   placeholder = 'Pick a date',
   disabled = false,
+  id,
 }: DatePickerProps) {
   const { i18n } = useTranslation();
   const locale = { code: getIntlLocale(i18n.language) } as const;
@@ -51,6 +53,7 @@ export function DatePicker({
               !date && 'text-muted-foreground'
             )}
             disabled={disabled}
+            id={id}
             variant={'outline'}
           >
             <CalendarIcon />

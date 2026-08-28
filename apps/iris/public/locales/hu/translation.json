@@ -677,7 +677,8 @@
     "createError": "Nem sikerült létrehozni az API kulcsot",
     "revokeSuccess": "API kulcs visszavonva",
     "revokeError": "Nem sikerült visszavonni az API kulcsot",
-    "loadError": "Nem sikerült betölteni az API kulcsokat"
+    "loadError": "Nem sikerült betölteni az API kulcsokat",
+    "nameRequired": "A név megadása kötelező"
   },
   "bugReports": {
     "title": "Hibajelentések",

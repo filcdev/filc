@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { z } from 'zod';
 
 export const NICKNAME_MIN_LENGTH = 3;
@@ -74,7 +75,8 @@ export const nicknameSchema = z.object({
   nickname: z.string().min(NICKNAME_MIN_LENGTH).max(NICKNAME_MAX_LENGTH),
 });
 
-export const createApiKeySchema = z.object({
-  expiresAt: z.date().optional(),
-  name: z.string().trim().min(1, 'Name is required').max(64),
-});
+export const createApiKeySchema = (t: TFunction) =>
+  z.object({
+    expiresAt: z.date().optional(),
+    name: z.string().trim().min(1, t('apiKeys.nameRequired')).max(64),
+  });

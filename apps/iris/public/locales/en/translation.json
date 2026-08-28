@@ -677,7 +677,8 @@
     "createError": "Failed to create API key",
     "revokeSuccess": "API key revoked",
     "revokeError": "Failed to revoke API key",
-    "loadError": "Unable to load API keys"
+    "loadError": "Unable to load API keys",
+    "nameRequired": "Name is required"
   },
   "bugReports": {
     "title": "Bug reports",
