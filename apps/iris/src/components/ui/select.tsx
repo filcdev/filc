@@ -76,6 +76,7 @@ function SelectTrigger({
       )}
       data-size={size}
       data-slot="select-trigger"
+      translate="no"
       {...props}
     >
       {children}
@@ -118,6 +119,7 @@ function SelectContent({
             className
           )}
           data-slot="select-content"
+          translate="no"
           {...props}
         >
           <SelectScrollUpButton />

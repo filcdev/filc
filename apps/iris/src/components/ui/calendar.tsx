@@ -164,6 +164,7 @@ function Calendar({
             className={cn(rootClassName)}
             data-slot="calendar"
             ref={rootRef}
+            translate="no"
             {...rootProps}
           />
         ),
