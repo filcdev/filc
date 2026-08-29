@@ -158,7 +158,9 @@ export function AnnouncementsDialog({
             <form.Field name="title">
               {(field) => (
                 <div className="space-y-2">
-                  <Label htmlFor={field.name}>{t('announcements.title')}</Label>
+                  <Label htmlFor={field.name}>
+                    {t('announcements.titleLabel')}
+                  </Label>
                   <Input
                     id={field.name}
                     onChange={(e) => field.handleChange(e.target.value)}
