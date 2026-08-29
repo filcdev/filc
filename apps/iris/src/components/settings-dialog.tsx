@@ -249,7 +249,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         <Select
                           items={cohortItems}
                           onValueChange={setSelectedCohortId}
-                          value={selectedCohortId}
+                          value={selectedCohortId ?? NO_CLASS_VALUE}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue

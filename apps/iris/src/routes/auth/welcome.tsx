@@ -157,8 +157,12 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const handleCohortSkip = async () => {
     // Staff users are not required to pick a cohort. Persist the null
     // selection so the choice is remembered, then advance.
+    const { error } = await authClient.updateUser({ cohortId: null });
+    if (error) {
+      toast.error(t('welcome.cohortSaveFailed'));
+      return false;
+    }
     setSelectedCohortId(null);
-    await authClient.updateUser({ cohortId: null });
     return true;
   };
 
