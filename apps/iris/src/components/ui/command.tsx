@@ -23,6 +23,7 @@ function Command({
       )}
       data-slot="command"
       {...props}
+      translate="no"
     />
   );
 }
