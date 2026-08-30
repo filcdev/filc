@@ -53,6 +53,10 @@ const NOTIFICATION_TYPES = [
   },
 ];
 
+// Sentinel value for the "no class" choice in the cohort <Select>.
+// Cohort ids are UUIDs, so this cannot collide with a real id.
+const NO_CLASS_VALUE = 'no-class';
+
 type SettingsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -115,9 +119,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     },
     updateCohort: async () => {
       const currentCohortId = session?.user?.cohortId ?? null;
-      if (cohortQuery.isSuccess && selectedCohortId !== currentCohortId) {
+      const newCohortId =
+        selectedCohortId === NO_CLASS_VALUE ? null : selectedCohortId;
+      if (cohortQuery.isSuccess && newCohortId !== currentCohortId) {
         try {
-          await authClient.updateUser({ cohortId: selectedCohortId });
+          await authClient.updateUser({ cohortId: newCohortId });
         } catch {
           throw new Error('Failed to update cohort');
         }
@@ -173,10 +179,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     { label: t('preferences.themeSystem'), value: 'system' },
   ];
 
-  const cohortItems = (cohortQuery.data ?? []).map((cohort) => ({
-    label: cohort.name,
-    value: cohort.id,
-  }));
+  const cohortItems = [
+    { label: t('cohort.noClass'), value: NO_CLASS_VALUE },
+    ...(cohortQuery.data ?? []).map((cohort) => ({
+      label: cohort.name,
+      value: cohort.id,
+    })),
+  ];
 
   const ready = !(isLoading || isError);
 
@@ -240,7 +249,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         <Select
                           items={cohortItems}
                           onValueChange={setSelectedCohortId}
-                          value={selectedCohortId}
+                          value={selectedCohortId ?? NO_CLASS_VALUE}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue
