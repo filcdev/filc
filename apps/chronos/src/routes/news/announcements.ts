@@ -3,6 +3,7 @@ import {
   announcementQuerySchema,
   announcementUpdateSchema,
 } from '@filcdev/api/domains/news/announcements';
+import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -69,7 +70,7 @@ export const listAnnouncements = newsFactory.createHandlers(
     // Admins managing announcements should see all of them, unfiltered by cohort
     const isAdmin = await userHasPermission(
       currentUser.id,
-      'news:announcements'
+      permissions.announcementsCreate
     );
 
     const now = new Date();
@@ -220,7 +221,7 @@ export const createAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  ...authRouter('news:announcements'),
+  ...authRouter(permissions.announcementsCreate),
   zValidator('json', announcementCreateSchema),
   async (c) => {
     const body = c.req.valid('json');
@@ -293,7 +294,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  ...authRouter('news:announcements'),
+  ...authRouter(permissions.announcementsCreate),
   zValidator('param', z.object({ id: z.string().uuid() })),
   zValidator('json', announcementUpdateSchema),
   async (c) => {
@@ -401,7 +402,7 @@ export const deleteAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  ...authRouter('news:announcements'),
+  ...authRouter(permissions.announcementsCreate),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');
