@@ -164,8 +164,8 @@ function Calendar({
             className={cn(rootClassName)}
             data-slot="calendar"
             ref={rootRef}
-            translate="no"
             {...rootProps}
+            translate="no"
           />
         ),
         WeekNumber: ({ children, ...weekNumberProps }) => (

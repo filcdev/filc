@@ -76,8 +76,8 @@ function SelectTrigger({
       )}
       data-size={size}
       data-slot="select-trigger"
-      translate="no"
       {...props}
+      translate="no"
     >
       {children}
       <SelectPrimitive.Icon
@@ -119,8 +119,8 @@ function SelectContent({
             className
           )}
           data-slot="select-content"
-          translate="no"
           {...props}
+          translate="no"
         >
           <SelectScrollUpButton />
           <SelectPrimitive.List>{children}</SelectPrimitive.List>

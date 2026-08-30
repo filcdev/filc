@@ -22,8 +22,8 @@ function Command({
         className
       )}
       data-slot="command"
-      translate="no"
       {...props}
+      translate="no"
     />
   );
 }
