@@ -107,9 +107,10 @@ export function TimetableView() {
   const latestValidTimetableId =
     latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
 
-  // Selected timetable — initialised from URL param, else latestValid
+  // Selected timetable — always defaulted to the current (latest valid) one;
+  // the URL param is not trusted on reload because it may hold a stale id.
   const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(
-    search.timetable ?? null
+    null
   );
 
   // Once we know the latest valid, set it as default if nothing is selected
