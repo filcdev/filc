@@ -338,6 +338,7 @@ export function TimetableView() {
 
     const blob = await pdf(
       <TimetablePDF
+        activeFilter={activeFilter}
         blackAndWhite={blackAndWhite}
         generatedAt={generatedAt}
         label={label}

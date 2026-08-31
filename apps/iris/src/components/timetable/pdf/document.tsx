@@ -1,6 +1,6 @@
 import { Document, Page, Text, View } from '@react-pdf/renderer';
-import { formatRooms, formatTeachers, toHHMM } from '../helpers';
-import type { LessonItem, TimetableViewModel } from '../types';
+import { formatCohorts, formatRooms, formatTeachers, toHHMM } from '../helpers';
+import type { FilterType, LessonItem, TimetableViewModel } from '../types';
 import { getPdfSubjectColor, styles } from './styles';
 
 type Props = {
@@ -9,22 +9,29 @@ type Props = {
   label: string;
   timetableName: string;
   generatedAt: string;
+  activeFilter: FilterType;
 };
 
 function LessonCard({
   lesson,
   blackAndWhite,
+  activeFilter,
 }: {
   lesson: LessonItem;
   blackAndWhite: boolean;
+  activeFilter: FilterType;
 }) {
   const subjectName = lesson.subject?.name ?? '';
   const subjectShort = lesson.subject?.short ?? subjectName;
   const color = getPdfSubjectColor(subjectName, blackAndWhite);
   const teachers = formatTeachers(lesson.teachers);
   const rooms = formatRooms(lesson.classrooms);
+  const cohorts =
+    activeFilter === 'teacher' || activeFilter === 'classroom'
+      ? formatCohorts(lesson.cohorts)
+      : '';
   const showFullName = subjectName !== '' && subjectName !== subjectShort;
-  const meta = [teachers, rooms].filter(Boolean).join(' · ');
+  const meta = [cohorts, teachers, rooms].filter(Boolean).join(' · ');
 
   return (
     <View
@@ -48,6 +55,7 @@ export function TimetablePDF({
   label,
   timetableName,
   generatedAt,
+  activeFilter,
 }: Props) {
   const { days, timeSlots, grid } = model;
 
@@ -122,6 +130,7 @@ export function TimetablePDF({
                         // Single group-scoped lesson: show half-width with empty sibling
                         <View style={{ flex: 1, flexDirection: 'row', gap: 2 }}>
                           <LessonCard
+                            activeFilter={activeFilter}
                             blackAndWhite={blackAndWhite}
                             // biome-ignore lint/style/noNonNullAssertion: length checked above
                             lesson={lessons[0]!}
@@ -131,6 +140,7 @@ export function TimetablePDF({
                       ) : (
                         lessons.map((lesson, idx) => (
                           <LessonCard
+                            activeFilter={activeFilter}
                             blackAndWhite={blackAndWhite}
                             key={lesson.id ?? idx}
                             lesson={lesson}
