@@ -712,9 +712,8 @@ const upsertCohort = async (
   if (existing) {
     cohortId = existing.id;
   } else {
-    if (!attrs.teacherId) {
-      return null;
-    }
+    // Create the cohort even when it has no resolvable homeroom teacher, so
+    // classes are not silently dropped from the timetable import.
     const [inserted] = await tx
       .insert(cohortSchema)
       .values({
