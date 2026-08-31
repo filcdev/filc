@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  type NotificationItem,
   useMarkAllNotificationsRead,
   useRecentNotifications,
   useUnreadNotificationCount,
@@ -24,7 +25,8 @@ import { authClient } from '@/utils/authentication';
 export function NotificationBell() {
   const { t } = useTranslation();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationItem | null>(null);
   const { data: session } = authClient.useSession();
   const userId = session?.session.userId;
 
@@ -36,9 +38,6 @@ export function NotificationBell() {
 
   const unreadCount = unreadData?.count ?? 0;
   const recent = recentData ?? [];
-  const selectedNotification = selectedId
-    ? (recent.find((n) => n.id === selectedId) ?? null)
-    : null;
 
   return (
     <>
@@ -91,7 +90,7 @@ export function NotificationBell() {
               <DropdownMenuItem
                 className="cursor-pointer"
                 key={notif.id}
-                onClick={() => setSelectedId(notif.id)}
+                onClick={() => setSelectedNotification(notif)}
               >
                 <div className="flex flex-col gap-0.5">
                   <span
@@ -123,7 +122,7 @@ export function NotificationBell() {
         notification={selectedNotification}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedId(null);
+            setSelectedNotification(null);
           }
         }}
         open={!!selectedNotification}
