@@ -71,10 +71,13 @@ export function TimetablePDF({
 }: Props) {
   const { days, timeSlots, grid } = model;
   const chunks = chunkRows(timeSlots, ROWS_PER_PAGE);
+  // Render a single (empty) page when there are no time slots, otherwise the
+  // PDF would contain no pages at all.
+  const pages = chunks.length > 0 ? chunks : [[]];
 
   return (
     <Document>
-      {chunks.map((slots, pageIdx) => (
+      {pages.map((slots, pageIdx) => (
         <Page
           // biome-ignore lint/suspicious/noArrayIndexKey: static PDF pages, no reordering
           key={pageIdx}
