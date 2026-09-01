@@ -141,7 +141,6 @@ export const styles = StyleSheet.create({
     borderBottom: '1 solid #E5E7EB',
     flexDirection: 'row',
     minHeight: 44,
-    wrap: false,
   },
   periodRowLast: {
     borderBottom: 0,

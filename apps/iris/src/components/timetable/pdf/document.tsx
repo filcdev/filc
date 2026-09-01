@@ -118,6 +118,7 @@ export function TimetablePDF({
                     styles.periodRow,
                     isLastRow ? styles.periodRowLast : {},
                   ]}
+                  wrap={false}
                 >
                   {/* Time cell */}
                   <View style={styles.timeCell}>
