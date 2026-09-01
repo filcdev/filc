@@ -32,6 +32,9 @@ import {
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 
+/** How far in advance (days) a future announcement should be visible. */
+const ANNOUNCEMENT_LEAD_DAYS = 7;
+
 const { schema: createRequestSchema } = await resolver(
   announcementCreateSchema
 ).toOpenAPISchema();
@@ -74,10 +77,13 @@ export const listAnnouncements = newsFactory.createHandlers(
     );
 
     const now = new Date();
+    const leadWindow = new Date(
+      now.getTime() + ANNOUNCEMENT_LEAD_DAYS * 24 * 60 * 60 * 1000
+    );
     const conditions: SQL[] = [];
 
     if (!includeExpired) {
-      conditions.push(lte(announcement.validFrom, now));
+      conditions.push(lte(announcement.validFrom, leadWindow));
       conditions.push(gte(announcement.validUntil, now));
     }
 
