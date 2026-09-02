@@ -63,6 +63,7 @@ export const subject = pgTable('subject', {
 });
 
 export const teacher = pgTable('teacher', {
+  email: text('email'),
   firstName: text('first_name').notNull(),
   gender: bit({ dimensions: 1 }),
   id: text('id').primaryKey(),

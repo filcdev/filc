@@ -14,7 +14,11 @@ import type {
   TimetableImportModel,
   WeekInput,
 } from '../../types';
-import { normalizeName, type TimetableImportLogger } from '../../types';
+import {
+  normalizeEmail,
+  normalizeName,
+  type TimetableImportLogger,
+} from '../../types';
 import type { TimetableImportAdapter } from '../registry';
 import { ascExportRootSchema } from './schema';
 
@@ -110,6 +114,7 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
   }));
 
   const teachers: TeacherInput[] = (tt.teachers.teacher ?? []).map((t) => ({
+    email: normalizeEmail(t._email ?? '') || null,
     firstName: normalizeName(t._firstname),
     id: t._id,
     lastName: normalizeName(t._lastname),

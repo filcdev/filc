@@ -2,6 +2,8 @@ import {
   fcmTokenSchema,
   notificationIdParamsSchema,
   paginationSchema,
+  previewTestNotificationSchema,
+  sendTestNotificationSchema,
   tokenDeleteSchema,
   unsubscribeSchema,
   updateSettingsSchema,
@@ -21,8 +23,30 @@ import { authRouter } from '#middleware/auth';
 import { notificationsFactory } from '#routes/notifications/_factory';
 import { env } from '#utils/environment';
 import { created as createdResponse, notFound, ok } from '#utils/http';
-import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
+import { sendPush } from '#utils/notifications/providers/fcm';
+import {
+  generateUnsubscribeToken,
+  renderEmail,
+  sendEmail,
+} from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
+
+/** HTML-escape a string for interpolation into markup (e.g. reflected tokens). */
+const escapeHtml = (value: string): string =>
+  value.replace(/[&<>"']/g, (ch) => {
+    switch (ch) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      default:
+        return '&#39;';
+    }
+  });
 
 const getUser = (c: { var: { user: { id: string } | null } }) => {
   const user = c.var.user;
@@ -325,8 +349,8 @@ export const getUnsubscribePage = notificationsFactory.createHandlers(
     <h1>Leiratkozás az értesítésekről</h1>
     <p>Szeretnéd lemondani az összes email értesítést a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
     <form method="POST" action="/api/notifications/unsubscribe">
-      <input type="hidden" name="userId" value="${userId}">
-      <input type="hidden" name="token" value="${token}">
+      <input type="hidden" name="userId" value="${escapeHtml(userId)}">
+      <input type="hidden" name="token" value="${escapeHtml(token)}">
       <button type="submit">Leiratkozás</button>
     </form>
   </div>
@@ -390,5 +414,141 @@ export const processUnsubscribe = notificationsFactory.createHandlers(
   </div>
 </body>
 </html>`);
+  }
+);
+
+type TestTarget = {
+  email: string;
+  id: string;
+  isUser: boolean;
+  language: string;
+};
+
+async function resolveTestTarget(
+  email: string | undefined,
+  language: 'en' | 'hu' | undefined,
+  currentUserId: string
+): Promise<TestTarget> {
+  let target: TestTarget = {
+    email: '',
+    id: currentUserId,
+    isUser: true,
+    language: 'hu',
+  };
+
+  if (email) {
+    const [byEmail] = await db
+      .select({ email: userTable.email, id: userTable.id })
+      .from(userTable)
+      .where(sql`lower(${userTable.email}) = ${email.toLowerCase()}`)
+      .limit(1);
+    if (byEmail) {
+      target = {
+        email: byEmail.email,
+        id: byEmail.id,
+        isUser: true,
+        language: 'hu',
+      };
+    } else {
+      target = {
+        email,
+        id: currentUserId,
+        isUser: false,
+        language: 'hu',
+      };
+    }
+  } else {
+    const [me] = await db
+      .select({ email: userTable.email })
+      .from(userTable)
+      .where(eq(userTable.id, currentUserId))
+      .limit(1);
+    target.email = me?.email ?? '';
+  }
+
+  const [prefs] = await db
+    .select({ language: userPreferences.language })
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, target.id))
+    .limit(1);
+  target.language = language ?? prefs?.language ?? 'hu';
+  return target;
+}
+
+export const sendTestNotification = notificationsFactory.createHandlers(
+  ...authRouter(),
+  zValidator('json', sendTestNotificationSchema),
+  async (c) => {
+    if (env.mode !== 'development') {
+      throw new HTTPException(StatusCodes.FORBIDDEN, {
+        message: 'Test notifications can only be sent in development mode',
+      });
+    }
+
+    const currentUserId = c.var.user?.id;
+    if (!currentUserId) {
+      throw new HTTPException(StatusCodes.UNAUTHORIZED);
+    }
+    const body = c.req.valid('json');
+
+    const target = await resolveTestTarget(
+      body.email,
+      body.language,
+      currentUserId
+    );
+    const subject = body.subject ?? 'Filc test message';
+    const content =
+      body.content ??
+      'This is a development test message. If you received this, everything works.';
+
+    const results = { email: false, inApp: false, push: false };
+
+    if (target.isUser && body.channels.inApp) {
+      const [notif] = await db
+        .insert(notification)
+        .values({ content, title: subject, type: body.type, userId: target.id })
+        .returning();
+      results.inApp = Boolean(notif);
+    }
+    if (body.channels.email) {
+      results.email = await sendEmail(
+        target.email,
+        subject,
+        body.type,
+        target.language,
+        { content, title: subject },
+        target.id
+      );
+    }
+    if (target.isUser && body.channels.push) {
+      results.push = await sendPush(target.id, subject, content);
+    }
+
+    return ok(c, results);
+  }
+);
+
+export const previewTestNotification = notificationsFactory.createHandlers(
+  ...authRouter(),
+  zValidator('json', previewTestNotificationSchema),
+  async (c) => {
+    if (env.mode !== 'development') {
+      throw new HTTPException(StatusCodes.FORBIDDEN, {
+        message: 'Test notifications can only be previewed in development mode',
+      });
+    }
+
+    const body = c.req.valid('json');
+    const subject = body.subject ?? 'Filc test message';
+    const content =
+      body.content ??
+      'This is a development test message. If you received this, everything works.';
+
+    const html = await renderEmail(body.type, body.language ?? 'hu', {
+      content,
+      title: subject,
+    });
+
+    return ok(c, { html });
   }
 );

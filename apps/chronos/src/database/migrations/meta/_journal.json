@@ -120,6 +120,13 @@
       "when": 1788346359949,
       "tag": "0016_add_timetable_group_display",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788385798904,
+      "tag": "0017_lonely_switch",
+      "breakpoints": true
     }
   ]
 }

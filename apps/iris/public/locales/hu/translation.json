@@ -135,7 +135,8 @@
     "management": "Kezelés",
     "users": "Felhasználók",
     "roles": "Szerepkörök",
-    "bugReports": "Hibajelentések"
+    "bugReports": "Hibajelentések",
+    "developer": "Fejlesztő"
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
@@ -453,6 +454,50 @@
   "cookiePopup": {
     "description": "Mi is sütiket használunk az oldalunkon, hogy jobb élményt adhassunk neked.",
     "title": "Kérsz egy sütit?"
+  },
+  "devNotifications": {
+    "title": "Teszt értesítések",
+    "description": "Teszt értesítések küldése és e-mail sablonok előnézete (csak fejlesztés)",
+    "type": "Értesítés típusa",
+    "language": "Nyelv",
+    "recipientEmail": "Címzett e-mail",
+    "recipientEmailPlaceholder": "opcionalis@example.com",
+    "subject": "Tárgy",
+    "subjectPlaceholder": "Opcionális tárgy",
+    "content": "Tartalom",
+    "contentPlaceholder": "Opcionális üzenet",
+    "channels": "Csatornák",
+    "channelInApp": "Appon belüli értesítés",
+    "channelEmail": "E-mail",
+    "channelPush": "Push",
+    "send": "Teszt küldése",
+    "preview": "E-mail előnézet",
+    "previewTitle": "E-mail előnézet",
+    "previewDescription": "Renderelt sablon küldés nélkül.",
+    "sendAll": "Minden típus küldése",
+    "sendAllSuccess": "Minden típushoz elküldve a minta",
+    "sendSuccess": "Teszt elküldve: {{channels}}",
+    "sendError": "Nem sikerült elküldeni a teszt értesítést",
+    "previewError": "Nem sikerült renderelni az előnézetet"
+  },
+  "teachers": {
+    "title": "Tanárok",
+    "description": "Tanárok, e-mail címek és hozzákapcsolt fiókok kezelése",
+    "searchPlaceholder": "Tanárok keresése...",
+    "name": "Név",
+    "short": "Rövid",
+    "email": "E-mail",
+    "assignedUser": "Hozzákapcsolt felhasználó",
+    "assignedUserPlaceholder": "Felhasználó kiválasztása...",
+    "noUsersFound": "Nincs találat.",
+    "unassigned": "Nincs hozzákapcsolva",
+    "noTeachersFound": "Nincs találat.",
+    "edit": "Szerkesztés",
+    "editTitle": "Tanár szerkesztése",
+    "emailPlaceholder": "tanar@iskola.hu",
+    "save": "Mentés",
+    "updateSuccess": "Tanár sikeresen frissítve",
+    "updateError": "Nem sikerült frissíteni a tanárt"
   },
   "users": {
     "title": "Felhasználók kezelése",

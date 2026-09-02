@@ -44,7 +44,7 @@ import {
   updateSubstitution,
 } from '#routes/timetable/substitution';
 import { getAvailableClassrooms, getClassrooms } from './room';
-import { getTeachers } from './teacher';
+import { getTeachers, listTeachersAdmin, updateTeacher } from './teacher';
 
 export const timetableRouter = timetableFactory
   .createApp()
@@ -100,4 +100,6 @@ export const timetableRouter = timetableFactory
   .get('/groups/getForCohort/:cohortId', ...getGroupsForCohort)
   .post('/groups/select', ...selectGroup)
   // Teacher routes
-  .get('/teachers/getAll', ...getTeachers);
+  .get('/teachers/getAll', ...getTeachers)
+  .get('/teachers', ...listTeachersAdmin)
+  .patch('/teachers/:id', ...updateTeacher);
