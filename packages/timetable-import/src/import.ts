@@ -363,15 +363,24 @@ const insertMissingDays = async <Tx>(
     return result;
   }
 
-  // One row per distinct name; map every source id of that name to it.
+  // One row per distinct name; map every source id of that name to it. The
+  // `days` column stores the source day IDs (the day mask), so keep the name ->
+  // source ids index rather than using the name itself.
   const byName = new Map<string, DayAttributes>();
-  for (const [, data] of missing) {
+  const sourceIdsByName = new Map<string, string[]>();
+  for (const [predefinedId, data] of missing) {
     if (!byName.has(data.name)) {
       byName.set(data.name, data);
     }
+    const ids = sourceIdsByName.get(data.name);
+    if (ids) {
+      ids.push(predefinedId);
+    } else {
+      sourceIdsByName.set(data.name, [predefinedId]);
+    }
   }
-  const toInsert = Array.from(byName.entries()).map(([predefinedId, data]) => ({
-    days: [predefinedId],
+  const toInsert = Array.from(byName.entries()).map(([name, data]) => ({
+    days: sourceIdsByName.get(name) ?? [],
     id: randomId(),
     name: data.name,
     short: data.short,

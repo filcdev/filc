@@ -142,7 +142,8 @@ export const selectGroup = timetableFactory.createHandlers(
   requireAuthentication,
   zValidator('json', selectGroupRequestSchema),
   async (c) => {
-    const userId = c.get('user').id;
+    const user = c.get('user');
+    const userId = user.id;
     const { groupId } = c.req.valid('json');
 
     const [group] = await db
@@ -159,6 +160,12 @@ export const selectGroup = timetableFactory.createHandlers(
     if (!(group.cohortId && group.divisionTag)) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'This group has no division to select',
+      });
+    }
+    // A caller can only pick a group in their own persisted cohort.
+    if (group.cohortId !== user.cohortId) {
+      throw new HTTPException(StatusCodes.FORBIDDEN, {
+        message: 'This group does not belong to your cohort',
       });
     }
     const cohortId = group.cohortId;

@@ -78,7 +78,10 @@ function GroupDisplaySelect({
         onValueChange={(v) => onValueChange(v as 'highlight' | 'hide')}
         value={value}
       >
-        <SelectTrigger className="w-40">
+        <SelectTrigger
+          aria-label={t('preferences.groupDisplay')}
+          className="w-40"
+        >
           <SelectValue />
         </SelectTrigger>
       </Select>
