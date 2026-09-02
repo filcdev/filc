@@ -183,6 +183,8 @@
       "generate": "PDF generálása",
       "generating": "Generálás..."
     },
+    "viewGrid": "Rács",
+    "viewCard": "Órarend kártya",
     "time": "Idő",
     "teacherFallback": "Tanár",
     "selectTimetable": "Órarend kiválasztása",

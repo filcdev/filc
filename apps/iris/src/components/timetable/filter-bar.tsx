@@ -3,7 +3,9 @@ import {
   CheckIcon,
   ChevronsUpDownIcon,
   GraduationCap,
+  LayoutGrid,
   Printer,
+  Table2,
   UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -129,6 +131,8 @@ export function FilterBar({
   selectorLoading,
   onPrint,
   disabled,
+  view,
+  onViewChange,
 }: {
   activeFilter: FilterType;
   onFilterChange: (value: FilterType) => void;
@@ -147,6 +151,10 @@ export function FilterBar({
   selectorLoading: boolean;
   onPrint: () => void;
   disabled?: boolean;
+  /** Active timetable view mode ('grid' | 'card'). */
+  view: 'grid' | 'card';
+  /** Change the active timetable view mode. */
+  onViewChange: (view: 'grid' | 'card') => void;
 }) {
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
@@ -296,17 +304,41 @@ export function FilterBar({
         </div>
       </div>
 
-      {/* Print with label — desktop only, sits at the far right */}
-      <Button
-        className="hidden sm:flex"
-        disabled={disabled}
-        onClick={onPrint}
-        size="sm"
-        variant="outline"
-      >
-        <Printer />
-        {t('timetable.printPdf')}
-      </Button>
+      {/* View toggle + print — far right */}
+      <div className="flex items-center gap-2">
+        <ButtonGroup>
+          <Button
+            disabled={disabled}
+            onClick={() => onViewChange('grid')}
+            size="sm"
+            variant={view === 'grid' ? 'secondary' : 'outline'}
+          >
+            <LayoutGrid />
+            {t('timetable.viewGrid')}
+          </Button>
+          <Button
+            disabled={disabled}
+            onClick={() => onViewChange('card')}
+            size="sm"
+            variant={view === 'card' ? 'secondary' : 'outline'}
+          >
+            <Table2 />
+            {t('timetable.viewCard')}
+          </Button>
+        </ButtonGroup>
+
+        {/* Print with label — desktop only, sits at the far right */}
+        <Button
+          className="hidden sm:flex"
+          disabled={disabled}
+          onClick={onPrint}
+          size="sm"
+          variant="outline"
+        >
+          <Printer />
+          {t('timetable.printPdf')}
+        </Button>
+      </div>
     </div>
   );
 }

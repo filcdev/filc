@@ -195,6 +195,8 @@
       "generate": "Generate PDF",
       "generating": "Generating..."
     },
+    "viewGrid": "Grid",
+    "viewCard": "Card view",
     "time": "Time",
     "teacherFallback": "Teacher",
     "noLessonsOnThisDay": "No lessons",
