@@ -77,8 +77,8 @@ export const importRoute = timetableFactory.createHandlers(
         model,
         {
           name,
-          validFrom: validFrom.toISOString(),
-          validTo: validTo?.toISOString() ?? null,
+          validFrom,
+          validTo: validTo ?? null,
         },
         timetableImportStore,
         logger

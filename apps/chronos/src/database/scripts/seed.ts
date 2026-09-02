@@ -78,7 +78,7 @@ type MovedLessonParams = {
 const generateDates = (): string[] => {
   const offsets = [1, 2, 3, 5, 7];
 
-  return offsets.map((days) => dayjs().add(days, 'day').toISOString());
+  return offsets.map((days) => dayjs().add(days, 'day').format('YYYY-MM-DD'));
 };
 
 const fetchBaseData = async (): Promise<BaseData> => {
@@ -255,7 +255,7 @@ const importBaseData = async () => {
     model,
     {
       name: 'Default Timetable',
-      validFrom: dayjs().toISOString(),
+      validFrom: dayjs().format('YYYY-MM-DD'),
     },
     timetableImportStore,
     getLogger(['chronos', 'timetable'])

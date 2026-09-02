@@ -160,7 +160,15 @@ type ImportTimetablePayload = {
   validTo?: Date;
 };
 
-/** Import an Oman XML timetable export; replaces the whole timetable graph. */
+/** Format a Date as a local `YYYY-MM-DD` string for date-only DB columns. */
+const toDateInput = (value: Date): string => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/** Import an aSc/Oman XML timetable export; replaces the whole timetable graph. */
 export function useImportTimetable({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateTimetableGraph();
@@ -177,8 +185,8 @@ export function useImportTimetable({ onSaved }: MutationCallbacks = {}) {
           form: {
             file,
             name,
-            validFrom: validFrom.toISOString(),
-            ...(validTo && { validTo: validTo.toISOString() }),
+            validFrom: toDateInput(validFrom),
+            ...(validTo && { validTo: toDateInput(validTo) }),
           },
         })
       );

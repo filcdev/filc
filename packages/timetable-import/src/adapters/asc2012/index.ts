@@ -195,6 +195,7 @@ const buildLessons = (tt: AscTimetable, ctx: BaseContext): LessonInput[] => {
       : null;
 
     const cardClassroomIds = splitIds(card._classroomids);
+    const periodsPerWeek = Number(lesson._periodsperweek);
     lessons.push({
       classroomIds: cardClassroomIds.length
         ? cardClassroomIds
@@ -204,7 +205,7 @@ const buildLessons = (tt: AscTimetable, ctx: BaseContext): LessonInput[] => {
       groupIds: splitIds(lesson._groupids),
       id: `${lesson._id}:${card._period}:${card._days}`,
       periodId: card._period,
-      periodsPerWeek: Math.round(Number(lesson._periodsperweek)),
+      periodsPerWeek: periodsPerWeek > 0 ? Math.round(periodsPerWeek) : 1,
       subjectId: lesson._subjectid,
       teacherIds: splitIds(lesson._teacherids),
       termId: termsName,
