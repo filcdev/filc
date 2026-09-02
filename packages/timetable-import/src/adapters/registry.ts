@@ -1,4 +1,4 @@
-import type { TimetableImportModel } from '../types';
+import type { TimetableImportLogger, TimetableImportModel } from '../types';
 
 /**
  * A timetable import format adapter.
@@ -18,8 +18,14 @@ export type TimetableImportAdapter = {
    * MIME type the routing helper prefers the one whose `detect` matches.
    */
   detect?(input: Uint8Array): boolean;
-  /** Parses raw uploaded bytes into a normalized timetable model. */
-  parse(input: Uint8Array): TimetableImportModel;
+  /**
+   * Parses raw uploaded bytes into a normalized timetable model. An optional
+   * logger lets the adapter report diagnostics (e.g. skipped cards).
+   */
+  parse(
+    input: Uint8Array,
+    logger?: TimetableImportLogger
+  ): TimetableImportModel;
 };
 
 const registry = new Map<string, TimetableImportAdapter>();

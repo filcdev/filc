@@ -114,19 +114,8 @@ export const importTimetable = <Tx>(
 
     // Resolve the currently active timetable inside this transaction so a
     // concurrent import cannot race on the same row.
-    const today = new Date().toLocaleDateString('en-CA', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-    const validFromDay = new Date(options.validFrom).toLocaleDateString(
-      'en-CA',
-      {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      }
-    );
+    const today = dayjs().format('YYYY-MM-DD');
+    const validFromDay = dayjs(options.validFrom).format('YYYY-MM-DD');
     const takesEffectNow = validFromDay <= today;
     const active = await store.findActiveTimetable(tx, today);
     // Only expire a still-valid timetable when this import actually takes
@@ -149,7 +138,7 @@ export const importTimetable = <Tx>(
     // Cohort identity is scoped to the calendar year the timetable starts in.
     // Re-imports of the same school year reuse that year's cohorts, while a
     // new school year's rename never merges into an old (expired) cohort.
-    const schoolYear = new Date(options.validFrom).getFullYear();
+    const schoolYear = dayjs(options.validFrom).year();
 
     const [periodMap, dayMap, subjectMap, teacherMap, classroomMap] =
       await Promise.all([
@@ -205,6 +194,19 @@ export const importTimetable = <Tx>(
   });
 };
 
+const buildSourceIdByNumber = (
+  unique: Map<string, { period: number; start: string; end: string }>
+): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const [sourceId, value] of unique) {
+    const key = `${value.period}`;
+    if (!map.has(key)) {
+      map.set(key, sourceId);
+    }
+  }
+  return map;
+};
+
 const loadPeriods = async <Tx>(
   tx: Tx,
   periods: TimetableImportModel['periods'],
@@ -239,35 +241,62 @@ const loadPeriods = async <Tx>(
     });
   }
 
-  const periodNumbers = Array.from(unique.values()).map((p) => p.period);
-  if (periodNumbers.length) {
-    const existing = await store.findPeriodsByNumber(tx, periodNumbers);
+  const sourceIdsByNumber = buildSourceIdByNumber(unique);
 
-    for (const row of existing) {
-      const key = `${row.period}`;
-      if (unique.has(key)) {
-        result.set(key, row.id);
-        unique.delete(key);
-      }
+  await matchExistingPeriods(tx, unique, sourceIdsByNumber, store, result);
+  await insertRemainingPeriods(tx, unique, sourceIdsByNumber, store, result);
+
+  logger.trace('Loaded periods', { total: result.size });
+  return result;
+};
+
+// Key `periodMap` by the *source* period id (what `lesson.periodId` uses), not
+// the numeric period. Period ids like `"01"` (number 1) would otherwise miss
+// the lookup and the lesson would be dropped in `processLesson`.
+const matchExistingPeriods = async <Tx>(
+  tx: Tx,
+  unique: Map<string, { period: number; start: string; end: string }>,
+  sourceIdsByNumber: Map<string, string>,
+  store: TimetableImportStore<Tx>,
+  result: Map<string, string>
+): Promise<void> => {
+  const numbers = Array.from(unique.values()).map((p) => p.period);
+  if (!numbers.length) {
+    return;
+  }
+  const existing = await store.findPeriodsByNumber(tx, numbers);
+  for (const row of existing) {
+    const sourceId = sourceIdsByNumber.get(`${row.period}`);
+    if (sourceId && unique.has(sourceId)) {
+      result.set(sourceId, row.id);
+      unique.delete(sourceId);
     }
   }
+};
 
+const insertRemainingPeriods = async <Tx>(
+  tx: Tx,
+  unique: Map<string, { period: number; start: string; end: string }>,
+  sourceIdsByNumber: Map<string, string>,
+  store: TimetableImportStore<Tx>,
+  result: Map<string, string>
+): Promise<void> => {
   const toInsert = Array.from(unique.entries()).map(([, value]) => ({
     endTime: value.end,
     id: randomId(),
     period: value.period,
     startTime: value.start,
   }));
-
-  if (toInsert.length) {
-    const inserted = await store.insertPeriods(tx, toInsert);
-    for (const row of inserted) {
-      result.set(`${row.period}`, row.id);
+  if (!toInsert.length) {
+    return;
+  }
+  const inserted = await store.insertPeriods(tx, toInsert);
+  for (const row of inserted) {
+    const sourceId = sourceIdsByNumber.get(`${row.period}`);
+    if (sourceId) {
+      result.set(sourceId, row.id);
     }
   }
-
-  logger.trace('Loaded periods', { total: result.size });
-  return result;
 };
 
 type DayAttributes = { name: string; short: string };
@@ -334,24 +363,27 @@ const insertMissingDays = async <Tx>(
     return result;
   }
 
-  const toInsert = Array.from(missing.entries()).map(
-    ([predefinedId, data]) => ({
-      days: [predefinedId],
-      id: randomId(),
-      name: data.name,
-      short: data.short,
-    })
-  );
+  // One row per distinct name; map every source id of that name to it.
+  const byName = new Map<string, DayAttributes>();
+  for (const [, data] of missing) {
+    if (!byName.has(data.name)) {
+      byName.set(data.name, data);
+    }
+  }
+  const toInsert = Array.from(byName.entries()).map(([predefinedId, data]) => ({
+    days: [predefinedId],
+    id: randomId(),
+    name: data.name,
+    short: data.short,
+  }));
 
   const inserted = await store.insertDays(tx, toInsert);
 
   for (const row of inserted) {
-    const match = Array.from(missing.entries()).find(
-      ([, data]) => data.name === row.name
-    );
-    if (match) {
-      const [predefinedId] = match;
-      result.set(predefinedId, row.id);
+    for (const [predefinedId, data] of missing) {
+      if (data.name === row.name) {
+        result.set(predefinedId, row.id);
+      }
     }
   }
 
@@ -415,13 +447,13 @@ const matchExistingSubjects = async <Tx>(
 
   const existing = await store.findSubjectsByName(tx, names);
 
+  // Map every source id that shares a name to that row, so duplicate names
+  // don't leave source ids un-mapped (which would then insert dup rows).
   for (const row of existing) {
-    const match = Array.from(unique.entries()).find(
-      ([, data]) => data.name === row.name
-    );
-    if (match) {
-      const [predefinedId] = match;
-      result.set(predefinedId, row.id);
+    for (const [predefinedId, data] of unique) {
+      if (data.name === row.name) {
+        result.set(predefinedId, row.id);
+      }
     }
   }
 
@@ -438,23 +470,24 @@ const insertMissingSubjects = async <Tx>(
     return result;
   }
 
-  const toInsert = Array.from(missing.entries()).map(
-    ([_predefinedId, data]) => ({
-      id: randomId(),
-      name: data.name,
-      short: data.short,
-    })
-  );
+  // One row per distinct name; map every source id of that name to it.
+  const byName = new Map<string, SubjectAttributes>();
+  for (const [, data] of missing) {
+    byName.set(data.name, data);
+  }
+  const toInsert = Array.from(byName.values()).map((data) => ({
+    id: randomId(),
+    name: data.name,
+    short: data.short,
+  }));
 
   const inserted = await store.insertSubjects(tx, toInsert);
 
   for (const row of inserted) {
-    const match = Array.from(missing.entries()).find(
-      ([, data]) => data.name === row.name
-    );
-    if (match) {
-      const [predefinedId] = match;
-      result.set(predefinedId, row.id);
+    for (const [predefinedId, data] of missing) {
+      if (data.name === row.name) {
+        result.set(predefinedId, row.id);
+      }
     }
   }
 
@@ -527,22 +560,34 @@ const loadTeachers = async <Tx>(
   }
 
   if (missing.length) {
-    const toInsert = missing.map((item) => ({
-      firstName: item.firstName,
-      id: randomId(),
-      lastName: item.lastName,
-      short: item.short,
-    }));
+    // One row per distinct full name; map every source id of that name to it.
+    const seen = new Set<string>();
+    const toInsert = missing
+      .filter((item) => {
+        const key = `${item.firstName}|${item.lastName}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      })
+      .map((item) => ({
+        firstName: item.firstName,
+        id: randomId(),
+        lastName: item.lastName,
+        short: item.short,
+      }));
 
     const inserted = await store.insertTeachers(tx, toInsert);
 
+    const insertedByName = new Map<string, string>();
     for (const row of inserted) {
-      const match = missing.find(
-        (item) =>
-          item.firstName === row.firstName && item.lastName === row.lastName
-      );
-      if (match) {
-        result.set(match.predefinedId, row.id);
+      insertedByName.set(`${row.firstName}|${row.lastName}`, row.id);
+    }
+    for (const item of missing) {
+      const id = insertedByName.get(`${item.firstName}|${item.lastName}`);
+      if (id) {
+        result.set(item.predefinedId, id);
       }
     }
   }
@@ -567,25 +612,6 @@ const getOrCreateBuilding = async <Tx>(
   return inserted;
 };
 
-const upsertClassroom = async <Tx>(
-  tx: Tx,
-  buildingId: string,
-  attrs: { id: string; name: string; short: string; capacity: number | null },
-  store: TimetableImportStore<Tx>
-): Promise<string | null> => {
-  const existing = await store.findClassroomByName(tx, attrs.name);
-  if (existing) {
-    return existing;
-  }
-  return store.insertClassroom(tx, {
-    buildingId,
-    capacity: attrs.capacity,
-    id: randomId(),
-    name: attrs.name,
-    short: attrs.short,
-  });
-};
-
 const loadClassrooms = async <Tx>(
   tx: Tx,
   classrooms: TimetableImportModel['classrooms'],
@@ -597,6 +623,19 @@ const loadClassrooms = async <Tx>(
   const result: Map<string, string> = new Map();
   const buildingId = await getOrCreateBuilding(tx, buildingName, store);
 
+  // Batch the existing-name lookup (one query for all names) and reuse one row
+  // for duplicate-named classrooms instead of inserting duplicate rows.
+  const existingByName = new Map<string, string>();
+  const names = Array.from(
+    new Set(classrooms.map((c) => c.name).filter(Boolean))
+  );
+  if (names.length) {
+    const rows = await store.findClassroomsByName(tx, names);
+    for (const row of rows) {
+      existingByName.set(row.name, row.id);
+    }
+  }
+
   for (const el of classrooms) {
     const predefinedId = el.id;
     const name = el.name;
@@ -606,17 +645,20 @@ const loadClassrooms = async <Tx>(
         'Incomplete data for classroom, unable to get all attributes'
       );
     }
-    const dbId = await upsertClassroom(
-      tx,
-      buildingId,
-      {
+    let dbId = existingByName.get(name);
+    if (!dbId) {
+      const inserted = await store.insertClassroom(tx, {
+        buildingId,
         capacity: el.capacity,
-        id: predefinedId,
+        id: randomId(),
         name,
         short,
-      },
-      store
-    );
+      });
+      dbId = inserted ?? '';
+      if (dbId) {
+        existingByName.set(name, dbId);
+      }
+    }
     if (dbId) {
       result.set(predefinedId, dbId);
     }
@@ -696,41 +738,22 @@ const loadCohorts = async <Tx>(
   return result;
 };
 
-const upsertGroup = async <Tx>(
+const loadExistingGroupsByKey = async <Tx>(
   tx: Tx,
-  attrs: {
-    cohortId: string;
-    timetableId: string;
-    name: string;
-    entireClass: boolean;
-    studentCount: number | null;
-    divisionTag: string | null;
-  },
+  cohortIds: string[],
   store: TimetableImportStore<Tx>
-): Promise<string | null> => {
-  const existing = await store.findCohortGroupByCohortAndName(
-    tx,
-    attrs.cohortId,
-    attrs.name
-  );
-  if (existing) {
-    // Re-imports may carry the authoritative aSc divisiontag; refresh the
-    // stored key so the group follows the latest export.
-    await store.updateCohortGroup(tx, existing, {
-      divisionTag: attrs.divisionTag,
-    });
-    return existing;
+): Promise<Map<string, string>> => {
+  const map = new Map<string, string>();
+  if (!cohortIds.length) {
+    return map;
   }
-  return store.insertCohortGroup(tx, {
-    cohortId: attrs.cohortId,
-    divisionTag: attrs.divisionTag,
-    entireClass: attrs.entireClass,
-    id: randomId(),
-    name: attrs.name,
-    studentCount: attrs.studentCount ?? 0,
-    teacherId: null,
-    timetableId: attrs.timetableId,
-  });
+  const rows = await store.findCohortGroupsByCohorts(tx, cohortIds);
+  for (const row of rows) {
+    if (row.cohortId) {
+      map.set(`${row.cohortId}|${row.name}`, row.id);
+    }
+  }
+  return map;
 };
 
 const loadGroups = async <Tx>(
@@ -744,23 +767,47 @@ const loadGroups = async <Tx>(
   logger.trace('Loading groups from XML');
   const result: Map<string, string> = new Map();
 
+  // Batch-fetch existing groups for the mapped cohorts (one query), keyed by
+  // `cohortId|name`, so duplicate-named groups reuse a row and we avoid one
+  // lookup per group inside the import transaction.
+  const cohortIds = Array.from(
+    new Set(
+      groups
+        .map((group) => cohortMap.get(group.cohortId))
+        .filter(Boolean) as string[]
+    )
+  );
+  const existingByKey = await loadExistingGroupsByKey(tx, cohortIds, store);
+
   for (const group of groups) {
     const cohortId = cohortMap.get(group.cohortId);
     if (!cohortId) {
       continue;
     }
-    const dbId = await upsertGroup(
-      tx,
-      {
+    const key = `${cohortId}|${group.name}`;
+    let dbId = existingByKey.get(key);
+    if (dbId) {
+      // Re-imports may carry the authoritative aSc divisiontag; refresh the
+      // stored key so the group follows the latest export.
+      await store.updateCohortGroup(tx, dbId, {
+        divisionTag: group.divisionTag,
+      });
+    } else {
+      const inserted = await store.insertCohortGroup(tx, {
         cohortId,
         divisionTag: group.divisionTag,
         entireClass: group.entireClass,
+        id: randomId(),
         name: group.name,
-        studentCount: group.studentCount,
+        studentCount: group.studentCount ?? 0,
+        teacherId: null,
         timetableId,
-      },
-      store
-    );
+      });
+      dbId = inserted ?? '';
+      if (dbId) {
+        existingByKey.set(key, dbId);
+      }
+    }
     if (dbId) {
       result.set(group.id, dbId);
     }
@@ -880,6 +927,11 @@ const processLesson = (
   const subjectId = maps.subjectMap.get(lesson.subjectId);
   const dayDefinitionId = maps.dayMap.get(lesson.dayId);
   if (!(subjectId && dayDefinitionId)) {
+    logger.error('Dropping lesson: subject or day not resolved', {
+      dayId: lesson.dayId,
+      lessonId: lesson.id,
+      subjectId: lesson.subjectId,
+    });
     return null;
   }
 
@@ -905,6 +957,10 @@ const processLesson = (
 
   const weeksDefinitionId = weekMap.get(lesson.weekId);
   if (!weeksDefinitionId) {
+    logger.error('Dropping lesson: week definition not resolved', {
+      lessonId: lesson.id,
+      weekId: lesson.weekId,
+    });
     return null;
   }
 
@@ -1027,15 +1083,15 @@ const loadLessons = async <Tx>(
 
   await insertChunked(toInsert, LESSON_INSERT_CHUNK, async (chunk) => {
     const rows = chunk.map((item) => item.row);
-    const insertedIds = await store.insertLessons(tx, rows);
+    await store.insertLessons(tx, rows);
 
     const mtmRows: LessonCohortRow[] = [];
-    for (let i = 0; i < chunk.length; i++) {
-      const item = chunk[i];
+    for (const item of chunk) {
       if (!item) {
         continue;
       }
-      const lessonId = insertedIds[i] ?? item.row.id;
+      // Use the pre-generated id; do not rely on the DB RETURNING order.
+      const lessonId = item.row.id;
       result.set(item.scheduleKey, lessonId);
       for (const cohortId of item.cohortIds) {
         mtmRows.push({ cohortId, lessonId });

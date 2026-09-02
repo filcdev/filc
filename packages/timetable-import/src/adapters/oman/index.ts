@@ -7,7 +7,7 @@ import type {
   LessonInput,
   TimetableImportModel,
 } from '../../types';
-import { normalizeName } from '../../types';
+import { normalizeName, type TimetableImportLogger } from '../../types';
 import type { TimetableImportAdapter } from '../registry';
 import { timetableExportRootSchema } from './schema';
 import type { TimetableExportRoot } from './types';
@@ -175,7 +175,10 @@ const toModel = (root: TimetableExportRoot): TimetableImportModel => {
  * export), a stray `Period=""` attribute is stripped, and the document is
  * validated against the Oman XML schema before normalization.
  */
-export const parseOmanTimetable = (input: Uint8Array): TimetableImportModel => {
+export const parseOmanTimetable = (
+  input: Uint8Array,
+  _logger?: TimetableImportLogger
+): TimetableImportModel => {
   const decoded = decode(input, 'win1250');
   const cleaned = decoded.replaceAll('Period=""', '');
 

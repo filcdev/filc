@@ -74,12 +74,10 @@ export type GroupInput = {
   teacherId: string | null;
 };
 
-// These regexes run on a short, bounded group name (never attacker-controlled
-// or long input), and contain no nested quantifiers, so they cannot backtrack
-// superlinearly. The CodeQL "polynomial regex" heuristic is a false positive.
-// codeql[js/polynomial-regex]
+// Bounded quantifiers keep these linear to avoid CodeQL's polynomial-regex
+// check (the unbounded `\s*\d+$` could backtrack per digit from every offset).
 const CLASS_CODE_PREFIX_RE = /^\d{1,2}\.[A-Z]{1,2}\s+/;
-const TRAILING_NUMBER_RE = /\s*\d+$/;
+const TRAILING_NUMBER_RE = /\s{0,8}\d{1,4}$/;
 const MULTIPLE_WHITESPACE_RE = /\s+/g;
 
 /**

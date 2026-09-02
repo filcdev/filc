@@ -161,37 +161,45 @@ export const selectGroup = timetableFactory.createHandlers(
         message: 'This group has no division to select',
       });
     }
+    const cohortId = group.cohortId;
+    const divisionTag = group.divisionTag;
 
     // A student keeps exactly one group per division, so drop any previous
-    // membership among the groups of the same cohort + division.
-    const sameDivisionRows = await db
-      .select({ id: cohortGroup.id })
-      .from(cohortGroup)
-      .where(
-        and(
-          eq(cohortGroup.cohortId, group.cohortId),
-          eq(cohortGroup.divisionTag, group.divisionTag)
-        )
-      );
-    const sameDivisionIds = sameDivisionRows.map((row) => row.id);
-    if (sameDivisionIds.length) {
-      await db
-        .delete(userGroup)
+    // membership among the groups of the same cohort + division. Run the
+    // delete + insert in one transaction and lock the division's group rows so
+    // two concurrent selections cannot both delete-then-insert (write skew).
+    await db.transaction(async (tx) => {
+      const divisionRows = await tx
+        .select({ id: cohortGroup.id })
+        .from(cohortGroup)
         .where(
           and(
-            eq(userGroup.userId, userId),
-            inArray(userGroup.groupId, sameDivisionIds)
+            eq(cohortGroup.cohortId, cohortId),
+            eq(cohortGroup.divisionTag, divisionTag)
           )
-        );
-    }
+        )
+        .for('update');
 
-    await db
-      .insert(userGroup)
-      .values({ groupId, userId })
-      .onConflictDoNothing();
+      const sameDivisionIds = divisionRows.map((row) => row.id);
+      if (sameDivisionIds.length) {
+        await tx
+          .delete(userGroup)
+          .where(
+            and(
+              eq(userGroup.userId, userId),
+              inArray(userGroup.groupId, sameDivisionIds)
+            )
+          );
+      }
+
+      await tx
+        .insert(userGroup)
+        .values({ groupId, userId })
+        .onConflictDoNothing();
+    });
 
     return ok(c, {
-      divisionTag: group.divisionTag,
+      divisionTag,
       selectedGroupId: groupId,
     });
   }

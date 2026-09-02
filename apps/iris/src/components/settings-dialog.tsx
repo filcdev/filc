@@ -58,11 +58,40 @@ const NOTIFICATION_TYPES = [
 // Cohort ids are UUIDs, so this cannot collide with a real id.
 const NO_CLASS_VALUE = 'no-class';
 
+/** The "Split classes" display preference (highlight vs. hide other groups). */
+function GroupDisplaySelect({
+  onValueChange,
+  value,
+}: {
+  onValueChange: (value: 'highlight' | 'hide') => void;
+  value: 'highlight' | 'hide';
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-between">
+      <span>{t('preferences.groupDisplay')}</span>
+      <Select
+        items={[
+          { label: t('preferences.groupDisplayHighlight'), value: 'highlight' },
+          { label: t('preferences.groupDisplayHide'), value: 'hide' },
+        ]}
+        onValueChange={(v) => onValueChange(v as 'highlight' | 'hide')}
+        value={value}
+      >
+        <SelectTrigger className="w-40">
+          <SelectValue />
+        </SelectTrigger>
+      </Select>
+    </div>
+  );
+}
+
 type SettingsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: settings page with many option groups
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { i18n, t } = useTranslation();
   const [, setCookie] = useCookies(['filc.language']);
@@ -196,6 +225,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   ];
 
   const ready = !(isLoading || isError);
+  // The group picker is scoped to the user's *persisted* cohort, so memberships
+  // are never saved for a cohort the user has only drafted in this dialog.
+  const persistedCohortId = session?.user?.cohortId ?? null;
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -282,33 +314,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     ) : null}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span>{t('preferences.groupDisplay')}</span>
-                    <Select
-                      items={[
-                        {
-                          label: t('preferences.groupDisplayHighlight'),
-                          value: 'highlight',
-                        },
-                        {
-                          label: t('preferences.groupDisplayHide'),
-                          value: 'hide',
-                        },
-                      ]}
-                      onValueChange={(value) =>
-                        setTimetableGroupDisplay(value as 'highlight' | 'hide')
-                      }
-                      value={timetableGroupDisplay}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </Select>
-                  </div>
+                  <GroupDisplaySelect
+                    onValueChange={setTimetableGroupDisplay}
+                    value={timetableGroupDisplay}
+                  />
                 </CardContent>
               </Card>
 
-              <MyGroupsSettingsCard cohortId={selectedCohortId} />
+              <MyGroupsSettingsCard cohortId={persistedCohortId} />
 
               <Card>
                 <CardHeader>

@@ -92,7 +92,10 @@ const ascCardSchema = z.object({
 });
 
 const maybeArray = <T extends z.ZodType>(schema: T) =>
-  z.union([schema, z.undefined(), z.null()]).optional();
+  z
+    .union([schema, z.literal(''), z.undefined(), z.null()])
+    .optional()
+    .transform((value) => (value === '' ? undefined : value));
 
 // An empty section renders as `null`/`''` in fast-xml-parser, so each array is
 // optional and holes are treated as `[]` during normalization.

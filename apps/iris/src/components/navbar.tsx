@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Book,
@@ -64,6 +65,7 @@ export function Navbar({
 }: NavbarProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { data, isPending } = authClient.useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -211,6 +213,9 @@ export function Navbar({
                         className="text-destructive"
                         onClick={async () => {
                           await authClient.signOut();
+                          // Clear cached user-specific data (e.g. group
+                          // selections) so the next account can't read it.
+                          queryClient.clear();
                         }}
                       >
                         <LogOut />

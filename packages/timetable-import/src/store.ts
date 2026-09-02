@@ -104,6 +104,12 @@ export type NewCohortGroup = {
   timetableId: string;
 };
 
+export type CohortGroupRow = {
+  id: string;
+  cohortId: string | null;
+  name: string;
+};
+
 export type NewTerm = {
   id: string;
   name: string;
@@ -174,6 +180,7 @@ export type TimetableImportStore<Tx = unknown> = {
   findBuildingByName(tx: Tx, name: string): Promise<string | null>;
   insertBuilding(tx: Tx, name: string): Promise<string>;
   findClassroomByName(tx: Tx, name: string): Promise<string | null>;
+  findClassroomsByName(tx: Tx, names: string[]): Promise<ClassroomRow[]>;
   insertClassroom(tx: Tx, row: NewClassroom): Promise<string | null>;
 
   findCohortByName(tx: Tx, name: string, year: number): Promise<string | null>;
@@ -194,6 +201,10 @@ export type TimetableImportStore<Tx = unknown> = {
     cohortId: string,
     name: string
   ): Promise<string | null>;
+  findCohortGroupsByCohorts(
+    tx: Tx,
+    cohortIds: string[]
+  ): Promise<CohortGroupRow[]>;
   insertCohortGroup(tx: Tx, row: NewCohortGroup): Promise<string | null>;
   updateCohortGroup(
     tx: Tx,

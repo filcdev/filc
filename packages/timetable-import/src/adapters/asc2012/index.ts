@@ -14,7 +14,7 @@ import type {
   TimetableImportModel,
   WeekInput,
 } from '../../types';
-import { normalizeName } from '../../types';
+import { normalizeName, type TimetableImportLogger } from '../../types';
 import type { TimetableImportAdapter } from '../registry';
 import { ascExportRootSchema } from './schema';
 
@@ -171,51 +171,83 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
   };
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: maps aSc lessons+cards onto placement rows
-const buildLessons = (tt: AscTimetable, ctx: BaseContext): LessonInput[] => {
+type AscCard = NonNullable<AscTimetable['cards']>['card'][number];
+
+/**
+ * Map a single aSc `<card>` (a scheduled placement) to a lesson draft.
+ * Returns `null` (with a diagnostic log) when the card cannot be placed, so an
+ * import no longer silently drops cards.
+ */
+const cardToLesson = (
+  card: AscCard,
+  ctx: BaseContext,
+  logger?: TimetableImportLogger
+): LessonInput | null => {
+  const lesson = ctx.lessonById.get(card._lessonid);
+  if (!lesson) {
+    logger?.debug('Skipped aSc card: unknown lesson', {
+      lessonId: card._lessonid,
+    });
+    return null;
+  }
+  const dayId =
+    ctx.dayByMask.get(card._days) ?? ctx.dayById.get(lesson._daysdefid)?._id;
+  if (!dayId) {
+    logger?.debug('Skipped aSc card: no day resolved', {
+      lessonId: card._lessonid,
+    });
+    return null;
+  }
+  const weeksName = lesson._weeksdefid
+    ? (ctx.weekNameById.get(lesson._weeksdefid) ?? '')
+    : '';
+  if (!weeksName) {
+    logger?.debug('Skipped aSc card: no week definition', {
+      lessonId: card._lessonid,
+    });
+    return null;
+  }
+  const termsName = lesson._termsdefid
+    ? (ctx.termNameById.get(lesson._termsdefid) ?? '')
+    : null;
+  const cardClassroomIds = splitIds(card._classroomids);
+  const periodsPerWeek = Number(lesson._periodsperweek);
+  return {
+    classroomIds: cardClassroomIds.length
+      ? cardClassroomIds
+      : splitIds(lesson._classroomids),
+    cohortIds: splitIds(lesson._classids),
+    dayId,
+    groupIds: splitIds(lesson._groupids),
+    id: `${lesson._id}:${card._period}:${card._days}`,
+    periodId: card._period,
+    periodsPerWeek: periodsPerWeek > 0 ? Math.round(periodsPerWeek) : 1,
+    subjectId: lesson._subjectid,
+    teacherIds: splitIds(lesson._teacherids),
+    termId: termsName,
+    weekId: weeksName,
+  };
+};
+
+const buildLessons = (
+  tt: AscTimetable,
+  ctx: BaseContext,
+  logger?: TimetableImportLogger
+): LessonInput[] => {
   const lessons: LessonInput[] = [];
   for (const card of tt.cards?.card ?? []) {
-    const lesson = ctx.lessonById.get(card._lessonid);
-    if (!lesson) {
-      continue;
+    const lesson = cardToLesson(card, ctx, logger);
+    if (lesson) {
+      lessons.push(lesson);
     }
-    const dayId =
-      ctx.dayByMask.get(card._days) ?? ctx.dayById.get(lesson._daysdefid)?._id;
-    if (!dayId) {
-      continue;
-    }
-    const weeksName = lesson._weeksdefid
-      ? (ctx.weekNameById.get(lesson._weeksdefid) ?? '')
-      : '';
-    if (!weeksName) {
-      continue;
-    }
-    const termsName = lesson._termsdefid
-      ? (ctx.termNameById.get(lesson._termsdefid) ?? '')
-      : null;
-
-    const cardClassroomIds = splitIds(card._classroomids);
-    const periodsPerWeek = Number(lesson._periodsperweek);
-    lessons.push({
-      classroomIds: cardClassroomIds.length
-        ? cardClassroomIds
-        : splitIds(lesson._classroomids),
-      cohortIds: splitIds(lesson._classids),
-      dayId,
-      groupIds: splitIds(lesson._groupids),
-      id: `${lesson._id}:${card._period}:${card._days}`,
-      periodId: card._period,
-      periodsPerWeek: periodsPerWeek > 0 ? Math.round(periodsPerWeek) : 1,
-      subjectId: lesson._subjectid,
-      teacherIds: splitIds(lesson._teacherids),
-      termId: termsName,
-      weekId: weeksName,
-    });
   }
   return lessons;
 };
 
-const toModel = (root: AscExportRoot): TimetableImportModel => {
+const toModel = (
+  root: AscExportRoot,
+  logger?: TimetableImportLogger
+): TimetableImportModel => {
   const tt = root.timetable;
   const ctx = normalizeBase(tt);
   return {
@@ -223,7 +255,7 @@ const toModel = (root: AscExportRoot): TimetableImportModel => {
     cohorts: ctx.cohorts,
     days: ctx.days,
     groups: ctx.groups,
-    lessons: buildLessons(tt, ctx),
+    lessons: buildLessons(tt, ctx, logger),
     periods: ctx.periods,
     subjects: ctx.subjects,
     teachers: ctx.teachers,
@@ -245,7 +277,10 @@ const decodeXml = (input: Uint8Array): string => {
  * and the desktop `aSc Timetables 2012 XML` export) into the normalized import
  * model. The document may be UTF-8 or windows-1250 encoded.
  */
-export const parseAsc2012 = (input: Uint8Array): TimetableImportModel => {
+export const parseAsc2012 = (
+  input: Uint8Array,
+  logger?: TimetableImportLogger
+): TimetableImportModel => {
   const parser = new XMLParser({
     attributeNamePrefix: '_',
     ignoreAttributes: false,
@@ -259,7 +294,7 @@ export const parseAsc2012 = (input: Uint8Array): TimetableImportModel => {
     timetable?: unknown;
   } | null;
   const root = z.parse(ascExportRootSchema, parsed);
-  return toModel(root);
+  return toModel(root, logger);
 };
 
 export const asc2012TimetableImportAdapter: TimetableImportAdapter = {

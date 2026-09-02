@@ -1,5 +1,7 @@
 import type {
   ActiveTimetableRow,
+  ClassroomRow,
+  CohortGroupRow,
   DayRow,
   ExistingLessonRow,
   LessonCohortRow,
@@ -82,6 +84,16 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     return existing?.id ?? null;
   },
 
+  async findClassroomsByName(tx, names): Promise<ClassroomRow[]> {
+    if (!names.length) {
+      return [];
+    }
+    return await tx
+      .select({ id: classroomTable.id, name: classroomTable.name })
+      .from(classroomTable)
+      .where(inArray(classroomTable.name, names));
+  },
+
   async findCohortByName(tx, name, year): Promise<string | null> {
     // Scope cohort identity to the calendar year a linked timetable starts in,
     // so a rename in a new school year creates a fresh cohort instead of
@@ -126,6 +138,20 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       )
       .limit(1);
     return existing?.id ?? null;
+  },
+
+  async findCohortGroupsByCohorts(tx, cohortIds): Promise<CohortGroupRow[]> {
+    if (!cohortIds.length) {
+      return [];
+    }
+    return await tx
+      .select({
+        cohortId: cohortGroupTable.cohortId,
+        id: cohortGroupTable.id,
+        name: cohortGroupTable.name,
+      })
+      .from(cohortGroupTable)
+      .where(inArray(cohortGroupTable.cohortId, cohortIds));
   },
 
   async findDaysByName(tx, names): Promise<DayRow[]> {
