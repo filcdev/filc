@@ -25,6 +25,15 @@ import {
   getSubstitutionCandidates,
 } from '#routes/timetable/lesson';
 import {
+  buildingCrud,
+  classroomCrud,
+  dayDefinitionCrud,
+  periodCrud,
+  subjectCrud,
+  termDefinitionCrud,
+  weekDefinitionCrud,
+} from '#routes/timetable/master-data';
+import {
   createMovedLesson,
   deleteMovedLesson,
   getAllMovedLessons,
@@ -100,4 +109,40 @@ export const timetableRouter = timetableFactory
   .get('/groups/getForCohort/:cohortId', ...getGroupsForCohort)
   .post('/groups/select', ...selectGroup)
   // Teacher routes
-  .get('/teachers/getAll', ...getTeachers);
+  .get('/teachers/getAll', ...getTeachers)
+  // Base-data CRUD (managed under /manage to avoid clashing with public reads)
+  .get('/manage/subjects', ...subjectCrud.list)
+  .post('/manage/subjects', ...subjectCrud.create)
+  .get('/manage/subjects/:id', ...subjectCrud.getById)
+  .patch('/manage/subjects/:id', ...subjectCrud.update)
+  .delete('/manage/subjects/:id', ...subjectCrud.remove)
+  .get('/manage/buildings', ...buildingCrud.list)
+  .post('/manage/buildings', ...buildingCrud.create)
+  .get('/manage/buildings/:id', ...buildingCrud.getById)
+  .patch('/manage/buildings/:id', ...buildingCrud.update)
+  .delete('/manage/buildings/:id', ...buildingCrud.remove)
+  .get('/manage/classrooms', ...classroomCrud.list)
+  .post('/manage/classrooms', ...classroomCrud.create)
+  .get('/manage/classrooms/:id', ...classroomCrud.getById)
+  .patch('/manage/classrooms/:id', ...classroomCrud.update)
+  .delete('/manage/classrooms/:id', ...classroomCrud.remove)
+  .get('/manage/periods', ...periodCrud.list)
+  .post('/manage/periods', ...periodCrud.create)
+  .get('/manage/periods/:id', ...periodCrud.getById)
+  .patch('/manage/periods/:id', ...periodCrud.update)
+  .delete('/manage/periods/:id', ...periodCrud.remove)
+  .get('/manage/dayDefinitions', ...dayDefinitionCrud.list)
+  .post('/manage/dayDefinitions', ...dayDefinitionCrud.create)
+  .get('/manage/dayDefinitions/:id', ...dayDefinitionCrud.getById)
+  .patch('/manage/dayDefinitions/:id', ...dayDefinitionCrud.update)
+  .delete('/manage/dayDefinitions/:id', ...dayDefinitionCrud.remove)
+  .get('/manage/weekDefinitions', ...weekDefinitionCrud.list)
+  .post('/manage/weekDefinitions', ...weekDefinitionCrud.create)
+  .get('/manage/weekDefinitions/:id', ...weekDefinitionCrud.getById)
+  .patch('/manage/weekDefinitions/:id', ...weekDefinitionCrud.update)
+  .delete('/manage/weekDefinitions/:id', ...weekDefinitionCrud.remove)
+  .get('/manage/termDefinitions', ...termDefinitionCrud.list)
+  .post('/manage/termDefinitions', ...termDefinitionCrud.create)
+  .get('/manage/termDefinitions/:id', ...termDefinitionCrud.getById)
+  .patch('/manage/termDefinitions/:id', ...termDefinitionCrud.update)
+  .delete('/manage/termDefinitions/:id', ...termDefinitionCrud.remove);

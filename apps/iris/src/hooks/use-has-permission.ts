@@ -4,6 +4,7 @@ export const ADMIN_UI_PERMISSIONS = [
   permissions.importTimetable,
   permissions.substitutionCreate,
   permissions.movedLessonCreate,
+  permissions.timetableDataManage,
   permissions.announcementsCreate,
   permissions.systemMessagesManage,
   permissions.doorlockStatsRead,

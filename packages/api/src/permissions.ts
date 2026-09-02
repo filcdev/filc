@@ -21,6 +21,7 @@ export const permissions = {
   rolesRead: 'roles:read',
   substitutionCreate: 'substitution:create',
   systemMessagesManage: 'system-messages:manage',
+  timetableDataManage: 'timetable:data:manage',
   usersRead: 'users:read',
 } as const;
 
