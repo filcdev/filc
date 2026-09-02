@@ -68,7 +68,7 @@ function SubstitutionsPage() {
     null
   );
   const [sortColumn, setSortColumn] = useState<
-    'date' | 'teacher' | 'lessons' | 'cohorts' | null
+    'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher' | null
   >(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
     null
@@ -108,6 +108,11 @@ function SubstitutionsPage() {
         const teacherName = sub.teacher
           ? `${sub.teacher.firstName} ${sub.teacher.lastName}`.toLowerCase()
           : '';
+        const replacedTeachers = sub.lessons
+          .filter((l) => l !== null && l !== undefined)
+          .flatMap((l) => l.teachers.map((teacher) => teacher.name))
+          .join(' ')
+          .toLowerCase();
         const lessons = sub.lessons.filter(
           (l) => l !== null && l !== undefined
         );
@@ -123,6 +128,7 @@ function SubstitutionsPage() {
         return (
           sub.substitution.date.includes(term) ||
           teacherName.includes(term) ||
+          replacedTeachers.includes(term) ||
           lessonSubjects.includes(term) ||
           cohorts.includes(term)
         );
@@ -146,7 +152,9 @@ function SubstitutionsPage() {
     return list;
   }, [substitutionsQuery.data, search, sortColumn, sortDirection, showPast]);
 
-  const handleSort = (column: 'date' | 'teacher' | 'lessons' | 'cohorts') => {
+  const handleSort = (
+    column: 'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher'
+  ) => {
     if (sortColumn === column) {
       // Ugyanaz az oszlop: asc -> desc -> null
       if (sortDirection === 'asc') {
@@ -272,6 +280,19 @@ function SubstitutionsPage() {
                 </TableHead>
                 <TableHead
                   className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('replacedTeacher')}
+                >
+                  <div className="flex items-center gap-2">
+                    {t('substitution.missingTeacher')}
+                    <SortIcon
+                      column="replacedTeacher"
+                      currentColumn={sortColumn}
+                      direction={sortDirection}
+                    />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none hover:bg-muted/50"
                   onClick={() => handleSort('teacher')}
                 >
                   <div className="flex items-center gap-2">
@@ -319,6 +340,22 @@ function SubstitutionsPage() {
                 <TableRow key={sub.substitution.id}>
                   <TableCell className="font-medium">
                     {formatLocalizedDate(sub.substitution.date, i18n.language)}
+                  </TableCell>
+                  <TableCell className="truncate">
+                    {(() => {
+                      const replacedTeachers = Array.from(
+                        new Set(
+                          sub.lessons
+                            .filter((l) => l !== null && l !== undefined)
+                            .flatMap((l) =>
+                              l.teachers.map((teacher) => teacher.name)
+                            )
+                        )
+                      );
+                      return replacedTeachers.length > 0
+                        ? replacedTeachers.join(', ')
+                        : '—';
+                    })()}
                   </TableCell>
                   <TableCell className="truncate">
                     {sub.teacher ? (
@@ -397,7 +434,7 @@ function SubstitutionsPage() {
                 <TableRow>
                   <TableCell
                     className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 5 : 4}
+                    colSpan={hasWritePermission ? 6 : 5}
                   >
                     {t('substitution.noSubstitutions')}
                   </TableCell>
@@ -467,7 +504,7 @@ function SubstitutionsPage() {
 
 function getSortValue(
   a: SubstitutionItem,
-  sortColumn: 'date' | 'teacher' | 'lessons' | 'cohorts'
+  sortColumn: 'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher'
 ): string {
   switch (sortColumn) {
     case 'date':
@@ -485,6 +522,14 @@ function getSortValue(
           a.lessons
             .filter((l) => l !== null && l !== undefined)
             .flatMap((l) => l.cohorts)
+        )
+      ).join(' ');
+    case 'replacedTeacher':
+      return Array.from(
+        new Set(
+          a.lessons
+            .filter((l) => l !== null && l !== undefined)
+            .flatMap((l) => l.teachers.map((teacher) => teacher.name))
         )
       ).join(' ');
     default:
