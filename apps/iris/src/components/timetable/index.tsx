@@ -10,6 +10,8 @@ import { TimetableGrid } from '@/components/timetable/grid';
 import { buildViewModel } from '@/components/timetable/helpers';
 import { TimetablePDF } from '@/components/timetable/pdf/document';
 import { PrintDialog } from '@/components/timetable/print-dialog';
+import { TimetableCardView } from '@/components/timetable/secondary';
+import type { SecondaryTimetableHeader } from '@/components/timetable/secondary/types';
 import type {
   FilterType,
   LessonItem,
@@ -52,6 +54,57 @@ const getActiveSelectionId = (
       return null;
   }
 };
+
+/**
+ * Derive the header info for the secondary (paper-like) timetable card. Only
+ * the class code is shown in the grid's top-left corner cell.
+ */
+const buildCardHeader = (selectionLabel: string): SecondaryTimetableHeader => ({
+  classCode: selectionLabel,
+});
+
+type TimetableCardRender = {
+  header: SecondaryTimetableHeader;
+  language: string | undefined;
+  lessons: LessonItem[];
+  periods: PeriodItem[];
+};
+
+type TimetableGridRender = {
+  activeFilter: FilterType;
+  groupDisplay: 'highlight' | 'hide' | 'none';
+  model: TimetableViewModel;
+  handleColorChange?: (subject: string, colorIndex: number) => void;
+  isAuthenticated: boolean;
+  selectedDivisionTags: Set<string>;
+  selectedGroupIds: Set<string>;
+  userColors: Record<string, number>;
+};
+
+/** Pick the on-screen timetable body: the secondary card view or the grid. */
+const renderTimetableBody = (
+  view: 'grid' | 'card',
+  card: TimetableCardRender,
+  grid: TimetableGridRender
+) =>
+  view === 'card' ? (
+    <TimetableCardView
+      header={card.header}
+      language={card.language}
+      lessons={card.lessons}
+      periods={card.periods}
+    />
+  ) : (
+    <TimetableGrid
+      activeFilter={grid.activeFilter}
+      groupDisplay={grid.groupDisplay}
+      model={grid.model}
+      onColorChange={grid.isAuthenticated ? grid.handleColorChange : undefined}
+      selectedDivisionTags={grid.selectedDivisionTags}
+      selectedGroupIds={grid.selectedGroupIds}
+      userColors={grid.userColors}
+    />
+  );
 
 // Component
 export function TimetableView() {
@@ -290,6 +343,7 @@ export function TimetableView() {
         room: undefined,
         teacher: undefined,
         timetable: selectedTimetableId ?? undefined,
+        view: search.view,
       };
 
       const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
@@ -299,7 +353,13 @@ export function TimetableView() {
         search: () => searchParams,
       });
     }
-  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
+  }, [
+    activeFilter,
+    activeSelectionId,
+    selectedTimetableId,
+    navigate,
+    search.view,
+  ]);
 
   const model = useMemo(
     () =>
@@ -336,6 +396,23 @@ export function TimetableView() {
       default:
         return '';
     }
+  };
+
+  // Secondary (paper-like) view: the class code shown in the corner cell.
+  const view = search.view ?? 'grid';
+  const cardHeader = buildCardHeader(getSelectionLabel());
+
+  const handleViewChange = (nextView: 'grid' | 'card') => {
+    navigate({
+      replace: true,
+      search: () => ({
+        cohort: search.cohort,
+        room: search.room,
+        teacher: search.teacher,
+        timetable: search.timetable,
+        view: nextView,
+      }),
+    });
   };
 
   const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
@@ -386,6 +463,26 @@ export function TimetableView() {
     classroomsQuery.error ||
     lessonsQuery.error;
 
+  const timetableContent = renderTimetableBody(
+    view,
+    {
+      header: cardHeader,
+      language: i18n.language,
+      lessons: (lessonsQuery.data ?? []) as LessonItem[],
+      periods: (periodsQuery.data ?? []) as PeriodItem[],
+    },
+    {
+      activeFilter,
+      groupDisplay,
+      handleColorChange,
+      isAuthenticated,
+      model,
+      selectedDivisionTags,
+      selectedGroupIds,
+      userColors,
+    }
+  );
+
   return (
     <div className="flex grow flex-col items-center p-4">
       <div className="flex w-full min-w-0 max-w-7xl flex-col gap-4">
@@ -402,6 +499,7 @@ export function TimetableView() {
             setSelections((s) => ({ ...s, teacher: id }))
           }
           onSelectTimetable={setSelectedTimetableId}
+          onViewChange={handleViewChange}
           selectedByClass={selections.class}
           selectedByRoom={selections.classroom}
           selectedByTeacher={selections.teacher}
@@ -409,6 +507,7 @@ export function TimetableView() {
           selectorLoading={selectorLoading}
           teachers={teachersQuery.data}
           timetables={timetablesQuery.data}
+          view={view}
         />
 
         <PrintDialog
@@ -439,17 +538,7 @@ export function TimetableView() {
                 />
               );
             }
-            return (
-              <TimetableGrid
-                activeFilter={activeFilter}
-                groupDisplay={groupDisplay}
-                model={model}
-                onColorChange={isAuthenticated ? handleColorChange : undefined}
-                selectedDivisionTags={selectedDivisionTags}
-                selectedGroupIds={selectedGroupIds}
-                userColors={userColors}
-              />
-            );
+            return timetableContent;
           })()
         )}
       </div>
