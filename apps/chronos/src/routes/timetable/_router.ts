@@ -4,6 +4,7 @@ import {
   exportMovedLessonsRoute,
   exportSubstitutionsRoute,
 } from '#routes/timetable/export';
+import { getGroupsForCohort, selectGroup } from '#routes/timetable/groups';
 import { importRoute } from '#routes/timetable/import';
 import {
   cleanupOrphanedCohortsHandler,
@@ -95,5 +96,8 @@ export const timetableRouter = timetableFactory
   .get('/classrooms/getAll', ...getClassrooms)
   // Cohort routes
   .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
+  // Group routes
+  .get('/groups/getForCohort/:cohortId', ...getGroupsForCohort)
+  .post('/groups/select', ...selectGroup)
   // Teacher routes
   .get('/teachers/getAll', ...getTeachers);

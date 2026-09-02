@@ -14,11 +14,16 @@ export const paginationSchema = z.object({
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
 
+export const timetableGroupDisplayValues = ['highlight', 'hide'] as const;
+export type TimetableGroupDisplay =
+  (typeof timetableGroupDisplayValues)[number];
+
 export const updateSettingsSchema = z.object({
   language: z.string().optional(),
   notificationPreferences: z.record(z.string(), z.unknown()).optional(),
   theme: z.string().optional(),
   timetableClassColors: z.record(z.string(), z.number()).optional(),
+  timetableGroupDisplay: z.enum(timetableGroupDisplayValues).optional(),
   timetableView: z.string().optional(),
 });
 

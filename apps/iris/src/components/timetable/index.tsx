@@ -1,6 +1,7 @@
 import { pdf } from '@react-pdf/renderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { CalendarX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
@@ -16,7 +17,9 @@ import type {
   SelectionsType,
   TimetableViewModel,
 } from '@/components/timetable/types';
+import { Empty } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTimetableGroupDisplay } from '@/hooks/timetable-groups';
 import {
   useClassrooms,
   useLatestValidTimetable,
@@ -53,7 +56,7 @@ const getActiveSelectionId = (
 // Component
 export function TimetableView() {
   const search = Route.useSearch();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { data: session, isPending } = authClient.useSession();
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
@@ -157,6 +160,15 @@ export function TimetableView() {
     selectedTimetableId
   );
 
+  // Group highlighting applies to a signed-in student viewing their own class.
+  const showGroupHandling = isAuthenticated && activeFilter === 'class';
+  const { groupDisplay, selectedDivisionTags, selectedGroupIds } =
+    useTimetableGroupDisplay(
+      showGroupHandling ? selections.class : null,
+      showGroupHandling,
+      settingsQuery.data?.timetableGroupDisplay
+    );
+
   // Initialize from URL or defaults
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
   useEffect(() => {
@@ -174,7 +186,8 @@ export function TimetableView() {
         : null;
 
     const cohortTeacher =
-      search.teacher && teachersQuery.data.some((t) => t.id === search.teacher)
+      search.teacher &&
+      teachersQuery.data.some((teacher) => teacher.id === search.teacher)
         ? search.teacher
         : null;
 
@@ -308,7 +321,7 @@ export function TimetableView() {
         );
       case 'teacher': {
         const teacher = teachersQuery.data?.find(
-          (t) => t.id === selections.teacher
+          (entry) => entry.id === selections.teacher
         );
         if (!teacher) {
           return '';
@@ -327,8 +340,8 @@ export function TimetableView() {
 
   const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
     const timetableName =
-      timetablesQuery.data?.find((t) => t.id === selectedTimetableId)?.name ??
-      '';
+      timetablesQuery.data?.find((entry) => entry.id === selectedTimetableId)
+        ?.name ?? '';
     const label = getSelectionLabel();
     const generatedAt = new Date().toLocaleDateString(i18n.language, {
       day: '2-digit',
@@ -416,12 +429,28 @@ export function TimetableView() {
             <Skeleton className="h-[130px] w-full" />
           </div>
         ) : (
-          <TimetableGrid
-            activeFilter={activeFilter}
-            model={model}
-            onColorChange={isAuthenticated ? handleColorChange : undefined}
-            userColors={userColors}
-          />
+          (() => {
+            if (!hasError && (lessonsQuery.data ?? []).length === 0) {
+              return (
+                <Empty
+                  description={t('timetable.emptyWeekDescription')}
+                  icon={<CalendarX className="size-6" />}
+                  title={t('timetable.emptyWeekTitle')}
+                />
+              );
+            }
+            return (
+              <TimetableGrid
+                activeFilter={activeFilter}
+                groupDisplay={groupDisplay}
+                model={model}
+                onColorChange={isAuthenticated ? handleColorChange : undefined}
+                selectedDivisionTags={selectedDivisionTags}
+                selectedGroupIds={selectedGroupIds}
+                userColors={userColors}
+              />
+            );
+          })()
         )}
       </div>
     </div>
