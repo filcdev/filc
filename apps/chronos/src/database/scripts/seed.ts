@@ -2,14 +2,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { importTimetable } from '@filcdev/timetable-import/import';
+import { omanTimetableImportAdapter } from '@filcdev/timetable-import/oman';
 import { checkbox, confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import { Presets, SingleBar } from 'cli-progress';
 import dayjs from 'dayjs';
 import { eq, inArray } from 'drizzle-orm';
-import { XMLParser } from 'fast-xml-parser';
-import iconv from 'iconv-lite';
-import z from 'zod';
 import { db, prepareDb } from '#database/index';
 import { user } from '#database/schema/authentication';
 import {
@@ -38,9 +37,8 @@ import {
   substitutionLessonMTM,
   teacher,
 } from '#database/schema/timetable';
+import { timetableImportStore } from '#database/timetable-import-store';
 import { configureLogger } from '#utils/logger';
-import { importTimetableXML } from '#utils/timetable/imports';
-import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
 const CANCELLATION_PROBABILITY = 0.3;
 const SUBSTITUTION_ROOM_PROBABILITY = 0.4;
@@ -251,25 +249,17 @@ const importBaseData = async () => {
   );
 
   const xmlBuffer = fs.readFileSync(baseTimetableXmlPath);
-  const decoded = iconv.decode(xmlBuffer, 'win1250');
-  const cleaned = decoded.replaceAll('Period=""', '');
+  const model = omanTimetableImportAdapter.parse(new Uint8Array(xmlBuffer));
 
-  const parser = new XMLParser({
-    attributeNamePrefix: '_',
-    ignoreAttributes: false,
-    parseAttributeValue: false,
-    parseTagValue: true,
-    textNodeName: 'text',
-    trimValues: true,
-  });
-
-  const input = parser.parse(cleaned);
-  const data = z.parse(timetableExportRootSchema, input);
-
-  await importTimetableXML(data, {
-    name: 'Default Timetable',
-    validFrom: dayjs().toISOString(),
-  });
+  await importTimetable(
+    model,
+    {
+      name: 'Default Timetable',
+      validFrom: dayjs().toISOString(),
+    },
+    timetableImportStore,
+    getLogger(['chronos', 'timetable'])
+  );
 
   logger.info('Base data imported.');
 };

@@ -1,5 +1,4 @@
 import type z from 'zod';
-import type { timetableSchema } from '#database/schema/timetable';
 import type {
   cardSchema,
   cardsSchema,
@@ -23,7 +22,8 @@ import type {
   timeTableScheduleSchema,
   timeTableSchedulesSchema,
   timetableExportRootSchema,
-} from '#utils/timetable/schemas';
+  timetableSchema,
+} from './schema';
 
 export type TimetableExportRoot = z.infer<typeof timetableExportRootSchema>;
 export type Timetable = z.infer<typeof timetableSchema>;

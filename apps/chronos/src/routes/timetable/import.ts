@@ -2,22 +2,27 @@ import {
   importResponseSchema,
   importSchema,
 } from '@filcdev/api/domains/timetable/import';
+import {
+  findTimetableImportAdapterForMimeType,
+  registerTimetableImportAdapter,
+} from '@filcdev/timetable-import/adapters';
+import { importTimetable } from '@filcdev/timetable-import/import';
+import { omanTimetableImportAdapter } from '@filcdev/timetable-import/oman';
 import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import { XMLParser } from 'fast-xml-parser';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
-import { decode } from 'iconv-lite';
-import z from 'zod';
+import { timetableImportStore } from '#database/timetable-import-store';
 import { authRouter } from '#middleware/auth';
 import { timetableFactory } from '#routes/timetable/_factory';
 import { env } from '#utils/environment';
 import { ok } from '#utils/http';
-import { importTimetableXML } from '#utils/timetable/imports';
-import { timetableExportRootSchema } from '#utils/timetable/schemas';
 
 const logger = getLogger(['chronos', 'timetable']);
+
+// Register the built-in format adapters so uploads can be routed by MIME type.
+registerTimetableImportAdapter(omanTimetableImportAdapter);
 
 export const importRoute = timetableFactory.createHandlers(
   describeRoute({
@@ -45,11 +50,6 @@ export const importRoute = timetableFactory.createHandlers(
   zValidator('form', importSchema),
   ...authRouter('import:timetable'),
   async (c) => {
-    // const body = (await c.req.parseBody()) as {
-    //   omanXml?: File;
-    //   name?: string;
-    //   validFrom?: string;
-    // };
     const body = c.req.valid('form');
 
     // get file
@@ -58,37 +58,28 @@ export const importRoute = timetableFactory.createHandlers(
     const validFrom = body.validFrom;
     const validTo = body.validTo;
 
-    // check that we got valid XML
-    if (file.type !== 'text/xml' && file.type !== 'application/xml') {
+    const adapter = findTimetableImportAdapterForMimeType(file.type);
+    if (!adapter) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Invalid file type, must be XML',
       });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const decoded = decode(buffer, 'win1250');
-    const cleaned = decoded.replaceAll('Period=""', '');
-
-    const parser = new XMLParser({
-      attributeNamePrefix: '_',
-      ignoreAttributes: false,
-      parseAttributeValue: false,
-      parseTagValue: true,
-      textNodeName: 'text',
-      trimValues: true,
-    });
-
     try {
       logger.info('Starting timetable import');
       const start = performance.now();
-      const input = parser.parse(cleaned);
-      const data = z.parse(timetableExportRootSchema, input);
+      const model = adapter.parse(new Uint8Array(await file.arrayBuffer()));
 
-      await importTimetableXML(data, {
-        name,
-        validFrom: validFrom.toISOString(),
-        validTo: validTo?.toISOString() ?? null,
-      });
+      await importTimetable(
+        model,
+        {
+          name,
+          validFrom: validFrom.toISOString(),
+          validTo: validTo?.toISOString() ?? null,
+        },
+        timetableImportStore,
+        logger
+      );
       const end = performance.now();
 
       logger.info('Imported timetable', {
