@@ -535,6 +535,7 @@
     },
     "types": {
       "substitution": "Substitution",
+      "substitutionTeacher": "Your substitution",
       "movedLesson": "Moved lesson",
       "announcement": "News item",
       "systemMessage": "System message",

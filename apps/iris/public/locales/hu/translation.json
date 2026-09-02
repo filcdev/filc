@@ -535,6 +535,7 @@
     },
     "types": {
       "substitution": "Helyettesítés",
+      "substitutionTeacher": "A te helyettesítésed",
       "movedLesson": "Áthelyezett óra",
       "announcement": "Hír",
       "systemMessage": "Rendszerüzenet",
