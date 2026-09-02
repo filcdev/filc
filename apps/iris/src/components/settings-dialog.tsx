@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
 import type { CohortItem } from '@/components/timetable/types';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
+  const [timetableGroupDisplay, setTimetableGroupDisplay] = useState<
+    'highlight' | 'hide'
+  >('highlight');
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(null);
   const [prefs, setPrefs] = useState({
     announcement: true,
@@ -95,6 +99,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setLanguage(settingsData.language);
     setTheme(settingsData.theme);
     setTimetableView(settingsData.timetableView);
+    setTimetableGroupDisplay(
+      settingsData.timetableGroupDisplay === 'hide' ? 'hide' : 'highlight'
+    );
     setPrefs(settingsData.notificationPreferences);
   }, [isSuccess, settingsData]);
 
@@ -136,6 +143,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       language,
       notificationPreferences: prefs,
       theme,
+      timetableGroupDisplay,
       timetableView,
     });
 
@@ -273,8 +281,34 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </Alert>
                     ) : null}
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <span>{t('preferences.groupDisplay')}</span>
+                    <Select
+                      items={[
+                        {
+                          label: t('preferences.groupDisplayHighlight'),
+                          value: 'highlight',
+                        },
+                        {
+                          label: t('preferences.groupDisplayHide'),
+                          value: 'hide',
+                        },
+                      ]}
+                      onValueChange={(value) =>
+                        setTimetableGroupDisplay(value as 'highlight' | 'hide')
+                      }
+                      value={timetableGroupDisplay}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </Select>
+                  </div>
                 </CardContent>
               </Card>
+
+              <MyGroupsSettingsCard cohortId={selectedCohortId} />
 
               <Card>
                 <CardHeader>

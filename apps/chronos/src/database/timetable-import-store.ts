@@ -18,7 +18,7 @@ import type {
   TeacherRow,
   TimetableImportStore,
 } from '@filcdev/timetable-import/store';
-import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lt, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import {
   building,
@@ -82,11 +82,30 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     return existing?.id ?? null;
   },
 
-  async findCohortByName(tx, name): Promise<string | null> {
+  async findCohortByName(tx, name, year): Promise<string | null> {
+    // Scope cohort identity to the calendar year a linked timetable starts in,
+    // so a rename in a new school year creates a fresh cohort instead of
+    // reusing (and conflating with) the last year's one.
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year + 1}-01-01`;
     const [existing] = await tx
       .select({ id: cohortTable.id })
       .from(cohortTable)
-      .where(eq(cohortTable.name, name))
+      .innerJoin(
+        cohortTimetableMtm,
+        eq(cohortTimetableMtm.cohortId, cohortTable.id)
+      )
+      .innerJoin(
+        timetableTable,
+        eq(timetableTable.id, cohortTimetableMtm.timetableId)
+      )
+      .where(
+        and(
+          eq(cohortTable.name, name),
+          gte(timetableTable.validFrom, yearStart),
+          lt(timetableTable.validFrom, yearEnd)
+        )
+      )
       .limit(1);
     return existing?.id ?? null;
   },
@@ -324,5 +343,16 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   },
   async transaction<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
     return await db.transaction(fn);
+  },
+
+  async updateCohortGroup(
+    tx,
+    id,
+    patch: { divisionTag: string | null }
+  ): Promise<void> {
+    await tx
+      .update(cohortGroupTable)
+      .set(patch)
+      .where(eq(cohortGroupTable.id, id));
   },
 };

@@ -61,12 +61,55 @@ export type GroupInput = {
   name: string;
   /** `true` when the group covers the entire cohort. */
   entireClass: boolean;
-  /** Source `divisiontag`; used to group split lessons together. */
-  divisionTag: number | null;
+  /**
+   * The aSc numeric `divisiontag` string, used as the canonical division key.
+   * Groups that are alternatives in one split share the same value
+   * (`'57'` for both `11.A angol1` and `11.A angol2`). `null` when the group
+   * has no split. Used to offer a per-division `"pick your group"` choice and
+   * to keep exactly one group per division.
+   */
+  divisionTag: string | null;
   studentCount: number | null;
   /** Source homeroom teacher id; resolved to a database id by the importer. */
   teacherId: string | null;
 };
+
+const CLASS_CODE_PREFIX_RE = /^\d{1,2}\.[A-Z]{1,2}\s+/;
+const TRAILING_NUMBER_RE = /\s*\d+$/;
+const MULTIPLE_WHITESPACE_RE = /\s+/g;
+
+/**
+ * Derive a **readable** division label from a group name, for display. The
+ * class-code prefix and the trailing group index are dropped
+ * (`'11.A angol1'` → `'angol'`, `'kemia2'` → `'kemia'`, `'13.AB mat3'` →
+ * `'mat'`). Returns `null` when the group covers the whole cohort or the name
+ * carries no division marker. Note this labels only; grouping must use the
+ * numeric {@link GroupInput.divisionTag}.
+ */
+export const deriveDivisionLabel = (
+  name: string,
+  entireClass: boolean
+): string | null => {
+  if (entireClass) {
+    return null;
+  }
+  const label = name
+    .replace(CLASS_CODE_PREFIX_RE, '')
+    .replace(TRAILING_NUMBER_RE, '')
+    .trim();
+  if (!label || label === name) {
+    return null;
+  }
+  return label;
+};
+
+/**
+ * Normalise an entity name for stable matching across imports: trim and
+ * collapse internal whitespace so `"  Math  "` and `"Math"` resolve to the same
+ * row instead of creating duplicate subjects/teachers/classrooms/cohorts.
+ */
+export const normalizeName = (value: string): string =>
+  value.replace(MULTIPLE_WHITESPACE_RE, ' ').trim();
 
 /** A week definition (e.g. `Hét A`, `Minden héten`). */
 export type WeekInput = {

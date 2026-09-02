@@ -7,9 +7,14 @@ import type {
   LessonInput,
   TimetableImportModel,
 } from '../../types';
+import { normalizeName } from '../../types';
 import type { TimetableImportAdapter } from '../registry';
 import { timetableExportRootSchema } from './schema';
 import type { TimetableExportRoot } from './types';
+
+// Leading honorifics must not be treated as a first name; stripping them keeps
+// a titled teacher and the same teacher without a title on one row.
+const TITLE_RE = /^(dr\.?|prof\.?|mr\.?|mrs\.?|ms\.?|miss\.?|doc\.?)\s+/i;
 
 const splitName = (
   fullName: string
@@ -18,15 +23,15 @@ const splitName = (
     return { firstName: '', restOfName: '' };
   }
 
-  const trimmedName = fullName.trim();
-  const firstSpaceIndex = trimmedName.indexOf(' ');
+  const name = fullName.trim().replace(TITLE_RE, '').trim();
+  const firstSpaceIndex = name.indexOf(' ');
 
   if (firstSpaceIndex === -1) {
-    return { firstName: trimmedName, restOfName: '' };
+    return { firstName: name, restOfName: '' };
   }
 
-  const firstName = trimmedName.slice(0, firstSpaceIndex);
-  const restOfName = trimmedName.slice(firstSpaceIndex + 1).trim();
+  const firstName = name.slice(0, firstSpaceIndex);
+  const restOfName = name.slice(firstSpaceIndex + 1).trim();
 
   return { firstName, restOfName };
 };
@@ -70,7 +75,7 @@ const toModel = (root: TimetableExportRoot): TimetableImportModel => {
         `incomplete data for subject, unable to get all attributes: id=${predefinedId}, name=${name}, short=${short}`
       );
     }
-    return { id: predefinedId, name, short };
+    return { id: predefinedId, name: normalizeName(name), short };
   });
 
   const teachers = tt.teachers.teacher.map((t) => {
@@ -108,7 +113,7 @@ const toModel = (root: TimetableExportRoot): TimetableImportModel => {
     return {
       capacity: capacityStr === '*' ? null : Number.parseInt(capacityStr, 10),
       id: predefinedId,
-      name,
+      name: normalizeName(name),
       short,
     };
   });
@@ -123,7 +128,7 @@ const toModel = (root: TimetableExportRoot): TimetableImportModel => {
       }
       return {
         id: predefinedId,
-        name,
+        name: normalizeName(name),
         short,
         teacherId: c._teacherid || null,
       };

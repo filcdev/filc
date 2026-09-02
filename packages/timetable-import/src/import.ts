@@ -112,15 +112,27 @@ export const importTimetable = <Tx>(
       validFrom: options.validFrom,
     });
 
-    // Resolve and expire the currently active timetable inside this
-    // transaction so concurrent imports cannot race on the same row.
+    // Resolve the currently active timetable inside this transaction so a
+    // concurrent import cannot race on the same row.
     const today = new Date().toLocaleDateString('en-CA', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     });
+    const validFromDay = new Date(options.validFrom).toLocaleDateString(
+      'en-CA',
+      {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }
+    );
+    const takesEffectNow = validFromDay <= today;
     const active = await store.findActiveTimetable(tx, today);
-    if (active?.validTo === null) {
+    // Only expire a still-valid timetable when this import actually takes
+    // effect today or sooner; a future-dated/draft import must not invalidate
+    // the still-running timetable.
+    if (active?.validTo === null && takesEffectNow) {
       const dayBefore = dayjs(options.validFrom)
         .subtract(1, 'day')
         .format('YYYY-MM-DD');
@@ -133,6 +145,11 @@ export const importTimetable = <Tx>(
       validFrom: options.validFrom,
       validTo: options.validTo ?? null,
     });
+
+    // Cohort identity is scoped to the calendar year the timetable starts in.
+    // Re-imports of the same school year reuse that year's cohorts, while a
+    // new school year's rename never merges into an old (expired) cohort.
+    const schoolYear = new Date(options.validFrom).getFullYear();
 
     const [periodMap, dayMap, subjectMap, teacherMap, classroomMap] =
       await Promise.all([
@@ -148,6 +165,7 @@ export const importTimetable = <Tx>(
       model.cohorts,
       teacherMap,
       timetableId,
+      schoolYear,
       store,
       logger
     );
@@ -611,9 +629,10 @@ const upsertCohort = async <Tx>(
   tx: Tx,
   attrs: { name: string; short: string; teacherId: string | null },
   timetableId: string,
+  year: number,
   store: TimetableImportStore<Tx>
 ): Promise<string | null> => {
-  const existing = await store.findCohortByName(tx, attrs.name);
+  const existing = await store.findCohortByName(tx, attrs.name, year);
 
   let cohortId: string;
 
@@ -627,6 +646,7 @@ const upsertCohort = async <Tx>(
       name: attrs.name,
       short: attrs.short,
       teacherId: attrs.teacherId,
+      timetableId,
     });
     if (!inserted) {
       return null;
@@ -644,6 +664,7 @@ const loadCohorts = async <Tx>(
   cohorts: TimetableImportModel['cohorts'],
   teacherMap: Map<string, string>,
   timetableId: string,
+  year: number,
   store: TimetableImportStore<Tx>,
   logger: TimetableImportLogger
 ): Promise<Map<string, string>> => {
@@ -664,6 +685,7 @@ const loadCohorts = async <Tx>(
       tx,
       { name, short, teacherId },
       timetableId,
+      year,
       store
     );
     if (upserted) {
@@ -682,6 +704,7 @@ const upsertGroup = async <Tx>(
     name: string;
     entireClass: boolean;
     studentCount: number | null;
+    divisionTag: string | null;
   },
   store: TimetableImportStore<Tx>
 ): Promise<string | null> => {
@@ -691,10 +714,16 @@ const upsertGroup = async <Tx>(
     attrs.name
   );
   if (existing) {
+    // Re-imports may carry the authoritative aSc divisiontag; refresh the
+    // stored key so the group follows the latest export.
+    await store.updateCohortGroup(tx, existing, {
+      divisionTag: attrs.divisionTag,
+    });
     return existing;
   }
   return store.insertCohortGroup(tx, {
     cohortId: attrs.cohortId,
+    divisionTag: attrs.divisionTag,
     entireClass: attrs.entireClass,
     id: randomId(),
     name: attrs.name,
@@ -724,6 +753,7 @@ const loadGroups = async <Tx>(
       tx,
       {
         cohortId,
+        divisionTag: group.divisionTag,
         entireClass: group.entireClass,
         name: group.name,
         studentCount: group.studentCount,

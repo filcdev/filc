@@ -14,6 +14,7 @@ import type {
   TimetableImportModel,
   WeekInput,
 } from '../../types';
+import { normalizeName } from '../../types';
 import type { TimetableImportAdapter } from '../registry';
 import { ascExportRootSchema } from './schema';
 
@@ -104,14 +105,14 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
 
   const subjects: SubjectInput[] = (tt.subjects.subject ?? []).map((s) => ({
     id: s._id,
-    name: s._name,
+    name: normalizeName(s._name),
     short: s._short,
   }));
 
   const teachers: TeacherInput[] = (tt.teachers.teacher ?? []).map((t) => ({
-    firstName: t._firstname,
+    firstName: normalizeName(t._firstname),
     id: t._id,
-    lastName: t._lastname,
+    lastName: normalizeName(t._lastname),
     short: t._short || '-',
   }));
 
@@ -119,27 +120,34 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
     (c) => ({
       capacity: c._capacity === '*' ? null : Number.parseInt(c._capacity, 10),
       id: c._id,
-      name: c._name,
+      name: normalizeName(c._name),
       short: c._short,
     })
   );
 
   const cohorts: CohortInput[] = (tt.classes.class ?? []).map((c) => ({
     id: c._id,
-    name: c._name,
+    name: normalizeName(c._name),
     short: c._short,
     teacherId: c._teacherid || null,
   }));
 
-  const groups: GroupInput[] = (tt.groups?.group ?? []).map((g) => ({
-    cohortId: g._classid,
-    divisionTag: g._divisiontag ? Number(g._divisiontag) : null,
-    entireClass: g._entireclass === '1',
-    id: g._id,
-    name: g._name,
-    studentCount: g._studentcount ? Number(g._studentcount) : null,
-    teacherId: null,
-  }));
+  const groups: GroupInput[] = (tt.groups?.group ?? []).map((g) => {
+    const entireClass = g._entireclass === '1';
+    let divisionTag: string | null = null;
+    if (!entireClass && g._divisiontag) {
+      divisionTag = String(g._divisiontag);
+    }
+    return {
+      cohortId: g._classid,
+      divisionTag,
+      entireClass,
+      id: g._id,
+      name: g._name,
+      studentCount: g._studentcount ? Number(g._studentcount) : null,
+      teacherId: null,
+    };
+  });
 
   const lessonById = new Map(
     (tt.lessons?.lesson ?? []).map((l: AscLesson) => [l._id, l])
