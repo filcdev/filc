@@ -110,9 +110,12 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
   }));
 
   const teachers: TeacherInput[] = (tt.teachers.teacher ?? []).map((t) => ({
-    firstName: normalizeName(t._firstname),
+    // aSc exports `firstname`/`lastname` as given/surname. Store them surname/
+    // given (Hungarian order) to match the Oman importer, so a re-import over
+    // existing data matches the same teacher instead of creating a reversed row.
+    firstName: normalizeName(t._lastname),
     id: t._id,
-    lastName: normalizeName(t._lastname),
+    lastName: normalizeName(t._firstname),
     short: t._short || '-',
   }));
 
