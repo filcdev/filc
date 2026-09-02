@@ -1,9 +1,11 @@
 import dayjs from 'dayjs';
 import type { LessonCohortRow, NewLesson, TimetableImportStore } from './store';
 import type {
+  TermInput,
   TimetableImportLogger,
   TimetableImportModel,
   TimetableImportOptions,
+  WeekInput,
 } from './types';
 
 const randomId = (): string => crypto.randomUUID();
@@ -43,11 +45,14 @@ const makeLessonKey = (args: {
   cohortIds: string[];
   teacherIds: string[];
   classroomIds: string[];
+  groupsIds: string[];
+  termDefinitionId: string | null;
 }): string => {
   const { subjectId, dayDefinitionId, weekDefinitionId, periodId } = args;
   const cohorts = [...args.cohortIds].sort().join(',');
   const teachers = [...args.teacherIds].sort().join(',');
   const classrooms = [...args.classroomIds].sort().join(',');
+  const groups = [...args.groupsIds].sort().join(',');
   return [
     subjectId,
     dayDefinitionId,
@@ -56,6 +61,8 @@ const makeLessonKey = (args: {
     cohorts,
     teachers,
     classrooms,
+    groups,
+    args.termDefinitionId ?? '',
   ].join('|');
 };
 
@@ -145,10 +152,22 @@ export const importTimetable = <Tx>(
       logger
     );
 
+    const groupMap = await loadGroups(
+      tx,
+      model.groups,
+      cohortMap,
+      timetableId,
+      store,
+      logger
+    );
+
     const lessonCount = await loadLessons(
       tx,
       model.lessons,
       { classroomMap, cohortMap, dayMap, periodMap, subjectMap, teacherMap },
+      groupMap,
+      model.weeks,
+      model.terms,
       timetableId,
       store,
       logger
@@ -655,20 +674,102 @@ const loadCohorts = async <Tx>(
   return result;
 };
 
+const upsertGroup = async <Tx>(
+  tx: Tx,
+  attrs: {
+    cohortId: string;
+    timetableId: string;
+    name: string;
+    entireClass: boolean;
+    studentCount: number | null;
+  },
+  store: TimetableImportStore<Tx>
+): Promise<string | null> => {
+  const existing = await store.findCohortGroupByCohortAndName(
+    tx,
+    attrs.cohortId,
+    attrs.name
+  );
+  if (existing) {
+    return existing;
+  }
+  return store.insertCohortGroup(tx, {
+    cohortId: attrs.cohortId,
+    entireClass: attrs.entireClass,
+    id: randomId(),
+    name: attrs.name,
+    studentCount: attrs.studentCount ?? 0,
+    teacherId: null,
+    timetableId: attrs.timetableId,
+  });
+};
+
+const loadGroups = async <Tx>(
+  tx: Tx,
+  groups: TimetableImportModel['groups'],
+  cohortMap: Map<string, string>,
+  timetableId: string,
+  store: TimetableImportStore<Tx>,
+  logger: TimetableImportLogger
+): Promise<Map<string, string>> => {
+  logger.trace('Loading groups from XML');
+  const result: Map<string, string> = new Map();
+
+  for (const group of groups) {
+    const cohortId = cohortMap.get(group.cohortId);
+    if (!cohortId) {
+      continue;
+    }
+    const dbId = await upsertGroup(
+      tx,
+      {
+        cohortId,
+        entireClass: group.entireClass,
+        name: group.name,
+        studentCount: group.studentCount,
+        timetableId,
+      },
+      store
+    );
+    if (dbId) {
+      result.set(group.id, dbId);
+    }
+  }
+  logger.trace('Loaded groups', { total: result.size });
+  return result;
+};
+
 const ensureWeekDefinition = async <Tx>(
   tx: Tx,
-  weekName: string,
+  week: WeekInput,
   store: TimetableImportStore<Tx>
 ): Promise<string> => {
-  const existing = await store.findWeekDefinitionByName(tx, weekName);
+  const existing = await store.findWeekDefinitionByName(tx, week.name);
   if (existing) {
     return existing;
   }
   return store.insertWeekDefinition(tx, {
     id: randomId(),
-    name: weekName,
-    short: weekName,
-    weeks: [],
+    name: week.name,
+    short: week.short,
+    weeks: week.weeks,
+  });
+};
+
+const ensureTermDefinition = async <Tx>(
+  tx: Tx,
+  term: TermInput,
+  store: TimetableImportStore<Tx>
+): Promise<string> => {
+  const existing = await store.findTermByName(tx, term.name);
+  if (existing) {
+    return existing;
+  }
+  return store.insertTerm(tx, {
+    id: randomId(),
+    name: term.name,
+    short: term.short,
+    terms: term.terms,
   });
 };
 
@@ -716,9 +817,11 @@ const hydrateExistingLessons = async <Tx>(
       classroomIds: lesson.classroomIds ?? [],
       cohortIds: existingCohorts.get(lesson.id) ?? [],
       dayDefinitionId: lesson.dayDefinitionId,
+      groupsIds: lesson.groupsIds ?? [],
       periodId: lesson.periodId,
       subjectId: lesson.subjectId,
       teacherIds: lesson.teacherIds ?? [],
+      termDefinitionId: lesson.termDefinitionId ?? null,
       weekDefinitionId: lesson.weeksDefinitionId,
     });
     if (lessonKeySet.size === 0 || lessonKeySet.has(key)) {
@@ -732,7 +835,9 @@ const processLesson = (
   lessonIndex: number,
   lesson: TimetableImportModel['lessons'][number],
   maps: LessonMaps,
+  groupMap: Map<string, string>,
   weekMap: Map<string, string>,
+  termMap: Map<string, string>,
   timetableId: string,
   logger: TimetableImportLogger
 ): LessonDraft | null => {
@@ -763,21 +868,30 @@ const processLesson = (
     mapMaybeId(schoolRoomId, maps.classroomMap, classroomIds);
   }
 
+  const groupsIds: string[] = [];
+  for (const groupId of lesson.groupIds) {
+    mapMaybeId(groupId, groupMap, groupsIds);
+  }
+
   const weeksDefinitionId = weekMap.get(lesson.weekId);
   if (!weeksDefinitionId) {
     return null;
   }
 
+  const termDefinitionId = lesson.termId
+    ? (termMap.get(lesson.termId) ?? null)
+    : null;
+
   const row: NewLesson = {
     classroomIds,
     dayDefinitionId,
-    groupsIds: [],
+    groupsIds,
     id: randomId(),
     periodId,
     periodsPerWeek: lesson.periodsPerWeek ?? 1,
     subjectId,
     teacherIds,
-    termDefinitionId: null,
+    termDefinitionId,
     timetableId,
     weeksDefinitionId,
   };
@@ -786,9 +900,11 @@ const processLesson = (
     classroomIds,
     cohortIds,
     dayDefinitionId,
+    groupsIds,
     periodId,
     subjectId,
     teacherIds,
+    termDefinitionId,
     weekDefinitionId: weeksDefinitionId,
   });
 
@@ -799,6 +915,9 @@ const loadLessons = async <Tx>(
   tx: Tx,
   lessons: TimetableImportModel['lessons'],
   maps: LessonMaps,
+  groupMap: Map<string, string>,
+  weeks: TimetableImportModel['weeks'],
+  terms: TimetableImportModel['terms'],
   timetableId: string,
   store: TimetableImportStore<Tx>,
   logger: TimetableImportLogger
@@ -806,8 +925,24 @@ const loadLessons = async <Tx>(
   const result: Map<string, string> = new Map();
 
   const weekMap = new Map<string, string>();
+  for (const week of weeks) {
+    weekMap.set(week.name, await ensureWeekDefinition(tx, week, store));
+  }
   for (const weekName of new Set(lessons.map((l) => l.weekId))) {
-    weekMap.set(weekName, await ensureWeekDefinition(tx, weekName, store));
+    if (!weekMap.has(weekName)) {
+      weekMap.set(
+        weekName,
+        await ensureWeekDefinition(
+          tx,
+          { id: randomId(), name: weekName, short: weekName, weeks: [] },
+          store
+        )
+      );
+    }
+  }
+  const termMap = new Map<string, string>();
+  for (const term of terms) {
+    termMap.set(term.name, await ensureTermDefinition(tx, term, store));
   }
 
   const drafts: LessonDraft[] = [];
@@ -820,7 +955,9 @@ const loadLessons = async <Tx>(
       i,
       lesson,
       maps,
+      groupMap,
       weekMap,
+      termMap,
       timetableId,
       logger
     );

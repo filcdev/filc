@@ -92,6 +92,23 @@ export type NewWeekDefinition = {
   weeks: string[];
 };
 
+export type NewCohortGroup = {
+  id: string;
+  cohortId: string;
+  entireClass: boolean;
+  name: string;
+  studentCount: number;
+  teacherId: string | null;
+  timetableId: string;
+};
+
+export type NewTerm = {
+  id: string;
+  name: string;
+  short: string;
+  terms: string[];
+};
+
 export type ExistingLessonRow = {
   id: string;
   subjectId: string;
@@ -100,8 +117,9 @@ export type ExistingLessonRow = {
   weeksDefinitionId: string;
   teacherIds: string[];
   classroomIds: string[];
+  groupsIds: string[];
+  termDefinitionId: string | null;
 };
-
 export type NewLesson = {
   id: string;
   subjectId: string;
@@ -165,6 +183,16 @@ export type TimetableImportStore<Tx = unknown> = {
 
   findWeekDefinitionByName(tx: Tx, name: string): Promise<string | null>;
   insertWeekDefinition(tx: Tx, row: NewWeekDefinition): Promise<string>;
+
+  findTermByName(tx: Tx, name: string): Promise<string | null>;
+  insertTerm(tx: Tx, row: NewTerm): Promise<string>;
+
+  findCohortGroupByCohortAndName(
+    tx: Tx,
+    cohortId: string,
+    name: string
+  ): Promise<string | null>;
+  insertCohortGroup(tx: Tx, row: NewCohortGroup): Promise<string | null>;
 
   findLessonsByTimetable(
     tx: Tx,

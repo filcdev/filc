@@ -171,7 +171,7 @@
     "validFromPlaceholder": "Select a date",
     "clickToUpload": "Click to upload or drag and drop",
     "dragAndDrop": "Drag and drop your XML file here",
-    "supportedFormats": "Supported format: XML files from OMAN",
+    "supportedFormats": "Supported formats: OMAN XML and aSc Timetables XML",
     "invalidFileType": "Invalid file type. Please upload an XML file.",
     "importing": "Importing...",
     "importButton": "Import Timetable",

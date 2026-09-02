@@ -139,15 +139,28 @@ const toModel = (root: TimetableExportRoot): TimetableImportModel => {
         (v): v is string => Boolean(v)
       ),
       dayId: schedule._DayID,
+      groupIds: [],
       id: String(index),
       periodId: schedule._Period,
       subjectId: schedule._SubjectGradeID,
       teacherIds: [schedule._TeacherID].filter((v): v is string => Boolean(v)),
+      termId: null,
       weekId: 'A',
     })
   );
 
-  return { classrooms, cohorts, days, lessons, periods, subjects, teachers };
+  return {
+    classrooms,
+    cohorts,
+    days,
+    groups: [],
+    lessons,
+    periods,
+    subjects,
+    teachers,
+    terms: [],
+    weeks: [],
+  };
 };
 
 /**
@@ -176,6 +189,10 @@ export const parseOmanTimetable = (input: Uint8Array): TimetableImportModel => {
 };
 
 export const omanTimetableImportAdapter: TimetableImportAdapter = {
+  detect(input: Uint8Array): boolean {
+    const text = decode(input.slice(0, 4096), 'win1250');
+    return text.includes('TimeTableSchedule');
+  },
   format: 'oman',
   mimeTypes: ['text/xml', 'application/xml'],
   parse: parseOmanTimetable,

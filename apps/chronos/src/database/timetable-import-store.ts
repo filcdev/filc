@@ -5,11 +5,13 @@ import type {
   LessonCohortRow,
   NewClassroom,
   NewCohort,
+  NewCohortGroup,
   NewDay,
   NewLesson,
   NewPeriod,
   NewSubject,
   NewTeacher,
+  NewTerm,
   NewWeekDefinition,
   PeriodRow,
   SubjectRow,
@@ -21,6 +23,7 @@ import { db } from '#database';
 import {
   building,
   classroom as classroomTable,
+  cohortGroup as cohortGroupTable,
   cohort as cohortTable,
   cohortTimetableMtm,
   dayDefinition,
@@ -29,6 +32,7 @@ import {
   period as periodTable,
   subject as subjectTable,
   teacher as teacherTable,
+  termDefinition,
   timetable as timetableTable,
   weekDefinition as weekTable,
 } from '#database/schema/timetable';
@@ -87,6 +91,24 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     return existing?.id ?? null;
   },
 
+  async findCohortGroupByCohortAndName(
+    tx,
+    cohortId,
+    name
+  ): Promise<string | null> {
+    const [existing] = await tx
+      .select({ id: cohortGroupTable.id })
+      .from(cohortGroupTable)
+      .where(
+        and(
+          eq(cohortGroupTable.cohortId, cohortId),
+          eq(cohortGroupTable.name, name)
+        )
+      )
+      .limit(1);
+    return existing?.id ?? null;
+  },
+
   async findDaysByName(tx, names): Promise<DayRow[]> {
     if (!names.length) {
       return [];
@@ -115,10 +137,12 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       .select({
         classroomIds: lessonTable.classroomIds,
         dayDefinitionId: lessonTable.dayDefinitionId,
+        groupsIds: lessonTable.groupsIds,
         id: lessonTable.id,
         periodId: lessonTable.periodId,
         subjectId: lessonTable.subjectId,
         teacherIds: lessonTable.teacherIds,
+        termDefinitionId: lessonTable.termDefinitionId,
         weeksDefinitionId: lessonTable.weeksDefinitionId,
       })
       .from(lessonTable)
@@ -127,6 +151,7 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     return rows.map((row) => ({
       ...row,
       classroomIds: (row.classroomIds ?? []) as string[],
+      groupsIds: (row.groupsIds ?? []) as string[],
       teacherIds: (row.teacherIds ?? []) as string[],
     }));
   },
@@ -165,6 +190,15 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       .where(inArray(teacherTable.lastName, lastNames));
   },
 
+  async findTermByName(tx, name): Promise<string | null> {
+    const [existing] = await tx
+      .select({ id: termDefinition.id })
+      .from(termDefinition)
+      .where(eq(termDefinition.name, name))
+      .limit(1);
+    return existing?.id ?? null;
+  },
+
   async findWeekDefinitionByName(tx, name): Promise<string | null> {
     const [existing] = await tx
       .select({ id: weekTable.id })
@@ -198,6 +232,14 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       .insert(cohortTable)
       .values(row)
       .returning({ insertedId: cohortTable.id });
+    return inserted?.insertedId ?? null;
+  },
+
+  async insertCohortGroup(tx, row: NewCohortGroup): Promise<string | null> {
+    const [inserted] = await tx
+      .insert(cohortGroupTable)
+      .values(row)
+      .returning({ insertedId: cohortGroupTable.id });
     return inserted?.insertedId ?? null;
   },
 
@@ -245,6 +287,17 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     });
   },
 
+  async insertTerm(tx, row: NewTerm): Promise<string> {
+    const [inserted] = await tx
+      .insert(termDefinition)
+      .values(row)
+      .returning({ insertedId: termDefinition.id });
+    if (!inserted) {
+      throw new Error('Failed to insert term definition');
+    }
+    return inserted.insertedId;
+  },
+
   async insertTimetable(tx, row) {
     const [inserted] = await tx
       .insert(timetableTable)
@@ -266,7 +319,6 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     }
     return inserted.insertedId;
   },
-
   async linkCohortToTimetable(tx, link) {
     await tx.insert(cohortTimetableMtm).values(link).onConflictDoNothing();
   },

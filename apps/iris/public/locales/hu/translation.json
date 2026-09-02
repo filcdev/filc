@@ -159,7 +159,7 @@
     "validFromPlaceholder": "Válassz egy dátumot",
     "clickToUpload": "Kattints a feltöltéshez vagy húzd ide",
     "dragAndDrop": "Húzd ide az XML fájlt",
-    "supportedFormats": "Támogatott formátum: OMAN XML fájlok",
+    "supportedFormats": "Támogatott formátumok: OMAN XML és aSc órarend XML",
     "invalidFileType": "Érvénytelen fájltípus. Kérlek tölts fel XML fájlt.",
     "importing": "Importálás...",
     "importButton": "Órarend importálása",

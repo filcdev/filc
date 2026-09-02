@@ -175,8 +175,8 @@ export function useImportTimetable({ onSaved }: MutationCallbacks = {}) {
       const res = await parseResponse(
         api.timetable.import.$post({
           form: {
+            file,
             name,
-            omanXml: file,
             validFrom: validFrom.toISOString(),
             ...(validTo && { validTo: validTo.toISOString() }),
           },

@@ -53,6 +53,39 @@ export type CohortInput = {
   teacherId: string | null;
 };
 
+/** A group within a cohort (e.g. a language/PE split of a class). */
+export type GroupInput = {
+  id: string;
+  /** Reference to {@link CohortInput.id}. */
+  cohortId: string;
+  name: string;
+  /** `true` when the group covers the entire cohort. */
+  entireClass: boolean;
+  /** Source `divisiontag`; used to group split lessons together. */
+  divisionTag: number | null;
+  studentCount: number | null;
+  /** Source homeroom teacher id; resolved to a database id by the importer. */
+  teacherId: string | null;
+};
+
+/** A week definition (e.g. `Hét A`, `Minden héten`). */
+export type WeekInput = {
+  id: string;
+  name: string;
+  short: string;
+  /** Week pattern from the source, e.g. `['10']`, `['10', '01']`. */
+  weeks: string[];
+};
+
+/** A term definition (e.g. `Egész év`). */
+export type TermInput = {
+  id: string;
+  name: string;
+  short: string;
+  /** Term pattern from the source, e.g. `['1']`. */
+  terms: string[];
+};
+
 export type LessonInput = {
   /**
    * Client-side correlation key for this schedule entry (used to correlate
@@ -67,8 +100,12 @@ export type LessonInput = {
   subjectId: string;
   /** Name of the week definition the lesson belongs to (e.g. `A`). */
   weekId: string;
+  /** Reference to {@link TermInput.id} (source term id). */
+  termId: string | null;
   /** References to {@link CohortInput.id} (class + optional class). */
   cohortIds: string[];
+  /** References to {@link GroupInput.id}. */
+  groupIds: string[];
   /** References to {@link TeacherInput.id}. */
   teacherIds: string[];
   /** References to {@link ClassroomInput.id}. */
@@ -84,6 +121,9 @@ export type TimetableImportModel = {
   teachers: TeacherInput[];
   classrooms: ClassroomInput[];
   cohorts: CohortInput[];
+  groups: GroupInput[];
+  weeks: WeekInput[];
+  terms: TermInput[];
   lessons: LessonInput[];
 };
 

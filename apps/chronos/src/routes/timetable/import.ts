@@ -3,9 +3,10 @@ import {
   importSchema,
 } from '@filcdev/api/domains/timetable/import';
 import {
-  findTimetableImportAdapterForMimeType,
+  findTimetableImportAdapter,
   registerTimetableImportAdapter,
 } from '@filcdev/timetable-import/adapters';
+import { asc2012TimetableImportAdapter } from '@filcdev/timetable-import/asc2012';
 import { importTimetable } from '@filcdev/timetable-import/import';
 import { omanTimetableImportAdapter } from '@filcdev/timetable-import/oman';
 import { zValidator } from '@hono/zod-validator';
@@ -21,12 +22,13 @@ import { ok } from '#utils/http';
 
 const logger = getLogger(['chronos', 'timetable']);
 
-// Register the built-in format adapters so uploads can be routed by MIME type.
+// Register the built-in format adapters so uploads can be routed by content.
 registerTimetableImportAdapter(omanTimetableImportAdapter);
+registerTimetableImportAdapter(asc2012TimetableImportAdapter);
 
 export const importRoute = timetableFactory.createHandlers(
   describeRoute({
-    description: 'Import a timetable from an Oman XML file.',
+    description: 'Import a timetable from an Oman or aSc 2012 XML file.',
     requestBody: {
       content: {
         'multipart/form-data': {
@@ -53,22 +55,23 @@ export const importRoute = timetableFactory.createHandlers(
     const body = c.req.valid('form');
 
     // get file
-    const file = body.omanXml;
+    const file = body.file;
     const name = body.name;
     const validFrom = body.validFrom;
     const validTo = body.validTo;
 
-    const adapter = findTimetableImportAdapterForMimeType(file.type);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const adapter = findTimetableImportAdapter(bytes, file.type);
     if (!adapter) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid file type, must be XML',
+        message: 'Unsupported file type',
       });
     }
 
     try {
       logger.info('Starting timetable import');
       const start = performance.now();
-      const model = adapter.parse(new Uint8Array(await file.arrayBuffer()));
+      const model = adapter.parse(bytes);
 
       await importTimetable(
         model,
