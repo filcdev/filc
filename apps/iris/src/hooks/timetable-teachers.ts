@@ -48,20 +48,39 @@ export function useTeachersAdmin() {
 }
 
 /**
- * Users for the teacher assignment picker. Limited to the first page because
- * the list endpoint caps `limit` at 100; a miss just hides the option.
+ * Users for the teacher assignment picker. The list endpoint caps `limit` at
+ * 100, so page through it to offer every assignable account; a failed page
+ * falls back to an empty list so the combobox stays usable.
  */
 export function useTeacherUserOptions() {
   return useQuery({
     queryFn: async (): Promise<TeacherUserOption[]> => {
       try {
-        const res = await parseResponse(
-          api.users.index.$get({ query: { limit: '100', offset: '0' } })
-        );
-        if (!res.success) {
-          return [];
+        const pageSize = 100;
+        const users: TeacherUserOption[] = [];
+        let offset = 0;
+        let total = Number.POSITIVE_INFINITY;
+        while (users.length < total) {
+          const res = await parseResponse(
+            api.users.index.$get({
+              query: {
+                limit: String(pageSize),
+                offset: String(offset),
+              },
+            })
+          );
+          if (!res.success) {
+            return [];
+          }
+          const page = res.data?.users ?? [];
+          users.push(...page);
+          total = res.data?.total ?? users.length;
+          if (page.length < pageSize) {
+            break;
+          }
+          offset += pageSize;
         }
-        return res.data?.users ?? [];
+        return users;
       } catch {
         return [];
       }

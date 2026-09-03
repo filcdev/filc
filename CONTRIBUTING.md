@@ -9,7 +9,7 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 
   - **Disposable container (recommended)**: the [`pg-dispo`](https://gist.github.com/nemvince/89c8f12e8dd4f4eec8d31aa9a9018a73#file-pg-dispo) script — a single command that starts a Postgres 16+ container with defaults `postgresql://postgres:postgres@localhost:5432/postgres`.
 
-  - **Compose stack**: `docker compose up -d` at the repo root runs Postgres 18 (Alpine) and [Mailpit](https://mailpit.axllent.org) (SMTP capture). Mailpit is already wired into [`apps/chronos/.env.example`](apps/chronos/.env.example); the web UI is at <http://localhost:8025>. Only use one Postgres source at a time — both bind host port 5432.
+  - **Compose stack**: `docker compose up -d` at the repo root runs Postgres 18 (Alpine) and [Mailpit](https://mailpit.axllent.org) (SMTP capture). Uncomment the SMTP block in [`apps/chronos/.env.example`](apps/chronos/.env.example) to route Chronos email through Mailpit; the web UI is at <http://localhost:8025>. Only use one Postgres source at a time — both bind host port 5432.
 
 1. Clone and install:
 

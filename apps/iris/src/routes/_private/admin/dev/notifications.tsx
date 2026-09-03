@@ -286,7 +286,10 @@ function DevNotificationsPage() {
         </Field>
 
         <div className="flex flex-wrap gap-2">
-          <Button disabled={!form.state.canSubmit} type="submit">
+          <Button
+            disabled={!form.state.canSubmit || sendNotification.isPending}
+            type="submit"
+          >
             <Send className="size-4" />
             {t('devNotifications.send')}
           </Button>

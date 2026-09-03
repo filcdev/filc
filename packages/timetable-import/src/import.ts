@@ -639,7 +639,7 @@ const linkTeachersToUsers = async <Tx>(
   const users = await store.findUserIdsByEmail(tx, emails);
   const userByEmail = new Map(users.map((u) => [u.email.toLowerCase(), u.id]));
   for (const target of targets) {
-    const userId = userByEmail.get(target.email);
+    const userId = userByEmail.get(target.email.toLowerCase());
     if (userId) {
       await store.linkTeacherToUser(tx, target.id, userId);
     }

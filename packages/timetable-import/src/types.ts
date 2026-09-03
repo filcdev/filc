@@ -116,13 +116,19 @@ export const deriveDivisionLabel = (
 export const normalizeName = (value: string): string =>
   value.replace(MULTIPLE_WHITESPACE_RE, ' ').trim();
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
- * Normalise a teacher email for stable linking against `user.email`: trim,
- * collapse whitespace and lowercase (local-part semantics aside, addresses are
- * matched case-insensitively against better-auth's stored user emails).
+ * Normalise a teacher email for stable linking against `user.email`: strip
+ * whitespace, lowercase and reject values that cannot be an address (an
+ * unquoted address never contains whitespace, so anything else is junk that
+ * can never match an account). Invalid input yields `''`, which callers treat
+ * as absent.
  */
-export const normalizeEmail = (value: string): string =>
-  value.replace(MULTIPLE_WHITESPACE_RE, ' ').trim().toLowerCase();
+export const normalizeEmail = (value: string): string => {
+  const email = value.replace(/\s+/g, '').toLowerCase();
+  return EMAIL_RE.test(email) ? email : '';
+};
 
 /** A week definition (e.g. `Hét A`, `Minden héten`). */
 export type WeekInput = {

@@ -450,9 +450,11 @@ async function resolveTestTarget(
         language: 'hu',
       };
     } else {
+      // Unmatched address: a pure SMTP delivery test. Keep the caller out of
+      // it — no unsubscribe token for the caller, no caller greeting/prefs.
       target = {
         email,
-        id: currentUserId,
+        id: '',
         isUser: false,
         language: 'hu',
       };
@@ -485,10 +487,7 @@ export const sendTestNotification = notificationsFactory.createHandlers(
       });
     }
 
-    const currentUserId = c.var.user?.id;
-    if (!currentUserId) {
-      throw new HTTPException(StatusCodes.UNAUTHORIZED);
-    }
+    const { id: currentUserId } = getUser(c);
     const body = c.req.valid('json');
 
     const target = await resolveTestTarget(

@@ -238,9 +238,12 @@ export function buildSubstitutionTeacherContent(
 
   const lessonLines = (entry: SubstitutionTeacherLesson): string[] => {
     const result: string[] = [];
-    const timeRange = entry.startTime
-      ? ` (${entry.startTime} - ${entry.endTime ?? ''})`
-      : '';
+    let timeRange = '';
+    if (entry.startTime) {
+      timeRange = entry.endTime
+        ? ` (${entry.startTime} - ${entry.endTime})`
+        : ` (${entry.startTime})`;
+    }
     const lessonLabel = [periodLabel(entry.period, hu), timeRange]
       .filter(Boolean)
       .join(' ');
