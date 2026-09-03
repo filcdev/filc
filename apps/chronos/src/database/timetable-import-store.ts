@@ -20,8 +20,20 @@ import type {
   TeacherRow,
   TimetableImportStore,
 } from '@filcdev/timetable-import/store';
-import { and, desc, eq, gte, inArray, isNull, lt, lte, or } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { db } from '#database';
+import { user as userTable } from '#database/schema/authentication';
 import {
   building,
   classroom as classroomTable,
@@ -227,6 +239,7 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     }
     return await tx
       .select({
+        email: teacherTable.email,
         firstName: teacherTable.firstName,
         id: teacherTable.id,
         lastName: teacherTable.lastName,
@@ -242,6 +255,21 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       .where(eq(termDefinition.name, name))
       .limit(1);
     return existing?.id ?? null;
+  },
+
+  async findUserIdsByEmail(tx, emails) {
+    if (!emails.length) {
+      return [];
+    }
+    return await tx
+      .select({ email: userTable.email, id: userTable.id })
+      .from(userTable)
+      .where(
+        inArray(
+          sql`lower(${userTable.email})`,
+          emails.map((email) => email.toLowerCase())
+        )
+      );
   },
 
   async findWeekDefinitionByName(tx, name): Promise<string | null> {
@@ -326,6 +354,7 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
 
   async insertTeachers(tx, rows: NewTeacher[]): Promise<TeacherRow[]> {
     return await tx.insert(teacherTable).values(rows).returning({
+      email: teacherTable.email,
       firstName: teacherTable.firstName,
       id: teacherTable.id,
       lastName: teacherTable.lastName,
@@ -367,6 +396,13 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   async linkCohortToTimetable(tx, link) {
     await tx.insert(cohortTimetableMtm).values(link).onConflictDoNothing();
   },
+
+  async linkTeacherToUser(tx, teacherId, userId) {
+    await tx
+      .update(teacherTable)
+      .set({ userId })
+      .where(and(eq(teacherTable.id, teacherId), isNull(teacherTable.userId)));
+  },
   async transaction<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
     return await db.transaction(fn);
   },
@@ -380,5 +416,9 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       .update(cohortGroupTable)
       .set(patch)
       .where(eq(cohortGroupTable.id, id));
+  },
+
+  async updateTeacherEmail(tx, id, email) {
+    await tx.update(teacherTable).set({ email }).where(eq(teacherTable.id, id));
   },
 };

@@ -21,6 +21,7 @@ export const permissions = {
   rolesRead: 'roles:read',
   substitutionCreate: 'substitution:create',
   systemMessagesManage: 'system-messages:manage',
+  teacherManage: 'teacher:manage',
   usersRead: 'users:read',
 } as const;
 

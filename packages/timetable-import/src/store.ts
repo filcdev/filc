@@ -49,12 +49,14 @@ export type NewSubject = {
 };
 
 export type TeacherRow = {
+  email: string | null;
   id: string;
   firstName: string;
   lastName: string;
 };
 
 export type NewTeacher = {
+  email?: string | null;
   id: string;
   firstName: string;
   lastName: string;
@@ -176,6 +178,18 @@ export type TimetableImportStore<Tx = unknown> = {
 
   findTeachersByLastName(tx: Tx, lastNames: string[]): Promise<TeacherRow[]>;
   insertTeachers(tx: Tx, rows: NewTeacher[]): Promise<TeacherRow[]>;
+  /** Backfill a teacher's email when a re-import carries a new value. */
+  updateTeacherEmail(tx: Tx, id: string, email: string): Promise<void>;
+  /**
+   * Find users whose email matches any of `emails` (case-insensitive), so a
+   * freshly imported/backfilled teacher can be linked to an existing account.
+   */
+  findUserIdsByEmail(
+    tx: Tx,
+    emails: string[]
+  ): Promise<Array<{ email: string; id: string }>>;
+  /** Link a teacher to a user, but only when the teacher is still unlinked. */
+  linkTeacherToUser(tx: Tx, teacherId: string, userId: string): Promise<void>;
 
   findBuildingByName(tx: Tx, name: string): Promise<string | null>;
   insertBuilding(tx: Tx, name: string): Promise<string>;

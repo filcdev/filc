@@ -32,6 +32,7 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
+import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
@@ -631,6 +632,16 @@ export const createSubstitution = timetableFactory.createHandlers(
       substituter,
     });
 
+    dispatchPendingNotification(
+      result.id,
+      'substitution_teacher',
+      await loadSubstitutionTeacherPayload({
+        date: result.date,
+        lessonIds,
+        substituter,
+      })
+    );
+
     return ok(c, result);
   }
 );
@@ -894,6 +905,16 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       substituter,
     });
 
+    dispatchPendingNotification(
+      result.id,
+      'substitution_teacher',
+      await loadSubstitutionTeacherPayload({
+        date: result.date,
+        lessonIds: [manualLessonId],
+        substituter,
+      })
+    );
+
     return c.json<SuccessResponse<typeof result>>({
       data: result,
       success: true,
@@ -1016,6 +1037,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     }
 
     cancelPendingNotification(id, 'substitution');
+    cancelPendingNotification(id, 'substitution_teacher');
 
     // Fetch existing lesson IDs for notification fallback
     const existingLessonRecords = await db
@@ -1024,12 +1046,27 @@ export const updateSubstitution = timetableFactory.createHandlers(
       .where(eq(substitutionLessonMTM.substitutionId, id));
     const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
 
+    const updatedLessonIds =
+      body.lessonIds == null ? existingLessonIds : body.lessonIds;
+    const updatedSubstituter =
+      'substituter' in body ? body.substituter : existing.substituter;
+    const updatedDate = body.date ?? existing.date;
+
     dispatchPendingNotification(id, 'substitution', {
-      date: body.date ?? existing.date,
-      lessonIds: body.lessonIds == null ? existingLessonIds : body.lessonIds,
-      substituter:
-        'substituter' in body ? body.substituter : existing.substituter,
+      date: updatedDate,
+      lessonIds: updatedLessonIds,
+      substituter: updatedSubstituter,
     });
+
+    dispatchPendingNotification(
+      id,
+      'substitution_teacher',
+      await loadSubstitutionTeacherPayload({
+        date: updatedDate,
+        lessonIds: updatedLessonIds,
+        substituter: updatedSubstituter,
+      })
+    );
 
     return ok(c, updatedSubstitution);
   }
@@ -1086,6 +1123,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       .returning();
 
     cancelPendingNotification(id, 'substitution');
+    cancelPendingNotification(id, 'substitution_teacher');
 
     return ok(c, deletedSubstitution);
   }

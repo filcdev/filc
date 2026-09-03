@@ -147,7 +147,8 @@
     "management": "Management",
     "users": "Users",
     "roles": "Roles",
-    "bugReports": "Bug reports"
+    "bugReports": "Bug reports",
+    "developer": "Developer"
   },
   "timetable": {
     "selectClass": "Select class",
@@ -454,6 +455,50 @@
     "title": "We use cookies",
     "description": "By using this site, you agree to our usage of cookie to enhance your experience."
   },
+  "devNotifications": {
+    "title": "Test notifications",
+    "description": "Send test notifications and preview email templates (development only)",
+    "type": "Notification type",
+    "language": "Language",
+    "recipientEmail": "Recipient email",
+    "recipientEmailPlaceholder": "optional@example.com",
+    "subject": "Subject",
+    "subjectPlaceholder": "Optional subject",
+    "content": "Content",
+    "contentPlaceholder": "Optional message body",
+    "channels": "Channels",
+    "channelInApp": "In-app notification",
+    "channelEmail": "Email",
+    "channelPush": "Push",
+    "send": "Send test",
+    "preview": "Preview email",
+    "previewTitle": "Email preview",
+    "previewDescription": "Rendered template without sending.",
+    "sendAll": "Send all types",
+    "sendAllSuccess": "Sample sent for every type",
+    "sendSuccess": "Test sent via: {{channels}}",
+    "sendError": "Failed to send test notification",
+    "previewError": "Failed to render preview"
+  },
+  "teachers": {
+    "title": "Teachers",
+    "description": "Manage teachers, emails and linked user accounts",
+    "searchPlaceholder": "Search teachers...",
+    "name": "Name",
+    "short": "Short",
+    "email": "Email",
+    "assignedUser": "Assigned user",
+    "assignedUserPlaceholder": "Assign a user...",
+    "noUsersFound": "No users found.",
+    "unassigned": "Unassigned",
+    "noTeachersFound": "No teachers found.",
+    "edit": "Edit",
+    "editTitle": "Edit Teacher",
+    "emailPlaceholder": "teacher@school.hu",
+    "save": "Save",
+    "updateSuccess": "Teacher updated successfully",
+    "updateError": "Failed to update teacher"
+  },
   "users": {
     "title": "User Management",
     "description": "Manage user accounts and permissions",
@@ -539,6 +584,7 @@
     },
     "types": {
       "substitution": "Substitution",
+      "substitutionTeacher": "Your substitution",
       "movedLesson": "Moved lesson",
       "announcement": "News item",
       "systemMessage": "System message",

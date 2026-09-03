@@ -1,5 +1,6 @@
 export const NOTIFICATION_TYPES = [
   'substitution',
+  'substitution_teacher',
   'moved_lesson',
   'announcement',
   'system_message',
@@ -17,6 +18,7 @@ export function typeLabel(
     doorlock_card_used: t('notifications.types.doorlockCardUsed'),
     moved_lesson: t('notifications.types.movedLesson'),
     substitution: t('notifications.types.substitution'),
+    substitution_teacher: t('notifications.types.substitutionTeacher'),
     system_message: t('notifications.types.systemMessage'),
   };
   return map[type] ?? type;

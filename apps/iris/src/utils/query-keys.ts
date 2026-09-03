@@ -1,4 +1,5 @@
 export const queryKeys = {
+  adminTeachers: () => ['admin-teachers'] as const,
   bugReports: {
     all: () => ['bugReports'] as const,
     list: (filters: {
@@ -102,6 +103,7 @@ export const queryKeys = {
     all: () => ['timetables'] as const,
     latestValid: () => ['timetables', 'latestValid'] as const,
   },
+  userOptions: () => ['user-options'] as const,
   users: (page: number, search: string) => ['users', page, search] as const,
   usersAll: () => ['users'] as const,
 };

@@ -31,6 +31,8 @@ export type SubjectInput = {
 };
 
 export type TeacherInput = {
+  /** Teacher email address, when the source export provides one. */
+  email?: string | null;
   id: string;
   firstName: string;
   lastName: string;
@@ -110,8 +112,23 @@ export const deriveDivisionLabel = (
  * collapse internal whitespace so `"  Math  "` and `"Math"` resolve to the same
  * row instead of creating duplicate subjects/teachers/classrooms/cohorts.
  */
+
 export const normalizeName = (value: string): string =>
   value.replace(MULTIPLE_WHITESPACE_RE, ' ').trim();
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Normalise a teacher email for stable linking against `user.email`: strip
+ * whitespace, lowercase and reject values that cannot be an address (an
+ * unquoted address never contains whitespace, so anything else is junk that
+ * can never match an account). Invalid input yields `''`, which callers treat
+ * as absent.
+ */
+export const normalizeEmail = (value: string): string => {
+  const email = value.replace(/\s+/g, '').toLowerCase();
+  return EMAIL_RE.test(email) ? email : '';
+};
 
 /** A week definition (e.g. `Hét A`, `Minden héten`). */
 export type WeekInput = {

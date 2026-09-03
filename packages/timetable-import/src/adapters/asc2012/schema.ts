@@ -41,6 +41,8 @@ const ascSubjectSchema = z.object({
 });
 
 const ascTeacherSchema = z.object({
+  // Email is not part of the core aSc teacher record; some exports carry it.
+  _email: str().optional(),
   _firstname: str(),
   _id: str(),
   _lastname: str(),

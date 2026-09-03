@@ -7,7 +7,11 @@ import type {
   LessonInput,
   TimetableImportModel,
 } from '../../types';
-import { normalizeName, type TimetableImportLogger } from '../../types';
+import {
+  normalizeEmail,
+  normalizeName,
+  type TimetableImportLogger,
+} from '../../types';
 import type { TimetableImportAdapter } from '../registry';
 import { timetableExportRootSchema } from './schema';
 import type { TimetableExportRoot } from './types';
@@ -93,6 +97,7 @@ const toModel = (root: TimetableExportRoot): TimetableImportModel => {
     }
     const names = splitName(name);
     return {
+      email: normalizeEmail(t._email ?? '') || null,
       firstName: names.firstName,
       id: predefinedId,
       lastName: names.restOfName,

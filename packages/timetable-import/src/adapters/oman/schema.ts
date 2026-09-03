@@ -25,6 +25,8 @@ export const subjectSchema = z.object({
 
 export const teacherSchema = z.object({
   _color: z.string(),
+  // Some exports carry a teacher email; absent is fine.
+  _email: z.string().optional(),
   _gender: z.string(),
   _id: z.string(),
   _name: z.string(),

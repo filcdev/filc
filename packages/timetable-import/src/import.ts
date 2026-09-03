@@ -1,5 +1,10 @@
 import dayjs from 'dayjs';
-import type { LessonCohortRow, NewLesson, TimetableImportStore } from './store';
+import type {
+  LessonCohortRow,
+  NewLesson,
+  TeacherRow,
+  TimetableImportStore,
+} from './store';
 import type {
   TermInput,
   TimetableImportLogger,
@@ -526,6 +531,121 @@ const loadSubjects = async <Tx>(
   return result;
 };
 
+type MissingTeacher = {
+  email: string | null;
+  firstName: string;
+  lastName: string;
+  predefinedId: string;
+  short: string;
+};
+
+/**
+ * Split parsed teachers into rows that match an existing teacher and rows to
+ * insert, tracking emails to backfill on existing rows. Mutates `result`
+ * (source id → database id) for every existing match.
+ */
+const collectTeacherMatches = (
+  teachers: TimetableImportModel['teachers'],
+  existingByKey: Map<string, { email: string | null; id: string }>,
+  result: Map<string, string>
+): {
+  emailBackfills: Array<{ email: string; id: string }>;
+  missing: MissingTeacher[];
+} => {
+  const missing: MissingTeacher[] = [];
+  const emailBackfills: Array<{ email: string; id: string }> = [];
+
+  for (const teacher of teachers) {
+    const key = `${teacher.firstName}|${teacher.lastName}`;
+    const existing = existingByKey.get(key);
+    if (existing) {
+      result.set(teacher.id, existing.id);
+      if (teacher.email && !existing.email) {
+        emailBackfills.push({ email: teacher.email, id: existing.id });
+      }
+    } else {
+      missing.push({
+        email: teacher.email ?? null,
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
+        predefinedId: teacher.id,
+        short: teacher.short,
+      });
+    }
+  }
+
+  return { emailBackfills, missing };
+};
+
+const insertMissingTeachers = async <Tx>(
+  tx: Tx,
+  missing: MissingTeacher[],
+  store: TimetableImportStore<Tx>,
+  result: Map<string, string>
+): Promise<TeacherRow[]> => {
+  if (!missing.length) {
+    return [];
+  }
+
+  // One row per distinct full name; map every source id of that name to it.
+  const seen = new Set<string>();
+  const toInsert = missing
+    .filter((item) => {
+      const key = `${item.firstName}|${item.lastName}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .map((item) => ({
+      email: item.email ?? null,
+      firstName: item.firstName,
+      id: randomId(),
+      lastName: item.lastName,
+      short: item.short,
+    }));
+
+  const inserted = await store.insertTeachers(tx, toInsert);
+
+  const insertedByName = new Map<string, string>();
+  for (const row of inserted) {
+    insertedByName.set(`${row.firstName}|${row.lastName}`, row.id);
+  }
+  for (const item of missing) {
+    const id = insertedByName.get(`${item.firstName}|${item.lastName}`);
+    if (id) {
+      result.set(item.predefinedId, id);
+    }
+  }
+
+  return inserted;
+};
+
+/**
+ * Link teachers touched by this import to an existing user account with the
+ * same email. Runs after insert/backfill so a freshly imported or re-imported
+ * teacher email is reconciled immediately, not only at the user's next login.
+ */
+const linkTeachersToUsers = async <Tx>(
+  tx: Tx,
+  targets: Array<{ email: string; id: string }>,
+  store: TimetableImportStore<Tx>
+): Promise<void> => {
+  const emails = [...new Set(targets.map((target) => target.email))];
+  if (!emails.length) {
+    return;
+  }
+  const users = await store.findUserIdsByEmail(tx, emails);
+  const userByEmail = new Map(users.map((u) => [u.email.toLowerCase(), u.id]));
+  for (const target of targets) {
+    const userId = userByEmail.get(target.email.toLowerCase());
+    if (userId) {
+      await store.linkTeacherToUser(tx, target.id, userId);
+    }
+  }
+};
+
 const loadTeachers = async <Tx>(
   tx: Tx,
   teachers: TimetableImportModel['teachers'],
@@ -540,66 +660,33 @@ const loadTeachers = async <Tx>(
     ? await store.findTeachersByLastName(tx, lastNames)
     : [];
 
-  const byNameKey = new Map<string, string>();
+  const existingByKey = new Map<string, { email: string | null; id: string }>();
   for (const row of existing) {
-    byNameKey.set(`${row.firstName}|${row.lastName}`, row.id);
+    existingByKey.set(`${row.firstName}|${row.lastName}`, {
+      email: row.email,
+      id: row.id,
+    });
   }
 
-  // Collect missing teachers
-  const missing: Array<{
-    predefinedId: string;
-    firstName: string;
-    lastName: string;
-    short: string;
-  }> = [];
+  const { emailBackfills, missing } = collectTeacherMatches(
+    teachers,
+    existingByKey,
+    result
+  );
 
-  for (const teacher of teachers) {
-    const key = `${teacher.firstName}|${teacher.lastName}`;
-    const existingId = byNameKey.get(key);
-    if (existingId) {
-      result.set(teacher.id, existingId);
-    } else {
-      missing.push({
-        firstName: teacher.firstName,
-        lastName: teacher.lastName,
-        predefinedId: teacher.id,
-        short: teacher.short,
-      });
-    }
+  const inserted = await insertMissingTeachers(tx, missing, store, result);
+
+  for (const backfill of emailBackfills) {
+    await store.updateTeacherEmail(tx, backfill.id, backfill.email);
   }
 
-  if (missing.length) {
-    // One row per distinct full name; map every source id of that name to it.
-    const seen = new Set<string>();
-    const toInsert = missing
-      .filter((item) => {
-        const key = `${item.firstName}|${item.lastName}`;
-        if (seen.has(key)) {
-          return false;
-        }
-        seen.add(key);
-        return true;
-      })
-      .map((item) => ({
-        firstName: item.firstName,
-        id: randomId(),
-        lastName: item.lastName,
-        short: item.short,
-      }));
-
-    const inserted = await store.insertTeachers(tx, toInsert);
-
-    const insertedByName = new Map<string, string>();
-    for (const row of inserted) {
-      insertedByName.set(`${row.firstName}|${row.lastName}`, row.id);
-    }
-    for (const item of missing) {
-      const id = insertedByName.get(`${item.firstName}|${item.lastName}`);
-      if (id) {
-        result.set(item.predefinedId, id);
-      }
-    }
-  }
+  const linkTargets: Array<{ email: string; id: string }> = [
+    ...inserted.flatMap((row) =>
+      row.email ? [{ email: row.email, id: row.id }] : []
+    ),
+    ...emailBackfills,
+  ];
+  await linkTeachersToUsers(tx, linkTargets, store);
 
   logger.trace('Loaded teachers', { total: result.size });
   return result;
