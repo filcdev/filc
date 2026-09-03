@@ -533,6 +533,10 @@
       "deleteSuccess": "Értesítés törölve",
       "deleteError": "Nem sikerült törölni az értesítést"
     },
+    "viewer": {
+      "title": "Értesítés részletei",
+      "changeCohort": "Csoport módosítása"
+    },
     "types": {
       "substitution": "Helyettesítés",
       "movedLesson": "Áthelyezett óra",

@@ -533,6 +533,10 @@
       "deleteSuccess": "Notification deleted",
       "deleteError": "Failed to delete notification"
     },
+    "viewer": {
+      "title": "Notification details",
+      "changeCohort": "Change cohort"
+    },
     "types": {
       "substitution": "Substitution",
       "movedLesson": "Moved lesson",
