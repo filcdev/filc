@@ -21,7 +21,7 @@ Responses are unwrapped via `unwrapResponse` (`apps/iris/src/utils/api.ts`), whi
 - **Feature layout**: `apps/chronos/src/routes/<feature>/` keeps `_factory.ts`, handler files, and `_router.ts` together; routers are mounted in `src/index.ts`.
 - **OpenAPI**: handlers use `describeRoute(...)` so `/api/doc/openapi.json` and Swagger UI stay accurate.
 - **Auth**: `requireAuthentication` and `requireAuthorization(permissions.<name>)` middleware; permission strings are canonical constants from `@filcdev/api/permissions` (never inline `'resource:action'` literals).
-- **Database**: Drizzle schema sources under `apps/chronos/src/database/schema`; migrations are generated (`bun run db:generate`) and never hand-edited.
+- **Database**: Drizzle schema sources under `apps/chronos/src/database/schema`; migrations are generated (`bun run db:generate`) and never hand-edited. The repo root [`compose.yml`](../compose.yml) runs a local Postgres 18 instance (Alpine) as the dev database; run `docker compose up -d` and see CONTRIBUTING.md for the alternative `pg-dispo` flow.
 - **Success/error envelopes**: `ok(...)` helpers from `#utils/http`; `HTTPException` + `StatusCodes` for errors.
 
 ## Frontend (iris)

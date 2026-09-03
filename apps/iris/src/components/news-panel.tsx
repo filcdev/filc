@@ -149,10 +149,13 @@ export function NewsPanel() {
                 <div className="space-y-3">
                   {newsItems.map((item) => (
                     <Alert key={item.id}>
-                      <AlertTitle className="font-semibold">
+                      <AlertTitle className="font-semibold" translate="yes">
                         {item.title}
                       </AlertTitle>
-                      <AlertDescription className="mt-2 whitespace-pre-wrap">
+                      <AlertDescription
+                        className="mt-2 whitespace-pre-wrap"
+                        translate="yes"
+                      >
                         {renderBlockContent(item.content)}
                       </AlertDescription>
                       <div className="mt-2 text-muted-foreground text-xs">

@@ -6,6 +6,7 @@ import type {
   FilterType,
   LessonItem,
   PeriodItem,
+  TimeSlot,
   TimetableViewModel,
 } from './types';
 
@@ -250,7 +251,31 @@ export const buildViewModel = (
       start: times.start,
     }));
 
-  return { days, grid, timeSlots };
+  // Cut off empty rows at the top and bottom: keep only the span of slots that
+  // actually hold a lesson on at least one day, instead of rendering the full
+  // canonical period range with empty rows before/after the last lesson.
+  const occupiedKeys = new Set<string>();
+  for (const [key, cell] of grid) {
+    if ((cell.lessons?.length ?? 0) > 0) {
+      occupiedKeys.add(key);
+    }
+  }
+  const isOccupied = (slot: TimeSlot): boolean => {
+    const hhmm = slot.start.format('HH:mm');
+    return days.some((day) => occupiedKeys.has(`${day.key}-${hhmm}`));
+  };
+  let first = 0;
+  let last = timeSlots.length - 1;
+  while (first <= last && !isOccupied(timeSlots[first] as TimeSlot)) {
+    first += 1;
+  }
+  while (last >= first && !isOccupied(timeSlots[last] as TimeSlot)) {
+    last -= 1;
+  }
+  const trimmedTimeSlots =
+    first <= last ? timeSlots.slice(first, last + 1) : timeSlots;
+
+  return { days, grid, timeSlots: trimmedTimeSlots };
 };
 
 /** Get filter label for i18n */

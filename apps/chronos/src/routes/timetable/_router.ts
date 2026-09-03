@@ -4,6 +4,7 @@ import {
   exportMovedLessonsRoute,
   exportSubstitutionsRoute,
 } from '#routes/timetable/export';
+import { getGroupsForCohort, selectGroup } from '#routes/timetable/groups';
 import { importRoute } from '#routes/timetable/import';
 import {
   cleanupOrphanedCohortsHandler,
@@ -43,7 +44,7 @@ import {
   updateSubstitution,
 } from '#routes/timetable/substitution';
 import { getAvailableClassrooms, getClassrooms } from './room';
-import { getTeachers } from './teacher';
+import { getTeachers, listTeachersAdmin, updateTeacher } from './teacher';
 
 export const timetableRouter = timetableFactory
   .createApp()
@@ -95,5 +96,10 @@ export const timetableRouter = timetableFactory
   .get('/classrooms/getAll', ...getClassrooms)
   // Cohort routes
   .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
+  // Group routes
+  .get('/groups/getForCohort/:cohortId', ...getGroupsForCohort)
+  .post('/groups/select', ...selectGroup)
   // Teacher routes
-  .get('/teachers/getAll', ...getTeachers);
+  .get('/teachers/getAll', ...getTeachers)
+  .get('/teachers', ...listTeachersAdmin)
+  .patch('/teachers/:id', ...updateTeacher);

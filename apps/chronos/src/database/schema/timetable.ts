@@ -63,6 +63,7 @@ export const subject = pgTable('subject', {
 });
 
 export const teacher = pgTable('teacher', {
+  email: text('email'),
   firstName: text('first_name').notNull(),
   gender: bit({ dimensions: 1 }),
   id: text('id').primaryKey(),
@@ -104,11 +105,10 @@ export const cohortGroup = pgTable('group', {
   cohortId: text('cohort_id').references(() => cohort.id, {
     onDelete: 'set null',
   }),
+  divisionTag: text('division_tag'),
   entireClass: boolean('entire_class').notNull(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  // TODO: figure out what this does
-  // divisionTag: integer('division_tag'),
   // TODO: review if school uses this
   studentCount: integer('student_count').notNull(),
   teacherId: text('teacher_id').references(() => teacher.id),
@@ -118,6 +118,23 @@ export const cohortGroup = pgTable('group', {
     })
     .notNull(),
 });
+
+export const userGroup = pgTable(
+  'user_group',
+  {
+    groupId: text('group_id')
+      .notNull()
+      .references(() => cohortGroup.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.groupId, t.userId] }),
+    index('user_group_user_id_idx').on(t.userId),
+    index('user_group_group_id_idx').on(t.groupId),
+  ]
+);
 
 export const lesson = pgTable('lesson', {
   classroomIds: text('classroom_ids').array(),
@@ -238,5 +255,6 @@ export const timetableSchema = {
   teacher,
   termDefinition,
   timetable,
+  userGroup,
   weekDefinition,
 };

@@ -2,10 +2,15 @@ import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession } from 'better-auth/plugins';
+import { and, eq, isNull, or } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { Context } from '#_types/globals';
 import { db } from '#database';
-import { authenticationSchema } from '#database/schema/authentication';
+import {
+  authenticationSchema,
+  user as userTable,
+} from '#database/schema/authentication';
+import { teacher } from '#database/schema/timetable';
 import { getUserPermissions } from '#utils/authorization';
 import { env } from '#utils/environment';
 
@@ -32,6 +37,42 @@ const authOptions = {
     schema: authenticationSchema,
   }),
   databaseHooks: {
+    session: {
+      create: {
+        // Link the user account to any teacher row whose email matches. This
+        // runs on both registration and login (a session is created either
+        // way), so an import carrying teacher emails gets reconciled with user
+        // accounts over time.
+        after: async (session) => {
+          try {
+            const [linkedUser] = await db
+              .select({ email: userTable.email })
+              .from(userTable)
+              .where(eq(userTable.id, session.userId))
+              .limit(1);
+            const userEmail = linkedUser?.email?.toLowerCase();
+            if (!userEmail) {
+              return;
+            }
+            await db
+              .update(teacher)
+              .set({ userId: session.userId })
+              .where(
+                and(
+                  eq(teacher.email, userEmail),
+                  // Never clobber a manual assignment made in the teacher UI.
+                  or(isNull(teacher.userId), eq(teacher.userId, session.userId))
+                )
+              );
+          } catch (err) {
+            logger.error('Failed to link user to teacher by email', {
+              err,
+              userId: session.userId,
+            });
+          }
+        },
+      },
+    },
     user: {
       create: {
         before: async (user, _ctx) => ({

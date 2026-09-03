@@ -1,4 +1,5 @@
 export const queryKeys = {
+  adminTeachers: () => ['admin-teachers'] as const,
   bugReports: {
     all: () => ['bugReports'] as const,
     list: (filters: {
@@ -71,6 +72,8 @@ export const queryKeys = {
     cohortLessons: (data: unknown) => ['cohort-lessons', data] as const,
     cohorts: (timetableId: string | null | undefined) =>
       ['cohorts', timetableId] as const,
+    groups: (cohortId: string | null | undefined) =>
+      ['timetable', 'groups', cohortId] as const,
     lessons: (
       filter: string | null,
       selectionId: string | null,
@@ -100,6 +103,7 @@ export const queryKeys = {
     all: () => ['timetables'] as const,
     latestValid: () => ['timetables', 'latestValid'] as const,
   },
+  userOptions: () => ['user-options'] as const,
   users: (page: number, search: string) => ['users', page, search] as const,
   usersAll: () => ['users'] as const,
 };

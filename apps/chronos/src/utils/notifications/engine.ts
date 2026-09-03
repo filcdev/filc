@@ -5,6 +5,10 @@ import { user as userTable } from '#database/schema/authentication';
 import { notification, userPreferences } from '#database/schema/notifications';
 import { lessonCohortMTM } from '#database/schema/timetable';
 import { enqueue } from '#utils/notifications/queue';
+import {
+  resolveSubstituteTeacherAudience,
+  type SubstitutionTeacherPayload,
+} from '#utils/notifications/substitution-teacher';
 import type {
   AudienceUser,
   NotificationContent,
@@ -226,6 +230,8 @@ const audienceResolvers: Record<
   doorlock_card_used: resolveAudienceForDoorlock,
   moved_lesson: resolveAudienceForLessonChange,
   substitution: resolveAudienceForLessonChange,
+  substitution_teacher: (payload) =>
+    resolveSubstituteTeacherAudience(payload as SubstitutionTeacherPayload),
   system_message: (p) =>
     resolveAudienceByCohortOrAll((p as { cohortIds?: string[] }).cohortIds),
 };
@@ -246,6 +252,7 @@ const preferenceKeys: Record<
   doorlock_card_used: 'doorlockCardUsed',
   moved_lesson: 'movedLesson',
   substitution: 'substitution',
+  substitution_teacher: 'substitution',
   system_message: 'systemMessage',
 };
 

@@ -2,7 +2,10 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/utils';
 import { LessonCard } from './lesson-card';
-import type { FilterType, TimetableViewModel } from './types';
+import type { FilterType, LessonItem, TimetableViewModel } from './types';
+
+type GroupDisplay = 'highlight' | 'hide' | 'none';
+type GroupEmphasis = 'mine' | 'dim' | 'neutral';
 
 type TimetableGridProps = {
   model: TimetableViewModel;
@@ -10,6 +13,12 @@ type TimetableGridProps = {
   onColorChange?: (subject: string, colorIndex: number) => void;
   /** When 'teacher' or 'classroom', cohorts are shown on each lesson card. */
   activeFilter?: FilterType;
+  /** Ids of the groups the current user belongs to (per division). */
+  selectedGroupIds?: Set<string>;
+  /** Division keys the user has picked a group in. */
+  selectedDivisionTags?: Set<string>;
+  /** How split lessons are shown. `'none'` disables group handling. */
+  groupDisplay?: GroupDisplay;
 };
 
 export function TimetableGrid({
@@ -17,11 +26,37 @@ export function TimetableGrid({
   userColors,
   onColorChange,
   activeFilter = 'class',
+  selectedGroupIds,
+  selectedDivisionTags,
+  groupDisplay = 'none',
 }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
   const showCohorts =
     activeFilter === 'teacher' || activeFilter === 'classroom';
+  const hasSelection = (selectedGroupIds?.size ?? 0) > 0;
+
+  const classifyLesson = (lesson: LessonItem): GroupEmphasis => {
+    if (!hasSelection) {
+      return 'neutral';
+    }
+    const groups = lesson.groups ?? [];
+    if (groups.length === 0) {
+      return 'neutral';
+    }
+    if (groups.some((group) => selectedGroupIds?.has(group.id))) {
+      return 'mine';
+    }
+    if (
+      groups.some((group) => {
+        const tag = group.divisionTag;
+        return tag !== null && selectedDivisionTags?.has(tag);
+      })
+    ) {
+      return 'dim';
+    }
+    return 'neutral';
+  };
 
   const emptyDayKeys = useMemo(
     () =>
@@ -110,7 +145,13 @@ export function TimetableGrid({
                 {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: multiple render branches kept inline */}
                 {days.map((day, i) => {
                   const cellKey = `${day.key}-${slot.start.format('HH:mm')}`;
-                  const lessons = grid.get(cellKey)?.lessons ?? [];
+                  const rawLessons = grid.get(cellKey)?.lessons ?? [];
+                  const lessons =
+                    groupDisplay === 'hide'
+                      ? rawLessons.filter(
+                          (lesson) => classifyLesson(lesson) !== 'dim'
+                        )
+                      : rawLessons;
                   const isEmptyDay = emptyDayKeys.has(day.key);
                   const borderClass =
                     i < days.length - 1 ? 'border-border border-r-2' : '';
@@ -147,29 +188,6 @@ export function TimetableGrid({
                   const isSingle = lessons.length === 1;
                   const firstLesson = lessons[0];
 
-                  if (
-                    isSingle &&
-                    firstLesson &&
-                    (firstLesson.groupsIds?.length ?? 0) > 0
-                  ) {
-                    return (
-                      <div
-                        className={cn('min-h-24 p-0.5', borderClass)}
-                        key={cellKey}
-                      >
-                        <div className="grid h-full grid-cols-2 gap-0.5 overflow-hidden rounded-md bg-muted">
-                          <LessonCard
-                            lesson={firstLesson}
-                            onColorChange={onColorChange}
-                            showCohorts={showCohorts}
-                            userColors={userColors}
-                          />
-                          <div />
-                        </div>
-                      </div>
-                    );
-                  }
-
                   if (isSingle && firstLesson) {
                     return (
                       <div
@@ -177,6 +195,7 @@ export function TimetableGrid({
                         key={cellKey}
                       >
                         <LessonCard
+                          emphasis={classifyLesson(firstLesson)}
                           lesson={firstLesson}
                           onColorChange={onColorChange}
                           showCohorts={showCohorts}
@@ -199,6 +218,7 @@ export function TimetableGrid({
                       >
                         {lessons.map((lesson, idx) => (
                           <LessonCard
+                            emphasis={classifyLesson(lesson)}
                             key={lesson.id ?? idx}
                             lesson={lesson}
                             onColorChange={onColorChange}

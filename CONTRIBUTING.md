@@ -5,9 +5,11 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 ## Prerequisites
 
 - **Bun 1.4.0+** — the exact version is pinned in [`mise.toml`](mise.toml); if you use [mise](https://mise.jdx.dev), it installs the right version automatically. Use `bun` only — no npm/pnpm/yarn.
-- **PostgreSQL** — any local Postgres works. Maintainers use the [`pg-dispo`](https://gist.github.com/nemvince/89c8f12e8dd4f4eec8d31aa9a9018a73#file-pg-dispo) script, a disposable Postgres container with defaults `postgresql://postgres:postgres@localhost:5432/postgres`.
+- **PostgreSQL** — any local Postgres works. Two options:
 
-## First-time setup
+  - **Disposable container (recommended)**: the [`pg-dispo`](https://gist.github.com/nemvince/89c8f12e8dd4f4eec8d31aa9a9018a73#file-pg-dispo) script — a single command that starts a Postgres 16+ container with defaults `postgresql://postgres:postgres@localhost:5432/postgres`.
+
+  - **Compose stack**: `docker compose up -d` at the repo root runs Postgres 18 (Alpine) and [Mailpit](https://mailpit.axllent.org) (SMTP capture). Uncomment the SMTP block in [`apps/chronos/.env.example`](apps/chronos/.env.example) to route Chronos email through Mailpit; the web UI is at <http://localhost:8025>. Only use one Postgres source at a time — both bind host port 5432.
 
 1. Clone and install:
 
@@ -17,7 +19,7 @@ This guide gets you from a fresh clone to a running dev environment, then covers
    bun install
    ```
 
-2. Start Postgres (e.g. `pg-dispo start`).
+2. Start Postgres — either `pg-dispo start` or `docker compose up -d` (the latter also starts Mailpit for SMTP capture).
 
 3. Configure environment files:
 
