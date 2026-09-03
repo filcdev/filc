@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrivateRouteRouteImport } from './routes/_private/route'
 import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
-import { Route as PrivateNotificationsRouteImport } from './routes/_private/notifications'
 import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicSubsRouteImport } from './routes/_public/subs'
@@ -46,11 +45,6 @@ const PublicRouteRoute = PublicRouteRouteImport.update({
 const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => PrivateRouteRoute,
-} as any)
-const PrivateNotificationsRoute = PrivateNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
@@ -172,7 +166,6 @@ const PrivateAdminTimetableSubstitutionsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
-  '/notifications': typeof PrivateNotificationsRoute
   '/settings': typeof PrivateSettingsRoute
   '/subs': typeof PublicSubsRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
@@ -197,7 +190,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
-  '/notifications': typeof PrivateNotificationsRoute
   '/settings': typeof PrivateSettingsRoute
   '/subs': typeof PublicSubsRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
@@ -224,7 +216,6 @@ export interface FileRoutesById {
   '/_private': typeof PrivateRouteRouteWithChildren
   '/_public': typeof PublicRouteRouteWithChildren
   '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
-  '/_private/notifications': typeof PrivateNotificationsRoute
   '/_private/settings': typeof PrivateSettingsRoute
   '/_public/subs': typeof PublicSubsRoute
   '/_public/unsubscribe': typeof PublicUnsubscribeRoute
@@ -252,7 +243,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/notifications'
     | '/settings'
     | '/subs'
     | '/unsubscribe'
@@ -277,7 +267,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
-    | '/notifications'
     | '/settings'
     | '/subs'
     | '/unsubscribe'
@@ -303,7 +292,6 @@ export interface FileRouteTypes {
     | '/_private'
     | '/_public'
     | '/_private/admin'
-    | '/_private/notifications'
     | '/_private/settings'
     | '/_public/subs'
     | '/_public/unsubscribe'
@@ -356,13 +344,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof PrivateAdminRouteRouteImport
-      parentRoute: typeof PrivateRouteRoute
-    }
-    '/_private/notifications': {
-      id: '/_private/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof PrivateNotificationsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
     '/_private/settings': {
@@ -554,14 +535,12 @@ const PrivateAdminRouteRouteWithChildren =
 
 interface PrivateRouteRouteChildren {
   PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
-  PrivateNotificationsRoute: typeof PrivateNotificationsRoute
   PrivateSettingsRoute: typeof PrivateSettingsRoute
   PrivateCardsIndexRoute: typeof PrivateCardsIndexRoute
 }
 
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
   PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
-  PrivateNotificationsRoute: PrivateNotificationsRoute,
   PrivateSettingsRoute: PrivateSettingsRoute,
   PrivateCardsIndexRoute: PrivateCardsIndexRoute,
 }
