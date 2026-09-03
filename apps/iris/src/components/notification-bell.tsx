@@ -2,6 +2,7 @@ import { Bell, MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NotificationHistoryDialog } from '@/components/notification-history-dialog';
+import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,8 +15,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  type NotificationItem,
   useMarkAllNotificationsRead,
-  useMarkNotificationRead,
   useRecentNotifications,
   useUnreadNotificationCount,
 } from '@/hooks/notifications';
@@ -24,14 +25,14 @@ import { authClient } from '@/utils/authentication';
 export function NotificationBell() {
   const { t } = useTranslation();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationItem | null>(null);
   const { data: session } = authClient.useSession();
   const userId = session?.session.userId;
 
   const { data: unreadData } = useUnreadNotificationCount(userId);
 
   const { data: recentData } = useRecentNotifications(userId);
-
-  const markAsReadMutation = useMarkNotificationRead();
 
   const markAllAsReadMutation = useMarkAllNotificationsRead();
 
@@ -89,9 +90,7 @@ export function NotificationBell() {
               <DropdownMenuItem
                 className="cursor-pointer"
                 key={notif.id}
-                onClick={() => {
-                  markAsReadMutation.mutate(notif.id);
-                }}
+                onClick={() => setSelectedNotification(notif)}
               >
                 <div className="flex flex-col gap-0.5">
                   <span
@@ -118,6 +117,15 @@ export function NotificationBell() {
       <NotificationHistoryDialog
         onOpenChange={setHistoryOpen}
         open={historyOpen}
+      />
+      <NotificationViewerDialog
+        notification={selectedNotification}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedNotification(null);
+          }
+        }}
+        open={!!selectedNotification}
       />
     </>
   );
