@@ -157,15 +157,21 @@ export function TimetableView() {
   // Timetable query (all timetables for the selector)
   const timetablesQuery = useTimetables();
 
-  // Compute the latest valid timetable id from the list
+  // Compute the latest valid timetable id, falling back to the list only once
+  // the latest-valid query has settled, so a provisional first-list id is never committed.
   const latestValidTimetableQuery = useLatestValidTimetable();
 
   const latestValidTimetableId =
-    latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
+    latestValidTimetableQuery.data?.id ??
+    (latestValidTimetableQuery.isPending
+      ? null
+      : timetablesQuery.data?.[0]?.id) ??
+    null;
 
-  // Selected timetable — initialised from URL param, else latestValid
+  // Selected timetable — always defaulted to the current (latest valid) one;
+  // the URL param is not trusted on reload because it may hold a stale id.
   const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(
-    search.timetable ?? null
+    null
   );
 
   // Once we know the latest valid, set it as default if nothing is selected
