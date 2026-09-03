@@ -27,6 +27,7 @@ import { db } from '#database';
 import {
   classroom,
   cohort,
+  cohortGroup,
   dayDefinition,
   lesson,
   lessonCohortMTM,
@@ -119,10 +120,15 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
       )
     )
   );
+  const groupIds = Array.from(
+    new Set(
+      lessons.flatMap((l) => (Array.isArray(l.groupsIds) ? l.groupsIds : []))
+    )
+  );
 
   const lessonIds = lessons.map((l) => l.id);
 
-  const [subjects, days, periods, teachers, classrooms, cohortRows] =
+  const [subjects, days, periods, teachers, classrooms, cohortRows, groupRows] =
     await Promise.all([
       db.select().from(subject).where(inArray(subject.id, subjectIds)),
       db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
@@ -145,6 +151,17 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
             .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
             .where(inArray(lessonCohortMTM.lessonId, lessonIds))
         : Promise.resolve([] as never[]),
+      groupIds.length
+        ? db
+            .select({
+              divisionTag: cohortGroup.divisionTag,
+              entireClass: cohortGroup.entireClass,
+              id: cohortGroup.id,
+              name: cohortGroup.name,
+            })
+            .from(cohortGroup)
+            .where(inArray(cohortGroup.id, groupIds))
+        : Promise.resolve([] as never[]),
     ]);
 
   const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
@@ -152,6 +169,20 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   const periodMap = new Map(periods.map((p) => [p.id, p] as const));
   const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
   const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
+  const groupMap = new Map(
+    groupRows.map(
+      (g) =>
+        [
+          g.id,
+          {
+            divisionTag: g.divisionTag,
+            entireClass: g.entireClass,
+            id: g.id,
+            name: g.name,
+          },
+        ] as const
+    )
+  );
   const cohortMap = new Map<
     string,
     { id: string; name: string; short: string }[]
@@ -191,6 +222,15 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
         const d = dayMap.get(l.dayDefinitionId);
         return d;
       })(),
+      groups: (Array.isArray(l.groupsIds) ? l.groupsIds : [])
+        .map((id) => groupMap.get(id))
+        .filter(Boolean)
+        .map((g) => ({
+          divisionTag: (g as (typeof groupRows)[number]).divisionTag,
+          entireClass: (g as (typeof groupRows)[number]).entireClass,
+          id: (g as (typeof groupRows)[number]).id,
+          name: (g as (typeof groupRows)[number]).name,
+        })),
       groupsIds: (Array.isArray(l.groupsIds) ? l.groupsIds : []) as string[],
       id: l.id,
       period: (() => {
@@ -231,6 +271,14 @@ const enrichedLessonSchema = z.object({
     z.object({ id: z.string(), name: z.string(), short: z.string() })
   ),
   day: createSelectSchema(dayDefinition).optional(),
+  groups: z.array(
+    z.object({
+      divisionTag: z.string().nullable(),
+      entireClass: z.boolean(),
+      id: z.string(),
+      name: z.string(),
+    })
+  ),
   groupsIds: z.array(z.string()),
   id: z.string(),
   period: z

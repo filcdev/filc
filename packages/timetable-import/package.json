@@ -1,0 +1,28 @@
+{
+  "name": "@filcdev/timetable-import",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./import": "./src/import.ts",
+    "./adapters": "./src/adapters/registry.ts",
+    "./oman": "./src/adapters/oman/index.ts",
+    "./asc2012": "./src/adapters/asc2012/index.ts",
+    "./types": "./src/types.ts",
+    "./store": "./src/store.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.23",
+    "fast-xml-parser": "^5.11.1",
+    "iconv-lite": "^0.7.3",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

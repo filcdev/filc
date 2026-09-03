@@ -179,6 +179,9 @@ export const updateNotificationSettings = notificationsFactory.createHandlers(
     if (body.timetableClassColors !== undefined) {
       values.timetableClassColors = body.timetableClassColors;
     }
+    if (body.timetableGroupDisplay !== undefined) {
+      values.timetableGroupDisplay = body.timetableGroupDisplay;
+    }
 
     const [updated] = await db
       .update(userPreferences)

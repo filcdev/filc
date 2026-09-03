@@ -71,6 +71,8 @@ export const queryKeys = {
     cohortLessons: (data: unknown) => ['cohort-lessons', data] as const,
     cohorts: (timetableId: string | null | undefined) =>
       ['cohorts', timetableId] as const,
+    groups: (cohortId: string | null | undefined) =>
+      ['timetable', 'groups', cohortId] as const,
     lessons: (
       filter: string | null,
       selectionId: string | null,
