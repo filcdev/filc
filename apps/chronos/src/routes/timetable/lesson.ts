@@ -38,6 +38,7 @@ import {
 } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
+import { getTimetableIdForDate } from '#utils/timetable/active';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -549,12 +550,18 @@ function compareSubstituteCandidates(
 
 async function buildCandidateLessonsMap(
   candidateTeacherIds: string[],
-  weekday: number
+  weekday: number,
+  timetableId: string
 ): Promise<Map<string, CandidateLessonEntry[]>> {
   const candidateLessons = await db
     .select()
     .from(lesson)
-    .where(arrayOverlaps(lesson.teacherIds, candidateTeacherIds));
+    .where(
+      and(
+        arrayOverlaps(lesson.teacherIds, candidateTeacherIds),
+        eq(lesson.timetableId, timetableId)
+      )
+    );
 
   const enrichedCandidateLessons = await enrichLessons(candidateLessons);
   const map = new Map<string, CandidateLessonEntry[]>();
@@ -597,7 +604,8 @@ async function buildCandidateLessonsMap(
 
 async function getParallelLessons(
   selectedLessons: Awaited<ReturnType<typeof enrichLessons>>,
-  missingTeacherId: string
+  missingTeacherId: string,
+  timetableId: string
 ): Promise<Awaited<ReturnType<typeof enrichLessons>>> {
   const periodIds = [
     ...new Set(
@@ -651,7 +659,8 @@ async function getParallelLessons(
       and(
         inArray(lesson.id, parallelLessonIds),
         inArray(lesson.periodId, periodIds),
-        inArray(lesson.dayDefinitionId, dayIds)
+        inArray(lesson.dayDefinitionId, dayIds),
+        eq(lesson.timetableId, timetableId)
       )
     );
 
@@ -783,11 +792,25 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     }
 
     const weekday = getWeekdayInBudapest(date);
+    const timetableId = await getTimetableIdForDate(date);
+
+    if (!timetableId) {
+      return ok(c, {
+        availableLessons: [],
+        parallelLessons: [],
+        substituteCandidates: [],
+      });
+    }
 
     const missingTeacherLessons = await db
       .select()
       .from(lesson)
-      .where(arrayContains(lesson.teacherIds, [missingTeacherId]));
+      .where(
+        and(
+          arrayContains(lesson.teacherIds, [missingTeacherId]),
+          eq(lesson.timetableId, timetableId)
+        )
+      );
 
     const enrichedMissingTeacherLessons = await enrichLessons(
       missingTeacherLessons
@@ -834,7 +857,8 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
 
     const parallelLessons = await getParallelLessons(
       selectedLessons,
-      missingTeacherId
+      missingTeacherId,
+      timetableId
     );
 
     const candidateTeacherIds = normalizedTeacherIds.filter(
@@ -861,7 +885,8 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
 
     const candidateLessonsByTeacherId = await buildCandidateLessonsMap(
       candidateTeacherIds,
-      weekday
+      weekday,
+      timetableId
     );
 
     const substituteCandidates = candidateTeachers
