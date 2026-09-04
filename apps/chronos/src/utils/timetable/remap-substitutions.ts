@@ -78,6 +78,85 @@ const makeLessonIdentityKey = (
     sortedIds(cohortIds),
   ].join('|');
 
+type SubstitutionLessonLink = {
+  lessonId: string;
+  substitutionId: string;
+};
+
+const buildTargetIdsByKey = (
+  targetLessons: LessonIdentity[],
+  cohortIdsByLesson: Map<string, string[]>
+): Map<string, string[]> => {
+  const targetIdsByKey = new Map<string, string[]>();
+
+  for (const targetLesson of targetLessons) {
+    const key = makeLessonIdentityKey(
+      targetLesson,
+      cohortIdsByLesson.get(targetLesson.id) ?? []
+    );
+
+    const current = targetIdsByKey.get(key) ?? [];
+    current.push(targetLesson.id);
+    targetIdsByKey.set(key, current);
+  }
+
+  return targetIdsByKey;
+};
+
+const matchSourceLessons = (
+  sourceLessons: LessonIdentity[],
+  targetIdsByKey: Map<string, string[]>,
+  cohortIdsByLesson: Map<string, string[]>
+): {
+  targetBySourceId: Map<string, string>;
+  unmatchedSourceLessonIds: string[];
+} => {
+  const targetBySourceId = new Map<string, string>();
+  const unmatchedSourceLessonIds: string[] = [];
+
+  for (const sourceLesson of sourceLessons) {
+    const key = makeLessonIdentityKey(
+      sourceLesson,
+      cohortIdsByLesson.get(sourceLesson.id) ?? []
+    );
+
+    const candidates = targetIdsByKey.get(key) ?? [];
+
+    if (candidates.length !== 1) {
+      unmatchedSourceLessonIds.push(sourceLesson.id);
+      continue;
+    }
+
+    const targetLessonId = candidates[0];
+
+    if (targetLessonId) {
+      targetBySourceId.set(sourceLesson.id, targetLessonId);
+    }
+  }
+
+  return {
+    targetBySourceId,
+    unmatchedSourceLessonIds,
+  };
+};
+
+const buildRemappedLinks = (
+  sourceLinks: SubstitutionLessonLink[],
+  targetBySourceId: Map<string, string>
+): SubstitutionLessonLink[] =>
+  sourceLinks.flatMap((link) => {
+    const targetLessonId = targetBySourceId.get(link.lessonId);
+
+    return targetLessonId
+      ? [
+          {
+            lessonId: targetLessonId,
+            substitutionId: link.substitutionId,
+          },
+        ]
+      : [];
+  });
+
 /**
  * Re-link substitutions from a timetable that is about to be deleted to
  * logically equivalent lessons in another timetable.
@@ -136,55 +215,14 @@ export const remapSubstitutionLessonsToTimetable = async (
 
   const cohortIdsByLesson = await loadCohortIdsByLesson(tx, allLessonIds);
 
-  const targetIdsByKey = new Map<string, string[]>();
+  const targetIdsByKey = buildTargetIdsByKey(targetLessons, cohortIdsByLesson);
 
-  for (const targetLesson of targetLessons) {
-    const key = makeLessonIdentityKey(
-      targetLesson,
-      cohortIdsByLesson.get(targetLesson.id) ?? []
-    );
-
-    const current = targetIdsByKey.get(key) ?? [];
-    current.push(targetLesson.id);
-    targetIdsByKey.set(key, current);
-  }
-
-  const sourceById = new Map(
-    sourceLessons.map((sourceLesson) => [sourceLesson.id, sourceLesson])
+  const { targetBySourceId, unmatchedSourceLessonIds } = matchSourceLessons(
+    sourceLessons,
+    targetIdsByKey,
+    cohortIdsByLesson
   );
 
-  const targetBySourceId = new Map<string, string>();
-  const unmatchedSourceLessonIds: string[] = [];
-
-  for (const sourceLessonId of sourceLessonIds) {
-    const sourceLesson = sourceById.get(sourceLessonId);
-
-    if (!sourceLesson) {
-      unmatchedSourceLessonIds.push(sourceLessonId);
-      continue;
-    }
-
-    const key = makeLessonIdentityKey(
-      sourceLesson,
-      cohortIdsByLesson.get(sourceLesson.id) ?? []
-    );
-
-    const candidates = targetIdsByKey.get(key) ?? [];
-
-    // We only migrate when there is exactly one unambiguous replacement.
-    if (candidates.length !== 1) {
-      unmatchedSourceLessonIds.push(sourceLessonId);
-      continue;
-    }
-
-    const targetLessonId = candidates[0];
-
-    if (targetLessonId) {
-      targetBySourceId.set(sourceLessonId, targetLessonId);
-    }
-  }
-
-  // Do not partially migrate. The caller should abort the deletion instead.
   if (unmatchedSourceLessonIds.length > 0) {
     return {
       remappedLinks: 0,
@@ -192,21 +230,7 @@ export const remapSubstitutionLessonsToTimetable = async (
     };
   }
 
-  const newLinks: Array<{
-    lessonId: string;
-    substitutionId: string;
-  }> = [];
-
-  for (const link of sourceLinks) {
-    const targetLessonId = targetBySourceId.get(link.lessonId);
-
-    if (targetLessonId) {
-      newLinks.push({
-        lessonId: targetLessonId,
-        substitutionId: link.substitutionId,
-      });
-    }
-  }
+  const newLinks = buildRemappedLinks(sourceLinks, targetBySourceId);
 
   if (newLinks.length > 0) {
     await tx
