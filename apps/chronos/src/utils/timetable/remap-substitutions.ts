@@ -10,7 +10,6 @@ type TxClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 type LessonIdentity = {
   dayDefinitionId: string;
-  groupsIds: string[] | null;
   id: string;
   periodId: string;
   periodsPerWeek: number;
@@ -22,7 +21,6 @@ type LessonIdentity = {
 
 const lessonIdentitySelection = {
   dayDefinitionId: lesson.dayDefinitionId,
-  groupsIds: lesson.groupsIds,
   id: lesson.id,
   periodId: lesson.periodId,
   periodsPerWeek: lesson.periodsPerWeek,
@@ -74,7 +72,6 @@ const makeLessonIdentityKey = (
     value.termDefinitionId ?? '',
     String(value.periodsPerWeek),
     sortedIds(value.teacherIds),
-    sortedIds(value.groupsIds),
     sortedIds(cohortIds),
   ].join('|');
 
