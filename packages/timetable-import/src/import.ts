@@ -168,7 +168,6 @@ export const importTimetable = <Tx>(
       tx,
       model.groups,
       cohortMap,
-      timetableId,
       store,
       logger
     );
@@ -856,7 +855,6 @@ const loadGroups = async <Tx>(
   tx: Tx,
   groups: TimetableImportModel['groups'],
   cohortMap: Map<string, string>,
-  timetableId: string,
   store: TimetableImportStore<Tx>,
   logger: TimetableImportLogger
 ): Promise<Map<string, string>> => {
@@ -897,7 +895,6 @@ const loadGroups = async <Tx>(
         name: group.name,
         studentCount: group.studentCount ?? 0,
         teacherId: null,
-        timetableId,
       });
       dbId = inserted ?? '';
       if (dbId) {

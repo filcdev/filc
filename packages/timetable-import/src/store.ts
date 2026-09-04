@@ -103,7 +103,6 @@ export type NewCohortGroup = {
   name: string;
   studentCount: number;
   teacherId: string | null;
-  timetableId: string;
 };
 
 export type CohortGroupRow = {

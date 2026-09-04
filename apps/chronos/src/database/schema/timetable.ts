@@ -112,11 +112,6 @@ export const cohortGroup = pgTable('group', {
   // TODO: review if school uses this
   studentCount: integer('student_count').notNull(),
   teacherId: text('teacher_id').references(() => teacher.id),
-  timetableId: text('timetable_id')
-    .references(() => timetable.id, {
-      onDelete: 'cascade',
-    })
-    .notNull(),
 });
 
 export const userGroup = pgTable(
