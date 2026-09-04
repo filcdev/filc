@@ -30,6 +30,7 @@ import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import { cleanupOrphanedCohorts } from '#utils/timetable/cleanup';
 import { dateToYYYYMMDD } from '#utils/timetable/date';
+import { remapSubstitutionLessonsToTimetable } from '#utils/timetable/remap-substitutions';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -249,6 +250,7 @@ export const deleteTimetable = timetableFactory.createHandlers(
     }
 
     const activeId = await getActiveTimetableId();
+
     if (activeId === id) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Cannot delete the currently active timetable.',
@@ -258,38 +260,75 @@ export const deleteTimetable = timetableFactory.createHandlers(
     const notifiedUserIds: string[] = [];
 
     await db.transaction(async (tx) => {
+      // Re-link substitutions to equivalent lessons in the active timetable
+      // before deleting the old timetable.
+      if (activeId) {
+        const remapResult = await remapSubstitutionLessonsToTimetable(
+          tx,
+          id,
+          activeId
+        );
+
+        if (remapResult.unmatchedSourceLessonIds.length > 0) {
+          throw new HTTPException(StatusCodes.BAD_REQUEST, {
+            message:
+              `Cannot delete timetable: ${remapResult.unmatchedSourceLessonIds.length} substituted lesson(s) ` +
+              'could not be uniquely matched to the active timetable.',
+          });
+        }
+      } else {
+        const [linkedSubstitution] = await tx
+          .select({
+            substitutionId: substitutionLessonMTM.substitutionId,
+          })
+          .from(substitutionLessonMTM)
+          .innerJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+          .where(eq(lesson.timetableId, id))
+          .limit(1);
+
+        if (linkedSubstitution) {
+          throw new HTTPException(StatusCodes.BAD_REQUEST, {
+            message:
+              'Cannot delete timetable with substitutions because there is no active timetable to migrate them to.',
+          });
+        }
+      }
+
       // Find cohorts in other timetables (will survive deletion)
       const survivingRows = await tx
         .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
         .from(cohortTimetableMtm)
         .where(ne(cohortTimetableMtm.timetableId, id));
-      const survivingSet = new Set(survivingRows.map((r) => r.cohortId));
+
+      const survivingSet = new Set(survivingRows.map((row) => row.cohortId));
 
       // Cohorts linked only to this timetable become orphaned after deletion
       const timetableCohortRows = await tx
         .select({ cohortId: cohortTimetableMtm.cohortId })
         .from(cohortTimetableMtm)
         .where(eq(cohortTimetableMtm.timetableId, id));
+
       const orphanedCohortIds = timetableCohortRows
-        .map((r) => r.cohortId)
+        .map((row) => row.cohortId)
         .filter((cohortId) => !survivingSet.has(cohortId));
 
       if (orphanedCohortIds.length > 0) {
-        // Nullify cohortId on users referencing orphaned cohorts in a single
-        // conditional update to avoid a race between select and update.
+        // Nullify cohortId on users referencing orphaned cohorts.
         const updatedUsers = await tx
           .update(user)
           .set({ cohortId: null })
           .where(inArray(user.cohortId, orphanedCohortIds))
           .returning({ id: user.id });
+
         if (updatedUsers.length > 0) {
           notifiedUserIds.push(...updatedUsers.map((u) => u.id));
         }
 
-        // Delete orphaned cohorts that are no longer linked to any timetable
+        // Delete cohorts that are no longer linked to any timetable.
         await tx.delete(cohort).where(inArray(cohort.id, orphanedCohortIds));
       }
 
+      // Finally delete the timetable.
       await tx.delete(timetable).where(eq(timetable.id, id));
     });
 
