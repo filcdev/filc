@@ -1,6 +1,7 @@
 import { pdf } from '@react-pdf/renderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import dayjs from 'dayjs';
 import { CalendarX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,7 @@ import type {
   LessonItem,
   PeriodItem,
   SelectionsType,
+  TimetableItem,
   TimetableViewModel,
 } from '@/components/timetable/types';
 import { Empty } from '@/components/ui/empty';
@@ -154,14 +156,23 @@ export function TimetableView() {
     [colorMutation]
   );
 
-  // Timetable query (all timetables for the selector)
+  // Timetable query (all timetables)
   const timetablesQuery = useTimetables();
 
-  // Compute the latest valid timetable id from the list
+  // Expired timetables stay in the database, but are hidden from the public
+  // selector. Current and upcoming timetables remain selectable.
+  const visibleTimetables = useMemo(() => {
+    const today = dayjs().format('YYYY-MM-DD');
+
+    return (timetablesQuery.data ?? []).filter(
+      (item: TimetableItem) => !item.validTo || item.validTo >= today
+    );
+  }, [timetablesQuery.data]);
+
+  // The backend is the source of truth for the currently active timetable.
   const latestValidTimetableQuery = useLatestValidTimetable();
 
-  const latestValidTimetableId =
-    latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
+  const latestValidTimetableId = latestValidTimetableQuery.data?.id ?? null;
 
   // Selected timetable — initialised from URL param, else latestValid
   const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(
@@ -170,10 +181,23 @@ export function TimetableView() {
 
   // Once we know the latest valid, set it as default if nothing is selected
   useEffect(() => {
-    if (!selectedTimetableId && latestValidTimetableId) {
+    if (!(timetablesQuery.data && latestValidTimetableId)) {
+      return;
+    }
+
+    const selectedIsVisible =
+      selectedTimetableId !== null &&
+      visibleTimetables.some((item) => item.id === selectedTimetableId);
+
+    if (!selectedIsVisible) {
       setSelectedTimetableId(latestValidTimetableId);
     }
-  }, [selectedTimetableId, latestValidTimetableId]);
+  }, [
+    timetablesQuery.data,
+    visibleTimetables,
+    selectedTimetableId,
+    latestValidTimetableId,
+  ]);
 
   // Queries
   const cohortsQuery = useTimetableCohorts(selectedTimetableId);
@@ -507,7 +531,7 @@ export function TimetableView() {
           selectedTimetableId={selectedTimetableId}
           selectorLoading={selectorLoading}
           teachers={teachersQuery.data}
-          timetables={timetablesQuery.data}
+          timetables={timetablesQuery.data ? visibleTimetables : undefined}
           view={view}
         />
 
