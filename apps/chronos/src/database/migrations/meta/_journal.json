@@ -127,6 +127,13 @@
       "when": 1788385798904,
       "tag": "0017_lonely_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788556112340,
+      "tag": "0018_smart_warbird",
+      "breakpoints": true
     }
   ]
 }
