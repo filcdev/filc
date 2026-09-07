@@ -34,6 +34,18 @@ export const queryKeys = {
   lessons: () => ['lessons'] as const,
   movedLessons: () => ['movedLessons'] as const,
 
+  navigator: {
+    buildings: () => ['navigator', 'buildings'] as const,
+    classrooms: () => ['navigator', 'classrooms'] as const,
+    classroomTypes: () => ['navigator', 'classroomTypes'] as const,
+    corridors: () => ['navigator', 'corridors'] as const,
+    graph: () => ['navigator', 'graph'] as const,
+    lifts: () => ['navigator', 'lifts'] as const,
+    root: () => ['navigator'] as const,
+    stairs: () => ['navigator', 'stairs'] as const,
+    translations: () => ['navigator', 'translations'] as const,
+  },
+
   news: {
     adminSystemMessages: () => ['admin-system-messages'] as const,
     announcements: () => ['announcements'] as const,
