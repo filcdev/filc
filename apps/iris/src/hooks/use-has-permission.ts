@@ -14,6 +14,7 @@ export const ADMIN_UI_PERMISSIONS = [
   permissions.rolesRead,
   permissions.bugReportsRead,
   permissions.bugReportsWrite,
+  permissions.navigatorManage,
 ] as const;
 
 export function useHasPermission(

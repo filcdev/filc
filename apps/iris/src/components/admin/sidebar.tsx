@@ -5,17 +5,25 @@ import {
   ArrowRightLeft,
   Bell,
   Bug,
+  Building2,
   DoorOpen,
   FlaskConical,
   GraduationCap,
   IdCard,
+  Languages,
   LayoutDashboard,
   List,
+  MapPin,
   Microchip,
+  MoveVertical,
+  Palette,
   RefreshCw,
+  School,
   Shield,
+  TrendingUp,
   UserRound,
   Users,
+  Waypoints,
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -147,6 +155,59 @@ export function AdminSidebar() {
           },
         ],
         label: t('admin.doorlock'),
+      },
+      {
+        items: [
+          {
+            icon: MapPin,
+            permission: permissions.navigatorManage,
+            title: t('navigator.overview.title'),
+            url: '/admin/navigator',
+          },
+          {
+            icon: Building2,
+            permission: permissions.navigatorManage,
+            title: t('navigator.buildings.title'),
+            url: '/admin/navigator/buildings',
+          },
+          {
+            icon: Palette,
+            permission: permissions.navigatorManage,
+            title: t('navigator.classroomTypes.title'),
+            url: '/admin/navigator/classroom-types',
+          },
+          {
+            icon: School,
+            permission: permissions.navigatorManage,
+            title: t('navigator.classrooms.title'),
+            url: '/admin/navigator/classrooms',
+          },
+          {
+            icon: Waypoints,
+            permission: permissions.navigatorManage,
+            title: t('navigator.corridors.title'),
+            url: '/admin/navigator/corridors',
+          },
+          {
+            icon: MoveVertical,
+            permission: permissions.navigatorManage,
+            title: t('navigator.lifts.title'),
+            url: '/admin/navigator/lifts',
+          },
+          {
+            icon: TrendingUp,
+            permission: permissions.navigatorManage,
+            title: t('navigator.stairs.title'),
+            url: '/admin/navigator/stairs',
+          },
+          {
+            icon: Languages,
+            permission: permissions.navigatorManage,
+            title: t('navigator.translations.title'),
+            url: '/admin/navigator/translations',
+          },
+        ],
+        label: t('admin.navigator'),
       },
       {
         items: [
