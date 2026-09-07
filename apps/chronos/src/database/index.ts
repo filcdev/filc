@@ -7,6 +7,7 @@ import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { bugReportSchema } from '#database/schema/bug-report';
 import { doorlockSchema } from '#database/schema/doorlock';
+import { navigatorSchema } from '#database/schema/navigator';
 import { newsSchema } from '#database/schema/news';
 import { notificationsSchema } from '#database/schema/notifications';
 import { timetableSchema } from '#database/schema/timetable';
@@ -43,6 +44,7 @@ const schema = {
   ...authorizationSchema,
   ...bugReportSchema,
   ...doorlockSchema,
+  ...navigatorSchema,
   ...newsSchema,
   ...notificationsSchema,
   ...timetableSchema,
