@@ -1,3 +1,4 @@
+import { permissions as apiPermissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
@@ -132,7 +133,7 @@ export const initializeRBAC = async () => {
   await db
     .insert(dbRole)
     .values([
-      { can: ['*'], name: 'admin' },
+      { can: ['*', apiPermissions.navigatorManage], name: 'admin' },
       { can: [], name: 'user' },
     ])
     .onConflictDoNothing();
@@ -210,7 +211,10 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
     if (!rolePermissions) {
       logger.warn(`Role ${role} not found in the database.`);
       // create it
-      await rbac.createRole(role, role === 'admin' ? ['*'] : []);
+      await rbac.createRole(
+        role,
+        role === 'admin' ? ['*', apiPermissions.navigatorManage] : []
+      );
       continue;
     }
 
