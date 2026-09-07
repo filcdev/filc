@@ -141,6 +141,13 @@
       "when": 1788795354597,
       "tag": "0019_goofy_karma",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788807734333,
+      "tag": "0020_grant_navigator_manage_to_admin",
+      "breakpoints": true
     }
   ]
 }
