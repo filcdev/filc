@@ -136,17 +136,13 @@ function LiftsPage() {
     setSortDirection('asc');
   };
 
-  const hasError = liftsQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-bold text-3xl tracking-tight">
           {t('navigator.lifts.title')}
         </h1>
-        <p className="text-muted-foreground">
-          {t('navigator.lifts.description')}
-        </p>
+        <p className="text-muted-foreground">{t('navigator.lifts.subtitle')}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -313,7 +309,7 @@ function LiftsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredLifts.length || hasError) && (
+                {!filteredLifts.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={6}>
                       {t('navigator.lifts.noLiftsFound')}

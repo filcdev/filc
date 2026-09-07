@@ -764,7 +764,7 @@
     },
     "overview": {
       "title": "Navigátor",
-      "description": "Beltéri navigáció áttekintése és gyors hivatkozások",
+      "subtitle": "Beltéri navigáció áttekintése és gyors hivatkozások",
       "buildings": "Épületek",
       "classroomTypes": "Teremtípusok",
       "classrooms": "Termek",
@@ -785,6 +785,7 @@
     },
     "buildings": {
       "title": "Épületek",
+      "subtitle": "Az épületek kezelése a térképen.",
       "description": "Leírás",
       "searchPlaceholder": "Épületek keresése...",
       "refresh": "Frissítés",
@@ -807,7 +808,7 @@
     },
     "classroomTypes": {
       "title": "Teremtípusok",
-      "description": "Leírás",
+      "subtitle": "A teremtípusok és térképi színeik kezelése.",
       "searchPlaceholder": "Teremtípusok keresése...",
       "refresh": "Frissítés",
       "add": "Hozzáadás",
@@ -826,6 +827,7 @@
     },
     "classrooms": {
       "title": "Termek",
+      "subtitle": "A termek és térképi pozícióik kezelése.",
       "description": "Leírás",
       "searchPlaceholder": "Termek keresése...",
       "refresh": "Frissítés",
@@ -853,7 +855,7 @@
     },
     "corridors": {
       "title": "Folyosók",
-      "description": "Leírás",
+      "subtitle": "A termeket összekötő folyosók kezelése.",
       "searchPlaceholder": "Folyosók keresése...",
       "refresh": "Frissítés",
       "add": "Hozzáadás",
@@ -882,7 +884,7 @@
     },
     "lifts": {
       "title": "Liftek",
-      "description": "Leírás",
+      "subtitle": "A liftek és szinttartományaik kezelése.",
       "searchPlaceholder": "Liftek keresése...",
       "refresh": "Frissítés",
       "add": "Hozzáadás",
@@ -904,7 +906,7 @@
     },
     "stairs": {
       "title": "Lépcsők",
-      "description": "Leírás",
+      "subtitle": "A lépcsők és szinttartományaik kezelése.",
       "searchPlaceholder": "Lépcsők keresése...",
       "refresh": "Frissítés",
       "add": "Hozzáadás",
@@ -927,7 +929,7 @@
     },
     "translations": {
       "title": "Fordítások",
-      "description": "Leírás",
+      "subtitle": "A fordítási kulcsok kezelése.",
       "searchPlaceholder": "Fordítások keresése...",
       "refresh": "Frissítés",
       "add": "Hozzáadás",

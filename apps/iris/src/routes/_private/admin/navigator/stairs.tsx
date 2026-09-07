@@ -144,8 +144,6 @@ function StairsPage() {
     setSortDirection('asc');
   };
 
-  const hasError = stairsQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -153,7 +151,7 @@ function StairsPage() {
           {t('navigator.stairs.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.stairs.description')}
+          {t('navigator.stairs.subtitle')}
         </p>
       </div>
 
@@ -343,7 +341,7 @@ function StairsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredStairs.length || hasError) && (
+                {!filteredStairs.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={7}>
                       {t('navigator.stairs.noStairsFound')}

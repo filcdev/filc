@@ -110,8 +110,6 @@ function ClassroomTypesPage() {
     setSortDirection('asc');
   };
 
-  const hasError = classroomTypesQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -119,7 +117,7 @@ function ClassroomTypesPage() {
           {t('navigator.classroomTypes.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.classroomTypes.description')}
+          {t('navigator.classroomTypes.subtitle')}
         </p>
       </div>
 
@@ -227,7 +225,7 @@ function ClassroomTypesPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredTypes.length || hasError) && (
+                {!filteredTypes.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={3}>
                       {t('navigator.classroomTypes.noClassroomTypesFound')}

@@ -169,8 +169,6 @@ function ClassroomsPage() {
     setSortDirection('asc');
   };
 
-  const hasError = classroomsQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -178,7 +176,7 @@ function ClassroomsPage() {
           {t('navigator.classrooms.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.classrooms.description')}
+          {t('navigator.classrooms.subtitle')}
         </p>
       </div>
 
@@ -394,7 +392,7 @@ function ClassroomsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredClassrooms.length || hasError) && (
+                {!filteredClassrooms.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={9}>
                       {t('navigator.classrooms.noClassroomsFound')}

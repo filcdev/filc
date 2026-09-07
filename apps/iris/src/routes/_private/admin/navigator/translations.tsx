@@ -127,8 +127,6 @@ function TranslationsPage() {
     setSortDirection('asc');
   };
 
-  const hasError = translationsQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -136,7 +134,7 @@ function TranslationsPage() {
           {t('navigator.translations.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.translations.description')}
+          {t('navigator.translations.subtitle')}
         </p>
       </div>
 
@@ -280,7 +278,7 @@ function TranslationsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredTranslations.length || hasError) && (
+                {!filteredTranslations.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={5}>
                       {t('navigator.translations.noTranslationsFound')}

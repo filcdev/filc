@@ -132,8 +132,6 @@ function BuildingsPage() {
     setSortDirection('asc');
   };
 
-  const hasError = buildingsQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -141,7 +139,7 @@ function BuildingsPage() {
           {t('navigator.buildings.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.buildings.description')}
+          {t('navigator.buildings.subtitle')}
         </p>
       </div>
 
@@ -317,7 +315,7 @@ function BuildingsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredBuildings.length || hasError) && (
+                {!filteredBuildings.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={7}>
                       {t('navigator.buildings.noBuildingsFound')}

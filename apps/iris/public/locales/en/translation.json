@@ -764,7 +764,7 @@
     },
     "overview": {
       "title": "Navigator",
-      "description": "Indoor navigation overview and quick links",
+      "subtitle": "Indoor navigation overview and quick links",
       "buildings": "Buildings",
       "classroomTypes": "Classroom types",
       "classrooms": "Classrooms",
@@ -785,6 +785,7 @@
     },
     "buildings": {
       "title": "Buildings",
+      "subtitle": "Manage the campus buildings shown on the map.",
       "description": "Description",
       "searchPlaceholder": "Search buildings...",
       "refresh": "Refresh",
@@ -807,7 +808,7 @@
     },
     "classroomTypes": {
       "title": "Classroom types",
-      "description": "Description",
+      "subtitle": "Manage the classroom types and their map colors.",
       "searchPlaceholder": "Search classroom types...",
       "refresh": "Refresh",
       "add": "Add",
@@ -826,6 +827,7 @@
     },
     "classrooms": {
       "title": "Classrooms",
+      "subtitle": "Manage the classrooms and their positions on the map.",
       "description": "Description",
       "searchPlaceholder": "Search classrooms...",
       "refresh": "Refresh",
@@ -853,7 +855,7 @@
     },
     "corridors": {
       "title": "Corridors",
-      "description": "Description",
+      "subtitle": "Manage the corridors connecting the classrooms.",
       "searchPlaceholder": "Search corridors...",
       "refresh": "Refresh",
       "add": "Add",
@@ -882,7 +884,7 @@
     },
     "lifts": {
       "title": "Lifts",
-      "description": "Description",
+      "subtitle": "Manage the lifts and their storey ranges.",
       "searchPlaceholder": "Search lifts...",
       "refresh": "Refresh",
       "add": "Add",
@@ -904,7 +906,7 @@
     },
     "stairs": {
       "title": "Stairs",
-      "description": "Description",
+      "subtitle": "Manage the stairs and their storey ranges.",
       "searchPlaceholder": "Search stairs...",
       "refresh": "Refresh",
       "add": "Add",
@@ -927,7 +929,7 @@
     },
     "translations": {
       "title": "Translations",
-      "description": "Description",
+      "subtitle": "Manage the translation keys used across the navigator.",
       "searchPlaceholder": "Search translations...",
       "refresh": "Refresh",
       "add": "Add",

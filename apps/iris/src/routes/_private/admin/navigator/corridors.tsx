@@ -139,8 +139,6 @@ function CorridorsPage() {
     setSortDirection('asc');
   };
 
-  const hasError = corridorsQuery.isError;
-
   return (
     <div className="space-y-6">
       <div>
@@ -148,7 +146,7 @@ function CorridorsPage() {
           {t('navigator.corridors.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.corridors.description')}
+          {t('navigator.corridors.subtitle')}
         </p>
       </div>
 
@@ -323,7 +321,7 @@ function CorridorsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!(filteredCorridors.length || hasError) && (
+                {!filteredCorridors.length && (
                   <TableRow>
                     <TableCell className="text-muted-foreground" colSpan={7}>
                       {t('navigator.corridors.noCorridorsFound')}

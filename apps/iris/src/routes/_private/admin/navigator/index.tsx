@@ -75,7 +75,7 @@ function NavigatorOverview() {
           {t('navigator.overview.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.overview.description')}
+          {t('navigator.overview.subtitle')}
         </p>
       </div>
 
