@@ -10,7 +10,13 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { navigatorStair } from '#database/schema/navigator';
 import { authRouter } from '#middleware/auth';
-import { created, notFound, ok } from '#utils/http';
+import {
+  badRequest,
+  created,
+  internalServerError,
+  notFound,
+  ok,
+} from '#utils/http';
 import { pickDefined } from '#utils/navigator/pick-defined';
 import {
   stairResponseSchema,
@@ -98,6 +104,10 @@ export const createStairRoute = navigatorFactory.createHandlers(
         .values(payload)
         .returning();
 
+      if (!inserted) {
+        throw internalServerError('Failed to create stair');
+      }
+
       return created(c, { stair: inserted });
     } catch (err) {
       throw conflictOnUniqueViolation(
@@ -152,6 +162,13 @@ export const updateStairRoute = navigatorFactory.createHandlers(
       throw notFound('Stair not found');
     }
 
+    const minStorey = payload.minStorey ?? existing.minStorey;
+    const maxStorey = payload.maxStorey ?? existing.maxStorey;
+
+    if (minStorey > maxStorey) {
+      throw badRequest('minStorey must be less than or equal to maxStorey');
+    }
+
     const name = payload.name ?? existing.name;
     const buildingId = payload.buildingId ?? existing.buildingId;
 
@@ -170,6 +187,10 @@ export const updateStairRoute = navigatorFactory.createHandlers(
         .set(set)
         .where(eq(navigatorStair.id, id))
         .returning();
+
+      if (!updated) {
+        throw notFound('Stair not found');
+      }
 
       return ok(c, { stair: updated });
     } catch (err) {

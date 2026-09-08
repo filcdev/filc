@@ -1,0 +1,2 @@
+ALTER TABLE "navigator_lift" ADD CONSTRAINT "navigator_lift_storey_check" CHECK (min_storey <= max_storey);--> statement-breakpoint
+ALTER TABLE "navigator_stair" ADD CONSTRAINT "navigator_stair_storey_check" CHECK (min_storey <= max_storey);

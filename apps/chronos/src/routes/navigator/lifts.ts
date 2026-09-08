@@ -10,7 +10,13 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { navigatorLift } from '#database/schema/navigator';
 import { authRouter } from '#middleware/auth';
-import { created, notFound, ok } from '#utils/http';
+import {
+  badRequest,
+  created,
+  internalServerError,
+  notFound,
+  ok,
+} from '#utils/http';
 import { pickDefined } from '#utils/navigator/pick-defined';
 import {
   liftResponseSchema,
@@ -98,6 +104,10 @@ export const createLiftRoute = navigatorFactory.createHandlers(
         .values(payload)
         .returning();
 
+      if (!inserted) {
+        throw internalServerError('Failed to create lift');
+      }
+
       return created(c, { lift: inserted });
     } catch (err) {
       throw conflictOnUniqueViolation(
@@ -152,6 +162,13 @@ export const updateLiftRoute = navigatorFactory.createHandlers(
       throw notFound('Lift not found');
     }
 
+    const minStorey = payload.minStorey ?? existing.minStorey;
+    const maxStorey = payload.maxStorey ?? existing.maxStorey;
+
+    if (minStorey > maxStorey) {
+      throw badRequest('minStorey must be less than or equal to maxStorey');
+    }
+
     const name = payload.name ?? existing.name;
     const buildingId = payload.buildingId ?? existing.buildingId;
 
@@ -170,6 +187,10 @@ export const updateLiftRoute = navigatorFactory.createHandlers(
         .set(set)
         .where(eq(navigatorLift.id, id))
         .returning();
+
+      if (!updated) {
+        throw notFound('Lift not found');
+      }
 
       return ok(c, { lift: updated });
     } catch (err) {

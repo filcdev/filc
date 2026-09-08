@@ -11,10 +11,27 @@ const baseStairPayloadSchema = z.object({
 });
 
 /** Payload for creating a navigator stair. */
-export const createStairSchema = baseStairPayloadSchema;
+export const createStairSchema = baseStairPayloadSchema.refine(
+  (data) => data.minStorey <= data.maxStorey,
+  {
+    message: 'minStorey must be less than or equal to maxStorey',
+    path: ['minStorey'],
+  }
+);
 
 /** Payload for updating a navigator stair. */
-export const updateStairSchema = baseStairPayloadSchema.partial();
+export const updateStairSchema = baseStairPayloadSchema
+  .partial()
+  .refine(
+    (data) =>
+      data.minStorey === undefined ||
+      data.maxStorey === undefined ||
+      data.minStorey <= data.maxStorey,
+    {
+      message: 'minStorey must be less than or equal to maxStorey',
+      path: ['minStorey'],
+    }
+  );
 
 export type CreateStairInput = z.infer<typeof createStairSchema>;
 export type UpdateStairInput = z.infer<typeof updateStairSchema>;

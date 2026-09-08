@@ -10,10 +10,27 @@ const baseLiftPayloadSchema = z.object({
 });
 
 /** Payload for creating a navigator lift. */
-export const createLiftSchema = baseLiftPayloadSchema;
+export const createLiftSchema = baseLiftPayloadSchema.refine(
+  (data) => data.minStorey <= data.maxStorey,
+  {
+    message: 'minStorey must be less than or equal to maxStorey',
+    path: ['minStorey'],
+  }
+);
 
 /** Payload for updating a navigator lift. */
-export const updateLiftSchema = baseLiftPayloadSchema.partial();
+export const updateLiftSchema = baseLiftPayloadSchema
+  .partial()
+  .refine(
+    (data) =>
+      data.minStorey === undefined ||
+      data.maxStorey === undefined ||
+      data.minStorey <= data.maxStorey,
+    {
+      message: 'minStorey must be less than or equal to maxStorey',
+      path: ['minStorey'],
+    }
+  );
 
 export type CreateLiftInput = z.infer<typeof createLiftSchema>;
 export type UpdateLiftInput = z.infer<typeof updateLiftSchema>;

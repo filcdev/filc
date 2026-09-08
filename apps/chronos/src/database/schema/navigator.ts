@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -106,6 +108,7 @@ export const navigatorLift = pgTable(
       t.name,
       t.buildingId
     ),
+    check('navigator_lift_storey_check', sql`min_storey <= max_storey`),
   ]
 );
 
@@ -129,6 +132,7 @@ export const navigatorStair = pgTable(
       t.name,
       t.buildingId
     ),
+    check('navigator_stair_storey_check', sql`min_storey <= max_storey`),
   ]
 );
 
