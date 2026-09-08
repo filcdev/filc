@@ -36,15 +36,19 @@ export const corridorTransferSchema = corridorSelectSchema.omit({
   updatedAt: true,
 });
 
-export const liftTransferSchema = liftSelectSchema.omit({
-  createdAt: true,
-  updatedAt: true,
-});
+export const liftTransferSchema = liftSelectSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .refine((data) => data.minStorey <= data.maxStorey, {
+    message: 'minStorey must be less than or equal to maxStorey',
+    path: ['minStorey'],
+  });
 
-export const stairTransferSchema = stairSelectSchema.omit({
-  createdAt: true,
-  updatedAt: true,
-});
+export const stairTransferSchema = stairSelectSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .refine((data) => data.minStorey <= data.maxStorey, {
+    message: 'minStorey must be less than or equal to maxStorey',
+    path: ['minStorey'],
+  });
 
 export const translationTransferSchema = translationSelectSchema.omit({
   createdAt: true,
