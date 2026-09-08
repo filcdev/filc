@@ -8,6 +8,7 @@ import { CorridorDialog } from '@/components/admin/navigator/corridor-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -137,6 +138,20 @@ function CorridorsPage() {
 
     setSortColumn(column);
     setSortDirection('asc');
+  };
+
+  const renderBuildingName = (name: string) => {
+    if (buildingsQuery.isLoading) {
+      return <Skeleton className="h-4 w-24" />;
+    }
+    if (buildingsQuery.isError) {
+      return (
+        <span className="text-destructive">
+          {t('navigator.corridors.loadError')}
+        </span>
+      );
+    }
+    return name;
   };
 
   return (
@@ -275,7 +290,9 @@ function CorridorsPage() {
                     <TableCell className="font-medium">
                       {corridor.name}
                     </TableCell>
-                    <TableCell>{corridor.buildingName}</TableCell>
+                    <TableCell>
+                      {renderBuildingName(corridor.buildingName)}
+                    </TableCell>
                     <TableCell>{corridor.storey}</TableCell>
                     <TableCell>
                       ({corridor.x1}, {corridor.y1}) → ({corridor.x2},{' '}

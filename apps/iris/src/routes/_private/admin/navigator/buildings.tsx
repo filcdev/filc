@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { BuildingDialog } from '@/components/admin/navigator/building-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -130,6 +131,20 @@ function BuildingsPage() {
 
     setSortColumn(column);
     setSortDirection('asc');
+  };
+
+  const renderRoomCount = (buildingId: string) => {
+    if (classroomsQuery.isLoading) {
+      return <Skeleton className="h-4 w-12" />;
+    }
+    if (classroomsQuery.isError) {
+      return (
+        <span className="text-destructive">
+          {t('navigator.buildings.loadError')}
+        </span>
+      );
+    }
+    return roomCountByBuilding.get(buildingId) ?? 0;
   };
 
   return (
@@ -285,9 +300,7 @@ function BuildingsPage() {
                     </TableCell>
                     <TableCell>{building.x}</TableCell>
                     <TableCell>{building.y}</TableCell>
-                    <TableCell>
-                      {roomCountByBuilding.get(building.id) ?? 0}
-                    </TableCell>
+                    <TableCell>{renderRoomCount(building.id)}</TableCell>
                     <TableCell>
                       {dayjs(building.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
                     </TableCell>
