@@ -11,6 +11,7 @@ import {
   Waypoints,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { TransferActions } from '@/components/admin/navigator/transfer-actions';
 import { StatCard } from '@/components/admin/stat-card';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,6 +92,8 @@ function NavigatorOverview() {
 
           return (
             <>
+              <TransferActions />
+
               <div className="grid gap-4 md:grid-cols-3">
                 <StatCard
                   icon={<Building2 className="text-primary" />}

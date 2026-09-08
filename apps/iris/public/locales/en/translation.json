@@ -947,6 +947,16 @@
       "saveError": "Failed to save",
       "deleteSuccess": "Deleted successfully",
       "deleteError": "Failed to delete"
+    },
+    "transfer": {
+      "export": "Export JSON",
+      "exportInProgress": "Exporting…",
+      "import": "Import JSON",
+      "importConfirm": "Import replaces all current navigator data (buildings, rooms, corridors, lifts, stairs, translations). Continue?",
+      "importSuccess": "Navigator data imported successfully",
+      "importError": "Import failed",
+      "exportError": "Export failed",
+      "invalidFile": "The selected file is not a valid navigator export"
     }
   }
 }

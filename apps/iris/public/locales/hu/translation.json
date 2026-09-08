@@ -947,6 +947,16 @@
       "saveError": "Hiba történt a mentéskor",
       "deleteSuccess": "Sikeresen törölve",
       "deleteError": "Hiba történt a törléskor"
+    },
+    "transfer": {
+      "export": "JSON exportálása",
+      "exportInProgress": "Exportálás…",
+      "import": "JSON importálása",
+      "importConfirm": "Az import felülírja az összes jelenlegi navigátor adatot (épületek, termek, folyosók, liftek, lépcsők, fordítások). Folytatod?",
+      "importSuccess": "A navigátor adatok importálása sikeres",
+      "importError": "Hiba történt az importálás során",
+      "exportError": "Hiba történt az exportálás során",
+      "invalidFile": "A kiválasztott fájl nem érvényes navigátor export"
     }
   }
 }

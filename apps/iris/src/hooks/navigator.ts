@@ -74,6 +74,9 @@ export type TranslationPayload = InferRequestType<
 export type UpdateTranslationPayload = InferRequestType<
   (typeof api.navigator.translations)[':lang'][':key']['$put']
 >['json'];
+export type NavigatorExportPayload = InferRequestType<
+  typeof api.navigator.import.$post
+>['json'];
 
 /** All navigator buildings. */
 export function useBuildings() {
@@ -659,6 +662,58 @@ export function useDeleteTranslation({ onSaved }: MutationCallbacks = {}) {
     },
     onSuccess: () => {
       toast.success(t('navigator.translations.deleteSuccess'));
+      invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Download the full navigator graph as a JSON file. Not a React hook: the
+ * caller drives the busy state and surfaces errors via a toast.
+ */
+export async function exportNavigatorJson(): Promise<void> {
+  const res = await api.navigator.export.$get();
+  if (!res.ok) {
+    throw new Error('Export failed');
+  }
+  const text = await res.text();
+  downloadBlob(
+    new Blob([text], { type: 'application/json' }),
+    `navigator-export-${new Date().toISOString().slice(0, 10)}.json`
+  );
+}
+
+/** Replace all navigator data with the contents of an export JSON payload. */
+export function useImportNavigator({ onSaved }: MutationCallbacks = {}) {
+  const invalidate = useInvalidateNavigator();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (payload: NavigatorExportPayload) => {
+      const res = await parseResponse(
+        api.navigator.import.$post({ json: payload })
+      );
+      if (!res.success) {
+        throw new Error('Failed to import navigator data');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('navigator.transfer.importError'));
+    },
+    onSuccess: () => {
+      toast.success(t('navigator.transfer.importSuccess'));
       invalidate();
       onSaved?.();
     },
