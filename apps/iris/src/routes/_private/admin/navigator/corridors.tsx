@@ -317,6 +317,9 @@ function CorridorsPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          aria-label={t('navigator.common.edit', {
+                            name: corridor.name,
+                          })}
                           onClick={() => {
                             setSelectedCorridor(corridor);
                             setDialogOpen(true);
@@ -327,6 +330,9 @@ function CorridorsPage() {
                           <Pen className="h-4 w-4" />
                         </Button>
                         <Button
+                          aria-label={t('navigator.common.delete', {
+                            name: corridor.name,
+                          })}
                           disabled={deleteMutation.isPending}
                           onClick={() => handleDelete(corridor)}
                           size="icon"

@@ -288,6 +288,9 @@ function LiftsPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          aria-label={t('navigator.common.edit', {
+                            name: lift.name,
+                          })}
                           onClick={() => {
                             setSelectedLift(lift);
                             setDialogOpen(true);
@@ -298,6 +301,9 @@ function LiftsPage() {
                           <Pen className="h-4 w-4" />
                         </Button>
                         <Button
+                          aria-label={t('navigator.common.delete', {
+                            name: lift.name,
+                          })}
                           disabled={deleteMutation.isPending}
                           onClick={() => handleDelete(lift)}
                           size="icon"

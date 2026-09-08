@@ -257,6 +257,9 @@ function TranslationsPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          aria-label={t('navigator.common.edit', {
+                            name: `${translation.langKey}:${translation.textKey}`,
+                          })}
                           onClick={() => {
                             setSelectedTranslation(translation);
                             setDialogOpen(true);
@@ -267,6 +270,9 @@ function TranslationsPage() {
                           <Pen className="h-4 w-4" />
                         </Button>
                         <Button
+                          aria-label={t('navigator.common.delete', {
+                            name: `${translation.langKey}:${translation.textKey}`,
+                          })}
                           disabled={deleteMutation.isPending}
                           onClick={() => handleDelete(translation)}
                           size="icon"

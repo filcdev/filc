@@ -320,6 +320,9 @@ function StairsPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          aria-label={t('navigator.common.edit', {
+                            name: stair.name,
+                          })}
                           onClick={() => {
                             setSelectedStair(stair);
                             setDialogOpen(true);
@@ -330,6 +333,9 @@ function StairsPage() {
                           <Pen className="h-4 w-4" />
                         </Button>
                         <Button
+                          aria-label={t('navigator.common.delete', {
+                            name: stair.name,
+                          })}
                           disabled={deleteMutation.isPending}
                           onClick={() => handleDelete(stair)}
                           size="icon"

@@ -204,6 +204,9 @@ function ClassroomTypesPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          aria-label={t('navigator.common.edit', {
+                            name: type.name,
+                          })}
                           onClick={() => {
                             setSelectedType(type);
                             setDialogOpen(true);
@@ -214,6 +217,9 @@ function ClassroomTypesPage() {
                           <Pen className="h-4 w-4" />
                         </Button>
                         <Button
+                          aria-label={t('navigator.common.delete', {
+                            name: type.name,
+                          })}
                           disabled={deleteMutation.isPending}
                           onClick={() => handleDelete(type)}
                           size="icon"

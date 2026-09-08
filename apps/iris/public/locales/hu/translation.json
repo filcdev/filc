@@ -748,7 +748,9 @@
     "common": {
       "building": "Épület",
       "create": "Létrehozás",
+      "delete": "Törlés: {{name}}",
       "description": "Leírás",
+      "edit": "Szerkesztés: {{name}}",
       "maxStorey": "Felső szint",
       "minStorey": "Alsó szint",
       "name": "Név",

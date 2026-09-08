@@ -748,7 +748,9 @@
     "common": {
       "building": "Building",
       "create": "Create",
+      "delete": "Delete {{name}}",
       "description": "Description",
+      "edit": "Edit {{name}}",
       "maxStorey": "Max storey",
       "minStorey": "Min storey",
       "name": "Name",
