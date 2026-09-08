@@ -10,7 +10,7 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { navigatorClassroomType } from '#database/schema/navigator';
 import { authRouter } from '#middleware/auth';
-import { created, notFound, ok } from '#utils/http';
+import { created, internalServerError, notFound, ok } from '#utils/http';
 import {
   classroomTypeResponseSchema,
   classroomTypesResponseSchema,
@@ -101,6 +101,10 @@ export const createClassroomTypeRoute = navigatorFactory.createHandlers(
         .values({ colorhex: payload.colorhex ?? null, name: payload.name })
         .returning();
 
+      if (!inserted) {
+        throw internalServerError('Failed to create classroom type');
+      }
+
       return created(c, { classroomType: inserted });
     } catch (err) {
       throw conflictOnUniqueViolation(
@@ -176,6 +180,10 @@ export const updateClassroomTypeRoute = navigatorFactory.createHandlers(
         .set(set)
         .where(eq(navigatorClassroomType.id, id))
         .returning();
+
+      if (!updated) {
+        throw notFound('Classroom type not found');
+      }
 
       return ok(c, { classroomType: updated });
     } catch (err) {

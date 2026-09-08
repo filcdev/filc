@@ -62,3 +62,8 @@ export const unauthorized = (message = 'Unauthorized', cause?: unknown) =>
 
 export const conflict = (message: string, cause?: unknown) =>
   new ApiHttpError(StatusCodes.CONFLICT, { cause, message });
+
+export const internalServerError = (
+  message = 'Internal server error',
+  cause?: unknown
+) => new ApiHttpError(StatusCodes.INTERNAL_SERVER_ERROR, { cause, message });

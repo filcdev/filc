@@ -10,7 +10,7 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { navigatorCorridor } from '#database/schema/navigator';
 import { authRouter } from '#middleware/auth';
-import { created, notFound, ok } from '#utils/http';
+import { created, internalServerError, notFound, ok } from '#utils/http';
 import { pickDefined } from '#utils/navigator/pick-defined';
 import {
   corridorResponseSchema,
@@ -103,6 +103,10 @@ export const createCorridorRoute = navigatorFactory.createHandlers(
         .values(payload)
         .returning();
 
+      if (!inserted) {
+        throw internalServerError('Failed to create corridor');
+      }
+
       return created(c, { corridor: inserted });
     } catch (err) {
       throw conflictOnUniqueViolation(
@@ -180,6 +184,10 @@ export const updateCorridorRoute = navigatorFactory.createHandlers(
         .set(set)
         .where(eq(navigatorCorridor.id, id))
         .returning();
+
+      if (!updated) {
+        throw notFound('Corridor not found');
+      }
 
       return ok(c, { corridor: updated });
     } catch (err) {

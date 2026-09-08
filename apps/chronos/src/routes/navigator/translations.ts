@@ -11,7 +11,7 @@ import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { navigatorTranslation } from '#database/schema/navigator';
 import { authRouter } from '#middleware/auth';
-import { created, notFound, ok } from '#utils/http';
+import { created, internalServerError, notFound, ok } from '#utils/http';
 import { pickDefined } from '#utils/navigator/pick-defined';
 import {
   translationAvailableResponseSchema,
@@ -184,6 +184,10 @@ export const createTranslationRoute = navigatorFactory.createHandlers(
         .values(payload)
         .returning();
 
+      if (!inserted) {
+        throw internalServerError('Failed to create translation');
+      }
+
       return created(c, { translation: inserted });
     } catch (err) {
       throw conflictOnUniqueViolation(
@@ -305,6 +309,10 @@ export const updateTranslationRoute = navigatorFactory.createHandlers(
         )
       )
       .returning();
+
+    if (!updated) {
+      throw notFound('Translation not found');
+    }
 
     return ok(c, { translation: updated });
   }
