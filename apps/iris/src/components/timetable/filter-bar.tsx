@@ -27,8 +27,8 @@ import {
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/utils';
+import type { WeekFilter } from './helpers';
 import { TimetableSelector } from './timetable-selector';
-
 import type {
   ClassroomItem,
   CohortItem,
@@ -36,6 +36,7 @@ import type {
   TeacherItem,
   TimetableItem,
 } from './types';
+import { WeekSelector } from './week-selector';
 
 const teacherLabel = (t: TeacherItem, fallback: string): string =>
   `${t.firstName} ${t.lastName}`.trim() || fallback;
@@ -133,6 +134,8 @@ export function FilterBar({
   disabled,
   view,
   onViewChange,
+  weekFilter,
+  onWeekFilterChange,
 }: {
   activeFilter: FilterType;
   onFilterChange: (value: FilterType) => void;
@@ -155,6 +158,8 @@ export function FilterBar({
   view: 'grid' | 'card';
   /** Change the active timetable view mode. */
   onViewChange: (view: 'grid' | 'card') => void;
+  weekFilter: WeekFilter;
+  onWeekFilterChange: (value: WeekFilter) => void;
 }) {
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
@@ -257,6 +262,11 @@ export function FilterBar({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         {/* Mobile row 1: filter toggles + print icon */}
         <div className="flex items-center gap-2">
+          <WeekSelector
+            disabled={disabled}
+            onChange={onWeekFilterChange}
+            value={weekFilter}
+          />
           <ButtonGroup>
             <Button
               disabled={activeFilter === 'class'}

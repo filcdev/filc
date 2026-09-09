@@ -11,6 +11,8 @@ import { TimetableGrid } from '@/components/timetable/grid';
 import {
   buildViewModel,
   filterLessonsForGroupDisplay,
+  filterLessonsForWeek,
+  type WeekFilter,
 } from '@/components/timetable/helpers';
 import { TimetablePDF } from '@/components/timetable/pdf/document';
 import { PrintDialog } from '@/components/timetable/print-dialog';
@@ -229,6 +231,9 @@ export function TimetableView() {
     classroom: null,
     teacher: null,
   });
+
+  const [weekFilter, setWeekFilter] = useState<WeekFilter>('all');
+
   const [initialized, setInitialized] = useState(false);
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
@@ -392,25 +397,34 @@ export function TimetableView() {
     search.view,
   ]);
 
+  const weekFilteredLessons = useMemo(
+    () =>
+      filterLessonsForWeek(
+        (lessonsQuery.data ?? []) as LessonItem[],
+        weekFilter
+      ),
+    [lessonsQuery.data, weekFilter]
+  );
+
   const model = useMemo(
     () =>
       buildViewModel(
-        (lessonsQuery.data ?? []) as LessonItem[],
+        weekFilteredLessons,
         i18n.language,
         (periodsQuery.data ?? []) as PeriodItem[]
       ),
-    [lessonsQuery.data, periodsQuery.data, i18n.language]
+    [weekFilteredLessons, periodsQuery.data, i18n.language]
   );
 
   const cardLessons = useMemo(
     () =>
       filterLessonsForGroupDisplay(
-        (lessonsQuery.data ?? []) as LessonItem[],
+        weekFilteredLessons,
         groupDisplay,
         selectedGroupIds,
         selectedDivisionTags
       ),
-    [lessonsQuery.data, groupDisplay, selectedGroupIds, selectedDivisionTags]
+    [weekFilteredLessons, groupDisplay, selectedGroupIds, selectedDivisionTags]
   );
 
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
@@ -543,6 +557,7 @@ export function TimetableView() {
           }
           onSelectTimetable={setSelectedTimetableId}
           onViewChange={handleViewChange}
+          onWeekFilterChange={setWeekFilter}
           selectedByClass={selections.class}
           selectedByRoom={selections.classroom}
           selectedByTeacher={selections.teacher}
@@ -551,6 +566,7 @@ export function TimetableView() {
           teachers={teachersQuery.data}
           timetables={timetablesQuery.data ? visibleTimetables : undefined}
           view={view}
+          weekFilter={weekFilter}
         />
 
         <PrintDialog
@@ -572,7 +588,7 @@ export function TimetableView() {
           </div>
         ) : (
           (() => {
-            if (!hasError && (lessonsQuery.data ?? []).length === 0) {
+            if (!hasError && weekFilteredLessons.length === 0) {
               return (
                 <Empty
                   description={t('timetable.emptyWeekDescription')}

@@ -248,7 +248,10 @@
     "cleanupConfirmTitle": "Clean Up Orphaned Cohorts",
     "cleanupConfirmDescription": "This will delete all cohorts that are no longer linked to any timetable. Users referencing those cohorts will have their cohort assignment removed. This action cannot be undone.",
     "cleanupOrphanedCohortsSuccess": "Orphaned cohorts cleaned up",
-    "cleanupOrphanedCohortsError": "Failed to clean up orphaned cohorts"
+    "cleanupOrphanedCohortsError": "Failed to clean up orphaned cohorts",
+    "weekA": "Week A",
+    "weekB": "Week B",
+    "weekAll": "All weeks"
   },
   "navigation": {
     "title": "Navigation",

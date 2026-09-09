@@ -236,7 +236,10 @@
     "cleanupConfirmTitle": "Árva csoportok törlése",
     "cleanupConfirmDescription": "Ez törölni fog minden olyan csoportot, amely már nincs hozzárendelve egyetlen órarendhez sem. Az ilyen csoportokra hivatkozó felhasználók csoport-hozzárendelése törlődik. Ez a művelet nem vonható vissza.",
     "cleanupOrphanedCohortsSuccess": "Árva csoportok kitakarítva",
-    "cleanupOrphanedCohortsError": "Nem sikerült az árva csoportok tisztítása"
+    "cleanupOrphanedCohortsError": "Nem sikerült az árva csoportok tisztítása",
+    "weekA": "A hét",
+    "weekB": "B hét",
+    "weekAll": "Mindkettő"
   },
   "common": {
     "cancel": "Mégsem",
