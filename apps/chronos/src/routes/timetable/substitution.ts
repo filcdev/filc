@@ -724,6 +724,38 @@ async function findOrCreateManualLesson(
   return lessonId;
 }
 
+async function lockAndValidateTeachers(
+  tx: TxOrDb,
+  teacherId: string,
+  substituter: string | null | undefined
+): Promise<void> {
+  // Lock the teacher and substituter rows (when set) in a deterministic
+  // sorted order, so concurrent requests with reversed teacherId/substituter
+  // values can't deadlock on the second FOR UPDATE. Locking before validating
+  // either row also keeps a concurrent cleanup from deleting a referenced
+  // teacher mid-flight.
+  const teacherIdsToLock = Array.from(
+    new Set([teacherId, ...(substituter ? [substituter] : [])])
+  ).sort();
+
+  for (const id of teacherIdsToLock) {
+    const [lockedTeacher] = await tx
+      .select({ id: teacher.id })
+      .from(teacher)
+      .where(eq(teacher.id, id))
+      .for('update');
+
+    if (!lockedTeacher) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message:
+          id === teacherId
+            ? 'Invalid teacher provided'
+            : 'Invalid substituter provided',
+      });
+    }
+  }
+}
+
 export const createManualSubstitution = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Substitution', '@unit Substitution', true),
@@ -852,36 +884,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     let manualLessonId = '';
     const result = await db.transaction(
       async (tx) => {
-        // Lock the referenced teacher row so a concurrent cleanup can't delete
-        // it after this transaction has already validated its existence.
-        const [lockedTeacher] = await tx
-          .select({ id: teacher.id })
-          .from(teacher)
-          .where(eq(teacher.id, teacherId))
-          .for('update');
-
-        if (!lockedTeacher) {
-          throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message: 'Invalid teacher provided',
-          });
-        }
-
-        // Lock and revalidate the substituter's teacher row too when it
-        // differs from the teacher, so a concurrent cleanup can't delete it
-        // between the pre-transaction existence check and the insert below.
-        if (substituter && substituter !== teacherId) {
-          const [lockedSubstituter] = await tx
-            .select({ id: teacher.id })
-            .from(teacher)
-            .where(eq(teacher.id, substituter))
-            .for('update');
-
-          if (!lockedSubstituter) {
-            throw new HTTPException(StatusCodes.BAD_REQUEST, {
-              message: 'Invalid substituter provided',
-            });
-          }
-        }
+        await lockAndValidateTeachers(tx, teacherId, substituter);
 
         const lessonId = await findOrCreateManualLesson(tx, {
           cohortId,
