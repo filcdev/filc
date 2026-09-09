@@ -484,7 +484,7 @@ export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Timetable', '@unit Timetable', true),
     description:
-      'Delete all cohorts that are no longer linked to any timetable (orphaned). Users referencing those cohorts will have their cohortId nullified.',
+      'Delete all cohorts that are no longer linked to any timetable (orphaned) and all teachers that are not assigned to any lesson. Users referencing those cohorts will have their cohortId nullified. Teachers still referenced by cohorts or substitutions are kept.',
     responses: {
       200: {
         content: {
