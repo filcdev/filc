@@ -227,6 +227,74 @@ const WEEKDAY_STUBS = [
   { dayName: 'Friday', dayShort: 'Fri', sortOrder: 4 },
 ] as const;
 
+/*
+ */
+
+export type WeekFilter = 'A' | 'B' | 'all';
+export type LessonWeekType = 'A' | 'B' | 'all';
+
+const normalizeWeekText = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+export const getLessonWeekType = (lesson: LessonItem): LessonWeekType => {
+  const week = lesson.weekDefinition;
+
+  if (!week) {
+    return 'all';
+  }
+
+  const short = week.short.trim().toUpperCase();
+
+  if (short === 'A') {
+    return 'A';
+  }
+
+  if (short === 'B') {
+    return 'B';
+  }
+
+  const name = normalizeWeekText(week.name);
+
+  if (name === 'het a' || name === 'a het' || name === 'week a') {
+    return 'A';
+  }
+
+  if (name === 'het b' || name === 'b het' || name === 'week b') {
+    return 'B';
+  }
+
+  const weeks = new Set((week.weeks ?? []).map((value) => value.trim()));
+
+  if (weeks.size === 1 && weeks.has('10')) {
+    return 'A';
+  }
+
+  if (weeks.size === 1 && weeks.has('01')) {
+    return 'B';
+  }
+
+  return 'all';
+};
+
+export const filterLessonsForWeek = (
+  lessons: LessonItem[],
+  weekFilter: WeekFilter
+): LessonItem[] => {
+  if (weekFilter === 'all') {
+    return lessons;
+  }
+
+  return lessons.filter((lesson) => {
+    const lessonWeek = getLessonWeekType(lesson);
+
+    return lessonWeek === 'all' || lessonWeek === weekFilter;
+  });
+};
+
 /** Build view model from lessons array */
 export const buildViewModel = (
   lessons: LessonItem[],
