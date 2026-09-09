@@ -2,18 +2,34 @@ import { cn } from '@/utils';
 import { getLessonWeekType } from './helpers';
 import type { LessonItem } from './types';
 
+type WeekBadgeProps = {
+  lesson: LessonItem;
+  className?: string;
+  variant?: 'badge' | 'plain';
+};
+
 export function WeekBadge({
   lesson,
   className,
-}: {
-  lesson: LessonItem;
-  className?: string;
-}) {
+  variant = 'badge',
+}: WeekBadgeProps) {
   const week = getLessonWeekType(lesson);
 
-  // Weekly lessons do not need a badge; only alternating lessons are marked.
   if (week === 'all') {
     return null;
+  }
+
+  if (variant === 'plain') {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center justify-center font-bold text-[11px] text-foreground leading-none',
+          className
+        )}
+      >
+        {week}
+      </span>
+    );
   }
 
   return (
