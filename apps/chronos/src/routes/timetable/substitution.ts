@@ -866,6 +866,23 @@ export const createManualSubstitution = timetableFactory.createHandlers(
           });
         }
 
+        // Lock and revalidate the substituter's teacher row too when it
+        // differs from the teacher, so a concurrent cleanup can't delete it
+        // between the pre-transaction existence check and the insert below.
+        if (substituter && substituter !== teacherId) {
+          const [lockedSubstituter] = await tx
+            .select({ id: teacher.id })
+            .from(teacher)
+            .where(eq(teacher.id, substituter))
+            .for('update');
+
+          if (!lockedSubstituter) {
+            throw new HTTPException(StatusCodes.BAD_REQUEST, {
+              message: 'Invalid substituter provided',
+            });
+          }
+        }
+
         const lessonId = await findOrCreateManualLesson(tx, {
           cohortId,
           dayDefinitionId,
