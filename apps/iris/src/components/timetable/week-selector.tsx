@@ -35,14 +35,14 @@ export function WeekSelector({
   ];
 
   return (
-    <div className="inline-flex h-9 items-center rounded-lg border border-border bg-muted/40 p-0.5 shadow-sm">
+    <div className="grid h-9 w-full grid-cols-3 items-center rounded-lg border border-border bg-muted/40 p-0.5 shadow-sm sm:inline-flex sm:w-auto">
       {items.map((item) => {
         const active = value === item.value;
 
         return (
           <Button
             className={cn(
-              'h-7 rounded-md px-3 font-semibold text-xs transition-all',
+              'h-7 w-full rounded-md px-2 font-semibold text-xs transition-all sm:w-auto sm:px-3',
               !active && 'text-muted-foreground',
               active &&
                 item.value === 'A' &&

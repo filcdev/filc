@@ -245,7 +245,7 @@ export function TimetableCardView({
   }
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto overscroll-x-contain">
       <div
         className="mx-auto w-fit overflow-hidden rounded-xl border border-border bg-card"
         style={{ minWidth: gridWidth }}
