@@ -234,7 +234,7 @@
     "upcomingTimetables": "Közelgő",
     "clean": "Tisztítás",
     "cleanupConfirmTitle": "Árva órarendi adatok törlése",
-    "cleanupConfirmDescription": "Ez törölni fog minden olyan csoportot, amely már nincs hozzárendelve egyetlen órarendhez sem, valamint minden olyan tanárt, akihez egyetlen óra sincs hozzárendelve. A törölt csoportokra hivatkozó felhasználók csoport-hozzárendelése elvész. A csoportokhoz vagy helyettesítésekhez tartozó tanárok megmaradnak. Ez a művelet nem vonható vissza.",
+    "cleanupConfirmDescription": "Ez törölni fog minden olyan csoportot, amely már nincs hozzárendelve egyetlen órarendhez sem, valamint minden olyan tanárt, akihez egyetlen óra sincs hozzárendelve. A törölt csoportokra hivatkozó felhasználók csoport-hozzárendelése elvész. A csoportokhoz, csoportegységekhez vagy helyettesítésekhez tartozó tanárok megmaradnak. Ez a művelet nem vonható vissza.",
     "cleanupOrphanedCohortsSuccess": "Az árva órarendi adatok kitakarítva",
     "cleanupOrphanedCohortsError": "Nem sikerült az árva órarendi adatok tisztítása"
   },

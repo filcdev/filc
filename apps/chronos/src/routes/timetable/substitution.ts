@@ -852,6 +852,20 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     let manualLessonId = '';
     const result = await db.transaction(
       async (tx) => {
+        // Lock the referenced teacher row so a concurrent cleanup can't delete
+        // it after this transaction has already validated its existence.
+        const [lockedTeacher] = await tx
+          .select({ id: teacher.id })
+          .from(teacher)
+          .where(eq(teacher.id, teacherId))
+          .for('update');
+
+        if (!lockedTeacher) {
+          throw new HTTPException(StatusCodes.BAD_REQUEST, {
+            message: 'Invalid teacher provided',
+          });
+        }
+
         const lessonId = await findOrCreateManualLesson(tx, {
           cohortId,
           dayDefinitionId,
