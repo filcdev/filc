@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/logtape';
-import { inArray } from 'drizzle-orm';
+import { asc, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -91,10 +91,14 @@ export async function cleanupOrphanedCohorts(): Promise<CleanupOrphanedCohortsRe
       });
     }
 
-    // Lock all teacher rows so a concurrent insert can't race the orphan scan.
+    // Lock all teacher rows in ascending id order so a concurrent insert
+    // can't race the orphan scan. Ordering matches the sorted lock order used
+    // by the substitution writer, avoiding a deadlock where the two
+    // transactions acquire teacher locks in opposite orders.
     const allTeacherRows = await tx
       .select({ id: teacher.id })
       .from(teacher)
+      .orderBy(asc(teacher.id))
       .for('update');
 
     // Teachers referenced by any lesson's `teacherIds` array are assigned.
