@@ -75,9 +75,6 @@ const groupMovedLessonsByDate = (data: MovedLessonItem[]) =>
 
 // Filter helpers
 
-/** Sentinel value for the "show everything" option in the class selector. */
-const EVERYONE = 'everyone';
-
 const teacherLabel = (teacher: TeacherItem, fallback: string): string =>
   `${teacher.firstName} ${teacher.lastName}`.trim() || fallback;
 
@@ -92,10 +89,7 @@ const getFilterOptions = (
 ): { label: string; value: string }[] => {
   const { cohorts, teachers, classrooms, translate } = options;
   if (activeFilter === 'class') {
-    return [
-      { label: translate('news.everyone'), value: EVERYONE },
-      ...(cohorts ?? []).map((c) => ({ label: c.name, value: c.id })),
-    ];
+    return (cohorts ?? []).map((c) => ({ label: c.name, value: c.id }));
   }
   if (activeFilter === 'teacher') {
     return (teachers ?? []).map((teacher) => ({
@@ -263,11 +257,7 @@ function SubsFilterBar({
   const { t } = useTranslation();
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
-  const activeSelectionId = getActiveSelectionId(activeFilter, selections);
-  const selectedValue =
-    activeFilter === 'class' && activeSelectionId === null
-      ? EVERYONE
-      : (activeSelectionId ?? '');
+  const selectedValue = getActiveSelectionId(activeFilter, selections) ?? '';
   const selectWidthClassName =
     activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
 
@@ -285,10 +275,6 @@ function SubsFilterBar({
 
   const handleSelection = (value: string) => {
     setComboboxOpen(false);
-    if (activeFilter === 'class' && value === EVERYONE) {
-      onClear?.();
-      return;
-    }
     const handlers = {
       class: onSelectClass,
       classroom: onSelectRoom,
@@ -384,7 +370,7 @@ function SubsFilterBar({
       </ButtonGroup>
       <div className="flex items-center gap-1">
         {renderSelect()}
-        {activeSelectionId !== null && onClear && (
+        {selectedValue && onClear && (
           <Button
             aria-label={t('timetable.clearFilter')}
             className="h-9 w-9 p-0"
