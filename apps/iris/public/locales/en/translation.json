@@ -741,6 +741,7 @@
     "rawKeyWarning": "Copy this key now. For security, it will only be shown once.",
     "copy": "Copy",
     "copied": "Copied",
+    "copyError": "Couldn't copy to the clipboard. Please copy it manually.",
     "close": "Close",
     "createSuccess": "API key created",
     "createError": "Failed to create API key",

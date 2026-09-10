@@ -187,8 +187,12 @@ export function ApiKeysCard() {
               <Button
                 onClick={async () => {
                   if (rawKey) {
-                    await navigator.clipboard.writeText(rawKey);
-                    toast.success(t('apiKeys.copied'));
+                    try {
+                      await navigator.clipboard.writeText(rawKey);
+                      toast.success(t('apiKeys.copied'));
+                    } catch {
+                      toast.error(t('apiKeys.copyError'));
+                    }
                   }
                 }}
               >

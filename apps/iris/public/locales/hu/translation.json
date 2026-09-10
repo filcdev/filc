@@ -741,6 +741,7 @@
     "rawKeyWarning": "Másold le most a kulcsot. Biztonsági okokból csak egyszer jelenik meg.",
     "copy": "Másolás",
     "copied": "Kimásolva",
+    "copyError": "Nem sikerült a vágólapra másolni. Másold ki kézzel.",
     "close": "Bezárás",
     "createSuccess": "API kulcs létrehozva",
     "createError": "Nem sikerült létrehozni az API kulcsot",
