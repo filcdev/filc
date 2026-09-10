@@ -376,7 +376,8 @@
     "exportError": "Nem sikerült exportálni az áthelyezett órákat"
   },
   "news": {
-    "title": "Hírek"
+    "title": "Hírek",
+    "everyone": "Mindenki"
   },
   "announcements": {
     "title": "Hírek",

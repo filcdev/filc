@@ -15,7 +15,6 @@ import { user } from '#database/schema/authentication';
 import { announcement, announcementCohortMtm } from '#database/schema/news';
 import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
-import { userHasPermission } from '#utils/authorization';
 import { ok } from '#utils/http';
 import { validateCohortIds } from '#utils/news/cohort';
 import {
@@ -50,7 +49,7 @@ export const listAnnouncements = newsFactory.createHandlers(
       true
     ),
     description:
-      'List active announcements within date range, cohort-filtered by default; admins may request all with includeAll=true',
+      'List active announcements within date range, cohort-filtered by default; includeAll=true returns everything',
     responses: {
       200: {
         content: {
@@ -70,12 +69,9 @@ export const listAnnouncements = newsFactory.createHandlers(
     const currentUser = c.var.user;
     const userCohortId = currentUser.cohortId;
 
-    // Admins managing announcements should see all of them, unfiltered by cohort
-    const isAdmin = await userHasPermission(
-      currentUser.id,
-      permissions.announcementsCreate
-    );
-    const bypassCohortFilter = includeAll && isAdmin;
+    // Any signed-in user may request all announcements (e.g. the public panel's
+    // "Everyone" option) via includeAll=true.
+    const bypassCohortFilter = includeAll;
 
     const now = new Date();
     const leadWindow = new Date(
@@ -90,7 +86,7 @@ export const listAnnouncements = newsFactory.createHandlers(
 
     // Cohort filtering: show items that are global (no rows in M2M)
     // or targeted to the user's cohort. Users without a cohort only see
-    // global announcements. Admins bypass this filter via includeAll=true.
+    // global announcements. includeAll=true bypasses this filter.
     if (!bypassCohortFilter) {
       if (userCohortId) {
         conditions.push(

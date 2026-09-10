@@ -376,7 +376,8 @@
     "exportError": "Failed to export moved lessons"
   },
   "news": {
-    "title": "News"
+    "title": "News",
+    "everyone": "Everyone"
   },
   "announcements": {
     "title": "News",
