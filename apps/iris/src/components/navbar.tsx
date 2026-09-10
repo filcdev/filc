@@ -214,6 +214,9 @@ export function Navbar({
                         className="text-destructive"
                         onClick={async () => {
                           await authClient.signOut();
+                          // Clear cached user-specific data (e.g. group
+                          // selections) so the next account can't read it.
+                          queryClient.clear();
                           queryClient.removeQueries({
                             queryKey: queryKeys.apiKeys.list(),
                           });

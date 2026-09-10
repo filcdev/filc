@@ -157,8 +157,12 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const handleCohortSkip = async () => {
     // Staff users are not required to pick a cohort. Persist the null
     // selection so the choice is remembered, then advance.
+    const { error } = await authClient.updateUser({ cohortId: null });
+    if (error) {
+      toast.error(t('welcome.cohortSaveFailed'));
+      return false;
+    }
     setSelectedCohortId(null);
-    await authClient.updateUser({ cohortId: null });
     return true;
   };
 
@@ -341,6 +345,14 @@ const CohortSelectorStep = (props: {
     return success;
   };
 
+  const clearCohort = async () => {
+    setIsUpdating(true);
+    setOpen(false);
+    const success = await props.onSkip();
+    setIsUpdating(false);
+    return success;
+  };
+
   if (
     cohortQuery.isLoading ||
     (!props.userCohortId && activeTimetableQuery.isLoading)
@@ -387,6 +399,20 @@ const CohortSelectorStep = (props: {
             <CommandList>
               <CommandEmpty>{t('cohort.noneFound')}</CommandEmpty>
               <CommandGroup>
+                <CommandItem
+                  onSelect={() => clearCohort()}
+                  value={t('cohort.noClass')}
+                >
+                  {t('cohort.noClass')}
+                  <Check
+                    className={cn(
+                      'ml-auto',
+                      props.selectedCohortId === null
+                        ? 'opacity-100'
+                        : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
                 {cohortQuery.data.map((cohort) => (
                   <CommandItem
                     key={cohort.id}

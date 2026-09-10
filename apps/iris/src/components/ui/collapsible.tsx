@@ -7,6 +7,7 @@ import {
 
 type CollapsibleContextValue = {
   open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
 const CollapsibleContext = createContext<CollapsibleContextValue | null>(null);
@@ -32,18 +33,28 @@ function Collapsible({
   ...props
 }: CollapsibleProps) {
   return (
-    <CollapsibleContext.Provider value={{ open }}>
+    <CollapsibleContext.Provider
+      value={{ onOpenChange: (next) => onOpenChange?.(next), open }}
+    >
       <div {...props}>{children}</div>
     </CollapsibleContext.Provider>
   );
 }
 
-interface CollapsibleTriggerProps extends ComponentProps<'button'> {
-  onOpenChange?: (open: boolean) => void;
-}
+interface CollapsibleTriggerProps extends ComponentProps<'button'> {}
 
 function CollapsibleTrigger({ onClick, ...props }: CollapsibleTriggerProps) {
-  return <button onClick={onClick} type="button" {...props} />;
+  const { open, onOpenChange } = useCollapsibleContext();
+  return (
+    <button
+      onClick={(event) => {
+        onClick?.(event);
+        onOpenChange(!open);
+      }}
+      type="button"
+      {...props}
+    />
+  );
 }
 
 function CollapsibleContent({

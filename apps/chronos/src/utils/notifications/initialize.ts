@@ -2,6 +2,10 @@ import { getLogger } from '@logtape/logtape';
 import { env } from '#utils/environment';
 import { registerHandler } from '#utils/notifications/engine';
 import { initializeFcm } from '#utils/notifications/providers/fcm';
+import {
+  buildSubstitutionTeacherContent,
+  type SubstitutionTeacherPayload,
+} from '#utils/notifications/substitution-teacher';
 
 const logger = getLogger(['chronos', 'notifications', 'initialize']);
 
@@ -176,6 +180,17 @@ export function initializeNotificationEngine(): void {
     getAudience: async () => [],
     getDelay: () => env.notificationDelaySubstitution,
     type: 'substitution',
+  });
+
+  registerHandler({
+    buildContent: (payload, locale) =>
+      buildSubstitutionTeacherContent(
+        payload as SubstitutionTeacherPayload,
+        locale
+      ),
+    getAudience: async () => [],
+    getDelay: () => env.notificationDelaySubstitution,
+    type: 'substitution_teacher',
   });
 
   registerHandler({

@@ -19,38 +19,6 @@ type BlockContent = {
   type: string;
 };
 
-const DISMISSED_STORAGE_KEY = 'filc.system-messages.dismissed.v1';
-
-const parseDismissedIds = (value: string | null): string[] => {
-  if (!value) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.filter((id): id is string => typeof id === 'string');
-  } catch {
-    return [];
-  }
-};
-
-const readDismissedIds = (): string[] => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-  return parseDismissedIds(window.localStorage.getItem(DISMISSED_STORAGE_KEY));
-};
-
-const writeDismissedIds = (ids: string[]) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(ids));
-};
-
 const renderBlockContent = (content: unknown): string => {
   if (typeof content === 'string') {
     return content;
@@ -70,10 +38,6 @@ export function SystemMessageBanner() {
   const { isPending } = authClient.useSession();
   const { i18n, t } = useTranslation();
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setDismissedIds(readDismissedIds());
-  }, []);
 
   const systemMessagesQuery = useApiQuery<SystemMessageItem[]>(
     () => api.news['system-messages'].$get({ query: {} }),
@@ -101,7 +65,6 @@ export function SystemMessageBanner() {
 
     if (nextDismissed.length !== dismissedIds.length) {
       setDismissedIds(nextDismissed);
-      writeDismissedIds(nextDismissed);
     }
   }, [dismissedIds, systemMessagesQuery.data, systemMessagesQuery.isSuccess]);
 
@@ -112,7 +75,6 @@ export function SystemMessageBanner() {
       }
 
       const next = [...previous, messageId];
-      writeDismissedIds(next);
       return next;
     });
   };
@@ -133,8 +95,13 @@ export function SystemMessageBanner() {
     <div className="fixed inset-x-0 top-0 z-[70]">
       <div className="flex items-center bg-destructive text-destructive-foreground shadow-md">
         <div className="min-w-0 flex-1 px-3 py-2 sm:px-4">
-          <p className="font-semibold text-sm leading-5">{message.title}</p>
-          <p className="wrap-break-word mt-0.5 text-xs leading-5 opacity-95">
+          <p className="font-semibold text-sm leading-5" translate="yes">
+            {message.title}
+          </p>
+          <p
+            className="wrap-break-word mt-0.5 text-xs leading-5 opacity-95"
+            translate="yes"
+          >
             {renderBlockContent(message.content)}
           </p>
           <p className="mt-0.5 text-[11px] opacity-80">

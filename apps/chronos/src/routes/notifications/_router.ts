@@ -6,8 +6,10 @@ import {
   listNotifications,
   markAllAsRead,
   markAsRead,
+  previewTestNotification,
   processUnsubscribe,
   registerFcmToken,
+  sendTestNotification,
   testNotification,
   unregisterFcmToken,
   updateNotificationSettings,
@@ -18,6 +20,8 @@ export const notificationsRouter = notificationsFactory
   .get('/', ...listNotifications)
   .get('/unread-count', ...getUnreadCount)
   .get('/test', ...testNotification)
+  .post('/send-test', ...sendTestNotification)
+  .post('/preview-test', ...previewTestNotification)
   .get('/settings', ...getNotificationSettings)
   .patch('/settings', ...updateNotificationSettings)
   .post('/fcm-token', ...registerFcmToken)

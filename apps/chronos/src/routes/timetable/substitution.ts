@@ -32,6 +32,7 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
+import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
@@ -631,6 +632,16 @@ export const createSubstitution = timetableFactory.createHandlers(
       substituter,
     });
 
+    dispatchPendingNotification(
+      result.id,
+      'substitution_teacher',
+      await loadSubstitutionTeacherPayload({
+        date: result.date,
+        lessonIds,
+        substituter,
+      })
+    );
+
     return ok(c, result);
   }
 );
@@ -711,6 +722,38 @@ async function findOrCreateManualLesson(
   });
   await tx.insert(lessonCohortMTM).values({ cohortId, lessonId });
   return lessonId;
+}
+
+async function lockAndValidateTeachers(
+  tx: TxOrDb,
+  teacherId: string,
+  substituter: string | null | undefined
+): Promise<void> {
+  // Lock the teacher and substituter rows (when set) in a deterministic
+  // sorted order, so concurrent requests with reversed teacherId/substituter
+  // values can't deadlock on the second FOR UPDATE. Locking before validating
+  // either row also keeps a concurrent cleanup from deleting a referenced
+  // teacher mid-flight.
+  const teacherIdsToLock = Array.from(
+    new Set([teacherId, ...(substituter ? [substituter] : [])])
+  ).sort();
+
+  for (const id of teacherIdsToLock) {
+    const [lockedTeacher] = await tx
+      .select({ id: teacher.id })
+      .from(teacher)
+      .where(eq(teacher.id, id))
+      .for('update');
+
+    if (!lockedTeacher) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message:
+          id === teacherId
+            ? 'Invalid teacher provided'
+            : 'Invalid substituter provided',
+      });
+    }
+  }
 }
 
 export const createManualSubstitution = timetableFactory.createHandlers(
@@ -841,6 +884,8 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     let manualLessonId = '';
     const result = await db.transaction(
       async (tx) => {
+        await lockAndValidateTeachers(tx, teacherId, substituter);
+
         const lessonId = await findOrCreateManualLesson(tx, {
           cohortId,
           dayDefinitionId,
@@ -893,6 +938,16 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       lessonIds: [manualLessonId],
       substituter,
     });
+
+    dispatchPendingNotification(
+      result.id,
+      'substitution_teacher',
+      await loadSubstitutionTeacherPayload({
+        date: result.date,
+        lessonIds: [manualLessonId],
+        substituter,
+      })
+    );
 
     return c.json<SuccessResponse<typeof result>>({
       data: result,
@@ -1016,6 +1071,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     }
 
     cancelPendingNotification(id, 'substitution');
+    cancelPendingNotification(id, 'substitution_teacher');
 
     // Fetch existing lesson IDs for notification fallback
     const existingLessonRecords = await db
@@ -1024,12 +1080,27 @@ export const updateSubstitution = timetableFactory.createHandlers(
       .where(eq(substitutionLessonMTM.substitutionId, id));
     const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
 
+    const updatedLessonIds =
+      body.lessonIds == null ? existingLessonIds : body.lessonIds;
+    const updatedSubstituter =
+      'substituter' in body ? body.substituter : existing.substituter;
+    const updatedDate = body.date ?? existing.date;
+
     dispatchPendingNotification(id, 'substitution', {
-      date: body.date ?? existing.date,
-      lessonIds: body.lessonIds == null ? existingLessonIds : body.lessonIds,
-      substituter:
-        'substituter' in body ? body.substituter : existing.substituter,
+      date: updatedDate,
+      lessonIds: updatedLessonIds,
+      substituter: updatedSubstituter,
     });
+
+    dispatchPendingNotification(
+      id,
+      'substitution_teacher',
+      await loadSubstitutionTeacherPayload({
+        date: updatedDate,
+        lessonIds: updatedLessonIds,
+        substituter: updatedSubstituter,
+      })
+    );
 
     return ok(c, updatedSubstitution);
   }
@@ -1086,6 +1157,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       .returning();
 
     cancelPendingNotification(id, 'substitution');
+    cancelPendingNotification(id, 'substitution_teacher');
 
     return ok(c, deletedSubstitution);
   }

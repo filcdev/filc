@@ -344,22 +344,31 @@ function MovedLessonsPage() {
             {t('movedLesson.showPast')}
           </label>
         </div>
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <DateRangePicker onChange={setDateRange} value={dateRange} />
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+          <div className="w-fit">
+            <DateRangePicker onChange={setDateRange} value={dateRange} />
+          </div>
           <MovedLessonExportButton dateRange={dateRange} />
-          <Button onClick={() => movedLessonsQuery.refetch()} variant="outline">
+          <Button
+            aria-label={t('movedLesson.refresh')}
+            onClick={() => movedLessonsQuery.refetch()}
+            variant="outline"
+          >
             <RefreshCw className="h-4 w-4" />
-            {t('movedLesson.refresh')}
+            <span className="hidden sm:inline">{t('movedLesson.refresh')}</span>
           </Button>
           {hasWritePermission && (
             <Button
+              aria-label={t('movedLesson.create')}
               onClick={() => {
                 setSelectedItem(null);
                 setDialogOpen(true);
               }}
             >
               <Plus className="h-4 w-4" />
-              {t('movedLesson.create')}
+              <span className="hidden sm:inline">
+                {t('movedLesson.create')}
+              </span>
             </Button>
           )}
         </div>

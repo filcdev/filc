@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/utils';
+import {
+  filterLessonsForGroupDisplay,
+  type GroupDisplay,
+  getLessonGroupEmphasis,
+} from './helpers';
 import { LessonCard } from './lesson-card';
 import type { FilterType, TimetableViewModel } from './types';
 
@@ -10,6 +15,12 @@ type TimetableGridProps = {
   onColorChange?: (subject: string, colorIndex: number) => void;
   /** When 'teacher' or 'classroom', cohorts are shown on each lesson card. */
   activeFilter?: FilterType;
+  /** Ids of the groups the current user belongs to (per division). */
+  selectedGroupIds?: Set<string>;
+  /** Division keys the user has picked a group in. */
+  selectedDivisionTags?: Set<string>;
+  /** How split lessons are shown. `'none'` disables group handling. */
+  groupDisplay?: GroupDisplay;
 };
 
 export function TimetableGrid({
@@ -17,6 +28,9 @@ export function TimetableGrid({
   userColors,
   onColorChange,
   activeFilter = 'class',
+  selectedGroupIds,
+  selectedDivisionTags,
+  groupDisplay = 'none',
 }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
@@ -110,7 +124,14 @@ export function TimetableGrid({
                 {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: multiple render branches kept inline */}
                 {days.map((day, i) => {
                   const cellKey = `${day.key}-${slot.start.format('HH:mm')}`;
-                  const lessons = grid.get(cellKey)?.lessons ?? [];
+                  const rawLessons = grid.get(cellKey)?.lessons ?? [];
+
+                  const lessons = filterLessonsForGroupDisplay(
+                    rawLessons,
+                    groupDisplay,
+                    selectedGroupIds,
+                    selectedDivisionTags
+                  );
                   const isEmptyDay = emptyDayKeys.has(day.key);
                   const borderClass =
                     i < days.length - 1 ? 'border-border border-r-2' : '';
@@ -147,29 +168,6 @@ export function TimetableGrid({
                   const isSingle = lessons.length === 1;
                   const firstLesson = lessons[0];
 
-                  if (
-                    isSingle &&
-                    firstLesson &&
-                    (firstLesson.groupsIds?.length ?? 0) > 0
-                  ) {
-                    return (
-                      <div
-                        className={cn('min-h-24 p-0.5', borderClass)}
-                        key={cellKey}
-                      >
-                        <div className="grid h-full grid-cols-2 gap-0.5 overflow-hidden rounded-md bg-muted">
-                          <LessonCard
-                            lesson={firstLesson}
-                            onColorChange={onColorChange}
-                            showCohorts={showCohorts}
-                            userColors={userColors}
-                          />
-                          <div />
-                        </div>
-                      </div>
-                    );
-                  }
-
                   if (isSingle && firstLesson) {
                     return (
                       <div
@@ -177,6 +175,11 @@ export function TimetableGrid({
                         key={cellKey}
                       >
                         <LessonCard
+                          emphasis={getLessonGroupEmphasis(
+                            firstLesson,
+                            selectedGroupIds,
+                            selectedDivisionTags
+                          )}
                           lesson={firstLesson}
                           onColorChange={onColorChange}
                           showCohorts={showCohorts}
@@ -199,6 +202,11 @@ export function TimetableGrid({
                       >
                         {lessons.map((lesson, idx) => (
                           <LessonCard
+                            emphasis={getLessonGroupEmphasis(
+                              lesson,
+                              selectedGroupIds,
+                              selectedDivisionTags
+                            )}
                             key={lesson.id ?? idx}
                             lesson={lesson}
                             onColorChange={onColorChange}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
 import type { CohortItem } from '@/components/timetable/types';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -54,11 +55,47 @@ const NOTIFICATION_TYPES = [
   },
 ];
 
+// Sentinel value for the "no class" choice in the cohort <Select>.
+// Cohort ids are UUIDs, so this cannot collide with a real id.
+const NO_CLASS_VALUE = 'no-class';
+
+/** The "Split classes" display preference (highlight vs. hide other groups). */
+function GroupDisplaySelect({
+  onValueChange,
+  value,
+}: {
+  onValueChange: (value: 'highlight' | 'hide') => void;
+  value: 'highlight' | 'hide';
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-between">
+      <span>{t('preferences.groupDisplay')}</span>
+      <Select
+        items={[
+          { label: t('preferences.groupDisplayHighlight'), value: 'highlight' },
+          { label: t('preferences.groupDisplayHide'), value: 'hide' },
+        ]}
+        onValueChange={(v) => onValueChange(v as 'highlight' | 'hide')}
+        value={value}
+      >
+        <SelectTrigger
+          aria-label={t('preferences.groupDisplay')}
+          className="w-40"
+        >
+          <SelectValue />
+        </SelectTrigger>
+      </Select>
+    </div>
+  );
+}
+
 type SettingsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: settings page with many option groups
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const navigate = useNavigate();
   const { i18n, t } = useTranslation();
@@ -68,6 +105,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
+  const [timetableGroupDisplay, setTimetableGroupDisplay] = useState<
+    'highlight' | 'hide'
+  >('highlight');
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(null);
   const [prefs, setPrefs] = useState({
     announcement: true,
@@ -93,6 +133,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setLanguage(settingsData.language);
     setTheme(settingsData.theme);
     setTimetableView(settingsData.timetableView);
+    setTimetableGroupDisplay(
+      settingsData.timetableGroupDisplay === 'hide' ? 'hide' : 'highlight'
+    );
     setPrefs(settingsData.notificationPreferences);
   }, [isSuccess, settingsData]);
 
@@ -117,9 +160,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     },
     updateCohort: async () => {
       const currentCohortId = session?.user?.cohortId ?? null;
-      if (cohortQuery.isSuccess && selectedCohortId !== currentCohortId) {
+      const newCohortId =
+        selectedCohortId === NO_CLASS_VALUE ? null : selectedCohortId;
+      if (cohortQuery.isSuccess && newCohortId !== currentCohortId) {
         try {
-          await authClient.updateUser({ cohortId: selectedCohortId });
+          await authClient.updateUser({ cohortId: newCohortId });
         } catch {
           throw new Error('Failed to update cohort');
         }
@@ -132,6 +177,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       language,
       notificationPreferences: prefs,
       theme,
+      timetableGroupDisplay,
       timetableView,
     });
 
@@ -175,12 +221,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     { label: t('preferences.themeSystem'), value: 'system' },
   ];
 
-  const cohortItems = (cohortQuery.data ?? []).map((cohort) => ({
-    label: cohort.name,
-    value: cohort.id,
-  }));
+  const cohortItems = [
+    { label: t('cohort.noClass'), value: NO_CLASS_VALUE },
+    ...(cohortQuery.data ?? []).map((cohort) => ({
+      label: cohort.name,
+      value: cohort.id,
+    })),
+  ];
 
   const ready = !(isLoading || isError);
+  // The group picker is scoped to the user's *persisted* cohort, so memberships
+  // are never saved for a cohort the user has only drafted in this dialog.
+  const persistedCohortId = session?.user?.cohortId ?? null;
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -242,7 +294,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         <Select
                           items={cohortItems}
                           onValueChange={setSelectedCohortId}
-                          value={selectedCohortId}
+                          value={selectedCohortId ?? NO_CLASS_VALUE}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue
@@ -266,8 +318,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </Alert>
                     ) : null}
                   </div>
+
+                  <GroupDisplaySelect
+                    onValueChange={setTimetableGroupDisplay}
+                    value={timetableGroupDisplay}
+                  />
                 </CardContent>
               </Card>
+
+              <MyGroupsSettingsCard cohortId={persistedCohortId} />
 
               <Card>
                 <CardHeader>

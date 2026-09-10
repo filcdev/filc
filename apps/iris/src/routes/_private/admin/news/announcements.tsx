@@ -213,7 +213,7 @@ function AnnouncementsPage() {
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-2">
-                      {t('announcements.title')}
+                      {t('announcements.titleLabel')}
                       <SortIcon
                         column="title"
                         currentColumn={sortColumn}

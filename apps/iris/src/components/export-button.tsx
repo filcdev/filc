@@ -19,6 +19,8 @@ export type ExportColumn = {
 type ExportButtonProps = {
   /** i18n key for the button label (defaults to `export`). */
   labelKey?: string;
+  /** Hide the label below the `sm` breakpoint (icon-only on mobile). */
+  hideLabelOnMobile?: boolean;
   /** i18n key for the success toast. */
   successKey: string;
   /** i18n key for the error toast. */
@@ -139,6 +141,7 @@ export function ExportButton({
   errorKey,
   fetchCsv,
   filenamePrefix,
+  hideLabelOnMobile = false,
   labelKey = 'export',
   pdfTitle,
   successKey,
@@ -192,9 +195,18 @@ export function ExportButton({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button disabled={exporting} size="sm" variant="outline">
+          <Button
+            aria-label={hideLabelOnMobile ? t(labelKey) : undefined}
+            disabled={exporting}
+            size="sm"
+            variant="outline"
+          >
             <Download className="h-4 w-4" />
-            {t(labelKey)}
+            {hideLabelOnMobile ? (
+              <span className="hidden sm:inline">{t(labelKey)}</span>
+            ) : (
+              t(labelKey)
+            )}
           </Button>
         }
       />

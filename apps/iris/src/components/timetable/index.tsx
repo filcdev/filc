@@ -1,22 +1,34 @@
 import { pdf } from '@react-pdf/renderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import dayjs from 'dayjs';
+import { CalendarX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
-import { buildViewModel } from '@/components/timetable/helpers';
+import {
+  buildViewModel,
+  filterLessonsForGroupDisplay,
+  filterLessonsForWeek,
+  type WeekFilter,
+} from '@/components/timetable/helpers';
 import { TimetablePDF } from '@/components/timetable/pdf/document';
 import { PrintDialog } from '@/components/timetable/print-dialog';
+import { TimetableCardView } from '@/components/timetable/secondary';
+import type { SecondaryTimetableHeader } from '@/components/timetable/secondary/types';
 import type {
   FilterType,
   LessonItem,
   PeriodItem,
   SelectionsType,
+  TimetableItem,
   TimetableViewModel,
 } from '@/components/timetable/types';
+import { Empty } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTimetableGroupDisplay } from '@/hooks/timetable-groups';
 import {
   useClassrooms,
   useLatestValidTimetable,
@@ -50,10 +62,61 @@ const getActiveSelectionId = (
   }
 };
 
+/**
+ * Derive the header info for the secondary (paper-like) timetable card. Only
+ * the class code is shown in the grid's top-left corner cell.
+ */
+const buildCardHeader = (selectionLabel: string): SecondaryTimetableHeader => ({
+  classCode: selectionLabel,
+});
+
+type TimetableCardRender = {
+  header: SecondaryTimetableHeader;
+  language: string | undefined;
+  lessons: LessonItem[];
+  periods: PeriodItem[];
+};
+
+type TimetableGridRender = {
+  activeFilter: FilterType;
+  groupDisplay: 'highlight' | 'hide' | 'none';
+  model: TimetableViewModel;
+  handleColorChange?: (subject: string, colorIndex: number) => void;
+  isAuthenticated: boolean;
+  selectedDivisionTags: Set<string>;
+  selectedGroupIds: Set<string>;
+  userColors: Record<string, number>;
+};
+
+/** Pick the on-screen timetable body: the secondary card view or the grid. */
+const renderTimetableBody = (
+  view: 'grid' | 'card',
+  card: TimetableCardRender,
+  grid: TimetableGridRender
+) =>
+  view === 'card' ? (
+    <TimetableCardView
+      header={card.header}
+      language={card.language}
+      lessons={card.lessons}
+      periods={card.periods}
+    />
+  ) : (
+    <TimetableGrid
+      activeFilter={grid.activeFilter}
+      groupDisplay={grid.groupDisplay}
+      model={grid.model}
+      onColorChange={grid.isAuthenticated ? grid.handleColorChange : undefined}
+      selectedDivisionTags={grid.selectedDivisionTags}
+      selectedGroupIds={grid.selectedGroupIds}
+      userColors={grid.userColors}
+    />
+  );
+
 // Component
 export function TimetableView() {
   const search = Route.useSearch();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { data: session, isPending } = authClient.useSession();
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
@@ -98,14 +161,23 @@ export function TimetableView() {
     [colorMutation]
   );
 
-  // Timetable query (all timetables for the selector)
+  // Timetable query (all timetables)
   const timetablesQuery = useTimetables();
 
-  // Compute the latest valid timetable id from the list
+  // Expired timetables stay in the database, but are hidden from the public
+  // selector. Current and upcoming timetables remain selectable.
+  const visibleTimetables = useMemo(() => {
+    const today = dayjs().format('YYYY-MM-DD');
+
+    return (timetablesQuery.data ?? []).filter(
+      (item: TimetableItem) => !item.validTo || item.validTo >= today
+    );
+  }, [timetablesQuery.data]);
+
+  // The backend is the source of truth for the currently active timetable.
   const latestValidTimetableQuery = useLatestValidTimetable();
 
-  const latestValidTimetableId =
-    latestValidTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
+  const latestValidTimetableId = latestValidTimetableQuery.data?.id ?? null;
 
   // Selected timetable — initialised from URL param, else latestValid
   const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(
@@ -114,10 +186,23 @@ export function TimetableView() {
 
   // Once we know the latest valid, set it as default if nothing is selected
   useEffect(() => {
-    if (!selectedTimetableId && latestValidTimetableId) {
+    if (!(timetablesQuery.data && latestValidTimetableId)) {
+      return;
+    }
+
+    const selectedIsVisible =
+      selectedTimetableId !== null &&
+      visibleTimetables.some((item) => item.id === selectedTimetableId);
+
+    if (!selectedIsVisible) {
       setSelectedTimetableId(latestValidTimetableId);
     }
-  }, [selectedTimetableId, latestValidTimetableId]);
+  }, [
+    timetablesQuery.data,
+    visibleTimetables,
+    selectedTimetableId,
+    latestValidTimetableId,
+  ]);
 
   // Queries
   const cohortsQuery = useTimetableCohorts(selectedTimetableId);
@@ -146,6 +231,9 @@ export function TimetableView() {
     classroom: null,
     teacher: null,
   });
+
+  const [weekFilter, setWeekFilter] = useState<WeekFilter>('all');
+
   const [initialized, setInitialized] = useState(false);
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
@@ -156,6 +244,19 @@ export function TimetableView() {
     activeSelectionId,
     selectedTimetableId
   );
+
+  // Group highlighting applies to a signed-in student viewing their own class.
+  const showGroupHandling =
+    isAuthenticated &&
+    activeFilter === 'class' &&
+    selections.class !== null &&
+    selections.class === session?.user?.cohortId;
+  const { groupDisplay, selectedDivisionTags, selectedGroupIds } =
+    useTimetableGroupDisplay(
+      showGroupHandling ? selections.class : null,
+      showGroupHandling,
+      settingsQuery.data?.timetableGroupDisplay
+    );
 
   // Initialize from URL or defaults
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
@@ -174,7 +275,8 @@ export function TimetableView() {
         : null;
 
     const cohortTeacher =
-      search.teacher && teachersQuery.data.some((t) => t.id === search.teacher)
+      search.teacher &&
+      teachersQuery.data.some((teacher) => teacher.id === search.teacher)
         ? search.teacher
         : null;
 
@@ -277,6 +379,7 @@ export function TimetableView() {
         room: undefined,
         teacher: undefined,
         timetable: selectedTimetableId ?? undefined,
+        view: search.view,
       };
 
       const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
@@ -286,16 +389,42 @@ export function TimetableView() {
         search: () => searchParams,
       });
     }
-  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
+  }, [
+    activeFilter,
+    activeSelectionId,
+    selectedTimetableId,
+    navigate,
+    search.view,
+  ]);
+
+  const weekFilteredLessons = useMemo(
+    () =>
+      filterLessonsForWeek(
+        (lessonsQuery.data ?? []) as LessonItem[],
+        weekFilter
+      ),
+    [lessonsQuery.data, weekFilter]
+  );
 
   const model = useMemo(
     () =>
       buildViewModel(
-        (lessonsQuery.data ?? []) as LessonItem[],
+        weekFilteredLessons,
         i18n.language,
         (periodsQuery.data ?? []) as PeriodItem[]
       ),
-    [lessonsQuery.data, periodsQuery.data, i18n.language]
+    [weekFilteredLessons, periodsQuery.data, i18n.language]
+  );
+
+  const cardLessons = useMemo(
+    () =>
+      filterLessonsForGroupDisplay(
+        weekFilteredLessons,
+        groupDisplay,
+        selectedGroupIds,
+        selectedDivisionTags
+      ),
+    [weekFilteredLessons, groupDisplay, selectedGroupIds, selectedDivisionTags]
   );
 
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
@@ -308,7 +437,7 @@ export function TimetableView() {
         );
       case 'teacher': {
         const teacher = teachersQuery.data?.find(
-          (t) => t.id === selections.teacher
+          (entry) => entry.id === selections.teacher
         );
         if (!teacher) {
           return '';
@@ -325,10 +454,27 @@ export function TimetableView() {
     }
   };
 
+  // Secondary (paper-like) view: the class code shown in the corner cell.
+  const view = search.view ?? 'grid';
+  const cardHeader = buildCardHeader(getSelectionLabel());
+
+  const handleViewChange = (nextView: 'grid' | 'card') => {
+    navigate({
+      replace: true,
+      search: () => ({
+        cohort: search.cohort,
+        room: search.room,
+        teacher: search.teacher,
+        timetable: search.timetable,
+        view: nextView,
+      }),
+    });
+  };
+
   const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
     const timetableName =
-      timetablesQuery.data?.find((t) => t.id === selectedTimetableId)?.name ??
-      '';
+      timetablesQuery.data?.find((entry) => entry.id === selectedTimetableId)
+        ?.name ?? '';
     const label = getSelectionLabel();
     const generatedAt = new Date().toLocaleDateString(i18n.language, {
       day: '2-digit',
@@ -338,6 +484,7 @@ export function TimetableView() {
 
     const blob = await pdf(
       <TimetablePDF
+        activeFilter={activeFilter}
         blackAndWhite={blackAndWhite}
         generatedAt={generatedAt}
         label={label}
@@ -373,6 +520,26 @@ export function TimetableView() {
     classroomsQuery.error ||
     lessonsQuery.error;
 
+  const timetableContent = renderTimetableBody(
+    view,
+    {
+      header: cardHeader,
+      language: i18n.language,
+      lessons: cardLessons,
+      periods: (periodsQuery.data ?? []) as PeriodItem[],
+    },
+    {
+      activeFilter,
+      groupDisplay,
+      handleColorChange,
+      isAuthenticated,
+      model,
+      selectedDivisionTags,
+      selectedGroupIds,
+      userColors,
+    }
+  );
+
   return (
     <div className="flex grow flex-col items-center p-4">
       <div className="flex w-full min-w-0 max-w-7xl flex-col gap-4">
@@ -389,13 +556,17 @@ export function TimetableView() {
             setSelections((s) => ({ ...s, teacher: id }))
           }
           onSelectTimetable={setSelectedTimetableId}
+          onViewChange={handleViewChange}
+          onWeekFilterChange={setWeekFilter}
           selectedByClass={selections.class}
           selectedByRoom={selections.classroom}
           selectedByTeacher={selections.teacher}
           selectedTimetableId={selectedTimetableId}
           selectorLoading={selectorLoading}
           teachers={teachersQuery.data}
-          timetables={timetablesQuery.data}
+          timetables={timetablesQuery.data ? visibleTimetables : undefined}
+          view={view}
+          weekFilter={weekFilter}
         />
 
         <PrintDialog
@@ -416,12 +587,18 @@ export function TimetableView() {
             <Skeleton className="h-[130px] w-full" />
           </div>
         ) : (
-          <TimetableGrid
-            activeFilter={activeFilter}
-            model={model}
-            onColorChange={isAuthenticated ? handleColorChange : undefined}
-            userColors={userColors}
-          />
+          (() => {
+            if (!hasError && weekFilteredLessons.length === 0) {
+              return (
+                <Empty
+                  description={t('timetable.emptyWeekDescription')}
+                  icon={<CalendarX className="size-6" />}
+                  title={t('timetable.emptyWeekTitle')}
+                />
+              );
+            }
+            return timetableContent;
+          })()
         )}
       </div>
     </div>

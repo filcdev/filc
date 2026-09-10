@@ -193,7 +193,7 @@ export function DeviceStatsDialog({
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm">Recent History</h3>
                 <div className="rounded-md border">
-                  <Table className="w-full table-fixed">
+                  <Table className="w-full min-w-3xl table-fixed">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Time</TableHead>

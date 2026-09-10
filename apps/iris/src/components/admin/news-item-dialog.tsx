@@ -161,7 +161,7 @@ export function NewsItemDialog({
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder={
                       mode === 'announcements'
-                        ? 'Announcement title'
+                        ? t('announcements.titlePlaceholder')
                         : t('systemMessages.titlePlaceholder')
                     }
                     value={field.state.value}
@@ -186,7 +186,7 @@ export function NewsItemDialog({
                     }
                     placeholder={
                       mode === 'announcements'
-                        ? 'Announcement content'
+                        ? t('announcements.contentPlaceholder')
                         : t('systemMessages.contentPlaceholder')
                     }
                     value={field.state.value[0]?.content ?? ''}

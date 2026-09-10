@@ -3,6 +3,7 @@ import {
   announcementQuerySchema,
   announcementUpdateSchema,
 } from '@filcdev/api/domains/news/announcements';
+import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
 import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
@@ -30,6 +31,9 @@ import {
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
+
+/** How far in advance (days) a future announcement should be visible. */
+const ANNOUNCEMENT_LEAD_DAYS = 7;
 
 const { schema: createRequestSchema } = await resolver(
   announcementCreateSchema
@@ -69,14 +73,17 @@ export const listAnnouncements = newsFactory.createHandlers(
     // Admins managing announcements should see all of them, unfiltered by cohort
     const isAdmin = await userHasPermission(
       currentUser.id,
-      'news:announcements'
+      permissions.announcementsCreate
     );
 
     const now = new Date();
+    const leadWindow = new Date(
+      now.getTime() + ANNOUNCEMENT_LEAD_DAYS * 24 * 60 * 60 * 1000
+    );
     const conditions: SQL[] = [];
 
     if (!includeExpired) {
-      conditions.push(lte(announcement.validFrom, now));
+      conditions.push(lte(announcement.validFrom, leadWindow));
       conditions.push(gte(announcement.validUntil, now));
     }
 
@@ -220,7 +227,7 @@ export const createAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  ...authRouter('news:announcements'),
+  ...authRouter(permissions.announcementsCreate),
   zValidator('json', announcementCreateSchema),
   async (c) => {
     const body = c.req.valid('json');
@@ -293,7 +300,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  ...authRouter('news:announcements'),
+  ...authRouter(permissions.announcementsCreate),
   zValidator('param', z.object({ id: z.string().uuid() })),
   zValidator('json', announcementUpdateSchema),
   async (c) => {
@@ -401,7 +408,7 @@ export const deleteAnnouncement = newsFactory.createHandlers(
     },
     tags: ['News / Announcements'],
   }),
-  ...authRouter('news:announcements'),
+  ...authRouter(permissions.announcementsCreate),
   zValidator('param', z.object({ id: z.string().uuid() })),
   async (c) => {
     const { id } = c.req.valid('param');

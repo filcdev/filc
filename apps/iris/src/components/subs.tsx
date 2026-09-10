@@ -81,6 +81,15 @@ function LessonRow({
         )}
       </TableCell>
       <TableCell>
+        {lesson.teachers && lesson.teachers.length > 0 ? (
+          <div className="text-sm">
+            {lesson.teachers.map((teacher) => teacher.name).join(', ')}
+          </div>
+        ) : (
+          <span className="text-muted-foreground">{notAvailable}</span>
+        )}
+      </TableCell>
+      <TableCell>
         {isCancelled && (
           <Badge className="text-xs" variant="destructive">
             {t('substitution.cancelled')}
@@ -95,15 +104,6 @@ function LessonRow({
           <span className="text-muted-foreground">
             {t('substitution.noSubstituter')}
           </span>
-        )}
-      </TableCell>
-      <TableCell>
-        {lesson.teachers && lesson.teachers.length > 0 ? (
-          <div className="text-sm">
-            {lesson.teachers.map((teacher) => teacher.name).join(', ')}
-          </div>
-        ) : (
-          <span className="text-muted-foreground">{notAvailable}</span>
         )}
       </TableCell>
       <TableCell>
@@ -167,6 +167,9 @@ function MovedLessonRow({
         )}
       </TableCell>
       <TableCell>
+        <span className="text-muted-foreground">—</span>
+      </TableCell>
+      <TableCell>
         {movedLesson.dayDefinition ? (
           <span className="font-medium text-blue-700 dark:text-blue-400">
             {movedLesson.dayDefinition.name} ({movedLesson.dayDefinition.short})
@@ -174,9 +177,6 @@ function MovedLessonRow({
         ) : (
           <span className="text-muted-foreground">{notAvailable}</span>
         )}
-      </TableCell>
-      <TableCell>
-        <span className="text-muted-foreground">—</span>
       </TableCell>
       <TableCell>
         <span className="text-muted-foreground">—</span>
@@ -315,10 +315,10 @@ export function SubsV({
                   {t('timetable.filterByClassroom')}
                 </TableHead>
                 <TableHead className="font-semibold text-foreground">
-                  {t('substitution.substituteTeacher')}
+                  {t('timetable.teacherFallback')}
                 </TableHead>
                 <TableHead className="font-semibold text-foreground">
-                  {t('timetable.teacherFallback')}
+                  {t('substitution.substituteTeacher')}
                 </TableHead>
                 <TableHead className="font-semibold text-foreground">
                   {t('substitution.comment')}

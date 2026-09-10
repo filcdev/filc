@@ -12,7 +12,13 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
 }
 
 function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
-  return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
+  return (
+    <MenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      {...props}
+      translate="no"
+    />
+  );
 }
 
 function DropdownMenuContent({
@@ -43,6 +49,7 @@ function DropdownMenuContent({
           )}
           data-slot="dropdown-menu-content"
           {...props}
+          translate="no"
         />
       </MenuPrimitive.Positioner>
     </MenuPrimitive.Portal>

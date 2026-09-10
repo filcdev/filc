@@ -6,6 +6,7 @@ import {
   Bell,
   Bug,
   DoorOpen,
+  FlaskConical,
   GraduationCap,
   IdCard,
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
   Microchip,
   RefreshCw,
   Shield,
+  UserRound,
   Users,
 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -91,6 +93,12 @@ export function AdminSidebar() {
             title: t('movedLesson.title'),
             url: '/admin/timetable/moved-lessons',
           },
+          {
+            icon: UserRound,
+            permission: permissions.teacherManage,
+            title: t('teachers.title'),
+            url: '/admin/timetable/teachers',
+          },
         ],
         label: t('admin.timetable'),
       },
@@ -163,6 +171,21 @@ export function AdminSidebar() {
         ],
         label: t('admin.management'),
       },
+      ...(import.meta.env.MODE === 'development'
+        ? [
+            {
+              items: [
+                {
+                  icon: FlaskConical,
+                  permission: permissions.announcementsCreate,
+                  title: t('devNotifications.title'),
+                  url: '/admin/dev/notifications',
+                },
+              ],
+              label: t('admin.developer'),
+            },
+          ]
+        : []),
     ],
     [t]
   );

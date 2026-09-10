@@ -1,5 +1,6 @@
 export type NotificationType =
   | 'substitution'
+  | 'substitution_teacher'
   | 'moved_lesson'
   | 'announcement'
   | 'system_message'

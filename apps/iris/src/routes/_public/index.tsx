@@ -9,6 +9,7 @@ export const searchSchema = z.object({
   room: z.string().optional(),
   teacher: z.string().optional(),
   timetable: z.string().optional(),
+  view: z.enum(['grid', 'card']).optional(),
 });
 
 export const Route = createFileRoute('/_public/')({

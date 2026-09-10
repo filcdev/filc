@@ -42,6 +42,7 @@ export function DateRangePicker({ onChange, value }: DateRangePickerProps) {
               'w-full justify-start text-left font-normal sm:w-auto',
               !value.from && 'text-muted-foreground'
             )}
+            translate="no"
             variant="outline"
           >
             <CalendarIcon />
@@ -49,7 +50,7 @@ export function DateRangePicker({ onChange, value }: DateRangePickerProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-auto p-0">
+      <PopoverContent align="end" className="w-auto p-0" translate="no">
         <Calendar
           autoFocus
           mode="range"

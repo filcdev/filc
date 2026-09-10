@@ -31,6 +31,10 @@ export const userPreferences = pgTable('user_preferences', {
     .$type<Record<string, number>>()
     .notNull()
     .default({}),
+  /** How split (division) classes are shown: highlight the user's group, or hide the others. */
+  timetableGroupDisplay: text('timetable_group_display')
+    .default('highlight')
+    .notNull(),
   timetableView: text('timetable_view').default('class').notNull(),
   userId: uuid('user_id')
     .notNull()

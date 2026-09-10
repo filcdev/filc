@@ -1,0 +1,50 @@
+# Local development stack.
+#
+# PostgreSQL 18 (Alpine) backs Chronos; Mailpit captures outbound SMTP
+# from local dev runs so notification emails are viewable, not sent.
+#
+#   docker compose up           # run both services in the foreground
+#   docker compose up -d        # run detached
+#   docker compose down -v      # stop and remove volumes
+#
+# Mailpit web UI:  http://localhost:8025
+# Mailpit SMTP:    localhost:1025
+# PostgreSQL:      postgresql://postgres:postgres@localhost:5432/postgres
+#
+# This is an alternative to the pg-dispo script documented in CONTRIBUTING.md;
+# do not run both at once — they share host port 5432.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: filc-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:v1.31.0
+    container_name: filc-mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025" # SMTP
+      - "127.0.0.1:8025:8025" # Web UI
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit-data:/data
+
+volumes:
+  postgres-data:
+  mailpit-data:

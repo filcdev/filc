@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   useUpsertCardFromLog,
   useUpsertDoorlockCard,
@@ -150,19 +150,18 @@ export function CardDialog<
           <form.Field name="userId">
             {(field) => (
               <Field>
-                <FieldLabel>Owner</FieldLabel>
-                <Select
-                  items={users.map((user) => ({
+                <FieldLabel>{t('doorlockCards.owner')}</FieldLabel>
+                <Combobox
+                  emptyMessage={t('doorlockCards.noUsersFound')}
+                  onValueChange={(value) => field.handleChange(value || null)}
+                  options={users.map((user) => ({
                     label: getOwnerLabel(user) || t('doorlock.unknownUser'),
                     value: user.id,
                   }))}
-                  onValueChange={(value) => field.handleChange(value ?? null)}
-                  value={field.state.value}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                </Select>
+                  placeholder={t('doorlockCards.selectOwnerPlaceholder')}
+                  searchPlaceholder={t('search')}
+                  value={field.state.value ?? ''}
+                />
               </Field>
             )}
           </form.Field>

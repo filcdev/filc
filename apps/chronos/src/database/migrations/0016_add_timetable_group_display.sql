@@ -1,0 +1,1 @@
+ALTER TABLE "user_preferences" ADD COLUMN "timetable_group_display" text DEFAULT 'highlight' NOT NULL;

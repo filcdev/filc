@@ -53,6 +53,7 @@ export function Combobox({
               !value && 'text-muted-foreground',
               className
             )}
+            translate="no"
             variant="outline"
           >
             <span className="truncate">{selectedLabel ?? placeholder}</span>
@@ -60,7 +61,7 @@ export function Combobox({
           </Button>
         }
       />
-      <PopoverContent className="w-(--anchor-width) p-0">
+      <PopoverContent className="w-(--anchor-width) p-0" translate="no">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>

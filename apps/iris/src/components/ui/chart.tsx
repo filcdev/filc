@@ -76,6 +76,7 @@ function ChartContainer({
         )}
         data-chart={chartId}
         data-slot="chart"
+        translate="no"
         {...props}
       >
         <ChartStyle config={config} id={chartId} />

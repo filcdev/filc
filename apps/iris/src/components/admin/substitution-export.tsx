@@ -40,6 +40,7 @@ export function SubstitutionExportButton({
       errorKey="substitution.exportError"
       fetchCsv={fetchCsv}
       filenamePrefix="substitutions"
+      hideLabelOnMobile
       labelKey="substitution.export"
       pdfTitle={t('substitution.exportTitle')}
       successKey="substitution.exportSuccess"

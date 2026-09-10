@@ -165,6 +165,7 @@ function Calendar({
             data-slot="calendar"
             ref={rootRef}
             {...rootProps}
+            translate="no"
           />
         ),
         WeekNumber: ({ children, ...weekNumberProps }) => (

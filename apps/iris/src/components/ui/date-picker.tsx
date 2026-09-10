@@ -51,6 +51,7 @@ export function DatePicker({
               !date && 'text-muted-foreground'
             )}
             disabled={disabled}
+            translate="no"
             variant={'outline'}
           >
             <CalendarIcon />
@@ -66,7 +67,7 @@ export function DatePicker({
           </Button>
         }
       />
-      <PopoverContent align="start" className="w-auto p-0">
+      <PopoverContent align="start" className="w-auto p-0" translate="no">
         <Calendar
           autoFocus
           disabled={disabledDays}
