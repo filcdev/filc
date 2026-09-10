@@ -67,6 +67,8 @@ function useInvalidateTimetableGraph() {
     queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
     queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
     queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.teachers() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminTeachers() });
   };
 }
 

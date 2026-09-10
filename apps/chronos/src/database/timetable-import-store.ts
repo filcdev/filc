@@ -331,6 +331,26 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   },
 
   async insertLessons(tx, rows: NewLesson[]): Promise<string[]> {
+    // Serialize with teacher cleanup by locking the referenced teacher rows.
+    // A concurrent cleanup holds FOR UPDATE on all teacher rows, so this
+    // blocks until it commits; if a referenced teacher was deleted, fail so
+    // the import transaction rolls back instead of referencing a dangling id.
+    const teacherIds = [...new Set(rows.flatMap((r) => r.teacherIds))];
+    if (teacherIds.length > 0) {
+      const locked = await tx
+        .select({ id: teacherTable.id })
+        .from(teacherTable)
+        .where(inArray(teacherTable.id, teacherIds))
+        .for('update');
+      const lockedIds = new Set(locked.map((r) => r.id));
+      const missing = teacherIds.filter((id) => !lockedIds.has(id));
+      if (missing.length > 0) {
+        throw new Error(
+          `Import aborted: referenced teacher(s) no longer exist: ${missing.join(', ')}`
+        );
+      }
+    }
+
     const inserted = await tx
       .insert(lessonTable)
       .values(rows)
