@@ -9,6 +9,7 @@ import {
 import { cn } from '@/utils';
 import { getSubjectColor, toHHMM } from '../helpers';
 import type { LessonItem, PeriodItem } from '../types';
+import { WeekBadge } from '../week-badge';
 import {
   buildSecondaryModel,
   formatGroupCode,
@@ -81,6 +82,12 @@ function LessonEntry({
               half ? 'text-sm' : 'text-base'
             )}
           >
+            <WeekBadge
+              className="absolute top-1 left-1"
+              lesson={lesson}
+              variant="plain"
+            />
+
             <span className="max-w-full truncate font-semibold text-foreground leading-tight">
               {subjectShort}
             </span>
@@ -238,7 +245,7 @@ export function TimetableCardView({
   }
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto overscroll-x-contain">
       <div
         className="mx-auto w-fit overflow-hidden rounded-xl border border-border bg-card"
         style={{ minWidth: gridWidth }}
