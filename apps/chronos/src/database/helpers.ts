@@ -14,18 +14,10 @@ export const timestamps = {
  * a storage-type change is made in one place.
  */
 
-/** 16-bit signed grid coordinate. */
-export const coordinate = (name: string) => smallint(name);
-/** 16-bit signed storey index (negative = basement). */
-export const storey = (name: string) => smallint(name);
-/** 16-bit rotation angle in degrees. */
-export const rotation = (name: string) => smallint(name);
-/** 16-bit non-negative count (e.g. seats), max 32,767. */
-export const count = (name: string) => smallint(name);
-/** 16-bit non-negative dimension (e.g. centimetres), max 32,767. */
-export const dimension = (name: string) => smallint(name);
-/** 4-byte float measurement (e.g. corridor width). */
+/** 16-bit signed integer: coordinates, storeys, rotations, counts, dimensions. */
+export const smallInt = (name: string) => smallint(name);
+/** 4-byte float: measurements such as corridor width. */
 export const measurement = (name: string) => real(name);
-/** Short bounded string (e.g. language code or translation key). */
+/** Short bounded string. */
 export const shortText = (name: string, length: number) =>
   varchar(name, { length });

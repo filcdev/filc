@@ -3,10 +3,8 @@ import {
   navigatorBuilding,
   navigatorClassroom,
   navigatorClassroomType,
-  navigatorCorridor,
-  navigatorLift,
-  navigatorStair,
   navigatorTranslation,
+  navigatorUtility,
 } from '#database/schema/navigator';
 import { createSelectSchema } from '#utils/zod';
 
@@ -15,10 +13,44 @@ export const classroomTypeSelectSchema = createSelectSchema(
   navigatorClassroomType
 );
 export const classroomSelectSchema = createSelectSchema(navigatorClassroom);
-export const corridorSelectSchema = createSelectSchema(navigatorCorridor);
-export const liftSelectSchema = createSelectSchema(navigatorLift);
-export const stairSelectSchema = createSelectSchema(navigatorStair);
 export const translationSelectSchema = createSelectSchema(navigatorTranslation);
+
+const utilityBaseSelectSchema = createSelectSchema(navigatorUtility);
+
+const corridorUtilitySelectSchema = utilityBaseSelectSchema.extend({
+  barrierFree: z.boolean(),
+  isOutdoor: z.boolean(),
+  kind: z.literal('corridor'),
+  storey: z.number(),
+  width: z.number(),
+  x1: z.number(),
+  x2: z.number(),
+  y1: z.number(),
+  y2: z.number(),
+});
+
+const liftUtilitySelectSchema = utilityBaseSelectSchema.extend({
+  kind: z.literal('lift'),
+  maxStorey: z.number(),
+  minStorey: z.number(),
+  x: z.number(),
+  y: z.number(),
+});
+
+const stairUtilitySelectSchema = utilityBaseSelectSchema.extend({
+  kind: z.literal('stair'),
+  maxStorey: z.number(),
+  minStorey: z.number(),
+  rotation: z.number(),
+  x: z.number(),
+  y: z.number(),
+});
+
+export const utilitySelectSchema = z.discriminatedUnion('kind', [
+  corridorUtilitySelectSchema,
+  liftUtilitySelectSchema,
+  stairUtilitySelectSchema,
+]);
 
 export const buildingResponseSchema = z.object({
   data: z.object({ building: buildingSelectSchema }),
@@ -50,33 +82,13 @@ export const classroomsResponseSchema = z.object({
   success: z.literal(true),
 });
 
-export const corridorResponseSchema = z.object({
-  data: z.object({ corridor: corridorSelectSchema }),
+export const utilityResponseSchema = z.object({
+  data: z.object({ utility: utilitySelectSchema }),
   success: z.literal(true),
 });
 
-export const corridorsResponseSchema = z.object({
-  data: z.object({ corridors: z.array(corridorSelectSchema) }),
-  success: z.literal(true),
-});
-
-export const liftResponseSchema = z.object({
-  data: z.object({ lift: liftSelectSchema }),
-  success: z.literal(true),
-});
-
-export const liftsResponseSchema = z.object({
-  data: z.object({ lifts: z.array(liftSelectSchema) }),
-  success: z.literal(true),
-});
-
-export const stairResponseSchema = z.object({
-  data: z.object({ stair: stairSelectSchema }),
-  success: z.literal(true),
-});
-
-export const stairsResponseSchema = z.object({
-  data: z.object({ stairs: z.array(stairSelectSchema) }),
+export const utilitiesResponseSchema = z.object({
+  data: z.object({ utilities: z.array(utilitySelectSchema) }),
   success: z.literal(true),
 });
 
@@ -105,9 +117,7 @@ export const graphResponseSchema = z.object({
     buildings: z.array(buildingSelectSchema),
     classrooms: z.array(classroomSelectSchema),
     classroomTypes: z.array(classroomTypeSelectSchema),
-    corridors: z.array(corridorSelectSchema),
-    lifts: z.array(liftSelectSchema),
-    stairs: z.array(stairSelectSchema),
+    utilities: z.array(utilitySelectSchema),
   }),
   success: z.literal(true),
 });

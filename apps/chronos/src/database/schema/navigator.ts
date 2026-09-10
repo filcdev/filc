@@ -10,13 +10,9 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import {
-  coordinate,
-  count,
-  dimension,
   measurement,
-  rotation,
   shortText,
-  storey,
+  smallInt,
   timestamps,
 } from '#database/helpers';
 
@@ -24,8 +20,8 @@ export const navigatorBuilding = pgTable('navigator_building', {
   description: text('description').notNull(),
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull().unique(),
-  x: coordinate('x').notNull(),
-  y: coordinate('y').notNull(),
+  x: smallInt('x').notNull(),
+  y: smallInt('y').notNull(),
   ...timestamps,
 });
 
@@ -42,20 +38,20 @@ export const navigatorClassroom = pgTable(
     buildingId: uuid('building_id')
       .notNull()
       .references(() => navigatorBuilding.id, { onDelete: 'cascade' }),
-    capacity: count('capacity').notNull(),
+    capacity: smallInt('capacity').notNull(),
     description: text('description').notNull(),
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
-    rotation: rotation('rotation').notNull(),
-    sizeX: dimension('size_x').notNull(),
-    sizeY: dimension('size_y').notNull(),
-    sizeZ: dimension('size_z').notNull(),
-    storey: storey('storey').notNull(),
+    rotation: smallInt('rotation').notNull(),
+    sizeX: smallInt('size_x').notNull(),
+    sizeY: smallInt('size_y').notNull(),
+    sizeZ: smallInt('size_z').notNull(),
+    storey: smallInt('storey').notNull(),
     typeId: uuid('type_id')
       .notNull()
       .references(() => navigatorClassroomType.id, { onDelete: 'restrict' }),
-    x: coordinate('x').notNull(),
-    y: coordinate('y').notNull(),
+    x: smallInt('x').notNull(),
+    y: smallInt('y').notNull(),
     ...timestamps,
   },
   (t) => [
@@ -68,76 +64,41 @@ export const navigatorClassroom = pgTable(
   ]
 );
 
-export const navigatorCorridor = pgTable(
-  'navigator_corridor',
+export const navigatorUtility = pgTable(
+  'navigator_utility',
   {
-    barrierFree: boolean('barrier_free').notNull().default(false),
+    barrierFree: boolean('barrier_free'),
     buildingId: uuid('building_id')
       .notNull()
       .references(() => navigatorBuilding.id, { onDelete: 'cascade' }),
     id: uuid('id').primaryKey().defaultRandom(),
-    isOutdoor: boolean('is_outdoor').notNull().default(false),
+    isOutdoor: boolean('is_outdoor'),
+    kind: text('kind').notNull(),
+    maxStorey: smallInt('max_storey'),
+    minStorey: smallInt('min_storey'),
     name: text('name').notNull(),
-    storey: storey('storey').notNull(),
-    width: measurement('width').notNull(),
-    x1: coordinate('x1').notNull(),
-    x2: coordinate('x2').notNull(),
-    y1: coordinate('y1').notNull(),
-    y2: coordinate('y2').notNull(),
+    rotation: smallInt('rotation'),
+    storey: smallInt('storey'),
+    width: measurement('width'),
+    x: smallInt('x'),
+    x1: smallInt('x1'),
+    x2: smallInt('x2'),
+    y: smallInt('y'),
+    y1: smallInt('y1'),
+    y2: smallInt('y2'),
     ...timestamps,
   },
   (t) => [
-    uniqueIndex('navigator_corridor_name_building_id_uidx').on(
+    uniqueIndex('navigator_utility_name_building_id_kind_uidx').on(
       t.name,
-      t.buildingId
+      t.buildingId,
+      t.kind
     ),
-  ]
-);
-
-export const navigatorLift = pgTable(
-  'navigator_lift',
-  {
-    buildingId: uuid('building_id')
-      .notNull()
-      .references(() => navigatorBuilding.id, { onDelete: 'cascade' }),
-    id: uuid('id').primaryKey().defaultRandom(),
-    maxStorey: storey('max_storey').notNull(),
-    minStorey: storey('min_storey').notNull(),
-    name: text('name').notNull(),
-    x: coordinate('x').notNull(),
-    y: coordinate('y').notNull(),
-    ...timestamps,
-  },
-  (t) => [
-    uniqueIndex('navigator_lift_name_building_id_uidx').on(
-      t.name,
-      t.buildingId
+    index('navigator_utility_building_id_idx').on(t.buildingId),
+    check(
+      'navigator_utility_storey_check',
+      sql`min_storey IS NULL OR max_storey IS NULL OR min_storey <= max_storey`
     ),
-    check('navigator_lift_storey_check', sql`min_storey <= max_storey`),
-  ]
-);
-
-export const navigatorStair = pgTable(
-  'navigator_stair',
-  {
-    buildingId: uuid('building_id')
-      .notNull()
-      .references(() => navigatorBuilding.id, { onDelete: 'cascade' }),
-    id: uuid('id').primaryKey().defaultRandom(),
-    maxStorey: storey('max_storey').notNull(),
-    minStorey: storey('min_storey').notNull(),
-    name: text('name').notNull(),
-    rotation: rotation('rotation').notNull(),
-    x: coordinate('x').notNull(),
-    y: coordinate('y').notNull(),
-    ...timestamps,
-  },
-  (t) => [
-    uniqueIndex('navigator_stair_name_building_id_uidx').on(
-      t.name,
-      t.buildingId
-    ),
-    check('navigator_stair_storey_check', sql`min_storey <= max_storey`),
   ]
 );
 
@@ -156,8 +117,6 @@ export const navigatorSchema = {
   navigatorBuilding,
   navigatorClassroom,
   navigatorClassroomType,
-  navigatorCorridor,
-  navigatorLift,
-  navigatorStair,
   navigatorTranslation,
+  navigatorUtility,
 };

@@ -4,10 +4,8 @@ import {
   navigatorBuilding,
   navigatorClassroom,
   navigatorClassroomType,
-  navigatorCorridor,
-  navigatorLift,
-  navigatorStair,
   navigatorTranslation,
+  navigatorUtility,
 } from '#database/schema/navigator';
 import { conflict } from '#utils/http';
 
@@ -103,78 +101,32 @@ export const assertClassroomNameUnique = async (
   }
 };
 
-export const assertCorridorNameUnique = async (
+export const assertUtilityNameUnique = async (
   executor: DbExecutor,
   name: string,
   buildingId: string,
+  kind: string,
   excludeId?: string
 ) => {
   const conditions = [
-    eq(navigatorCorridor.name, name),
-    eq(navigatorCorridor.buildingId, buildingId),
+    eq(navigatorUtility.name, name),
+    eq(navigatorUtility.buildingId, buildingId),
+    eq(navigatorUtility.kind, kind),
   ];
   if (excludeId) {
-    conditions.push(ne(navigatorCorridor.id, excludeId));
+    conditions.push(ne(navigatorUtility.id, excludeId));
   }
 
   const rows = await executor
-    .select({ id: navigatorCorridor.id })
-    .from(navigatorCorridor)
+    .select({ id: navigatorUtility.id })
+    .from(navigatorUtility)
     .where(and(...conditions))
     .limit(1);
 
   if (rows.length > 0) {
-    throw conflict('A corridor with this name already exists in this building');
-  }
-};
-
-export const assertLiftNameUnique = async (
-  executor: DbExecutor,
-  name: string,
-  buildingId: string,
-  excludeId?: string
-) => {
-  const conditions = [
-    eq(navigatorLift.name, name),
-    eq(navigatorLift.buildingId, buildingId),
-  ];
-  if (excludeId) {
-    conditions.push(ne(navigatorLift.id, excludeId));
-  }
-
-  const rows = await executor
-    .select({ id: navigatorLift.id })
-    .from(navigatorLift)
-    .where(and(...conditions))
-    .limit(1);
-
-  if (rows.length > 0) {
-    throw conflict('A lift with this name already exists in this building');
-  }
-};
-
-export const assertStairNameUnique = async (
-  executor: DbExecutor,
-  name: string,
-  buildingId: string,
-  excludeId?: string
-) => {
-  const conditions = [
-    eq(navigatorStair.name, name),
-    eq(navigatorStair.buildingId, buildingId),
-  ];
-  if (excludeId) {
-    conditions.push(ne(navigatorStair.id, excludeId));
-  }
-
-  const rows = await executor
-    .select({ id: navigatorStair.id })
-    .from(navigatorStair)
-    .where(and(...conditions))
-    .limit(1);
-
-  if (rows.length > 0) {
-    throw conflict('A stair with this name already exists in this building');
+    throw conflict(
+      'A utility with this name already exists in this building for this kind'
+    );
   }
 };
 

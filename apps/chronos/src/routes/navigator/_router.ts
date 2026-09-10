@@ -17,25 +17,7 @@ import {
   listClassroomsRoute,
   updateClassroomRoute,
 } from '#routes/navigator/classrooms';
-import {
-  createCorridorRoute,
-  deleteCorridorRoute,
-  listCorridorsRoute,
-  updateCorridorRoute,
-} from '#routes/navigator/corridors';
 import { graphRoute } from '#routes/navigator/graph';
-import {
-  createLiftRoute,
-  deleteLiftRoute,
-  listLiftsRoute,
-  updateLiftRoute,
-} from '#routes/navigator/lifts';
-import {
-  createStairRoute,
-  deleteStairRoute,
-  listStairsRoute,
-  updateStairRoute,
-} from '#routes/navigator/stairs';
 import {
   exportNavigatorRoute,
   importNavigatorRoute,
@@ -49,6 +31,13 @@ import {
   listTranslationsRoute,
   updateTranslationRoute,
 } from '#routes/navigator/translations';
+import {
+  createUtilityRoute,
+  deleteUtilityRoute,
+  getUtilityRoute,
+  listUtilitiesRoute,
+  updateUtilityRoute,
+} from '#routes/navigator/utilities';
 
 export const navigatorRouter = navigatorFactory
   .createApp()
@@ -72,21 +61,12 @@ export const navigatorRouter = navigatorFactory
   .post('/classrooms', ...createClassroomRoute)
   .put('/classrooms/:id', ...updateClassroomRoute)
   .delete('/classrooms/:id', ...deleteClassroomRoute)
-  // Corridors
-  .get('/corridors', ...listCorridorsRoute)
-  .post('/corridors', ...createCorridorRoute)
-  .put('/corridors/:id', ...updateCorridorRoute)
-  .delete('/corridors/:id', ...deleteCorridorRoute)
-  // Lifts
-  .get('/lifts', ...listLiftsRoute)
-  .post('/lifts', ...createLiftRoute)
-  .put('/lifts/:id', ...updateLiftRoute)
-  .delete('/lifts/:id', ...deleteLiftRoute)
-  // Stairs
-  .get('/stairs', ...listStairsRoute)
-  .post('/stairs', ...createStairRoute)
-  .put('/stairs/:id', ...updateStairRoute)
-  .delete('/stairs/:id', ...deleteStairRoute)
+  // Utilities
+  .get('/utilities', ...listUtilitiesRoute)
+  .post('/utilities', ...createUtilityRoute)
+  .get('/utilities/:id', ...getUtilityRoute)
+  .put('/utilities/:id', ...updateUtilityRoute)
+  .delete('/utilities/:id', ...deleteUtilityRoute)
   // Translations (public reads first, then auth CRUD)
   .get('/translations/lang', ...listTranslationsByLangRoute)
   .get('/translations/available', ...listAvailableTranslationLangsRoute)

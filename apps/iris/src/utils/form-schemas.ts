@@ -176,136 +176,78 @@ export const navigatorClassroomSchema = z.object({
   ),
 });
 
-export const navigatorCorridorSchema = z.object({
-  barrierFree: z.boolean(),
-  buildingId: z.uuid('A building is required'),
-  isOutdoor: z.boolean(),
-  name: z.string().min(1, 'Name is required').max(254),
-  storey: requiredNumber(
+const navigatorInt16 = (label: string) =>
+  requiredNumber(
     z.coerce
-      .number('Storey is required')
-      .int('Storey must be a whole number')
+      .number(`${label} is required`)
+      .int(`${label} must be a whole number`)
       .min(-32_768)
       .max(32_767)
-  ),
+  );
+
+const navigatorUtilityCommonFields = {
+  buildingId: z.uuid('A building is required'),
+  name: z.string().min(1, 'Name is required').max(254),
+};
+
+const navigatorCorridorUtilityFields = {
+  ...navigatorUtilityCommonFields,
+  storey: navigatorInt16('Storey'),
   width: requiredNumber(
     z.coerce
       .number('Width is required')
       .min(0.5, 'Width must be at least 0.5')
       .max(20)
   ),
-  x1: requiredNumber(
-    z.coerce
-      .number('X1 is required')
-      .int('X1 must be a whole number')
-      .min(-32_768)
-      .max(32_767)
-  ),
-  x2: requiredNumber(
-    z.coerce
-      .number('X2 is required')
-      .int('X2 must be a whole number')
-      .min(-32_768)
-      .max(32_767)
-  ),
-  y1: requiredNumber(
-    z.coerce
-      .number('Y1 is required')
-      .int('Y1 must be a whole number')
-      .min(-32_768)
-      .max(32_767)
-  ),
-  y2: requiredNumber(
-    z.coerce
-      .number('Y2 is required')
-      .int('Y2 must be a whole number')
-      .min(-32_768)
-      .max(32_767)
-  ),
-});
+  x1: navigatorInt16('X1'),
+  x2: navigatorInt16('X2'),
+  y1: navigatorInt16('Y1'),
+  y2: navigatorInt16('Y2'),
+};
 
-export const navigatorLiftSchema = z
-  .object({
-    buildingId: z.uuid('A building is required'),
-    maxStorey: requiredNumber(
-      z.coerce
-        .number('Max storey is required')
-        .int('Max storey must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-    minStorey: requiredNumber(
-      z.coerce
-        .number('Min storey is required')
-        .int('Min storey must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-    name: z.string().min(1, 'Name is required').max(190),
-    x: requiredNumber(
-      z.coerce
-        .number('X is required')
-        .int('X must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-    y: requiredNumber(
-      z.coerce
-        .number('Y is required')
-        .int('Y must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-  })
-  .refine((data) => data.minStorey <= data.maxStorey, {
-    message: 'Min storey must be less than or equal to max storey',
-    path: ['minStorey'],
-  });
+const navigatorLiftUtilityFields = {
+  ...navigatorUtilityCommonFields,
+  maxStorey: navigatorInt16('Max storey'),
+  minStorey: navigatorInt16('Min storey'),
+  x: navigatorInt16('X'),
+  y: navigatorInt16('Y'),
+};
 
-export const navigatorStairSchema = z
-  .object({
-    buildingId: z.uuid('A building is required'),
-    maxStorey: requiredNumber(
-      z.coerce
-        .number('Max storey is required')
-        .int('Max storey must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-    minStorey: requiredNumber(
-      z.coerce
-        .number('Min storey is required')
-        .int('Min storey must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-    name: z.string().min(1, 'Name is required').max(190),
-    rotation: requiredNumber(
-      z.coerce
-        .number('Rotation is required')
-        .int('Rotation must be a whole number')
-        .min(0)
-        .max(360)
-    ),
-    x: requiredNumber(
-      z.coerce
-        .number('X is required')
-        .int('X must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-    y: requiredNumber(
-      z.coerce
-        .number('Y is required')
-        .int('Y must be a whole number')
-        .min(-32_768)
-        .max(32_767)
-    ),
-  })
-  .refine((data) => data.minStorey <= data.maxStorey, {
-    message: 'Min storey must be less than or equal to max storey',
-    path: ['minStorey'],
-  });
+const navigatorStairUtilityFields = {
+  ...navigatorLiftUtilityFields,
+  rotation: requiredNumber(
+    z.coerce
+      .number('Rotation is required')
+      .int('Rotation must be a whole number')
+      .min(0)
+      .max(360)
+  ),
+};
+
+export const navigatorUtilitySchema = z
+  .discriminatedUnion('kind', [
+    z.object({
+      ...navigatorCorridorUtilityFields,
+      barrierFree: z.boolean(),
+      isOutdoor: z.boolean(),
+      kind: z.literal('corridor'),
+    }),
+    z.object({
+      ...navigatorLiftUtilityFields,
+      kind: z.literal('lift'),
+    }),
+    z.object({
+      ...navigatorStairUtilityFields,
+      kind: z.literal('stair'),
+    }),
+  ])
+  .refine(
+    (data) => data.kind === 'corridor' || data.minStorey <= data.maxStorey,
+    {
+      message: 'Min storey must be less than or equal to max storey',
+      path: ['minStorey'],
+    }
+  );
 
 export const navigatorTranslationSchema = z.object({
   langKey: z.string().min(1, 'Language is required').max(10),

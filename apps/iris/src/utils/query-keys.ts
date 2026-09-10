@@ -38,12 +38,10 @@ export const queryKeys = {
     buildings: () => ['navigator', 'buildings'] as const,
     classrooms: () => ['navigator', 'classrooms'] as const,
     classroomTypes: () => ['navigator', 'classroomTypes'] as const,
-    corridors: () => ['navigator', 'corridors'] as const,
     graph: () => ['navigator', 'graph'] as const,
-    lifts: () => ['navigator', 'lifts'] as const,
     root: () => ['navigator'] as const,
-    stairs: () => ['navigator', 'stairs'] as const,
     translations: () => ['navigator', 'translations'] as const,
+    utilities: () => ['navigator', 'utilities'] as const,
   },
 
   news: {

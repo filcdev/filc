@@ -24,14 +24,8 @@ type ClassroomTypesData = NonNullable<
 type ClassroomsData = NonNullable<
   InferResponseType<typeof api.navigator.classrooms.$get>['data']
 >;
-type CorridorsData = NonNullable<
-  InferResponseType<typeof api.navigator.corridors.$get>['data']
->;
-type LiftsData = NonNullable<
-  InferResponseType<typeof api.navigator.lifts.$get>['data']
->;
-type StairsData = NonNullable<
-  InferResponseType<typeof api.navigator.stairs.$get>['data']
+type UtilitiesData = NonNullable<
+  InferResponseType<typeof api.navigator.utilities.$get>['data']
 >;
 type TranslationsData = NonNullable<
   InferResponseType<typeof api.navigator.translations.$get>['data']
@@ -44,9 +38,7 @@ export type NavigatorBuilding = BuildingsData['buildings'][number];
 export type NavigatorClassroomType =
   ClassroomTypesData['classroomTypes'][number];
 export type NavigatorClassroom = ClassroomsData['classrooms'][number];
-export type NavigatorCorridor = CorridorsData['corridors'][number];
-export type NavigatorLift = LiftsData['lifts'][number];
-export type NavigatorStair = StairsData['stairs'][number];
+export type NavigatorUtility = UtilitiesData['utilities'][number];
 export type NavigatorTranslation = TranslationsData['translations'][number];
 export type NavigatorGraph = NavigatorGraphData;
 
@@ -59,14 +51,8 @@ export type ClassroomTypePayload = InferRequestType<
 export type ClassroomPayload = InferRequestType<
   typeof api.navigator.classrooms.$post
 >['json'];
-export type CorridorPayload = InferRequestType<
-  typeof api.navigator.corridors.$post
->['json'];
-export type LiftPayload = InferRequestType<
-  typeof api.navigator.lifts.$post
->['json'];
-export type StairPayload = InferRequestType<
-  typeof api.navigator.stairs.$post
+export type UtilityPayload = InferRequestType<
+  typeof api.navigator.utilities.$post
 >['json'];
 export type TranslationPayload = InferRequestType<
   typeof api.navigator.translations.$post
@@ -120,45 +106,19 @@ export function useClassrooms() {
   });
 }
 
-/** All navigator corridors. */
-export function useCorridors() {
+/** All navigator utilities. */
+export function useUtilities() {
   return useQuery({
-    queryFn: async (): Promise<CorridorsData> => {
-      const res = await parseResponse(api.navigator.corridors.$get());
+    queryFn: async (): Promise<UtilitiesData> => {
+      const res = await parseResponse(
+        api.navigator.utilities.$get({ query: {} })
+      );
       if (!res.success) {
-        throw new Error('Failed to load corridors');
+        throw new Error('Failed to load utilities');
       }
-      return res.data as CorridorsData;
+      return res.data as UtilitiesData;
     },
-    queryKey: queryKeys.navigator.corridors(),
-  });
-}
-
-/** All navigator lifts. */
-export function useLifts() {
-  return useQuery({
-    queryFn: async (): Promise<LiftsData> => {
-      const res = await parseResponse(api.navigator.lifts.$get());
-      if (!res.success) {
-        throw new Error('Failed to load lifts');
-      }
-      return res.data as LiftsData;
-    },
-    queryKey: queryKeys.navigator.lifts(),
-  });
-}
-
-/** All navigator stairs. */
-export function useStairs() {
-  return useQuery({
-    queryFn: async (): Promise<StairsData> => {
-      const res = await parseResponse(api.navigator.stairs.$get());
-      if (!res.success) {
-        throw new Error('Failed to load stairs');
-      }
-      return res.data as StairsData;
-    },
-    queryKey: queryKeys.navigator.stairs(),
+    queryKey: queryKeys.navigator.utilities(),
   });
 }
 
@@ -176,7 +136,7 @@ export function useTranslations() {
   });
 }
 
-/** The complete navigator graph (buildings, types, rooms, corridors, lifts, stairs). */
+/** The complete navigator graph (buildings, types, rooms, utilities). */
 export function useNavigatorGraph() {
   return useQuery({
     queryFn: async (): Promise<NavigatorGraphData> => {
@@ -391,8 +351,8 @@ export function useDeleteClassroom({ onSaved }: MutationCallbacks = {}) {
   });
 }
 
-/** Create or update a navigator corridor. */
-export function useUpsertCorridor({ onSaved }: MutationCallbacks = {}) {
+/** Create or update a navigator utility. */
+export function useUpsertUtility({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateNavigator();
   const { t } = useTranslation();
   return useMutation({
@@ -401,29 +361,29 @@ export function useUpsertCorridor({ onSaved }: MutationCallbacks = {}) {
       payload,
     }: {
       id?: string;
-      payload: CorridorPayload;
+      payload: UtilityPayload;
     }) => {
       const res = await parseResponse(
         id
-          ? api.navigator.corridors[':id'].$put({
+          ? api.navigator.utilities[':id'].$put({
               json: payload,
               param: { id },
             })
-          : api.navigator.corridors.$post({ json: payload })
+          : api.navigator.utilities.$post({ json: payload })
       );
       if (!res.success) {
-        throw new Error('Failed to save corridor');
+        throw new Error('Failed to save utility');
       }
       return res;
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('navigator.corridors.saveError'));
+      toast.error(error.message || t('navigator.utilities.saveError'));
     },
     onSuccess: (_res, variables) => {
       toast.success(
         variables.id
-          ? t('navigator.corridors.updateSuccess')
-          : t('navigator.corridors.createSuccess')
+          ? t('navigator.utilities.updateSuccess')
+          : t('navigator.utilities.createSuccess')
       );
       invalidate();
       onSaved?.();
@@ -431,149 +391,25 @@ export function useUpsertCorridor({ onSaved }: MutationCallbacks = {}) {
   });
 }
 
-/** Delete a navigator corridor by id. */
-export function useDeleteCorridor({ onSaved }: MutationCallbacks = {}) {
+/** Delete a navigator utility by id. */
+export function useDeleteUtility({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateNavigator();
   const { t } = useTranslation();
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await parseResponse(
-        api.navigator.corridors[':id'].$delete({ param: { id } })
+        api.navigator.utilities[':id'].$delete({ param: { id } })
       );
       if (!res.success) {
-        throw new Error('Failed to delete corridor');
+        throw new Error('Failed to delete utility');
       }
       return res;
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('navigator.corridors.deleteError'));
+      toast.error(error.message || t('navigator.utilities.deleteError'));
     },
     onSuccess: () => {
-      toast.success(t('navigator.corridors.deleteSuccess'));
-      invalidate();
-      onSaved?.();
-    },
-  });
-}
-
-/** Create or update a navigator lift. */
-export function useUpsertLift({ onSaved }: MutationCallbacks = {}) {
-  const invalidate = useInvalidateNavigator();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id?: string;
-      payload: LiftPayload;
-    }) => {
-      const res = await parseResponse(
-        id
-          ? api.navigator.lifts[':id'].$put({ json: payload, param: { id } })
-          : api.navigator.lifts.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save lift');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('navigator.lifts.saveError'));
-    },
-    onSuccess: (_res, variables) => {
-      toast.success(
-        variables.id
-          ? t('navigator.lifts.updateSuccess')
-          : t('navigator.lifts.createSuccess')
-      );
-      invalidate();
-      onSaved?.();
-    },
-  });
-}
-
-/** Delete a navigator lift by id. */
-export function useDeleteLift({ onSaved }: MutationCallbacks = {}) {
-  const invalidate = useInvalidateNavigator();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.navigator.lifts[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete lift');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('navigator.lifts.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('navigator.lifts.deleteSuccess'));
-      invalidate();
-      onSaved?.();
-    },
-  });
-}
-
-/** Create or update a navigator stair. */
-export function useUpsertStair({ onSaved }: MutationCallbacks = {}) {
-  const invalidate = useInvalidateNavigator();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id?: string;
-      payload: StairPayload;
-    }) => {
-      const res = await parseResponse(
-        id
-          ? api.navigator.stairs[':id'].$put({ json: payload, param: { id } })
-          : api.navigator.stairs.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save stair');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('navigator.stairs.saveError'));
-    },
-    onSuccess: (_res, variables) => {
-      toast.success(
-        variables.id
-          ? t('navigator.stairs.updateSuccess')
-          : t('navigator.stairs.createSuccess')
-      );
-      invalidate();
-      onSaved?.();
-    },
-  });
-}
-
-/** Delete a navigator stair by id. */
-export function useDeleteStair({ onSaved }: MutationCallbacks = {}) {
-  const invalidate = useInvalidateNavigator();
-  const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.navigator.stairs[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete stair');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('navigator.stairs.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('navigator.stairs.deleteSuccess'));
+      toast.success(t('navigator.utilities.deleteSuccess'));
       invalidate();
       onSaved?.();
     },

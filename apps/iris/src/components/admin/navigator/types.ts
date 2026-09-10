@@ -4,10 +4,8 @@ import type {
   NavigatorBuilding,
   NavigatorClassroom,
   NavigatorClassroomType,
-  NavigatorCorridor,
-  NavigatorLift,
-  NavigatorStair,
   NavigatorTranslation,
+  NavigatorUtility,
 } from '@/hooks/navigator';
 
 /** Props shared by every navigator record dialog. `record` null -> create, otherwise edit. */
@@ -20,9 +18,7 @@ export type ClassroomTypeDialogProps =
   NavigatorRecordDialogProps<NavigatorClassroomType>;
 export type ClassroomDialogProps =
   NavigatorRecordDialogProps<NavigatorClassroom>;
-export type CorridorDialogProps = NavigatorRecordDialogProps<NavigatorCorridor>;
-export type LiftDialogProps = NavigatorRecordDialogProps<NavigatorLift>;
-export type StairDialogProps = NavigatorRecordDialogProps<NavigatorStair>;
+export type UtilityDialogProps = NavigatorRecordDialogProps<NavigatorUtility>;
 export type TranslationDialogProps =
   NavigatorRecordDialogProps<NavigatorTranslation>;
 

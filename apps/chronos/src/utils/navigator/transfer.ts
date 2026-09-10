@@ -1,13 +1,12 @@
 import z from 'zod';
+import { navigatorUtility } from '#database/schema/navigator';
 import {
   buildingSelectSchema,
   classroomSelectSchema,
   classroomTypeSelectSchema,
-  corridorSelectSchema,
-  liftSelectSchema,
-  stairSelectSchema,
   translationSelectSchema,
 } from '#utils/navigator/schemas';
+import { createSelectSchema } from '#utils/zod';
 
 /**
  * Transfer schemas for navigator export/import. Each strips the audit
@@ -31,24 +30,16 @@ export const classroomTransferSchema = classroomSelectSchema.omit({
   updatedAt: true,
 });
 
-export const corridorTransferSchema = corridorSelectSchema.omit({
+const utilityBaseTransferSchema = createSelectSchema(navigatorUtility).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const liftTransferSchema = liftSelectSchema
-  .omit({ createdAt: true, updatedAt: true })
-  .refine((data) => data.minStorey <= data.maxStorey, {
-    message: 'minStorey must be less than or equal to maxStorey',
-    path: ['minStorey'],
-  });
-
-export const stairTransferSchema = stairSelectSchema
-  .omit({ createdAt: true, updatedAt: true })
-  .refine((data) => data.minStorey <= data.maxStorey, {
-    message: 'minStorey must be less than or equal to maxStorey',
-    path: ['minStorey'],
-  });
+export const utilityTransferSchema = z.discriminatedUnion('kind', [
+  utilityBaseTransferSchema.extend({ kind: z.literal('corridor') }),
+  utilityBaseTransferSchema.extend({ kind: z.literal('lift') }),
+  utilityBaseTransferSchema.extend({ kind: z.literal('stair') }),
+]);
 
 export const translationTransferSchema = translationSelectSchema.omit({
   createdAt: true,
@@ -62,9 +53,7 @@ export const navigatorTransferSchema = z.object({
   buildings: z.array(buildingTransferSchema),
   classroomTypes: z.array(classroomTypeTransferSchema),
   classrooms: z.array(classroomTransferSchema),
-  corridors: z.array(corridorTransferSchema),
-  lifts: z.array(liftTransferSchema),
-  stairs: z.array(stairTransferSchema),
+  utilities: z.array(utilityTransferSchema),
   translations: z.array(translationTransferSchema),
 });
 

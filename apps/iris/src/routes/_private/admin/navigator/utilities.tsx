@@ -4,9 +4,12 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StairDialog } from '@/components/admin/navigator/stair-dialog';
+import { UtilityDialog } from '@/components/admin/navigator/utility-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -19,30 +22,27 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
 import {
-  type NavigatorStair,
+  type NavigatorUtility,
   useBuildings,
-  useDeleteStair,
-  useStairs,
+  useDeleteUtility,
+  useUtilities,
 } from '@/hooks/navigator';
 import { confirmDestructiveAction } from '@/utils/confirm';
 
-export const Route = createFileRoute('/_private/admin/navigator/stairs')({
+export const Route = createFileRoute('/_private/admin/navigator/utilities')({
   component: () => (
     <PermissionGuard permission={permissions.navigatorManage}>
-      <StairsPage />
+      <UtilitiesPage />
     </PermissionGuard>
   ),
 });
 
-type StairSortColumn =
-  | 'name'
-  | 'building'
-  | 'x'
-  | 'y'
-  | 'minStorey'
-  | 'rotation';
+type UtilityKind = 'corridor' | 'lift' | 'stair';
+type KindFilter = 'all' | UtilityKind;
 
-type StairRow = NavigatorStair & { buildingName: string };
+type UtilitySortColumn = 'name' | 'building' | 'kind';
+
+type UtilityRow = NavigatorUtility & { buildingName: string };
 
 function getAriaSortState(
   column: string,
@@ -55,23 +55,24 @@ function getAriaSortState(
   return sortDirection === 'asc' ? 'ascending' : 'descending';
 }
 
-function StairsPage() {
+function UtilitiesPage() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
-  const [sortColumn, setSortColumn] = useState<StairSortColumn | null>(null);
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
+  const [sortColumn, setSortColumn] = useState<UtilitySortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
     null
   );
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedStair, setSelectedStair] = useState<NavigatorStair | null>(
-    null
-  );
+  const [selectedUtility, setSelectedUtility] =
+    useState<NavigatorUtility | null>(null);
 
-  const stairsQuery = useStairs();
+  const utilitiesQuery = useUtilities();
   const buildingsQuery = useBuildings();
-  const deleteMutation = useDeleteStair();
+  const deleteMutation = useDeleteUtility();
 
-  const stairs: NavigatorStair[] | undefined = stairsQuery.data?.stairs;
+  const utilities: NavigatorUtility[] | undefined =
+    utilitiesQuery.data?.utilities;
 
   const buildingNameById = useMemo(
     () =>
@@ -81,31 +82,35 @@ function StairsPage() {
     [buildingsQuery.data]
   );
 
-  const rows: StairRow[] = useMemo(
+  const rows: UtilityRow[] = useMemo(
     () =>
-      (stairs ?? []).map((stair) => ({
-        ...stair,
-        buildingName: buildingNameById.get(stair.buildingId) ?? '—',
+      (utilities ?? []).map((utility) => ({
+        ...utility,
+        buildingName: buildingNameById.get(utility.buildingId) ?? '—',
       })),
-    [stairs, buildingNameById]
+    [utilities, buildingNameById]
   );
 
-  const filteredStairs = useMemo(() => {
+  const filteredUtilities = useMemo(() => {
     const term = search.trim().toLowerCase();
     let filtered = rows;
 
+    if (kindFilter !== 'all') {
+      filtered = filtered.filter((utility) => utility.kind === kindFilter);
+    }
+
     if (term) {
       filtered = filtered.filter(
-        (stair) =>
-          stair.name.toLowerCase().includes(term) ||
-          stair.buildingName.toLowerCase().includes(term)
+        (utility) =>
+          utility.name.toLowerCase().includes(term) ||
+          utility.buildingName.toLowerCase().includes(term)
       );
     }
 
     if (sortColumn && sortDirection) {
       filtered = [...filtered].sort((a, b) => {
-        const aValue = getStairSortValue(a, sortColumn);
-        const bValue = getStairSortValue(b, sortColumn);
+        const aValue = getUtilitySortValue(a, sortColumn);
+        const bValue = getUtilitySortValue(b, sortColumn);
 
         if (typeof aValue === 'number' && typeof bValue === 'number') {
           return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
@@ -117,19 +122,19 @@ function StairsPage() {
     }
 
     return filtered;
-  }, [rows, search, sortColumn, sortDirection]);
+  }, [rows, search, kindFilter, sortColumn, sortDirection]);
 
-  const handleDelete = async (stair: NavigatorStair) => {
+  const handleDelete = async (utility: NavigatorUtility) => {
     const confirmed = confirmDestructiveAction(
-      t('navigator.stairs.deleteConfirm', { name: stair.name })
+      t('navigator.utilities.deleteConfirm', { name: utility.name })
     );
     if (!confirmed) {
       return;
     }
-    await deleteMutation.mutateAsync(stair.id);
+    await deleteMutation.mutateAsync(utility.id);
   };
 
-  const handleSort = (column: StairSortColumn) => {
+  const handleSort = (column: UtilitySortColumn) => {
     if (sortColumn === column) {
       if (sortDirection === 'asc') {
         setSortDirection('desc');
@@ -144,14 +149,48 @@ function StairsPage() {
     setSortDirection('asc');
   };
 
+  const renderBuildingName = (name: string) => {
+    if (buildingsQuery.isLoading) {
+      return <Skeleton className="h-4 w-24" />;
+    }
+    if (buildingsQuery.isError) {
+      return (
+        <span className="text-destructive">
+          {t('navigator.utilities.loadError')}
+        </span>
+      );
+    }
+    return name;
+  };
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: renders a kind-specific detail summary with nullable fallbacks
+  const describeUtility = (utility: NavigatorUtility): string => {
+    if (utility.kind === 'corridor') {
+      const flags: string[] = [];
+      if (utility.barrierFree) {
+        flags.push(t('navigator.utilities.barrierFree'));
+      }
+      if (utility.isOutdoor) {
+        flags.push(t('navigator.utilities.isOutdoor'));
+      }
+      const flagText = flags.length > 0 ? ` · ${flags.join(', ')}` : '';
+      return `L${utility.storey ?? '—'} · ${utility.width ?? '—'} · (${utility.x1 ?? '—'}, ${utility.y1 ?? '—'}) → (${utility.x2 ?? '—'}, ${utility.y2 ?? '—'})${flagText}`;
+    }
+    const range = `${utility.minStorey ?? '—'}–${utility.maxStorey ?? '—'}`;
+    const at = `(${utility.x ?? '—'}, ${utility.y ?? '—'})`;
+    return utility.kind === 'stair'
+      ? `${range} · ${at} · ${utility.rotation ?? '—'}°`
+      : `${range} · ${at}`;
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-bold text-3xl tracking-tight">
-          {t('navigator.stairs.title')}
+          {t('navigator.utilities.title')}
         </h1>
         <p className="text-muted-foreground">
-          {t('navigator.stairs.subtitle')}
+          {t('navigator.utilities.subtitle')}
         </p>
       </div>
 
@@ -159,27 +198,44 @@ function StairsPage() {
         <Input
           className="max-w-sm"
           onChange={(event) => setSearch(event.target.value)}
-          placeholder={t('navigator.stairs.searchPlaceholder')}
+          placeholder={t('navigator.utilities.searchPlaceholder')}
           value={search}
         />
+        <Select
+          items={[
+            { label: t('navigator.utilities.allKinds'), value: 'all' },
+            ...(['corridor', 'lift', 'stair'] as const).map((kind) => ({
+              label: t(`navigator.utilities.kinds.${kind}`),
+              value: kind,
+            })),
+          ]}
+          onValueChange={(value) =>
+            setKindFilter((value ?? 'all') as KindFilter)
+          }
+          value={kindFilter}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={t('navigator.utilities.allKinds')} />
+          </SelectTrigger>
+        </Select>
         <div className="ml-auto flex items-center gap-2">
-          <Button onClick={() => stairsQuery.refetch()} variant="outline">
+          <Button onClick={() => utilitiesQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />
-            {t('navigator.stairs.refresh')}
+            {t('navigator.utilities.refresh')}
           </Button>
           <Button
             onClick={() => {
-              setSelectedStair(null);
+              setSelectedUtility(null);
               setDialogOpen(true);
             }}
           >
             <Plus className="h-4 w-4" />
-            {t('navigator.stairs.add')}
+            {t('navigator.utilities.add')}
           </Button>
         </div>
       </div>
 
-      <QueryBoundary data={stairsQuery.data} query={stairsQuery}>
+      <QueryBoundary data={utilitiesQuery.data} query={utilitiesQuery}>
         {() => (
           <div className="w-full overflow-x-auto rounded-md border">
             <Table className="w-full min-w-3xl">
@@ -198,7 +254,7 @@ function StairsPage() {
                       onClick={() => handleSort('name')}
                       type="button"
                     >
-                      {t('navigator.stairs.name')}
+                      {t('navigator.utilities.name')}
                       <SortIcon
                         column="name"
                         currentColumn={sortColumn}
@@ -219,7 +275,7 @@ function StairsPage() {
                       onClick={() => handleSort('building')}
                       type="button"
                     >
-                      {t('navigator.stairs.building')}
+                      {t('navigator.utilities.building')}
                       <SortIcon
                         column="building"
                         currentColumn={sortColumn}
@@ -228,42 +284,8 @@ function StairsPage() {
                     </button>
                   </TableHead>
                   <TableHead
-                    aria-sort={getAriaSortState('x', sortColumn, sortDirection)}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('x')}
-                      type="button"
-                    >
-                      {t('navigator.stairs.x')}
-                      <SortIcon
-                        column="x"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead
-                    aria-sort={getAriaSortState('y', sortColumn, sortDirection)}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('y')}
-                      type="button"
-                    >
-                      {t('navigator.stairs.y')}
-                      <SortIcon
-                        column="y"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead
                     aria-sort={getAriaSortState(
-                      'minStorey',
+                      'kind',
                       sortColumn,
                       sortDirection
                     )}
@@ -271,60 +293,44 @@ function StairsPage() {
                   >
                     <button
                       className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('minStorey')}
+                      onClick={() => handleSort('kind')}
                       type="button"
                     >
-                      {t('navigator.stairs.storeyRange')}
+                      {t('navigator.utilities.kind')}
                       <SortIcon
-                        column="minStorey"
+                        column="kind"
                         currentColumn={sortColumn}
                         direction={sortDirection}
                       />
                     </button>
                   </TableHead>
-                  <TableHead
-                    aria-sort={getAriaSortState(
-                      'rotation',
-                      sortColumn,
-                      sortDirection
-                    )}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('rotation')}
-                      type="button"
-                    >
-                      {t('navigator.stairs.rotation')}
-                      <SortIcon
-                        column="rotation"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead>{t('navigator.stairs.actions')}</TableHead>
+                  <TableHead>{t('navigator.utilities.details')}</TableHead>
+                  <TableHead>{t('navigator.utilities.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStairs.map((stair) => (
-                  <TableRow key={stair.id}>
-                    <TableCell className="font-medium">{stair.name}</TableCell>
-                    <TableCell>{stair.buildingName}</TableCell>
-                    <TableCell>{stair.x}</TableCell>
-                    <TableCell>{stair.y}</TableCell>
-                    <TableCell>
-                      {stair.minStorey}–{stair.maxStorey}
+                {filteredUtilities.map((utility) => (
+                  <TableRow key={utility.id}>
+                    <TableCell className="font-medium">
+                      {utility.name}
                     </TableCell>
-                    <TableCell>{stair.rotation}</TableCell>
+                    <TableCell>
+                      {renderBuildingName(utility.buildingName)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {t(`navigator.utilities.kinds.${utility.kind}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{describeUtility(utility)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           aria-label={t('navigator.common.edit', {
-                            name: stair.name,
+                            name: utility.name,
                           })}
                           onClick={() => {
-                            setSelectedStair(stair);
+                            setSelectedUtility(utility);
                             setDialogOpen(true);
                           }}
                           size="icon"
@@ -334,10 +340,10 @@ function StairsPage() {
                         </Button>
                         <Button
                           aria-label={t('navigator.common.delete', {
-                            name: stair.name,
+                            name: utility.name,
                           })}
                           disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(stair)}
+                          onClick={() => handleDelete(utility)}
                           size="icon"
                           variant="destructive"
                         >
@@ -347,10 +353,10 @@ function StairsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!filteredStairs.length && (
+                {!filteredUtilities.length && (
                   <TableRow>
-                    <TableCell className="text-muted-foreground" colSpan={7}>
-                      {t('navigator.stairs.noStairsFound')}
+                    <TableCell className="text-muted-foreground" colSpan={5}>
+                      {t('navigator.utilities.noUtilitiesFound')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -360,37 +366,31 @@ function StairsPage() {
         )}
       </QueryBoundary>
 
-      <StairDialog
+      <UtilityDialog
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {
-            setSelectedStair(null);
+            setSelectedUtility(null);
           }
         }}
         open={dialogOpen}
-        record={selectedStair}
+        record={selectedUtility}
       />
     </div>
   );
 }
 
-function getStairSortValue(
-  stair: StairRow,
-  column: StairSortColumn
+function getUtilitySortValue(
+  utility: UtilityRow,
+  column: UtilitySortColumn
 ): string | number {
   switch (column) {
     case 'name':
-      return stair.name;
+      return utility.name;
     case 'building':
-      return stair.buildingName;
-    case 'x':
-      return stair.x;
-    case 'y':
-      return stair.y;
-    case 'minStorey':
-      return stair.minStorey;
-    case 'rotation':
-      return stair.rotation;
+      return utility.buildingName;
+    case 'kind':
+      return utility.kind;
     default:
       return '';
   }

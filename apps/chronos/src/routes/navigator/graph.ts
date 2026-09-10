@@ -5,9 +5,7 @@ import {
   navigatorBuilding,
   navigatorClassroom,
   navigatorClassroomType,
-  navigatorCorridor,
-  navigatorLift,
-  navigatorStair,
+  navigatorUtility,
 } from '#database/schema/navigator';
 import { ok } from '#utils/http';
 import { graphResponseSchema } from '#utils/navigator/schemas';
@@ -18,7 +16,7 @@ export const graphRoute = navigatorFactory.createHandlers(
   describeRoute({
     ...filcExt('Navigator', '@unit NavigatorGraphResponse'),
     description:
-      'Fetch the complete navigator graph (buildings, classroom types, classrooms, corridors, lifts and stairs).',
+      'Fetch the complete navigator graph (buildings, classroom types, classrooms and utilities).',
     responses: {
       200: {
         content: {
@@ -32,7 +30,7 @@ export const graphRoute = navigatorFactory.createHandlers(
     tags: ['Navigator'],
   }),
   async (c) => {
-    const [buildings, classrooms, classroomTypes, corridors, lifts, stairs] =
+    const [buildings, classrooms, classroomTypes, utilities] =
       await Promise.all([
         db
           .select()
@@ -49,21 +47,14 @@ export const graphRoute = navigatorFactory.createHandlers(
           .select()
           .from(navigatorClassroomType)
           .orderBy(asc(navigatorClassroomType.name)),
-        db
-          .select()
-          .from(navigatorCorridor)
-          .orderBy(asc(navigatorCorridor.name)),
-        db.select().from(navigatorLift).orderBy(asc(navigatorLift.name)),
-        db.select().from(navigatorStair).orderBy(asc(navigatorStair.name)),
+        db.select().from(navigatorUtility).orderBy(asc(navigatorUtility.name)),
       ]);
 
     return ok(c, {
       buildings,
       classrooms,
       classroomTypes,
-      corridors,
-      lifts,
-      stairs,
+      utilities,
     });
   }
 );

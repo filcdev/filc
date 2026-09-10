@@ -32,10 +32,8 @@ import { Route as PrivateAdminNavigatorIndexRouteImport } from './routes/_privat
 import { Route as PrivateAdminNavigatorBuildingsRouteImport } from './routes/_private/admin/navigator/buildings'
 import { Route as PrivateAdminNavigatorClassroomTypesRouteImport } from './routes/_private/admin/navigator/classroom-types'
 import { Route as PrivateAdminNavigatorClassroomsRouteImport } from './routes/_private/admin/navigator/classrooms'
-import { Route as PrivateAdminNavigatorCorridorsRouteImport } from './routes/_private/admin/navigator/corridors'
-import { Route as PrivateAdminNavigatorLiftsRouteImport } from './routes/_private/admin/navigator/lifts'
-import { Route as PrivateAdminNavigatorStairsRouteImport } from './routes/_private/admin/navigator/stairs'
 import { Route as PrivateAdminNavigatorTranslationsRouteImport } from './routes/_private/admin/navigator/translations'
+import { Route as PrivateAdminNavigatorUtilitiesRouteImport } from './routes/_private/admin/navigator/utilities'
 import { Route as PrivateAdminNewsAnnouncementsRouteImport } from './routes/_private/admin/news/announcements'
 import { Route as PrivateAdminNewsSystemMessagesRouteImport } from './routes/_private/admin/news/system-messages'
 import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
@@ -166,28 +164,16 @@ const PrivateAdminNavigatorClassroomsRoute =
     path: '/navigator/classrooms',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
-const PrivateAdminNavigatorCorridorsRoute =
-  PrivateAdminNavigatorCorridorsRouteImport.update({
-    id: '/navigator/corridors',
-    path: '/navigator/corridors',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminNavigatorLiftsRoute =
-  PrivateAdminNavigatorLiftsRouteImport.update({
-    id: '/navigator/lifts',
-    path: '/navigator/lifts',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
-const PrivateAdminNavigatorStairsRoute =
-  PrivateAdminNavigatorStairsRouteImport.update({
-    id: '/navigator/stairs',
-    path: '/navigator/stairs',
-    getParentRoute: () => PrivateAdminRouteRoute,
-  } as any)
 const PrivateAdminNavigatorTranslationsRoute =
   PrivateAdminNavigatorTranslationsRouteImport.update({
     id: '/navigator/translations',
     path: '/navigator/translations',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorUtilitiesRoute =
+  PrivateAdminNavigatorUtilitiesRouteImport.update({
+    id: '/navigator/utilities',
+    path: '/navigator/utilities',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
 const PrivateAdminNewsAnnouncementsRoute =
@@ -253,10 +239,8 @@ export interface FileRoutesByFullPath {
   '/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
   '/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
   '/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
-  '/admin/navigator/corridors': typeof PrivateAdminNavigatorCorridorsRoute
-  '/admin/navigator/lifts': typeof PrivateAdminNavigatorLiftsRoute
-  '/admin/navigator/stairs': typeof PrivateAdminNavigatorStairsRoute
   '/admin/navigator/translations': typeof PrivateAdminNavigatorTranslationsRoute
+  '/admin/navigator/utilities': typeof PrivateAdminNavigatorUtilitiesRoute
   '/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/admin/news/system-messages': typeof PrivateAdminNewsSystemMessagesRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
@@ -287,10 +271,8 @@ export interface FileRoutesByTo {
   '/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
   '/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
   '/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
-  '/admin/navigator/corridors': typeof PrivateAdminNavigatorCorridorsRoute
-  '/admin/navigator/lifts': typeof PrivateAdminNavigatorLiftsRoute
-  '/admin/navigator/stairs': typeof PrivateAdminNavigatorStairsRoute
   '/admin/navigator/translations': typeof PrivateAdminNavigatorTranslationsRoute
+  '/admin/navigator/utilities': typeof PrivateAdminNavigatorUtilitiesRoute
   '/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/admin/news/system-messages': typeof PrivateAdminNewsSystemMessagesRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
@@ -324,10 +306,8 @@ export interface FileRoutesById {
   '/_private/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
   '/_private/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
   '/_private/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
-  '/_private/admin/navigator/corridors': typeof PrivateAdminNavigatorCorridorsRoute
-  '/_private/admin/navigator/lifts': typeof PrivateAdminNavigatorLiftsRoute
-  '/_private/admin/navigator/stairs': typeof PrivateAdminNavigatorStairsRoute
   '/_private/admin/navigator/translations': typeof PrivateAdminNavigatorTranslationsRoute
+  '/_private/admin/navigator/utilities': typeof PrivateAdminNavigatorUtilitiesRoute
   '/_private/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/_private/admin/news/system-messages': typeof PrivateAdminNewsSystemMessagesRoute
   '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
@@ -360,10 +340,8 @@ export interface FileRouteTypes {
     | '/admin/navigator/buildings'
     | '/admin/navigator/classroom-types'
     | '/admin/navigator/classrooms'
-    | '/admin/navigator/corridors'
-    | '/admin/navigator/lifts'
-    | '/admin/navigator/stairs'
     | '/admin/navigator/translations'
+    | '/admin/navigator/utilities'
     | '/admin/news/announcements'
     | '/admin/news/system-messages'
     | '/admin/timetable/import'
@@ -394,10 +372,8 @@ export interface FileRouteTypes {
     | '/admin/navigator/buildings'
     | '/admin/navigator/classroom-types'
     | '/admin/navigator/classrooms'
-    | '/admin/navigator/corridors'
-    | '/admin/navigator/lifts'
-    | '/admin/navigator/stairs'
     | '/admin/navigator/translations'
+    | '/admin/navigator/utilities'
     | '/admin/news/announcements'
     | '/admin/news/system-messages'
     | '/admin/timetable/import'
@@ -430,10 +406,8 @@ export interface FileRouteTypes {
     | '/_private/admin/navigator/buildings'
     | '/_private/admin/navigator/classroom-types'
     | '/_private/admin/navigator/classrooms'
-    | '/_private/admin/navigator/corridors'
-    | '/_private/admin/navigator/lifts'
-    | '/_private/admin/navigator/stairs'
     | '/_private/admin/navigator/translations'
+    | '/_private/admin/navigator/utilities'
     | '/_private/admin/news/announcements'
     | '/_private/admin/news/system-messages'
     | '/_private/admin/timetable/import'
@@ -616,32 +590,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminNavigatorClassroomsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
-    '/_private/admin/navigator/corridors': {
-      id: '/_private/admin/navigator/corridors'
-      path: '/navigator/corridors'
-      fullPath: '/admin/navigator/corridors'
-      preLoaderRoute: typeof PrivateAdminNavigatorCorridorsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/navigator/lifts': {
-      id: '/_private/admin/navigator/lifts'
-      path: '/navigator/lifts'
-      fullPath: '/admin/navigator/lifts'
-      preLoaderRoute: typeof PrivateAdminNavigatorLiftsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/admin/navigator/stairs': {
-      id: '/_private/admin/navigator/stairs'
-      path: '/navigator/stairs'
-      fullPath: '/admin/navigator/stairs'
-      preLoaderRoute: typeof PrivateAdminNavigatorStairsRouteImport
-      parentRoute: typeof PrivateAdminRouteRoute
-    }
     '/_private/admin/navigator/translations': {
       id: '/_private/admin/navigator/translations'
       path: '/navigator/translations'
       fullPath: '/admin/navigator/translations'
       preLoaderRoute: typeof PrivateAdminNavigatorTranslationsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/utilities': {
+      id: '/_private/admin/navigator/utilities'
+      path: '/navigator/utilities'
+      fullPath: '/admin/navigator/utilities'
+      preLoaderRoute: typeof PrivateAdminNavigatorUtilitiesRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/news/announcements': {
@@ -707,10 +667,8 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminNavigatorBuildingsRoute: typeof PrivateAdminNavigatorBuildingsRoute
   PrivateAdminNavigatorClassroomTypesRoute: typeof PrivateAdminNavigatorClassroomTypesRoute
   PrivateAdminNavigatorClassroomsRoute: typeof PrivateAdminNavigatorClassroomsRoute
-  PrivateAdminNavigatorCorridorsRoute: typeof PrivateAdminNavigatorCorridorsRoute
-  PrivateAdminNavigatorLiftsRoute: typeof PrivateAdminNavigatorLiftsRoute
-  PrivateAdminNavigatorStairsRoute: typeof PrivateAdminNavigatorStairsRoute
   PrivateAdminNavigatorTranslationsRoute: typeof PrivateAdminNavigatorTranslationsRoute
+  PrivateAdminNavigatorUtilitiesRoute: typeof PrivateAdminNavigatorUtilitiesRoute
   PrivateAdminNewsAnnouncementsRoute: typeof PrivateAdminNewsAnnouncementsRoute
   PrivateAdminNewsSystemMessagesRoute: typeof PrivateAdminNewsSystemMessagesRoute
   PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
@@ -734,11 +692,9 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminNavigatorClassroomTypesRoute:
     PrivateAdminNavigatorClassroomTypesRoute,
   PrivateAdminNavigatorClassroomsRoute: PrivateAdminNavigatorClassroomsRoute,
-  PrivateAdminNavigatorCorridorsRoute: PrivateAdminNavigatorCorridorsRoute,
-  PrivateAdminNavigatorLiftsRoute: PrivateAdminNavigatorLiftsRoute,
-  PrivateAdminNavigatorStairsRoute: PrivateAdminNavigatorStairsRoute,
   PrivateAdminNavigatorTranslationsRoute:
     PrivateAdminNavigatorTranslationsRoute,
+  PrivateAdminNavigatorUtilitiesRoute: PrivateAdminNavigatorUtilitiesRoute,
   PrivateAdminNewsAnnouncementsRoute: PrivateAdminNewsAnnouncementsRoute,
   PrivateAdminNewsSystemMessagesRoute: PrivateAdminNewsSystemMessagesRoute,
   PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,

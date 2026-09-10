@@ -1,15 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
-import {
-  Building2,
-  Languages,
-  MoveVertical,
-  Palette,
-  School,
-  TrendingUp,
-  Waypoints,
-} from 'lucide-react';
+import { Building2, Languages, Palette, School, Waypoints } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TransferActions } from '@/components/admin/navigator/transfer-actions';
 import { StatCard } from '@/components/admin/stat-card';
@@ -45,18 +37,8 @@ const quickLinks = [
   },
   {
     Icon: Waypoints,
-    labelKey: 'navigator.overview.manageCorridors',
-    to: '/admin/navigator/corridors',
-  },
-  {
-    Icon: MoveVertical,
-    labelKey: 'navigator.overview.manageLifts',
-    to: '/admin/navigator/lifts',
-  },
-  {
-    Icon: TrendingUp,
-    labelKey: 'navigator.overview.manageStairs',
-    to: '/admin/navigator/stairs',
+    labelKey: 'navigator.overview.manageUtilities',
+    to: '/admin/navigator/utilities',
   },
   {
     Icon: Languages,
@@ -112,18 +94,8 @@ function NavigatorOverview() {
                 />
                 <StatCard
                   icon={<Waypoints className="text-primary" />}
-                  label={t('navigator.overview.corridors')}
-                  value={graph.corridors.length}
-                />
-                <StatCard
-                  icon={<MoveVertical className="text-primary" />}
-                  label={t('navigator.overview.lifts')}
-                  value={graph.lifts.length}
-                />
-                <StatCard
-                  icon={<TrendingUp className="text-primary" />}
-                  label={t('navigator.overview.stairs')}
-                  value={graph.stairs.length}
+                  label={t('navigator.overview.utilities')}
+                  value={graph.utilities.length}
                 />
               </div>
 

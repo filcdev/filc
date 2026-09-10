@@ -1,5 +1,5 @@
 {
-  "id": "e4b7163d-142b-4a53-b826-1737a0c19316",
+  "id": "4ff29a22-56bb-4d19-861a-111ec21349a7",
   "prevId": "1c500486-ed0d-4e9a-958d-5e8bebd96d9b",
   "version": "7",
   "dialect": "postgresql",
@@ -1109,366 +1109,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.navigator_corridor": {
-      "name": "navigator_corridor",
-      "schema": "",
-      "columns": {
-        "barrier_free": {
-          "name": "barrier_free",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "building_id": {
-          "name": "building_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "is_outdoor": {
-          "name": "is_outdoor",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "storey": {
-          "name": "storey",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "width": {
-          "name": "width",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "x1": {
-          "name": "x1",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "x2": {
-          "name": "x2",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "y1": {
-          "name": "y1",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "y2": {
-          "name": "y2",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "navigator_corridor_name_building_id_uidx": {
-          "name": "navigator_corridor_name_building_id_uidx",
-          "columns": [
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "building_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "navigator_corridor_building_id_navigator_building_id_fk": {
-          "name": "navigator_corridor_building_id_navigator_building_id_fk",
-          "tableFrom": "navigator_corridor",
-          "tableTo": "navigator_building",
-          "columnsFrom": [
-            "building_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.navigator_lift": {
-      "name": "navigator_lift",
-      "schema": "",
-      "columns": {
-        "building_id": {
-          "name": "building_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "max_storey": {
-          "name": "max_storey",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "min_storey": {
-          "name": "min_storey",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "x": {
-          "name": "x",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "y": {
-          "name": "y",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "navigator_lift_name_building_id_uidx": {
-          "name": "navigator_lift_name_building_id_uidx",
-          "columns": [
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "building_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "navigator_lift_building_id_navigator_building_id_fk": {
-          "name": "navigator_lift_building_id_navigator_building_id_fk",
-          "tableFrom": "navigator_lift",
-          "tableTo": "navigator_building",
-          "columnsFrom": [
-            "building_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "navigator_lift_storey_check": {
-          "name": "navigator_lift_storey_check",
-          "value": "min_storey <= max_storey"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.navigator_stair": {
-      "name": "navigator_stair",
-      "schema": "",
-      "columns": {
-        "building_id": {
-          "name": "building_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "max_storey": {
-          "name": "max_storey",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "min_storey": {
-          "name": "min_storey",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rotation": {
-          "name": "rotation",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "x": {
-          "name": "x",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "y": {
-          "name": "y",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "navigator_stair_name_building_id_uidx": {
-          "name": "navigator_stair_name_building_id_uidx",
-          "columns": [
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "building_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "navigator_stair_building_id_navigator_building_id_fk": {
-          "name": "navigator_stair_building_id_navigator_building_id_fk",
-          "tableFrom": "navigator_stair",
-          "tableTo": "navigator_building",
-          "columnsFrom": [
-            "building_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "navigator_stair_storey_check": {
-          "name": "navigator_stair_storey_check",
-          "value": "min_storey <= max_storey"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.navigator_translation": {
       "name": "navigator_translation",
       "schema": "",
@@ -1520,6 +1160,198 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.navigator_utility": {
+      "name": "navigator_utility",
+      "schema": "",
+      "columns": {
+        "barrier_free": {
+          "name": "barrier_free",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "building_id": {
+          "name": "building_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "is_outdoor": {
+          "name": "is_outdoor",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_storey": {
+          "name": "max_storey",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_storey": {
+          "name": "min_storey",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rotation": {
+          "name": "rotation",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storey": {
+          "name": "storey",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "width": {
+          "name": "width",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "x": {
+          "name": "x",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "x1": {
+          "name": "x1",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "x2": {
+          "name": "x2",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "y": {
+          "name": "y",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "y1": {
+          "name": "y1",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "y2": {
+          "name": "y2",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "navigator_utility_name_building_id_kind_uidx": {
+          "name": "navigator_utility_name_building_id_kind_uidx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "building_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "navigator_utility_building_id_idx": {
+          "name": "navigator_utility_building_id_idx",
+          "columns": [
+            {
+              "expression": "building_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "navigator_utility_building_id_navigator_building_id_fk": {
+          "name": "navigator_utility_building_id_navigator_building_id_fk",
+          "tableFrom": "navigator_utility",
+          "tableTo": "navigator_building",
+          "columnsFrom": [
+            "building_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "navigator_utility_storey_check": {
+          "name": "navigator_utility_storey_check",
+          "value": "min_storey IS NULL OR max_storey IS NULL OR min_storey <= max_storey"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.building": {

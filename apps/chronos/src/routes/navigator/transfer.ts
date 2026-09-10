@@ -7,10 +7,8 @@ import {
   navigatorBuilding,
   navigatorClassroom,
   navigatorClassroomType,
-  navigatorCorridor,
-  navigatorLift,
-  navigatorStair,
   navigatorTranslation,
+  navigatorUtility,
 } from '#database/schema/navigator';
 import { authRouter } from '#middleware/auth';
 import { badRequest, ok } from '#utils/http';
@@ -26,7 +24,7 @@ export const exportNavigatorRoute = navigatorFactory.createHandlers(
   describeRoute({
     ...filcExt('Navigator', '@unit NavigatorTransfer', true),
     description:
-      'Export all navigator data (buildings, classroom types, classrooms, corridors, lifts, stairs and translations) as a JSON file.',
+      'Export all navigator data (buildings, classroom types, classrooms, utilities and translations) as a JSON file.',
     responses: {
       200: {
         content: {
@@ -41,48 +39,40 @@ export const exportNavigatorRoute = navigatorFactory.createHandlers(
   }),
   ...authRouter(permissions.navigatorManage),
   async (c) => {
-    const [
-      buildings,
-      classroomTypes,
-      classrooms,
-      corridors,
-      lifts,
-      stairs,
-      translations,
-    ] = await Promise.all([
-      db.select().from(navigatorBuilding).orderBy(asc(navigatorBuilding.name)),
-      db
-        .select()
-        .from(navigatorClassroomType)
-        .orderBy(asc(navigatorClassroomType.name)),
-      db
-        .select()
-        .from(navigatorClassroom)
-        .orderBy(
-          asc(navigatorClassroom.name),
-          asc(navigatorClassroom.buildingId)
-        ),
-      db.select().from(navigatorCorridor).orderBy(asc(navigatorCorridor.name)),
-      db.select().from(navigatorLift).orderBy(asc(navigatorLift.name)),
-      db.select().from(navigatorStair).orderBy(asc(navigatorStair.name)),
-      db
-        .select()
-        .from(navigatorTranslation)
-        .orderBy(
-          asc(navigatorTranslation.langKey),
-          asc(navigatorTranslation.textKey)
-        ),
-    ]);
+    const [buildings, classroomTypes, classrooms, utilities, translations] =
+      await Promise.all([
+        db
+          .select()
+          .from(navigatorBuilding)
+          .orderBy(asc(navigatorBuilding.name)),
+        db
+          .select()
+          .from(navigatorClassroomType)
+          .orderBy(asc(navigatorClassroomType.name)),
+        db
+          .select()
+          .from(navigatorClassroom)
+          .orderBy(
+            asc(navigatorClassroom.name),
+            asc(navigatorClassroom.buildingId)
+          ),
+        db.select().from(navigatorUtility).orderBy(asc(navigatorUtility.name)),
+        db
+          .select()
+          .from(navigatorTranslation)
+          .orderBy(
+            asc(navigatorTranslation.langKey),
+            asc(navigatorTranslation.textKey)
+          ),
+      ]);
 
     const payload = navigatorTransferSchema.parse({
       buildings,
       classrooms,
       classroomTypes,
-      corridors,
       exportedAt: new Date().toISOString(),
-      lifts,
-      stairs,
       translations,
+      utilities,
       version: 1,
     });
 
@@ -123,9 +113,7 @@ export const importNavigatorRoute = navigatorFactory.createHandlers(
       await db.transaction(async (tx) => {
         // Delete children before parents so FK constraints hold while wiping.
         await tx.delete(navigatorClassroom);
-        await tx.delete(navigatorCorridor);
-        await tx.delete(navigatorLift);
-        await tx.delete(navigatorStair);
+        await tx.delete(navigatorUtility);
         await tx.delete(navigatorClassroomType);
         await tx.delete(navigatorBuilding);
         await tx.delete(navigatorTranslation);
@@ -143,14 +131,8 @@ export const importNavigatorRoute = navigatorFactory.createHandlers(
         if (payload.classrooms.length > 0) {
           await tx.insert(navigatorClassroom).values(payload.classrooms);
         }
-        if (payload.corridors.length > 0) {
-          await tx.insert(navigatorCorridor).values(payload.corridors);
-        }
-        if (payload.lifts.length > 0) {
-          await tx.insert(navigatorLift).values(payload.lifts);
-        }
-        if (payload.stairs.length > 0) {
-          await tx.insert(navigatorStair).values(payload.stairs);
+        if (payload.utilities.length > 0) {
+          await tx.insert(navigatorUtility).values(payload.utilities);
         }
         if (payload.translations.length > 0) {
           await tx.insert(navigatorTranslation).values(payload.translations);
