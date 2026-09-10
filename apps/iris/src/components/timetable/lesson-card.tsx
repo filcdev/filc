@@ -14,6 +14,7 @@ import {
   toHHMM,
 } from './helpers';
 import type { LessonItem } from './types';
+import { WeekBadge } from './week-badge';
 
 /**
  * Build the "group" line on a lesson card. Split lessons show their split group
@@ -87,6 +88,8 @@ export function LessonCard({
               emphasis === 'dim' && 'opacity-70 saturate-90'
             )}
           >
+            <WeekBadge className="absolute top-1 left-1" lesson={lesson} />
+
             {onColorChange && subject !== '—' && (
               <div className="absolute top-0.5 right-0.5 z-10">
                 <ColorPicker

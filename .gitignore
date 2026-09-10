@@ -48,4 +48,4 @@ yarn-error.log*
 thoughts
 .opencode
 .codegraph
-graphify-out
+graphify-out/

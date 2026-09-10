@@ -65,6 +65,7 @@ type BaseContext = {
   dayByMask: Map<string, string>;
   dayById: Map<string, AscDayDef>;
   weekNameById: Map<string, string>;
+  weekNameByMask: Map<string, string>;
   termNameById: Map<string, string>;
   lessonById: Map<string, AscLesson>;
 };
@@ -95,6 +96,10 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
   }));
   const weekNameById = new Map(
     (tt.weeksdefs.weeksdef ?? []).map((w: AscWeekDef) => [w._id, w._name])
+  );
+
+  const weekNameByMask = new Map(
+    (tt.weeksdefs.weeksdef ?? []).map((w: AscWeekDef) => [w._weeks, w._name])
   );
 
   const terms: TermInput[] = (tt.termsdefs.termsdef ?? []).map((t) => ({
@@ -175,6 +180,7 @@ const normalizeBase = (tt: AscTimetable): BaseContext => {
     termNameById,
     terms,
     weekNameById,
+    weekNameByMask,
     weeks,
   };
 };
@@ -206,9 +212,12 @@ const cardToLesson = (
     });
     return null;
   }
-  const weeksName = lesson._weeksdefid
-    ? (ctx.weekNameById.get(lesson._weeksdefid) ?? '')
-    : '';
+  const weeksName =
+    ctx.weekNameByMask.get(card._weeks) ??
+    (lesson._weeksdefid
+      ? (ctx.weekNameById.get(lesson._weeksdefid) ?? '')
+      : '');
+
   if (!weeksName) {
     logger?.debug('Skipped aSc card: no week definition', {
       lessonId: card._lessonid,
@@ -227,7 +236,7 @@ const cardToLesson = (
     cohortIds: splitIds(lesson._classids),
     dayId,
     groupIds: splitIds(lesson._groupids),
-    id: `${lesson._id}:${card._period}:${card._days}`,
+    id: `${lesson._id}:${card._period}:${card._days}:${card._weeks}`,
     periodId: card._period,
     periodsPerWeek: periodsPerWeek > 0 ? Math.round(periodsPerWeek) : 1,
     subjectId: lesson._subjectid,
