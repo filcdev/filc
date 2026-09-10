@@ -187,11 +187,11 @@ const navigatorInt16 = (label: string) =>
 
 const navigatorUtilityCommonFields = {
   buildingId: z.uuid('A building is required'),
-  name: z.string().min(1, 'Name is required').max(254),
 };
 
 const navigatorCorridorUtilityFields = {
   ...navigatorUtilityCommonFields,
+  name: z.string().min(1, 'Name is required').max(254),
   storey: navigatorInt16('Storey'),
   width: requiredNumber(
     z.coerce
@@ -209,6 +209,7 @@ const navigatorLiftUtilityFields = {
   ...navigatorUtilityCommonFields,
   maxStorey: navigatorInt16('Max storey'),
   minStorey: navigatorInt16('Min storey'),
+  name: z.string().min(1, 'Name is required').max(190),
   x: navigatorInt16('X'),
   y: navigatorInt16('Y'),
 };

@@ -35,11 +35,50 @@ const utilityBaseTransferSchema = createSelectSchema(navigatorUtility).omit({
   updatedAt: true,
 });
 
-export const utilityTransferSchema = z.discriminatedUnion('kind', [
-  utilityBaseTransferSchema.extend({ kind: z.literal('corridor') }),
-  utilityBaseTransferSchema.extend({ kind: z.literal('lift') }),
-  utilityBaseTransferSchema.extend({ kind: z.literal('stair') }),
-]);
+const storeyRangeRefine = {
+  message: 'minStorey must be less than or equal to maxStorey',
+  path: ['minStorey'] as string[],
+};
+
+const corridorUtilityTransferSchema = utilityBaseTransferSchema.extend({
+  barrierFree: z.boolean(),
+  isOutdoor: z.boolean(),
+  kind: z.literal('corridor'),
+  storey: z.number(),
+  width: z.number(),
+  x1: z.number(),
+  x2: z.number(),
+  y1: z.number(),
+  y2: z.number(),
+});
+
+const liftUtilityTransferSchema = utilityBaseTransferSchema.extend({
+  kind: z.literal('lift'),
+  maxStorey: z.number(),
+  minStorey: z.number(),
+  x: z.number(),
+  y: z.number(),
+});
+
+const stairUtilityTransferSchema = utilityBaseTransferSchema.extend({
+  kind: z.literal('stair'),
+  maxStorey: z.number(),
+  minStorey: z.number(),
+  rotation: z.number(),
+  x: z.number(),
+  y: z.number(),
+});
+
+export const utilityTransferSchema = z
+  .discriminatedUnion('kind', [
+    corridorUtilityTransferSchema,
+    liftUtilityTransferSchema,
+    stairUtilityTransferSchema,
+  ])
+  .refine(
+    (data) => data.kind === 'corridor' || data.minStorey <= data.maxStorey,
+    storeyRangeRefine
+  );
 
 export const translationTransferSchema = translationSelectSchema.omit({
   createdAt: true,
