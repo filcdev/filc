@@ -19,7 +19,6 @@ import {
   movedLesson,
   movedLessonLessonMTM,
   period,
-  subject,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
 import { created, ok } from '#utils/http';
@@ -28,6 +27,11 @@ import {
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
+import {
+  type EnrichedLesson,
+  enrichedLessonSchema,
+  enrichLessons,
+} from '#utils/timetable/enrich-lessons';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -173,8 +177,7 @@ const getAllResponseSchema = z.object({
     z.object({
       classroom: createSelectSchema(classroom).nullable(),
       dayDefinition: createSelectSchema(dayDefinition).nullable(),
-      lessonNames: z.array(z.string()),
-      lessons: z.array(z.string()),
+      lessons: z.array(enrichedLessonSchema),
       movedLesson: createSelectSchema(movedLesson),
       period: createSelectSchema(period).nullable(),
     })
@@ -182,8 +185,35 @@ const getAllResponseSchema = z.object({
   success: z.boolean(),
 });
 
+// Row shape returned by each moved-lesson query before lesson enrichment.
+type MovedLessonRow = {
+  classroom: typeof classroom.$inferSelect | null;
+  dayDefinition: typeof dayDefinition.$inferSelect | null;
+  lessons: string[];
+  movedLesson: typeof movedLesson.$inferSelect;
+  period: typeof period.$inferSelect | null;
+};
+
+// Enrich the linked lesson ids of a batch of moved-lesson rows, preserving the
+// target joins and the per-moved-lesson lesson order.
+async function attachEnrichedLessons(rows: MovedLessonRow[]) {
+  const allLessonIds = Array.from(new Set(rows.flatMap((r) => r.lessons)));
+  const enriched = await enrichLessons(allLessonIds);
+  const lessonMap = new Map(enriched.map((l) => [l.id, l]));
+
+  return rows.map((r) => ({
+    classroom: r.classroom,
+    dayDefinition: r.dayDefinition,
+    lessons: r.lessons
+      .map((id) => lessonMap.get(id))
+      .filter((l): l is EnrichedLesson => l !== undefined),
+    movedLesson: r.movedLesson,
+    period: r.period,
+  }));
+}
+
 const movedLessonWithRelationsType =
-  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<String>) @field(.lessonNames, List<String>)';
+  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<EnrichedLesson>)';
 
 export const getAllMovedLessons = timetableFactory.createHandlers(
   describeRoute({
@@ -206,10 +236,6 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -225,11 +251,9 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         movedLessonLessonMTM,
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
-      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
@@ -272,10 +296,6 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -292,13 +312,12 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .where(
         and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
@@ -338,10 +357,6 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -358,12 +373,11 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
       .where(eq(lessonCohortMTM.cohortId, cohortId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
@@ -406,10 +420,6 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -426,7 +436,6 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
       .where(
         and(
@@ -436,7 +445,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 

@@ -85,7 +85,7 @@ const initialState = (
   item?: MovedLessonItem | null
 ): InferRequestType<typeof api.timetable.movedLessons.$post>['json'] => ({
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
-  lessonIds: item?.lessons ?? [],
+  lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
   room: item?.movedLesson.room || undefined,
   startingDay: item?.movedLesson.startingDay || undefined,
   startingPeriod: item?.movedLesson.startingPeriod || undefined,
@@ -186,7 +186,11 @@ export function MovedLessonDialog({
     let cohortId = '';
 
     if (item && item.lessons.length > 0) {
-      cohortId = getDefaultCohortId(item.lessons, cohortLessonsData, cohorts);
+      cohortId = getDefaultCohortId(
+        item.lessons.map((lesson) => lesson.id),
+        cohortLessonsData,
+        cohorts
+      );
     }
 
     setSelectedCohort(cohortId);

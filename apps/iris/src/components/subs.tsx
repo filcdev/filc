@@ -117,66 +117,119 @@ function LessonRow({
   );
 }
 
+type MovedTarget = {
+  day: MovedLessonItem['dayDefinition'];
+  period: MovedLessonItem['period'];
+  classroom: MovedLessonItem['classroom'];
+};
+
+function formatPeriodLabel(p: {
+  startTime: string;
+  endTime: string;
+  period: number;
+}) {
+  return `P${p.period} ${p.startTime.slice(0, 5)}\u2013${p.endTime.slice(0, 5)}`;
+}
+
 function MovedLessonRow({
-  lessonNameById,
-  movedLesson,
+  lesson,
+  movedTarget,
 }: {
-  lessonNameById: Map<string, string>;
-  movedLesson: MovedLessonItem;
+  lesson: Lesson;
+  movedTarget: MovedTarget;
 }) {
   const { t } = useTranslation();
   const notAvailable = t('substitution.notAvailable');
-  const movedLessonNames = movedLesson.lessons.map(
-    (lessonId, index) =>
-      movedLesson.lessonNames?.[index] ??
-      lessonNameById.get(lessonId) ??
-      lessonId
-  );
+
+  const originalPeriod = lesson.period;
+  const targetPeriod = movedTarget?.period ?? null;
+  const originalRooms = lesson.classrooms ?? [];
+  const targetRoom = movedTarget?.classroom ?? null;
+
+  const renderTime = () => {
+    if (originalPeriod) {
+      if (targetPeriod && targetPeriod.id !== originalPeriod.id) {
+        return (
+          <span className="font-medium">
+            {formatPeriodLabel(originalPeriod)} →{' '}
+            {formatPeriodLabel(targetPeriod)}
+          </span>
+        );
+      }
+      return (
+        <span className="font-medium">{formatPeriodLabel(originalPeriod)}</span>
+      );
+    }
+    if (targetPeriod) {
+      return (
+        <span className="font-medium">{formatPeriodLabel(targetPeriod)}</span>
+      );
+    }
+    return <span className="text-muted-foreground">{notAvailable}</span>;
+  };
+
+  const renderRoom = () => {
+    if (originalRooms.length === 0 && !targetRoom) {
+      return <span className="text-muted-foreground">—</span>;
+    }
+
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        {originalRooms.length > 0 && (
+          <span className="text-sm">
+            {originalRooms.map((c) => c.short || c.name).join(', ')}
+          </span>
+        )}
+        {originalRooms.length > 0 && targetRoom && (
+          <span className="text-muted-foreground">→</span>
+        )}
+        {targetRoom && (
+          <Badge className="text-xs" variant="outline">
+            {targetRoom.short || targetRoom.name}
+          </Badge>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
       <TableCell className="font-medium">
-        {movedLesson.lessons && movedLesson.lessons.length > 0 ? (
-          <span>{movedLessonNames.join(', ')}</span>
-        ) : (
-          <span className="text-muted-foreground">{notAvailable}</span>
-        )}
-      </TableCell>
-      <TableCell>
-        <Badge className="text-xs" variant="outline">
-          {t('movedLesson.moved')}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        {movedLesson.period?.startTime && movedLesson.period?.endTime ? (
-          <span className="font-medium">
-            {movedLesson.period.startTime.slice(0, 5)} –{' '}
-            {movedLesson.period.endTime.slice(0, 5)}
+        <div className="flex items-center gap-1.5">
+          <span>
+            {lesson.subject?.short ?? lesson.subject?.name ?? notAvailable}
           </span>
+          <Badge className="text-xs" variant="secondary">
+            {t('movedLesson.moved')}
+          </Badge>
+        </div>
+      </TableCell>
+      <TableCell>
+        {lesson.cohorts && lesson.cohorts.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {lesson.cohorts.map((cohort) => (
+              <Badge className="text-xs" key={cohort} variant="outline">
+                {cohort}
+              </Badge>
+            ))}
+          </div>
         ) : (
           <span className="text-muted-foreground">{notAvailable}</span>
         )}
       </TableCell>
+      <TableCell>{renderTime()}</TableCell>
+      <TableCell>{renderRoom()}</TableCell>
       <TableCell>
-        {movedLesson.classroom ? (
-          <Badge className="text-xs" variant="outline">
-            {movedLesson.classroom.short || movedLesson.classroom.name}
-          </Badge>
+        {lesson.teachers && lesson.teachers.length > 0 ? (
+          <div className="text-sm">
+            {lesson.teachers.map((teacher) => teacher.name).join(', ')}
+          </div>
         ) : (
           <span className="text-muted-foreground">{notAvailable}</span>
         )}
       </TableCell>
       <TableCell>
         <span className="text-muted-foreground">—</span>
-      </TableCell>
-      <TableCell>
-        {movedLesson.dayDefinition ? (
-          <span className="font-medium text-blue-700 dark:text-blue-400">
-            {movedLesson.dayDefinition.name} ({movedLesson.dayDefinition.short})
-          </span>
-        ) : (
-          <span className="text-muted-foreground">{notAvailable}</span>
-        )}
       </TableCell>
       <TableCell>
         <span className="text-muted-foreground">—</span>
@@ -213,23 +266,29 @@ function LessonReturn(data: Subs[], cohortFilter?: string) {
     );
 }
 
-function MovedLessonReturn(
-  data: MovedLessonItem[],
-  lessonNameById: Map<string, string>
-) {
+function MovedLessonReturn(data: MovedLessonItem[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return data
     .filter((ml) => new Date(ml.movedLesson.date) >= today)
-    .map((ml) => (
-      <TableRow
-        className="border-accent/10 transition-colors hover:bg-accent/5"
-        key={ml.movedLesson.id}
-      >
-        <MovedLessonRow lessonNameById={lessonNameById} movedLesson={ml} />
-      </TableRow>
-    ));
+    .flatMap((ml) =>
+      ml.lessons.map((lesson) => (
+        <TableRow
+          className="border-accent/10 transition-colors hover:bg-accent/5"
+          key={`${ml.movedLesson.id}-${lesson.id}`}
+        >
+          <MovedLessonRow
+            lesson={lesson}
+            movedTarget={{
+              classroom: ml.classroom,
+              day: ml.dayDefinition,
+              period: ml.period,
+            }}
+          />
+        </TableRow>
+      ))
+    );
 }
 
 export function SubsV({
@@ -239,20 +298,6 @@ export function SubsV({
   date: dateProp,
 }: TimetableProps) {
   const { i18n, t } = useTranslation();
-
-  const lessonNameById = new Map<string, string>();
-  for (const sub of data) {
-    for (const lesson of sub.lessons) {
-      if (!lesson) {
-        continue;
-      }
-
-      lessonNameById.set(
-        lesson.id,
-        lesson.subject?.name ?? lesson.subject?.short ?? lesson.id
-      );
-    }
-  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -271,7 +316,7 @@ export function SubsV({
   }
 
   const lessonRows = LessonReturn(data, cohortFilter);
-  const movedRows = MovedLessonReturn(movedLessons, lessonNameById);
+  const movedRows = MovedLessonReturn(movedLessons);
 
   return (
     <Card className="w-full border-accent/50 bg-linear-to-br from-background to-accent/5 shadow-sm">

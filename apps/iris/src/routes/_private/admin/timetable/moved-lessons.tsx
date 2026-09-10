@@ -137,15 +137,22 @@ function extractReferenceData(
     }
   }
 
-  // Also include lessons from moved lessons
+  // Also include lessons from moved lessons (already enriched).
   for (const ml of movedLessons) {
-    for (const lessonId of ml.lessons) {
-      // Find lesson from subs or cohortLessons
-      const foundLesson = Array.from(lessonMap.values()).find(
-        (l) => l.id === lessonId
-      );
-      if (foundLesson && !lessonMap.has(lessonId)) {
-        lessonMap.set(lessonId, foundLesson);
+    for (const lesson of ml.lessons) {
+      if (!lessonMap.has(lesson.id)) {
+        lessonMap.set(lesson.id, lesson);
+      }
+      if (lesson.period) {
+        periodMap.set(lesson.period.id, lesson.period);
+      }
+      if (lesson.day) {
+        dayMap.set(lesson.day.id, {
+          days: [],
+          id: lesson.day.id,
+          name: lesson.day.name,
+          short: lesson.day.short,
+        });
       }
     }
   }
