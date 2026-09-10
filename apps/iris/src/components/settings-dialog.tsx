@@ -1,9 +1,9 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ApiKeysCard } from '@/components/api-keys-card';
 import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
 import type { CohortItem } from '@/components/timetable/types';
 import { Alert, AlertTitle } from '@/components/ui/alert';
@@ -97,7 +97,6 @@ type SettingsDialogProps = {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: settings page with many option groups
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const navigate = useNavigate();
   const { i18n, t } = useTranslation();
   const [, setCookie] = useCookies(['filc.language']);
   const { setTheme: applyTheme } = useTheme();
@@ -240,7 +239,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogHeader>
           <DialogTitle>{t('preferences.title')}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {isLoading ? (
             <div className="space-y-4">
               {[0, 1, 2].map((i) => (
@@ -370,24 +369,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('apiKeys.title')}</CardTitle>
-                  <CardDescription>{t('apiKeys.description')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    className="w-full"
-                    onClick={() => {
-                      onOpenChange(false);
-                      navigate({ to: '/api-keys' });
-                    }}
-                    variant="outline"
-                  >
-                    {t('apiKeys.title')}
-                  </Button>
-                </CardContent>
-              </Card>
+              <ApiKeysCard />
 
               <Button
                 className="w-full"

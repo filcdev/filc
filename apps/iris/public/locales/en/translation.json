@@ -719,7 +719,6 @@
     "title": "API keys",
     "description": "Manage your personal API keys.",
     "empty": "No API keys yet. Create one to authenticate against the API.",
-    "menuItem": "API keys",
     "create": "Create API key",
     "createTitle": "Create API key",
     "nameLabel": "Name",

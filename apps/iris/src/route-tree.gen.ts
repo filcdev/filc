@@ -22,7 +22,6 @@ import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
 import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
-import { Route as PrivateApiKeysIndexRouteImport } from './routes/_private/api-keys/index'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
 import { Route as PrivateAdminDevNotificationsRouteImport } from './routes/_private/admin/dev/notifications'
 import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private/admin/doorlock/index'
@@ -99,11 +98,6 @@ const PrivateAdminUsersRoute = PrivateAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => PrivateAdminRouteRoute,
-} as any)
-const PrivateApiKeysIndexRoute = PrivateApiKeysIndexRouteImport.update({
-  id: '/api-keys/',
-  path: '/api-keys/',
-  getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateCardsIndexRoute = PrivateCardsIndexRouteImport.update({
   id: '/cards/',
@@ -195,7 +189,6 @@ export interface FileRoutesByFullPath {
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/users': typeof PrivateAdminUsersRoute
-  '/api-keys/': typeof PrivateApiKeysIndexRoute
   '/cards/': typeof PrivateCardsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
@@ -222,7 +215,6 @@ export interface FileRoutesByTo {
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/users': typeof PrivateAdminUsersRoute
-  '/api-keys': typeof PrivateApiKeysIndexRoute
   '/cards': typeof PrivateCardsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
@@ -252,7 +244,6 @@ export interface FileRoutesById {
   '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
   '/_private/admin/users': typeof PrivateAdminUsersRoute
-  '/_private/api-keys/': typeof PrivateApiKeysIndexRoute
   '/_private/cards/': typeof PrivateCardsIndexRoute
   '/_private/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/_private/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
@@ -281,7 +272,6 @@ export interface FileRouteTypes {
     | '/admin/bug-reports'
     | '/admin/roles'
     | '/admin/users'
-    | '/api-keys/'
     | '/cards/'
     | '/admin/dev/notifications'
     | '/admin/doorlock/cards'
@@ -308,7 +298,6 @@ export interface FileRouteTypes {
     | '/admin/bug-reports'
     | '/admin/roles'
     | '/admin/users'
-    | '/api-keys'
     | '/cards'
     | '/admin/dev/notifications'
     | '/admin/doorlock/cards'
@@ -337,7 +326,6 @@ export interface FileRouteTypes {
     | '/_private/admin/bug-reports'
     | '/_private/admin/roles'
     | '/_private/admin/users'
-    | '/_private/api-keys/'
     | '/_private/cards/'
     | '/_private/admin/dev/notifications'
     | '/_private/admin/doorlock/cards'
@@ -453,13 +441,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof PrivateAdminUsersRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
-    }
-    '/_private/api-keys/': {
-      id: '/_private/api-keys/'
-      path: '/api-keys'
-      fullPath: '/api-keys/'
-      preLoaderRoute: typeof PrivateApiKeysIndexRouteImport
-      parentRoute: typeof PrivateRouteRoute
     }
     '/_private/cards/': {
       id: '/_private/cards/'
@@ -599,14 +580,12 @@ const PrivateAdminRouteRouteWithChildren =
 interface PrivateRouteRouteChildren {
   PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
   PrivateSettingsRoute: typeof PrivateSettingsRoute
-  PrivateApiKeysIndexRoute: typeof PrivateApiKeysIndexRoute
   PrivateCardsIndexRoute: typeof PrivateCardsIndexRoute
 }
 
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
   PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
   PrivateSettingsRoute: PrivateSettingsRoute,
-  PrivateApiKeysIndexRoute: PrivateApiKeysIndexRoute,
   PrivateCardsIndexRoute: PrivateCardsIndexRoute,
 }
 

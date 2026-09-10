@@ -719,7 +719,6 @@
     "title": "API kulcsok",
     "description": "Személyes API kulcsaid kezelése.",
     "empty": "Még nincs API kulcs. Hozz létre egyet az API-val való hitelesítéshez.",
-    "menuItem": "API kulcsok",
     "create": "API kulcs létrehozása",
     "createTitle": "API kulcs létrehozása",
     "nameLabel": "Név",
