@@ -14,6 +14,7 @@ export const paginationSchema = z.object({
 });
 
 export const announcementQuerySchema = paginationSchema.extend({
+  includeAll: z.coerce.boolean().default(false),
   includeExpired: z.coerce.boolean().default(false),
 });
 

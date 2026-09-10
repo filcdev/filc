@@ -46,7 +46,7 @@ export function useAnnouncements() {
     queryFn: async (): Promise<AnnouncementItem[]> => {
       const res = await parseResponse(
         api.news.announcements.$get({
-          query: { includeExpired: 'true' },
+          query: { includeAll: 'true', includeExpired: 'true' },
         })
       );
       if (!res.success) {

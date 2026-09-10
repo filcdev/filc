@@ -50,7 +50,7 @@ export const listAnnouncements = newsFactory.createHandlers(
       true
     ),
     description:
-      'List active announcements within date range, filtered by user cohort',
+      'List active announcements within date range, cohort-filtered by default; admins may request all with includeAll=true',
     responses: {
       200: {
         content: {
@@ -66,7 +66,7 @@ export const listAnnouncements = newsFactory.createHandlers(
   ...authRouter(),
   zValidator('query', announcementQuerySchema),
   async (c) => {
-    const { limit, offset, includeExpired } = c.req.valid('query');
+    const { limit, offset, includeExpired, includeAll } = c.req.valid('query');
     const currentUser = c.var.user;
     const userCohortId = currentUser.cohortId;
 
@@ -75,6 +75,7 @@ export const listAnnouncements = newsFactory.createHandlers(
       currentUser.id,
       permissions.announcementsCreate
     );
+    const bypassCohortFilter = includeAll && isAdmin;
 
     const now = new Date();
     const leadWindow = new Date(
@@ -88,15 +89,21 @@ export const listAnnouncements = newsFactory.createHandlers(
     }
 
     // Cohort filtering: show items that are global (no rows in M2M)
-    // or targeted to the user's cohort.
-    // Admins bypass this filter so they can manage all announcements.
-    if (userCohortId && !isAdmin) {
-      conditions.push(
-        sql`(
-          NOT EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id})
-          OR EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id} AND cohort_id = ${userCohortId})
-        )`
-      );
+    // or targeted to the user's cohort. Users without a cohort only see
+    // global announcements. Admins bypass this filter via includeAll=true.
+    if (!bypassCohortFilter) {
+      if (userCohortId) {
+        conditions.push(
+          sql`(
+            NOT EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id})
+            OR EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id} AND cohort_id = ${userCohortId})
+          )`
+        );
+      } else {
+        conditions.push(
+          sql`NOT EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id})`
+        );
+      }
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
