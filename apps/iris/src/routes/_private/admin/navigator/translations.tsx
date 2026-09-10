@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useConfirmDialog } from '@/components/util/confirm-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -24,7 +25,6 @@ import {
   useDeleteTranslation,
   useTranslations,
 } from '@/hooks/navigator';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute('/_private/admin/navigator/translations')({
   component: () => (
@@ -49,6 +49,7 @@ function getAriaSortState(
 
 function TranslationsPage() {
   const { t } = useTranslation();
+  const { confirm, dialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<TranslationSortColumn | null>(
     null
@@ -98,11 +99,12 @@ function TranslationsPage() {
   }, [translations, search, sortColumn, sortDirection]);
 
   const handleDelete = async (translation: NavigatorTranslation) => {
-    const confirmed = confirmDestructiveAction(
-      t('navigator.translations.deleteConfirm', {
+    const confirmed = await confirm({
+      destructive: true,
+      title: t('navigator.translations.deleteConfirm', {
         key: `${translation.langKey}:${translation.textKey}`,
-      })
-    );
+      }),
+    });
     if (!confirmed) {
       return;
     }
@@ -307,6 +309,7 @@ function TranslationsPage() {
         open={dialogOpen}
         record={selectedTranslation}
       />
+      {dialog}
     </div>
   );
 }

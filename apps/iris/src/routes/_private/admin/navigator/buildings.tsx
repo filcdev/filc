@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useConfirmDialog } from '@/components/util/confirm-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -26,7 +27,6 @@ import {
   useClassrooms,
   useDeleteBuilding,
 } from '@/hooks/navigator';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute('/_private/admin/navigator/buildings')({
   component: () => (
@@ -51,6 +51,7 @@ function getAriaSortState(
 
 function BuildingsPage() {
   const { t } = useTranslation();
+  const { confirm, dialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<BuildingSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -109,9 +110,10 @@ function BuildingsPage() {
   }, [buildings, search, sortColumn, sortDirection, roomCountByBuilding]);
 
   const handleDelete = async (building: NavigatorBuilding) => {
-    const confirmed = confirmDestructiveAction(
-      t('navigator.buildings.deleteConfirm', { name: building.name })
-    );
+    const confirmed = await confirm({
+      destructive: true,
+      title: t('navigator.buildings.deleteConfirm', { name: building.name }),
+    });
     if (!confirmed) {
       return;
     }
@@ -357,6 +359,7 @@ function BuildingsPage() {
         open={dialogOpen}
         record={selectedBuilding}
       />
+      {dialog}
     </div>
   );
 }

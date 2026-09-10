@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useConfirmDialog } from '@/components/util/confirm-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -25,7 +26,6 @@ import {
   useClassroomTypes,
   useDeleteClassroom,
 } from '@/hooks/navigator';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute('/_private/admin/navigator/classrooms')({
   component: () => (
@@ -62,6 +62,7 @@ function getAriaSortState(
 
 function ClassroomsPage() {
   const { t } = useTranslation();
+  const { confirm, dialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<ClassroomSortColumn | null>(
     null
@@ -145,9 +146,10 @@ function ClassroomsPage() {
   }, [rows, search, sortColumn, sortDirection]);
 
   const handleDelete = async (classroom: NavigatorClassroom) => {
-    const confirmed = confirmDestructiveAction(
-      t('navigator.classrooms.deleteConfirm', { name: classroom.name })
-    );
+    const confirmed = await confirm({
+      destructive: true,
+      title: t('navigator.classrooms.deleteConfirm', { name: classroom.name }),
+    });
     if (!confirmed) {
       return;
     }
@@ -421,6 +423,7 @@ function ClassroomsPage() {
         open={dialogOpen}
         record={selectedClassroom}
       />
+      {dialog}
     </div>
   );
 }

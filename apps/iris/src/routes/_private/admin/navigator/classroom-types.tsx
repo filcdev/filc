@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useConfirmDialog } from '@/components/util/confirm-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -24,7 +25,6 @@ import {
   useClassroomTypes,
   useDeleteClassroomType,
 } from '@/hooks/navigator';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute(
   '/_private/admin/navigator/classroom-types'
@@ -49,6 +49,7 @@ function getAriaSortState(
 
 function ClassroomTypesPage() {
   const { t } = useTranslation();
+  const { confirm, dialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<'name' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -86,9 +87,10 @@ function ClassroomTypesPage() {
   }, [classroomTypes, search, sortColumn, sortDirection]);
 
   const handleDelete = async (type: NavigatorClassroomType) => {
-    const confirmed = confirmDestructiveAction(
-      t('navigator.classroomTypes.deleteConfirm', { name: type.name })
-    );
+    const confirmed = await confirm({
+      destructive: true,
+      title: t('navigator.classroomTypes.deleteConfirm', { name: type.name }),
+    });
     if (!confirmed) {
       return;
     }
@@ -254,6 +256,7 @@ function ClassroomTypesPage() {
         open={dialogOpen}
         record={selectedType}
       />
+      {dialog}
     </div>
   );
 }

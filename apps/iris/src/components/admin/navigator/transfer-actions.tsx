@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { useConfirmDialog } from '@/components/util/confirm-dialog';
 import {
   exportNavigatorJson,
   type NavigatorExportPayload,
   useImportNavigator,
 } from '@/hooks/navigator';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 /**
  * Export the current navigator graph as JSON and import a JSON file to replace
@@ -18,6 +18,7 @@ import { confirmDestructiveAction } from '@/utils/confirm';
  */
 export function TransferActions() {
   const { t } = useTranslation();
+  const { confirm, dialog } = useConfirmDialog();
   const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importMutation = useImportNavigator();
@@ -49,9 +50,12 @@ export function TransferActions() {
       return;
     }
 
-    const confirmed = confirmDestructiveAction(
-      t('navigator.transfer.importConfirm')
-    );
+    const confirmed = await confirm({
+      confirmLabel: t('navigator.transfer.import'),
+      description: t('navigator.transfer.importConfirm'),
+      destructive: true,
+      title: t('navigator.transfer.import'),
+    });
     if (!confirmed) {
       return;
     }
@@ -98,6 +102,7 @@ export function TransferActions() {
         ref={fileInputRef}
         type="file"
       />
+      {dialog}
     </div>
   );
 }
