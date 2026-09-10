@@ -120,6 +120,7 @@ export const navigatorClassroomSchema = z.object({
       .number('Capacity is required')
       .int('Capacity must be a whole number')
       .min(0)
+      .max(32_767)
   ),
   description: z.string().min(1, 'Description is required').max(16_000),
   name: z.string().min(1, 'Name is required').max(254),
@@ -135,18 +136,21 @@ export const navigatorClassroomSchema = z.object({
       .number('Size X is required')
       .int('Size X must be a whole number')
       .min(0)
+      .max(32_767)
   ),
   sizeY: requiredNumber(
     z.coerce
       .number('Size Y is required')
       .int('Size Y must be a whole number')
       .min(0)
+      .max(32_767)
   ),
   sizeZ: requiredNumber(
     z.coerce
       .number('Size Z is required')
       .int('Size Z must be a whole number')
       .min(0)
+      .max(32_767)
   ),
   storey: requiredNumber(
     z.coerce

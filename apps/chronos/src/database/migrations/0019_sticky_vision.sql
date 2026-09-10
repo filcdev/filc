@@ -11,14 +11,14 @@ CREATE TABLE "navigator_building" (
 --> statement-breakpoint
 CREATE TABLE "navigator_classroom" (
 	"building_id" uuid NOT NULL,
-	"capacity" integer NOT NULL,
+	"capacity" smallint NOT NULL,
 	"description" text NOT NULL,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"rotation" smallint NOT NULL,
-	"size_x" integer NOT NULL,
-	"size_y" integer NOT NULL,
-	"size_z" integer NOT NULL,
+	"size_x" smallint NOT NULL,
+	"size_y" smallint NOT NULL,
+	"size_z" smallint NOT NULL,
 	"storey" smallint NOT NULL,
 	"type_id" uuid NOT NULL,
 	"x" smallint NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE "navigator_corridor" (
 	"is_outdoor" boolean DEFAULT false NOT NULL,
 	"name" text NOT NULL,
 	"storey" smallint NOT NULL,
-	"width" double precision NOT NULL,
+	"width" real NOT NULL,
 	"x1" smallint NOT NULL,
 	"x2" smallint NOT NULL,
 	"y1" smallint NOT NULL,
@@ -61,7 +61,8 @@ CREATE TABLE "navigator_lift" (
 	"x" smallint NOT NULL,
 	"y" smallint NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "navigator_lift_storey_check" CHECK (min_storey <= max_storey)
 );
 --> statement-breakpoint
 CREATE TABLE "navigator_stair" (
@@ -74,7 +75,8 @@ CREATE TABLE "navigator_stair" (
 	"x" smallint NOT NULL,
 	"y" smallint NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "navigator_stair_storey_check" CHECK (min_storey <= max_storey)
 );
 --> statement-breakpoint
 CREATE TABLE "navigator_translation" (

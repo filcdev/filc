@@ -1,5 +1,5 @@
 {
-  "id": "6d3b94a5-df7b-4783-bd0c-6930f28e45eb",
+  "id": "e4b7163d-142b-4a53-b826-1737a0c19316",
   "prevId": "1c500486-ed0d-4e9a-958d-5e8bebd96d9b",
   "version": "7",
   "dialect": "postgresql",
@@ -882,7 +882,7 @@
         },
         "capacity": {
           "name": "capacity",
-          "type": "integer",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
@@ -913,19 +913,19 @@
         },
         "size_x": {
           "name": "size_x",
-          "type": "integer",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
         "size_y": {
           "name": "size_y",
-          "type": "integer",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
         "size_z": {
           "name": "size_z",
-          "type": "integer",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
@@ -1154,7 +1154,7 @@
         },
         "width": {
           "name": "width",
-          "type": "double precision",
+          "type": "real",
           "primaryKey": false,
           "notNull": true
         },
@@ -1344,7 +1344,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "navigator_lift_storey_check": {
+          "name": "navigator_lift_storey_check",
+          "value": "min_storey <= max_storey"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.navigator_stair": {
@@ -1456,7 +1461,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "navigator_stair_storey_check": {
+          "name": "navigator_stair_storey_check",
+          "value": "min_storey <= max_storey"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.navigator_translation": {

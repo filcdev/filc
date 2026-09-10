@@ -138,15 +138,8 @@
     {
       "idx": 19,
       "version": "7",
-      "when": 1788795354597,
-      "tag": "0019_goofy_karma",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1788883047551,
-      "tag": "0020_clean_black_tarantula",
+      "when": 1789067453874,
+      "tag": "0019_sticky_vision",
       "breakpoints": true
     }
   ]
