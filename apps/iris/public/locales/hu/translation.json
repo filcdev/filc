@@ -781,6 +781,10 @@
       "manageUtilities": "Közlekedők",
       "manageTranslations": "Fordítások"
     },
+    "preview": {
+      "title": "3D előnézet",
+      "description": "Az egyetem interaktív 3D előnézete."
+    },
     "buildings": {
       "title": "Épületek",
       "subtitle": "Az épületek kezelése a térképen.",

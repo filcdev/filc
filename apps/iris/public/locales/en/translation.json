@@ -781,6 +781,10 @@
       "manageUtilities": "Utilities",
       "manageTranslations": "Translations"
     },
+    "preview": {
+      "title": "3D preview",
+      "description": "Interactive 3D preview of the campus."
+    },
     "buildings": {
       "title": "Buildings",
       "subtitle": "Manage the campus buildings shown on the map.",

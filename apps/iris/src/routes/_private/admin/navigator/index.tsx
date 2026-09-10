@@ -2,11 +2,19 @@ import { permissions } from '@filcdev/api/permissions';
 
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Building2, Languages, Palette, School, Waypoints } from 'lucide-react';
+import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TransferActions } from '@/components/admin/navigator/transfer-actions';
 import { StatCard } from '@/components/admin/stat-card';
 import { buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { useNavigatorGraph } from '@/hooks/navigator';
@@ -46,6 +54,12 @@ const quickLinks = [
     to: '/admin/navigator/translations',
   },
 ] as const;
+
+const NavigatorPreview = lazy(() =>
+  import('@/components/admin/navigator/preview3d/navigator-preview').then(
+    (m) => ({ default: m.NavigatorPreview })
+  )
+);
 
 function NavigatorOverview() {
   const { t } = useTranslation();
@@ -98,6 +112,22 @@ function NavigatorOverview() {
                   value={graph.utilities.length}
                 />
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('navigator.preview.title')}</CardTitle>
+                  <CardDescription>
+                    {t('navigator.preview.description')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Suspense
+                    fallback={<Skeleton className="h-[480px] w-full" />}
+                  >
+                    <NavigatorPreview graph={graph} />
+                  </Suspense>
+                </CardContent>
+              </Card>
 
               <div className="grid gap-4 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
