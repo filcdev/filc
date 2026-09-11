@@ -354,6 +354,7 @@
     "fromRoom": "Inneni terem",
     "toRoom": "Célterem",
     "selectSlotHint": "Válassz napot és termet az adott teremben lévő órák megtekintéséhez.",
+    "selectDayHint": "Válassz napot az aznapi összes óra megtekintéséhez.",
     "free": "szabad",
     "occupied": "foglalt",
     "noChange": "Nincs változás",

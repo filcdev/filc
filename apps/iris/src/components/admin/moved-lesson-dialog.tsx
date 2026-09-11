@@ -111,6 +111,40 @@ function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
   return -1;
 }
 
+// Lessons on the source day, de-duplicated by id. A day move lists every
+// lesson on the day; a room move narrows to the selected from-room.
+function filterVisibleLessons(
+  allLessons: EnrichedLesson[],
+  sourceDay: string,
+  fromRoom: string,
+  mode: MoveMode
+): EnrichedLesson[] {
+  if (!sourceDay) {
+    return [];
+  }
+  if (mode === 'room' && !fromRoom) {
+    return [];
+  }
+
+  const seen = new Map<string, EnrichedLesson>();
+  for (const lesson of allLessons) {
+    const matchesDay = lesson.day?.id === sourceDay;
+    const matchesRoom =
+      mode === 'day' || lesson.classrooms?.some((cr) => cr.id === fromRoom);
+    if (matchesDay && matchesRoom && !seen.has(lesson.id)) {
+      seen.set(lesson.id, lesson);
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function slotHintKey(mode: MoveMode): string {
+  return mode === 'day'
+    ? 'movedLesson.selectDayHint'
+    : 'movedLesson.selectSlotHint';
+}
+
 type MovedLessonFormValues = InferRequestType<
   typeof api.timetable.movedLessons.$post
 >['json'];
@@ -334,22 +368,12 @@ export function MovedLessonDialog({
     }
   );
 
-  // Lessons in the selected source slot (de-duplicated by lesson id).
-  const visibleLessons = useMemo(() => {
-    if (!(sourceDay && fromRoom)) {
-      return [];
-    }
-
-    const seen = new Map<string, EnrichedLesson>();
-    for (const lesson of allLessons) {
-      const inRoom = lesson.classrooms?.some((cr) => cr.id === fromRoom);
-      if (lesson.day?.id === sourceDay && inRoom && !seen.has(lesson.id)) {
-        seen.set(lesson.id, lesson);
-      }
-    }
-
-    return Array.from(seen.values());
-  }, [allLessons, sourceDay, fromRoom]);
+  // Lessons in the selected source slot (de-duplicated by lesson id). A day
+  // move lists every lesson on the day; a room move narrows to the from-room.
+  const visibleLessons = useMemo(
+    () => filterVisibleLessons(allLessons, sourceDay, fromRoom, mode),
+    [allLessons, sourceDay, fromRoom, mode]
+  );
 
   const availabilityKnown = Boolean(
     formDate && formStartingDay && selectedPeriodId
@@ -391,6 +415,11 @@ export function MovedLessonDialog({
       !!(formLessonIds && formLessonIds.length > 0)
     );
   }, [formDate, formLessonIds, formRoom, formStartingDay, selectedPeriodId]);
+
+  // Whether the lessons list has enough context to render: a day always, plus
+  // a from-room in room-move mode.
+  const hasSlotContext =
+    mode === 'day' ? Boolean(sourceDay) : Boolean(sourceDay && fromRoom);
 
   const toggleLesson = (lesson: EnrichedLesson, checked: boolean) => {
     const current = form.getFieldValue('lessonIds') ?? [];
@@ -460,31 +489,33 @@ export function MovedLessonDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>{t('movedLesson.fromRoom')}</Label>
-              <Combobox
-                emptyMessage={t('movedLesson.noRoomFound')}
-                onValueChange={handleFromRoomChange}
-                options={classrooms.map((c) => ({
-                  label: `${c.name} (${c.short})`,
-                  value: c.id,
-                }))}
-                placeholder={t('movedLesson.fromRoom')}
-                searchPlaceholder={t('search')}
-                value={fromRoom}
-              />
-            </div>
+            {mode === 'room' && (
+              <div className="space-y-2">
+                <Label>{t('movedLesson.fromRoom')}</Label>
+                <Combobox
+                  emptyMessage={t('movedLesson.noRoomFound')}
+                  onValueChange={handleFromRoomChange}
+                  options={classrooms.map((c) => ({
+                    label: `${c.name} (${c.short})`,
+                    value: c.id,
+                  }))}
+                  placeholder={t('movedLesson.fromRoom')}
+                  searchPlaceholder={t('search')}
+                  value={fromRoom}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>{t('movedLesson.lessons')}</Label>
               <div className="max-h-48 overflow-y-auto rounded-lg border">
                 <div className="space-y-1 p-2">
-                  {!(sourceDay && fromRoom) && (
+                  {!hasSlotContext && (
                     <p className="p-2 text-muted-foreground text-sm">
-                      {t('movedLesson.selectSlotHint')}
+                      {t(slotHintKey(mode))}
                     </p>
                   )}
-                  {sourceDay && fromRoom && visibleLessons.length === 0 && (
+                  {hasSlotContext && visibleLessons.length === 0 && (
                     <p className="p-2 text-muted-foreground text-sm">
                       {t('movedLesson.noLessons')}
                     </p>

@@ -354,6 +354,7 @@
     "fromRoom": "From Room",
     "toRoom": "To Room",
     "selectSlotHint": "Select a day and room to see the lessons in that room.",
+    "selectDayHint": "Select a day to see all lessons on that day.",
     "free": "free",
     "occupied": "occupied",
     "noChange": "No change",
