@@ -270,8 +270,10 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       new Set(substitutions.flatMap((s) => s.lessonIds))
     );
 
-    // Enrich lessons in one batch
-    const enrichedLessons = await enrichLessons(allLessonIds);
+    // Enrich lessons in one batch, scoped to the active timetable so retired
+    // timetables' lessons don't leak into the affected-lessons list.
+    const timetableId = await getActiveTimetableId();
+    const enrichedLessons = await enrichLessons(allLessonIds, timetableId);
     const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
 
     // Map lessons back to substitutions
@@ -364,8 +366,16 @@ export const getRelevantSubstitutionsForCohort =
     async (c) => {
       const { cohortId } = c.req.valid('param');
 
+      const timetableId = await getActiveTimetableId();
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      // No active timetable: yield no substitutions rather than every
+      // timetable's (including retired) lessons.
+      if (!timetableId) {
+        return ok(c, { cohortId, substitutions: [] });
+      }
 
       const substitutions = await db
         .select({
@@ -385,7 +395,13 @@ export const getRelevantSubstitutionsForCohort =
         .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
         .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
         .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-        .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
+        .where(
+          and(
+            gte(substitution.date, today),
+            eq(cohort.id, cohortId),
+            eq(lesson.timetableId, timetableId)
+          )
+        )
         .groupBy(substitution.id, teacher.id);
 
       return ok(c, {

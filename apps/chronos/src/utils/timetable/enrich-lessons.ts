@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import z from 'zod';
 import { db } from '#database';
 import {
@@ -45,17 +45,38 @@ export type EnrichedLesson = z.infer<typeof enrichedLessonSchema>;
 // Enrich a batch of lessons with subject, cohorts, day, period, classrooms and
 // teachers. Returns only lessons that still exist; callers map the results back
 // onto their own lesson-id lists.
+//
+// `timetableId` optionally scopes enrichment to a single timetable. When it is
+// `undefined` (callers that predate timetable scoping), no timetable filter is
+// applied. When it is a string or an explicit `null`, lessons are restricted to
+// that timetable — a `null` id matches nothing (lesson.timetableId is NOT NULL),
+// so a gap in active timetables returns no lessons rather than leaking retired
+// ones.
 export async function enrichLessons(
-  lessonIds: string[]
+  lessonIds: string[],
+  timetableId?: string | null
 ): Promise<EnrichedLesson[]> {
   if (lessonIds.length === 0) {
+    return [];
+  }
+
+  // A null timetable id means "no active timetable": match nothing instead of
+  // falling back to every (including retired) timetable.
+  if (timetableId === null) {
     return [];
   }
 
   const lessons = await db
     .select()
     .from(lesson)
-    .where(inArray(lesson.id, lessonIds));
+    .where(
+      timetableId === undefined
+        ? inArray(lesson.id, lessonIds)
+        : and(
+            inArray(lesson.id, lessonIds),
+            eq(lesson.timetableId, timetableId)
+          )
+    );
 
   if (lessons.length === 0) {
     return [];

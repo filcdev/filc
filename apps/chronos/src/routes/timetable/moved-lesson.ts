@@ -27,6 +27,7 @@ import {
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
+import { getActiveTimetableId } from '#utils/timetable/active';
 import {
   type EnrichedLesson,
   enrichedLessonSchema,
@@ -195,10 +196,15 @@ type MovedLessonRow = {
 };
 
 // Enrich the linked lesson ids of a batch of moved-lesson rows, preserving the
-// target joins and the per-moved-lesson lesson order.
-async function attachEnrichedLessons(rows: MovedLessonRow[]) {
+// target joins and the per-moved-lesson lesson order. `timetableId` scopes
+// enrichment to a single timetable so retired timetables' lessons don't leak
+// into the list.
+async function attachEnrichedLessons(
+  rows: MovedLessonRow[],
+  timetableId?: string | null
+) {
   const allLessonIds = Array.from(new Set(rows.flatMap((r) => r.lessons)));
-  const enriched = await enrichLessons(allLessonIds);
+  const enriched = await enrichLessons(allLessonIds, timetableId);
   const lessonMap = new Map(enriched.map((l) => [l.id, l]));
 
   return rows.map((r) => ({
@@ -253,7 +259,8 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
+    const timetableId = await getActiveTimetableId();
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
@@ -317,7 +324,7 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
@@ -353,6 +360,8 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
+    const timetableId = await getActiveTimetableId();
+
     const movedLessons = await db
       .select({
         classroom,
@@ -377,7 +386,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       .where(eq(lessonCohortMTM.cohortId, cohortId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
@@ -413,6 +422,8 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
+    const timetableId = await getActiveTimetableId();
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -445,7 +456,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
