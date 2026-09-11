@@ -13,6 +13,7 @@ import {
 import { teacher } from '#database/schema/timetable';
 import { getUserPermissions } from '#utils/authorization';
 import { env } from '#utils/environment';
+import { mergenMobile } from '#utils/mergen-mobile';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -39,10 +40,6 @@ const authOptions = {
   databaseHooks: {
     session: {
       create: {
-        // Link the user account to any teacher row whose email matches. This
-        // runs on both registration and login (a session is created either
-        // way), so an import carrying teacher emails gets reconciled with user
-        // accounts over time.
         after: async (session) => {
           try {
             const [linkedUser] = await db
@@ -60,7 +57,6 @@ const authOptions = {
               .where(
                 and(
                   eq(teacher.email, userEmail),
-                  // Never clobber a manual assignment made in the teacher UI.
                   or(isNull(teacher.userId), eq(teacher.userId, session.userId))
                 )
               );
@@ -93,7 +89,7 @@ const authOptions = {
       logger[level]({ message, ...args });
     },
   },
-  plugins: [],
+  plugins: [mergenMobile()],
   secret: env.authSecret,
   socialProviders: {
     microsoft: {
@@ -107,7 +103,11 @@ const authOptions = {
   telemetry: {
     enabled: false,
   },
-  trustedOrigins: env.trustedOrigins ?? [env.baseUrl],
+  trustedOrigins: [
+    ...(env.trustedOrigins ?? [env.baseUrl]),
+    'mergen://',
+    'mergen://*',
+  ],
   user: {
     additionalFields: {
       cohortId: {
