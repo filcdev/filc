@@ -55,10 +55,13 @@ const getFilterOptions = (
     return (cohorts ?? []).map((c) => ({ label: c.name, value: c.id }));
   }
   if (activeFilter === 'teacher') {
-    return (teachers ?? []).map((teacher) => ({
-      label: teacherLabel(teacher, t('timetable.teacherFallback')),
-      value: teacher.id,
-    }));
+    // Ascending alphabetical order on the displayed label so the picker reads A → Z.
+    return (teachers ?? [])
+      .map((teacher) => ({
+        label: teacherLabel(teacher, t('timetable.teacherFallback')),
+        value: teacher.id,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
   return (classrooms ?? []).map((c) => ({ label: c.name, value: c.id }));
 };
