@@ -26,6 +26,7 @@ import {
 import { useApiQuery } from '@/utils/api';
 import { isMatchingWeekday } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
+import { formatPeriodLabel } from '@/utils/period';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
 
@@ -48,12 +49,21 @@ type LessonForLabel = {
   id: string;
   classrooms?: Array<{ name?: string; short?: string }>;
   cohorts?: CohortLike[];
+  period?: {
+    startTime?: string | null;
+    endTime?: string | null;
+    period?: number | null;
+  } | null;
   subject?: { name?: string; short?: string } | null;
   teachers?: Array<{ name?: string; short?: string }>;
 };
 
 function formatLessonLabel(lesson: LessonForLabel): string {
   const parts: string[] = [];
+
+  if (lesson.period?.startTime && lesson.period?.endTime) {
+    parts.push(formatPeriodLabel(lesson.period));
+  }
 
   if (lesson.subject?.short) {
     parts.push(lesson.subject.short);

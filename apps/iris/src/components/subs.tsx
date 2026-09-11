@@ -12,6 +12,7 @@ import {
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { formatPeriodLabel } from '@/utils/period';
 
 type TimetableProps = {
   data: Subs[];
@@ -122,14 +123,6 @@ type MovedTarget = {
   period: MovedLessonItem['period'];
   classroom: MovedLessonItem['classroom'];
 };
-
-function formatPeriodLabel(p: {
-  startTime: string;
-  endTime: string;
-  period: number;
-}) {
-  return `P${p.period} ${p.startTime.slice(0, 5)}\u2013${p.endTime.slice(0, 5)}`;
-}
 
 function MovedLessonRow({
   lesson,
