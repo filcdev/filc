@@ -127,9 +127,11 @@ type MovedTarget = {
 function MovedLessonRow({
   lesson,
   movedTarget,
+  comment,
 }: {
   lesson: Lesson;
   movedTarget: MovedTarget;
+  comment?: string | null;
 }) {
   const { t } = useTranslation();
   const notAvailable = t('substitution.notAvailable');
@@ -225,7 +227,11 @@ function MovedLessonRow({
         <span className="text-muted-foreground">—</span>
       </TableCell>
       <TableCell>
-        <span className="text-muted-foreground">—</span>
+        {comment ? (
+          <span className="whitespace-pre-wrap text-sm">{comment}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
     </>
   );
@@ -272,6 +278,7 @@ function MovedLessonReturn(data: MovedLessonItem[]) {
           key={`${ml.movedLesson.id}-${lesson.id}`}
         >
           <MovedLessonRow
+            comment={ml.movedLesson.comment}
             lesson={lesson}
             movedTarget={{
               classroom: ml.classroom,

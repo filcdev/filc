@@ -25,6 +25,7 @@ export type CohortIdParamsInput = z.infer<typeof cohortIdParamsSchema>;
 
 /** Payload for updating an existing moved lesson. */
 export const updateSchema = z.object({
+  comment: z.string().nullable().optional(),
   date: z.coerce.date(),
   lessonIds: z.uuid().array(),
   room: z.string(),

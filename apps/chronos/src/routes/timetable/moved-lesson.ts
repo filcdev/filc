@@ -496,7 +496,8 @@ export const createMovedLesson = timetableFactory.createHandlers(
   zValidator('json', createSchema),
   async (c) => {
     const body = c.req.valid('json');
-    const { startingPeriod, startingDay, room, date, lessonIds } = body;
+    const { startingPeriod, startingDay, room, date, lessonIds, comment } =
+      body;
 
     if (!date) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -514,6 +515,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
     const [newMovedLesson] = await db
       .insert(movedLesson)
       .values({
+        comment,
         date,
         id: crypto.randomUUID(),
         room,
@@ -588,7 +590,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
   zValidator('json', updateSchema),
   async (c) => {
     const { id } = c.req.valid('param');
-    const { startingPeriod, startingDay, room, date, lessonIds } =
+    const { startingPeriod, startingDay, room, date, lessonIds, comment } =
       c.req.valid('json');
 
     await validateMovedLessonReferences({
@@ -603,6 +605,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     const [updatedMovedLesson] = await db
       .update(movedLesson)
       .set({
+        comment: comment === undefined ? undefined : comment,
         date,
         room: room === undefined ? undefined : room,
         startingDay: startingDay === undefined ? undefined : startingDay,

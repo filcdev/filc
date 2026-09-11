@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   type Classroom,
   type DayDefinition,
@@ -117,6 +118,7 @@ type MovedLessonFormValues = InferRequestType<
 const initialState = (
   item?: MovedLessonItem | null
 ): MovedLessonFormValues => ({
+  comment: item?.movedLesson.comment ?? null,
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
   room: item?.movedLesson.room || undefined,
@@ -204,6 +206,7 @@ export function MovedLessonDialog({
         await updateMutation.mutateAsync({
           id: item.movedLesson.id,
           payload: {
+            comment: value.comment ?? null,
             date: value.date,
             lessonIds: value.lessonIds ?? [],
             room: value.room as string,
@@ -540,6 +543,23 @@ export function MovedLessonDialog({
                 searchPlaceholder={t('search')}
                 value={formRoom ?? ''}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="moved-lesson-comment">
+                {t('movedLesson.comment')}
+              </Label>
+              <form.Field name="comment">
+                {(field) => (
+                  <Textarea
+                    id="moved-lesson-comment"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value || null)}
+                    placeholder={t('movedLesson.commentPlaceholder')}
+                    value={field.state.value ?? ''}
+                  />
+                )}
+              </form.Field>
             </div>
           </form>
         </div>

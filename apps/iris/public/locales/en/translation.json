@@ -364,6 +364,8 @@
     "loadingRooms": "Loading available rooms…",
     "noRoomFound": "No room found.",
     "noMovedLessons": "No moved lessons found",
+    "comment": "Comment",
+    "commentPlaceholder": "Optional note about this move",
     "createSuccess": "Moved lesson created successfully",
     "createError": "Failed to create moved lesson",
     "updateSuccess": "Moved lesson updated successfully",

@@ -364,6 +364,8 @@
     "loadingRooms": "Elérhető termek betöltése…",
     "noRoomFound": "Nem található terem.",
     "noMovedLessons": "Nincsenek áthelyezett órák",
+    "comment": "Megjegyzés",
+    "commentPlaceholder": "Opcionális megjegyzés az áthelyezéshez",
     "createSuccess": "Áthelyezett óra sikeresen létrehozva",
     "createError": "Nem sikerült létrehozni az áthelyezett órát",
     "updateSuccess": "Áthelyezett óra sikeresen frissítve",

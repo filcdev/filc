@@ -481,6 +481,7 @@ function MovedLessonsPage() {
                     />
                   </div>
                 </TableHead>
+                <TableHead>{t('movedLesson.comment')}</TableHead>
                 {hasWritePermission && (
                   <TableHead>{t('movedLesson.actions')}</TableHead>
                 )}
@@ -510,6 +511,15 @@ function MovedLessonsPage() {
                       <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
                       {ml.lessons.length}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {ml.movedLesson.comment ? (
+                      <span className="whitespace-pre-wrap text-sm">
+                        {ml.movedLesson.comment}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   {hasWritePermission && (
                     <TableCell>
@@ -542,7 +552,7 @@ function MovedLessonsPage() {
                 <TableRow>
                   <TableCell
                     className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 6 : 5}
+                    colSpan={hasWritePermission ? 7 : 6}
                   >
                     {t('movedLesson.noMovedLessons')}
                   </TableCell>
