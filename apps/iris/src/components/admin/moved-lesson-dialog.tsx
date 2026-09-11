@@ -17,11 +17,9 @@ import {
 import { Label } from '@/components/ui/label';
 import {
   type Classroom,
-  type Cohort,
   type DayDefinition,
   type EnrichedLesson,
   type MovedLessonItem,
-  type Period,
   useCreateMovedLesson,
   useUpdateMovedLesson,
 } from '@/hooks/moved-lessons';
@@ -36,12 +34,10 @@ export type MoveMode = 'room' | 'day';
 type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
   classrooms: Classroom[];
-  cohorts: Cohort[];
   days: DayDefinition[];
   item?: MovedLessonItem | null;
   mode?: MoveMode;
   onModeChange?: (mode: MoveMode) => void;
-  periods: Period[];
 };
 
 // Cohort entries can arrive as plain names (from substitutions/moved lessons)
@@ -55,12 +51,6 @@ type LessonForLabel = {
   subject?: { name?: string; short?: string } | null;
   teachers?: Array<{ name?: string; short?: string }>;
 };
-
-// Drizzle `time` columns are serialised as strings, but keep formatting
-// defensive so a non-string value can never crash the render.
-function formatTime(value: string | undefined): string {
-  return String(value ?? '').slice(0, 5);
-}
 
 function formatLessonLabel(lesson: LessonForLabel): string {
   const parts: string[] = [];
@@ -166,23 +156,20 @@ function MoveModeToggle({ mode, onChange }: MoveModeToggleProps) {
 export function MovedLessonDialog({
   allLessons,
   classrooms,
-  cohorts,
   days,
   item,
   mode = 'room',
   onModeChange,
   onOpenChange,
   open,
-  periods,
 }: MovedLessonDialogProps) {
   const { t } = useTranslation();
   const close = () => onOpenChange(false);
   const createMutation = useCreateMovedLesson({ onSaved: close });
   const updateMutation = useUpdateMovedLesson({ onSaved: close });
 
-  const [selectedCohort, setSelectedCohort] = useState<string>('');
+  const [fromRoom, setFromRoom] = useState<string>('');
   const [sourceDate, setSourceDate] = useState<Date | undefined>();
-  const [sourcePeriod, setSourcePeriod] = useState<string>('');
 
   const defaultValues = useMemo(() => initialState(item), [item]);
 
@@ -226,11 +213,17 @@ export function MovedLessonDialog({
     form.store,
     (state) => state.values.startingDay
   );
-  const formStartingPeriod = useStore(
-    form.store,
-    (state) => state.values.startingPeriod
-  );
   const formRoom = useStore(form.store, (state) => state.values.room);
+
+  // The period selector is gone, so the target period is the first selected
+  // lesson's current period (the slot it sits in).
+  const selectedPeriodId = useMemo(() => {
+    const firstId = (formLessonIds ?? [])[0];
+    if (!firstId) {
+      return '';
+    }
+    return allLessons.find((lesson) => lesson.id === firstId)?.period?.id ?? '';
+  }, [allLessons, formLessonIds]);
 
   // Reset the form and derive the source slot whenever the dialog opens.
   useEffect(() => {
@@ -241,16 +234,15 @@ export function MovedLessonDialog({
     form.reset(defaultValues);
 
     let sourceWeekdayId = '';
-    let periodId = '';
+    let fromRoomId = '';
 
     if (item && item.lessons.length > 0) {
       const firstLesson = item.lessons[0];
       sourceWeekdayId = firstLesson?.day?.id ?? '';
-      periodId = firstLesson?.period?.id ?? '';
+      fromRoomId = firstLesson?.classrooms?.[0]?.id ?? '';
     }
 
-    setSelectedCohort('');
-    setSourcePeriod(periodId);
+    setFromRoom(fromRoomId);
 
     // The source date is the lesson's date. For a room move the move's own
     // date already lands on the source weekday; otherwise anchor on it and
@@ -276,9 +268,6 @@ export function MovedLessonDialog({
     if (sourceDay && form.getFieldValue('startingDay') !== sourceDay) {
       form.setFieldValue('startingDay', sourceDay);
     }
-    if (sourcePeriod && form.getFieldValue('startingPeriod') !== sourcePeriod) {
-      form.setFieldValue('startingPeriod', sourcePeriod);
-    }
     if (sourceDate) {
       const currentDate = form.getFieldValue('date');
       if (
@@ -288,19 +277,17 @@ export function MovedLessonDialog({
         form.setFieldValue('date', sourceDate);
       }
     }
-  }, [form, mode, sourceDate, sourceDay, sourcePeriod]);
+  }, [form, mode, sourceDate, sourceDay]);
 
-  const cohortLessonsQuery = useApiQuery<EnrichedLesson[]>(
-    () =>
-      api.timetable.lessons.getForCohort[':cohortId'].$get({
-        param: { cohortId: selectedCohort },
-        query: {},
-      }),
-    {
-      enabled: !!selectedCohort,
-      queryKey: queryKeys.timetable.lessonsByCohort(selectedCohort),
+  // Keep the target period in sync with the selected lesson's period.
+  useEffect(() => {
+    if (
+      selectedPeriodId &&
+      form.getFieldValue('startingPeriod') !== selectedPeriodId
+    ) {
+      form.setFieldValue('startingPeriod', selectedPeriodId);
     }
-  );
+  }, [form, selectedPeriodId]);
 
   const availableClassroomsQuery = useApiQuery<Classroom[]>(
     () => {
@@ -310,7 +297,7 @@ export function MovedLessonDialog({
           : String(formDate ?? '');
 
       const sd = formStartingDay;
-      const sp = formStartingPeriod;
+      const sp = selectedPeriodId;
 
       if (!(sd && sp)) {
         return [] as never;
@@ -325,49 +312,34 @@ export function MovedLessonDialog({
       });
     },
     {
-      enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
+      enabled: !!formDate && !!formStartingDay && !!selectedPeriodId,
       queryKey: queryKeys.timetable.availableClassrooms(
         formDate,
         formStartingDay,
-        formStartingPeriod
+        selectedPeriodId
       ),
     }
   );
 
-  // Lessons in the selected source slot (de-duplicated by lesson id, since the
-  // per-cohort endpoint can return the same lesson once per group).
+  // Lessons in the selected source slot (de-duplicated by lesson id).
   const visibleLessons = useMemo(() => {
-    if (!(sourceDay && sourcePeriod)) {
+    if (!(sourceDay && fromRoom)) {
       return [];
     }
 
-    const source =
-      selectedCohort && cohortLessonsQuery.data?.length
-        ? cohortLessonsQuery.data
-        : allLessons;
-
     const seen = new Map<string, EnrichedLesson>();
-    for (const lesson of source) {
-      if (
-        lesson?.day?.id === sourceDay &&
-        lesson?.period?.id === sourcePeriod &&
-        !seen.has(lesson.id)
-      ) {
+    for (const lesson of allLessons) {
+      const inRoom = lesson.classrooms?.some((cr) => cr.id === fromRoom);
+      if (lesson.day?.id === sourceDay && inRoom && !seen.has(lesson.id)) {
         seen.set(lesson.id, lesson);
       }
     }
 
     return Array.from(seen.values());
-  }, [
-    allLessons,
-    cohortLessonsQuery.data,
-    selectedCohort,
-    sourceDay,
-    sourcePeriod,
-  ]);
+  }, [allLessons, sourceDay, fromRoom]);
 
   const availabilityKnown = Boolean(
-    formDate && formStartingDay && formStartingPeriod
+    formDate && formStartingDay && selectedPeriodId
   );
 
   const roomOptions = useMemo(() => {
@@ -402,10 +374,10 @@ export function MovedLessonDialog({
       !!formDate &&
       !!formRoom &&
       !!formStartingDay &&
-      !!formStartingPeriod &&
+      !!selectedPeriodId &&
       !!(formLessonIds && formLessonIds.length > 0)
     );
-  }, [formDate, formLessonIds, formRoom, formStartingDay, formStartingPeriod]);
+  }, [formDate, formLessonIds, formRoom, formStartingDay, selectedPeriodId]);
 
   const toggleLesson = (lesson: EnrichedLesson, checked: boolean) => {
     const current = form.getFieldValue('lessonIds') ?? [];
@@ -427,8 +399,8 @@ export function MovedLessonDialog({
     form.setFieldValue('lessonIds', []);
   };
 
-  const handleSourcePeriodChange = (value: string) => {
-    setSourcePeriod(value);
+  const handleFromRoomChange = (value: string) => {
+    setFromRoom(value);
     form.setFieldValue('lessonIds', []);
   };
 
@@ -467,73 +439,43 @@ export function MovedLessonDialog({
             }}
           >
             <div className="space-y-2">
-              <Label>{t('movedLesson.class')}</Label>
-              <Combobox
-                emptyMessage={t('movedLesson.noCohortFound')}
-                onValueChange={setSelectedCohort}
-                options={cohorts.map((c) => ({
-                  label: c.name,
-                  value: c.id,
-                }))}
-                placeholder={t('movedLesson.selectCohortPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={selectedCohort}
+              <Label>{t('movedLesson.date')}</Label>
+              <DatePicker
+                date={sourceDate}
+                onDateChange={handleSourceDateChange}
+                placeholder={t('movedLesson.datePlaceholder')}
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{t('movedLesson.date')}</Label>
-                <DatePicker
-                  date={sourceDate}
-                  onDateChange={handleSourceDateChange}
-                  placeholder={t('movedLesson.datePlaceholder')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('movedLesson.period')}</Label>
-                <Combobox
-                  emptyMessage={t('movedLesson.noPeriodFound')}
-                  onValueChange={handleSourcePeriodChange}
-                  options={periods.map((p) => ({
-                    label: t('movedLesson.periodLabel', {
-                      end: formatTime(p.endTime),
-                      num: p.period,
-                      start: formatTime(p.startTime),
-                    }),
-                    value: p.id,
-                  }))}
-                  placeholder={t('movedLesson.selectPeriodPlaceholder')}
-                  searchPlaceholder={t('search')}
-                  value={sourcePeriod}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>{t('movedLesson.fromRoom')}</Label>
+              <Combobox
+                emptyMessage={t('movedLesson.noRoomFound')}
+                onValueChange={handleFromRoomChange}
+                options={classrooms.map((c) => ({
+                  label: `${c.name} (${c.short})`,
+                  value: c.id,
+                }))}
+                placeholder={t('movedLesson.fromRoom')}
+                searchPlaceholder={t('search')}
+                value={fromRoom}
+              />
             </div>
 
             <div className="space-y-2">
               <Label>{t('movedLesson.lessons')}</Label>
               <div className="max-h-48 overflow-y-auto rounded-lg border">
                 <div className="space-y-1 p-2">
-                  {!(sourceDay && sourcePeriod) && (
+                  {!(sourceDay && fromRoom) && (
                     <p className="p-2 text-muted-foreground text-sm">
                       {t('movedLesson.selectSlotHint')}
                     </p>
                   )}
-                  {sourceDay &&
-                    sourcePeriod &&
-                    cohortLessonsQuery.isLoading && (
-                      <p className="p-2 text-muted-foreground text-sm">
-                        {t('movedLesson.loadingLessons')}
-                      </p>
-                    )}
-                  {sourceDay &&
-                    sourcePeriod &&
-                    !cohortLessonsQuery.isLoading &&
-                    visibleLessons.length === 0 && (
-                      <p className="p-2 text-muted-foreground text-sm">
-                        {t('movedLesson.noLessons')}
-                      </p>
-                    )}
+                  {sourceDay && fromRoom && visibleLessons.length === 0 && (
+                    <p className="p-2 text-muted-foreground text-sm">
+                      {t('movedLesson.noLessons')}
+                    </p>
+                  )}
                   {visibleLessons.map((lesson) => (
                     <label
                       className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
@@ -557,40 +499,18 @@ export function MovedLessonDialog({
             </div>
 
             {mode === 'day' && (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>{t('movedLesson.targetDate')}</Label>
-                  <DatePicker
-                    date={formDate instanceof Date ? formDate : undefined}
-                    onDateChange={handleTargetDateChange}
-                    placeholder={t('movedLesson.datePlaceholder')}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('movedLesson.targetPeriod')}</Label>
-                  <Combobox
-                    emptyMessage={t('movedLesson.noPeriodFound')}
-                    onValueChange={(value) =>
-                      form.setFieldValue('startingPeriod', value || undefined)
-                    }
-                    options={periods.map((p) => ({
-                      label: t('movedLesson.periodLabel', {
-                        end: formatTime(p.endTime),
-                        num: p.period,
-                        start: formatTime(p.startTime),
-                      }),
-                      value: p.id,
-                    }))}
-                    placeholder={t('movedLesson.targetPeriod')}
-                    searchPlaceholder={t('search')}
-                    value={formStartingPeriod ?? ''}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>{t('movedLesson.targetDate')}</Label>
+                <DatePicker
+                  date={formDate instanceof Date ? formDate : undefined}
+                  onDateChange={handleTargetDateChange}
+                  placeholder={t('movedLesson.datePlaceholder')}
+                />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label>{t('movedLesson.targetRoom')}</Label>
+              <Label>{t('movedLesson.toRoom')}</Label>
               <Combobox
                 className={
                   availableClassroomsQuery.isLoading
@@ -606,7 +526,7 @@ export function MovedLessonDialog({
                   form.setFieldValue('room', value || undefined)
                 }
                 options={roomOptions}
-                placeholder={t('movedLesson.targetRoom')}
+                placeholder={t('movedLesson.toRoom')}
                 searchPlaceholder={t('search')}
                 value={formRoom ?? ''}
               />

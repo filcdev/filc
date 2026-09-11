@@ -229,8 +229,8 @@ function MovedLessonsPage() {
     hasWritePermission
   );
 
-  // Extract unique periods and day definitions from moved lessons data
-  const { allLessons, days, periods } = useMemo(
+  // Extract unique day definitions from moved lessons data
+  const { allLessons, days } = useMemo(
     () =>
       extractReferenceData(
         movedLessonsQuery.data ?? [],
@@ -557,7 +557,6 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
-          cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
           mode={moveMode}
@@ -570,7 +569,6 @@ function MovedLessonsPage() {
             }
           }}
           open={dialogOpen}
-          periods={periods}
         />
       )}
 
