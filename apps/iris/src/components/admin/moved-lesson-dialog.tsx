@@ -378,8 +378,12 @@ export function MovedLessonDialog({
       ? getWeekdayIndex(sourceWeekdayId, days)
       : anchor.getDay();
     const initialSourceDate = new Date(anchor);
+    // Shift within the SAME week as the target date (no wrap): a negative
+    // offset moves to the source weekday earlier in the week, a positive one
+    // later. This handles both source-before-target (Mon → Fri) and
+    // source-after-target (Fri → Mon) moves.
     initialSourceDate.setDate(
-      anchor.getDate() + ((weekdayIndex - anchor.getDay() + 7) % 7)
+      anchor.getDate() + (weekdayIndex - anchor.getDay())
     );
     setSourceDate(initialSourceDate);
   }, [days, defaultValues, form, item, open]);
@@ -413,13 +417,28 @@ export function MovedLessonDialog({
     }
   }, [form, selectedPeriodId]);
 
+  // Normalised target date string, shared by the availability query and the
+  // stored-slot comparison so both always refer to the same queried slot.
+  const dateParam = useMemo(
+    () =>
+      formDate instanceof Date
+        ? formDate.toISOString().slice(0, 10)
+        : String(formDate ?? ''),
+    [formDate]
+  );
+
+  // Whether the queried target slot is the edited move's original slot.
+  const isStoredSlot = useMemo(
+    () =>
+      item != null &&
+      dateParam === item.movedLesson.date &&
+      formStartingDay === item.movedLesson.startingDay &&
+      selectedPeriodId === item.movedLesson.startingPeriod,
+    [dateParam, formStartingDay, item, selectedPeriodId]
+  );
+
   const availableClassroomsQuery = useApiQuery<Classroom[]>(
     () => {
-      const dateParam =
-        formDate instanceof Date
-          ? formDate.toISOString().split('T')[0]
-          : String(formDate ?? '');
-
       const sd = formStartingDay;
       const sp = selectedPeriodId;
 
@@ -429,7 +448,7 @@ export function MovedLessonDialog({
 
       return api.timetable.classrooms.getAvailable.$get({
         query: {
-          date: dateParam as string,
+          date: dateParam,
           startingDay: sd,
           startingPeriod: sp,
         },
@@ -468,8 +487,10 @@ export function MovedLessonDialog({
       (availableClassroomsQuery.data ?? []).map((cr) => cr.id)
     );
 
-    // The room currently assigned to the edited move is never "occupied" by it.
-    if (item?.movedLesson.room) {
+    // Treat the stored room as free only when the queried slot is the edited
+    // move's original target slot; otherwise let the availability response
+    // stand so a room occupied in the new slot stays occupied.
+    if (isStoredSlot && item?.movedLesson.room) {
       freeRoomIds.add(item.movedLesson.room);
     }
 
@@ -486,7 +507,14 @@ export function MovedLessonDialog({
         value: cr.id,
       };
     });
-  }, [availableClassroomsQuery.data, availabilityKnown, classrooms, item, t]);
+  }, [
+    availableClassroomsQuery.data,
+    availabilityKnown,
+    classrooms,
+    isStoredSlot,
+    item,
+    t,
+  ]);
 
   const isCreate = !item;
 
@@ -546,7 +574,21 @@ export function MovedLessonDialog({
   };
 
   const handleModeChange = (next: MoveMode) => {
+    if (next === mode) {
+      return;
+    }
     onModeChange?.(next);
+
+    // Clear cross-mode state so lessons picked for one move type never leak
+    // into the other. The room-move effect re-syncs date/day to the source
+    // slot; a day move starts with an empty target date/day.
+    form.setFieldValue('lessonIds', []);
+    form.setFieldValue('startingPeriod', undefined);
+    setFromRoom('');
+    if (next === 'day') {
+      form.setFieldValue('date', undefined);
+      form.setFieldValue('startingDay', undefined);
+    }
   };
 
   return (
@@ -617,24 +659,43 @@ export function MovedLessonDialog({
                       {t('movedLesson.noLessons')}
                     </p>
                   )}
-                  {visibleLessons.map((lesson) => (
-                    <label
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                      htmlFor={`ml-lesson-${lesson.id}`}
-                      key={lesson.id}
-                    >
-                      <Checkbox
-                        checked={(formLessonIds ?? []).includes(lesson.id)}
-                        id={`ml-lesson-${lesson.id}`}
-                        onCheckedChange={(checked) =>
-                          toggleLesson(lesson, !!checked)
-                        }
-                      />
-                      <span>
-                        {formatLessonLabel(lesson as unknown as LessonForLabel)}
-                      </span>
-                    </label>
-                  ))}
+                  {visibleLessons.map((lesson) => {
+                    const isChecked = (formLessonIds ?? []).includes(lesson.id);
+                    // Once a lesson is selected, only lessons in the same
+                    // period may be added to the move.
+                    const isPeriodMismatch =
+                      (formLessonIds ?? []).length > 0 &&
+                      !isChecked &&
+                      lesson.period?.id !== selectedPeriodId;
+
+                    return (
+                      <label
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                        htmlFor={`ml-lesson-${lesson.id}`}
+                        key={lesson.id}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          disabled={isPeriodMismatch}
+                          id={`ml-lesson-${lesson.id}`}
+                          onCheckedChange={(checked) =>
+                            toggleLesson(lesson, !!checked)
+                          }
+                        />
+                        <span
+                          className={
+                            isPeriodMismatch
+                              ? 'text-muted-foreground'
+                              : undefined
+                          }
+                        >
+                          {formatLessonLabel(
+                            lesson as unknown as LessonForLabel
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>

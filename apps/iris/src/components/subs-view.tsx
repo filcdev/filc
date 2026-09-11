@@ -225,18 +225,27 @@ const filterMovedLessons = (
   }
   if (activeFilter === 'class') {
     const cohortName = cohorts?.find((c) => c.id === selectionId)?.name;
-    return cohortName
-      ? data.filter((ml) =>
-          ml.lessons.some((lesson) => lesson.cohorts.includes(cohortName))
-        )
-      : [];
+    if (!cohortName) {
+      return [];
+    }
+    return data
+      .map((ml) => ({
+        ...ml,
+        lessons: ml.lessons.filter((lesson) =>
+          lesson.cohorts.includes(cohortName)
+        ),
+      }))
+      .filter((ml) => ml.lessons.length > 0);
   }
   if (activeFilter === 'teacher') {
-    return data.filter((ml) =>
-      ml.lessons.some((lesson) =>
-        lesson.teachers.some((teacher) => teacher.id === selectionId)
-      )
-    );
+    return data
+      .map((ml) => ({
+        ...ml,
+        lessons: ml.lessons.filter((lesson) =>
+          lesson.teachers.some((teacher) => teacher.id === selectionId)
+        ),
+      }))
+      .filter((ml) => ml.lessons.length > 0);
   }
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
@@ -513,9 +522,12 @@ export function SubstitutionView() {
         )}
         date={date}
         key={`${date}-${cohort}`}
-        movedLessons={dateMovedLessons.filter((ml) =>
-          ml.lessons.some((l) => l.cohorts.includes(cohort))
-        )}
+        movedLessons={dateMovedLessons
+          .map((ml) => ({
+            ...ml,
+            lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+          }))
+          .filter((ml) => ml.lessons.length > 0)}
       />
     ));
 
