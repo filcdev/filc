@@ -12,6 +12,7 @@ import {
 } from '#database/schema/authentication';
 import { teacher } from '#database/schema/timetable';
 import { getUserPermissions } from '#utils/authorization';
+import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
@@ -102,6 +103,13 @@ const authOptions = {
       enabled: true,
       prompt: env.mode === 'development' ? 'consent' : undefined,
       tenantId: env.entraTenantId,
+      // Clients that sign in natively (Mergen) submit an Entra ID token to
+      // `/api/auth/sign-in/social`; Better Auth's built-in Microsoft verifier rejects all of
+      // them, so the token is verified against the tenant's JWKS here instead.
+      verifyIdToken: createEntraIdTokenVerifier({
+        clientId: env.entraClientId,
+        tenantId: env.entraTenantId,
+      }),
     },
   },
   telemetry: {
