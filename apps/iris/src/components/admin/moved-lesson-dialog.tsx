@@ -113,6 +113,38 @@ function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
   return -1;
 }
 
+// Sortable class label for a lesson, normalising cohorts that can arrive as
+// plain names or objects.
+function cohortLabel(cohorts: CohortLike[] | undefined): string {
+  if (!cohorts?.length) {
+    return '';
+  }
+  return cohorts
+    .map((cohort) =>
+      typeof cohort === 'string' ? cohort : (cohort.short ?? cohort.name ?? '')
+    )
+    .join(', ');
+}
+
+// Order lessons by period number ascending (unknown periods last), breaking
+// ties by subject short then class so same-period lessons group sensibly.
+function compareLessonsByPeriod(a: EnrichedLesson, b: EnrichedLesson): number {
+  const aPeriod = a.period?.period ?? Number.POSITIVE_INFINITY;
+  const bPeriod = b.period?.period ?? Number.POSITIVE_INFINITY;
+  if (aPeriod !== bPeriod) {
+    return aPeriod - bPeriod;
+  }
+  const aSubject = a.subject?.short ?? a.subject?.name ?? '';
+  const bSubject = b.subject?.short ?? b.subject?.name ?? '';
+  const subjectDiff = aSubject.localeCompare(bSubject);
+  if (subjectDiff !== 0) {
+    return subjectDiff;
+  }
+  return cohortLabel(a.cohorts as CohortLike[]).localeCompare(
+    cohortLabel(b.cohorts as CohortLike[])
+  );
+}
+
 // Lessons on the source day, de-duplicated by id. A day move lists every
 // lesson on the day (optionally narrowed to a selected class); a room move
 // narrows to the selected from-room.
@@ -150,7 +182,7 @@ function filterVisibleLessons(
     }
   }
 
-  return Array.from(seen.values());
+  return Array.from(seen.values()).sort(compareLessonsByPeriod);
 }
 
 function slotHintKey(mode: MoveMode): string {
