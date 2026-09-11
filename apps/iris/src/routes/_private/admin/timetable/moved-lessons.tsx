@@ -5,7 +5,10 @@ import dayjs from 'dayjs';
 import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
+import {
+  MovedLessonDialog,
+  type MoveMode,
+} from '@/components/admin/moved-lesson-dialog';
 import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
 import {
   DateRangePicker,
@@ -170,12 +173,26 @@ function extractReferenceData(
   };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex form with multiple queries and state
+// A move that keeps the lesson's own day/period is a room move; otherwise it
+// is a day move.
+function detectMoveMode(item: MovedLessonItem): MoveMode {
+  const firstLesson = item.lessons[0];
+  if (
+    firstLesson &&
+    item.movedLesson.startingDay === firstLesson.day?.id &&
+    item.movedLesson.startingPeriod === firstLesson.period?.id
+  ) {
+    return 'room';
+  }
+  return 'day';
+}
+
 function MovedLessonsPage() {
   const { i18n, t } = useTranslation();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [moveMode, setMoveMode] = useState<MoveMode>('room');
   const [selectedItem, setSelectedItem] = useState<MovedLessonItem | null>(
     null
   );
@@ -369,6 +386,7 @@ function MovedLessonsPage() {
               aria-label={t('movedLesson.create')}
               onClick={() => {
                 setSelectedItem(null);
+                setMoveMode('room');
                 setDialogOpen(true);
               }}
             >
@@ -499,6 +517,7 @@ function MovedLessonsPage() {
                         <Button
                           onClick={() => {
                             setSelectedItem(ml);
+                            setMoveMode(detectMoveMode(ml));
                             setDialogOpen(true);
                           }}
                           size="icon"
@@ -538,14 +557,16 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
-          cohortLessonsData={cohortLessonsQueries.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
+          mode={moveMode}
+          onModeChange={setMoveMode}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
               setSelectedItem(null);
+              setMoveMode('room');
             }
           }}
           open={dialogOpen}

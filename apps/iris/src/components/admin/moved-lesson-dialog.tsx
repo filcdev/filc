@@ -1,7 +1,6 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import dayjs from 'dayjs';
 import type { InferRequestType } from 'hono/client';
-import { Save } from 'lucide-react';
+import { ArrowRightLeft, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -27,63 +26,73 @@ import {
   useUpdateMovedLesson,
 } from '@/hooks/moved-lessons';
 import { useApiQuery } from '@/utils/api';
-import {
-  formatLocalizedDate,
-  getDayOrder,
-  getLocalizedWeekdayName,
-  isMatchingWeekday,
-} from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
+
+export type MoveMode = 'room' | 'day';
 
 type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
   classrooms: Classroom[];
   cohorts: Cohort[];
-  cohortLessonsData?: Array<{ lessons: EnrichedLesson[] }>;
   days: DayDefinition[];
   item?: MovedLessonItem | null;
+  mode?: MoveMode;
+  onModeChange?: (mode: MoveMode) => void;
   periods: Period[];
 };
 
-type LessonWithCohorts = Omit<EnrichedLesson, 'cohorts'> & {
-  cohorts?: Array<string | { id: string; name: string; short: string }>;
+// Cohort entries can arrive as plain names (from substitutions/moved lessons)
+// or as objects (from the per-cohort lessons endpoint); normalise for display.
+type CohortLike = string | { id: string; name: string; short?: string };
+
+type LessonForLabel = {
+  id: string;
+  classrooms?: Array<{ name?: string; short?: string }>;
+  cohorts?: CohortLike[];
+  subject?: { name?: string; short?: string } | null;
+  teachers?: Array<{ name?: string; short?: string }>;
 };
 
-function formatLessonLabel(
-  lesson: LessonWithCohorts,
-  language: string | undefined
-): string {
+// Drizzle `time` columns are serialised as strings, but keep formatting
+// defensive so a non-string value can never crash the render.
+function formatTime(value: string | undefined): string {
+  return String(value ?? '').slice(0, 5);
+}
+
+function formatLessonLabel(lesson: LessonForLabel): string {
   const parts: string[] = [];
-  if (lesson.subject) {
+
+  if (lesson.subject?.short) {
     parts.push(lesson.subject.short);
   }
-  if (lesson.day) {
-    parts.push(
-      getLocalizedWeekdayName(
-        lesson.day.name,
-        lesson.day.short,
-        language,
-        'short'
-      )
-    );
-  }
-  if (lesson.period) {
-    parts.push(`P${lesson.period.period}`);
-  }
+
   if (lesson.cohorts && lesson.cohorts.length > 0) {
     const cohortLabels = lesson.cohorts.map((c) =>
-      typeof c === 'string' ? c : (c.short ?? c.name)
+      typeof c === 'string' ? c : (c.short ?? c.name ?? '')
     );
     parts.push(`(${cohortLabels.join(', ')})`);
   }
-  return parts.join(' - ') || lesson.id;
+
+  if (lesson.classrooms && lesson.classrooms.length > 0) {
+    parts.push(lesson.classrooms.map((cr) => cr.name ?? '').join(', '));
+  }
+
+  if (lesson.teachers && lesson.teachers.length > 0) {
+    parts.push(lesson.teachers.map((t) => t.name ?? '').join(', '));
+  }
+
+  return parts.join(' · ') || lesson.id;
 }
+
+type MovedLessonFormValues = InferRequestType<
+  typeof api.timetable.movedLessons.$post
+>['json'];
 
 const initialState = (
   item?: MovedLessonItem | null
-): InferRequestType<typeof api.timetable.movedLessons.$post>['json'] => ({
+): MovedLessonFormValues => ({
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
   room: item?.movedLesson.room || undefined,
@@ -91,56 +100,74 @@ const initialState = (
   startingPeriod: item?.movedLesson.startingPeriod || undefined,
 });
 
-function getDefaultCohortId(
-  lessonIds: string[],
-  cohortLessonsData: Array<{ lessons: EnrichedLesson[] }> | undefined,
-  cohorts: Cohort[]
-) {
-  if (!cohortLessonsData || cohortLessonsData.length === 0) {
-    return '';
-  }
+type MoveModeToggleProps = {
+  mode: MoveMode;
+  onChange: (mode: MoveMode) => void;
+};
 
-  // For each lesson ID, find which cohort contains it
-  for (const lessonId of lessonIds) {
-    for (let i = 0; i < cohortLessonsData.length; i++) {
-      const cohortLessons = cohortLessonsData[i]?.lessons ?? [];
-      const hasLesson = cohortLessons.some((l) => l.id === lessonId);
+function MoveModeToggle({ mode, onChange }: MoveModeToggleProps) {
+  const { t } = useTranslation();
 
-      if (hasLesson) {
-        const cohortId = cohorts[i]?.id;
-        if (cohortId) {
-          return cohortId;
-        }
-      }
-    }
-  }
-
-  return '';
+  return (
+    <div className="mt-4 space-y-2 rounded-lg border bg-muted/40 p-3">
+      <div className="flex items-center gap-2">
+        <ArrowRightLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <p className="font-medium text-sm">{t('movedLesson.moveMode')}</p>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => onChange('room')}
+          size="sm"
+          variant={mode === 'room' ? 'default' : 'outline'}
+        >
+          {t('movedLesson.roomMove')}
+        </Button>
+        <Button
+          onClick={() => onChange('day')}
+          size="sm"
+          variant={mode === 'day' ? 'default' : 'outline'}
+        >
+          {t('movedLesson.dayMove')}
+        </Button>
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {mode === 'room'
+          ? t('movedLesson.roomMoveHint')
+          : t('movedLesson.dayMoveHint')}
+      </p>
+    </div>
+  );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mode, source and target fields plus availability queries
 export function MovedLessonDialog({
   allLessons,
   classrooms,
   cohorts,
-  cohortLessonsData,
   days,
   item,
+  mode = 'room',
+  onModeChange,
   onOpenChange,
   open,
   periods,
 }: MovedLessonDialogProps) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const close = () => onOpenChange(false);
   const createMutation = useCreateMovedLesson({ onSaved: close });
   const updateMutation = useUpdateMovedLesson({ onSaved: close });
+
   const [selectedCohort, setSelectedCohort] = useState<string>('');
+  const [sourceDay, setSourceDay] = useState<string>('');
+  const [sourcePeriod, setSourcePeriod] = useState<string>('');
+
   const defaultValues = useMemo(() => initialState(item), [item]);
 
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       if (item) {
-        // For updates, ensure all required fields are present
+        // Updates require every target field to be present.
         const hasAllFields =
           Boolean(value.room) &&
           Boolean(value.startingDay) &&
@@ -176,6 +203,7 @@ export function MovedLessonDialog({
   );
   const formRoom = useStore(form.store, (state) => state.values.room);
 
+  // Reset the form and derive the source slot whenever the dialog opens.
   useEffect(() => {
     if (!open) {
       return;
@@ -183,49 +211,32 @@ export function MovedLessonDialog({
 
     form.reset(defaultValues);
 
-    let cohortId = '';
+    let dayId = '';
+    let periodId = '';
 
     if (item && item.lessons.length > 0) {
-      cohortId = getDefaultCohortId(
-        item.lessons.map((lesson) => lesson.id),
-        cohortLessonsData,
-        cohorts
-      );
+      const firstLesson = item.lessons[0];
+      dayId = firstLesson?.day?.id ?? '';
+      periodId = firstLesson?.period?.id ?? '';
     }
 
-    setSelectedCohort(cohortId);
-  }, [defaultValues, form, open, item, cohortLessonsData, cohorts]);
+    setSelectedCohort('');
+    setSourceDay(dayId);
+    setSourcePeriod(periodId);
+  }, [defaultValues, form, item, open]);
 
-  // Auto-fill target day based on selected date.
+  // In room-move mode the target slot is the source slot.
   useEffect(() => {
-    if (!formDate || days.length === 0) {
+    if (mode !== 'room') {
       return;
     }
-
-    const weekdayIndex = dayjs(formDate as Date | string).day();
-
-    const matchingDay = days.find((day) =>
-      isMatchingWeekday(weekdayIndex, day.name, day.short)
-    );
-
-    const matchingDayId = matchingDay?.id;
-
-    if (formStartingDay === matchingDayId) {
-      return;
+    if (sourceDay && form.getFieldValue('startingDay') !== sourceDay) {
+      form.setFieldValue('startingDay', sourceDay);
     }
-
-    form.setFieldValue('startingDay', matchingDayId);
-  }, [days, form, formDate, formStartingDay]);
-
-  const selectedWeekdayLabel = useMemo(() => {
-    if (!formDate) {
-      return '-';
+    if (sourcePeriod && form.getFieldValue('startingPeriod') !== sourcePeriod) {
+      form.setFieldValue('startingPeriod', sourcePeriod);
     }
-
-    return formatLocalizedDate(formDate as Date | string, i18n.language, {
-      weekday: 'long',
-    });
-  }, [formDate, i18n.language]);
+  }, [form, mode, sourceDay, sourcePeriod]);
 
   const cohortLessonsQuery = useApiQuery<EnrichedLesson[]>(
     () =>
@@ -271,143 +282,106 @@ export function MovedLessonDialog({
     }
   );
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex filtering and mapping logic
-  const availableLessons = useMemo(() => {
-    const map = new Map<string, EnrichedLesson>();
+  // Lessons in the selected source slot (de-duplicated by lesson id, since the
+  // per-cohort endpoint can return the same lesson once per group).
+  const visibleLessons = useMemo(() => {
+    if (!(sourceDay && sourcePeriod)) {
+      return [];
+    }
 
     const source =
       selectedCohort && cohortLessonsQuery.data?.length
         ? cohortLessonsQuery.data
         : allLessons;
 
-    /* biome-disable useBlockStatements */
-    for (const l of source) {
-      if (!l?.id) {
-        continue;
-      }
-      map.set(l.id, l as EnrichedLesson);
-    }
-    /* biome-enable useBlockStatements */
-
-    // In edit mode, always include the current selected lessons even if they don't match current filters
-    if (item && formLessonIds) {
-      for (const lessonId of formLessonIds) {
-        const lesson = allLessons.find((l) => l.id === lessonId);
-        if (lesson) {
-          map.set(lesson.id, lesson);
-        }
+    const seen = new Map<string, EnrichedLesson>();
+    for (const lesson of source) {
+      if (
+        lesson?.day?.id === sourceDay &&
+        lesson?.period?.id === sourcePeriod &&
+        !seen.has(lesson.id)
+      ) {
+        seen.set(lesson.id, lesson);
       }
     }
 
-    let lessons = Array.from(map.values());
-
-    lessons = lessons.filter((l) => {
-      const periodMatch =
-        !formStartingPeriod || l.period?.id === formStartingPeriod;
-      const dayMatch = !formStartingDay || l.day?.id === formStartingDay;
-      return periodMatch && dayMatch;
-    });
-
-    return lessons.sort((a, b) => {
-      const aDay = getDayOrder(a.day?.name ?? '', a.day?.short);
-      const bDay = getDayOrder(b.day?.name ?? '', b.day?.short);
-
-      if (aDay !== bDay) {
-        return aDay - bDay;
-      }
-
-      return (a.period?.period ?? 999) - (b.period?.period ?? 999);
-    });
+    return Array.from(seen.values());
   }, [
     allLessons,
     cohortLessonsQuery.data,
     selectedCohort,
-    formStartingPeriod,
-    formStartingDay,
-    item,
-    formLessonIds,
+    sourceDay,
+    sourcePeriod,
   ]);
+
+  const availabilityKnown = Boolean(
+    formDate && formStartingDay && formStartingPeriod
+  );
 
   const roomOptions = useMemo(() => {
-    const availableRooms =
-      formDate && formStartingDay && formStartingPeriod
-        ? (availableClassroomsQuery.data ?? [])
-        : classrooms;
+    const freeRoomIds = new Set(
+      (availableClassroomsQuery.data ?? []).map((cr) => cr.id)
+    );
 
-    const roomMap = new Map<string, Classroom>();
-    for (const cr of availableRooms) {
-      roomMap.set(cr.id, cr);
-    }
-
-    // Ensure the current room is included in edit mode
+    // The room currently assigned to the edited move is never "occupied" by it.
     if (item?.movedLesson.room) {
-      const currentRoom = classrooms.find(
-        (cr) => cr.id === item.movedLesson.room
-      );
-      if (currentRoom) {
-        roomMap.set(currentRoom.id, currentRoom);
-      }
+      freeRoomIds.add(item.movedLesson.room);
     }
 
-    return Array.from(roomMap.values()).map((cr) => ({
-      label: `${cr.name} (${cr.short})`,
-      value: cr.id,
-    }));
-  }, [
-    formDate,
-    formStartingDay,
-    formStartingPeriod,
-    availableClassroomsQuery.data,
-    classrooms,
-    item,
-  ]);
+    return classrooms.map((cr) => {
+      const isFree = !availabilityKnown || freeRoomIds.has(cr.id);
+      const label = availabilityKnown
+        ? `${cr.name} (${cr.short}) — ${
+            isFree ? t('movedLesson.free') : t('movedLesson.occupied')
+          }`
+        : `${cr.name} (${cr.short})`;
+      return {
+        disabled: availabilityKnown && !freeRoomIds.has(cr.id),
+        label,
+        value: cr.id,
+      };
+    });
+  }, [availableClassroomsQuery.data, availabilityKnown, classrooms, item, t]);
 
   const isCreate = !item;
 
   const isValid = useMemo(() => {
-    if (isCreate) {
-      return !!formDate && !!(formLessonIds && formLessonIds.length > 0);
-    }
     return (
       !!formDate &&
+      !!formRoom &&
       !!formStartingDay &&
       !!formStartingPeriod &&
-      !!formRoom &&
       !!(formLessonIds && formLessonIds.length > 0)
     );
-  }, [
-    formDate,
-    formLessonIds,
-    formStartingDay,
-    formStartingPeriod,
-    formRoom,
-    isCreate,
-  ]);
+  }, [formDate, formLessonIds, formRoom, formStartingDay, formStartingPeriod]);
 
-  const toggleLesson = (
-    lesson: EnrichedLesson | undefined,
-    checked: boolean
-  ) => {
-    if (!lesson?.id) {
-      return;
-    }
+  const toggleLesson = (lesson: EnrichedLesson, checked: boolean) => {
     const current = form.getFieldValue('lessonIds') ?? [];
     if (checked) {
-      const newLessonIds = Array.from(new Set([...current, lesson.id]));
-      form.setFieldValue('lessonIds', newLessonIds);
-      // Auto-fill period/day if not already set
-      if (!form.getFieldValue('startingPeriod') && lesson.period?.id) {
-        form.setFieldValue('startingPeriod', lesson.period.id);
-      }
-      if (!form.getFieldValue('startingDay') && lesson.day?.id) {
-        form.setFieldValue('startingDay', lesson.day.id);
-      }
+      form.setFieldValue(
+        'lessonIds',
+        Array.from(new Set([...current, lesson.id]))
+      );
     } else {
       form.setFieldValue(
         'lessonIds',
         current.filter((id) => id !== lesson.id)
       );
     }
+  };
+
+  const handleSourceDayChange = (value: string) => {
+    setSourceDay(value);
+    form.setFieldValue('lessonIds', []);
+  };
+
+  const handleSourcePeriodChange = (value: string) => {
+    setSourcePeriod(value);
+    form.setFieldValue('lessonIds', []);
+  };
+
+  const handleModeChange = (next: MoveMode) => {
+    onModeChange?.(next);
   };
 
   return (
@@ -419,6 +393,9 @@ export function MovedLessonDialog({
               {isCreate ? t('movedLesson.create') : t('movedLesson.edit')}
             </DialogTitle>
           </DialogHeader>
+
+          <MoveModeToggle mode={mode} onChange={handleModeChange} />
+
           <form
             className="mt-4 space-y-4"
             id="movedLessonForm"
@@ -440,34 +417,142 @@ export function MovedLessonDialog({
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>{t('movedLesson.class')}</Label>
+              <Combobox
+                emptyMessage={t('movedLesson.noCohortFound')}
+                onValueChange={setSelectedCohort}
+                options={cohorts.map((c) => ({
+                  label: c.name,
+                  value: c.id,
+                }))}
+                placeholder={t('movedLesson.selectCohortPlaceholder')}
+                searchPlaceholder={t('search')}
+                value={selectedCohort}
+              />
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>{t('movedLesson.targetDay')}</Label>
-                <div className="rounded-md border px-3 py-2 text-sm capitalize">
-                  {selectedWeekdayLabel}
-                </div>
+                <Label>{t('movedLesson.day')}</Label>
+                <Combobox
+                  emptyMessage={t('movedLesson.noDayFound')}
+                  onValueChange={handleSourceDayChange}
+                  options={days.map((day) => ({
+                    label: `${day.name} (${day.short})`,
+                    value: day.id,
+                  }))}
+                  placeholder={t('movedLesson.selectDayPlaceholder')}
+                  searchPlaceholder={t('search')}
+                  value={sourceDay}
+                />
               </div>
               <div className="space-y-2">
-                <Label>{t('movedLesson.targetPeriod')}</Label>
+                <Label>{t('movedLesson.period')}</Label>
                 <Combobox
                   emptyMessage={t('movedLesson.noPeriodFound')}
-                  onValueChange={(value) =>
-                    form.setFieldValue('startingPeriod', value || undefined)
-                  }
+                  onValueChange={handleSourcePeriodChange}
                   options={periods.map((p) => ({
                     label: t('movedLesson.periodLabel', {
-                      end: p.endTime.slice(0, 5),
+                      end: formatTime(p.endTime),
                       num: p.period,
-                      start: p.startTime.slice(0, 5),
+                      start: formatTime(p.startTime),
                     }),
                     value: p.id,
                   }))}
-                  placeholder={t('movedLesson.targetPeriod')}
+                  placeholder={t('movedLesson.selectPeriodPlaceholder')}
                   searchPlaceholder={t('search')}
-                  value={formStartingPeriod ?? ''}
+                  value={sourcePeriod}
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>{t('movedLesson.lessons')}</Label>
+              <div className="max-h-48 overflow-y-auto rounded-lg border">
+                <div className="space-y-1 p-2">
+                  {!(sourceDay && sourcePeriod) && (
+                    <p className="p-2 text-muted-foreground text-sm">
+                      {t('movedLesson.selectSlotHint')}
+                    </p>
+                  )}
+                  {sourceDay &&
+                    sourcePeriod &&
+                    cohortLessonsQuery.isLoading && (
+                      <p className="p-2 text-muted-foreground text-sm">
+                        {t('movedLesson.loadingLessons')}
+                      </p>
+                    )}
+                  {sourceDay &&
+                    sourcePeriod &&
+                    !cohortLessonsQuery.isLoading &&
+                    visibleLessons.length === 0 && (
+                      <p className="p-2 text-muted-foreground text-sm">
+                        {t('movedLesson.noLessons')}
+                      </p>
+                    )}
+                  {visibleLessons.map((lesson) => (
+                    <label
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                      htmlFor={`ml-lesson-${lesson.id}`}
+                      key={lesson.id}
+                    >
+                      <Checkbox
+                        checked={(formLessonIds ?? []).includes(lesson.id)}
+                        id={`ml-lesson-${lesson.id}`}
+                        onCheckedChange={(checked) =>
+                          toggleLesson(lesson, !!checked)
+                        }
+                      />
+                      <span>
+                        {formatLessonLabel(lesson as unknown as LessonForLabel)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {mode === 'day' && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{t('movedLesson.targetDay')}</Label>
+                  <Combobox
+                    emptyMessage={t('movedLesson.noDayFound')}
+                    onValueChange={(value) =>
+                      form.setFieldValue('startingDay', value || undefined)
+                    }
+                    options={days.map((day) => ({
+                      label: `${day.name} (${day.short})`,
+                      value: day.id,
+                    }))}
+                    placeholder={t('movedLesson.targetDay')}
+                    searchPlaceholder={t('search')}
+                    value={formStartingDay ?? ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('movedLesson.targetPeriod')}</Label>
+                  <Combobox
+                    emptyMessage={t('movedLesson.noPeriodFound')}
+                    onValueChange={(value) =>
+                      form.setFieldValue('startingPeriod', value || undefined)
+                    }
+                    options={periods.map((p) => ({
+                      label: t('movedLesson.periodLabel', {
+                        end: formatTime(p.endTime),
+                        num: p.period,
+                        start: formatTime(p.startTime),
+                      }),
+                      value: p.id,
+                    }))}
+                    placeholder={t('movedLesson.targetPeriod')}
+                    searchPlaceholder={t('search')}
+                    value={formStartingPeriod ?? ''}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>{t('movedLesson.targetRoom')}</Label>
@@ -490,60 +575,6 @@ export function MovedLessonDialog({
                 searchPlaceholder={t('search')}
                 value={formRoom ?? ''}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('movedLesson.selectCohort')}</Label>
-              <Combobox
-                emptyMessage={t('movedLesson.noCohortFound')}
-                onValueChange={(v) => setSelectedCohort(v)}
-                options={cohorts.map((c) => ({
-                  label: c.name,
-                  value: c.id,
-                }))}
-                placeholder={t('movedLesson.selectCohortPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={selectedCohort}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('movedLesson.lessons')}</Label>
-              <div className="max-h-48 overflow-y-auto rounded-lg border">
-                <div className="space-y-1 p-2">
-                  {cohortLessonsQuery.isLoading && (
-                    <p className="p-2 text-muted-foreground text-sm">
-                      {t('movedLesson.loadingLessons')}
-                    </p>
-                  )}
-                  {!cohortLessonsQuery.isLoading &&
-                    availableLessons.length === 0 && (
-                      <p className="p-2 text-muted-foreground text-sm">
-                        {t('movedLesson.noLessons')}
-                      </p>
-                    )}
-                  {!cohortLessonsQuery.isLoading &&
-                    availableLessons.length > 0 &&
-                    availableLessons.map((lesson) => (
-                      <label
-                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                        htmlFor={`ml-lesson-${lesson.id}`}
-                        key={lesson.id}
-                      >
-                        <Checkbox
-                          checked={(formLessonIds ?? []).includes(
-                            lesson.id ?? ''
-                          )}
-                          id={`ml-lesson-${lesson.id}`}
-                          onCheckedChange={(checked) =>
-                            toggleLesson(lesson, !!checked)
-                          }
-                        />
-                        <span>{formatLessonLabel(lesson, i18n.language)}</span>
-                      </label>
-                    ))}
-                </div>
-              </div>
             </div>
           </form>
         </div>

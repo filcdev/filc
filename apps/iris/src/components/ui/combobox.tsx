@@ -17,6 +17,7 @@ import {
 import { cn } from '@/utils';
 
 type ComboboxOption = {
+  disabled?: boolean;
   label: string;
   value: string;
 };
@@ -69,6 +70,7 @@ export function Combobox({
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
+                  disabled={option.disabled}
                   key={option.value}
                   onSelect={() => {
                     onValueChange(option.value === value ? '' : option.value);
