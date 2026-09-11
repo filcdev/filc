@@ -567,6 +567,7 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
+          cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
           mode={moveMode}

@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   type Classroom,
+  type Cohort,
   type DayDefinition,
   type EnrichedLesson,
   type MovedLessonItem,
@@ -36,6 +37,7 @@ export type MoveMode = 'room' | 'day';
 type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
   classrooms: Classroom[];
+  cohorts: Cohort[];
   days: DayDefinition[];
   item?: MovedLessonItem | null;
   mode?: MoveMode;
@@ -112,12 +114,14 @@ function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
 }
 
 // Lessons on the source day, de-duplicated by id. A day move lists every
-// lesson on the day; a room move narrows to the selected from-room.
+// lesson on the day (optionally narrowed to a selected class); a room move
+// narrows to the selected from-room.
 function filterVisibleLessons(
   allLessons: EnrichedLesson[],
   sourceDay: string,
   fromRoom: string,
-  mode: MoveMode
+  mode: MoveMode,
+  cohortName: string
 ): EnrichedLesson[] {
   if (!sourceDay) {
     return [];
@@ -131,7 +135,11 @@ function filterVisibleLessons(
     const matchesDay = lesson.day?.id === sourceDay;
     const matchesRoom =
       mode === 'day' || lesson.classrooms?.some((cr) => cr.id === fromRoom);
-    if (matchesDay && matchesRoom && !seen.has(lesson.id)) {
+    const matchesCohort =
+      mode !== 'day' ||
+      !cohortName ||
+      lesson.cohorts?.some((cohort) => cohort === cohortName);
+    if (matchesDay && matchesRoom && matchesCohort && !seen.has(lesson.id)) {
       seen.set(lesson.id, lesson);
     }
   }
@@ -199,9 +207,38 @@ function MoveModeToggle({ mode, onChange }: MoveModeToggleProps) {
   );
 }
 
+type CohortSelectorProps = {
+  cohorts: Cohort[];
+  onChange: (value: string) => void;
+  value: string;
+};
+
+function CohortSelector({ cohorts, onChange, value }: CohortSelectorProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-2">
+      <Label>{t('movedLesson.class')}</Label>
+      <Combobox
+        emptyMessage={t('movedLesson.noCohortFound')}
+        onValueChange={onChange}
+        options={cohorts.map((cohort) => ({
+          label: `${cohort.name} (${cohort.short})`,
+          value: cohort.name,
+        }))}
+        placeholder={t('movedLesson.selectCohortPlaceholder')}
+        searchPlaceholder={t('search')}
+        value={value}
+      />
+    </div>
+  );
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: two move modes share many conditional fields
 export function MovedLessonDialog({
   allLessons,
   classrooms,
+  cohorts,
   days,
   item,
   mode = 'room',
@@ -216,6 +253,7 @@ export function MovedLessonDialog({
 
   const [fromRoom, setFromRoom] = useState<string>('');
   const [sourceDate, setSourceDate] = useState<Date | undefined>();
+  const [selectedCohort, setSelectedCohort] = useState<string>('');
 
   const defaultValues = useMemo(() => initialState(item), [item]);
 
@@ -290,6 +328,7 @@ export function MovedLessonDialog({
     }
 
     setFromRoom(fromRoomId);
+    setSelectedCohort('');
 
     // The source date is the lesson's date. For a room move the move's own
     // date already lands on the source weekday; otherwise anchor on it and
@@ -371,8 +410,15 @@ export function MovedLessonDialog({
   // Lessons in the selected source slot (de-duplicated by lesson id). A day
   // move lists every lesson on the day; a room move narrows to the from-room.
   const visibleLessons = useMemo(
-    () => filterVisibleLessons(allLessons, sourceDay, fromRoom, mode),
-    [allLessons, sourceDay, fromRoom, mode]
+    () =>
+      filterVisibleLessons(
+        allLessons,
+        sourceDay,
+        fromRoom,
+        mode,
+        selectedCohort
+      ),
+    [allLessons, sourceDay, fromRoom, mode, selectedCohort]
   );
 
   const availabilityKnown = Boolean(
@@ -446,6 +492,11 @@ export function MovedLessonDialog({
     form.setFieldValue('lessonIds', []);
   };
 
+  const handleCohortChange = (value: string) => {
+    setSelectedCohort(value);
+    form.setFieldValue('lessonIds', []);
+  };
+
   const handleTargetDateChange = (date: Date | undefined) => {
     if (!date) {
       form.setFieldValue('date', undefined);
@@ -488,6 +539,14 @@ export function MovedLessonDialog({
                 placeholder={t('movedLesson.datePlaceholder')}
               />
             </div>
+
+            {mode === 'day' && (
+              <CohortSelector
+                cohorts={cohorts}
+                onChange={handleCohortChange}
+                value={selectedCohort}
+              />
+            )}
 
             {mode === 'room' && (
               <div className="space-y-2">
