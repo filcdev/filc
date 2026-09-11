@@ -75,11 +75,22 @@ const ensureClassroomExists = async (classroomId: string) => {
   }
 };
 
-const ensureLessonsExist = async (lessonIds: string[]) => {
+const ensureLessonsExist = async (
+  lessonIds: string[]
+): Promise<{ periodId: string }[]> => {
+  const timetableId = await getActiveTimetableId();
+
   const lessonRecords = await db
-    .select({ lessonId: lesson.id })
+    .select({ lessonId: lesson.id, periodId: lesson.periodId })
     .from(lesson)
-    .where(inArray(lesson.id, lessonIds));
+    .where(
+      timetableId
+        ? and(
+            inArray(lesson.id, lessonIds),
+            eq(lesson.timetableId, timetableId)
+          )
+        : sql`false`
+    );
 
   const foundLessonIds = new Set(lessonRecords.map(({ lessonId }) => lessonId));
   const missingLessonIds = lessonIds.filter(
@@ -91,6 +102,8 @@ const ensureLessonsExist = async (lessonIds: string[]) => {
       message: `Invalid lesson ids provided: ${missingLessonIds.join(', ')}`,
     });
   }
+
+  return lessonRecords;
 };
 
 const normalizeOptionalString = (
@@ -169,7 +182,18 @@ const validateMovedLessonReferences = async (options: {
     'Lesson ids'
   );
   if (normalizedLessonIds && normalizedLessonIds.length > 0) {
-    await ensureLessonsExist(normalizedLessonIds);
+    const lessonRecords = await ensureLessonsExist(normalizedLessonIds);
+
+    if (
+      normalizedStartingPeriod &&
+      lessonRecords.some(
+        ({ periodId }) => periodId !== normalizedStartingPeriod
+      )
+    ) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Provided lessons do not match the starting period',
+      });
+    }
   }
 };
 
@@ -238,6 +262,12 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   async (c) => {
+    const timetableId = await getActiveTimetableId();
+
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const movedLessons = await db
       .select({
         classroom,
@@ -257,9 +287,10 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         movedLessonLessonMTM,
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
+      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+      .where(eq(lesson.timetableId, timetableId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    const timetableId = await getActiveTimetableId();
     return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
@@ -362,6 +393,10 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
 
     const timetableId = await getActiveTimetableId();
 
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const movedLessons = await db
       .select({
         classroom,
@@ -383,7 +418,12 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
       .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-      .where(eq(lessonCohortMTM.cohortId, cohortId))
+      .where(
+        and(
+          eq(lessonCohortMTM.cohortId, cohortId),
+          eq(lesson.timetableId, timetableId)
+        )
+      )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
     return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
@@ -424,6 +464,10 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
 
     const timetableId = await getActiveTimetableId();
 
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -451,7 +495,8 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       .where(
         and(
           eq(lessonCohortMTM.cohortId, cohortId),
-          gte(movedLesson.date, today)
+          gte(movedLesson.date, today),
+          eq(lesson.timetableId, timetableId)
         )
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);

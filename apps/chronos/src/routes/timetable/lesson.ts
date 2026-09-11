@@ -766,13 +766,23 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
       return ok(c, []);
     }
 
+    const timetableId = await getActiveTimetableId();
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const lessons = await db
       .select()
       .from(lesson)
       .where(
-        or(
-          ...existingTeacherIds.map((id) =>
-            arrayContains(lesson.teacherIds, [id])
+        and(
+          eq(lesson.timetableId, timetableId),
+          or(
+            ...existingTeacherIds.map((id) =>
+              arrayContains(lesson.teacherIds, [id])
+            )
           )
         )
       );
