@@ -230,9 +230,7 @@ const cardToLesson = (
   const cardClassroomIds = splitIds(card._classroomids);
   const periodsPerWeek = Number(lesson._periodsperweek);
   return {
-    classroomIds: cardClassroomIds.length
-      ? cardClassroomIds
-      : splitIds(lesson._classroomids),
+    classroomIds: cardClassroomIds,
     cohortIds: splitIds(lesson._classids),
     dayId,
     groupIds: splitIds(lesson._groupids),
