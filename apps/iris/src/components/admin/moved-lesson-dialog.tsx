@@ -135,10 +135,16 @@ function filterVisibleLessons(
     const matchesDay = lesson.day?.id === sourceDay;
     const matchesRoom =
       mode === 'day' || lesson.classrooms?.some((cr) => cr.id === fromRoom);
+    // cohorts can arrive as plain names (from substitutions) or objects (from
+    // the per-cohort lessons endpoint); normalise each before comparing.
+    const cohorts = lesson.cohorts as CohortLike[];
     const matchesCohort =
       mode !== 'day' ||
       !cohortName ||
-      lesson.cohorts?.some((cohort) => cohort === cohortName);
+      cohorts.some((cohort) => {
+        const name = typeof cohort === 'string' ? cohort : cohort.name;
+        return name === cohortName;
+      });
     if (matchesDay && matchesRoom && matchesCohort && !seen.has(lesson.id)) {
       seen.set(lesson.id, lesson);
     }
