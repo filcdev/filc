@@ -505,10 +505,12 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
-const createSchema = createInsertSchema(movedLesson).omit({ id: true }).extend({
-  date: z.coerce.date(),
-  lessonIds: z.uuid().array().optional(),
-});
+const createSchema = createInsertSchema(movedLesson)
+  .omit({ id: true })
+  .extend({
+    date: z.coerce.date(),
+    lessonIds: z.uuid().array().min(1),
+  });
 
 const createResponseSchema = z.object({
   data: createSelectSchema(movedLesson),
