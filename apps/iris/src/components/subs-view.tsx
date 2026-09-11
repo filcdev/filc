@@ -408,7 +408,7 @@ export function SubstitutionView() {
     classInitialized.current = true;
     const cohortId = session?.user?.cohortId ?? null;
     if (cohortId) {
-      setSelections((s) => ({ ...s, class: cohortId }));
+      setSelections((s) => (s.class === null ? { ...s, class: cohortId } : s));
     }
   }, [isPending, session?.user?.cohortId]);
 

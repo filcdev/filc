@@ -1,4 +1,3 @@
-import type { InferResponseType } from 'hono/client';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,16 +8,9 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useApiQuery } from '@/utils/api';
+import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type AnnouncementApiResponse = InferResponseType<
-  typeof api.news.announcements.$get
->;
-type AnnouncementItem = NonNullable<AnnouncementApiResponse['data']>[number];
 
 type BlockContent = {
   content: string;
@@ -85,13 +77,7 @@ export function NewsPanel({ classId }: { classId?: string | null }) {
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 
-  const announcementsQuery = useApiQuery<AnnouncementItem[]>(
-    () => api.news.announcements.$get({ query: { includeAll: 'true' } }),
-    {
-      enabled: !isPending,
-      queryKey: queryKeys.news.announcementsPanel(),
-    }
-  );
+  const announcementsQuery = useAnnouncementsPanel(!isPending);
 
   const newsItems = useMemo<NewsItem[]>(() => {
     const today = new Date();

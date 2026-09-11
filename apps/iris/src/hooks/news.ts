@@ -58,6 +58,23 @@ export function useAnnouncements() {
   });
 }
 
+/** Active announcements for the public panel; only fetched when enabled. */
+export function useAnnouncementsPanel(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<AnnouncementItem[]> => {
+      const res = await parseResponse(
+        api.news.announcements.$get({ query: { includeAll: 'true' } })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load announcements');
+      }
+      return res.data as AnnouncementItem[];
+    },
+    queryKey: queryKeys.news.announcementsPanel(),
+  });
+}
+
 /** System message list for the admin table; only fetched when enabled. */
 export function useAdminSystemMessages(enabled: boolean) {
   return useQuery({
@@ -92,8 +109,12 @@ export function useCohorts(enabled: boolean) {
 
 function useInvalidateAnnouncements() {
   const queryClient = useQueryClient();
-  return () =>
+  return () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.news.announcements() });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.news.announcementsPanel(),
+    });
+  };
 }
 
 function useInvalidateSystemMessages() {
