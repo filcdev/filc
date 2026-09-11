@@ -26,6 +26,7 @@ import {
   useUpdateMovedLesson,
 } from '@/hooks/moved-lessons';
 import { useApiQuery } from '@/utils/api';
+import { isMatchingWeekday } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -86,6 +87,29 @@ function formatLessonLabel(lesson: LessonForLabel): string {
   return parts.join(' · ') || lesson.id;
 }
 
+// Map a calendar date to the id of the day definition matching its weekday.
+function getWeekdayId(date: Date, days: DayDefinition[]): string {
+  const weekdayIndex = date.getDay(); // 0 = Sunday … 6 = Saturday
+  return (
+    days.find((day) => isMatchingWeekday(weekdayIndex, day.name, day.short))
+      ?.id ?? ''
+  );
+}
+
+// Map a day definition id back to a JS weekday index (0 = Sunday … 6 = Saturday).
+function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
+  const day = days.find((d) => d.id === dayId);
+  if (!day) {
+    return -1;
+  }
+  for (let index = 0; index < 7; index += 1) {
+    if (isMatchingWeekday(index, day.name, day.short)) {
+      return index;
+    }
+  }
+  return -1;
+}
+
 type MovedLessonFormValues = InferRequestType<
   typeof api.timetable.movedLessons.$post
 >['json'];
@@ -139,7 +163,6 @@ function MoveModeToggle({ mode, onChange }: MoveModeToggleProps) {
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mode, source and target fields plus availability queries
 export function MovedLessonDialog({
   allLessons,
   classrooms,
@@ -158,10 +181,16 @@ export function MovedLessonDialog({
   const updateMutation = useUpdateMovedLesson({ onSaved: close });
 
   const [selectedCohort, setSelectedCohort] = useState<string>('');
-  const [sourceDay, setSourceDay] = useState<string>('');
+  const [sourceDate, setSourceDate] = useState<Date | undefined>();
   const [sourcePeriod, setSourcePeriod] = useState<string>('');
 
   const defaultValues = useMemo(() => initialState(item), [item]);
+
+  // The source weekday id is derived from the source date.
+  const sourceDay = useMemo(
+    () => (sourceDate ? getWeekdayId(sourceDate, days) : ''),
+    [sourceDate, days]
+  );
 
   const form = useForm({
     defaultValues,
@@ -211,19 +240,33 @@ export function MovedLessonDialog({
 
     form.reset(defaultValues);
 
-    let dayId = '';
+    let sourceWeekdayId = '';
     let periodId = '';
 
     if (item && item.lessons.length > 0) {
       const firstLesson = item.lessons[0];
-      dayId = firstLesson?.day?.id ?? '';
+      sourceWeekdayId = firstLesson?.day?.id ?? '';
       periodId = firstLesson?.period?.id ?? '';
     }
 
     setSelectedCohort('');
-    setSourceDay(dayId);
     setSourcePeriod(periodId);
-  }, [defaultValues, form, item, open]);
+
+    // The source date is the lesson's date. For a room move the move's own
+    // date already lands on the source weekday; otherwise anchor on it and
+    // shift to the source weekday so the derived weekday stays correct.
+    const anchor = item?.movedLesson.date
+      ? new Date(item.movedLesson.date)
+      : new Date();
+    const weekdayIndex = sourceWeekdayId
+      ? getWeekdayIndex(sourceWeekdayId, days)
+      : anchor.getDay();
+    const initialSourceDate = new Date(anchor);
+    initialSourceDate.setDate(
+      anchor.getDate() + ((weekdayIndex - anchor.getDay() + 7) % 7)
+    );
+    setSourceDate(initialSourceDate);
+  }, [days, defaultValues, form, item, open]);
 
   // In room-move mode the target slot is the source slot.
   useEffect(() => {
@@ -236,7 +279,16 @@ export function MovedLessonDialog({
     if (sourcePeriod && form.getFieldValue('startingPeriod') !== sourcePeriod) {
       form.setFieldValue('startingPeriod', sourcePeriod);
     }
-  }, [form, mode, sourceDay, sourcePeriod]);
+    if (sourceDate) {
+      const currentDate = form.getFieldValue('date');
+      if (
+        !(currentDate instanceof Date) ||
+        currentDate.getTime() !== sourceDate.getTime()
+      ) {
+        form.setFieldValue('date', sourceDate);
+      }
+    }
+  }, [form, mode, sourceDate, sourceDay, sourcePeriod]);
 
   const cohortLessonsQuery = useApiQuery<EnrichedLesson[]>(
     () =>
@@ -370,14 +422,24 @@ export function MovedLessonDialog({
     }
   };
 
-  const handleSourceDayChange = (value: string) => {
-    setSourceDay(value);
+  const handleSourceDateChange = (date: Date | undefined) => {
+    setSourceDate(date);
     form.setFieldValue('lessonIds', []);
   };
 
   const handleSourcePeriodChange = (value: string) => {
     setSourcePeriod(value);
     form.setFieldValue('lessonIds', []);
+  };
+
+  const handleTargetDateChange = (date: Date | undefined) => {
+    if (!date) {
+      form.setFieldValue('date', undefined);
+      form.setFieldValue('startingDay', undefined);
+      return;
+    }
+    form.setFieldValue('date', date);
+    form.setFieldValue('startingDay', getWeekdayId(date, days));
   };
 
   const handleModeChange = (next: MoveMode) => {
@@ -405,19 +467,6 @@ export function MovedLessonDialog({
             }}
           >
             <div className="space-y-2">
-              <Label>{t('movedLesson.date')}</Label>
-              <DatePicker
-                date={
-                  formDate instanceof Date
-                    ? formDate
-                    : new Date(String(formDate))
-                }
-                onDateChange={(d) => form.setFieldValue('date', d ?? formDate)}
-                placeholder={t('movedLesson.datePlaceholder')}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label>{t('movedLesson.class')}</Label>
               <Combobox
                 emptyMessage={t('movedLesson.noCohortFound')}
@@ -434,17 +483,11 @@ export function MovedLessonDialog({
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>{t('movedLesson.day')}</Label>
-                <Combobox
-                  emptyMessage={t('movedLesson.noDayFound')}
-                  onValueChange={handleSourceDayChange}
-                  options={days.map((day) => ({
-                    label: `${day.name} (${day.short})`,
-                    value: day.id,
-                  }))}
-                  placeholder={t('movedLesson.selectDayPlaceholder')}
-                  searchPlaceholder={t('search')}
-                  value={sourceDay}
+                <Label>{t('movedLesson.date')}</Label>
+                <DatePicker
+                  date={sourceDate}
+                  onDateChange={handleSourceDateChange}
+                  placeholder={t('movedLesson.datePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
@@ -516,19 +559,11 @@ export function MovedLessonDialog({
             {mode === 'day' && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t('movedLesson.targetDay')}</Label>
-                  <Combobox
-                    emptyMessage={t('movedLesson.noDayFound')}
-                    onValueChange={(value) =>
-                      form.setFieldValue('startingDay', value || undefined)
-                    }
-                    options={days.map((day) => ({
-                      label: `${day.name} (${day.short})`,
-                      value: day.id,
-                    }))}
-                    placeholder={t('movedLesson.targetDay')}
-                    searchPlaceholder={t('search')}
-                    value={formStartingDay ?? ''}
+                  <Label>{t('movedLesson.targetDate')}</Label>
+                  <DatePicker
+                    date={formDate instanceof Date ? formDate : undefined}
+                    onDateChange={handleTargetDateChange}
+                    placeholder={t('movedLesson.datePlaceholder')}
                   />
                 </div>
                 <div className="space-y-2">
