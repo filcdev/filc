@@ -634,11 +634,6 @@
     "substitutions": "Helyettesítések | Filc",
     "adminPanel": "Adminisztrációs felület | Filc"
   },
-  "cohortReselectionBanner": {
-    "title": "Csoport kiválasztása szükséges",
-    "description": "A hozzárendelt osztályod vagy csoportod már nem elérhető. Kérjük, válassz újat.",
-    "selectCohort": "Csoport kiválasztása"
-  },
   "doorlockCards": {
     "title": "Ajtózár kártyák",
     "description": "Belépőkártyák és jogosultságaik kezelése",
