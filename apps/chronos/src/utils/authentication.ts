@@ -62,7 +62,7 @@ const authOptions = {
                 .set({ userId: session.userId })
                 .where(
                   and(
-                    eq(teacher.email, userEmail),
+                    eq(sql`lower(${teacher.email})`, userEmail),
                     // Never clobber a manual assignment made in the teacher UI.
                     or(
                       isNull(teacher.userId),
@@ -74,9 +74,13 @@ const authOptions = {
 
             const fullName = linkedUser.name?.trim().toLowerCase();
             if (fullName) {
-              await db
-                .update(teacher)
-                .set({ userId: session.userId })
+              // Select candidates first and link only when the name resolves
+              // to exactly one unlinked/owned teacher row. A name collision
+              // (e.g. a student sharing a teacher's name) must not attach the
+              // account to the wrong person, so ambiguous matches are skipped.
+              const candidates = await db
+                .select({ id: teacher.id })
+                .from(teacher)
                 .where(
                   and(
                     eq(
@@ -89,6 +93,13 @@ const authOptions = {
                     )
                   )
                 );
+              const [candidate] = candidates;
+              if (candidates.length === 1 && candidate) {
+                await db
+                  .update(teacher)
+                  .set({ userId: session.userId })
+                  .where(eq(teacher.id, candidate.id));
+              }
             }
           } catch (err) {
             logger.error('Failed to link user to teacher', {

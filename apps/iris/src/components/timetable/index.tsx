@@ -214,7 +214,7 @@ export function TimetableView() {
 
   const periodsQuery = useTimetablePeriods(selectedTimetableId);
 
-  const myTeacherQuery = useMyTeacher(isAuthenticated);
+  const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
   const myTeacher = myTeacherQuery.data ?? null;
 
   // State

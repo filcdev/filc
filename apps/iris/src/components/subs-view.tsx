@@ -401,7 +401,7 @@ export function SubstitutionView() {
   });
 
   const isAuthenticated = !isPending && !!session;
-  const myTeacherQuery = useMyTeacher(isAuthenticated);
+  const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
   const myTeacher = myTeacherQuery.data ?? null;
 
   // Default the view to the user's linked teacher, else their profile class.

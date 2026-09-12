@@ -104,6 +104,7 @@ export const getMyTeacher = timetableFactory.createHandlers(
       })
       .from(teacher)
       .where(eq(teacher.userId, userId))
+      .orderBy(teacher.id)
       .limit(1);
 
     return ok(c, row ?? null);

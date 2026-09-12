@@ -276,6 +276,8 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
     if (!names.length) {
       return [];
     }
+    // One row per matching user, duplicates preserved (no dedupe by name), so
+    // the caller can skip ambiguous names that resolve to several accounts.
     return await tx
       .select({ id: userTable.id, name: userTable.name })
       .from(userTable)

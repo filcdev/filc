@@ -190,6 +190,8 @@ export type TimetableImportStore<Tx = unknown> = {
   /**
    * Find users whose full name matches any of `names` (case-insensitive), so a
    * teacher without a matching email can still be linked to an existing account.
+   * Returns one row per matching user and does NOT dedupe by name, so the caller
+   * can detect an ambiguous name (multiple accounts sharing it) and skip it.
    */
   findUserIdsByName(
     tx: Tx,

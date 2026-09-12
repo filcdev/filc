@@ -145,10 +145,18 @@ type MyTeacherResponse = InferResponseType<
 /** The signed-in user's linked teacher, or `null` when unlinked. */
 export type MyTeacher = NonNullable<MyTeacherResponse['data']>;
 
-/** The signed-in user's linked teacher; only fetched once authenticated. */
-export function useMyTeacher(enabled: boolean) {
+/**
+ * The signed-in user's linked teacher. Unlike the immutable reference data
+ * above, this can change mid-session (an import or admin relink may land after
+ * the first fetch), so it uses a finite `staleTime` and refetches on mount
+ * instead of pinning a transient `null` for the whole session. Scoped to the
+ * user so a different account's cached result is never reused.
+ */
+export function useMyTeacher(
+  enabled: boolean,
+  userId: string | null | undefined
+) {
   return useQuery({
-    ...QUERY_OPTIONS,
     enabled,
     queryFn: async (): Promise<MyTeacher | null> => {
       const res = await parseResponse(api.timetable.teachers.me.$get());
@@ -157,7 +165,9 @@ export function useMyTeacher(enabled: boolean) {
       }
       return (res.data as MyTeacher | null) ?? null;
     },
-    queryKey: queryKeys.myTeacher(),
+    queryKey: [...queryKeys.myTeacher(), userId],
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 }
 

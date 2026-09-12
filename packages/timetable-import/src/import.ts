@@ -681,12 +681,25 @@ const linkTeachersToUsers = async <Tx>(
 
   // Pass 2: full name, for teachers the email pass left unlinked.
   const unlinked = targets.filter((target) => !linked.has(target.id));
-  if (!unlinked.length) {
-    return;
+  if (unlinked.length) {
+    await linkTeachersByFullName(tx, unlinked, store);
   }
+};
+
+/**
+ * Link still-unlinked teachers to a user whose full name matches. A name that
+ * maps to more than one account is ambiguous (e.g. a student sharing a
+ * teacher's name), so it is skipped rather than attaching the teacher to the
+ * wrong user.
+ */
+const linkTeachersByFullName = async <Tx>(
+  tx: Tx,
+  targets: TeacherLinkTarget[],
+  store: TimetableImportStore<Tx>
+): Promise<void> => {
   const names = [
     ...new Set(
-      unlinked
+      targets
         .map((target) => `${target.firstName} ${target.lastName}`.trim())
         .filter(Boolean)
     ),
@@ -695,14 +708,27 @@ const linkTeachersToUsers = async <Tx>(
     return;
   }
   const usersByName = await store.findUserIdsByName(tx, names);
-  const userByName = new Map(
-    usersByName.map((user) => [user.name.toLowerCase(), user.id])
-  );
-  for (const target of unlinked) {
-    const fullName = `${target.firstName} ${target.lastName}`.trim();
-    const userId = userByName.get(fullName.toLowerCase());
-    if (userId) {
-      await store.linkTeacherToUser(tx, target.id, userId);
+  // name → list of matching user ids (duplicates preserved, not deduped).
+  const userIdsByName = new Map<string, string[]>();
+  for (const user of usersByName) {
+    const key = user.name.trim().toLowerCase();
+    const ids = userIdsByName.get(key);
+    if (ids) {
+      ids.push(user.id);
+    } else {
+      userIdsByName.set(key, [user.id]);
+    }
+  }
+  for (const target of targets) {
+    const fullName = `${target.firstName} ${target.lastName}`
+      .trim()
+      .toLowerCase();
+    const ids = userIdsByName.get(fullName);
+    if (ids && ids.length === 1) {
+      const [userId] = ids;
+      if (userId) {
+        await store.linkTeacherToUser(tx, target.id, userId);
+      }
     }
   }
 };
