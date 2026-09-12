@@ -138,6 +138,29 @@ export function useTeachers() {
   });
 }
 
+type MyTeacherResponse = InferResponseType<
+  typeof api.timetable.teachers.me.$get
+>;
+
+/** The signed-in user's linked teacher, or `null` when unlinked. */
+export type MyTeacher = NonNullable<MyTeacherResponse['data']>;
+
+/** The signed-in user's linked teacher; only fetched once authenticated. */
+export function useMyTeacher(enabled: boolean) {
+  return useQuery({
+    ...QUERY_OPTIONS,
+    enabled,
+    queryFn: async (): Promise<MyTeacher | null> => {
+      const res = await parseResponse(api.timetable.teachers.me.$get());
+      if (!res.success) {
+        throw new Error('Failed to load your teacher profile');
+      }
+      return (res.data as MyTeacher | null) ?? null;
+    },
+    queryKey: queryKeys.myTeacher(),
+  });
+}
+
 /** Classroom list for the public filter bars. */
 export function useClassrooms() {
   return useQuery({

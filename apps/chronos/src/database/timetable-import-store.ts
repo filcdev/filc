@@ -272,6 +272,21 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       );
   },
 
+  async findUserIdsByName(tx, names) {
+    if (!names.length) {
+      return [];
+    }
+    return await tx
+      .select({ id: userTable.id, name: userTable.name })
+      .from(userTable)
+      .where(
+        inArray(
+          sql`lower(${userTable.name})`,
+          names.map((name) => name.toLowerCase())
+        )
+      );
+  },
+
   async findWeekDefinitionByName(tx, name): Promise<string | null> {
     const [existing] = await tx
       .select({ id: weekTable.id })

@@ -32,6 +32,7 @@ import { useTimetableGroupDisplay } from '@/hooks/timetable-groups';
 import {
   useClassrooms,
   useLatestValidTimetable,
+  useMyTeacher,
   useTeachers,
   useTimetableCohorts,
   useTimetableLessons,
@@ -213,6 +214,9 @@ export function TimetableView() {
 
   const periodsQuery = useTimetablePeriods(selectedTimetableId);
 
+  const myTeacherQuery = useMyTeacher(isAuthenticated);
+  const myTeacher = myTeacherQuery.data ?? null;
+
   // State
   const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
     if (search.cohort) {
@@ -261,8 +265,14 @@ export function TimetableView() {
   // Initialize from URL or defaults
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
   useEffect(() => {
+    // The teacher profile loads after auth resolves; wait for it before
+    // deciding the default so a teacher isn't defaulted to their class.
+    const myTeacherLoaded = !(isAuthenticated && myTeacherQuery.isPending);
     const allDataLoaded =
-      cohortsQuery.data && teachersQuery.data && classroomsQuery.data;
+      cohortsQuery.data &&
+      teachersQuery.data &&
+      classroomsQuery.data &&
+      myTeacherLoaded;
 
     if (!allDataLoaded || initialized || isPending) {
       return;
@@ -294,6 +304,9 @@ export function TimetableView() {
     } else if (cohortClassroom) {
       setActiveFilter('classroom');
       setSelections((s) => ({ ...s, classroom: cohortClassroom }));
+    } else if (myTeacher) {
+      setActiveFilter('teacher');
+      setSelections((s) => ({ ...s, teacher: myTeacher.id }));
     } else {
       const userClassId = session?.user?.cohortId ?? null;
       const userDefault = cohortsQuery.data?.find(
@@ -312,6 +325,9 @@ export function TimetableView() {
     classroomsQuery.data,
     session,
     isPending,
+    isAuthenticated,
+    myTeacher,
+    myTeacherQuery.isPending,
     initialized,
     search.cohort,
     search.teacher,

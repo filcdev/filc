@@ -538,6 +538,21 @@ type MissingTeacher = {
   short: string;
 };
 
+type TeacherLinkTarget = {
+  email: string | null;
+  firstName: string;
+  id: string;
+  lastName: string;
+};
+
+/** A backfill on an existing teacher row, which always carries an email. */
+type TeacherEmailBackfill = {
+  email: string;
+  firstName: string;
+  id: string;
+  lastName: string;
+};
+
 /**
  * Split parsed teachers into rows that match an existing teacher and rows to
  * insert, tracking emails to backfill on existing rows. Mutates `result`
@@ -548,11 +563,11 @@ const collectTeacherMatches = (
   existingByKey: Map<string, { email: string | null; id: string }>,
   result: Map<string, string>
 ): {
-  emailBackfills: Array<{ email: string; id: string }>;
+  emailBackfills: TeacherEmailBackfill[];
   missing: MissingTeacher[];
 } => {
   const missing: MissingTeacher[] = [];
-  const emailBackfills: Array<{ email: string; id: string }> = [];
+  const emailBackfills: TeacherEmailBackfill[] = [];
 
   for (const teacher of teachers) {
     const key = `${teacher.firstName}|${teacher.lastName}`;
@@ -560,7 +575,12 @@ const collectTeacherMatches = (
     if (existing) {
       result.set(teacher.id, existing.id);
       if (teacher.email && !existing.email) {
-        emailBackfills.push({ email: teacher.email, id: existing.id });
+        emailBackfills.push({
+          email: teacher.email,
+          firstName: teacher.firstName,
+          id: existing.id,
+          lastName: teacher.lastName,
+        });
       }
     } else {
       missing.push({
@@ -622,23 +642,65 @@ const insertMissingTeachers = async <Tx>(
 };
 
 /**
- * Link teachers touched by this import to an existing user account with the
- * same email. Runs after insert/backfill so a freshly imported or re-imported
- * teacher email is reconciled immediately, not only at the user's next login.
+ * Link teachers touched by this import to an existing user account. Email
+ * matching runs first; teachers still unlinked then fall back to a full-name
+ * match. Runs after insert/backfill so a freshly imported or re-imported
+ * teacher is reconciled immediately, not only at the user's next login.
  */
 const linkTeachersToUsers = async <Tx>(
   tx: Tx,
-  targets: Array<{ email: string; id: string }>,
+  targets: TeacherLinkTarget[],
   store: TimetableImportStore<Tx>
 ): Promise<void> => {
-  const emails = [...new Set(targets.map((target) => target.email))];
-  if (!emails.length) {
+  // Pass 1: email. Email wins, so resolve and link it before the name fallback.
+  const emails = [
+    ...new Set(
+      targets
+        .map((target) => target.email)
+        .filter((email): email is string => email !== null)
+    ),
+  ];
+  const userByEmail = new Map<string, string>();
+  if (emails.length) {
+    const users = await store.findUserIdsByEmail(tx, emails);
+    for (const user of users) {
+      userByEmail.set(user.email.toLowerCase(), user.id);
+    }
+  }
+  const linked = new Set<string>();
+  for (const target of targets) {
+    if (target.email === null) {
+      continue;
+    }
+    const userId = userByEmail.get(target.email.toLowerCase());
+    if (userId) {
+      await store.linkTeacherToUser(tx, target.id, userId);
+      linked.add(target.id);
+    }
+  }
+
+  // Pass 2: full name, for teachers the email pass left unlinked.
+  const unlinked = targets.filter((target) => !linked.has(target.id));
+  if (!unlinked.length) {
     return;
   }
-  const users = await store.findUserIdsByEmail(tx, emails);
-  const userByEmail = new Map(users.map((u) => [u.email.toLowerCase(), u.id]));
-  for (const target of targets) {
-    const userId = userByEmail.get(target.email.toLowerCase());
+  const names = [
+    ...new Set(
+      unlinked
+        .map((target) => `${target.firstName} ${target.lastName}`.trim())
+        .filter(Boolean)
+    ),
+  ];
+  if (!names.length) {
+    return;
+  }
+  const usersByName = await store.findUserIdsByName(tx, names);
+  const userByName = new Map(
+    usersByName.map((user) => [user.name.toLowerCase(), user.id])
+  );
+  for (const target of unlinked) {
+    const fullName = `${target.firstName} ${target.lastName}`.trim();
+    const userId = userByName.get(fullName.toLowerCase());
     if (userId) {
       await store.linkTeacherToUser(tx, target.id, userId);
     }
@@ -679,10 +741,13 @@ const loadTeachers = async <Tx>(
     await store.updateTeacherEmail(tx, backfill.id, backfill.email);
   }
 
-  const linkTargets: Array<{ email: string; id: string }> = [
-    ...inserted.flatMap((row) =>
-      row.email ? [{ email: row.email, id: row.id }] : []
-    ),
+  const linkTargets: TeacherLinkTarget[] = [
+    ...inserted.map((row) => ({
+      email: row.email,
+      firstName: row.firstName,
+      id: row.id,
+      lastName: row.lastName,
+    })),
     ...emailBackfills,
   ];
   await linkTeachersToUsers(tx, linkTargets, store);
