@@ -6,7 +6,7 @@ import {
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NewsPanel } from '@/components/news-panel';
 import type {
@@ -136,16 +136,6 @@ const getEmptyMessage = (
   return translate(messages[activeFilter]);
 };
 
-const getSelectedValue = (filter: FilterType, sel: SelectionsType): string => {
-  if (filter === 'class') {
-    return sel.class ?? '';
-  }
-  if (filter === 'teacher') {
-    return sel.teacher ?? '';
-  }
-  return sel.classroom ?? '';
-};
-
 const getActiveSelectionId = (
   filter: FilterType,
   selections: SelectionsType
@@ -267,7 +257,7 @@ function SubsFilterBar({
   const { t } = useTranslation();
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
-  const selectedValue = getSelectedValue(activeFilter, selections);
+  const selectedValue = getActiveSelectionId(activeFilter, selections) ?? '';
   const selectWidthClassName =
     activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
 
@@ -399,7 +389,7 @@ function SubsFilterBar({
 // SubstitutionView
 
 export function SubstitutionView() {
-  const { isPending } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const { t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
@@ -408,6 +398,19 @@ export function SubstitutionView() {
     classroom: null,
     teacher: null,
   });
+
+  // Default the class selection to the user's profile class, once.
+  const classInitialized = useRef(false);
+  useEffect(() => {
+    if (classInitialized.current || isPending) {
+      return;
+    }
+    classInitialized.current = true;
+    const cohortId = session?.user?.cohortId ?? null;
+    if (cohortId) {
+      setSelections((s) => (s.class === null ? { ...s, class: cohortId } : s));
+    }
+  }, [isPending, session?.user?.cohortId]);
 
   const timetablesQuery = useTimetables();
 
@@ -545,7 +548,7 @@ export function SubstitutionView() {
           />
         </div>
       </div>
-      <NewsPanel />
+      <NewsPanel classId={selections.class} />
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />

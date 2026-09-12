@@ -14,7 +14,8 @@ export const paginationSchema = z.object({
 });
 
 export const announcementQuerySchema = paginationSchema.extend({
-  includeExpired: z.coerce.boolean().default(false),
+  includeAll: z.stringbool().default(false),
+  includeExpired: z.stringbool().default(false),
 });
 
 export type AnnouncementQueryInput = z.infer<typeof announcementQuerySchema>;

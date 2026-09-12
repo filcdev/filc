@@ -46,7 +46,7 @@ export function useAnnouncements() {
     queryFn: async (): Promise<AnnouncementItem[]> => {
       const res = await parseResponse(
         api.news.announcements.$get({
-          query: { includeExpired: 'true' },
+          query: { includeAll: 'true', includeExpired: 'true' },
         })
       );
       if (!res.success) {
@@ -55,6 +55,23 @@ export function useAnnouncements() {
       return res.data as AnnouncementItem[];
     },
     queryKey: queryKeys.news.announcements(),
+  });
+}
+
+/** Active announcements for the public panel; only fetched when enabled. */
+export function useAnnouncementsPanel(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<AnnouncementItem[]> => {
+      const res = await parseResponse(
+        api.news.announcements.$get({ query: { includeAll: 'true' } })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load announcements');
+      }
+      return res.data as AnnouncementItem[];
+    },
+    queryKey: queryKeys.news.announcementsPanel(),
   });
 }
 
@@ -92,8 +109,12 @@ export function useCohorts(enabled: boolean) {
 
 function useInvalidateAnnouncements() {
   const queryClient = useQueryClient();
-  return () =>
+  return () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.news.announcements() });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.news.announcementsPanel(),
+    });
+  };
 }
 
 function useInvalidateSystemMessages() {
