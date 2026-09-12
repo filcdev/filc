@@ -107,6 +107,7 @@ export const getMyTeacher = timetableFactory.createHandlers(
       .orderBy(teacher.id)
       .limit(1);
 
+    c.header('Cache-Control', 'no-store');
     return ok(c, row ?? null);
   }
 );

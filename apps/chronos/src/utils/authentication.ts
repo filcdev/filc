@@ -98,7 +98,15 @@ const authOptions = {
                 await db
                   .update(teacher)
                   .set({ userId: session.userId })
-                  .where(eq(teacher.id, candidate.id));
+                  .where(
+                    and(
+                      eq(teacher.id, candidate.id),
+                      or(
+                        isNull(teacher.userId),
+                        eq(teacher.userId, session.userId)
+                      )
+                    )
+                  );
               }
             }
           } catch (err) {

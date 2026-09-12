@@ -761,22 +761,32 @@ const loadTeachers = async <Tx>(
     result
   );
 
-  const inserted = await insertMissingTeachers(tx, missing, store, result);
+  await insertMissingTeachers(tx, missing, store, result);
 
   for (const backfill of emailBackfills) {
     await store.updateTeacherEmail(tx, backfill.id, backfill.email);
   }
 
-  const linkTargets: TeacherLinkTarget[] = [
-    ...inserted.map((row) => ({
-      email: row.email,
-      firstName: row.firstName,
-      id: row.id,
-      lastName: row.lastName,
-    })),
-    ...emailBackfills,
-  ];
-  await linkTeachersToUsers(tx, linkTargets, store);
+  // Link every teacher touched by this import, not just inserted/backfilled
+  // rows: an existing teacher with a populated email still needs reconciling
+  // with a user account. Deduplicate by persisted teacher id.
+  const targetsById = new Map<string, TeacherLinkTarget>();
+  for (const source of teachers) {
+    const id = result.get(source.id);
+    if (!id || targetsById.has(id)) {
+      continue;
+    }
+    const existingMatch = existingByKey.get(
+      `${source.firstName}|${source.lastName}`
+    );
+    targetsById.set(id, {
+      email: existingMatch?.email ?? source.email ?? null,
+      firstName: source.firstName,
+      id,
+      lastName: source.lastName,
+    });
+  }
+  await linkTeachersToUsers(tx, [...targetsById.values()], store);
 
   logger.trace('Loaded teachers', { total: result.size });
   return result;
