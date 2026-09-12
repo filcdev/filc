@@ -37,6 +37,7 @@ import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   useClassrooms,
   useLatestValidTimetable,
+  useMyTeacher,
   usePublicMovedLessons,
   usePublicSubstitutions,
   useTeachers,
@@ -399,18 +400,37 @@ export function SubstitutionView() {
     teacher: null,
   });
 
-  // Default the class selection to the user's profile class, once.
-  const classInitialized = useRef(false);
+  const isAuthenticated = !isPending && !!session;
+  const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
+  const myTeacher = myTeacherQuery.data ?? null;
+
+  // Default the view to the user's linked teacher, else their profile class.
+  const defaultInitialized = useRef(false);
   useEffect(() => {
-    if (classInitialized.current || isPending) {
+    if (defaultInitialized.current || isPending) {
       return;
     }
-    classInitialized.current = true;
+    // Wait until the teacher profile resolves before defaulting.
+    if (isAuthenticated && myTeacherQuery.isPending) {
+      return;
+    }
+    defaultInitialized.current = true;
+    if (myTeacher) {
+      setActiveFilter('teacher');
+      setSelections((s) => ({ ...s, teacher: myTeacher.id }));
+      return;
+    }
     const cohortId = session?.user?.cohortId ?? null;
     if (cohortId) {
       setSelections((s) => (s.class === null ? { ...s, class: cohortId } : s));
     }
-  }, [isPending, session?.user?.cohortId]);
+  }, [
+    isPending,
+    isAuthenticated,
+    myTeacher,
+    myTeacherQuery.isPending,
+    session?.user?.cohortId,
+  ]);
 
   const timetablesQuery = useTimetables();
 

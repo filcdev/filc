@@ -138,6 +138,39 @@ export function useTeachers() {
   });
 }
 
+type MyTeacherResponse = InferResponseType<
+  typeof api.timetable.teachers.me.$get
+>;
+
+/** The signed-in user's linked teacher, or `null` when unlinked. */
+export type MyTeacher = NonNullable<MyTeacherResponse['data']>;
+
+/**
+ * The signed-in user's linked teacher. Unlike the immutable reference data
+ * above, this can change mid-session (an import or admin relink may land after
+ * the first fetch), so it uses a finite `staleTime` and refetches on mount
+ * instead of pinning a transient `null` for the whole session. Scoped to the
+ * user so a different account's cached result is never reused.
+ */
+export function useMyTeacher(
+  enabled: boolean,
+  userId: string | null | undefined
+) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<MyTeacher | null> => {
+      const res = await parseResponse(api.timetable.teachers.me.$get());
+      if (!res.success) {
+        throw new Error('Failed to load your teacher profile');
+      }
+      return (res.data as MyTeacher | null) ?? null;
+    },
+    queryKey: [...queryKeys.myTeacher(), userId],
+    refetchOnMount: 'always',
+    staleTime: 0,
+  });
+}
+
 /** Classroom list for the public filter bars. */
 export function useClassrooms() {
   return useQuery({

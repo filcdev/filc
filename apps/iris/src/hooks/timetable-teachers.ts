@@ -113,6 +113,7 @@ export function useUpdateTeacher({ onSaved }: MutationCallbacks = {}) {
     onSuccess: () => {
       toast.success(t('teachers.updateSuccess'));
       queryClient.invalidateQueries({ queryKey: queryKeys.adminTeachers() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myTeacher() });
       onSaved?.();
     },
   });

@@ -634,11 +634,6 @@
     "substitutions": "Substitutions | Filc",
     "adminPanel": "Admin Panel | Filc"
   },
-  "cohortReselectionBanner": {
-    "title": "Cohort selection required",
-    "description": "Your assigned class or group is no longer available. Please select a new one.",
-    "selectCohort": "Select Cohort"
-  },
   "doorlockCards": {
     "title": "Doorlock Cards",
     "description": "Manage access cards and their authorizations",
