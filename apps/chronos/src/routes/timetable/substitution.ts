@@ -36,6 +36,10 @@ import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitutio
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
+  getWeekdayInBudapest,
+  isMatchingWeekday,
+} from '#utils/timetable/weekday';
+import {
   createInsertSchema,
   createSelectSchema,
   createUpdateSchema,
@@ -823,6 +827,29 @@ async function lockAndValidateTeachers(
   }
 }
 
+// Manual substitution only takes a date; resolve the matching day definition
+// from the active timetable's lessons via the date's weekday.
+async function getDayDefinitionIdForDate(
+  date: Date,
+  timetableId: string
+): Promise<string | null> {
+  const weekday = getWeekdayInBudapest(date);
+  const rows = await db
+    .selectDistinct({
+      id: dayDefinition.id,
+      name: dayDefinition.name,
+      short: dayDefinition.short,
+    })
+    .from(dayDefinition)
+    .innerJoin(lesson, eq(lesson.dayDefinitionId, dayDefinition.id))
+    .where(eq(lesson.timetableId, timetableId));
+
+  const match = rows.find((row) =>
+    isMatchingWeekday(weekday, row.name, row.short)
+  );
+  return match?.id ?? null;
+}
+
 export const createManualSubstitution = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('Substitution', '@unit Substitution', true),
@@ -854,7 +881,6 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       cohortId,
       comment,
       date,
-      dayDefinitionId,
       periodId,
       subjectId,
       substituter,
@@ -862,17 +888,12 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     } = c.req.valid('json');
 
     // Validate that all referenced entities exist.
-    const [[refTeacher], [refDay], [refPeriod], [refSubject], [refCohort]] =
+    const [[refTeacher], [refPeriod], [refSubject], [refCohort]] =
       await Promise.all([
         db
           .select({ id: teacher.id })
           .from(teacher)
           .where(eq(teacher.id, teacherId))
-          .limit(1),
-        db
-          .select({ id: dayDefinition.id })
-          .from(dayDefinition)
-          .where(eq(dayDefinition.id, dayDefinitionId))
           .limit(1),
         db
           .select({ id: period.id })
@@ -894,11 +915,6 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     if (!refTeacher) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Invalid teacher provided',
-      });
-    }
-    if (!refDay) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid day provided',
       });
     }
     if (!refPeriod) {
@@ -934,6 +950,13 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     if (!timetableId) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
         message: 'No active timetable found',
+      });
+    }
+
+    const dayDefinitionId = await getDayDefinitionIdForDate(date, timetableId);
+    if (!dayDefinitionId) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No day definition found for the given date',
       });
     }
 
