@@ -17,6 +17,16 @@ import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
 
+const baseUrl = new URL(env.baseUrl);
+
+// Preview deployments get a per-PR hostname (e.g. 359.filcdev.hu), so the auth
+// base URL is resolved per request from the Host header instead of being pinned
+// to CHRONOS_BASE_URL. allowedHosts is the host allowlist; better-auth derives
+// trustedOrigins from it. The configured host keeps local development working.
+const allowedHosts = Array.from(
+  new Set([baseUrl.host, 'filcdev.hu', '*.filcdev.hu'])
+);
+
 const authOptions = {
   account: {
     accountLinking: {
@@ -31,8 +41,16 @@ const authOptions = {
     database: {
       generateId: 'uuid',
     },
+    // The reverse proxy (Traefik/Coolify) conveys the public host and scheme
+    // via x-forwarded-host / x-forwarded-proto.
+    trustedProxyHeaders: true,
   },
-  baseURL: env.baseUrl,
+  basePath: '/api/auth',
+  baseURL: {
+    allowedHosts,
+    fallback: baseUrl.origin,
+    protocol: 'auto',
+  },
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: authenticationSchema,
@@ -159,7 +177,7 @@ const authOptions = {
   telemetry: {
     enabled: false,
   },
-  trustedOrigins: env.trustedOrigins ?? [env.baseUrl],
+  trustedOrigins: env.trustedOrigins,
   user: {
     additionalFields: {
       cohortId: {
