@@ -1,6 +1,8 @@
 import {
+  getMyTeacherResponseSchema,
   getTeacherParamsSchema,
   listTeachersResponseSchema,
+  publicTeacherSchema,
   type TeacherListItem,
   teacherListItemSchema,
   updateTeacherPayload,
@@ -19,13 +21,6 @@ import { authRouter } from '#middleware/auth';
 import { badRequest, notFound, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { timetableFactory } from './_factory';
-
-const publicTeacherSchema = z.object({
-  firstName: z.string(),
-  id: z.string(),
-  lastName: z.string(),
-  short: z.string(),
-});
 
 const getTeachersResponseSchema = z.object({
   data: publicTeacherSchema.array(),
@@ -73,6 +68,47 @@ export const getTeachers = timetableFactory.createHandlers(
       .from(teacher);
 
     return ok(c, teachers);
+  }
+);
+
+/**
+ * The signed-in user's linked teacher, or null when the account isn't tied to
+ * a teacher row. Lets teacher accounts default to the teacher view.
+ */
+export const getMyTeacher = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Teacher', '@unit Teacher', true),
+    description: "Get the signed-in user's linked teacher, if any.",
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(getMyTeacherResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Teacher'],
+  }),
+  ...authRouter(),
+  async (c) => {
+    const userId = c.get('user').id;
+
+    const [row] = await db
+      .select({
+        firstName: teacher.firstName,
+        id: teacher.id,
+        lastName: teacher.lastName,
+        short: teacher.short,
+      })
+      .from(teacher)
+      .where(eq(teacher.userId, userId))
+      .orderBy(teacher.id)
+      .limit(1);
+
+    c.header('Cache-Control', 'no-store');
+    return ok(c, row ?? null);
   }
 );
 

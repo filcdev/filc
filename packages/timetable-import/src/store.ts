@@ -187,6 +187,16 @@ export type TimetableImportStore<Tx = unknown> = {
     tx: Tx,
     emails: string[]
   ): Promise<Array<{ email: string; id: string }>>;
+  /**
+   * Find users whose full name matches any of `names` (case-insensitive), so a
+   * teacher without a matching email can still be linked to an existing account.
+   * Returns one row per matching user and does NOT dedupe by name, so the caller
+   * can detect an ambiguous name (multiple accounts sharing it) and skip it.
+   */
+  findUserIdsByName(
+    tx: Tx,
+    names: string[]
+  ): Promise<Array<{ name: string; id: string }>>;
   /** Link a teacher to a user, but only when the teacher is still unlinked. */
   linkTeacherToUser(tx: Tx, teacherId: string, userId: string): Promise<void>;
 

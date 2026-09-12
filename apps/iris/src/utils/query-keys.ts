@@ -33,6 +33,7 @@ export const queryKeys = {
   },
   lessons: () => ['lessons'] as const,
   movedLessons: () => ['movedLessons'] as const,
+  myTeacher: () => ['my-teacher'] as const,
 
   news: {
     adminSystemMessages: () => ['admin-system-messages'] as const,
