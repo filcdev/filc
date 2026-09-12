@@ -1,5 +1,8 @@
 export const queryKeys = {
   adminTeachers: () => ['admin-teachers'] as const,
+  apiKeys: {
+    list: () => ['apiKeys'] as const,
+  },
   bugReports: {
     all: () => ['bugReports'] as const,
     list: (filters: {

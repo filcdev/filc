@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ApiKeysCard } from '@/components/api-keys-card';
 import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
 import type { CohortItem } from '@/components/timetable/types';
 import { Alert, AlertTitle } from '@/components/ui/alert';
@@ -238,7 +239,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogHeader>
           <DialogTitle>{t('preferences.title')}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {isLoading ? (
             <div className="space-y-4">
               {[0, 1, 2].map((i) => (
@@ -367,6 +368,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   ))}
                 </CardContent>
               </Card>
+
+              <ApiKeysCard />
 
               <Button
                 className="w-full"

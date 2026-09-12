@@ -30,6 +30,7 @@ coverage
 out/
 build
 dist
+graphify-out/
 
 
 # Debug
@@ -48,4 +49,3 @@ yarn-error.log*
 thoughts
 .opencode
 .codegraph
-graphify-out/
