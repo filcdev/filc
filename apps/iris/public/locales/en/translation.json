@@ -311,6 +311,7 @@
     "commentPlaceholder": "Optional note about this substitution",
     "createSuccess": "Substitution created successfully",
     "createError": "Failed to create substitution",
+    "conflictError": "This teacher already has a substitution in this period on this date.",
     "updateSuccess": "Substitution updated successfully",
     "updateError": "Failed to update substitution",
     "deleteSuccess": "Substitution deleted successfully",

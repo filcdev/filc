@@ -27,7 +27,6 @@ export const manualCreateSchema = z.object({
   cohortId: z.string().uuid(),
   comment: z.string().nullable().optional(),
   date: z.coerce.date<Date>(),
-  dayDefinitionId: z.string().uuid(),
   periodId: z.string().uuid(),
   subjectId: z.string().uuid(),
   substituter: z.string().uuid().nullable(),

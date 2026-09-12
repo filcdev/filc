@@ -311,6 +311,7 @@
     "commentPlaceholder": "Opcionális megjegyzés a helyettesítéshez",
     "createSuccess": "Helyettesítés sikeresen létrehozva",
     "createError": "Nem sikerült létrehozni a helyettesítést",
+    "conflictError": "Ennek a tanárnak ebben az órában már van helyettesítése ezen a napon.",
     "updateSuccess": "Helyettesítés sikeresen frissítve",
     "updateError": "Nem sikerült frissíteni a helyettesítést",
     "deleteSuccess": "Helyettesítés sikeresen törölve",

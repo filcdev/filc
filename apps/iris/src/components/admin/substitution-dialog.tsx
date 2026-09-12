@@ -46,7 +46,6 @@ type SubstitutionFormValues = InferRequestType<
   typeof api.timetable.substitutions.$post
 >['json'] & {
   manualCohort: string;
-  manualDay: string;
   manualPeriod: string;
   manualSubject: string;
   manualSubstituter: string;
@@ -78,20 +77,7 @@ type SubstitutionFormApi = ReturnType<
 type SubjectApiResponse = InferResponseType<typeof api.timetable.subjects.$get>;
 type Subject = NonNullable<SubjectApiResponse['data']>[number];
 
-type DayDefinition = NonNullable<EnrichedLesson['day']>;
 type Period = NonNullable<EnrichedLesson['period']>;
-
-// Build unique day options from the available lessons of all teachers.
-function dedupeDays(lessons: TeacherLesson[]): DayDefinition[] {
-  const seen = new Map<string, DayDefinition>();
-  for (const lesson of lessons) {
-    const day = lesson.day;
-    if (day?.id && !seen.has(day.id)) {
-      seen.set(day.id, day);
-    }
-  }
-  return [...seen.values()];
-}
 
 // Build unique period options from the available lessons of all teachers.
 function dedupePeriods(lessons: TeacherLesson[]): Period[] {
@@ -177,7 +163,6 @@ function compareSubOptions(
 
 type ManualSubstitutionFieldsProps = {
   cohorts: NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>;
-  days: DayDefinition[];
   form: SubstitutionFormApi;
   periods: Period[];
   subjects: Subject[];
@@ -186,7 +171,6 @@ type ManualSubstitutionFieldsProps = {
 
 function ManualSubstitutionFields({
   cohorts,
-  days,
   form,
   periods,
   subjects,
@@ -215,44 +199,23 @@ function ManualSubstitutionFields({
         </form.Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>{t('substitution.day')}</Label>
-          <form.Field name="manualDay">
-            {(field) => (
-              <Combobox
-                emptyMessage={t('substitution.noDaysFound')}
-                onValueChange={(value) => field.handleChange(value)}
-                options={days.map((day) => ({
-                  label: day.name,
-                  value: day.id,
-                }))}
-                placeholder={t('substitution.dayPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-        </div>
-
-        <div className="space-y-2">
-          <Label>{t('substitution.period')}</Label>
-          <form.Field name="manualPeriod">
-            {(field) => (
-              <Combobox
-                emptyMessage={t('substitution.noPeriodsFound')}
-                onValueChange={(value) => field.handleChange(value)}
-                options={periods.map((period) => ({
-                  label: `${period.period}. (${period.startTime.slice(0, 5)} - ${period.endTime.slice(0, 5)})`,
-                  value: period.id,
-                }))}
-                placeholder={t('substitution.periodPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-        </div>
+      <div className="space-y-2">
+        <Label>{t('substitution.period')}</Label>
+        <form.Field name="manualPeriod">
+          {(field) => (
+            <Combobox
+              emptyMessage={t('substitution.noPeriodsFound')}
+              onValueChange={(value) => field.handleChange(value)}
+              options={periods.map((period) => ({
+                label: `${period.period}. (${period.startTime.slice(0, 5)} - ${period.endTime.slice(0, 5)})`,
+                value: period.id,
+              }))}
+              placeholder={t('substitution.periodPlaceholder')}
+              searchPlaceholder={t('search')}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
       </div>
 
       <div className="space-y-2">
@@ -497,7 +460,6 @@ function isSubstitutionValid(params: {
   formLessonIds: string[];
   manual: boolean;
   manualCohort: string;
-  manualDay: string;
   manualPeriod: string;
   manualSubject: string;
   manualTeacher: string;
@@ -507,7 +469,6 @@ function isSubstitutionValid(params: {
     formLessonIds,
     manual,
     manualCohort,
-    manualDay,
     manualPeriod,
     manualSubject,
     manualTeacher,
@@ -517,7 +478,6 @@ function isSubstitutionValid(params: {
     return (
       !!formDate &&
       !!manualTeacher &&
-      !!manualDay &&
       !!manualPeriod &&
       !!manualSubject &&
       !!manualCohort
@@ -576,7 +536,6 @@ export function SubstitutionDialog({
     () => ({
       ...initialState(item),
       manualCohort: '',
-      manualDay: '',
       manualPeriod: '',
       manualSubject: '',
       manualSubstituter: '',
@@ -605,7 +564,6 @@ export function SubstitutionDialog({
         : value.substituter;
       const {
         manualCohort: _c,
-        manualDay: _d,
         manualPeriod: _p,
         manualSubject: _s,
         manualSubstituter: _ms,
@@ -628,7 +586,6 @@ export function SubstitutionDialog({
     date: formDate,
     lessonIds: formLessonIds,
     manualCohort,
-    manualDay,
     manualPeriod,
     manualSubject,
     manualSubstituter,
@@ -771,7 +728,6 @@ export function SubstitutionDialog({
     formLessonIds,
     manual,
     manualCohort,
-    manualDay,
     manualPeriod,
     manualSubject,
     manualTeacher,
@@ -782,7 +738,6 @@ export function SubstitutionDialog({
       cohortId: manualCohort,
       comment: formComment || null,
       date: formDate,
-      dayDefinitionId: manualDay,
       periodId: manualPeriod,
       subjectId: manualSubject,
       substituter: manualSubstituter || null,
@@ -835,10 +790,6 @@ export function SubstitutionDialog({
             {manual ? (
               <ManualSubstitutionFields
                 cohorts={cohortsQuery.data ?? []}
-                days={dedupeDays(
-                  (substituteCandidatesQuery.data?.availableLessons ??
-                    []) as TeacherLesson[]
-                )}
                 form={form}
                 periods={dedupePeriods(
                   (substituteCandidatesQuery.data?.availableLessons ??
