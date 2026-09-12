@@ -4,6 +4,7 @@ import type {
   CohortRouter,
   DashboardRouter,
   DoorlockRouter,
+  NavigatorRouter,
   NewsRouter,
   NotificationsRouter,
   PingRouter,
@@ -23,6 +24,7 @@ export const api = {
   cohort: createApiClient<CohortRouter>('/api/cohort', clientOptions),
   dashboard: createApiClient<DashboardRouter>('/api/dashboard', clientOptions),
   doorlock: createApiClient<DoorlockRouter>('/api/doorlock', clientOptions),
+  navigator: createApiClient<NavigatorRouter>('/api/navigator', clientOptions),
   news: createApiClient<NewsRouter>('/api/news', clientOptions),
   notifications: createApiClient<NotificationsRouter>(
     '/api/notifications',

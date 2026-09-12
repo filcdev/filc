@@ -18,6 +18,7 @@ export const permissions = {
   doorlockStatsRead: 'doorlock:stats:read',
   importTimetable: 'import:timetable',
   movedLessonCreate: 'movedLesson:create',
+  navigatorManage: 'navigator:manage',
   rolesRead: 'roles:read',
   substitutionCreate: 'substitution:create',
   systemMessagesManage: 'system-messages:manage',
