@@ -207,24 +207,52 @@ const filterSubs = (
 const filterMovedLessons = (
   data: MovedLessonItem[],
   activeFilter: FilterType,
-  selectionId: string | null
+  selectionId: string | null,
+  cohorts: CohortItem[] | undefined
 ): MovedLessonItem[] => {
   if (!selectionId) {
     return data;
   }
-  if (activeFilter !== 'classroom') {
-    return [];
+  if (activeFilter === 'class') {
+    const cohortName = cohorts?.find((c) => c.id === selectionId)?.name;
+    if (!cohortName) {
+      return [];
+    }
+    return data
+      .map((ml) => ({
+        ...ml,
+        lessons: ml.lessons.filter((lesson) =>
+          lesson.cohorts.includes(cohortName)
+        ),
+      }))
+      .filter((ml) => ml.lessons.length > 0);
+  }
+  if (activeFilter === 'teacher') {
+    return data
+      .map((ml) => ({
+        ...ml,
+        lessons: ml.lessons.filter((lesson) =>
+          lesson.teachers.some((teacher) => teacher.id === selectionId)
+        ),
+      }))
+      .filter((ml) => ml.lessons.length > 0);
   }
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
 
-const getCohortsForDate = (subs: Subs[]): string[] =>
+const getCohortsForDate = (
+  subs: Subs[],
+  movedLessons: MovedLessonItem[]
+): string[] =>
   [
-    ...new Set(
-      subs.flatMap((sub) =>
+    ...new Set([
+      ...subs.flatMap((sub) =>
         sub.lessons.flatMap((lesson) => lesson?.cohorts ?? [])
-      )
-    ),
+      ),
+      ...movedLessons.flatMap((ml) =>
+        ml.lessons.flatMap((lesson) => lesson.cohorts)
+      ),
+    ]),
   ].sort();
 
 // SubsFilterBar
@@ -441,7 +469,8 @@ export function SubstitutionView() {
   const filteredMovedLessons = filterMovedLessons(
     movedLessonsQuery.data ?? [],
     activeFilter,
-    activeSelectionId
+    activeSelectionId,
+    cohortsQuery.data
   );
 
   const isLoading =
@@ -475,7 +504,7 @@ export function SubstitutionView() {
   const renderDateCards = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
-    const cohorts = getCohortsForDate(dateSubs);
+    const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
 
     if (cohorts.length === 0) {
       return [
@@ -494,17 +523,28 @@ export function SubstitutionView() {
         data={dateSubs.filter((sub) =>
           sub.lessons.some((l) => l?.cohorts.includes(cohort))
         )}
+        date={date}
         key={`${date}-${cohort}`}
+        movedLessons={dateMovedLessons
+          .map((ml) => ({
+            ...ml,
+            lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+          }))
+          .filter((ml) => ml.lessons.length > 0)}
       />
     ));
 
+    const unassignedMovedLessons = dateMovedLessons.filter(
+      (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+    );
+
     const movedCard =
-      dateMovedLessons.length > 0 ? (
+      unassignedMovedLessons.length > 0 ? (
         <SubsV
           data={[]}
           date={date}
           key={`${date}-moved`}
-          movedLessons={dateMovedLessons}
+          movedLessons={unassignedMovedLessons}
         />
       ) : null;
 

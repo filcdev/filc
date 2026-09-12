@@ -79,8 +79,6 @@ export const queryKeys = {
       selectionId: string | null,
       timetableId: string | null
     ) => ['lessons', filter, selectionId, timetableId] as const,
-    lessonsByCohort: (cohortId: string | null | undefined) =>
-      ['lessons', 'cohort', cohortId] as const,
     periods: (timetableId: string | null | undefined) =>
       ['timetable', 'periods', timetableId] as const,
     /** Used to broadly invalidate all timetable-related data after import */

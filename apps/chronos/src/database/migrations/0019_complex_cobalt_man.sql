@@ -1,0 +1,1 @@
+ALTER TABLE "moved_lesson" ADD COLUMN "comment" text;
