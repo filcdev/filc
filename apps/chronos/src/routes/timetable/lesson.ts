@@ -856,10 +856,9 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     const enrichedMissingTeacherLessons = await enrichLessons(
       missingTeacherLessons
     );
-    const EXCLUDED_SUBJECT_SHORTS = ['H1', 'H2'];
 
-    const availableLessons = enrichedMissingTeacherLessons
-      .filter((currentLesson) =>
+    const availableLessons = enrichedMissingTeacherLessons.filter(
+      (currentLesson) =>
         currentLesson.day
           ? isMatchingWeekday(
               weekday,
@@ -867,14 +866,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
               currentLesson.day.short
             )
           : false
-      )
-      .filter(
-        (currentLesson) =>
-          !(
-            currentLesson.subject?.short &&
-            EXCLUDED_SUBJECT_SHORTS.includes(currentLesson.subject.short)
-          )
-      );
+    );
 
     const selectedLessonIdsSet = new Set(selectedLessonIds);
     const selectedLessons = availableLessons.filter((currentLesson) =>

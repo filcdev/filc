@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '@filcdev/api/errors';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type InferRequestType,
   type InferResponseType,
@@ -6,6 +7,7 @@ import {
 } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useApiMutation } from '@/utils/api';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -68,22 +70,24 @@ function useInvalidateSubstitutions() {
     queryClient.invalidateQueries({ queryKey: queryKeys.substitutions() });
 }
 
-/** Create an automatic substitution from existing lessons. */
+/**
+ * Create an automatic substitution from existing lessons. A CONFLICT here
+ * means the substitute teacher is already booked in that period on that date,
+ * so it gets a translated message; everything else falls back to the backend
+ * message.
+ */
 export function useCreateSubstitution({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateSubstitutions();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (payload: CreatePayload) => {
-      const res = await parseResponse(
-        api.timetable.substitutions.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create substitution');
-      }
-      return res;
-    },
+  return useApiMutation<unknown, CreatePayload>({
+    mutationFn: (payload) =>
+      api.timetable.substitutions.$post({ json: payload }),
     onError: (error: Error) => {
-      toast.error(error.message || t('substitution.createError'));
+      toast.error(
+        error instanceof ApiError && error.code === 'CONFLICT'
+          ? t('substitution.conflictError')
+          : error.message || t('substitution.createError')
+      );
     },
     onSuccess: () => {
       toast.success(t('substitution.createSuccess'));
@@ -97,27 +101,18 @@ export function useCreateSubstitution({ onSaved }: MutationCallbacks = {}) {
 export function useUpdateSubstitution({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateSubstitutions();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: CreatePayload;
-    }) => {
-      const res = await parseResponse(
-        api.timetable.substitutions[':id'].$put({
-          json: payload,
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update substitution');
-      }
-      return res;
-    },
+  return useApiMutation<unknown, { id: string; payload: CreatePayload }>({
+    mutationFn: ({ id, payload }) =>
+      api.timetable.substitutions[':id'].$put({
+        json: payload,
+        param: { id },
+      }),
     onError: (error: Error) => {
-      toast.error(error.message || t('substitution.updateError'));
+      toast.error(
+        error instanceof ApiError && error.code === 'CONFLICT'
+          ? t('substitution.conflictError')
+          : error.message || t('substitution.updateError')
+      );
     },
     onSuccess: () => {
       toast.success(t('substitution.updateSuccess'));
@@ -131,18 +126,15 @@ export function useUpdateSubstitution({ onSaved }: MutationCallbacks = {}) {
 export function useDeleteSubstitution({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateSubstitutions();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.timetable.substitutions[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete substitution');
-      }
-      return res;
-    },
+  return useApiMutation<unknown, string>({
+    mutationFn: (id) =>
+      api.timetable.substitutions[':id'].$delete({ param: { id } }),
     onError: (error: Error) => {
-      toast.error(error.message || t('substitution.deleteError'));
+      toast.error(
+        error instanceof ApiError && error.code === 'CONFLICT'
+          ? t('substitution.conflictError')
+          : error.message || t('substitution.deleteError')
+      );
     },
     onSuccess: () => {
       toast.success(t('substitution.deleteSuccess'));
@@ -158,18 +150,15 @@ export function useCreateManualSubstitution({
 }: MutationCallbacks = {}) {
   const invalidate = useInvalidateSubstitutions();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (payload: ManualPayload) => {
-      const res = await parseResponse(
-        api.timetable.substitutions.manual.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create manual substitution');
-      }
-      return res;
-    },
+  return useApiMutation<unknown, ManualPayload>({
+    mutationFn: (payload) =>
+      api.timetable.substitutions.manual.$post({ json: payload }),
     onError: (error: Error) => {
-      toast.error(error.message || t('substitution.createError'));
+      toast.error(
+        error instanceof ApiError && error.code === 'CONFLICT'
+          ? t('substitution.conflictError')
+          : error.message || t('substitution.createError')
+      );
     },
     onSuccess: () => {
       toast.success(t('substitution.createSuccess'));

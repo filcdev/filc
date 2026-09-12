@@ -241,9 +241,9 @@ async function checkTeacherSubstitutionConflict(
     return;
   }
 
-  // Get period IDs for the incoming lessons
+  // Get IDs and period IDs for the incoming lessons
   const incomingLessons = await dbOrTx
-    .select({ periodId: lesson.periodId })
+    .select({ id: lesson.id, periodId: lesson.periodId })
     .from(lesson)
     .where(inArray(lesson.id, lessonIds));
 
@@ -285,9 +285,9 @@ async function checkTeacherSubstitutionConflict(
     return;
   }
 
-  // Get period IDs for those linked lessons
+  // Get IDs and period IDs for those linked lessons
   const existingLessonPeriods = await dbOrTx
-    .select({ periodId: lesson.periodId })
+    .select({ id: lesson.id, periodId: lesson.periodId })
     .from(lesson)
     .where(inArray(lesson.id, existingLessonIds));
 
@@ -297,14 +297,81 @@ async function checkTeacherSubstitutionConflict(
       .filter((id): id is string => id != null)
   );
 
-  // Check for overlap
-  for (const periodId of incomingPeriodIds) {
-    if (existingPeriodIds.has(periodId)) {
-      throw new HTTPException(StatusCodes.CONFLICT, {
-        message:
-          'Teacher already has a substitution in the same period on this date',
-      });
+  // Compute the periods shared by incoming and existing lessons
+  const overlappingPeriodIds = [...incomingPeriodIds].filter((periodId) =>
+    existingPeriodIds.has(periodId)
+  );
+
+  if (overlappingPeriodIds.length === 0) {
+    return;
+  }
+
+  // Fetch cohort links for every involved lesson in a single query so we can
+  // allow overlaps where the lessons are the same or share a cohort.
+  const allLessonIds = Array.from(
+    new Set([
+      ...incomingLessons.map((l) => l.id),
+      ...existingLessonPeriods.map((l) => l.id),
+    ])
+  );
+
+  const cohortLinks = await dbOrTx
+    .select({
+      cohortId: lessonCohortMTM.cohortId,
+      lessonId: lessonCohortMTM.lessonId,
+    })
+    .from(lessonCohortMTM)
+    .where(inArray(lessonCohortMTM.lessonId, allLessonIds));
+
+  const lessonCohorts = new Map<string, Set<string>>();
+  for (const link of cohortLinks) {
+    if (!lessonCohorts.has(link.lessonId)) {
+      lessonCohorts.set(link.lessonId, new Set());
     }
+    lessonCohorts.get(link.lessonId)?.add(link.cohortId);
+  }
+
+  for (const periodId of overlappingPeriodIds) {
+    const incomingInPeriod = incomingLessons.filter(
+      (l) => l.periodId === periodId
+    );
+    const existingInPeriod = existingLessonPeriods.filter(
+      (l) => l.periodId === periodId
+    );
+
+    const isSameLesson = incomingInPeriod.some((incoming) =>
+      existingInPeriod.some((existing) => existing.id === incoming.id)
+    );
+
+    const sharesCohort = incomingInPeriod.some((incoming) => {
+      const incomingCohorts = lessonCohorts.get(incoming.id);
+      if (!incomingCohorts) {
+        return false;
+      }
+      return existingInPeriod.some((existing) => {
+        const existingCohorts = lessonCohorts.get(existing.id);
+        if (!existingCohorts) {
+          return false;
+        }
+        for (const cohortId of incomingCohorts) {
+          if (existingCohorts.has(cohortId)) {
+            return true;
+          }
+        }
+        return false;
+      });
+    });
+
+    // The same lesson or a shared cohort means the substituter is covering the
+    // same class, so the overlap is allowed.
+    if (isSameLesson || sharesCohort) {
+      continue;
+    }
+
+    throw new HTTPException(StatusCodes.CONFLICT, {
+      message:
+        'Teacher already has a substitution in the same period on this date',
+    });
   }
 }
 
