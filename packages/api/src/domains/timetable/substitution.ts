@@ -28,7 +28,7 @@ export const manualCreateSchema = z.object({
   comment: z.string().nullable().optional(),
   date: z.coerce.date<Date>(),
   periodId: z.string().uuid(),
-  subjectId: z.string().uuid(),
+  subjectId: z.string().uuid().nullable(),
   substituter: z.string().uuid().nullable(),
   teacherId: z.string().uuid(),
 });

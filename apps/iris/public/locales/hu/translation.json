@@ -300,7 +300,7 @@
     "periodPlaceholder": "Válassz egy óraidoőpontot",
     "noPeriodsFound": "Nincsenek óraidoőpontok.",
     "subject": "Tantárgy",
-    "subjectPlaceholder": "Válassz egy tantárgyat",
+    "subjectPlaceholder": "Válassz egy tantárgyat (opcionális)",
     "noSubjectsFound": "Nincsenek tantárgyak.",
     "cohort": "Osztály",
     "cohortPlaceholder": "Válassz egy osztályt",

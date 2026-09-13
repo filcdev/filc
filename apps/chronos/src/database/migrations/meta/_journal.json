@@ -134,6 +134,13 @@
       "when": 1788556112340,
       "tag": "0018_smart_warbird",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789334831245,
+      "tag": "0019_silly_ultimates",
+      "breakpoints": true
     }
   ]
 }

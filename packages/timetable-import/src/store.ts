@@ -120,7 +120,7 @@ export type NewTerm = {
 
 export type ExistingLessonRow = {
   id: string;
-  subjectId: string;
+  subjectId: string | null;
   dayDefinitionId: string;
   periodId: string;
   weeksDefinitionId: string;

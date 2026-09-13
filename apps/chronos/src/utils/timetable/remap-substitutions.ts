@@ -13,7 +13,7 @@ type LessonIdentity = {
   id: string;
   periodId: string;
   periodsPerWeek: number;
-  subjectId: string;
+  subjectId: string | null;
   teacherIds: string[] | null;
   termDefinitionId: string | null;
   weeksDefinitionId: string;
@@ -65,7 +65,7 @@ const makeLessonIdentityKey = (
   cohortIds: string[]
 ): string =>
   [
-    value.subjectId,
+    value.subjectId ?? '',
     value.dayDefinitionId,
     value.periodId,
     value.weeksDefinitionId,

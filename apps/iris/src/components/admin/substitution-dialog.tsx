@@ -461,7 +461,6 @@ function isSubstitutionValid(params: {
   manual: boolean;
   manualCohort: string;
   manualPeriod: string;
-  manualSubject: string;
   manualTeacher: string;
 }): boolean {
   const {
@@ -470,18 +469,11 @@ function isSubstitutionValid(params: {
     manual,
     manualCohort,
     manualPeriod,
-    manualSubject,
     manualTeacher,
   } = params;
 
   if (manual) {
-    return (
-      !!formDate &&
-      !!manualTeacher &&
-      !!manualPeriod &&
-      !!manualSubject &&
-      !!manualCohort
-    );
+    return !!formDate && !!manualTeacher && !!manualPeriod && !!manualCohort;
   }
 
   return !!formDate && formLessonIds.length > 0;
@@ -729,7 +721,6 @@ export function SubstitutionDialog({
     manual,
     manualCohort,
     manualPeriod,
-    manualSubject,
     manualTeacher,
   });
 
@@ -739,7 +730,7 @@ export function SubstitutionDialog({
       comment: formComment || null,
       date: formDate,
       periodId: manualPeriod,
-      subjectId: manualSubject,
+      subjectId: manualSubject || null,
       substituter: manualSubstituter || null,
       teacherId: manualTeacher,
     });

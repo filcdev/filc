@@ -76,7 +76,9 @@ export async function loadSubstitutionTeacherPayload(args: {
     return { date, lessons: [], substituter: substituter ?? null };
   }
 
-  const subjectIds = [...new Set(lessons.map((l) => l.subjectId))];
+  const subjectIds = [...new Set(lessons.map((l) => l.subjectId))].filter(
+    (id): id is string => id != null
+  );
   const classroomIds = [
     ...new Set(
       lessons.flatMap((l) =>
@@ -140,7 +142,7 @@ export async function loadSubstitutionTeacherPayload(args: {
         .map((id) => classroomMap.get(id))
         .filter((name): name is string => !!name),
       startTime: formatTime(periodInfo?.startTime),
-      subjectName: subjectMap.get(l.subjectId) ?? null,
+      subjectName: subjectMap.get(l.subjectId ?? '') ?? null,
       substitutedTeachers: (Array.isArray(l.teacherIds) ? l.teacherIds : [])
         .map((id) => teacherMap.get(id))
         .filter((name): name is string => !!name),

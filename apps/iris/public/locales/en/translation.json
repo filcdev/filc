@@ -300,7 +300,7 @@
     "periodPlaceholder": "Select a period",
     "noPeriodsFound": "No periods found.",
     "subject": "Subject",
-    "subjectPlaceholder": "Select a subject",
+    "subjectPlaceholder": "Select a subject (optional)",
     "noSubjectsFound": "No subjects found.",
     "cohort": "Class",
     "cohortPlaceholder": "Select a class",

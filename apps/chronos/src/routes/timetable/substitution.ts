@@ -4,7 +4,7 @@ import {
   substitutionIdParamsSchema,
 } from '@filcdev/api/domains/timetable/substitution';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -120,7 +120,9 @@ async function enrichLessons(lessonIds: string[]) {
     return [];
   }
 
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const subjectIds = Array.from(
+    new Set(lessons.map((l) => l.subjectId))
+  ).filter((id): id is string => id != null);
   const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
   const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
   const teacherIds = Array.from(
@@ -157,7 +159,9 @@ async function enrichLessons(lessonIds: string[]) {
   }
 
   const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-    db.select().from(subject).where(inArray(subject.id, subjectIds)),
+    subjectIds.length
+      ? db.select().from(subject).where(inArray(subject.id, subjectIds))
+      : Promise.resolve([] as (typeof subject.$inferSelect)[]),
     db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
     db.select().from(period).where(inArray(period.id, periodIds)),
     teacherIds.length
@@ -206,7 +210,7 @@ async function enrichLessons(lessonIds: string[]) {
       })(),
       periodsPerWeek: l.periodsPerWeek,
       subject: (() => {
-        const s = subjMap.get(l.subjectId);
+        const s = subjMap.get(l.subjectId ?? '');
         return s ? { id: s.id, name: s.name, short: s.short } : null;
       })(),
       teachers: tIds
@@ -743,7 +747,7 @@ async function findOrCreateManualLesson(
     cohortId: string;
     dayDefinitionId: string;
     periodId: string;
-    subjectId: string;
+    subjectId: string | null;
     teacherId: string;
     timetableId: string;
     weeksDefinitionId: string;
@@ -761,6 +765,11 @@ async function findOrCreateManualLesson(
     termDefinitionId,
   } = params;
 
+  const subjectCondition =
+    subjectId === null
+      ? isNull(lesson.subjectId)
+      : eq(lesson.subjectId, subjectId);
+
   const existing = await tx
     .select({ lessonId: lessonCohortMTM.lessonId })
     .from(lessonCohortMTM)
@@ -771,7 +780,7 @@ async function findOrCreateManualLesson(
         eq(lesson.timetableId, timetableId),
         eq(lesson.dayDefinitionId, dayDefinitionId),
         eq(lesson.periodId, periodId),
-        eq(lesson.subjectId, subjectId),
+        subjectCondition,
         // teacherIds is a text array; check it contains exactly the teacher
         sql`${lesson.teacherIds} @> ARRAY[${teacherId}]::text[]`
       )
@@ -893,29 +902,23 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     } = c.req.valid('json');
 
     // Validate that all referenced entities exist.
-    const [[refTeacher], [refPeriod], [refSubject], [refCohort]] =
-      await Promise.all([
-        db
-          .select({ id: teacher.id })
-          .from(teacher)
-          .where(eq(teacher.id, teacherId))
-          .limit(1),
-        db
-          .select({ id: period.id })
-          .from(period)
-          .where(eq(period.id, periodId))
-          .limit(1),
-        db
-          .select({ id: subject.id })
-          .from(subject)
-          .where(eq(subject.id, subjectId))
-          .limit(1),
-        db
-          .select({ id: cohort.id })
-          .from(cohort)
-          .where(eq(cohort.id, cohortId))
-          .limit(1),
-      ]);
+    const [[refTeacher], [refPeriod], [refCohort]] = await Promise.all([
+      db
+        .select({ id: teacher.id })
+        .from(teacher)
+        .where(eq(teacher.id, teacherId))
+        .limit(1),
+      db
+        .select({ id: period.id })
+        .from(period)
+        .where(eq(period.id, periodId))
+        .limit(1),
+      db
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(eq(cohort.id, cohortId))
+        .limit(1),
+    ]);
 
     if (!refTeacher) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -927,15 +930,22 @@ export const createManualSubstitution = timetableFactory.createHandlers(
         message: 'Invalid period provided',
       });
     }
-    if (!refSubject) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid subject provided',
-      });
-    }
     if (!refCohort) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Invalid cohort provided',
       });
+    }
+    if (subjectId !== null) {
+      const [refSubject] = await db
+        .select({ id: subject.id })
+        .from(subject)
+        .where(eq(subject.id, subjectId))
+        .limit(1);
+      if (!refSubject) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: 'Invalid subject provided',
+        });
+      }
     }
 
     if (substituter) {

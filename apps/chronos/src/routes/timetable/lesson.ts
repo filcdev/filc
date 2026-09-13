@@ -54,7 +54,9 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
     return [];
   }
 
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const subjectIds = Array.from(
+    new Set(lessons.map((l) => l.subjectId))
+  ).filter((id): id is string => id != null);
   const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
   const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
   const teacherIds = Array.from(
@@ -91,7 +93,9 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
     groupRows,
     weekDefinitions,
   ] = await Promise.all([
-    db.select().from(subject).where(inArray(subject.id, subjectIds)),
+    subjectIds.length
+      ? db.select().from(subject).where(inArray(subject.id, subjectIds))
+      : Promise.resolve([] as (typeof subject.$inferSelect)[]),
     db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
     db.select().from(period).where(inArray(period.id, periodIds)),
     teacherIds.length
@@ -215,7 +219,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
       })(),
       periodsPerWeek: l.periodsPerWeek,
       subject: (() => {
-        const s = subjMap.get(l.subjectId);
+        const s = subjMap.get(l.subjectId ?? '');
         return s ? { id: s.id, name: s.name, short: s.short } : null;
       })(),
       teachers: tIds
