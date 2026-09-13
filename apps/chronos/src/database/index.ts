@@ -14,13 +14,64 @@ import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'drizzle']);
 
+const sanitizeDatabaseName = (value: string): string => {
+  const cleaned = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return `filc_${cleaned}`.slice(0, 63);
+};
+
+// Preview deployments set CHRONOS_DATABASE_NAME to a per-preview value (e.g.
+// $COOLIFY_FQDN) so each preview gets its own database on the shared Postgres
+// server in CHRONOS_DATABASE_URL. Production leaves it unset.
+const resolveDatabaseUrl = async (): Promise<string> => {
+  if (!env.databaseName) {
+    return env.databaseUrl;
+  }
+
+  const name = sanitizeDatabaseName(env.databaseName);
+  const url = new URL(env.databaseUrl);
+  if (url.pathname.slice(1) === name) {
+    return env.databaseUrl;
+  }
+
+  const admin = new SQL({
+    adapter: 'postgres',
+    prepare: false,
+    url: env.databaseUrl,
+  });
+  try {
+    const existing =
+      await admin`SELECT 1 FROM pg_database WHERE datname = ${name}`;
+    if (existing.length === 0) {
+      // `name` is restricted to [a-z0-9_], so interpolating the identifier is safe.
+      await admin.unsafe(`CREATE DATABASE "${name}"`);
+    }
+  } catch (error) {
+    // A concurrent boot can create the database between the check and the create.
+    const existing =
+      await admin`SELECT 1 FROM pg_database WHERE datname = ${name}`;
+    if (existing.length === 0) {
+      throw error;
+    }
+  } finally {
+    await admin.close();
+  }
+
+  url.pathname = `/${name}`;
+  return url.toString();
+};
+
+const databaseUrl = await resolveDatabaseUrl();
+
 let client: null | typeof sql = null;
 
 const createClient = () =>
   new SQL({
     adapter: 'postgres',
     prepare: false,
-    url: env.databaseUrl,
+    url: databaseUrl,
   });
 
 if (env.mode === 'production') {
