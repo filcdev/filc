@@ -53,6 +53,7 @@ const envSchema = z.object({
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.string()).optional()
   ),
+  CHRONOS_PREVIEW_DATABASE_URL: z.url().optional(),
   CHRONOS_RATE_LIMIT_COOKIE_NAME: z.string().default('filc_rl_id'),
   CHRONOS_RATE_LIMIT_MAX: z.coerce.number().default(180),
   CHRONOS_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(30_000),

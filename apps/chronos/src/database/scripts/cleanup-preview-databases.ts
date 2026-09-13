@@ -12,25 +12,34 @@ await configureLogger('chronos');
 
 const logger = getLogger(['chronos', 'preview-db-cleanup']);
 
+const LEADING_SLASH = /^\//;
+
 const dryRun = process.argv.includes('--dry-run');
 const maxAgeDays = env.previewDatabaseMaxAgeDays;
+const targetUrl = env.previewDatabaseUrl;
 
-// The cleanup is opt-in: without CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS it must
-// never touch anything, so it only ever runs where preview databases live.
-if (!maxAgeDays) {
+// The cleanup is opt-in: without both CHRONOS_PREVIEW_DATABASE_URL and
+// CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS it must never touch anything, so it
+// only ever runs where preview databases live and only against that server.
+if (!(targetUrl && maxAgeDays)) {
   logger.info(
-    'Preview database cleanup disabled: set CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS to enable.'
+    'Preview database cleanup disabled: set CHRONOS_PREVIEW_DATABASE_URL and CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS to enable.'
   );
   process.exit(0);
 }
 
+logger.info(`Preview database cleanup targeting ${new URL(targetUrl).host}`);
+
 const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+
+const databaseNameFrom = (url: string): string =>
+  decodeURIComponent(new URL(url).pathname.replace(LEADING_SLASH, ''));
 
 const protectedNames = new Set<string>(env.previewDatabaseProtected ?? []);
 // The database the app itself uses (from CHRONOS_DATABASE_URL).
-protectedNames.add(
-  decodeURIComponent(new URL(env.databaseUrl).pathname.replace(/^\//, ''))
-);
+protectedNames.add(databaseNameFrom(env.databaseUrl));
+// The database the cleanup connects to (from CHRONOS_PREVIEW_DATABASE_URL).
+protectedNames.add(databaseNameFrom(targetUrl));
 // The current preview's own database, when this runs inside a preview.
 if (env.databaseName) {
   protectedNames.add(sanitizeDatabaseName(env.databaseName));
@@ -39,7 +48,7 @@ if (env.databaseName) {
 const sql = new SQL({
   adapter: 'postgres',
   prepare: false,
-  url: env.databaseUrl,
+  url: targetUrl,
 });
 
 try {
