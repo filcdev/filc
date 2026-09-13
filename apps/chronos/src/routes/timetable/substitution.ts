@@ -12,7 +12,6 @@ import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
-  classroom,
   cohort,
   dayDefinition,
   lesson,
@@ -36,6 +35,10 @@ import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitutio
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
+  enrichedLessonSchema,
+  enrichLessons,
+} from '#utils/timetable/enrich-lessons';
+import {
   createInsertSchema,
   createSelectSchema,
   createUpdateSchema,
@@ -44,37 +47,10 @@ import { timetableFactory } from './_factory';
 
 const substitutionSchema = createSelectSchema(substitution);
 
-// Enriched lesson schema for substitution endpoints
-const enrichedSubstitutionLessonSchema = z.object({
-  classrooms: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  cohorts: z.array(z.string()),
-  day: createSelectSchema(dayDefinition).optional(),
-  id: z.string(),
-  period: z
-    .object({
-      endTime: z.string(),
-      id: z.string(),
-      period: z.number(),
-      startTime: z.string(),
-    })
-    .nullable(),
-  periodsPerWeek: z.number(),
-  subject: z
-    .object({ id: z.string(), name: z.string(), short: z.string() })
-    .nullable(),
-  teachers: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  termDefinitionId: z.string().nullable(),
-  weeksDefinitionId: z.string(),
-});
-
 const allSubstitutionsResponseSchema = z.object({
   data: z.array(
     z.object({
-      lessons: z.array(enrichedSubstitutionLessonSchema),
+      lessons: z.array(enrichedLessonSchema),
       substitution: substitutionSchema,
       teacher: createSelectSchema(teacher).nullable(),
     })
@@ -100,124 +76,6 @@ const cohortSubstitutionsResponseSchema = z.object({
   }),
   success: z.boolean(),
 });
-
-// Helper to enrich lessons with their related data
-async function enrichLessons(lessonIds: string[]) {
-  if (lessonIds.length === 0) {
-    return [];
-  }
-
-  const lessons = await db
-    .select()
-    .from(lesson)
-    .where(inArray(lesson.id, lessonIds));
-
-  if (lessons.length === 0) {
-    return [];
-  }
-
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
-  const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
-  const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
-  const teacherIds = Array.from(
-    new Set(
-      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
-    )
-  );
-  const classroomIds = Array.from(
-    new Set(
-      lessons.flatMap((l) =>
-        Array.isArray(l.classroomIds) ? l.classroomIds : []
-      )
-    )
-  );
-
-  // Get lesson-cohort relationships
-  const lessonCohorts = await db
-    .select({
-      cohortId: lessonCohortMTM.cohortId,
-      cohortName: cohort.name,
-      lessonId: lessonCohortMTM.lessonId,
-    })
-    .from(lessonCohortMTM)
-    .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-    .where(inArray(lessonCohortMTM.lessonId, lessonIds));
-
-  // Create a map of lesson ID to cohort names
-  const lessonCohortMap = new Map<string, string[]>();
-  for (const lc of lessonCohorts) {
-    if (!lessonCohortMap.has(lc.lessonId)) {
-      lessonCohortMap.set(lc.lessonId, []);
-    }
-    lessonCohortMap.get(lc.lessonId)?.push(lc.cohortName);
-  }
-
-  const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-    db.select().from(subject).where(inArray(subject.id, subjectIds)),
-    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-    db.select().from(period).where(inArray(period.id, periodIds)),
-    teacherIds.length
-      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-    classroomIds.length
-      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-  ]);
-
-  const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
-  const dayMap = new Map(days.map((d) => [d.id, d] as const));
-  const periodMap = new Map(periods.map((p) => [p.id, p] as const));
-  const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
-  const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
-
-  return lessons.map((l) => {
-    const tIds = (Array.isArray(l.teacherIds) ? l.teacherIds : []) as string[];
-    const cIds = (
-      Array.isArray(l.classroomIds) ? l.classroomIds : []
-    ) as string[];
-    const cohortNames = lessonCohortMap.get(l.id) || [];
-
-    return {
-      classrooms: cIds
-        .map((id) => classroomMap.get(id))
-        .filter(Boolean)
-        .map((cr) => ({
-          id: (cr as (typeof classrooms)[number]).id,
-          name: (cr as (typeof classrooms)[number]).name,
-          short: (cr as (typeof classrooms)[number]).short,
-        })),
-      cohorts: cohortNames,
-      day: dayMap.get(l.dayDefinitionId),
-      id: l.id,
-      period: (() => {
-        const p = periodMap.get(l.periodId);
-        return p
-          ? {
-              endTime: String(p.endTime),
-              id: p.id,
-              period: p.period,
-              startTime: String(p.startTime),
-            }
-          : null;
-      })(),
-      periodsPerWeek: l.periodsPerWeek,
-      subject: (() => {
-        const s = subjMap.get(l.subjectId);
-        return s ? { id: s.id, name: s.name, short: s.short } : null;
-      })(),
-      teachers: tIds
-        .map((id) => teacherMap.get(id))
-        .filter(Boolean)
-        .map((t) => ({
-          id: (t as (typeof teachers)[number]).id,
-          name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-          short: (t as (typeof teachers)[number]).short,
-        })),
-      termDefinitionId: l.termDefinitionId,
-      weeksDefinitionId: l.weeksDefinitionId,
-    };
-  });
-}
 
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -412,8 +270,10 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       new Set(substitutions.flatMap((s) => s.lessonIds))
     );
 
-    // Enrich lessons in one batch
-    const enrichedLessons = await enrichLessons(allLessonIds);
+    // Enrich lessons in one batch, scoped to the active timetable so retired
+    // timetables' lessons don't leak into the affected-lessons list.
+    const timetableId = await getActiveTimetableId();
+    const enrichedLessons = await enrichLessons(allLessonIds, timetableId);
     const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
 
     // Map lessons back to substitutions
@@ -506,8 +366,16 @@ export const getRelevantSubstitutionsForCohort =
     async (c) => {
       const { cohortId } = c.req.valid('param');
 
+      const timetableId = await getActiveTimetableId();
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      // No active timetable: yield no substitutions rather than every
+      // timetable's (including retired) lessons.
+      if (!timetableId) {
+        return ok(c, { cohortId, substitutions: [] });
+      }
 
       const substitutions = await db
         .select({
@@ -527,7 +395,13 @@ export const getRelevantSubstitutionsForCohort =
         .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
         .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
         .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-        .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
+        .where(
+          and(
+            gte(substitution.date, today),
+            eq(cohort.id, cohortId),
+            eq(lesson.timetableId, timetableId)
+          )
+        )
         .groupBy(substitution.id, teacher.id);
 
       return ok(c, {

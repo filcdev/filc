@@ -39,7 +39,10 @@ import {
 } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
-import { getTimetableIdForDate } from '#utils/timetable/active';
+import {
+  getActiveTimetableId,
+  getTimetableIdForDate,
+} from '#utils/timetable/active';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -406,12 +409,17 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       });
     }
 
-    const whereClause = timetableId
-      ? and(
-          eq(lessonCohortMTM.cohortId, cohortId),
-          eq(lesson.timetableId, timetableId)
-        )
-      : eq(lessonCohortMTM.cohortId, cohortId);
+    const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!effectiveTimetableId) {
+      return ok(c, []);
+    }
+
+    const whereClause = and(
+      eq(lessonCohortMTM.cohortId, cohortId),
+      eq(lesson.timetableId, effectiveTimetableId)
+    );
 
     const lessonRows = await db
       .select({ lesson })
@@ -476,12 +484,17 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       });
     }
 
-    const whereClause = timetableId
-      ? and(
-          arrayContains(lesson.teacherIds, [teacherId]),
-          eq(lesson.timetableId, timetableId)
-        )
-      : arrayContains(lesson.teacherIds, [teacherId]);
+    const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!effectiveTimetableId) {
+      return ok(c, []);
+    }
+
+    const whereClause = and(
+      arrayContains(lesson.teacherIds, [teacherId]),
+      eq(lesson.timetableId, effectiveTimetableId)
+    );
 
     const lessons = await db.select().from(lesson).where(whereClause);
 
@@ -753,13 +766,23 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
       return ok(c, []);
     }
 
+    const timetableId = await getActiveTimetableId();
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const lessons = await db
       .select()
       .from(lesson)
       .where(
-        or(
-          ...existingTeacherIds.map((id) =>
-            arrayContains(lesson.teacherIds, [id])
+        and(
+          eq(lesson.timetableId, timetableId),
+          or(
+            ...existingTeacherIds.map((id) =>
+              arrayContains(lesson.teacherIds, [id])
+            )
           )
         )
       );
@@ -1003,12 +1026,17 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       });
     }
 
-    const whereClause = timetableId
-      ? and(
-          arrayContains(lesson.classroomIds, [classroomId]),
-          eq(lesson.timetableId, timetableId)
-        )
-      : arrayContains(lesson.classroomIds, [classroomId]);
+    const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!effectiveTimetableId) {
+      return ok(c, []);
+    }
+
+    const whereClause = and(
+      arrayContains(lesson.classroomIds, [classroomId]),
+      eq(lesson.timetableId, effectiveTimetableId)
+    );
 
     const lessons = await db.select().from(lesson).where(whereClause);
 

@@ -212,6 +212,7 @@ export const substitutionLessonMTM = pgTable(
 );
 
 export const movedLesson = pgTable('moved_lesson', {
+  comment: text('comment'),
   date: date('date', { mode: 'date' }).notNull(),
   id: text('id').primaryKey(),
   room: text('room').references(() => classroom.id),
