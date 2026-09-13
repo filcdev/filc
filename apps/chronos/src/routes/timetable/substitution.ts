@@ -335,6 +335,26 @@ async function checkTeacherSubstitutionConflict(
     lessonCohorts.get(link.lessonId)?.add(link.cohortId);
   }
 
+  const isCompatiblePair = (
+    incomingId: string,
+    existingId: string
+  ): boolean => {
+    if (incomingId === existingId) {
+      return true;
+    }
+    const incomingCohorts = lessonCohorts.get(incomingId);
+    const existingCohorts = lessonCohorts.get(existingId);
+    if (!(incomingCohorts && existingCohorts)) {
+      return false;
+    }
+    for (const cohortId of incomingCohorts) {
+      if (existingCohorts.has(cohortId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   for (const periodId of overlappingPeriodIds) {
     const incomingInPeriod = incomingLessons.filter(
       (l) => l.periodId === periodId
@@ -343,32 +363,17 @@ async function checkTeacherSubstitutionConflict(
       (l) => l.periodId === periodId
     );
 
-    const isSameLesson = incomingInPeriod.some((incoming) =>
-      existingInPeriod.some((existing) => existing.id === incoming.id)
+    // Only allow the overlap when every incoming/existing lesson pair in this
+    // period is the same lesson or shares a cohort. A single unrelated pair
+    // means the substituter would cover two different classes at once, which
+    // is a real conflict.
+    const allPairsCompatible = incomingInPeriod.every((incoming) =>
+      existingInPeriod.every((existing) =>
+        isCompatiblePair(incoming.id, existing.id)
+      )
     );
 
-    const sharesCohort = incomingInPeriod.some((incoming) => {
-      const incomingCohorts = lessonCohorts.get(incoming.id);
-      if (!incomingCohorts) {
-        return false;
-      }
-      return existingInPeriod.some((existing) => {
-        const existingCohorts = lessonCohorts.get(existing.id);
-        if (!existingCohorts) {
-          return false;
-        }
-        for (const cohortId of incomingCohorts) {
-          if (existingCohorts.has(cohortId)) {
-            return true;
-          }
-        }
-        return false;
-      });
-    });
-
-    // The same lesson or a shared cohort means the substituter is covering the
-    // same class, so the overlap is allowed.
-    if (isSameLesson || sharesCohort) {
+    if (allPairsCompatible) {
       continue;
     }
 

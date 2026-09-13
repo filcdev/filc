@@ -42,18 +42,11 @@ export const isMatchingWeekday = (
   dayName: string,
   dayShort?: string
 ): boolean => {
-  const aliases = (weekdayAliases[weekdayIndex] ?? []).map(normalizeDayText);
+  const aliases = new Set(
+    (weekdayAliases[weekdayIndex] ?? []).map(normalizeDayText)
+  );
   const normalizedName = normalizeDayText(dayName);
   const normalizedShort = dayShort ? normalizeDayText(dayShort) : '';
 
-  const matchesAlias = (alias: string): boolean => {
-    if (normalizedName === alias || normalizedShort === alias) {
-      return true;
-    }
-    if (alias.length <= 3) {
-      return normalizedName.startsWith(alias);
-    }
-    return normalizedName.includes(alias);
-  };
-  return aliases.some(matchesAlias);
+  return aliases.has(normalizedName) || aliases.has(normalizedShort);
 };
