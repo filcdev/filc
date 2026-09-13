@@ -141,6 +141,13 @@
       "when": 1789117983743,
       "tag": "0019_complex_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789335087415,
+      "tag": "0020_real_fantastic_four",
+      "breakpoints": true
     }
   ]
 }
