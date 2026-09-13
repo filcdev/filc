@@ -11,16 +11,9 @@ import { newsSchema } from '#database/schema/news';
 import { notificationsSchema } from '#database/schema/notifications';
 import { timetableSchema } from '#database/schema/timetable';
 import { env } from '#utils/environment';
+import { sanitizeDatabaseName } from '#utils/preview-database';
 
 const logger = getLogger(['chronos', 'drizzle']);
-
-const sanitizeDatabaseName = (value: string): string => {
-  const cleaned = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return `filc_${cleaned}`.slice(0, 63);
-};
 
 // Preview deployments set CHRONOS_DATABASE_NAME to a per-preview value (e.g.
 // $COOLIFY_FQDN) so each preview gets its own database on the shared Postgres

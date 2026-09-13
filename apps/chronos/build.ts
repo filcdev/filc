@@ -3,7 +3,10 @@ console.info('Starting Chronos server build...');
 console.time('Built Chronos server');
 
 await Bun.build({
-  entrypoints: ['src/index.ts'],
+  entrypoints: [
+    'src/index.ts',
+    'src/database/scripts/cleanup-preview-databases.ts',
+  ],
   minify: true,
   outdir: 'dist',
   packages: 'bundle',
