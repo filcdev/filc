@@ -5,7 +5,10 @@ import dayjs from 'dayjs';
 import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
+import {
+  MovedLessonDialog,
+  type MoveMode,
+} from '@/components/admin/moved-lesson-dialog';
 import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
 import {
   DateRangePicker,
@@ -137,15 +140,22 @@ function extractReferenceData(
     }
   }
 
-  // Also include lessons from moved lessons
+  // Also include lessons from moved lessons (already enriched).
   for (const ml of movedLessons) {
-    for (const lessonId of ml.lessons) {
-      // Find lesson from subs or cohortLessons
-      const foundLesson = Array.from(lessonMap.values()).find(
-        (l) => l.id === lessonId
-      );
-      if (foundLesson && !lessonMap.has(lessonId)) {
-        lessonMap.set(lessonId, foundLesson);
+    for (const lesson of ml.lessons) {
+      if (!lessonMap.has(lesson.id)) {
+        lessonMap.set(lesson.id, lesson);
+      }
+      if (lesson.period) {
+        periodMap.set(lesson.period.id, lesson.period);
+      }
+      if (lesson.day) {
+        dayMap.set(lesson.day.id, {
+          days: [],
+          id: lesson.day.id,
+          name: lesson.day.name,
+          short: lesson.day.short,
+        });
       }
     }
   }
@@ -163,12 +173,26 @@ function extractReferenceData(
   };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex form with multiple queries and state
+// A move that keeps the lesson's own day/period is a room move; otherwise it
+// is a day move.
+function detectMoveMode(item: MovedLessonItem): MoveMode {
+  const firstLesson = item.lessons[0];
+  if (
+    firstLesson &&
+    item.movedLesson.startingDay === firstLesson.day?.id &&
+    item.movedLesson.startingPeriod === firstLesson.period?.id
+  ) {
+    return 'room';
+  }
+  return 'day';
+}
+
 function MovedLessonsPage() {
   const { i18n, t } = useTranslation();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [moveMode, setMoveMode] = useState<MoveMode>('room');
   const [selectedItem, setSelectedItem] = useState<MovedLessonItem | null>(
     null
   );
@@ -205,8 +229,8 @@ function MovedLessonsPage() {
     hasWritePermission
   );
 
-  // Extract unique periods and day definitions from moved lessons data
-  const { allLessons, days, periods } = useMemo(
+  // Extract unique day definitions from moved lessons data
+  const { allLessons, days } = useMemo(
     () =>
       extractReferenceData(
         movedLessonsQuery.data ?? [],
@@ -362,6 +386,7 @@ function MovedLessonsPage() {
               aria-label={t('movedLesson.create')}
               onClick={() => {
                 setSelectedItem(null);
+                setMoveMode('room');
                 setDialogOpen(true);
               }}
             >
@@ -456,6 +481,7 @@ function MovedLessonsPage() {
                     />
                   </div>
                 </TableHead>
+                <TableHead>{t('movedLesson.comment')}</TableHead>
                 {hasWritePermission && (
                   <TableHead>{t('movedLesson.actions')}</TableHead>
                 )}
@@ -486,12 +512,22 @@ function MovedLessonsPage() {
                       {ml.lessons.length}
                     </div>
                   </TableCell>
+                  <TableCell>
+                    {ml.movedLesson.comment ? (
+                      <span className="whitespace-pre-wrap text-sm">
+                        {ml.movedLesson.comment}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   {hasWritePermission && (
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
                             setSelectedItem(ml);
+                            setMoveMode(detectMoveMode(ml));
                             setDialogOpen(true);
                           }}
                           size="icon"
@@ -516,7 +552,7 @@ function MovedLessonsPage() {
                 <TableRow>
                   <TableCell
                     className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 6 : 5}
+                    colSpan={hasWritePermission ? 7 : 6}
                   >
                     {t('movedLesson.noMovedLessons')}
                   </TableCell>
@@ -531,18 +567,19 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
-          cohortLessonsData={cohortLessonsQueries.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
+          mode={moveMode}
+          onModeChange={setMoveMode}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
               setSelectedItem(null);
+              setMoveMode('room');
             }
           }}
           open={dialogOpen}
-          periods={periods}
         />
       )}
 

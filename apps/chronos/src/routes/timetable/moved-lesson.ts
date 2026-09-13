@@ -19,7 +19,6 @@ import {
   movedLesson,
   movedLessonLessonMTM,
   period,
-  subject,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
 import { created, ok } from '#utils/http';
@@ -28,6 +27,12 @@ import {
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
+import { getActiveTimetableId } from '#utils/timetable/active';
+import {
+  type EnrichedLesson,
+  enrichedLessonSchema,
+  enrichLessons,
+} from '#utils/timetable/enrich-lessons';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -70,11 +75,22 @@ const ensureClassroomExists = async (classroomId: string) => {
   }
 };
 
-const ensureLessonsExist = async (lessonIds: string[]) => {
+const ensureLessonsExist = async (
+  lessonIds: string[]
+): Promise<{ periodId: string }[]> => {
+  const timetableId = await getActiveTimetableId();
+
   const lessonRecords = await db
-    .select({ lessonId: lesson.id })
+    .select({ lessonId: lesson.id, periodId: lesson.periodId })
     .from(lesson)
-    .where(inArray(lesson.id, lessonIds));
+    .where(
+      timetableId
+        ? and(
+            inArray(lesson.id, lessonIds),
+            eq(lesson.timetableId, timetableId)
+          )
+        : sql`false`
+    );
 
   const foundLessonIds = new Set(lessonRecords.map(({ lessonId }) => lessonId));
   const missingLessonIds = lessonIds.filter(
@@ -86,6 +102,8 @@ const ensureLessonsExist = async (lessonIds: string[]) => {
       message: `Invalid lesson ids provided: ${missingLessonIds.join(', ')}`,
     });
   }
+
+  return lessonRecords;
 };
 
 const normalizeOptionalString = (
@@ -164,7 +182,18 @@ const validateMovedLessonReferences = async (options: {
     'Lesson ids'
   );
   if (normalizedLessonIds && normalizedLessonIds.length > 0) {
-    await ensureLessonsExist(normalizedLessonIds);
+    const lessonRecords = await ensureLessonsExist(normalizedLessonIds);
+
+    if (
+      normalizedStartingPeriod &&
+      lessonRecords.some(
+        ({ periodId }) => periodId !== normalizedStartingPeriod
+      )
+    ) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'Provided lessons do not match the starting period',
+      });
+    }
   }
 };
 
@@ -173,8 +202,7 @@ const getAllResponseSchema = z.object({
     z.object({
       classroom: createSelectSchema(classroom).nullable(),
       dayDefinition: createSelectSchema(dayDefinition).nullable(),
-      lessonNames: z.array(z.string()),
-      lessons: z.array(z.string()),
+      lessons: z.array(enrichedLessonSchema),
       movedLesson: createSelectSchema(movedLesson),
       period: createSelectSchema(period).nullable(),
     })
@@ -182,8 +210,40 @@ const getAllResponseSchema = z.object({
   success: z.boolean(),
 });
 
+// Row shape returned by each moved-lesson query before lesson enrichment.
+type MovedLessonRow = {
+  classroom: typeof classroom.$inferSelect | null;
+  dayDefinition: typeof dayDefinition.$inferSelect | null;
+  lessons: string[];
+  movedLesson: typeof movedLesson.$inferSelect;
+  period: typeof period.$inferSelect | null;
+};
+
+// Enrich the linked lesson ids of a batch of moved-lesson rows, preserving the
+// target joins and the per-moved-lesson lesson order. `timetableId` scopes
+// enrichment to a single timetable so retired timetables' lessons don't leak
+// into the list.
+async function attachEnrichedLessons(
+  rows: MovedLessonRow[],
+  timetableId?: string | null
+) {
+  const allLessonIds = Array.from(new Set(rows.flatMap((r) => r.lessons)));
+  const enriched = await enrichLessons(allLessonIds, timetableId);
+  const lessonMap = new Map(enriched.map((l) => [l.id, l]));
+
+  return rows.map((r) => ({
+    classroom: r.classroom,
+    dayDefinition: r.dayDefinition,
+    lessons: r.lessons
+      .map((id) => lessonMap.get(id))
+      .filter((l): l is EnrichedLesson => l !== undefined),
+    movedLesson: r.movedLesson,
+    period: r.period,
+  }));
+}
+
 const movedLessonWithRelationsType =
-  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<String>) @field(.lessonNames, List<String>)';
+  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<EnrichedLesson>)';
 
 export const getAllMovedLessons = timetableFactory.createHandlers(
   describeRoute({
@@ -202,14 +262,16 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   async (c) => {
+    const timetableId = await getActiveTimetableId();
+
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const movedLessons = await db
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -226,10 +288,10 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
+      .where(eq(lesson.timetableId, timetableId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
@@ -272,10 +334,6 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -292,13 +350,12 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .where(
         and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
@@ -334,14 +391,16 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
+    const timetableId = await getActiveTimetableId();
+
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const movedLessons = await db
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -358,12 +417,16 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-      .where(eq(lessonCohortMTM.cohortId, cohortId))
+      .where(
+        and(
+          eq(lessonCohortMTM.cohortId, cohortId),
+          eq(lesson.timetableId, timetableId)
+        )
+      )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
@@ -399,6 +462,12 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
+    const timetableId = await getActiveTimetableId();
+
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -406,10 +475,6 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       .select({
         classroom,
         dayDefinition,
-        lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -426,24 +491,26 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
       .where(
         and(
           eq(lessonCohortMTM.cohortId, cohortId),
-          gte(movedLesson.date, today)
+          gte(movedLesson.date, today),
+          eq(lesson.timetableId, timetableId)
         )
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, movedLessons);
+    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
   }
 );
 
-const createSchema = createInsertSchema(movedLesson).omit({ id: true }).extend({
-  date: z.coerce.date(),
-  lessonIds: z.uuid().array().optional(),
-});
+const createSchema = createInsertSchema(movedLesson)
+  .omit({ id: true })
+  .extend({
+    date: z.coerce.date(),
+    lessonIds: z.uuid().array().min(1),
+  });
 
 const createResponseSchema = z.object({
   data: createSelectSchema(movedLesson),
@@ -476,7 +543,8 @@ export const createMovedLesson = timetableFactory.createHandlers(
   zValidator('json', createSchema),
   async (c) => {
     const body = c.req.valid('json');
-    const { startingPeriod, startingDay, room, date, lessonIds } = body;
+    const { startingPeriod, startingDay, room, date, lessonIds, comment } =
+      body;
 
     if (!date) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
@@ -494,6 +562,7 @@ export const createMovedLesson = timetableFactory.createHandlers(
     const [newMovedLesson] = await db
       .insert(movedLesson)
       .values({
+        comment,
         date,
         id: crypto.randomUUID(),
         room,
@@ -568,7 +637,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
   zValidator('json', updateSchema),
   async (c) => {
     const { id } = c.req.valid('param');
-    const { startingPeriod, startingDay, room, date, lessonIds } =
+    const { startingPeriod, startingDay, room, date, lessonIds, comment } =
       c.req.valid('json');
 
     await validateMovedLessonReferences({
@@ -583,6 +652,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
     const [updatedMovedLesson] = await db
       .update(movedLesson)
       .set({
+        comment: comment === undefined ? undefined : comment,
         date,
         room: room === undefined ? undefined : room,
         startingDay: startingDay === undefined ? undefined : startingDay,
