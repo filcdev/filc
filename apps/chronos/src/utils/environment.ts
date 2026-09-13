@@ -13,6 +13,9 @@ const boolean = z.preprocess((v) => {
   return Boolean(v);
 }, z.boolean());
 
+const emptyStringAsUndefined = (value: unknown) =>
+  value === '' ? undefined : value;
+
 const envSchema = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
@@ -44,16 +47,18 @@ const envSchema = z.object({
     .min(MIN_PORT)
     .max(MAX_PORT)
     .default(DEFAULT_PORT),
-  CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional(),
+  CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS: z.preprocess(
+    emptyStringAsUndefined,
+    z.coerce.number().int().positive().optional()
+  ),
   CHRONOS_PREVIEW_DATABASE_PROTECTED: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.string()).optional()
   ),
-  CHRONOS_PREVIEW_DATABASE_URL: z.url().optional(),
+  CHRONOS_PREVIEW_DATABASE_URL: z.preprocess(
+    emptyStringAsUndefined,
+    z.url().optional()
+  ),
   CHRONOS_RATE_LIMIT_COOKIE_NAME: z.string().default('filc_rl_id'),
   CHRONOS_RATE_LIMIT_MAX: z.coerce.number().default(180),
   CHRONOS_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(30_000),

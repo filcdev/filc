@@ -24,6 +24,7 @@ RUN bun run build --filter=@filcdev/chronos
 FROM base AS release
 COPY --from=builder /app/apps/chronos/src/database/migrations ./src/database/migrations
 COPY --from=builder /app/apps/chronos/dist ./dist
+COPY --from=builder /app/apps/chronos/package.json ./package.json
 
 # run the app
 USER bun

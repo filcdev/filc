@@ -26,3 +26,13 @@ using the database in `CHRONOS_DATABASE_URL`.
 `CHRONOS_PREVIEW_DATABASE_MAX_AGE_DAYS`. It requires
 `CHRONOS_PREVIEW_DATABASE_URL` and never touches the databases in
 `CHRONOS_DATABASE_URL` / `CHRONOS_PREVIEW_DATABASE_URL`.
+
+## Required privileges
+
+- The role in `CHRONOS_DATABASE_URL` needs `CREATEDB` (or superuser) when
+  `CHRONOS_DATABASE_NAME` is set, so it can create the per-preview database.
+- `CHRONOS_PREVIEW_DATABASE_URL` is a restricted cleanup-only connection. Its
+  role needs:
+  - `pg_read_server_files` (or superuser) for `pg_stat_file`;
+  - ownership of each dropped database (or superuser);
+  - ownership of the target sessions or `pg_signal_backend` to terminate them.

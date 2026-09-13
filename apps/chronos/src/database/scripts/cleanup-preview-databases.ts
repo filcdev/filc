@@ -91,15 +91,15 @@ try {
       continue;
     }
 
-    await sql`SELECT pg_terminate_backend(pid)
-                FROM pg_stat_activity
-               WHERE datname = ${row.name}
-                 AND pid <> pg_backend_pid()`;
     // row.name is restricted to [a-z0-9_], so interpolating the identifier is safe.
-    await sql.unsafe(`DROP DATABASE "${row.name}"`);
-    logger.info(
-      `Dropped ${row.name} (created ${row.created_at.toISOString()})`
-    );
+    try {
+      await sql.unsafe(`DROP DATABASE "${row.name}" WITH (FORCE)`);
+      logger.info(
+        `Dropped ${row.name} (created ${row.created_at.toISOString()})`
+      );
+    } catch (error) {
+      logger.error(`Failed to drop ${row.name}: ${String(error)}`);
+    }
   }
 } finally {
   await sql.close();
