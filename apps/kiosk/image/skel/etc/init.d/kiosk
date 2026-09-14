@@ -21,6 +21,12 @@ respawn_period=60
 # root-owned, so start_pre() creates it as the session user.
 export XDG_RUNTIME_DIR="/run/kiosk"
 
+# wlroots aborts the whole session -- and cage with it -- when the seat has no
+# input device, which is the state of a TV box with its keyboard unplugged (and
+# of the QEMU command in README.md). The pages must keep rendering, so start the
+# backend anyway; without this the box stops on the getty prompt in /etc/inittab.
+export WLR_LIBINPUT_NO_DEVICES="1"
+
 depend() {
     need localmount
     after seatd chronyd

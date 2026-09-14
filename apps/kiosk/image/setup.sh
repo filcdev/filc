@@ -28,6 +28,10 @@ printf '%s\n' 'Europe/Budapest' > /etc/timezone
 # at tmpfs so busybox's udhcpc script can replace it on every boot.
 ln -sf /run/resolv.conf /etc/resolv.conf
 
+# Mountpoint for skel/etc/kiosk/fstab.tmpfs: busybox seedrng writes its seed
+# there and fails the boot with a read-only root.
+install -d -m 0700 /var/lib/seedrng
+
 # alpine-make-vm-image generated /etc/fstab with the root entry (filesystem UUID
 # + fs type) this image actually boots with, and the skel tree must not
 # overwrite it — so keep that entry, make it read-only, and append the tmpfs

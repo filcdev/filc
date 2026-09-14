@@ -17,6 +17,7 @@ reflash when this image changes.
 | `setup.sh` | Runs **chrooted inside the image**: kiosk user, service enablement, timezone, `/etc/fstab`. |
 | `skel/` | Files copied into the image root before `setup.sh` runs. |
 | `skel/etc/kiosk/url` | The SPA origin. Edit this file to repoint a box. |
+| `skel/etc/udhcpc/udhcpc.conf` | Points DHCP's resolver file at tmpfs (`/etc` is read-only). |
 
 Boot chain: `seatd` (seat for DRM/input) → `chronyd` (clock) → `kiosk`
 (`cage -- /usr/local/bin/kiosk-browser`, supervised by OpenRC's
@@ -90,13 +91,18 @@ the packages use roughly 700 MB (chromium dominates).
   have replaced that generated line with a hardcoded device name.
   OpenRC's `root` service remounts `/` read-write only when fstab does not say
   `ro`, so the rootfs stays read-only for the life of the box.
-- The launcher adds `--ozone-platform=wayland` to the flag set taken from the
-  old Debian/Ansible image: cage is a Wayland compositor, whereas the old boxes
-  ran Xorg, where Chromium selected X11 by itself.
-- Chromium's SwiftShader flags (`--use-gl=swiftshader`,
-  `--enable-unsafe-swiftshader`) are kept from the old image for the old
-  integrated GPUs. If a box renders WebGL fine without them, dropping them is a
-  change to this image only.
+- The launcher runs Chromium on **X11** (`--ozone-platform=x11`) even though
+  cage is a Wayland compositor: kiosk mode does not hide Chromium's own UI under
+  Wayland in the Chromium this image ships (152), so the box showed a tab strip
+  and an omnibox over the page. Through the Xwayland cage starts anyway, the
+  window is chromeless and fills the screen; cage exports `DISPLAY`, so nothing
+  has to set it.
+- Software GL is selected through ANGLE (`--use-angle=swiftshader` plus
+  `--enable-unsafe-swiftshader`), which is what this Chromium accepts:
+  `--use-gl=swiftshader` and the `--disable-session-crashed-bubble` /
+  `--disable-translate` flags from the old Debian image no longer exist in it.
+  If a box renders WebGL fine on its own GPU, dropping the pair is a change to
+  this image only.
 - The timezone is set to `Europe/Budapest` at build time: the kiosk pages render
   lesson, substitution and departure times in local time.
 - Everything writable lives on tmpfs (`/tmp`, `/var/log`, `/var/tmp`,
@@ -104,13 +110,27 @@ the packages use roughly 700 MB (chromium dominates).
   power cut cannot corrupt anything.
 - `/etc/chrony/chrony.conf` keeps the drift file on `/var/tmp` because `/` is
   read-only.
+- `/etc/resolv.conf` is a symlink to `/run/resolv.conf` **and**
+  `skel/etc/udhcpc/udhcpc.conf` moves busybox's `RESOLV_CONF` there: the udhcpc
+  script writes `<file>.<pid>` next to its target and renames it, so a target
+  inside the read-only `/etc` can never be written and the box would boot with
+  no resolver at all. `/var/lib/seedrng` is tmpfs for the same reason —
+  otherwise busybox `seedrng` ends the boot with a failure. Neither file can
+  outlive a power cut either way.
+- The `kiosk` service exports `WLR_LIBINPUT_NO_DEVICES=1`: wlroots refuses to
+  start when the seat has no input device, and `cage` then dies with it, which
+  leaves the box on the `getty` prompt from Alpine's `/etc/inittab`. A TV box
+  with no keyboard attached has to keep rendering, so the session starts
+  without input instead.
 
 ## Troubleshooting
 
 - Boot logs go to the serial console (`--serial-console` is passed to the build
-  tool): `qemu-system-x86_64 -m 2048 -drive file=kiosk.img,format=raw -nic user,model=virtio -display none -vnc :1`.
-  Under QEMU there may be no DRM device for cage; that is a QEMU limitation, not
-  a box problem.
+  tool):
+  `qemu-system-x86_64 -m 2048 -drive file=kiosk.img,format=raw -nic user,model=virtio -display none -vga none -device virtio-gpu-pci -vnc :1`.
+  `virtio-gpu-pci` is what gives cage a DRM device; with none at all cage cannot
+  start (a QEMU limitation, not a box problem) and the box shows the `getty`
+  prompt from `/etc/inittab`.
 - The browser session log is `/var/log/kiosk.log` (tmpfs — read it before
   rebooting).
 - If Chromium exits immediately with a sandbox error, the kiosk user cannot use

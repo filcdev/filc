@@ -39,21 +39,42 @@ printf '%s' '{"translate":{"enabled":false,"blocked_languages":["hu"],"denied_co
 
 url=$(cat /etc/kiosk/url)
 
-# --ozone-platform=wayland: cage is a Wayland compositor (the old Debian image
-# ran Xorg, where Chromium picked X11 by itself). SwiftShader flags are kept from
-# the old image: the classroom boxes have old integrated GPUs.
+# Flag set reviewed against the Chromium in `packages` (152.0.7977.82):
+#   --ozone-platform=x11: Chromium's kiosk mode does not hide its own UI under
+#     Wayland -- the box would show a tab strip and an omnibox -- while the X11
+#     path through the Xwayland cage already starts gives a chromeless, full
+#     screen window. cage exports DISPLAY, so Chromium finds it without help.
+#   --disable-translate and --disable-session-crashed-bubble no longer exist in
+#     this Chromium (the replacement for the latter is --hide-crash-restore-bubble).
+#   --use-gl=swiftshader is gone too: software GL is selected through ANGLE
+#     (--use-angle=swiftshader), and --enable-unsafe-swiftshader is what permits
+#     software WebGL at all.
 exec chromium \
     --kiosk \
+    --ozone-platform=x11 \
+    --start-maximized \
     --noerrdialogs \
     --no-first-run \
-    --disable-session-crashed-bubble \
+    --hide-crash-restore-bubble \
     --disable-infobars \
     --password-store=basic \
     --disable-features=Translate,TranslateUI,LanguageDetection \
-    --disable-translate \
+    --disable-popup-blocking \
+    --disable-notifications \
+    --disable-default-apps \
+    --disable-extensions \
+    --disable-sync-preferences \
+    --disable-background-mode \
+    --disable-new-tab-first-run \
+    --disable-crash-reporter \
+    --disable-dev-shm-usage \
+    --hide-scrollbars \
+    --mute-audio \
+    --memory-pressure-off \
+    --force-device-scale-factor=1 \
     --enable-unsafe-swiftshader \
-    --use-gl=swiftshader \
-    --ozone-platform=wayland \
+    --use-angle=swiftshader \
+    --enable-gpu-rasterization \
     --lang=hu \
     --user-data-dir="$profile_dir" \
     "${url%/}/?machine=$machine_id"

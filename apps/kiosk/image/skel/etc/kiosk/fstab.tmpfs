@@ -5,3 +5,7 @@ tmpfs	/tmp		tmpfs	size=256M,mode=1777			0 0
 tmpfs	/var/log	tmpfs	size=32M				0 0
 tmpfs	/var/tmp	tmpfs	size=32M				0 0
 tmpfs	/home/kiosk	tmpfs	size=32M,mode=0700,uid=1000,gid=1000	0 0
+# busybox seedrng writes its seed to /var/lib/seedrng, which the read-only root
+# cannot take: without this mount the boot log carries a failed seedrng on every
+# boot. The seed cannot outlive a power cut either way.
+tmpfs	/var/lib/seedrng	tmpfs	size=1M,mode=0700			0 0

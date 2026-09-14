@@ -70,6 +70,9 @@ packages=$(sed -e 's/#.*//' packages | tr '\n' ' ')
 # The image path and the setup script are positional; --script-chroot runs
 # setup.sh chrooted inside the image with its own directory bind-mounted at
 # /mnt, so every path in setup.sh is an image path.
+#
+# --fs-skel-chown: without it the copy keeps the builder's numeric uid, and
+# every file in skel/ lands in the image owned by whoever ran this script.
 "$workdir/alpine-make-vm-image" \
     --arch x86_64 \
     --branch "$ALPINE_BRANCH" \
@@ -81,6 +84,7 @@ packages=$(sed -e 's/#.*//' packages | tr '\n' ' ')
     --packages "$packages" \
     --repositories-file repositories \
     --fs-skel-dir skel \
+    --fs-skel-chown root:root \
     --script-chroot \
     "$IMAGE" setup.sh
 
@@ -90,7 +94,7 @@ mount_dir=$(mktemp -d)
 mount -o loop,ro "$IMAGE" "$mount_dir"
 
 for file in /etc/init.d/kiosk /etc/kiosk/url /usr/local/bin/kiosk-browser \
-    /usr/bin/cage /usr/bin/chromium; do
+    /usr/bin/cage /usr/bin/chromium /etc/udhcpc/udhcpc.conf; do
     if [ ! -e "$mount_dir$file" ]; then
         echo "built image is missing $file" >&2
         exit 1
