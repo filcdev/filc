@@ -1,7 +1,6 @@
 import {
   cohortIdParamsSchema,
   movedLessonIdParamsSchema,
-  timetableIdParamsSchema,
   updateSchema,
 } from '@filcdev/api/domains/timetable/moved-lesson';
 import { zValidator } from '@hono/zod-validator';
@@ -13,7 +12,6 @@ import z from 'zod';
 import { db } from '#database';
 import {
   classroom,
-  cohort,
   dayDefinition,
   lesson,
   lessonCohortMTM,
@@ -198,21 +196,9 @@ const validateMovedLessonReferences = async (options: {
   }
 };
 
-const movedLessonWithRelationsSchema = z.object({
-  classroom: createSelectSchema(classroom).nullable(),
-  dayDefinition: createSelectSchema(dayDefinition).nullable(),
-  lessonNames: z.array(z.string()),
-  lessons: z.array(z.string()),
-  movedLesson: createSelectSchema(movedLesson),
-  period: createSelectSchema(period).nullable(),
-});
-
-const getAllResponseSchema = z.object({
-  data: z.array(movedLessonWithRelationsSchema),
-  success: z.boolean(),
-});
-
-const getAllMovedLessonsResponseSchema = z.object({
+// Shared by every moved-lesson list endpoint: rows carry the target joins and
+// their linked lessons already enriched.
+const movedLessonsResponseSchema = z.object({
   data: z.array(
     z.object({
       classroom: createSelectSchema(classroom).nullable(),
@@ -268,7 +254,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(getAllMovedLessonsResponseSchema),
+            schema: resolver(movedLessonsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -285,12 +271,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     const movedLessons = await db
       .select({
         classroom,
-        cohortNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(DISTINCT ${cohort.name}) FILTER (WHERE ${cohort.name} IS NOT NULL),
-          ARRAY[]::text[]
-        )`.as('cohortNames'),
         dayDefinition,
-
         lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
@@ -317,24 +298,12 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
 export const getRelevantMovedLessons = timetableFactory.createHandlers(
   describeRoute({
     ...filcExt('MovedLesson', movedLessonWithRelationsType),
-    description: 'Get relevant moved lessons for a given timetable.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'timetableId',
-        required: true,
-        schema: {
-          description:
-            'The unique identifier for the timetable to get the relevant moved lessons from.',
-          type: 'string',
-        },
-      },
-    ],
+    description: 'Get relevant moved lessons for the active timetable.',
     responses: {
       200: {
         content: {
           'application/json': {
-            schema: resolver(getAllResponseSchema),
+            schema: resolver(movedLessonsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -342,9 +311,12 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
     },
     tags: ['Moved Lesson'],
   }),
-  zValidator('param', timetableIdParamsSchema),
   async (c) => {
-    const { timetableId } = c.req.valid('param');
+    const timetableId = await getActiveTimetableId();
+
+    if (!timetableId) {
+      return ok(c, []);
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -398,7 +370,7 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(getAllResponseSchema),
+            schema: resolver(movedLessonsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -469,7 +441,7 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(getAllResponseSchema),
+            schema: resolver(movedLessonsResponseSchema),
           },
         },
         description: 'Successful Response',

@@ -9,13 +9,6 @@ export type MovedLessonIdParamsInput = z.infer<
   typeof movedLessonIdParamsSchema
 >;
 
-/** Path parameters for moved lesson endpoints scoped to a timetable. */
-export const timetableIdParamsSchema = z.object({
-  timetableId: z.uuid(),
-});
-
-export type TimetableIdParamsInput = z.infer<typeof timetableIdParamsSchema>;
-
 /** Path parameters for moved lesson endpoints scoped to a cohort. */
 export const cohortIdParamsSchema = z.object({
   cohortId: z.uuid(),
