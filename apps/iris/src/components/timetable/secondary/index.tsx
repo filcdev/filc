@@ -1,12 +1,12 @@
-import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
-import { type CSSProperties, Fragment, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/utils';
+} from '@filcdev/ui/components/tooltip';
+import { cn } from '@filcdev/ui/lib/utils';
+import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
+import { type CSSProperties, Fragment, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSubjectColor, toHHMM } from '../helpers';
 import type { LessonItem, PeriodItem } from '../types';
 import { WeekBadge } from '../week-badge';

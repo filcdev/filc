@@ -46,7 +46,12 @@ export function useAnnouncements() {
     queryFn: async (): Promise<AnnouncementItem[]> => {
       const res = await parseResponse(
         api.news.announcements.$get({
-          query: { includeAll: 'true', includeExpired: 'true' },
+          // The admin table is the one place kiosk-only items stay visible.
+          query: {
+            includeAll: 'true',
+            includeExpired: 'true',
+            includeKioskOnly: 'true',
+          },
         })
       );
       if (!res.success) {
@@ -210,6 +215,66 @@ export function useDeleteAnnouncement({ onSaved }: MutationCallbacks = {}) {
     },
     onSuccess: () => {
       toast.success(t('announcements.deleteSuccess'));
+      invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+/** What the kiosk image upload needs: the announcement and the picked file. */
+export type AnnouncementImageUploadPayload = { file: File; id: string };
+
+/** Upload (or replace) the image an announcement shows on the kiosk. */
+export function useUploadAnnouncementImage({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const invalidate = useInvalidateAnnouncements();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ file, id }: AnnouncementImageUploadPayload) => {
+      const res = await parseResponse(
+        api.news.announcements[':id'].image.$post({
+          form: { file },
+          param: { id },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to upload the image');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('announcements.imageUploadError'));
+    },
+    onSuccess: () => {
+      toast.success(t('announcements.imageUploadSuccess'));
+      invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+/** Remove the kiosk image of an announcement; the announcement stays. */
+export function useDeleteAnnouncementImage({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const invalidate = useInvalidateAnnouncements();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await parseResponse(
+        api.news.announcements[':id'].image.$delete({ param: { id } })
+      );
+      if (!res.success) {
+        throw new Error('Failed to remove the image');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('announcements.imageRemoveError'));
+    },
+    onSuccess: () => {
+      toast.success(t('announcements.imageRemoveSuccess'));
       invalidate();
       onSaved?.();
     },

@@ -21,6 +21,16 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 
 2. Start Postgres — either `pg-dispo start` or `docker compose up -d` (the latter also starts Mailpit for SMTP capture).
 
+   Announcement images additionally need the dev [Garage](https://garagehq.deuxfleurs.fr) object store, which `pg-dispo` does not replace:
+
+   ```bash
+   GARAGE_DEFAULT_ACCESS_KEY=$(openssl rand -hex 16) \
+     GARAGE_DEFAULT_SECRET_KEY=$(openssl rand -hex 32) \
+     docker compose up -d garage
+   ```
+
+   Copy the same two values and the `CHRONOS_S3_*` block into `apps/chronos/.env` (see the next step). A Chronos without them still boots and serves everything except announcement images.
+
 3. Configure environment files:
 
    ```bash
@@ -53,7 +63,13 @@ This guide gets you from a fresh clone to a running dev environment, then covers
    bun dev
    ```
 
-   Both apps start via Turborepo. Iris runs through Vite, which regenerates `apps/iris/src/route-tree.gen.ts` automatically — never edit that file by hand.
+   All three apps start via Turborepo. Iris runs through Vite, which regenerates `apps/iris/src/route-tree.gen.ts` automatically — never edit that file by hand.
+
+   The kiosk app is a static bundle on a box, so it never relies on a proxied
+   `/api`: dev calls `http://localhost:3001/api` directly and a production build
+   calls `https://filc.petrik.hu/api` (override with `VITE_API_BASE_URL`, see
+   [`apps/kiosk/.env.example`](apps/kiosk/.env.example)). A box on its own host
+   therefore needs that origin in `CHRONOS_TRUSTED_ORIGINS`.
 
 ## Daily workflow
 

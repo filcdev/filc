@@ -1,5 +1,14 @@
 import { permissions } from '@filcdev/api/permissions';
-
+import { Button } from '@filcdev/ui/components/button';
+import { Input } from '@filcdev/ui/components/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import {
@@ -19,16 +28,6 @@ import { StatCard } from '@/components/admin/stat-card';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
 import { OtaUpdateDialog } from '@/components/doorlock/ota-update-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -37,6 +36,7 @@ import {
   useDeleteDoorlockDevice,
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 
@@ -78,12 +78,10 @@ function DevicesPage() {
   const [otaDialogOpen, setOtaDialogOpen] = useState(false);
   const [otaDevice, setOtaDevice] = useState<DoorlockDevice | null>(null);
 
-  const hasWritePermission = useMemo(() => {
-    const perms = session?.user?.permissions ?? [];
-    return (
-      perms.includes('*') || perms.includes(permissions.doorlockDevicesWrite)
-    );
-  }, [session?.user?.permissions]);
+  const hasWritePermission = useHasPermission(
+    permissions.doorlockDevicesWrite,
+    session?.user?.permissions
+  );
 
   const devicesQuery = useDoorlockDevices();
   const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;

@@ -73,3 +73,13 @@ export const timetableImportSchema = z.object({
 export const nicknameSchema = z.object({
   nickname: z.string().min(NICKNAME_MIN_LENGTH).max(NICKNAME_MAX_LENGTH),
 });
+
+export const otaUpdateSchema = z.object({
+  url: z.string().trim().min(1, 'Firmware URL is required'),
+});
+
+export const timetableEditSchema = z.object({
+  name: z.string(),
+  validFrom: z.date().optional(),
+  validTo: z.date().optional(),
+});

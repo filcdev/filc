@@ -1,19 +1,19 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { Save } from 'lucide-react';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
+import { useForm, useStore } from '@tanstack/react-form';
+import { Save } from 'lucide-react';
+import { useEffect, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type SystemMessageItem,
   type SystemMessagePayload,
@@ -21,6 +21,7 @@ import {
   useCreateSystemMessage,
   useUpdateSystemMessage,
 } from '@/hooks/news';
+import { getIntlLocale } from '@/utils/date-locale';
 import type { BaseDialogProps } from './admin.types';
 
 type SystemMessagesDialogProps = BaseDialogProps & {
@@ -80,8 +81,10 @@ export function SystemMessagesDialog({
   onOpenChange,
   open,
 }: SystemMessagesDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
+  const formId = useId();
+  const contentId = useId();
   const createMutation = useCreateSystemMessage({ onSaved: close });
   const updateMutation = useUpdateSystemMessage({ onSaved: close });
   const { data: cohorts = [] } = useCohorts(open);
@@ -134,7 +137,7 @@ export function SystemMessagesDialog({
 
           <form
             className="mt-4 space-y-4"
-            id="systemMessageForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
@@ -159,10 +162,12 @@ export function SystemMessagesDialog({
             <form.Field name="content">
               {(field) => (
                 <div className="space-y-2">
-                  <Label htmlFor="content">{t('systemMessages.content')}</Label>
+                  <Label htmlFor={contentId}>
+                    {t('systemMessages.content')}
+                  </Label>
                   <textarea
                     className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                    id="content"
+                    id={contentId}
                     onChange={(e) =>
                       field.handleChange([
                         { content: e.target.value, type: 'text' },
@@ -183,6 +188,7 @@ export function SystemMessagesDialog({
                   </Label>
                   <DatePicker
                     date={field.state.value}
+                    locale={getIntlLocale(i18n.language)}
                     onDateChange={(date) =>
                       field.handleChange(startOfDay(date ?? new Date()))
                     }
@@ -199,6 +205,7 @@ export function SystemMessagesDialog({
                   </Label>
                   <DatePicker
                     date={field.state.value}
+                    locale={getIntlLocale(i18n.language)}
                     onDateChange={(date) =>
                       field.handleChange(endOfDay(date ?? new Date()))
                     }
@@ -246,7 +253,7 @@ export function SystemMessagesDialog({
               createMutation.isPending ||
               updateMutation.isPending
             }
-            form="systemMessageForm"
+            form={formId}
             type="submit"
           >
             <Save className="h-4 w-4" />

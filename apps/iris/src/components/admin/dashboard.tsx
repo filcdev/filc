@@ -1,3 +1,22 @@
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@filcdev/ui/components/chart';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Separator } from '@filcdev/ui/components/separator';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import type { InferResponseType } from 'hono/client';
 import {
   ArrowLeftRight,
@@ -10,23 +29,202 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { StatCard } from '@/components/admin/stat-card';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useApiQuery } from '@/utils/api';
 import { api } from '@/utils/hc';
 
 type StatsResponse = InferResponseType<typeof api.dashboard.stats.$get>;
 type DashboardStats = NonNullable<StatsResponse['data']>['stats'];
+type ChartPoint = NonNullable<DashboardStats['chartData']>[number];
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: chart + stat cards + selector
+type ChartTotals = {
+  movedLessons: number;
+  substitutions: number;
+};
+
+type DashboardStatCardsProps = {
+  isError: boolean;
+  isLoading: boolean;
+  stats: DashboardStats | undefined;
+};
+
+function DashboardStatCards({
+  isError,
+  isLoading,
+  stats,
+}: DashboardStatCardsProps) {
+  const { t } = useTranslation();
+
+  if (isError) {
+    return (
+      <p className="col-span-full text-destructive text-sm">
+        {t('dashboard.loadError')}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <StatCard
+        icon={<Users className="text-primary" />}
+        isLoading={isLoading}
+        label={t('dashboard.totalUsers')}
+        value={stats?.totalUsers ?? 0}
+      />
+      <StatCard
+        icon={<ArrowRightLeft className="text-primary" />}
+        isLoading={isLoading}
+        label={t('dashboard.totalSubstitutions')}
+        value={stats?.totalSubstitutions ?? 0}
+      />
+      <StatCard
+        icon={<ArrowLeftRight className="text-primary" />}
+        isLoading={isLoading}
+        label={t('dashboard.totalMovedLessons')}
+        value={stats?.totalMovedLessons ?? 0}
+      />
+      <StatCard
+        icon={<GraduationCap className="text-primary" />}
+        isLoading={isLoading}
+        label={t('dashboard.totalCohorts')}
+        value={stats?.totalCohorts ?? 0}
+      />
+      <StatCard
+        icon={<Shield className="text-primary" />}
+        isLoading={isLoading}
+        label={t('dashboard.totalRoles')}
+        value={stats?.totalRoles ?? 0}
+      />
+    </>
+  );
+}
+
+type DashboardActivityChartProps = {
+  chartConfig: ChartConfig;
+  isError: boolean;
+  isLoading: boolean;
+  points: ChartPoint[];
+  stats: DashboardStats | undefined;
+};
+
+function DashboardActivityChart({
+  chartConfig,
+  isError,
+  isLoading,
+  points,
+  stats,
+}: DashboardActivityChartProps) {
+  const { t } = useTranslation();
+
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full sm:h-80" />;
+  }
+
+  if (isError) {
+    return (
+      <p className="text-destructive text-sm">{t('dashboard.loadError')}</p>
+    );
+  }
+
+  if (!stats || points.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        {t('dashboard.noActivity')}
+      </p>
+    );
+  }
+
+  return (
+    <ChartContainer className="h-64 w-full sm:h-80" config={chartConfig}>
+      <BarChart
+        data={points}
+        margin={{ bottom: 8, left: 12, right: 12, top: 8 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <XAxis
+          axisLine={false}
+          dataKey="date"
+          tickLine={false}
+          tickMargin={8}
+        />
+        <YAxis
+          allowDecimals={false}
+          tickLine={false}
+          tickMargin={8}
+          width={40}
+        />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <Bar
+          dataKey="substitutions"
+          fill="var(--color-substitutions)"
+          radius={[4, 4, 0, 0]}
+        />
+        <Bar
+          dataKey="movedLessons"
+          fill="var(--color-movedLessons)"
+          radius={[4, 4, 0, 0]}
+        />
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
+type DashboardSummaryProps = {
+  isError: boolean;
+  isLoading: boolean;
+  stats: DashboardStats | undefined;
+  totals: ChartTotals;
+};
+
+function DashboardSummary({
+  isError,
+  isLoading,
+  stats,
+  totals,
+}: DashboardSummaryProps) {
+  const { t } = useTranslation();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="text-destructive text-sm">{t('dashboard.loadError')}</p>
+    );
+  }
+
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="flex items-center justify-between">
+        <span>{t('dashboard.totalUsers')}</span>
+        <span className="font-semibold">{stats?.totalUsers ?? 0}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span>{t('dashboard.totalSubstitutions')}</span>
+        <span className="font-semibold">{totals.substitutions}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span>{t('dashboard.totalMovedLessons')}</span>
+        <span className="font-semibold">{totals.movedLessons}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span>{t('dashboard.totalCohorts')}</span>
+        <span className="font-semibold">{stats?.totalCohorts ?? 0}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span>{t('dashboard.totalRoles')}</span>
+        <span className="font-semibold">{stats?.totalRoles ?? 0}</span>
+      </div>
+    </div>
+  );
+}
+
 export function AdminDashboard() {
   const { t } = useTranslation();
   const [days, setDays] = useState(30);
@@ -50,11 +248,8 @@ export function AdminDashboard() {
   const isLoading = statsQuery.isLoading;
 
   const filteredChartData = useMemo(() => {
-    if (!stats?.chartData) {
-      return [];
-    }
-    if (days !== 7) {
-      return stats.chartData;
+    if (!(stats?.chartData && days === 7)) {
+      return stats?.chartData ?? [];
     }
     // For the week view, show only working days (Mon-Fri).
     // Parse YYYY-MM-DD in UTC to avoid timezone-based day misclassification.
@@ -93,99 +288,6 @@ export function AdminDashboard() {
     [t]
   );
 
-  let chartContent: React.ReactNode;
-  let summaryContent: React.ReactNode;
-  if (isLoading) {
-    chartContent = <Skeleton className="h-64 w-full sm:h-80" />;
-  } else if (statsQuery.isError) {
-    chartContent = (
-      <p className="text-destructive text-sm">{t('dashboard.loadError')}</p>
-    );
-  } else if (!stats || filteredChartData.length === 0) {
-    chartContent = (
-      <p className="text-muted-foreground text-sm">
-        {t('dashboard.noActivity')}
-      </p>
-    );
-  } else {
-    chartContent = (
-      <ChartContainer className="h-64 w-full sm:h-80" config={chartConfig}>
-        <BarChart
-          data={filteredChartData}
-          margin={{ bottom: 8, left: 12, right: 12, top: 8 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            axisLine={false}
-            dataKey="date"
-            tickLine={false}
-            tickMargin={8}
-          />
-          <YAxis
-            allowDecimals={false}
-            tickLine={false}
-            tickMargin={8}
-            width={40}
-          />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar
-            dataKey="substitutions"
-            fill="var(--color-substitutions)"
-            radius={[4, 4, 0, 0]}
-          />
-          <Bar
-            dataKey="movedLessons"
-            fill="var(--color-movedLessons)"
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
-      </ChartContainer>
-    );
-  }
-
-  if (isLoading) {
-    summaryContent = (
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-4 w-2/3" />
-        <Skeleton className="h-4 w-1/2" />
-      </div>
-    );
-  } else if (statsQuery.isError) {
-    summaryContent = (
-      <p className="text-destructive text-sm">{t('dashboard.loadError')}</p>
-    );
-  } else {
-    summaryContent = (
-      <div className="space-y-3 text-sm">
-        <div className="flex items-center justify-between">
-          <span>{t('dashboard.totalUsers')}</span>
-          <span className="font-semibold">{stats?.totalUsers ?? 0}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>{t('dashboard.totalSubstitutions')}</span>
-          <span className="font-semibold">
-            {summaryChartTotals.substitutions}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>{t('dashboard.totalMovedLessons')}</span>
-          <span className="font-semibold">
-            {summaryChartTotals.movedLessons}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>{t('dashboard.totalCohorts')}</span>
-          <span className="font-semibold">{stats?.totalCohorts ?? 0}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>{t('dashboard.totalRoles')}</span>
-          <span className="font-semibold">{stats?.totalRoles ?? 0}</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -195,44 +297,11 @@ export function AdminDashboard() {
         <p className="text-muted-foreground">{t('dashboard.description')}</p>
       </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        {statsQuery.isError ? (
-          <p className="col-span-full text-destructive text-sm">
-            {t('dashboard.loadError')}
-          </p>
-        ) : (
-          <>
-            <StatCard
-              icon={<Users className="text-primary" />}
-              isLoading={isLoading}
-              label={t('dashboard.totalUsers')}
-              value={stats?.totalUsers ?? 0}
-            />
-            <StatCard
-              icon={<ArrowRightLeft className="text-primary" />}
-              isLoading={isLoading}
-              label={t('dashboard.totalSubstitutions')}
-              value={stats?.totalSubstitutions ?? 0}
-            />
-            <StatCard
-              icon={<ArrowLeftRight className="text-primary" />}
-              isLoading={isLoading}
-              label={t('dashboard.totalMovedLessons')}
-              value={stats?.totalMovedLessons ?? 0}
-            />
-            <StatCard
-              icon={<GraduationCap className="text-primary" />}
-              isLoading={isLoading}
-              label={t('dashboard.totalCohorts')}
-              value={stats?.totalCohorts ?? 0}
-            />
-            <StatCard
-              icon={<Shield className="text-primary" />}
-              isLoading={isLoading}
-              label={t('dashboard.totalRoles')}
-              value={stats?.totalRoles ?? 0}
-            />
-          </>
-        )}
+        <DashboardStatCards
+          isError={statsQuery.isError}
+          isLoading={isLoading}
+          stats={stats}
+        />
       </div>
       <Separator />
       <div className="grid gap-4 lg:grid-cols-3">
@@ -249,13 +318,28 @@ export function AdminDashboard() {
               </SelectTrigger>
             </Select>
           </CardHeader>
-          <CardContent>{chartContent}</CardContent>
+          <CardContent>
+            <DashboardActivityChart
+              chartConfig={chartConfig}
+              isError={statsQuery.isError}
+              isLoading={isLoading}
+              points={filteredChartData}
+              stats={stats}
+            />
+          </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.summary')}</CardTitle>
           </CardHeader>
-          <CardContent>{summaryContent}</CardContent>
+          <CardContent>
+            <DashboardSummary
+              isError={statsQuery.isError}
+              isLoading={isLoading}
+              stats={stats}
+              totals={summaryChartTotals}
+            />
+          </CardContent>
         </Card>
       </div>
     </div>

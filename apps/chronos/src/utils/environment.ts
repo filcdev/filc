@@ -17,6 +17,7 @@ const envSchema = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
   CHRONOS_BASE_URL: z.url(),
+  CHRONOS_BKK_API_KEY: z.string().optional(),
   CHRONOS_DATABASE_URL: z.url(),
   CHRONOS_DRIZZLE_DEBUG: boolean.default(false),
   CHRONOS_ENTRA_CLIENT_ID: z.string(),
@@ -25,6 +26,9 @@ const envSchema = z.object({
 
   CHRONOS_FCM_CREDENTIALS: z.string().optional(),
   CHRONOS_FCM_PROJECT_ID: z.string().optional(),
+  CHRONOS_KIOSK_WEATHER_LOCATION: z
+    .string()
+    .default('47.50535837979173,19.090123083749727'),
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
@@ -47,6 +51,12 @@ const envSchema = z.object({
   CHRONOS_RATE_LIMIT_MAX: z.coerce.number().default(180),
   CHRONOS_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(30_000),
   CHRONOS_REAL_IP_HEADER: z.string().optional(),
+
+  CHRONOS_S3_ACCESS_KEY_ID: z.string().optional(),
+  CHRONOS_S3_BUCKET: z.string().optional(),
+  CHRONOS_S3_ENDPOINT: z.url().optional(),
+  CHRONOS_S3_REGION: z.string().default('garage'),
+  CHRONOS_S3_SECRET_ACCESS_KEY: z.string().optional(),
   CHRONOS_SENTRY_DSN: z.url().optional(),
   CHRONOS_SENTRY_ENVIRONMENT: z.string().optional(),
   CHRONOS_SENTRY_RELEASE: z.string().optional(),
@@ -68,6 +78,7 @@ const envSchema = z.object({
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()
   ),
+  CHRONOS_WEATHER_API_KEY: z.string().optional(),
 });
 
 const makeTypedEnvironment =

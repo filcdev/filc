@@ -1,12 +1,12 @@
-import dayjs from 'dayjs';
-import { useMemo } from 'react';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart';
+} from '@filcdev/ui/components/chart';
+import dayjs from 'dayjs';
+import { useMemo } from 'react';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 export type DoorOpenDatapoint = {
   count: number;

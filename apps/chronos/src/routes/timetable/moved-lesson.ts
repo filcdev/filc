@@ -13,6 +13,7 @@ import z from 'zod';
 import { db } from '#database';
 import {
   classroom,
+  cohort,
   dayDefinition,
   lesson,
   lessonCohortMTM,
@@ -197,7 +198,21 @@ const validateMovedLessonReferences = async (options: {
   }
 };
 
+const movedLessonWithRelationsSchema = z.object({
+  classroom: createSelectSchema(classroom).nullable(),
+  dayDefinition: createSelectSchema(dayDefinition).nullable(),
+  lessonNames: z.array(z.string()),
+  lessons: z.array(z.string()),
+  movedLesson: createSelectSchema(movedLesson),
+  period: createSelectSchema(period).nullable(),
+});
+
 const getAllResponseSchema = z.object({
+  data: z.array(movedLessonWithRelationsSchema),
+  success: z.boolean(),
+});
+
+const getAllMovedLessonsResponseSchema = z.object({
   data: z.array(
     z.object({
       classroom: createSelectSchema(classroom).nullable(),
@@ -253,7 +268,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(getAllResponseSchema),
+            schema: resolver(getAllMovedLessonsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -267,13 +282,17 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     if (!timetableId) {
       return ok(c, []);
     }
-
     const movedLessons = await db
       .select({
         classroom,
+        cohortNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${cohort.name}) FILTER (WHERE ${cohort.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('cohortNames'),
         dayDefinition,
+
         lessons: sql<string[]>`COALESCE(
-          ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
         )`.as('lessons'),
         movedLesson,

@@ -1,29 +1,34 @@
-import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
-import { useCookies } from 'react-cookie';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
-import type { CohortItem } from '@/components/timetable/types';
-import { Alert, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
+} from '@filcdev/ui/components/card';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+} from '@filcdev/ui/components/dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { useTheme } from 'next-themes';
+import { useEffect, useId, useState } from 'react';
+import { useCookies } from 'react-cookie';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
+import type { CohortItem } from '@/components/timetable/types';
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
@@ -94,10 +99,181 @@ type SettingsDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: settings page with many option groups
+/** Language, theme, cohort and timetable group-display preferences. */
+function GeneralSettingsCard({
+  cohortQuery,
+  language,
+  onGroupDisplayChange,
+  onLanguageChange,
+  onSelectedCohortIdChange,
+  onThemeChange,
+  selectedCohortId,
+  theme,
+  timetableGroupDisplay,
+}: {
+  cohortQuery: UseQueryResult<CohortItem[], Error>;
+  language: string;
+  onGroupDisplayChange: (value: 'highlight' | 'hide') => void;
+  onLanguageChange: (value: string | null) => void;
+  onSelectedCohortIdChange: (value: string | null) => void;
+  onThemeChange: (value: string) => void;
+  selectedCohortId: string | null;
+  theme: string;
+  timetableGroupDisplay: 'highlight' | 'hide';
+}) {
+  const { t } = useTranslation();
+  const languageItems = [
+    { label: 'Magyar', value: 'hu' },
+    { label: 'English', value: 'en' },
+  ];
+  const themeItems = [
+    { label: t('preferences.themeLight'), value: 'light' },
+    { label: t('preferences.themeDark'), value: 'dark' },
+    { label: t('preferences.themeSystem'), value: 'system' },
+  ];
+  const cohortItems = [
+    { label: t('cohort.noClass'), value: NO_CLASS_VALUE },
+    ...(cohortQuery.data ?? []).map((cohort) => ({
+      label: cohort.name,
+      value: cohort.id,
+    })),
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('preferences.general')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span>{t('preferences.language')}</span>
+          <Select
+            items={languageItems}
+            onValueChange={onLanguageChange}
+            value={language}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>{t('preferences.theme')}</span>
+          <Select
+            items={themeItems}
+            onValueChange={(value) => {
+              if (value) {
+                onThemeChange(value);
+              }
+            }}
+            value={theme}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+          </Select>
+        </div>
+
+        <div className="space-y-2 pt-2">
+          <div className="flex items-center justify-between">
+            <span>{t('preferences.cohort')}</span>
+            {cohortQuery.isLoading ? (
+              <Skeleton className="h-9 w-32" />
+            ) : (
+              <Select
+                items={cohortItems}
+                onValueChange={onSelectedCohortIdChange}
+                value={selectedCohortId ?? NO_CLASS_VALUE}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue
+                    placeholder={
+                      cohortItems.length > 0
+                        ? t('cohort.selectPlaceholder')
+                        : t('cohort.noneFound')
+                    }
+                  />
+                </SelectTrigger>
+              </Select>
+            )}
+          </div>
+          {cohortQuery.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>
+                {t('cohort.errorLoading', {
+                  message: `${cohortQuery.error ?? ''}`,
+                })}
+              </AlertTitle>
+            </Alert>
+          ) : null}
+        </div>
+
+        <GroupDisplaySelect
+          onValueChange={onGroupDisplayChange}
+          value={timetableGroupDisplay}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Notification channel toggle plus the per-type preference checkboxes. */
+function NotificationSettingsCard({
+  channelsId,
+  onTogglePref,
+  prefs,
+}: {
+  channelsId: string;
+  onTogglePref: (key: string) => void;
+  prefs: Record<string, boolean>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('preferences.notifications')}</CardTitle>
+        <CardDescription>
+          {t('preferences.notificationsDescription')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <label
+            className="cursor-pointer font-medium text-sm leading-none"
+            htmlFor={channelsId}
+          >
+            {t('preferences.channelsEnabled')}
+          </label>
+          <Checkbox
+            checked={prefs.channelsEnabled}
+            id={channelsId}
+            onCheckedChange={() => onTogglePref('channelsEnabled')}
+          />
+        </div>
+        {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
+          <div className="flex items-center justify-between" key={key}>
+            <label
+              className="cursor-pointer font-medium text-sm leading-none"
+              htmlFor={`pref-${key}`}
+            >
+              {t(labelKey)}
+            </label>
+            <Checkbox
+              checked={prefs[key]}
+              id={`pref-${key}`}
+              onCheckedChange={() => onTogglePref(key)}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { i18n, t } = useTranslation();
   const [, setCookie] = useCookies(['filc.language']);
+  const channelsId = useId();
   const { setTheme: applyTheme } = useTheme();
   const { data: session } = authClient.useSession();
   const [language, setLanguage] = useState('hu');
@@ -183,16 +359,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
   };
 
-  const handleSelectChange = (
-    setter: (v: string) => void
-  ): ((value: string | null) => void) => {
-    return (value: string | null) => {
-      if (value) {
-        setter(value);
-      }
-    };
-  };
-
   const handleLanguageChange = (value: string | null) => {
     if (!value) {
       return;
@@ -207,25 +373,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       document.documentElement.lang = value;
     }
   };
-
-  const languageItems = [
-    { label: 'Magyar', value: 'hu' },
-    { label: 'English', value: 'en' },
-  ];
-
-  const themeItems = [
-    { label: t('preferences.themeLight'), value: 'light' },
-    { label: t('preferences.themeDark'), value: 'dark' },
-    { label: t('preferences.themeSystem'), value: 'system' },
-  ];
-
-  const cohortItems = [
-    { label: t('cohort.noClass'), value: NO_CLASS_VALUE },
-    ...(cohortQuery.data ?? []).map((cohort) => ({
-      label: cohort.name,
-      value: cohort.id,
-    })),
-  ];
 
   const ready = !(isLoading || isError);
   // The group picker is scoped to the user's *persisted* cohort, so memberships
@@ -253,120 +400,25 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           ) : null}
           {ready ? (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('preferences.general')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>{t('preferences.language')}</span>
-                    <Select
-                      items={languageItems}
-                      onValueChange={handleLanguageChange}
-                      value={language}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>{t('preferences.theme')}</span>
-                    <Select
-                      items={themeItems}
-                      onValueChange={handleSelectChange(setTheme)}
-                      value={theme}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2 pt-2">
-                    <div className="flex items-center justify-between">
-                      <span>{t('preferences.cohort')}</span>
-                      {cohortQuery.isLoading ? (
-                        <Skeleton className="h-9 w-32" />
-                      ) : (
-                        <Select
-                          items={cohortItems}
-                          onValueChange={setSelectedCohortId}
-                          value={selectedCohortId ?? NO_CLASS_VALUE}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue
-                              placeholder={
-                                cohortItems.length > 0
-                                  ? t('cohort.selectPlaceholder')
-                                  : t('cohort.noneFound')
-                              }
-                            />
-                          </SelectTrigger>
-                        </Select>
-                      )}
-                    </div>
-                    {cohortQuery.isError ? (
-                      <Alert variant="destructive">
-                        <AlertTitle>
-                          {t('cohort.errorLoading', {
-                            message: `${cohortQuery.error ?? ''}`,
-                          })}
-                        </AlertTitle>
-                      </Alert>
-                    ) : null}
-                  </div>
-
-                  <GroupDisplaySelect
-                    onValueChange={setTimetableGroupDisplay}
-                    value={timetableGroupDisplay}
-                  />
-                </CardContent>
-              </Card>
+              <GeneralSettingsCard
+                cohortQuery={cohortQuery}
+                language={language}
+                onGroupDisplayChange={setTimetableGroupDisplay}
+                onLanguageChange={handleLanguageChange}
+                onSelectedCohortIdChange={setSelectedCohortId}
+                onThemeChange={setTheme}
+                selectedCohortId={selectedCohortId}
+                theme={theme}
+                timetableGroupDisplay={timetableGroupDisplay}
+              />
 
               <MyGroupsSettingsCard cohortId={persistedCohortId} />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('preferences.notifications')}</CardTitle>
-                  <CardDescription>
-                    {t('preferences.notificationsDescription')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label
-                      className="cursor-pointer font-medium text-sm leading-none"
-                      htmlFor="channelsEnabled"
-                    >
-                      {t('preferences.channelsEnabled')}
-                    </label>
-                    <Checkbox
-                      checked={prefs.channelsEnabled}
-                      id="channelsEnabled"
-                      onCheckedChange={() => togglePref('channelsEnabled')}
-                    />
-                  </div>
-                  {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
-                    <div
-                      className="flex items-center justify-between"
-                      key={key}
-                    >
-                      <label
-                        className="cursor-pointer font-medium text-sm leading-none"
-                        htmlFor={`pref-${key}`}
-                      >
-                        {t(labelKey)}
-                      </label>
-                      <Checkbox
-                        checked={prefs[key as keyof typeof prefs]}
-                        id={`pref-${key}`}
-                        onCheckedChange={() => togglePref(key)}
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              <NotificationSettingsCard
+                channelsId={channelsId}
+                onTogglePref={togglePref}
+                prefs={prefs}
+              />
 
               <Button
                 className="w-full"

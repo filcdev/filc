@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import type { Session } from 'better-auth';
@@ -18,6 +19,9 @@ import { bugReportRouter } from '#routes/bug-report/_router';
 import { cohortRouter } from '#routes/cohort/_router';
 import { dashboardRouter } from '#routes/dashboard/_router';
 import { doorlockRouter } from '#routes/doorlock/_router';
+import { healthRouter } from '#routes/health/_router';
+import { kioskRouter } from '#routes/kiosk/_router';
+import { navigatorRouter } from '#routes/navigator/_router';
 import { newsRouter } from '#routes/news/_router';
 import { notificationsRouter } from '#routes/notifications/_router';
 import { pingRouter } from '#routes/ping/_router';
@@ -93,10 +97,13 @@ api.use(
 
 api.route('/auth', authRouter);
 api.route('/ping', pingRouter);
+api.route('/health', healthRouter);
 api.route('/timetable', timetableRouter);
 api.route('/cohort', cohortRouter);
 api.route('/dashboard', dashboardRouter);
 api.route('/doorlock', doorlockRouter);
+api.route('/kiosk', kioskRouter);
+api.route('/navigator', navigatorRouter);
 api.route('/users', usersRouter);
 api.route('/roles', rolesRouter);
 api.route('/news', newsRouter);
@@ -124,14 +131,14 @@ api.onError((err, c) => {
     stack: err.stack,
   });
 
+  const isProduction = env.mode === 'production';
+  const cause = err instanceof Error ? err.cause : undefined;
+
   return c.json<ErrorResponse>(
     {
-      cause: err instanceof Error ? err.cause : undefined,
+      cause: isProduction ? undefined : cause,
       code: 'INTERNAL',
-      error:
-        env.mode === 'production'
-          ? 'Internal Server Error'
-          : (err.stack ?? err.message),
+      error: isProduction ? 'Internal Server Error' : err.message,
       success: false,
     },
     StatusCodes.INTERNAL_SERVER_ERROR

@@ -31,6 +31,10 @@ out/
 build
 dist
 
+# Kiosk disk images are built locally (apps/kiosk/image/build.sh) and flashed
+# straight to a USB stick; a 2G artifact has no business in git.
+apps/kiosk/image/*.img
+
 
 # Debug
 npm-debug.log*

@@ -1,0 +1,31 @@
+# Garage configuration for the local dev stack (see compose.yml).
+#
+# Dev only: a single node, replication factor 1, and the secrets below are
+# checked in and written in plaintext. NEVER point a deployment at this file —
+# production configs carry their own secrets and are not kept in the repo.
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+
+replication_factor = 1
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+# Fixed 32-byte key so restarting the container never orphans the cluster.
+rpc_secret = "9b16f1c9fc15f867150d6d5de871cd0d7ca4d281f8f59bf6c29c5db088e8173c"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage.localhost"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.localhost"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "AYI6/nfYVmtPbs+XxJMWv3y/hikPzvB6nsF8LRenNdk="
+metrics_token = "admlC4e/TkPVA6KThiFxW3BUXjhhezSCP8h7G0Ounhg="

@@ -1,21 +1,26 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
-import { type ChangeEvent, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Button } from '@filcdev/ui/components/button';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import { useForm, useStore } from '@tanstack/react-form';
+import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
+import { type ChangeEvent, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useImportTimetable } from '@/hooks/timetables-admin';
+import { getIntlLocale } from '@/utils/date-locale';
 import { timetableImportSchema } from '@/utils/form-schemas';
 
 type TimetableImportDialogProps = {
@@ -27,7 +32,7 @@ export function TimetableImportDialog({
   open,
   onOpenChange,
 }: TimetableImportDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importMutation = useImportTimetable({
@@ -146,6 +151,7 @@ export function TimetableImportDialog({
                 <FieldLabel>{t('timetable.validFromLabel')}</FieldLabel>
                 <DatePicker
                   date={field.state.value}
+                  locale={getIntlLocale(i18n.language)}
                   onDateChange={(date) =>
                     field.handleChange(date ?? new Date())
                   }
@@ -165,6 +171,7 @@ export function TimetableImportDialog({
                 <FieldLabel>{t('timetable.validToLabel')}</FieldLabel>
                 <DatePicker
                   date={field.state.value}
+                  locale={getIntlLocale(i18n.language)}
                   onDateChange={field.handleChange}
                   placeholder={t('timetable.validToPlaceholder')}
                 />

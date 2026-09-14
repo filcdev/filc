@@ -12,7 +12,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { authRouter } from '#middleware/auth';
 import { usersFactory } from '#routes/users/_factory';
-import { getUserPermissions } from '#utils/authorization';
+import { getUserPermissionsBulk } from '#utils/authorization';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { createSelectSchema } from '#utils/zod';
@@ -80,13 +80,15 @@ export const listUsers = usersFactory.createHandlers(
       .offset(offset)
       .orderBy(desc(user.createdAt));
 
-    const users = await Promise.all(
-      usersQuery.map(async (u) => ({
-        ...u,
-        displayName: u.nickname ? u.nickname : u.name || 'Unknown user',
-        permissions: await getUserPermissions(u.id),
-      }))
+    const permissionsByUser = await getUserPermissionsBulk(
+      usersQuery.map((u) => u.id)
     );
+
+    const users = usersQuery.map((u) => ({
+      ...u,
+      displayName: u.nickname ? u.nickname : u.name || 'Unknown user',
+      permissions: permissionsByUser.get(u.id) ?? [],
+    }));
 
     const [countResult] = await db
       .select({ count: count() })

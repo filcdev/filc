@@ -1,17 +1,18 @@
-import { useForm } from '@tanstack/react-form';
-import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
+import { Button } from '@filcdev/ui/components/button';
+import { Combobox } from '@filcdev/ui/components/combobox';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import { useForm } from '@tanstack/react-form';
+import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 import {
   type AdminTeacher,
   useTeacherUserOptions,
@@ -34,6 +35,8 @@ export function TeacherDialog({
   teacher,
 }: TeacherDialogProps) {
   const { t } = useTranslation();
+  const nameId = useId();
+  const shortId = useId();
   const usersQuery = useTeacherUserOptions();
   const updateTeacher = useUpdateTeacher({
     onSaved: () => onOpenChange(false),
@@ -73,18 +76,16 @@ export function TeacherDialog({
           }}
         >
           <Field>
-            <FieldLabel htmlFor="teacher-name">{t('teachers.name')}</FieldLabel>
+            <FieldLabel htmlFor={nameId}>{t('teachers.name')}</FieldLabel>
             <Input
               disabled
-              id="teacher-name"
+              id={nameId}
               value={`${teacher.firstName} ${teacher.lastName}`.trim()}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="teacher-short">
-              {t('teachers.short')}
-            </FieldLabel>
-            <Input disabled id="teacher-short" value={teacher.short} />
+            <FieldLabel htmlFor={shortId}>{t('teachers.short')}</FieldLabel>
+            <Input disabled id={shortId} value={teacher.short} />
           </Field>
           <form.Field name="email">
             {(field) => (

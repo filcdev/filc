@@ -29,3 +29,40 @@ updates:
         update-types:
           - "patch"
           - "minor"
+
+  # Base images of the three Dockerfiles (`oven/bun` in apps/chronos, `nginx`
+  # in apps/iris and apps/kiosk). Dependabot's docker ecosystem only scans the
+  # single directory it is given, so `directories` (which supports globs) is
+  # what covers all apps in one entry.
+  - package-ecosystem: "docker"
+    directories:
+      - "/apps/*"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 10
+    groups:
+      docker-patch-and-minor:
+        applies-to: version-updates
+        update-types:
+          - "patch"
+          - "minor"
+
+  # Images referenced by the root compose.yml (postgres, mailpit, garage). The
+  # docker ecosystem ignores compose files, so these need `docker-compose`.
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 10
+    groups:
+      compose-patch-and-minor:
+        applies-to: version-updates
+        update-types:
+          - "patch"
+          - "minor"

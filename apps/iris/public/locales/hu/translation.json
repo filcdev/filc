@@ -125,6 +125,15 @@
       "dialogTitle": "Ajtó nyitása",
       "dialogDescription": "Melyik ajtót szeretnéd kinyitni ezzel: {{cardName}}?",
       "dialogNoDevices": "Ennek a kártyának nincs engedélyezett eszköze."
+    },
+    "ota": {
+      "titleDevice": "\"{{name}}\" frissítése",
+      "titleAll": "Összes eszköz frissítése",
+      "descriptionDevice": "OTA firmware-frissítés küldése a következő eszköznek: {{name}}. Az eszköz automatikusan letölti és telepíti a firmware-t a megadott URL-ről.",
+      "descriptionAll": "OTA firmware-frissítés küldése minden regisztrált eszköznek. Minden csatlakozott eszköz automatikusan letölti és telepíti a firmware-t a megadott URL-ről.",
+      "urlLabel": "Firmware URL",
+      "submitDevice": "Eszköz frissítése",
+      "submitAll": "Összes frissítése"
     }
   },
   "featureFlags": {},
@@ -136,7 +145,9 @@
     "users": "Felhasználók",
     "roles": "Szerepkörök",
     "bugReports": "Hibajelentések",
-    "developer": "Fejlesztő"
+    "developer": "Fejlesztő",
+    "kiosks": "Kijelzők",
+    "navigator": "Navigátor"
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
@@ -251,7 +262,11 @@
     "skip": "Kihagyás",
     "complete": "Befejezés",
     "delete": "Törlés",
-    "deleting": "Törlés..."
+    "deleting": "Törlés...",
+    "edit": "Szerkesztés",
+    "no": "Nem",
+    "save": "Mentés",
+    "yes": "Igen"
   },
   "navigation": {
     "title": "Navigáció",
@@ -423,7 +438,24 @@
     "date": "Dátum",
     "setDateRange": "Dátumtartomány beállítása",
     "showPast": "Múltbeli hírek mutatása",
-    "untitled": "Cím nélkül"
+    "untitled": "Cím nélkül",
+    "highlighted": "Kiemelt a kijelzőn",
+    "kioskOnly": "Csak kijelzőn (a weben rejtve)",
+    "kiosks": "Kijelzők",
+    "allKiosks": "Minden kijelző",
+    "allKiosksHint": "A teljes képernyős hír minden TV-kijelzőn megjelenik.",
+    "kiosksHint": "A teljes képernyős hír csak a kiválasztott kijelzőkön jelenik meg.",
+    "kiosk": "Kijelző",
+    "notOnKiosk": "—",
+    "image": "Kép",
+    "imageHint": "JPEG, PNG vagy WebP, legfeljebb 8 MiB",
+    "imageOnSave": "A kép mentéskor töltődik fel.",
+    "imageUpload": "Feltöltés",
+    "imageRemove": "Kép törlése",
+    "imageUploadSuccess": "Kép feltöltve",
+    "imageUploadError": "Nem sikerült feltölteni a képet",
+    "imageRemoveSuccess": "Kép törölve",
+    "imageRemoveError": "Nem sikerült törölni a képet"
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",
@@ -751,5 +783,147 @@
     "close": "Bezárás",
     "anonymous": "Névtelen",
     "listDescription": "A felhasználók által beküldött hibajelentések áttekintése."
+  },
+  "ui": {
+    "common": {
+      "delete": "Törlés",
+      "less": "Kevesebb",
+      "more": "Több",
+      "no_data": "Nincs adat",
+      "unknown": "Ismeretlen"
+    }
+  },
+  "navigator": {
+    "overview": {
+      "title": "Navigátor",
+      "description": "Kampusz szerkesztő és áttekintés"
+    },
+    "refresh": "Frissítés",
+    "deleteConfirmTitle": "Bejegyzés törlése",
+    "deleteConfirmDescription": "Biztosan törlöd: {{name}}? Ez a művelet nem visszavonható.",
+    "createSuccess": "Sikeresen létrehozva",
+    "createError": "Nem sikerült létrehozni a bejegyzést",
+    "updateSuccess": "Sikeresen mentve",
+    "updateError": "Nem sikerült menteni a bejegyzést",
+    "deleteSuccess": "Sikeresen törölve",
+    "deleteError": "Nem sikerült törölni a bejegyzést",
+    "fields": {
+      "name": "Név",
+      "description": "Leírás",
+      "short": "Rövid kód",
+      "x": "X",
+      "y": "Y",
+      "building": "Épület",
+      "type": "Típus",
+      "storey": "Szint",
+      "capacity": "Kapacitás",
+      "rotation": "Elforgatás (°)",
+      "sizeX": "X méret (m)",
+      "sizeY": "Y méret (m)",
+      "sizeZ": "Z méret (m)",
+      "minStorey": "Legalsó szint",
+      "maxStorey": "Legfelső szint",
+      "width": "Szélesség (m)",
+      "x1": "Kezdő X",
+      "y1": "Kezdő Y",
+      "x2": "Vég X",
+      "y2": "Vég Y",
+      "barrierFree": "Akadálymentes",
+      "isOutdoor": "Kültéri",
+      "colorhex": "Szín"
+    },
+    "notPlaced": "Nincs a térképen",
+    "buildings": {
+      "title": "Épületek",
+      "description": "Kampusz épületei",
+      "add": "Új épület"
+    },
+    "classroomTypes": {
+      "title": "Teremtípusok",
+      "description": "Teremkategóriák és színeik",
+      "add": "Új típus",
+      "editTitle": "Teremtípus szerkesztése",
+      "createTitle": "Új teremtípus",
+      "colorError": "A szín hex érték legyen, például #1a2b3c"
+    },
+    "classrooms": {
+      "title": "Termek",
+      "description": "Termek pozícióval, mérettel és típussal",
+      "add": "Új terem"
+    },
+    "corridors": {
+      "title": "Folyosók",
+      "description": "Folyosószakaszok szintenként",
+      "add": "Új folyosó"
+    },
+    "lifts": {
+      "title": "Liftek",
+      "description": "Szinteket összekötő liftek",
+      "add": "Új lift"
+    },
+    "stairs": {
+      "title": "Lépcsők",
+      "description": "Szinteket összekötő lépcsők",
+      "add": "Új lépcső"
+    },
+    "translations": {
+      "title": "Fordítások",
+      "description": "Kampusz kódnevek nyelvenként",
+      "add": "Új kódnév",
+      "key": "Kódnév",
+      "editTitle": "Fordítás szerkesztése",
+      "createTitle": "Új fordítás",
+      "searchPlaceholder": "Kódnevek keresése...",
+      "saveSuccess": "Fordítások elmentve",
+      "saveError": "Nem sikerült menteni a fordításokat",
+      "deleteSuccess": "Fordítás törölve",
+      "deleteError": "Nem sikerült törölni a fordítást"
+    },
+    "preview": {
+      "title": "Kampusz előnézet",
+      "description": "A teljes kampusz csak olvasható nézete"
+    }
+  },
+  "kiosk": {
+    "title": "Kijelzők",
+    "description": "Regisztrált kijelzők és konfigurációjuk",
+    "create": "Új kijelző",
+    "editTitle": "Kijelző szerkesztése",
+    "createTitle": "Új kijelző",
+    "never": "Soha",
+    "deleteConfirmTitle": "Kijelző törlése",
+    "deleteConfirmDescription": "Biztosan törlöd: {{name}}? Ez a művelet nem visszavonható.",
+    "configError": "A konfiguráció érvénytelen",
+    "addGroup": "Csoport hozzáadása",
+    "addStop": "Megálló hozzáadása",
+    "removeGroup": "Csoport törlése",
+    "removeStop": "Megálló törlése",
+    "kindTv": "TV",
+    "kindNavigator": "Navigátor",
+    "createSuccess": "Kijelző létrehozva",
+    "createError": "Nem sikerült létrehozni a kijelzőt",
+    "updateSuccess": "Kijelző mentve",
+    "updateError": "Nem sikerült menteni a kijelzőt",
+    "deleteSuccess": "Kijelző törölve",
+    "deleteError": "Nem sikerült törölni a kijelzőt",
+    "fields": {
+      "name": "Név",
+      "machineId": "Gépazonosító",
+      "kind": "Típus",
+      "enabled": "Engedélyezve",
+      "groupLabel": "Csoport címke",
+      "stopId": "Megálló azonosító",
+      "routeFilter": "Járat szűrő",
+      "idleResetMs": "Tétlenség visszaállítás (ms)",
+      "highlightedNews": "Kiemelt hírek",
+      "newsImages": "Hírek képei",
+      "newsSlideSeconds": "Hírcsúszda (mp)",
+      "newsTickerSeconds": "Szalag a hírek között (mp)",
+      "building": "Kezdő épület",
+      "storey": "Szint",
+      "x": "X",
+      "y": "Y",
+      "lastSeen": "Utoljára látva"
+    }
   }
 }

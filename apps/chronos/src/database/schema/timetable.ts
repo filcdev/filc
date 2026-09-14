@@ -2,6 +2,7 @@ import {
   bit,
   boolean,
   date,
+  doublePrecision,
   index,
   integer,
   type PgColumn,
@@ -72,20 +73,63 @@ export const teacher = pgTable('teacher', {
   userId: uuid('user_id').references((): PgColumn => user.id),
 });
 
+// `building` and `classroom` are shared with the campus model: the Navigator
+// columns they carry, and the classroom columns themselves, keep the upstream
+// snake_case field names as their TypeScript property names, because selected
+// rows are served to the kiosk and the 3D editor as the wire shape verbatim.
+
 export const building = pgTable('building', {
+  description: text('description').notNull().default(''),
   id: text('id').primaryKey(),
+  /** Whether the campus has placed this building on the map. */
+  mapped: boolean('mapped').notNull().default(false),
   name: text('name').notNull(),
+  x: doublePrecision('x').notNull().default(0),
+  y: doublePrecision('y').notNull().default(0),
 });
 
-export const classroom = pgTable('classroom', {
-  buildingId: text('building_id')
-    .notNull()
-    .references(() => building.id),
-  capacity: integer('capacity'),
+/** A classroom category; `colorhex` is the fill colour used in the 3D views. */
+export const classroomType = pgTable('classroom_type', {
+  colorhex: text('colorhex').notNull(),
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  short: text('short').notNull(),
+  ...timestamps,
 });
+
+/**
+ * A room on a storey of a building. Geometry is `doublePrecision` because the
+ * 3D editor allows free rotation and free resizing; `type_id` and `capacity`
+ * are nullable because the timetable import creates rooms before anyone has
+ * placed them, and only placed rooms (`mapped`) reach the campus graph.
+ */
+export const classroom = pgTable(
+  'classroom',
+  {
+    building_id: text('building_id')
+      .notNull()
+      .references(() => building.id),
+    capacity: integer('capacity'),
+    description: text('description').notNull().default(''),
+    id: text('id').primaryKey(),
+    mapped: boolean('mapped').notNull().default(false),
+    name: text('name').notNull(),
+    rotation: doublePrecision('rotation').notNull().default(0),
+    short: text('short').notNull().default(''),
+    size_x: doublePrecision('size_x').notNull().default(6),
+    size_y: doublePrecision('size_y').notNull().default(6),
+    size_z: doublePrecision('size_z').notNull().default(3),
+    storey: integer('storey').notNull().default(0),
+    type_id: text('type_id').references(() => classroomType.id, {
+      onDelete: 'restrict',
+    }),
+    x: doublePrecision('x').notNull().default(0),
+    y: doublePrecision('y').notNull().default(0),
+  },
+  (t) => [
+    index('classroom_building_id_idx').on(t.building_id),
+    index('classroom_type_id_idx').on(t.type_id),
+  ]
+);
 
 export const cohort = pgTable('cohort', {
   // TODO: review if we need to store multiple classrooms
@@ -234,6 +278,7 @@ export const movedLessonLessonMTM = pgTable(
 export const timetableSchema = {
   building,
   classroom,
+  classroomType,
   cohort,
   cohortGroup,
   cohortTimetableMtm,

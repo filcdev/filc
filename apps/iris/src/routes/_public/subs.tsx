@@ -1,17 +1,17 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { LogIn, ShieldCheck } from 'lucide-react';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { SubstitutionView } from '@/components/subs-view';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
+} from '@filcdev/ui/components/card';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { LogIn, ShieldCheck } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SubstitutionView } from '@/components/subs-view';
 import { authClient } from '@/utils/authentication';
 
 // Map this page to /subs
