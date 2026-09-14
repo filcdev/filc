@@ -75,6 +75,7 @@ function LessonEntry({
   return (
     <Popover>
       <PopoverTrigger
+        nativeButton={false}
         openOnHover
         render={
           <div
