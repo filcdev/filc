@@ -762,7 +762,8 @@ export function SubstitutionDialog({
       date: formDate,
       periodId: manualPeriod,
       subjectId: manualSubject || null,
-      substituter: manualSubstituter || null,
+      substituter:
+        manualSubstituter === '__none__' ? null : manualSubstituter || null,
       teacherId: manualTeacher,
     });
   };
@@ -852,7 +853,9 @@ export function SubstitutionDialog({
 
         <DialogFooter className="border-t p-4">
           <Button
-            disabled={!isValid || form.state.isSubmitting}
+            disabled={
+              !isValid || form.state.isSubmitting || manualMutation.isPending
+            }
             form={formId}
             type="submit"
           >

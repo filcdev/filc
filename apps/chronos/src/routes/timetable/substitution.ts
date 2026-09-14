@@ -772,21 +772,16 @@ async function lockAndValidateTeachers(
 }
 
 // Manual substitution only takes a date; resolve the matching day definition
-// from the active timetable's lessons via the date's weekday.
-async function getDayDefinitionIdForDate(
-  date: Date,
-  timetableId: string
-): Promise<string | null> {
+// from the standalone day-definition table via the date's weekday.
+async function getDayDefinitionIdForDate(date: Date): Promise<string | null> {
   const weekday = getWeekdayInBudapest(date);
   const rows = await db
-    .selectDistinct({
+    .select({
       id: dayDefinition.id,
       name: dayDefinition.name,
       short: dayDefinition.short,
     })
-    .from(dayDefinition)
-    .innerJoin(lesson, eq(lesson.dayDefinitionId, dayDefinition.id))
-    .where(eq(lesson.timetableId, timetableId));
+    .from(dayDefinition);
 
   const match = rows.find((row) =>
     isMatchingWeekday(weekday, row.name, row.short)
@@ -898,7 +893,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       });
     }
 
-    const dayDefinitionId = await getDayDefinitionIdForDate(date, timetableId);
+    const dayDefinitionId = await getDayDefinitionIdForDate(date);
     if (!dayDefinitionId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'No day definition found for the given date',
