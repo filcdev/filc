@@ -12,7 +12,7 @@ import { Input } from '@filcdev/ui/components/input';
 import { Label } from '@filcdev/ui/components/label';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type SystemMessageItem,
@@ -83,6 +83,8 @@ export function SystemMessagesDialog({
 }: SystemMessagesDialogProps) {
   const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
+  const formId = useId();
+  const contentId = useId();
   const createMutation = useCreateSystemMessage({ onSaved: close });
   const updateMutation = useUpdateSystemMessage({ onSaved: close });
   const { data: cohorts = [] } = useCohorts(open);
@@ -135,7 +137,7 @@ export function SystemMessagesDialog({
 
           <form
             className="mt-4 space-y-4"
-            id="systemMessageForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
@@ -160,10 +162,12 @@ export function SystemMessagesDialog({
             <form.Field name="content">
               {(field) => (
                 <div className="space-y-2">
-                  <Label htmlFor="content">{t('systemMessages.content')}</Label>
+                  <Label htmlFor={contentId}>
+                    {t('systemMessages.content')}
+                  </Label>
                   <textarea
                     className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                    id="content"
+                    id={contentId}
                     onChange={(e) =>
                       field.handleChange([
                         { content: e.target.value, type: 'text' },
@@ -249,7 +253,7 @@ export function SystemMessagesDialog({
               createMutation.isPending ||
               updateMutation.isPending
             }
-            form="systemMessageForm"
+            form={formId}
             type="submit"
           >
             <Save className="h-4 w-4" />

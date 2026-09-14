@@ -37,7 +37,7 @@ import {
   teacher,
   weekDefinition,
 } from '#database/schema/timetable';
-import { ok } from '#utils/http';
+import { badRequest, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import {
   getActiveTimetableId,
@@ -69,7 +69,7 @@ const getWeekdayInBudapest = (value: Date): number => {
     Wed: 3,
   }[weekdayName];
   if (weekdayIndex === undefined) {
-    throw new Error(`Unsupported weekday value: ${weekdayName}`);
+    throw badRequest(`Unsupported weekday value: ${weekdayName}`);
   }
   return weekdayIndex;
 };

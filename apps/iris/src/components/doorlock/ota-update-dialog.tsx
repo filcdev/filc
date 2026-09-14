@@ -7,11 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
-import { Label } from '@filcdev/ui/components/label';
+import { useForm, useStore } from '@tanstack/react-form';
 import { Download, Save } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUpdateDeviceFirmware } from '@/hooks/doorlock-admin';
+import { otaUpdateSchema } from '@/utils/form-schemas';
 
 type OtaUpdateDialogProps = {
   deviceId?: string | null;
@@ -26,24 +28,29 @@ export function OtaUpdateDialog({
   onOpenChange,
   open,
 }: OtaUpdateDialogProps) {
-  const [url, setUrl] = useState('');
+  const { t } = useTranslation();
 
   const { isPending, mutateAsync } = useUpdateDeviceFirmware({
     onSaved: () => {
-      setUrl('');
+      form.reset();
       onOpenChange(false);
     },
   });
 
-  const isValid = url.trim().length > 0;
-
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!isValid) {
-      return;
-    }
-    await mutateAsync({ ...(deviceId && { deviceId }), url: url.trim() });
-  };
+  const form = useForm({
+    defaultValues: { url: '' },
+    onSubmit: async ({ value }) => {
+      await mutateAsync({
+        ...(deviceId && { deviceId }),
+        url: value.url.trim(),
+      });
+    },
+    validators: {
+      onChange: otaUpdateSchema,
+      onSubmit: otaUpdateSchema,
+    },
+  });
+  const isValid = useStore(form.store, (state) => state.isValid);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -51,29 +58,46 @@ export function OtaUpdateDialog({
         <DialogHeader>
           <DialogTitle>
             <Download className="mr-2 inline-block h-5 w-5" />
-            {deviceName ? `Update "${deviceName}"` : 'Update all devices'}
+            {deviceName
+              ? t('doorlock.ota.titleDevice', { name: deviceName })
+              : t('doorlock.ota.titleAll')}
           </DialogTitle>
           <DialogDescription>
             {deviceName
-              ? `Push an OTA firmware update to ${deviceName}. The device will download and install the firmware from the provided URL automatically.`
-              : 'Push an OTA firmware update to all registered devices. Each connected device will download and install the firmware from the provided URL.'}
+              ? t('doorlock.ota.descriptionDevice', { name: deviceName })
+              : t('doorlock.ota.descriptionAll')}
           </DialogDescription>
         </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="ota-url">Firmware URL</Label>
-            <Input
-              id="ota-url"
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://github.com/.../firmware.bin"
-              type="url"
-              value={url}
-            />
-          </div>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <form.Field name="url">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>
+                  {t('doorlock.ota.urlLabel')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="https://github.com/.../firmware.bin"
+                  type="url"
+                  value={field.state.value}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </form.Field>
           <DialogFooter>
             <Button disabled={!isValid || isPending} type="submit">
               <Save />
-              {deviceName ? 'Update device' : 'Update all devices'}
+              {deviceName
+                ? t('doorlock.ota.submitDevice')
+                : t('doorlock.ota.submitAll')}
             </Button>
           </DialogFooter>
         </form>

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@filcdev/ui/components/select';
 import { useForm, useStore } from '@tanstack/react-form';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type User,
@@ -31,6 +32,8 @@ type UserDialogProps = BaseDialogProps & {
 
 export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
   const { t } = useTranslation();
+  const nameId = useId();
+  const emailId = useId();
 
   const rolesQuery = useRoles();
   const cohortsQuery = useCohorts();
@@ -86,12 +89,12 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
           }}
         >
           <Field>
-            <FieldLabel htmlFor="user-name">{t('account.name')}</FieldLabel>
-            <Input disabled id="user-name" value={user.name} />
+            <FieldLabel htmlFor={nameId}>{t('account.name')}</FieldLabel>
+            <Input disabled id={nameId} value={user.name} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="user-email">{t('account.email')}</FieldLabel>
-            <Input disabled id="user-email" value={user.email} />
+            <FieldLabel htmlFor={emailId}>{t('account.email')}</FieldLabel>
+            <Input disabled id={emailId} value={user.email} />
           </Field>
           <form.Field name="nickname">
             {(field) => (

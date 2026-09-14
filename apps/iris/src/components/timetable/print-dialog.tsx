@@ -9,7 +9,7 @@ import {
 } from '@filcdev/ui/components/dialog';
 import { Label } from '@filcdev/ui/components/label';
 import { Loader2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type Props = {
@@ -20,6 +20,7 @@ type Props = {
 
 export function PrintDialog({ open, onOpenChange, onGenerate }: Props) {
   const { t } = useTranslation();
+  const bwToggleId = useId();
   const [blackAndWhite, setBlackAndWhite] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -44,10 +45,10 @@ export function PrintDialog({ open, onOpenChange, onGenerate }: Props) {
           <Checkbox
             checked={blackAndWhite}
             disabled={loading}
-            id="bw-toggle"
+            id={bwToggleId}
             onCheckedChange={(checked) => setBlackAndWhite(checked === true)}
           />
-          <Label htmlFor="bw-toggle">
+          <Label htmlFor={bwToggleId}>
             {t('timetable.printDialog.blackAndWhite')}
           </Label>
         </div>

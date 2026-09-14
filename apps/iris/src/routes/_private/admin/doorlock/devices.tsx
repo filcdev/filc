@@ -36,6 +36,7 @@ import {
   useDeleteDoorlockDevice,
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
+import { useHasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
 
@@ -77,12 +78,10 @@ function DevicesPage() {
   const [otaDialogOpen, setOtaDialogOpen] = useState(false);
   const [otaDevice, setOtaDevice] = useState<DoorlockDevice | null>(null);
 
-  const hasWritePermission = useMemo(() => {
-    const perms = session?.user?.permissions ?? [];
-    return (
-      perms.includes('*') || perms.includes(permissions.doorlockDevicesWrite)
-    );
-  }, [session?.user?.permissions]);
+  const hasWritePermission = useHasPermission(
+    permissions.doorlockDevicesWrite,
+    session?.user?.permissions
+  );
 
   const devicesQuery = useDoorlockDevices();
   const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;

@@ -63,7 +63,7 @@ This guide gets you from a fresh clone to a running dev environment, then covers
    bun dev
    ```
 
-   Both apps start via Turborepo. Iris runs through Vite, which regenerates `apps/iris/src/route-tree.gen.ts` automatically — never edit that file by hand.
+   All three apps start via Turborepo. Iris runs through Vite, which regenerates `apps/iris/src/route-tree.gen.ts` automatically — never edit that file by hand.
 
    The kiosk app is a static bundle on a box, so it never relies on a proxied
    `/api`: dev calls `http://localhost:3001/api` directly and a production build

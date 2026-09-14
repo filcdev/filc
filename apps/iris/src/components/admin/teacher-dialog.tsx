@@ -10,6 +10,7 @@ import {
 import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import {
@@ -34,6 +35,8 @@ export function TeacherDialog({
   teacher,
 }: TeacherDialogProps) {
   const { t } = useTranslation();
+  const nameId = useId();
+  const shortId = useId();
   const usersQuery = useTeacherUserOptions();
   const updateTeacher = useUpdateTeacher({
     onSaved: () => onOpenChange(false),
@@ -73,18 +76,16 @@ export function TeacherDialog({
           }}
         >
           <Field>
-            <FieldLabel htmlFor="teacher-name">{t('teachers.name')}</FieldLabel>
+            <FieldLabel htmlFor={nameId}>{t('teachers.name')}</FieldLabel>
             <Input
               disabled
-              id="teacher-name"
+              id={nameId}
               value={`${teacher.firstName} ${teacher.lastName}`.trim()}
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="teacher-short">
-              {t('teachers.short')}
-            </FieldLabel>
-            <Input disabled id="teacher-short" value={teacher.short} />
+            <FieldLabel htmlFor={shortId}>{t('teachers.short')}</FieldLabel>
+            <Input disabled id={shortId} value={teacher.short} />
           </Field>
           <form.Field name="email">
             {(field) => (

@@ -11,6 +11,25 @@
       "!bun.lock"
     ]
   },
+  // `noNodejsModules` is off globally (chronos scripts and entry code need
+  // `node:*`), but enforced for the browser-bound and server-free workspaces
+  // via the override below.
+  "overrides": [
+    {
+      "includes": [
+        "apps/iris/src/**",
+        "apps/kiosk/src/**",
+        "packages/api/src/**",
+        "packages/navigator-3d/src/**",
+        "packages/ui/src/**"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "error" }
+        }
+      }
+    }
+  ],
   "formatter": {
     "enabled": true,
     "formatWithErrors": true,
@@ -38,6 +57,13 @@
   "linter": {
     "enabled": true,
     "rules": {
+      // Category policy: `correctness` and `security` are the enforceable
+      // baseline — every rule in them is on, or off with a stated reason.
+      // `a11y`, `complexity`, `nursery`, `performance`, `style` and
+      // `suspicious` are advisory: enabled selectively, with the remaining
+      // rules in those groups left off.
+      // A11y (advisory): enforced for the rules listed below; the remaining
+      // a11y rules stay off.
       "a11y": {
         /** ------------------------ JavaScript Rules ------------------------ **/
 
@@ -82,6 +108,8 @@
         /** ------------------------ CSS Rules ------------------------ **/
         "useGenericFontNames": "error"
       },
+      // Complexity (advisory): enforced where it flags real nesting; the
+      // `off` entries here would cost more readability than they save.
       "complexity": {
         /** ------------------------ JavaScript Rules ------------------------ **/
 
@@ -178,11 +206,14 @@
         "useYield": "error",
 
         "noNodejsModules": "off",
-        "noPrivateImports": "off",
-        "noProcessGlobal": "off",
-        "noUndeclaredDependencies": "off",
+        "noPrivateImports": "error",
+        "noProcessGlobal": "error",
+        "noUndeclaredDependencies": "error",
+        // Bun's resolver does not need extensions and the repo never writes
+        // them (1289 findings); leaving the rule off avoids a mass rewrite
+        // that would diverge from every neighbouring import.
         "useImportExtensions": "off",
-        "useUniqueElementIds": "off",
+        "useUniqueElementIds": "error",
 
         /** ------ Project rules use Scanner and are too slow (https://biomejs.dev/linter/domains/#project-rules) ------ **/
         "useJsonImportAttributes": "off",
@@ -211,6 +242,8 @@
         "useHookAtTopLevel": "error",
         "useJsxKeyInIterable": "error"
       },
+      // Nursery (advisory): experimental rules are opt-in — only the rules
+      // enabled below run.
       "nursery": {
         "useSortedClasses": {
           "fix": "safe",
@@ -225,6 +258,8 @@
         "noMisusedPromises": "off",
         "useExhaustiveSwitchCases": "off"
       },
+      // Performance (advisory): enforced; the `off` entries are project-wide
+      // trade-offs noted inline.
       "performance": {
         /** ------------------------ JavaScript Rules ------------------------ **/
 
@@ -248,8 +283,17 @@
         "noDangerouslySetInnerHtmlWithChildren": "error",
         "noGlobalEval": "error",
 
+        // Kept off (2026-09-14). At the default entropyThreshold (41) the rule
+        // reports 39 false positives across the repo, all on filcExt
+        // `@unit ... @field(...)` type strings and Tailwind class strings.
+        // Raising entropyThreshold to >= 55 clears the repo, but that same
+        // setting stops detecting random hex secrets (16- and 32-byte
+        // token_hex values), which is a common credential shape here — so no
+        // threshold both clears the repo and reliably detects credentials.
         "noSecrets": "off"
       },
+      // Style (advisory): enforced for consistency rules; the `off` entries
+      // disagree with this repo's conventions.
       "style": {
         /** ------------------------ JavaScript Rules ------------------------ **/
 
@@ -342,6 +386,8 @@
         /** ------------------------ React Rules ------------------------ **/
         "useReactFunctionComponents": "error"
       },
+      // Suspicious (advisory): enforced; the `off` entries are false
+      // positives in this codebase.
       "suspicious": {
         /** ------------------------ JavaScript Rules ------------------------ **/
 

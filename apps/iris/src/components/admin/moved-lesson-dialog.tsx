@@ -14,7 +14,7 @@ import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import type { InferRequestType } from 'hono/client';
 import { ArrowRightLeft, Save } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type Classroom,
@@ -191,6 +191,177 @@ function slotHintKey(mode: MoveMode): string {
     : 'movedLesson.selectSlotHint';
 }
 
+// The source slot of the edited move: the first lesson's day and room.
+function resolveSourceSlot(item?: MovedLessonItem | null): {
+  fromRoomId: string;
+  sourceWeekdayId: string;
+} {
+  const firstLesson = item?.lessons[0];
+  return {
+    fromRoomId: firstLesson?.classrooms?.[0]?.id ?? '',
+    sourceWeekdayId: firstLesson?.day?.id ?? '',
+  };
+}
+
+// The source date is the lesson's date. For a room move the move's own date
+// already lands on the source weekday; otherwise anchor on it and shift to the
+// source weekday so the derived weekday stays correct. The shift stays within
+// the SAME week as the target date (no wrap): a negative offset moves to the
+// source weekday earlier in the week, a positive one later. This handles both
+// source-before-target (Mon → Fri) and source-after-target (Fri → Mon) moves.
+function resolveInitialSourceDate(
+  item: MovedLessonItem | null | undefined,
+  days: DayDefinition[],
+  sourceWeekdayId: string
+): Date {
+  const anchor = item?.movedLesson.date
+    ? new Date(item.movedLesson.date)
+    : new Date();
+  const weekdayIndex = sourceWeekdayId
+    ? getWeekdayIndex(sourceWeekdayId, days)
+    : anchor.getDay();
+  const initialSourceDate = new Date(anchor);
+  initialSourceDate.setDate(
+    anchor.getDate() + (weekdayIndex - anchor.getDay())
+  );
+  return initialSourceDate;
+}
+
+// Add or remove one lesson id, keeping the selection de-duplicated.
+function nextLessonIds(
+  current: string[],
+  lessonId: string,
+  checked: boolean
+): string[] {
+  if (checked) {
+    return Array.from(new Set([...current, lessonId]));
+  }
+  return current.filter((id) => id !== lessonId);
+}
+
+// Whether the queried target slot is the edited move's original slot.
+function isOriginalSlot(params: {
+  dateParam: string;
+  formStartingDay?: string | null;
+  item?: MovedLessonItem | null;
+  selectedPeriodId: string;
+}): boolean {
+  const { item } = params;
+  if (!item) {
+    return false;
+  }
+  return (
+    params.dateParam === item.movedLesson.date &&
+    params.formStartingDay === item.movedLesson.startingDay &&
+    params.selectedPeriodId === item.movedLesson.startingPeriod
+  );
+}
+
+// A move is submittable once a target date, room, source day, period and at
+// least one lesson are selected.
+function isMoveComplete(params: {
+  date: unknown;
+  lessonIds?: string[];
+  room?: string | null;
+  selectedPeriodId: string;
+  startingDay?: string | null;
+}): boolean {
+  return Boolean(
+    params.date &&
+      params.room &&
+      params.startingDay &&
+      params.selectedPeriodId &&
+      params.lessonIds?.length
+  );
+}
+
+// The lesson list has enough context to render: a day always, plus a from-room
+// in room-move mode.
+function hasLessonSlotContext(
+  mode: MoveMode,
+  sourceDay: string,
+  fromRoom: string
+): boolean {
+  return mode === 'day' ? Boolean(sourceDay) : Boolean(sourceDay && fromRoom);
+}
+
+// Rooms offered as the move target, annotated with the queried slot's
+// availability once that query has run.
+function resolveRoomModeSlot(
+  sourceDay: string,
+  sourceDate: Date | undefined,
+  current: { date: unknown; startingDay?: string | null }
+): { date?: Date; startingDay?: string } {
+  const synced: { date?: Date; startingDay?: string } = {};
+  if (sourceDay && current.startingDay !== sourceDay) {
+    synced.startingDay = sourceDay;
+  }
+  const currentDate = current.date;
+  if (
+    sourceDate &&
+    (!(currentDate instanceof Date) ||
+      currentDate.getTime() !== sourceDate.getTime())
+  ) {
+    synced.date = sourceDate;
+  }
+  return synced;
+}
+
+type RoomOption = { disabled: boolean; label: string; value: string };
+
+function buildRoomOptions(params: {
+  availableClassrooms?: Classroom[];
+  availabilityKnown: boolean;
+  classrooms: Classroom[];
+  isStoredSlot: boolean;
+  item?: MovedLessonItem | null;
+  labels: { free: string; occupied: string };
+}): RoomOption[] {
+  const { availabilityKnown, labels } = params;
+  const freeRoomIds = new Set(
+    (params.availableClassrooms ?? []).map((cr) => cr.id)
+  );
+
+  // Treat the stored room as free only when the queried slot is the edited
+  // move's original target slot; otherwise let the availability response stand
+  // so a room occupied in the new slot stays occupied.
+  const storedRoom = params.item?.movedLesson.room;
+  if (params.isStoredSlot && storedRoom) {
+    freeRoomIds.add(storedRoom);
+  }
+
+  return params.classrooms.map((cr) => {
+    const isFree = !availabilityKnown || freeRoomIds.has(cr.id);
+    const label = availabilityKnown
+      ? `${cr.name} (${cr.short}) — ${isFree ? labels.free : labels.occupied}`
+      : `${cr.name} (${cr.short})`;
+    return {
+      disabled: availabilityKnown && !freeRoomIds.has(cr.id),
+      label,
+      value: cr.id,
+    };
+  });
+}
+
+// Availability request for the selected target slot; no slot, no request.
+function requestAvailableClassrooms(
+  startingDay: string | null | undefined,
+  startingPeriod: string,
+  date: string
+) {
+  if (!(startingDay && startingPeriod)) {
+    return [] as never;
+  }
+
+  return api.timetable.classrooms.getAvailable.$get({
+    query: {
+      date,
+      startingDay,
+      startingPeriod,
+    },
+  });
+}
+
 type MovedLessonFormValues = InferRequestType<
   typeof api.timetable.movedLessons.$post
 >['json'];
@@ -272,7 +443,165 @@ function CohortSelector({ cohorts, onChange, value }: CohortSelectorProps) {
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: two move modes share many conditional fields
+type LessonListProps = {
+  formLessonIds?: string[];
+  hasSlotContext: boolean;
+  lessons: EnrichedLesson[];
+  mode: MoveMode;
+  onToggle: (lesson: EnrichedLesson, checked: boolean) => void;
+  selectedPeriodId: string;
+};
+
+// Lessons of the selected source slot, with the same-period selection rule.
+function LessonList({
+  formLessonIds,
+  hasSlotContext,
+  lessons,
+  mode,
+  onToggle,
+  selectedPeriodId,
+}: LessonListProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-2">
+      <Label>{t('movedLesson.lessons')}</Label>
+      <div className="max-h-48 overflow-y-auto rounded-lg border">
+        <div className="space-y-1 p-2">
+          {!hasSlotContext && (
+            <p className="p-2 text-muted-foreground text-sm">
+              {t(slotHintKey(mode))}
+            </p>
+          )}
+          {hasSlotContext && lessons.length === 0 && (
+            <p className="p-2 text-muted-foreground text-sm">
+              {t('movedLesson.noLessons')}
+            </p>
+          )}
+          {lessons.map((lesson) => {
+            const isChecked = (formLessonIds ?? []).includes(lesson.id);
+            // Once a lesson is selected, only lessons in the same
+            // period may be added to the move.
+            const isPeriodMismatch =
+              (formLessonIds ?? []).length > 0 &&
+              !isChecked &&
+              lesson.period?.id !== selectedPeriodId;
+
+            return (
+              <label
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                htmlFor={`ml-lesson-${lesson.id}`}
+                key={lesson.id}
+              >
+                <Checkbox
+                  checked={isChecked}
+                  disabled={isPeriodMismatch}
+                  id={`ml-lesson-${lesson.id}`}
+                  onCheckedChange={(checked) => onToggle(lesson, !!checked)}
+                />
+                <span
+                  className={
+                    isPeriodMismatch ? 'text-muted-foreground' : undefined
+                  }
+                >
+                  {formatLessonLabel(lesson as unknown as LessonForLabel)}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type FromRoomFieldProps = {
+  classrooms: Classroom[];
+  onChange: (value: string) => void;
+  value: string;
+};
+
+// Source-room picker, shown in room-move mode only.
+function FromRoomField({ classrooms, onChange, value }: FromRoomFieldProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-2">
+      <Label>{t('movedLesson.fromRoom')}</Label>
+      <Combobox
+        emptyMessage={t('movedLesson.noRoomFound')}
+        onValueChange={onChange}
+        options={classrooms.map((c) => ({
+          label: `${c.name} (${c.short})`,
+          value: c.id,
+        }))}
+        placeholder={t('movedLesson.fromRoom')}
+        searchPlaceholder={t('search')}
+        value={value}
+      />
+    </div>
+  );
+}
+
+type TargetDateFieldProps = {
+  date: Date | undefined;
+  locale: string;
+  onChange: (date: Date | undefined) => void;
+};
+
+// Target-date picker, shown in day-move mode only.
+function TargetDateField({ date, locale, onChange }: TargetDateFieldProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-2">
+      <Label>{t('movedLesson.targetDate')}</Label>
+      <DatePicker
+        date={date}
+        locale={locale}
+        onDateChange={onChange}
+        placeholder={t('movedLesson.datePlaceholder')}
+      />
+    </div>
+  );
+}
+
+type TargetRoomFieldProps = {
+  isLoading: boolean;
+  onChange: (value: string) => void;
+  options: RoomOption[];
+  value: string;
+};
+
+// Target-room picker, annotated with the queried slot's availability.
+function TargetRoomField({
+  isLoading,
+  onChange,
+  options,
+  value,
+}: TargetRoomFieldProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-2">
+      <Label>{t('movedLesson.toRoom')}</Label>
+      <Combobox
+        className={isLoading ? 'pointer-events-none opacity-50' : undefined}
+        emptyMessage={
+          isLoading
+            ? t('movedLesson.loadingRooms')
+            : t('movedLesson.noRoomFound')
+        }
+        onValueChange={onChange}
+        options={options}
+        placeholder={t('movedLesson.toRoom')}
+        searchPlaceholder={t('search')}
+        value={value}
+      />
+    </div>
+  );
+}
+
 export function MovedLessonDialog({
   allLessons,
   classrooms,
@@ -286,6 +615,8 @@ export function MovedLessonDialog({
 }: MovedLessonDialogProps) {
   const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
+  const formId = useId();
+  const commentId = useId();
   const createMutation = useCreateMovedLesson({ onSaved: close });
   const updateMutation = useUpdateMovedLesson({ onSaved: close });
 
@@ -356,36 +687,12 @@ export function MovedLessonDialog({
 
     form.reset(defaultValues);
 
-    let sourceWeekdayId = '';
-    let fromRoomId = '';
-
-    if (item && item.lessons.length > 0) {
-      const firstLesson = item.lessons[0];
-      sourceWeekdayId = firstLesson?.day?.id ?? '';
-      fromRoomId = firstLesson?.classrooms?.[0]?.id ?? '';
-    }
+    const { fromRoomId, sourceWeekdayId } = resolveSourceSlot(item);
 
     setFromRoom(fromRoomId);
     setSelectedCohort('');
 
-    // The source date is the lesson's date. For a room move the move's own
-    // date already lands on the source weekday; otherwise anchor on it and
-    // shift to the source weekday so the derived weekday stays correct.
-    const anchor = item?.movedLesson.date
-      ? new Date(item.movedLesson.date)
-      : new Date();
-    const weekdayIndex = sourceWeekdayId
-      ? getWeekdayIndex(sourceWeekdayId, days)
-      : anchor.getDay();
-    const initialSourceDate = new Date(anchor);
-    // Shift within the SAME week as the target date (no wrap): a negative
-    // offset moves to the source weekday earlier in the week, a positive one
-    // later. This handles both source-before-target (Mon → Fri) and
-    // source-after-target (Fri → Mon) moves.
-    initialSourceDate.setDate(
-      anchor.getDate() + (weekdayIndex - anchor.getDay())
-    );
-    setSourceDate(initialSourceDate);
+    setSourceDate(resolveInitialSourceDate(item, days, sourceWeekdayId));
   }, [days, defaultValues, form, item, open]);
 
   // In room-move mode the target slot is the source slot.
@@ -393,17 +700,15 @@ export function MovedLessonDialog({
     if (mode !== 'room') {
       return;
     }
-    if (sourceDay && form.getFieldValue('startingDay') !== sourceDay) {
-      form.setFieldValue('startingDay', sourceDay);
+    const synced = resolveRoomModeSlot(sourceDay, sourceDate, {
+      date: form.getFieldValue('date'),
+      startingDay: form.getFieldValue('startingDay'),
+    });
+    if (synced.startingDay !== undefined) {
+      form.setFieldValue('startingDay', synced.startingDay);
     }
-    if (sourceDate) {
-      const currentDate = form.getFieldValue('date');
-      if (
-        !(currentDate instanceof Date) ||
-        currentDate.getTime() !== sourceDate.getTime()
-      ) {
-        form.setFieldValue('date', sourceDate);
-      }
+    if (synced.date !== undefined) {
+      form.setFieldValue('date', synced.date);
     }
   }, [form, mode, sourceDate, sourceDay]);
 
@@ -430,30 +735,18 @@ export function MovedLessonDialog({
   // Whether the queried target slot is the edited move's original slot.
   const isStoredSlot = useMemo(
     () =>
-      item != null &&
-      dateParam === item.movedLesson.date &&
-      formStartingDay === item.movedLesson.startingDay &&
-      selectedPeriodId === item.movedLesson.startingPeriod,
+      isOriginalSlot({
+        dateParam,
+        formStartingDay,
+        item,
+        selectedPeriodId,
+      }),
     [dateParam, formStartingDay, item, selectedPeriodId]
   );
 
   const availableClassroomsQuery = useApiQuery<Classroom[]>(
-    () => {
-      const sd = formStartingDay;
-      const sp = selectedPeriodId;
-
-      if (!(sd && sp)) {
-        return [] as never;
-      }
-
-      return api.timetable.classrooms.getAvailable.$get({
-        query: {
-          date: dateParam,
-          startingDay: sd,
-          startingPeriod: sp,
-        },
-      });
-    },
+    () =>
+      requestAvailableClassrooms(formStartingDay, selectedPeriodId, dateParam),
     {
       enabled: !!formDate && !!formStartingDay && !!selectedPeriodId,
       queryKey: queryKeys.timetable.availableClassrooms(
@@ -482,70 +775,50 @@ export function MovedLessonDialog({
     formDate && formStartingDay && selectedPeriodId
   );
 
-  const roomOptions = useMemo(() => {
-    const freeRoomIds = new Set(
-      (availableClassroomsQuery.data ?? []).map((cr) => cr.id)
-    );
-
-    // Treat the stored room as free only when the queried slot is the edited
-    // move's original target slot; otherwise let the availability response
-    // stand so a room occupied in the new slot stays occupied.
-    if (isStoredSlot && item?.movedLesson.room) {
-      freeRoomIds.add(item.movedLesson.room);
-    }
-
-    return classrooms.map((cr) => {
-      const isFree = !availabilityKnown || freeRoomIds.has(cr.id);
-      const label = availabilityKnown
-        ? `${cr.name} (${cr.short}) — ${
-            isFree ? t('movedLesson.free') : t('movedLesson.occupied')
-          }`
-        : `${cr.name} (${cr.short})`;
-      return {
-        disabled: availabilityKnown && !freeRoomIds.has(cr.id),
-        label,
-        value: cr.id,
-      };
-    });
-  }, [
-    availableClassroomsQuery.data,
-    availabilityKnown,
-    classrooms,
-    isStoredSlot,
-    item,
-    t,
-  ]);
+  const roomOptions = useMemo(
+    () =>
+      buildRoomOptions({
+        availabilityKnown,
+        availableClassrooms: availableClassroomsQuery.data,
+        classrooms,
+        isStoredSlot,
+        item,
+        labels: {
+          free: t('movedLesson.free'),
+          occupied: t('movedLesson.occupied'),
+        },
+      }),
+    [
+      availableClassroomsQuery.data,
+      availabilityKnown,
+      classrooms,
+      isStoredSlot,
+      item,
+      t,
+    ]
+  );
 
   const isCreate = !item;
 
-  const isValid = useMemo(() => {
-    return (
-      !!formDate &&
-      !!formRoom &&
-      !!formStartingDay &&
-      !!selectedPeriodId &&
-      !!(formLessonIds && formLessonIds.length > 0)
-    );
-  }, [formDate, formLessonIds, formRoom, formStartingDay, selectedPeriodId]);
+  const isValid = useMemo(
+    () =>
+      isMoveComplete({
+        date: formDate,
+        lessonIds: formLessonIds,
+        room: formRoom,
+        selectedPeriodId,
+        startingDay: formStartingDay,
+      }),
+    [formDate, formLessonIds, formRoom, formStartingDay, selectedPeriodId]
+  );
 
   // Whether the lessons list has enough context to render: a day always, plus
   // a from-room in room-move mode.
-  const hasSlotContext =
-    mode === 'day' ? Boolean(sourceDay) : Boolean(sourceDay && fromRoom);
+  const hasSlotContext = hasLessonSlotContext(mode, sourceDay, fromRoom);
 
   const toggleLesson = (lesson: EnrichedLesson, checked: boolean) => {
     const current = form.getFieldValue('lessonIds') ?? [];
-    if (checked) {
-      form.setFieldValue(
-        'lessonIds',
-        Array.from(new Set([...current, lesson.id]))
-      );
-    } else {
-      form.setFieldValue(
-        'lessonIds',
-        current.filter((id) => id !== lesson.id)
-      );
-    }
+    form.setFieldValue('lessonIds', nextLessonIds(current, lesson.id, checked));
   };
 
   const handleSourceDateChange = (date: Date | undefined) => {
@@ -571,6 +844,10 @@ export function MovedLessonDialog({
     }
     form.setFieldValue('date', date);
     form.setFieldValue('startingDay', getWeekdayId(date, days));
+  };
+
+  const handleTargetRoomChange = (value: string) => {
+    form.setFieldValue('room', value || undefined);
   };
 
   const handleModeChange = (next: MoveMode) => {
@@ -605,7 +882,7 @@ export function MovedLessonDialog({
 
           <form
             className="mt-4 space-y-4"
-            id="movedLessonForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
@@ -630,120 +907,43 @@ export function MovedLessonDialog({
             )}
 
             {mode === 'room' && (
-              <div className="space-y-2">
-                <Label>{t('movedLesson.fromRoom')}</Label>
-                <Combobox
-                  emptyMessage={t('movedLesson.noRoomFound')}
-                  onValueChange={handleFromRoomChange}
-                  options={classrooms.map((c) => ({
-                    label: `${c.name} (${c.short})`,
-                    value: c.id,
-                  }))}
-                  placeholder={t('movedLesson.fromRoom')}
-                  searchPlaceholder={t('search')}
-                  value={fromRoom}
-                />
-              </div>
+              <FromRoomField
+                classrooms={classrooms}
+                onChange={handleFromRoomChange}
+                value={fromRoom}
+              />
             )}
 
-            <div className="space-y-2">
-              <Label>{t('movedLesson.lessons')}</Label>
-              <div className="max-h-48 overflow-y-auto rounded-lg border">
-                <div className="space-y-1 p-2">
-                  {!hasSlotContext && (
-                    <p className="p-2 text-muted-foreground text-sm">
-                      {t(slotHintKey(mode))}
-                    </p>
-                  )}
-                  {hasSlotContext && visibleLessons.length === 0 && (
-                    <p className="p-2 text-muted-foreground text-sm">
-                      {t('movedLesson.noLessons')}
-                    </p>
-                  )}
-                  {visibleLessons.map((lesson) => {
-                    const isChecked = (formLessonIds ?? []).includes(lesson.id);
-                    // Once a lesson is selected, only lessons in the same
-                    // period may be added to the move.
-                    const isPeriodMismatch =
-                      (formLessonIds ?? []).length > 0 &&
-                      !isChecked &&
-                      lesson.period?.id !== selectedPeriodId;
-
-                    return (
-                      <label
-                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
-                        htmlFor={`ml-lesson-${lesson.id}`}
-                        key={lesson.id}
-                      >
-                        <Checkbox
-                          checked={isChecked}
-                          disabled={isPeriodMismatch}
-                          id={`ml-lesson-${lesson.id}`}
-                          onCheckedChange={(checked) =>
-                            toggleLesson(lesson, !!checked)
-                          }
-                        />
-                        <span
-                          className={
-                            isPeriodMismatch
-                              ? 'text-muted-foreground'
-                              : undefined
-                          }
-                        >
-                          {formatLessonLabel(
-                            lesson as unknown as LessonForLabel
-                          )}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <LessonList
+              formLessonIds={formLessonIds}
+              hasSlotContext={hasSlotContext}
+              lessons={visibleLessons}
+              mode={mode}
+              onToggle={toggleLesson}
+              selectedPeriodId={selectedPeriodId}
+            />
 
             {mode === 'day' && (
-              <div className="space-y-2">
-                <Label>{t('movedLesson.targetDate')}</Label>
-                <DatePicker
-                  date={formDate instanceof Date ? formDate : undefined}
-                  locale={getIntlLocale(i18n.language)}
-                  onDateChange={handleTargetDateChange}
-                  placeholder={t('movedLesson.datePlaceholder')}
-                />
-              </div>
+              <TargetDateField
+                date={formDate instanceof Date ? formDate : undefined}
+                locale={getIntlLocale(i18n.language)}
+                onChange={handleTargetDateChange}
+              />
             )}
 
-            <div className="space-y-2">
-              <Label>{t('movedLesson.toRoom')}</Label>
-              <Combobox
-                className={
-                  availableClassroomsQuery.isLoading
-                    ? 'pointer-events-none opacity-50'
-                    : undefined
-                }
-                emptyMessage={
-                  availableClassroomsQuery.isLoading
-                    ? t('movedLesson.loadingRooms')
-                    : t('movedLesson.noRoomFound')
-                }
-                onValueChange={(value) =>
-                  form.setFieldValue('room', value || undefined)
-                }
-                options={roomOptions}
-                placeholder={t('movedLesson.toRoom')}
-                searchPlaceholder={t('search')}
-                value={formRoom ?? ''}
-              />
-            </div>
+            <TargetRoomField
+              isLoading={availableClassroomsQuery.isLoading}
+              onChange={handleTargetRoomChange}
+              options={roomOptions}
+              value={formRoom ?? ''}
+            />
 
             <div className="space-y-2">
-              <Label htmlFor="moved-lesson-comment">
-                {t('movedLesson.comment')}
-              </Label>
+              <Label htmlFor={commentId}>{t('movedLesson.comment')}</Label>
               <form.Field name="comment">
                 {(field) => (
                   <Textarea
-                    id="moved-lesson-comment"
+                    id={commentId}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value || null)}
                     placeholder={t('movedLesson.commentPlaceholder')}
@@ -758,7 +958,7 @@ export function MovedLessonDialog({
         <DialogFooter className="border-t p-4">
           <Button
             disabled={!isValid || form.state.isSubmitting}
-            form="movedLessonForm"
+            form={formId}
             type="submit"
           >
             <Save className="mr-2 h-4 w-4" />

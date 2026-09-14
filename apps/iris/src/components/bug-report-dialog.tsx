@@ -16,7 +16,7 @@ import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm } from '@tanstack/react-form';
 import { useRouter } from '@tanstack/react-router';
 import { Bug, Send } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { api } from '@/utils/hc';
@@ -34,6 +34,7 @@ const initialState: BugReportForm = {
 export function BugReportDialog() {
   const { t } = useTranslation();
   const router = useRouter();
+  const formId = useId();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -108,7 +109,7 @@ export function BugReportDialog() {
 
           <form
             className="mt-4 space-y-4"
-            id="bugReportForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
@@ -152,7 +153,7 @@ export function BugReportDialog() {
         </div>
 
         <DialogFooter className="border-t p-4">
-          <Button disabled={submitting} form="bugReportForm" type="submit">
+          <Button disabled={submitting} form={formId} type="submit">
             <Send className="h-4 w-4" />
             {t('bugReport.submit')}
           </Button>

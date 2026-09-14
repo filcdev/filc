@@ -141,6 +141,15 @@
       "dialogTitle": "Open a Door",
       "dialogDescription": "Choose which door to open using {{cardName}}.",
       "dialogNoDevices": "This card has no authorized devices."
+    },
+    "ota": {
+      "titleDevice": "Update \"{{name}}\"",
+      "titleAll": "Update all devices",
+      "descriptionDevice": "Push an OTA firmware update to {{name}}. The device will download and install the firmware from the provided URL automatically.",
+      "descriptionAll": "Push an OTA firmware update to all registered devices. Each connected device will download and install the firmware from the provided URL.",
+      "urlLabel": "Firmware URL",
+      "submitDevice": "Update device",
+      "submitAll": "Update all devices"
     }
   },
   "featureFlags": {},

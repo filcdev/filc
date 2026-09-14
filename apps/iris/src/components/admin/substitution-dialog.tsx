@@ -19,7 +19,7 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Hand, Save } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type SubstitutionItem,
@@ -567,6 +567,8 @@ export function SubstitutionDialog({
 }: SubstitutionDialogProps) {
   const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
+  const formId = useId();
+  const commentId = useId();
   const createMutation = useCreateSubstitution({ onSaved: close });
   const updateMutation = useUpdateSubstitution({ onSaved: close });
   const manualMutation = useCreateManualSubstitution({ onSaved: close });
@@ -810,7 +812,7 @@ export function SubstitutionDialog({
 
           <form
             className="mt-4 space-y-4"
-            id="substitutionForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               if (manual) {
@@ -865,13 +867,11 @@ export function SubstitutionDialog({
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="substitution-comment">
-                {t('substitution.comment')}
-              </Label>
+              <Label htmlFor={commentId}>{t('substitution.comment')}</Label>
               <form.Field name="comment">
                 {(field) => (
                   <Textarea
-                    id="substitution-comment"
+                    id={commentId}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value || null)}
                     placeholder={t('substitution.commentPlaceholder')}
@@ -886,7 +886,7 @@ export function SubstitutionDialog({
         <DialogFooter className="border-t p-4">
           <Button
             disabled={!isValid || form.state.isSubmitting}
-            form="substitutionForm"
+            form={formId}
             type="submit"
           >
             <Save className="h-4 w-4" />

@@ -13,7 +13,7 @@ import { Input } from '@filcdev/ui/components/input';
 import { Label } from '@filcdev/ui/components/label';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save, Trash, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useKiosks } from '@/hooks/kiosks';
 import {
@@ -128,6 +128,7 @@ function AnnouncementImageField({
   upload,
 }: AnnouncementImageFieldProps) {
   const { t } = useTranslation();
+  const imageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pickedPreview, setPickedPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -166,7 +167,7 @@ function AnnouncementImageField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="announcement-image">{t('announcements.image')}</Label>
+      <Label htmlFor={imageId}>{t('announcements.image')}</Label>
       {previewUrl && (
         <img
           alt=""
@@ -179,7 +180,7 @@ function AnnouncementImageField({
       <input
         accept="image/png,image/jpeg,image/webp"
         className="w-full cursor-pointer rounded-lg border-2 border-muted-foreground/25 border-dashed p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1 file:font-medium file:text-secondary-foreground hover:border-muted-foreground/50"
-        id="announcement-image"
+        id={imageId}
         onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
         ref={inputRef}
         type="file"
@@ -243,6 +244,14 @@ export function AnnouncementsDialog({
   const { data: kiosks = [] } = useKiosks(open && canManageKiosks);
   // The navigator kiosk has no news surface, so only TV boxes can be picked.
   const tvKiosks = kiosks.filter((kiosk) => kiosk.kind === 'tv');
+
+  const formId = useId();
+  const contentId = useId();
+  const dateRangeId = useId();
+  const cohortEveryoneId = useId();
+  const highlightedId = useId();
+  const kioskOnlyId = useId();
+  const kioskEveryId = useId();
 
   const [showDateRange, setShowDateRange] = useState(() => hasDateRange(item));
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -343,7 +352,7 @@ export function AnnouncementsDialog({
 
           <form
             className="mt-4 space-y-4"
-            id="announcementForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
@@ -368,10 +377,12 @@ export function AnnouncementsDialog({
             <form.Field name="content">
               {(field) => (
                 <div className="space-y-2">
-                  <Label htmlFor="content">{t('announcements.content')}</Label>
+                  <Label htmlFor={contentId}>
+                    {t('announcements.content')}
+                  </Label>
                   <textarea
                     className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                    id="content"
+                    id={contentId}
                     onChange={(e) =>
                       field.handleChange([
                         { content: e.target.value, type: 'text' },
@@ -433,7 +444,7 @@ export function AnnouncementsDialog({
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={showDateRange}
-                id="setDateRange"
+                id={dateRangeId}
                 onCheckedChange={(checked) => {
                   setShowDateRange(Boolean(checked));
                   if (!checked) {
@@ -446,7 +457,7 @@ export function AnnouncementsDialog({
               />
               <label
                 className="cursor-pointer font-medium text-sm leading-none"
-                htmlFor="setDateRange"
+                htmlFor={dateRangeId}
               >
                 {t('announcements.setDateRange')}
               </label>
@@ -458,7 +469,7 @@ export function AnnouncementsDialog({
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={cohortIds.length === 0}
-                    id="cohort-everyone"
+                    id={cohortEveryoneId}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         form.setFieldValue('cohortIds', []);
@@ -467,7 +478,7 @@ export function AnnouncementsDialog({
                   />
                   <label
                     className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    htmlFor="cohort-everyone"
+                    htmlFor={cohortEveryoneId}
                   >
                     {t('announcements.everyone')}
                   </label>
@@ -502,14 +513,14 @@ export function AnnouncementsDialog({
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={field.state.value}
-                    id="highlighted"
+                    id={highlightedId}
                     onCheckedChange={(checked) =>
                       field.handleChange(checked === true)
                     }
                   />
                   <label
                     className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    htmlFor="highlighted"
+                    htmlFor={highlightedId}
                   >
                     {t('announcements.highlighted')}
                   </label>
@@ -522,14 +533,14 @@ export function AnnouncementsDialog({
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={field.state.value}
-                    id="kioskOnly"
+                    id={kioskOnlyId}
                     onCheckedChange={(checked) =>
                       field.handleChange(checked === true)
                     }
                   />
                   <label
                     className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    htmlFor="kioskOnly"
+                    htmlFor={kioskOnlyId}
                   >
                     {t('announcements.kioskOnly')}
                   </label>
@@ -544,7 +555,7 @@ export function AnnouncementsDialog({
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={kioskIds.length === 0}
-                      id="kiosk-every"
+                      id={kioskEveryId}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           form.setFieldValue('kioskIds', []);
@@ -553,7 +564,7 @@ export function AnnouncementsDialog({
                     />
                     <label
                       className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      htmlFor="kiosk-every"
+                      htmlFor={kioskEveryId}
                     >
                       {t('announcements.allKiosks')}
                     </label>
@@ -611,7 +622,7 @@ export function AnnouncementsDialog({
               createMutation.isPending ||
               updateMutation.isPending
             }
-            form="announcementForm"
+            form={formId}
             type="submit"
           >
             <Save className="h-4 w-4" />

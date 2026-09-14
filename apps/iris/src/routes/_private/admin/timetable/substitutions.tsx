@@ -28,7 +28,7 @@ import {
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
 import { SubstitutionExportButton } from '@/components/admin/substitution-export';
@@ -59,6 +59,7 @@ export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
 
 function SubstitutionsPage() {
   const { i18n, t } = useTranslation();
+  const showPastId = useId();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -209,12 +210,12 @@ function SubstitutionsPage() {
         <div className="flex items-center gap-2">
           <Checkbox
             checked={showPast}
-            id="show-past"
+            id={showPastId}
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
             className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor="show-past"
+            htmlFor={showPastId}
           >
             {t('substitution.showPast')}
           </label>

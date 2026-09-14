@@ -39,6 +39,55 @@ export function useTimetables() {
   });
 }
 
+type LatestValidTimetableData = NonNullable<
+  InferResponseType<typeof api.timetable.timetables.latestValid.$get>['data']
+>;
+type CohortsData = NonNullable<
+  InferResponseType<typeof api.cohort.index.$get>['data']
+>;
+
+/** Active timetable (when the user has no cohort) plus the cohort options. */
+export function useCohortSelector(userCohortId: string | null) {
+  const activeTimetableQuery = useQuery({
+    enabled: !userCohortId,
+    queryFn: async (): Promise<LatestValidTimetableData> => {
+      const res = await parseResponse(
+        api.timetable.timetables.latestValid.$get()
+      );
+      if (!res.success) {
+        throw new Error('Failed to load timetable');
+      }
+      return res.data as LatestValidTimetableData;
+    },
+    queryKey: queryKeys.timetables.latestValid(),
+  });
+
+  const timetableId = userCohortId ?? activeTimetableQuery.data?.id ?? null;
+
+  const cohortQuery = useQuery({
+    enabled: !!timetableId,
+    queryFn: async (): Promise<CohortsData> => {
+      if (!timetableId) {
+        throw new Error('Failed to load cohorts');
+      }
+      const res = await parseResponse(
+        userCohortId
+          ? api.cohort.index.$get()
+          : api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+              param: { timetableId },
+            })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load cohorts');
+      }
+      return res.data as CohortsData;
+    },
+    queryKey: queryKeys.timetable.cohorts(timetableId),
+  });
+
+  return { activeTimetableQuery, cohortQuery };
+}
+
 /** Preview of what deleting a timetable would remove. */
 export function useDeletePreview(timetableId: string | null | undefined) {
   return useQuery({

@@ -30,7 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BugReportDialog } from '@/components/bug-report-dialog';
 import { NotificationBell } from '@/components/notification-bell';
@@ -73,6 +73,7 @@ export function Navbar({
   const { data, isPending } = authClient.useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileNavId = useId();
 
   const canSeeAdminUi = useHasPermission(
     ADMIN_UI_PERMISSIONS,
@@ -87,7 +88,7 @@ export function Navbar({
             {children}
             {data && showLinks && (
               <Button
-                aria-controls="mobile-nav"
+                aria-controls={mobileNavId}
                 aria-expanded={mobileMenuOpen}
                 aria-label={
                   mobileMenuOpen
@@ -252,7 +253,7 @@ export function Navbar({
               ? 'grid-rows-[1fr] border-b'
               : 'grid-rows-[0fr] border-b-0'
           )}
-          id="mobile-nav"
+          id={mobileNavId}
         >
           <div className="overflow-hidden">
             {mobileMenuOpen && (

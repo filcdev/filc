@@ -4,7 +4,7 @@ import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Label } from '@filcdev/ui/components/label';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { SearchableDropdown } from '@/components/searchable-dropdown';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 import { searchClassrooms } from '@/utils/classroom-search';
@@ -43,6 +43,7 @@ export function NavigatePanel({
   startId,
 }: NavigatePanelProps) {
   const { t } = useKioskTranslations();
+  const barrierFreeId = useId();
   const [query, setQuery] = useState('');
 
   const results = searchClassrooms(graph, query, t);
@@ -133,10 +134,10 @@ export function NavigatePanel({
         <Checkbox
           checked={barrierFree}
           className="size-5"
-          id="barrier-free"
+          id={barrierFreeId}
           onCheckedChange={(checked) => setBarrierFree(checked)}
         />
-        <Label className="cursor-pointer" htmlFor="barrier-free">
+        <Label className="cursor-pointer" htmlFor={barrierFreeId}>
           {t('ui.navigate.barrier_free')}
         </Label>
       </div>

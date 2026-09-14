@@ -169,6 +169,22 @@ export const filterLessonsForGroupDisplay = (
   );
 };
 
+/** Parse a period's start/end times, defaulting the end to +45 minutes. */
+const parsePeriodRange = (
+  startTime: string | undefined | null,
+  endTime: string | undefined | null
+): { start: dayjs.Dayjs; end: dayjs.Dayjs; startTimeStr: string } => {
+  const startTimeStr = toHHMM(startTime);
+  const endTimeStr = toHHMM(endTime);
+  const start = dayjs(startTimeStr, 'HH:mm');
+  const end =
+    endTimeStr && endTimeStr !== '00:00'
+      ? dayjs(endTimeStr, 'HH:mm')
+      : start.add(45, 'minute');
+
+  return { end, start, startTimeStr };
+};
+
 /** Process a single lesson into the grid structure */
 const processLesson = (
   lesson: LessonItem,
@@ -192,15 +208,11 @@ const processLesson = (
   }
 
   // Parse start and end times from lesson period
-  const startTimeStr = toHHMM(lesson.period?.startTime);
-  const endTimeStr = toHHMM(lesson.period?.endTime);
+  const { end, start, startTimeStr } = parsePeriodRange(
+    lesson.period?.startTime,
+    lesson.period?.endTime
+  );
   const periodNumber = lesson.period?.period ?? 0;
-
-  const start = dayjs(startTimeStr, 'HH:mm');
-  const end =
-    endTimeStr && endTimeStr !== '00:00'
-      ? dayjs(endTimeStr, 'HH:mm')
-      : start.add(45, 'minute');
 
   // Store time slot with actual end time and real period number
   const existing = timeMap.get(startTimeStr);
@@ -295,49 +307,51 @@ export const filterLessonsForWeek = (
   });
 };
 
-/** Build view model from lessons array */
-export const buildViewModel = (
-  lessons: LessonItem[],
-  language: string | undefined,
-  canonicalPeriods?: PeriodItem[]
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: builds complete timetable grid with canonical periods, synthetic weekday columns, and lesson grouping
-): TimetableViewModel => {
-  // Collect unique days and time slots
-  const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
-  const timeMap = new Map<
-    string,
-    { start: dayjs.Dayjs; end: dayjs.Dayjs; period: number }
-  >();
-  const grid = new Map<string, { lessons: LessonItem[] }>();
+/** Time slot metadata keyed by the lesson's `HH:mm` start time. */
+type TimeSlotMap = Map<
+  string,
+  { start: dayjs.Dayjs; end: dayjs.Dayjs; period: number }
+>;
 
-  // Pre-populate timeMap with canonical period definitions (period >= 1) so that
-  // regular periods without lessons for the current selection still appear as
-  // empty rows. Period 0 ("nulladik óra") is intentionally excluded here — it
-  // is only shown when the selected entity actually has a lesson there.
-  if (canonicalPeriods?.length) {
-    for (const cp of canonicalPeriods) {
-      if (cp.period === 0) {
-        continue;
-      }
-      const startTimeStr = toHHMM(cp.startTime);
-      const endTimeStr = toHHMM(cp.endTime);
-      const start = dayjs(startTimeStr, 'HH:mm');
-      const end =
-        endTimeStr && endTimeStr !== '00:00'
-          ? dayjs(endTimeStr, 'HH:mm')
-          : start.add(45, 'minute');
-      // Only add if not already present - lessons will override via processLesson
-      if (!timeMap.has(startTimeStr)) {
-        timeMap.set(startTimeStr, { end, period: cp.period, start });
-      }
+/** Lessons keyed by `` `${dayKey}-${HH:mm}` `` grid cell. */
+type LessonGrid = Map<string, { lessons: LessonItem[] }>;
+
+/**
+ * Pre-populate the time slot map with canonical period definitions (period >= 1)
+ * so that regular periods without lessons for the current selection still appear
+ * as empty rows. Period 0 ("nulladik óra") is intentionally excluded here — it
+ * is only shown when the selected entity actually has a lesson there.
+ */
+const seedCanonicalTimeSlots = (
+  timeMap: TimeSlotMap,
+  canonicalPeriods?: PeriodItem[]
+): void => {
+  for (const cp of canonicalPeriods ?? []) {
+    if (cp.period === 0) {
+      continue;
+    }
+
+    const { end, start, startTimeStr } = parsePeriodRange(
+      cp.startTime,
+      cp.endTime
+    );
+
+    // Only add if not already present - lessons will override via processLesson
+    if (!timeMap.has(startTimeStr)) {
+      timeMap.set(startTimeStr, { end, period: cp.period, start });
     }
   }
+};
 
-  for (const lesson of lessons) {
-    processLesson(lesson, dayMap, timeMap, grid);
-  }
-
-  // Build day columns from lessons
+/**
+ * Build day columns from the lessons, then always show Mon-Fri: insert a
+ * synthetic column for any weekday that has no lessons, using the same 0-4
+ * scale so deduplication is reliable.
+ */
+const buildDayColumns = (
+  dayMap: Map<string, { sortOrder: number; shortName?: string }>,
+  language: string | undefined
+): DayColumn[] => {
   const days: DayColumn[] = Array.from(dayMap.entries()).map(
     ([name, dayMeta]) => ({
       key: name,
@@ -346,8 +360,6 @@ export const buildViewModel = (
     })
   );
 
-  // Always show Mon-Fri: insert a synthetic column for any weekday that has
-  // no lessons, using the same 0-4 scale so deduplication is reliable.
   const presentOrders = new Set(days.map((d) => d.sortOrder));
   for (const { dayName, dayShort, sortOrder } of WEEKDAY_STUBS) {
     if (!presentOrders.has(sortOrder)) {
@@ -364,9 +376,15 @@ export const buildViewModel = (
       a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, language)
   );
 
-  // Use the actual period number from the DB (not the array index) so the
-  // label is correct even when early periods have no lessons.
-  const timeSlots = Array.from(timeMap.entries())
+  return days;
+};
+
+/**
+ * Build the time slots, using the actual period number from the DB (not the
+ * array index) so the label is correct even when early periods have no lessons.
+ */
+const buildTimeSlots = (timeMap: TimeSlotMap): TimeSlot[] =>
+  Array.from(timeMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, times]) => ({
       end: times.end,
@@ -374,19 +392,28 @@ export const buildViewModel = (
       start: times.start,
     }));
 
-  // Cut off empty rows at the top and bottom: keep only the span of slots that
-  // actually hold a lesson on at least one day, instead of rendering the full
-  // canonical period range with empty rows before/after the last lesson.
+/**
+ * Cut off empty rows at the top and bottom: keep only the span of slots that
+ * actually hold a lesson on at least one day, instead of rendering the full
+ * canonical period range with empty rows before/after the last lesson.
+ */
+const trimEmptyRows = (
+  timeSlots: TimeSlot[],
+  days: DayColumn[],
+  grid: LessonGrid
+): TimeSlot[] => {
   const occupiedKeys = new Set<string>();
   for (const [key, cell] of grid) {
     if ((cell.lessons?.length ?? 0) > 0) {
       occupiedKeys.add(key);
     }
   }
+
   const isOccupied = (slot: TimeSlot): boolean => {
     const hhmm = slot.start.format('HH:mm');
     return days.some((day) => occupiedKeys.has(`${day.key}-${hhmm}`));
   };
+
   let first = 0;
   let last = timeSlots.length - 1;
   while (first <= last && !isOccupied(timeSlots[first] as TimeSlot)) {
@@ -395,10 +422,34 @@ export const buildViewModel = (
   while (last >= first && !isOccupied(timeSlots[last] as TimeSlot)) {
     last -= 1;
   }
-  const trimmedTimeSlots =
-    first <= last ? timeSlots.slice(first, last + 1) : timeSlots;
 
-  return { days, grid, timeSlots: trimmedTimeSlots };
+  return first <= last ? timeSlots.slice(first, last + 1) : timeSlots;
+};
+
+/** Build view model from lessons array */
+export const buildViewModel = (
+  lessons: LessonItem[],
+  language: string | undefined,
+  canonicalPeriods?: PeriodItem[]
+): TimetableViewModel => {
+  // Collect unique days and time slots
+  const dayMap = new Map<string, { sortOrder: number; shortName?: string }>();
+  const timeMap: TimeSlotMap = new Map();
+  const grid: LessonGrid = new Map();
+
+  seedCanonicalTimeSlots(timeMap, canonicalPeriods);
+
+  for (const lesson of lessons) {
+    processLesson(lesson, dayMap, timeMap, grid);
+  }
+
+  const days = buildDayColumns(dayMap, language);
+
+  return {
+    days,
+    grid,
+    timeSlots: trimEmptyRows(buildTimeSlots(timeMap), days, grid),
+  };
 };
 
 /** Get filter label for i18n */

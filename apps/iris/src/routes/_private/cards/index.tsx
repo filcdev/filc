@@ -17,9 +17,7 @@ import {
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { cn } from '@filcdev/ui/lib/utils';
-import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
 import {
   ArrowLeft,
   CreditCard,
@@ -32,14 +30,12 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { useApiMutation, useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type SelfCardsResponse = InferResponseType<typeof api.doorlock.self.cards.$get>;
-type SelfCardsData = NonNullable<SelfCardsResponse['data']>;
-type SelfCard = NonNullable<SelfCardsResponse['data']>['cards'][number];
+import {
+  type SelfCard,
+  useActivateSelfCard,
+  useFreezeSelfCard,
+  useSelfCards,
+} from '@/hooks/doorlock-admin';
 
 export const Route = createFileRoute('/_private/cards/')({
   component: CardsPage,
@@ -47,57 +43,19 @@ export const Route = createFileRoute('/_private/cards/')({
 
 function CardsPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [activateCard, setActivateCard] = useState<SelfCard | null>(null);
 
-  const {
-    data: cardsResponse,
-    isLoading,
-    isError,
-  } = useApiQuery<SelfCardsData>(() => api.doorlock.self.cards.$get(), {
-    queryKey: queryKeys.doorlock.selfCards(),
+  const cardsQuery = useSelfCards();
+  const freezeMutation = useFreezeSelfCard({
+    onSaved: () => setActivateCard(null),
+  });
+  const activateMutation = useActivateSelfCard({
+    onSaved: () => setActivateCard(null),
   });
 
-  const cards = cardsResponse?.cards;
+  const cards = cardsQuery.data?.cards;
 
-  const freezeMutation = useApiMutation({
-    mutationFn: ({ id, frozen }: { id: string; frozen: boolean }) =>
-      api.doorlock.self.cards[':id'].frozen.$put({
-        json: { frozen },
-        param: { id },
-      }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlock.selfCards.freezeError'));
-    },
-    onSuccess: (_res, variables) => {
-      toast.success(
-        variables.frozen
-          ? t('doorlock.selfCards.freezeSuccess')
-          : t('doorlock.selfCards.unfreezeSuccess')
-      );
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.doorlock.selfCards(),
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
-    },
-  });
-
-  const activateMutation = useApiMutation({
-    mutationFn: ({ cardId, deviceId }: { cardId: string; deviceId: string }) =>
-      api.doorlock.self.cards[':id'].activate.$post({
-        json: { deviceId },
-        param: { id: cardId },
-      }),
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlock.selfCards.activateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('doorlock.selfCards.activateSuccess'));
-      setActivateCard(null);
-    },
-  });
-
-  if (isLoading) {
+  if (cardsQuery.isLoading) {
     return (
       <div className="mx-auto max-w-4xl space-y-6 p-6">
         <Skeleton className="h-8 w-48" />
@@ -110,7 +68,7 @@ function CardsPage() {
     );
   }
 
-  if (isError || !cards) {
+  if (cardsQuery.isError || !cards) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
         <ShieldOff className="size-10" />

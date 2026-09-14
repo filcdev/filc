@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { hasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 
 type MenuIcon = typeof List;
@@ -60,6 +61,7 @@ export function AdminSidebar() {
   const { data: session } = authClient.useSession();
   const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
+  const userPermissions = session?.user?.permissions;
 
   const handleNavigate = (url: string) => {
     navigate({ to: url });
@@ -271,19 +273,15 @@ export function AdminSidebar() {
     () =>
       categories
         .map((category) => {
-          const visibleItems = category.items.filter((item) => {
-            if (session?.user?.permissions.includes('*')) {
-              return true;
-            }
-            if (!item.permission) {
-              return true;
-            }
-            return session?.user?.permissions?.includes(item.permission);
-          });
+          const visibleItems = category.items.filter(
+            (item) =>
+              !item.permission ||
+              hasPermission(item.permission, userPermissions)
+          );
           return { ...category, items: visibleItems };
         })
         .filter((category) => category.items.length > 0),
-    [categories, session?.user?.permissions]
+    [categories, userPermissions]
   );
 
   return (
