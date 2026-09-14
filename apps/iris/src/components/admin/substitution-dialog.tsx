@@ -79,18 +79,6 @@ type Subject = NonNullable<SubjectApiResponse['data']>[number];
 
 type Period = NonNullable<EnrichedLesson['period']>;
 
-// Build unique period options from the available lessons of all teachers.
-function dedupePeriods(lessons: TeacherLesson[]): Period[] {
-  const seen = new Map<string, Period>();
-  for (const lesson of lessons) {
-    const period = lesson.period;
-    if (period?.id && !seen.has(period.id)) {
-      seen.set(period.id, period);
-    }
-  }
-  return [...seen.values()];
-}
-
 type SubstitutionDialogProps = BaseDialogProps & {
   item?: SubstitutionItem | null;
   manual?: boolean;
@@ -623,6 +611,20 @@ export function SubstitutionDialog({
     queryKey: queryKeys.cohorts(),
   });
 
+  const periodsQuery = useQuery({
+    enabled: manual,
+    queryFn: async (): Promise<Period[]> => {
+      const res = await parseResponse(
+        api.timetable.periods.getAll.$get({ query: {} })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load periods');
+      }
+      return res.data as Period[];
+    },
+    queryKey: queryKeys.timetable.periods(null),
+  });
+
   const substituteCandidatesQuery = useQuery({
     enabled:
       !manual && !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
@@ -782,10 +784,7 @@ export function SubstitutionDialog({
               <ManualSubstitutionFields
                 cohorts={cohortsQuery.data ?? []}
                 form={form}
-                periods={dedupePeriods(
-                  (substituteCandidatesQuery.data?.availableLessons ??
-                    []) as TeacherLesson[]
-                )}
+                periods={periodsQuery.data ?? []}
                 subjects={subjectsQuery.data ?? []}
                 teachers={teachers}
               />

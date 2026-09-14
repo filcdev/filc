@@ -84,6 +84,95 @@ const cohortSubstitutionsResponseSchema = z.object({
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+function areLessonsCompatible(
+  aId: string,
+  bId: string,
+  lessonCohorts: Map<string, Set<string>>
+): boolean {
+  if (aId === bId) {
+    return true;
+  }
+  const aCohorts = lessonCohorts.get(aId);
+  const bCohorts = lessonCohorts.get(bId);
+  if (!(aCohorts && bCohorts)) {
+    return false;
+  }
+  for (const cohortId of aCohorts) {
+    if (bCohorts.has(cohortId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// A substituter may cover multiple lessons in the same period only when those
+// lessons are the same lesson or share a cohort. Check the incoming lessons
+// against each other before any of the existing-substitution early returns.
+async function assertIncomingLessonsCompatible(
+  dbOrTx: TxOrDb,
+  incomingLessons: { id: string; periodId: string | null }[]
+): Promise<void> {
+  if (incomingLessons.length < 2) {
+    return;
+  }
+
+  const cohortLinks = await dbOrTx
+    .select({
+      cohortId: lessonCohortMTM.cohortId,
+      lessonId: lessonCohortMTM.lessonId,
+    })
+    .from(lessonCohortMTM)
+    .where(
+      inArray(
+        lessonCohortMTM.lessonId,
+        incomingLessons.map((l) => l.id)
+      )
+    );
+
+  const lessonCohorts = new Map<string, Set<string>>();
+  for (const link of cohortLinks) {
+    const cohorts = lessonCohorts.get(link.lessonId) ?? new Set<string>();
+    cohorts.add(link.cohortId);
+    lessonCohorts.set(link.lessonId, cohorts);
+  }
+
+  const lessonsByPeriod = new Map<string, string[]>();
+  for (const current of incomingLessons) {
+    if (current.periodId == null) {
+      continue;
+    }
+    const ids = lessonsByPeriod.get(current.periodId) ?? [];
+    ids.push(current.id);
+    lessonsByPeriod.set(current.periodId, ids);
+  }
+
+  assertPeriodsCompatible(lessonsByPeriod, lessonCohorts);
+}
+
+// Throw 409 CONFLICT when any two lessons sharing a period are unrelated.
+function assertPeriodsCompatible(
+  lessonsByPeriod: Map<string, string[]>,
+  lessonCohorts: Map<string, Set<string>>
+): void {
+  for (const ids of lessonsByPeriod.values()) {
+    for (let i = 0; i < ids.length; i += 1) {
+      for (let j = i + 1; j < ids.length; j += 1) {
+        const a = ids[i];
+        const b = ids[j];
+        if (a === undefined || b === undefined) {
+          continue;
+        }
+        if (!areLessonsCompatible(a, b, lessonCohorts)) {
+          throw new HTTPException(StatusCodes.CONFLICT, {
+            message:
+              'Teacher already has a substitution in the same period on this date',
+          });
+        }
+      }
+    }
+  }
+}
+
 // Check if a teacher already has a substitution in any of the same periods
 // on the same date. Throws 409 CONFLICT if an overlap is detected.
 async function checkTeacherSubstitutionConflict(
@@ -114,6 +203,10 @@ async function checkTeacherSubstitutionConflict(
       .map((l) => l.periodId)
       .filter((id): id is string => id != null)
   );
+
+  // Reject assigning the substituter to unrelated incoming lessons in the same
+  // period, even when there is no existing substitution to compare against.
+  await assertIncomingLessonsCompatible(dbOrTx, incomingLessons);
 
   // Find existing substitutions for the same date and substituter
   const conditions = [
@@ -193,26 +286,6 @@ async function checkTeacherSubstitutionConflict(
     lessonCohorts.get(link.lessonId)?.add(link.cohortId);
   }
 
-  const isCompatiblePair = (
-    incomingId: string,
-    existingId: string
-  ): boolean => {
-    if (incomingId === existingId) {
-      return true;
-    }
-    const incomingCohorts = lessonCohorts.get(incomingId);
-    const existingCohorts = lessonCohorts.get(existingId);
-    if (!(incomingCohorts && existingCohorts)) {
-      return false;
-    }
-    for (const cohortId of incomingCohorts) {
-      if (existingCohorts.has(cohortId)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
   for (const periodId of overlappingPeriodIds) {
     const incomingInPeriod = incomingLessons.filter(
       (l) => l.periodId === periodId
@@ -227,7 +300,7 @@ async function checkTeacherSubstitutionConflict(
     // is a real conflict.
     const allPairsCompatible = incomingInPeriod.every((incoming) =>
       existingInPeriod.every((existing) =>
-        isCompatiblePair(incoming.id, existing.id)
+        areLessonsCompatible(incoming.id, existing.id, lessonCohorts)
       )
     );
 
@@ -253,7 +326,8 @@ async function validateUpdateTeacherConflict(
   },
   existing: { date: Date; substituter: string | null }
 ): Promise<void> {
-  const effectiveSubstituter = body.substituter ?? existing.substituter;
+  const effectiveSubstituter =
+    'substituter' in body ? body.substituter : existing.substituter;
   if (effectiveSubstituter == null) {
     return;
   }
