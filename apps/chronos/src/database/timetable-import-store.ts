@@ -312,7 +312,13 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   async insertClassroom(tx, row: NewClassroom): Promise<string | null> {
     const [inserted] = await tx
       .insert(classroomTable)
-      .values(row)
+      .values({
+        building_id: row.buildingId,
+        capacity: row.capacity,
+        id: row.id,
+        name: row.name,
+        short: row.short,
+      })
       .returning({ insertedId: classroomTable.id });
     return inserted?.insertedId ?? null;
   },

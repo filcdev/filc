@@ -1,18 +1,22 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { useForm, useStore } from '@tanstack/react-form';
+import { useTranslation } from 'react-i18next';
 import {
   type User,
   useCohorts,

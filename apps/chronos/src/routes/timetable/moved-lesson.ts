@@ -6,6 +6,7 @@ import {
 } from '@filcdev/api/domains/timetable/moved-lesson';
 import { zValidator } from '@hono/zod-validator';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -13,6 +14,7 @@ import z from 'zod';
 import { db } from '#database';
 import {
   classroom,
+  cohort,
   dayDefinition,
   lesson,
   lessonCohortMTM,
@@ -30,6 +32,9 @@ import {
 import { filcExt } from '#utils/openapi';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
+
+/** The linked lessons' own rooms, which `classroom` above does not cover. */
+const lessonRoom = alias(classroom, 'lesson_room');
 
 const ensurePeriodExists = async (periodId: string) => {
   const [existingPeriod] = await db
@@ -168,15 +173,25 @@ const validateMovedLessonReferences = async (options: {
   }
 };
 
+const movedLessonWithRelationsSchema = z.object({
+  classroom: createSelectSchema(classroom).nullable(),
+  dayDefinition: createSelectSchema(dayDefinition).nullable(),
+  lessonNames: z.array(z.string()),
+  lessons: z.array(z.string()),
+  movedLesson: createSelectSchema(movedLesson),
+  period: createSelectSchema(period).nullable(),
+});
+
 const getAllResponseSchema = z.object({
+  data: z.array(movedLessonWithRelationsSchema),
+  success: z.boolean(),
+});
+
+const getAllMovedLessonsResponseSchema = z.object({
   data: z.array(
-    z.object({
-      classroom: createSelectSchema(classroom).nullable(),
-      dayDefinition: createSelectSchema(dayDefinition).nullable(),
-      lessonNames: z.array(z.string()),
-      lessons: z.array(z.string()),
-      movedLesson: createSelectSchema(movedLesson),
-      period: createSelectSchema(period).nullable(),
+    movedLessonWithRelationsSchema.extend({
+      cohortNames: z.array(z.string()),
+      fromRoomNames: z.array(z.string()),
     })
   ),
   success: z.boolean(),
@@ -193,7 +208,7 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       200: {
         content: {
           'application/json': {
-            schema: resolver(getAllResponseSchema),
+            schema: resolver(getAllMovedLessonsResponseSchema),
           },
         },
         description: 'Successful Response',
@@ -202,16 +217,26 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   async (c) => {
+    // The cohort and room joins multiply rows per linked lesson, so the
+    // lesson id/name aggregates are DISTINCT to keep one entry per lesson.
     const movedLessons = await db
       .select({
         classroom,
+        cohortNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${cohort.name}) FILTER (WHERE ${cohort.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('cohortNames'),
         dayDefinition,
+        fromRoomNames: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${lessonRoom.name}) FILTER (WHERE ${lessonRoom.name} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('fromRoomNames'),
         lessonNames: sql<string[]>`COALESCE(
-          ARRAY_AGG(${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
+          ARRAY_AGG(DISTINCT ${subject.name}) FILTER (WHERE ${subject.name} IS NOT NULL),
           ARRAY[]::text[]
         )`.as('lessonNames'),
         lessons: sql<string[]>`COALESCE(
-          ARRAY_AGG(${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
         )`.as('lessons'),
         movedLesson,
@@ -226,6 +251,9 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
+      .leftJoin(lessonCohortMTM, eq(lessonCohortMTM.lessonId, lesson.id))
+      .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+      .leftJoin(lessonRoom, sql`${lessonRoom.id} = ANY(${lesson.classroomIds})`)
       .leftJoin(subject, eq(lesson.subjectId, subject.id))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 

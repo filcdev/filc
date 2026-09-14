@@ -58,7 +58,11 @@
     "skip": "Skip",
     "complete": "Complete",
     "delete": "Delete",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "edit": "Edit",
+    "no": "No",
+    "save": "Save",
+    "yes": "Yes"
   },
   "login": {
     "byContinuing": "By continuing, you agree to our"
@@ -148,7 +152,9 @@
     "users": "Users",
     "roles": "Roles",
     "bugReports": "Bug reports",
-    "developer": "Developer"
+    "developer": "Developer",
+    "kiosks": "Kiosks",
+    "navigator": "Navigator"
   },
   "timetable": {
     "selectClass": "Select class",
@@ -412,7 +418,24 @@
     "date": "Date",
     "setDateRange": "Set date range",
     "showPast": "Show past news items",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "highlighted": "Highlighted on kiosk",
+    "kioskOnly": "Kiosk only (hidden on the web)",
+    "kiosks": "Kiosks",
+    "allKiosks": "All kiosks",
+    "allKiosksHint": "The takeover shows on every TV kiosk.",
+    "kiosksHint": "The takeover shows only on the selected kiosks.",
+    "kiosk": "Kiosk",
+    "notOnKiosk": "—",
+    "image": "Image",
+    "imageHint": "JPEG, PNG or WebP, max 8 MiB",
+    "imageOnSave": "The image is uploaded when you save.",
+    "imageUpload": "Upload",
+    "imageRemove": "Remove image",
+    "imageUploadSuccess": "Image uploaded",
+    "imageUploadError": "Failed to upload the image",
+    "imageRemoveSuccess": "Image removed",
+    "imageRemoveError": "Failed to remove the image"
   },
   "systemMessages": {
     "title": "System Messages",
@@ -740,5 +763,147 @@
     "close": "Close",
     "anonymous": "Anonymous",
     "listDescription": "Review bug reports submitted by users."
+  },
+  "ui": {
+    "common": {
+      "delete": "Delete",
+      "less": "Less",
+      "more": "More",
+      "no_data": "No data",
+      "unknown": "Unknown"
+    }
+  },
+  "navigator": {
+    "overview": {
+      "title": "Navigator",
+      "description": "Campus editor and overview"
+    },
+    "refresh": "Refresh",
+    "deleteConfirmTitle": "Delete entity",
+    "deleteConfirmDescription": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+    "createSuccess": "Created successfully",
+    "createError": "Failed to create entity",
+    "updateSuccess": "Saved successfully",
+    "updateError": "Failed to update entity",
+    "deleteSuccess": "Deleted successfully",
+    "deleteError": "Failed to delete entity",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "short": "Short code",
+      "x": "X",
+      "y": "Y",
+      "building": "Building",
+      "type": "Type",
+      "storey": "Storey",
+      "capacity": "Capacity",
+      "rotation": "Rotation (°)",
+      "sizeX": "Size X (m)",
+      "sizeY": "Size Y (m)",
+      "sizeZ": "Size Z (m)",
+      "minStorey": "Min storey",
+      "maxStorey": "Max storey",
+      "width": "Width (m)",
+      "x1": "Start X",
+      "y1": "Start Y",
+      "x2": "End X",
+      "y2": "End Y",
+      "barrierFree": "Barrier free",
+      "isOutdoor": "Outdoor",
+      "colorhex": "Colour"
+    },
+    "notPlaced": "Not placed on the map",
+    "buildings": {
+      "title": "Buildings",
+      "description": "Campus buildings",
+      "add": "New building"
+    },
+    "classroomTypes": {
+      "title": "Classroom types",
+      "description": "Room categories and their colours",
+      "add": "New type",
+      "editTitle": "Edit classroom type",
+      "createTitle": "New classroom type",
+      "colorError": "Colour must be a hex value like #1a2b3c"
+    },
+    "classrooms": {
+      "title": "Classrooms",
+      "description": "Rooms with their position, size and type",
+      "add": "New classroom"
+    },
+    "corridors": {
+      "title": "Corridors",
+      "description": "Corridor segments on each storey",
+      "add": "New corridor"
+    },
+    "lifts": {
+      "title": "Lifts",
+      "description": "Lift shafts connecting storeys",
+      "add": "New lift"
+    },
+    "stairs": {
+      "title": "Stairs",
+      "description": "Staircases connecting storeys",
+      "add": "New stair"
+    },
+    "translations": {
+      "title": "Translations",
+      "description": "Campus codenames per language",
+      "add": "New codename",
+      "key": "Codename",
+      "editTitle": "Edit translation",
+      "createTitle": "New translation",
+      "searchPlaceholder": "Search codenames...",
+      "saveSuccess": "Translations saved",
+      "saveError": "Failed to save translations",
+      "deleteSuccess": "Translation deleted",
+      "deleteError": "Failed to delete translation"
+    },
+    "preview": {
+      "title": "Campus preview",
+      "description": "Read-only view of the whole campus"
+    }
+  },
+  "kiosk": {
+    "title": "Kiosks",
+    "description": "Enrolled kiosk boxes and their configuration",
+    "create": "New kiosk",
+    "editTitle": "Edit kiosk",
+    "createTitle": "New kiosk",
+    "never": "Never",
+    "deleteConfirmTitle": "Delete kiosk",
+    "deleteConfirmDescription": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+    "configError": "The configuration is invalid",
+    "addGroup": "Add group",
+    "addStop": "Add stop",
+    "removeGroup": "Remove group",
+    "removeStop": "Remove stop",
+    "kindTv": "TV",
+    "kindNavigator": "Navigator",
+    "createSuccess": "Kiosk created",
+    "createError": "Failed to create kiosk",
+    "updateSuccess": "Kiosk updated",
+    "updateError": "Failed to update kiosk",
+    "deleteSuccess": "Kiosk deleted",
+    "deleteError": "Failed to delete kiosk",
+    "fields": {
+      "name": "Name",
+      "machineId": "Machine ID",
+      "kind": "Kind",
+      "enabled": "Enabled",
+      "groupLabel": "Group label",
+      "stopId": "Stop ID",
+      "routeFilter": "Route filter",
+      "idleResetMs": "Idle reset (ms)",
+      "highlightedNews": "Highlighted news",
+      "newsImages": "News images",
+      "newsSlideSeconds": "News slide (s)",
+      "newsTickerSeconds": "Ticker between news (s)",
+      "building": "Start building",
+      "storey": "Storey",
+      "x": "X",
+      "y": "Y",
+      "lastSeen": "Last seen"
+    }
   }
 }

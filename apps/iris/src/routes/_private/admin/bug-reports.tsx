@@ -1,4 +1,35 @@
 import { permissions } from '@filcdev/api/permissions';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import { RefreshCw } from 'lucide-react';
 import { useDeferredValue, useMemo, useState } from 'react';
@@ -7,29 +38,6 @@ import {
   DateRangePicker,
   type DateRangeValue,
 } from '@/components/date-range-picker';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { SortIcon } from '@/components/util/sort-icon';
 import {
   type BugReportItem,

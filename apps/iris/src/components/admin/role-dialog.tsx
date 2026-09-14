@@ -1,9 +1,5 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { CheckIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Command,
   CommandEmpty,
@@ -11,23 +7,27 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from '@filcdev/ui/components/command';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import { cn } from '@filcdev/ui/lib/utils';
+import { useForm, useStore } from '@tanstack/react-form';
+import { CheckIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type Role,
   useCreateRole,
   usePermissions,
   useUpdateRole,
 } from '@/hooks/admin-users';
-import { cn } from '@/utils';
 import type { BaseDialogProps } from './admin.types';
 
 type RoleDialogProps = BaseDialogProps & {

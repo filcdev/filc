@@ -1,11 +1,10 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
-import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
 import {
   Command,
   CommandEmpty,
@@ -13,22 +12,28 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/command';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import Stepper, { Step } from '@/components/ui/stepper';
+} from '@filcdev/ui/components/popover';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import Stepper, { Step } from '@filcdev/ui/components/stepper';
+import { cn } from '@filcdev/ui/lib/utils';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import type { InferResponseType } from 'hono/client';
+import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
-import { cn } from '@/utils';
 import { useApiQuery } from '@/utils/api';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
@@ -200,6 +205,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Stepper
         backButtonText={t('common.back')}
+        completeButtonText={t('common.complete')}
         nextButtonLoading={isSubmitting}
         nextButtonText={getNextButtonText()}
         onFinalStepCompleted={handleFinalStepCompleted}

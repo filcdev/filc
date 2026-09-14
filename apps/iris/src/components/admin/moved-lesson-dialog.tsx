@@ -1,21 +1,21 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import dayjs from 'dayjs';
-import type { InferRequestType } from 'hono/client';
-import { Save } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
-import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { Combobox } from '@filcdev/ui/components/combobox';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/dialog';
+import { Label } from '@filcdev/ui/components/label';
+import { useForm, useStore } from '@tanstack/react-form';
+import dayjs from 'dayjs';
+import type { InferRequestType } from 'hono/client';
+import { Save } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type Classroom,
   type Cohort,
@@ -30,6 +30,7 @@ import { useApiQuery } from '@/utils/api';
 import {
   formatLocalizedDate,
   getDayOrder,
+  getIntlLocale,
   getLocalizedWeekdayName,
   isMatchingWeekday,
 } from '@/utils/date-locale';
@@ -431,6 +432,7 @@ export function MovedLessonDialog({
                     ? formDate
                     : new Date(String(formDate))
                 }
+                locale={getIntlLocale(i18n.language)}
                 onDateChange={(d) => form.setFieldValue('date', d ?? formDate)}
                 placeholder={t('movedLesson.datePlaceholder')}
               />

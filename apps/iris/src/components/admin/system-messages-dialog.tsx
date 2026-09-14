@@ -1,19 +1,19 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { Save } from 'lucide-react';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
+import { useForm, useStore } from '@tanstack/react-form';
+import { Save } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type SystemMessageItem,
   type SystemMessagePayload,
@@ -21,6 +21,7 @@ import {
   useCreateSystemMessage,
   useUpdateSystemMessage,
 } from '@/hooks/news';
+import { getIntlLocale } from '@/utils/date-locale';
 import type { BaseDialogProps } from './admin.types';
 
 type SystemMessagesDialogProps = BaseDialogProps & {
@@ -80,7 +81,7 @@ export function SystemMessagesDialog({
   onOpenChange,
   open,
 }: SystemMessagesDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
   const createMutation = useCreateSystemMessage({ onSaved: close });
   const updateMutation = useUpdateSystemMessage({ onSaved: close });
@@ -183,6 +184,7 @@ export function SystemMessagesDialog({
                   </Label>
                   <DatePicker
                     date={field.state.value}
+                    locale={getIntlLocale(i18n.language)}
                     onDateChange={(date) =>
                       field.handleChange(startOfDay(date ?? new Date()))
                     }
@@ -199,6 +201,7 @@ export function SystemMessagesDialog({
                   </Label>
                   <DatePicker
                     date={field.state.value}
+                    locale={getIntlLocale(i18n.language)}
                     onDateChange={(date) =>
                       field.handleChange(endOfDay(date ?? new Date()))
                     }

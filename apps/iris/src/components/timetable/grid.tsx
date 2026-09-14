@@ -1,6 +1,6 @@
+import { cn } from '@filcdev/ui/lib/utils';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/utils';
 import {
   filterLessonsForGroupDisplay,
   type GroupDisplay,

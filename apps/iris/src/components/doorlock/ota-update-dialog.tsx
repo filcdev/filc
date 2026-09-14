@@ -1,6 +1,4 @@
-import { Download, Save } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +6,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
+import { Download, Save } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 import { useUpdateDeviceFirmware } from '@/hooks/doorlock-admin';
 
 type OtaUpdateDialogProps = {

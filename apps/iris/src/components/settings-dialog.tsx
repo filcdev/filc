@@ -1,3 +1,26 @@
+import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
@@ -5,25 +28,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyGroupsSettingsCard } from '@/components/timetable/my-groups-card';
 import type { CohortItem } from '@/components/timetable/types';
-import { Alert, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,

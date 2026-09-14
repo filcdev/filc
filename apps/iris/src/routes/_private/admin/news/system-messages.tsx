@@ -1,11 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { createFileRoute } from '@tanstack/react-router';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { NewsItemDialog } from '@/components/admin/news-item-dialog';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
 import {
   Table,
   TableBody,
@@ -22,7 +16,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { NewsItemDialog } from '@/components/admin/news-item-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';

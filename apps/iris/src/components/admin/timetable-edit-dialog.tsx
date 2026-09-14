@@ -1,21 +1,22 @@
-import { Save } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@filcdev/ui/components/button';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
+import { Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type TimetableRow,
   useUpdateTimetable,
 } from '@/hooks/timetables-admin';
+import { getIntlLocale } from '@/utils/date-locale';
 import type { BaseDialogProps } from './admin.types';
 
 type TimetableEditDialogProps = BaseDialogProps & {
@@ -27,7 +28,7 @@ export function TimetableEditDialog({
   onOpenChange,
   open,
 }: TimetableEditDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const [name, setName] = useState(item?.name ?? '');
   const [validFrom, setValidFrom] = useState<Date | undefined>(
@@ -87,6 +88,7 @@ export function TimetableEditDialog({
             <Label>{t('timetable.validFromLabel')}</Label>
             <DatePicker
               date={validFrom}
+              locale={getIntlLocale(i18n.language)}
               onDateChange={setValidFrom}
               placeholder={t('timetable.validFromPlaceholder')}
             />
@@ -95,6 +97,7 @@ export function TimetableEditDialog({
             <Label>{t('timetable.validToLabel')}</Label>
             <DatePicker
               date={validTo}
+              locale={getIntlLocale(i18n.language)}
               onDateChange={setValidTo}
               placeholder={t('timetable.validToPlaceholder')}
             />

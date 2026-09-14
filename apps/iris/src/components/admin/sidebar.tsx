@@ -1,24 +1,4 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { Link, useNavigate } from '@tanstack/react-router';
-import {
-  ArrowRightLeft,
-  Bell,
-  Bug,
-  DoorOpen,
-  FlaskConical,
-  GraduationCap,
-  IdCard,
-  LayoutDashboard,
-  List,
-  Microchip,
-  RefreshCw,
-  Shield,
-  UserRound,
-  Users,
-} from 'lucide-react';
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Sidebar,
   SidebarContent,
@@ -31,7 +11,34 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar';
+} from '@filcdev/ui/components/sidebar';
+import { Link, useNavigate } from '@tanstack/react-router';
+import {
+  ArrowRightLeft,
+  ArrowUpDown,
+  Bell,
+  Bug,
+  Building2,
+  DoorOpen,
+  Eye,
+  FlaskConical,
+  GraduationCap,
+  IdCard,
+  Languages,
+  Layers,
+  LayoutDashboard,
+  List,
+  Microchip,
+  MonitorSmartphone,
+  Palette,
+  RefreshCw,
+  Route,
+  Shield,
+  UserRound,
+  Users,
+} from 'lucide-react';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authClient } from '@/utils/authentication';
 
 type MenuIcon = typeof List;
@@ -170,6 +177,76 @@ export function AdminSidebar() {
           },
         ],
         label: t('admin.management'),
+      },
+      {
+        items: [
+          {
+            icon: LayoutDashboard,
+            permission: permissions.navigatorManage,
+            title: t('navigator.overview.title'),
+            url: '/admin/navigator',
+          },
+          {
+            icon: Building2,
+            permission: permissions.navigatorManage,
+            title: t('navigator.buildings.title'),
+            url: '/admin/navigator/buildings',
+          },
+          {
+            icon: Palette,
+            permission: permissions.navigatorManage,
+            title: t('navigator.classroomTypes.title'),
+            url: '/admin/navigator/classroom-types',
+          },
+          {
+            icon: DoorOpen,
+            permission: permissions.navigatorManage,
+            title: t('navigator.classrooms.title'),
+            url: '/admin/navigator/classrooms',
+          },
+          {
+            icon: Route,
+            permission: permissions.navigatorManage,
+            title: t('navigator.corridors.title'),
+            url: '/admin/navigator/corridors',
+          },
+          {
+            icon: ArrowUpDown,
+            permission: permissions.navigatorManage,
+            title: t('navigator.lifts.title'),
+            url: '/admin/navigator/lifts',
+          },
+          {
+            icon: Layers,
+            permission: permissions.navigatorManage,
+            title: t('navigator.stairs.title'),
+            url: '/admin/navigator/stairs',
+          },
+          {
+            icon: Languages,
+            permission: permissions.navigatorManage,
+            title: t('navigator.translations.title'),
+            url: '/admin/navigator/translations',
+          },
+          {
+            icon: Eye,
+            permission: permissions.navigatorManage,
+            title: t('navigator.preview.title'),
+            url: '/admin/navigator/preview',
+          },
+        ],
+        label: t('admin.navigator'),
+      },
+      {
+        items: [
+          {
+            icon: MonitorSmartphone,
+            permission: permissions.kiosksManage,
+            title: t('kiosk.title'),
+            url: '/admin/kiosks',
+          },
+        ],
+        label: t('admin.kiosks'),
       },
       ...(import.meta.env.MODE === 'development'
         ? [

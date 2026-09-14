@@ -1,16 +1,16 @@
-import { Loader2Icon } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/dialog';
+import { Label } from '@filcdev/ui/components/label';
+import { Loader2Icon } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   open: boolean;

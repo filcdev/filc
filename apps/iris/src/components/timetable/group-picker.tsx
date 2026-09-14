@@ -1,5 +1,9 @@
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
 import { useTranslation } from 'react-i18next';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { GroupItem } from '@/hooks/timetable-groups';
 import { useSelectGroup } from '@/hooks/timetable-groups';
 

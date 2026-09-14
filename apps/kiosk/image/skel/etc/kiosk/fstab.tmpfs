@@ -1,0 +1,7 @@
+# Templates: appended to the generated /etc/fstab by setup.sh (the generated
+# root line stays, with ro,noatime). Everything a running box writes lives on
+# tmpfs, so a power cut can only lose logs and the browser profile.
+tmpfs	/tmp		tmpfs	size=256M,mode=1777			0 0
+tmpfs	/var/log	tmpfs	size=32M				0 0
+tmpfs	/var/tmp	tmpfs	size=32M				0 0
+tmpfs	/home/kiosk	tmpfs	size=32M,mode=0700,uid=1000,gid=1000	0 0

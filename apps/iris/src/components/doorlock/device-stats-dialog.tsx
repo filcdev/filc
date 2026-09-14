@@ -1,3 +1,25 @@
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@filcdev/ui/components/chart';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import { ScrollArea } from '@filcdev/ui/components/scroll-area';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@filcdev/ui/components/table';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import {
@@ -9,28 +31,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useDoorlockDeviceStats } from '@/hooks/doorlock-admin';
 
 type DeviceStatsDialogProps = {

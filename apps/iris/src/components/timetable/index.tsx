@@ -1,3 +1,5 @@
+import { Empty } from '@filcdev/ui/components/empty';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { pdf } from '@react-pdf/renderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -26,8 +28,6 @@ import type {
   TimetableItem,
   TimetableViewModel,
 } from '@/components/timetable/types';
-import { Empty } from '@/components/ui/empty';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useTimetableGroupDisplay } from '@/hooks/timetable-groups';
 import {
   useClassrooms,

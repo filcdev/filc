@@ -1,3 +1,20 @@
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@filcdev/ui/components/avatar';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@filcdev/ui/components/dropdown-menu';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import { cn } from '@filcdev/ui/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -18,25 +35,12 @@ import { useTranslation } from 'react-i18next';
 import { BugReportDialog } from '@/components/bug-report-dialog';
 import { NotificationBell } from '@/components/notification-bell';
 import { SettingsDialog } from '@/components/settings-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
 import type { FileRoutesByTo } from '@/route-tree.gen';
-import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {

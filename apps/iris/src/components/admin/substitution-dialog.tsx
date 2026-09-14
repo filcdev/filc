@@ -1,3 +1,16 @@
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { Combobox } from '@filcdev/ui/components/combobox';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import { Label } from '@filcdev/ui/components/label';
+import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -8,19 +21,6 @@ import {
 import { Hand, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
-import { DatePicker } from '@/components/ui/date-picker';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   type SubstitutionItem,
   type Teacher,
@@ -29,6 +29,7 @@ import {
   useSubstitutionTeachers,
   useUpdateSubstitution,
 } from '@/hooks/substitutions';
+import { getIntlLocale } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -564,7 +565,7 @@ export function SubstitutionDialog({
   onOpenChange,
   open,
 }: SubstitutionDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
   const createMutation = useCreateSubstitution({ onSaved: close });
   const updateMutation = useUpdateSubstitution({ onSaved: close });
@@ -823,6 +824,7 @@ export function SubstitutionDialog({
               <Label>{t('substitution.date')}</Label>
               <DatePicker
                 date={formDate}
+                locale={getIntlLocale(i18n.language)}
                 onDateChange={(d) => {
                   form.setFieldValue('date', toUTCDate(d ?? new Date()));
                   form.setFieldValue('lessonIds', []);

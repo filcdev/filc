@@ -10,6 +10,28 @@ export const authorSelect = {
   name: user.name,
 };
 
+/**
+ * Shared column projection for announcement list & detail, so a new column
+ * cannot be forgotten in one of the hand-written selects. Spread the author
+ * projection next to it: `{ ...announcementSelect, author: authorSelect }`.
+ */
+export const announcementSelect = {
+  authorId: announcement.authorId,
+  content: announcement.content,
+  createdAt: announcement.createdAt,
+  highlighted: announcement.highlighted,
+  id: announcement.id,
+  imageByteSize: announcement.imageByteSize,
+  imageContentType: announcement.imageContentType,
+  imageKey: announcement.imageKey,
+  imageUpdatedAt: announcement.imageUpdatedAt,
+  kioskOnly: announcement.kioskOnly,
+  title: announcement.title,
+  updatedAt: announcement.updatedAt,
+  validFrom: announcement.validFrom,
+  validUntil: announcement.validUntil,
+};
+
 export const authorSchema = z.object({
   id: z.string(),
   image: z.string().nullable(),
@@ -25,6 +47,7 @@ const systemMessageSelectSchema = createSelectSchema(systemMessage);
 export const announcementItemSchema = announcementSelectSchema.extend({
   author: authorSchema.nullable().optional(),
   cohortIds: z.array(z.string()),
+  kioskIds: z.array(z.string()),
 });
 
 export const systemMessageItemSchema = systemMessageSelectSchema.extend({
@@ -55,7 +78,10 @@ export const systemMessageDetailResponseSchema = z.object({
 });
 
 export const announcementBaseDetailResponseSchema = z.object({
-  data: announcementSelectSchema.extend({ cohortIds: z.array(z.string()) }),
+  data: announcementSelectSchema.extend({
+    cohortIds: z.array(z.string()),
+    kioskIds: z.array(z.string()),
+  }),
   success: z.literal(true),
 });
 

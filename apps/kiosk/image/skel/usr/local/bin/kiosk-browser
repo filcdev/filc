@@ -1,0 +1,59 @@
+#!/bin/sh
+# Launches the kiosk SPA fullscreen in Chromium under cage. The box identifies
+# itself by its DMI product UUID; the SPA origin comes from /etc/kiosk/url so a
+# box can be repointed by editing one file.
+set -eu
+
+: "${HOME:=/home/kiosk}"
+export HOME
+
+machine_id=$(cat /sys/class/dmi/id/product_uuid 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)
+if [ -z "$machine_id" ]; then
+    # Some boards report an empty (or duplicated) UUID; fall back to the first
+    # non-loopback MAC address, which is stable for a given box.
+    LC_ALL=C
+    export LC_ALL
+    for address in /sys/class/net/*/address; do
+        case "$address" in
+            */lo/address) continue ;;
+        esac
+        mac=$(cat "$address" 2>/dev/null || true)
+        if [ -n "$mac" ] && [ "$mac" != "00:00:00:00:00:00" ]; then
+            machine_id=$mac
+            break
+        fi
+    done
+fi
+if [ -z "$machine_id" ]; then
+    echo 'kiosk-browser: no machine id (no DMI product UUID, no usable MAC)' >&2
+    exit 1
+fi
+
+profile_dir=/tmp/kiosk/chromium
+install -d -m 0700 "$profile_dir/Default"
+# Pre-seed the "never translate" preference: the feature flags are not enough on
+# every Chromium version, and the profile lives on tmpfs, so it is re-seeded on
+# every boot instead of being migrated.
+printf '%s' '{"translate":{"enabled":false,"blocked_languages":["hu"],"denied_count":999}}' \
+    > "$profile_dir/Default/Preferences"
+
+url=$(cat /etc/kiosk/url)
+
+# --ozone-platform=wayland: cage is a Wayland compositor (the old Debian image
+# ran Xorg, where Chromium picked X11 by itself). SwiftShader flags are kept from
+# the old image: the classroom boxes have old integrated GPUs.
+exec chromium \
+    --kiosk \
+    --noerrdialogs \
+    --no-first-run \
+    --disable-session-crashed-bubble \
+    --disable-infobars \
+    --password-store=basic \
+    --disable-features=Translate,TranslateUI,LanguageDetection \
+    --disable-translate \
+    --enable-unsafe-swiftshader \
+    --use-gl=swiftshader \
+    --ozone-platform=wayland \
+    --lang=hu \
+    --user-data-dir="$profile_dir" \
+    "${url%/}/?machine=$machine_id"

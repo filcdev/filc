@@ -1,0 +1,19 @@
+# Base system + kernel (BIOS boot, serial console for headless debugging).
+alpine-base
+linux-lts
+e2fsprogs
+dosfstools
+# Kiosk session: cage is a Wayland kiosk compositor, seatd hands it the DRM and
+# input devices, mesa-dri-gallium provides the GPU drivers, udev populates /dev.
+chromium
+cage
+seatd
+# Alpine's cage links Xwayland and refuses to start without the binary.
+xwayland
+udev
+mesa-dri-gallium
+xkeyboard-config
+ttf-dejavu
+# Clock: boxes lose power with no clean shutdown, chrony re-syncs at boot.
+chrony
+tzdata

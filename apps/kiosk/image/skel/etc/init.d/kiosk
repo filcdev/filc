@@ -1,0 +1,32 @@
+#!/sbin/openrc-run
+# cage (a Wayland kiosk compositor) running the Chromium kiosk browser as the
+# unprivileged `kiosk` user. supervise-daemon respawns the session when Chromium
+# or cage dies, which is what the old Debian image did with a cron watchdog.
+
+name="kiosk"
+description="Filc kiosk browser session"
+
+supervisor="supervise-daemon"
+command="/usr/bin/cage"
+command_args="-- /usr/local/bin/kiosk-browser"
+command_user="kiosk:kiosk"
+directory="/home/kiosk"
+output_log="/var/log/kiosk.log"
+error_log="/var/log/kiosk.log"
+respawn_delay=5
+respawn_max=0
+respawn_period=60
+
+# wlroots requires a private, user-owned runtime dir. /run is tmpfs and
+# root-owned, so start_pre() creates it as the session user.
+export XDG_RUNTIME_DIR="/run/kiosk"
+
+depend() {
+    need localmount
+    after seatd chronyd
+    use net
+}
+
+start_pre() {
+    install -d -m 0700 -o kiosk -g kiosk "$XDG_RUNTIME_DIR"
+}

@@ -1,6 +1,10 @@
-import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@filcdev/ui/components/badge';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
 import {
   Table,
   TableBody,
@@ -8,7 +12,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { useTranslation } from 'react-i18next';
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import { formatLocalizedDate } from '@/utils/date-locale';
