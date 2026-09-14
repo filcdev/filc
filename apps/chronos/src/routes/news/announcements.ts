@@ -1,26 +1,36 @@
 import {
+  type AnnouncementUpdateInput,
   announcementCreateSchema,
+  announcementImageUploadSchema,
   announcementQuerySchema,
   announcementUpdateSchema,
 } from '@filcdev/api/domains/news/announcements';
 import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
-import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
+import { getLogger } from '@logtape/logtape';
+import { and, count, eq, type SQL, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { announcement, announcementCohortMtm } from '#database/schema/news';
+import {
+  announcement,
+  announcementCohortMtm,
+  announcementKioskMtm,
+} from '#database/schema/news';
 import { authRouter } from '#middleware/auth';
 import { newsFactory } from '#routes/news/_factory';
-import { ok } from '#utils/http';
+import { ApiHttpError, badRequest, notFound, ok } from '#utils/http';
+import { activeAnnouncementConditions } from '#utils/news/announcements';
 import { validateCohortIds } from '#utils/news/cohort';
+import { validateKioskIds } from '#utils/news/kiosks';
 import {
   announcementBaseDetailResponseSchema,
   announcementDetailResponseSchema,
   announcementListResponseSchema,
+  announcementSelect,
   authorSelect,
   resolveTitle,
   successResponseSchema,
@@ -30,15 +40,141 @@ import {
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
+import {
+  announcementImageKey,
+  deleteObject,
+  isObjectStorageConfigured,
+  putObject,
+} from '#utils/storage/s3';
 
-/** How far in advance (days) a future announcement should be visible. */
-const ANNOUNCEMENT_LEAD_DAYS = 7;
+const logger = getLogger(['chronos', 'news']);
+
+/** Content types the kiosk can render, mapped to the extension used in the key. */
+const ANNOUNCEMENT_IMAGE_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
+
+/** Uploads above this are refused; the announcement dialog states the limit. */
+const MAX_ANNOUNCEMENT_IMAGE_BYTES = 8 * 1024 * 1024;
+
+/** Cohort ids this announcement targets; empty means "everyone". */
+const announcementCohortIds = async (id: string): Promise<string[]> =>
+  (
+    await db
+      .select()
+      .from(announcementCohortMtm)
+      .where(eq(announcementCohortMtm.announcementId, id))
+  ).map((m) => m.cohortId);
+
+/** Kiosk ids this announcement takes over; empty means "every kiosk". */
+const announcementKioskIds = async (id: string): Promise<string[]> =>
+  (
+    await db
+      .select()
+      .from(announcementKioskMtm)
+      .where(eq(announcementKioskMtm.announcementId, id))
+  ).map((m) => m.kioskId);
+
+/**
+ * The kiosk feed only ever carries titled announcements, so a featured item
+ * without a title would never reach the screen it was featured on.
+ */
+function assertFeaturedAnnouncementIsTitled(
+  highlighted: boolean,
+  title: string | null | undefined
+): void {
+  if (highlighted && !title) {
+    throw badRequest('A highlighted announcement needs a title');
+  }
+}
+
+/** The columns a PATCH changes; fields absent from the body stay untouched. */
+function announcementUpdateValues(
+  body: AnnouncementUpdateInput
+): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+
+  if (body.title !== undefined) {
+    values.title = body.title;
+  }
+  if (body.content !== undefined) {
+    values.content = body.content;
+  }
+  if (body.highlighted !== undefined) {
+    values.highlighted = body.highlighted;
+  }
+  if (body.kioskOnly !== undefined) {
+    values.kioskOnly = body.kioskOnly;
+  }
+  if (body.validFrom !== undefined) {
+    values.validFrom = body.validFrom;
+  }
+  if (body.validUntil !== undefined) {
+    values.validUntil = body.validUntil;
+  }
+
+  return values;
+}
+
+/** Check the targeting a write carries before anything is written. */
+async function validateAnnouncementTargeting(
+  cohortIds?: string[],
+  kioskIds?: string[]
+): Promise<void> {
+  if (cohortIds && cohortIds.length > 0) {
+    await validateCohortIds(cohortIds);
+  }
+  if (kioskIds && kioskIds.length > 0) {
+    await validateKioskIds(kioskIds);
+  }
+}
+
+/**
+ * Replace both targeting row sets of an announcement. An omitted list is left
+ * as it is, an empty one clears the targeting (= everyone / every kiosk).
+ */
+async function setAnnouncementTargeting(
+  announcementId: string,
+  {
+    cohortIds,
+    kioskIds,
+  }: { cohortIds?: string[] | undefined; kioskIds?: string[] | undefined }
+): Promise<void> {
+  if (cohortIds !== undefined) {
+    await db
+      .delete(announcementCohortMtm)
+      .where(eq(announcementCohortMtm.announcementId, announcementId));
+
+    if (cohortIds.length > 0) {
+      await db
+        .insert(announcementCohortMtm)
+        .values(cohortIds.map((cohortId) => ({ announcementId, cohortId })));
+    }
+  }
+
+  if (kioskIds !== undefined) {
+    await db
+      .delete(announcementKioskMtm)
+      .where(eq(announcementKioskMtm.announcementId, announcementId));
+
+    if (kioskIds.length > 0) {
+      await db
+        .insert(announcementKioskMtm)
+        .values(kioskIds.map((kioskId) => ({ announcementId, kioskId })));
+    }
+  }
+}
 
 const { schema: createRequestSchema } = await resolver(
   announcementCreateSchema
 ).toOpenAPISchema();
 const { schema: updateRequestSchema } = await resolver(
   announcementUpdateSchema
+).toOpenAPISchema();
+const { schema: uploadRequestSchema } = await resolver(
+  announcementImageUploadSchema
 ).toOpenAPISchema();
 
 export const listAnnouncements = newsFactory.createHandlers(
@@ -65,7 +201,8 @@ export const listAnnouncements = newsFactory.createHandlers(
   ...authRouter(),
   zValidator('query', announcementQuerySchema),
   async (c) => {
-    const { limit, offset, includeExpired, includeAll } = c.req.valid('query');
+    const { limit, offset, includeExpired, includeAll, includeKioskOnly } =
+      c.req.valid('query');
     const currentUser = c.var.user;
     const userCohortId = currentUser.cohortId;
 
@@ -74,14 +211,16 @@ export const listAnnouncements = newsFactory.createHandlers(
     const bypassCohortFilter = includeAll;
 
     const now = new Date();
-    const leadWindow = new Date(
-      now.getTime() + ANNOUNCEMENT_LEAD_DAYS * 24 * 60 * 60 * 1000
-    );
     const conditions: SQL[] = [];
 
     if (!includeExpired) {
-      conditions.push(lte(announcement.validFrom, leadWindow));
-      conditions.push(gte(announcement.validUntil, now));
+      conditions.push(...activeAnnouncementConditions(now));
+    }
+
+    // Kiosk-only announcements never reach the web app: the panel asks without
+    // the flag, the admin table asks with it.
+    if (!includeKioskOnly) {
+      conditions.push(eq(announcement.kioskOnly, false));
     }
 
     // Cohort filtering: show items that are global (no rows in M2M)
@@ -106,17 +245,7 @@ export const listAnnouncements = newsFactory.createHandlers(
 
     const [items, totalResult] = await Promise.all([
       db
-        .select({
-          author: authorSelect,
-          authorId: announcement.authorId,
-          content: announcement.content,
-          createdAt: announcement.createdAt,
-          id: announcement.id,
-          title: announcement.title,
-          updatedAt: announcement.updatedAt,
-          validFrom: announcement.validFrom,
-          validUntil: announcement.validUntil,
-        })
+        .select({ ...announcementSelect, author: authorSelect })
         .from(announcement)
         .leftJoin(user, eq(announcement.authorId, user.id))
         .where(where)
@@ -128,19 +257,29 @@ export const listAnnouncements = newsFactory.createHandlers(
 
     // Fetch cohort IDs for each announcement
     const itemIds = items.map((i) => i.id);
-    const cohortMappings =
+    const [cohortMappings, kioskMappings] = await Promise.all([
       itemIds.length > 0
-        ? await db
+        ? db
             .select()
             .from(announcementCohortMtm)
             .where(sql`${announcementCohortMtm.announcementId} IN ${itemIds}`)
-        : [];
+        : [],
+      itemIds.length > 0
+        ? db
+            .select()
+            .from(announcementKioskMtm)
+            .where(sql`${announcementKioskMtm.announcementId} IN ${itemIds}`)
+        : [],
+    ]);
 
     const data = items.map((item) => ({
       ...item,
       cohortIds: cohortMappings
         .filter((m) => m.announcementId === item.id)
         .map((m) => m.cohortId),
+      kioskIds: kioskMappings
+        .filter((m) => m.announcementId === item.id)
+        .map((m) => m.kioskId),
     }));
 
     return ok(c, data, StatusCodes.OK, { total: totalResult[0]?.count ?? 0 });
@@ -174,17 +313,7 @@ export const getAnnouncement = newsFactory.createHandlers(
     const { id } = c.req.valid('param');
 
     const [item] = await db
-      .select({
-        author: authorSelect,
-        authorId: announcement.authorId,
-        content: announcement.content,
-        createdAt: announcement.createdAt,
-        id: announcement.id,
-        title: announcement.title,
-        updatedAt: announcement.updatedAt,
-        validFrom: announcement.validFrom,
-        validUntil: announcement.validUntil,
-      })
+      .select({ ...announcementSelect, author: authorSelect })
       .from(announcement)
       .leftJoin(user, eq(announcement.authorId, user.id))
       .where(eq(announcement.id, id));
@@ -195,14 +324,10 @@ export const getAnnouncement = newsFactory.createHandlers(
       });
     }
 
-    const cohortIds = (
-      await db
-        .select()
-        .from(announcementCohortMtm)
-        .where(eq(announcementCohortMtm.announcementId, id))
-    ).map((m) => m.cohortId);
+    const cohortIds = await announcementCohortIds(id);
+    const kioskIds = await announcementKioskIds(id);
 
-    return ok(c, { ...item, cohortIds });
+    return ok(c, { ...item, cohortIds, kioskIds });
   }
 );
 
@@ -236,16 +361,17 @@ export const createAnnouncement = newsFactory.createHandlers(
     const body = c.req.valid('json');
     const currentUser = c.var.user;
 
-    // Validate cohort IDs if provided
-    if (body.cohortIds && body.cohortIds.length > 0) {
-      await validateCohortIds(body.cohortIds);
-    }
+    assertFeaturedAnnouncementIsTitled(body.highlighted ?? false, body.title);
+
+    await validateAnnouncementTargeting(body.cohortIds, body.kioskIds);
 
     const [created] = await db
       .insert(announcement)
       .values({
         authorId: currentUser.id,
         content: body.content,
+        highlighted: body.highlighted ?? false,
+        kioskOnly: body.kioskOnly ?? false,
         title: body.title ?? null,
         validFrom: body.validFrom,
         validUntil: body.validUntil,
@@ -256,23 +382,27 @@ export const createAnnouncement = newsFactory.createHandlers(
         message: 'Failed to create announcement',
       });
     }
-    if (body.cohortIds && body.cohortIds.length > 0) {
-      await db.insert(announcementCohortMtm).values(
-        body.cohortIds.map((cohortId) => ({
-          announcementId: created.id,
-          cohortId,
-        }))
-      );
-    }
 
-    dispatchPendingNotification(created.id, 'announcement', {
-      cohortIds: body.cohortIds ?? [],
-      title: resolveTitle(body.title),
+    await setAnnouncementTargeting(created.id, {
+      cohortIds: body.cohortIds,
+      kioskIds: body.kioskIds,
     });
+
+    // A kiosk-only announcement is not meant to reach anyone's inbox either.
+    if (!created.kioskOnly) {
+      dispatchPendingNotification(created.id, 'announcement', {
+        cohortIds: body.cohortIds ?? [],
+        title: resolveTitle(body.title),
+      });
+    }
 
     return ok(
       c,
-      { ...created, cohortIds: body.cohortIds ?? [] },
+      {
+        ...created,
+        cohortIds: body.cohortIds ?? [],
+        kioskIds: body.kioskIds ?? [],
+      },
       StatusCodes.CREATED
     );
   }
@@ -330,67 +460,50 @@ export const updateAnnouncement = newsFactory.createHandlers(
       });
     }
 
-    // Validate cohort IDs if provided
-    if (body.cohortIds && body.cohortIds.length > 0) {
-      await validateCohortIds(body.cohortIds);
-    }
+    // Same invariant as on create, judged against the row this update produces.
+    assertFeaturedAnnouncementIsTitled(
+      body.highlighted ?? existing.highlighted,
+      body.title ?? existing.title
+    );
+
+    await validateAnnouncementTargeting(body.cohortIds, body.kioskIds);
 
     cancelPendingNotification(id, 'announcement');
 
-    const updateData: Record<string, unknown> = {};
-    if (body.title !== undefined) {
-      updateData.title = body.title;
-    }
-    if (body.content !== undefined) {
-      updateData.content = body.content;
-    }
-    if (body.validFrom !== undefined) {
-      updateData.validFrom = body.validFrom;
-    }
-    if (body.validUntil !== undefined) {
-      updateData.validUntil = body.validUntil;
-    }
+    // A PATCH may carry only targeting, which writes no columns at all.
+    const values = announcementUpdateValues(body);
+    let updated = existing;
 
-    const [updated] = await db
-      .update(announcement)
-      .set(updateData)
-      .where(eq(announcement.id, id))
-      .returning();
-    if (!updated) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Announcement not found',
-      });
-    }
-    if (body.cohortIds !== undefined) {
-      await db
-        .delete(announcementCohortMtm)
-        .where(eq(announcementCohortMtm.announcementId, id));
-
-      if (body.cohortIds.length > 0) {
-        await db.insert(announcementCohortMtm).values(
-          body.cohortIds.map((cohortId) => ({
-            announcementId: id,
-            cohortId,
-          }))
-        );
+    if (Object.keys(values).length > 0) {
+      const [row] = await db
+        .update(announcement)
+        .set(values)
+        .where(eq(announcement.id, id))
+        .returning();
+      if (!row) {
+        throw new HTTPException(StatusCodes.NOT_FOUND, {
+          message: 'Announcement not found',
+        });
       }
+      updated = row;
     }
 
-    const cohortIds =
-      body.cohortIds ??
-      (
-        await db
-          .select()
-          .from(announcementCohortMtm)
-          .where(eq(announcementCohortMtm.announcementId, id))
-      ).map((m) => m.cohortId);
-
-    dispatchPendingNotification(id, 'announcement', {
-      cohortIds,
-      title: resolveTitle(updated.title),
+    await setAnnouncementTargeting(id, {
+      cohortIds: body.cohortIds,
+      kioskIds: body.kioskIds,
     });
 
-    return ok(c, { ...updated, cohortIds });
+    const cohortIds = body.cohortIds ?? (await announcementCohortIds(id));
+    const kioskIds = body.kioskIds ?? (await announcementKioskIds(id));
+
+    if (!updated.kioskOnly) {
+      dispatchPendingNotification(id, 'announcement', {
+        cohortIds,
+        title: resolveTitle(updated.title),
+      });
+    }
+
+    return ok(c, { ...updated, cohortIds, kioskIds });
   }
 );
 
@@ -427,8 +540,195 @@ export const deleteAnnouncement = newsFactory.createHandlers(
       });
     }
 
+    // The row is gone either way; a failed object delete must not turn a
+    // successful delete into a 500.
+    if (deleted.imageKey) {
+      try {
+        await deleteObject(deleted.imageKey);
+      } catch (error) {
+        logger.warn('Failed to delete the image of a deleted announcement', {
+          error,
+          key: deleted.imageKey,
+        });
+      }
+    }
+
     cancelPendingNotification(id, 'announcement');
 
     return ok(c, undefined);
+  }
+);
+
+export const uploadAnnouncementImage = newsFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Announcement', '@unit Announcement', true),
+    description: 'Upload the image this announcement shows on the kiosk',
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          schema: uploadRequestSchema,
+        },
+      },
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(announcementBaseDetailResponseSchema),
+          },
+        },
+        description: 'Image uploaded',
+      },
+      400: {
+        description:
+          'Unsupported image type, image too large, or the announcement has no title',
+      },
+      404: { description: 'Announcement not found' },
+      503: { description: 'Object storage is not configured' },
+    },
+    tags: ['News / Announcements'],
+  }),
+  // Authenticate before the form validator so an anonymous request cannot
+  // force the whole upload into memory (`z.file()` is unbounded).
+  ...authRouter(permissions.announcementsCreate),
+  zValidator('param', z.object({ id: z.string().uuid() })),
+  zValidator('form', announcementImageUploadSchema),
+  async (c) => {
+    const { id } = c.req.valid('param');
+    const { file } = c.req.valid('form');
+
+    const [existing] = await db
+      .select()
+      .from(announcement)
+      .where(eq(announcement.id, id));
+
+    if (!existing) {
+      throw notFound('Announcement not found');
+    }
+
+    if (!isObjectStorageConfigured()) {
+      throw new ApiHttpError(StatusCodes.SERVICE_UNAVAILABLE, {
+        message: 'Object storage is not configured',
+      });
+    }
+
+    const extension = ANNOUNCEMENT_IMAGE_EXTENSIONS[file.type];
+    if (!extension) {
+      throw badRequest('Unsupported image type');
+    }
+
+    if (file.size > MAX_ANNOUNCEMENT_IMAGE_BYTES) {
+      throw badRequest('The image is too large (max 8 MiB)');
+    }
+
+    // Same rule as the highlighted flag: only titled announcements are in the
+    // feed, so an untitled one could never show its image.
+    if (!existing.title) {
+      throw badRequest('An announcement with an image needs a title');
+    }
+
+    const key = announcementImageKey(id, extension);
+    await putObject(key, new Uint8Array(await file.arrayBuffer()), file.type);
+
+    const [updated] = await db
+      .update(announcement)
+      .set({
+        imageByteSize: file.size,
+        imageContentType: file.type,
+        imageKey: key,
+        imageUpdatedAt: new Date(),
+      })
+      .where(eq(announcement.id, id))
+      .returning();
+
+    if (!updated) {
+      throw notFound('Announcement not found');
+    }
+
+    // Replacing an image leaves the previous object behind; the row is already
+    // correct, so a failed cleanup is logged instead of failing the upload.
+    if (existing.imageKey) {
+      try {
+        await deleteObject(existing.imageKey);
+      } catch (error) {
+        logger.warn('Failed to delete the replaced announcement image', {
+          error,
+          key: existing.imageKey,
+        });
+      }
+    }
+
+    return ok(c, {
+      ...updated,
+      cohortIds: await announcementCohortIds(id),
+      kioskIds: await announcementKioskIds(id),
+    });
+  }
+);
+
+export const deleteAnnouncementImage = newsFactory.createHandlers(
+  describeRoute({
+    ...filcExt('Announcement', '@unit Announcement', true),
+    description: 'Delete the image attached to an announcement',
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(announcementBaseDetailResponseSchema),
+          },
+        },
+        description: 'Image deleted',
+      },
+      404: { description: 'Announcement not found, or it has no image' },
+    },
+    tags: ['News / Announcements'],
+  }),
+  ...authRouter(permissions.announcementsCreate),
+  zValidator('param', z.object({ id: z.string().uuid() })),
+  async (c) => {
+    const { id } = c.req.valid('param');
+
+    const [existing] = await db
+      .select()
+      .from(announcement)
+      .where(eq(announcement.id, id));
+
+    if (!existing) {
+      throw notFound('Announcement not found');
+    }
+    if (!existing.imageKey) {
+      throw notFound('Announcement has no image');
+    }
+
+    const key = existing.imageKey;
+
+    const [updated] = await db
+      .update(announcement)
+      .set({
+        imageByteSize: null,
+        imageContentType: null,
+        imageKey: null,
+        imageUpdatedAt: null,
+      })
+      .where(eq(announcement.id, id))
+      .returning();
+
+    if (!updated) {
+      throw notFound('Announcement not found');
+    }
+
+    // Clearing the row is what removes the image from the kiosk; a failed
+    // object delete only leaves an unreferenced object behind.
+    try {
+      await deleteObject(key);
+    } catch (error) {
+      logger.warn('Failed to delete an announcement image', { error, key });
+    }
+
+    return ok(c, {
+      ...updated,
+      cohortIds: await announcementCohortIds(id),
+      kioskIds: await announcementKioskIds(id),
+    });
   }
 );

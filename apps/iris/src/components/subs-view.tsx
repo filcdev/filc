@@ -1,3 +1,20 @@
+import { Button } from '@filcdev/ui/components/button';
+import { ButtonGroup } from '@filcdev/ui/components/button-group';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@filcdev/ui/components/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@filcdev/ui/components/popover';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
   CheckIcon,
@@ -16,22 +33,6 @@ import type {
   SelectionsType,
   TeacherItem,
 } from '@/components/timetable/types';
-import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
@@ -44,7 +45,6 @@ import {
   useTimetableCohorts,
   useTimetables,
 } from '@/hooks/timetable-public';
-import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
 import { SubsV } from './subs';
 

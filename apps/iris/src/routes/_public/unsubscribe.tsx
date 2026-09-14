@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useUnsubscribe } from '@/hooks/notifications';
 
 export const Route = createFileRoute('/_public/unsubscribe')({
   component: UnsubscribePage,
 });
 
 function UnsubscribePage() {
+  const unsubscribeMutation = useUnsubscribe();
   const [status, setStatus] = useState<'loading' | 'error' | 'done'>('loading');
   const [message, setMessage] = useState('');
   const [token, setToken] = useState('');
@@ -28,19 +30,19 @@ function UnsubscribePage() {
   const handleUnsubscribe = () => {
     setStatus('loading');
 
-    fetch('/api/notifications/unsubscribe', {
-      body: new URLSearchParams({ token, userId }),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      method: 'POST',
-    })
-      .then(() => {
-        setStatus('done');
-        setMessage('Preferences updated successfully');
-      })
-      .catch(() => {
-        setStatus('error');
-        setMessage('Failed to update preferences');
-      });
+    unsubscribeMutation.mutate(
+      { token, userId },
+      {
+        onError: () => {
+          setStatus('error');
+          setMessage('Failed to update preferences');
+        },
+        onSuccess: () => {
+          setStatus('done');
+          setMessage('Preferences updated successfully');
+        },
+      }
+    );
   };
 
   const titleMap: Record<string, string> = {

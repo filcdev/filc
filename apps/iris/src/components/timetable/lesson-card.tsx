@@ -1,10 +1,10 @@
-import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/utils';
+} from '@filcdev/ui/components/tooltip';
+import { cn } from '@filcdev/ui/lib/utils';
+import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import { ColorPicker } from './color-picker';
 import {
   formatCohorts,

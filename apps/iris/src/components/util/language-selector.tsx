@@ -1,7 +1,4 @@
-import { ChevronDown, Globe } from 'lucide-react';
-import { useCookies } from 'react-cookie';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +7,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@filcdev/ui/components/dropdown-menu';
+import { ChevronDown, Globe } from 'lucide-react';
+import { useCookies } from 'react-cookie';
+import { useTranslation } from 'react-i18next';
 
 type LangCode = 'EN' | 'HU';
 

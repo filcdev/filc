@@ -1,13 +1,13 @@
-import { useTranslation } from 'react-i18next';
-import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@filcdev/ui/components/card';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { useTranslation } from 'react-i18next';
 import { useGroupsForCohort } from '@/hooks/timetable-groups';
 import { DivisionGroupPicker } from './group-picker';
 

@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Table,
   TableBody,
@@ -9,7 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Role, useDeleteRole } from '@/hooks/admin-users';
 import { RoleDialog } from './role-dialog';
 

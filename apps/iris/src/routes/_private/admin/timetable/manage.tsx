@@ -1,5 +1,23 @@
 import { permissions } from '@filcdev/api/permissions';
-
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import {
@@ -17,25 +35,6 @@ import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
 import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import {
   type TimetableRow,

@@ -1,0 +1,8 @@
+# A kiosk box gets its address from the school network; there is no console to
+# configure a static one on. Without this file the box boots with no usable
+# interface, so it could never reach Chronos.
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp

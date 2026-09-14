@@ -2,13 +2,17 @@
 
 ## Repository shape
 
-Monorepo (Bun + Turborepo) with three workspaces:
+Monorepo (Bun + Turborepo) with three apps and four shared packages:
 
 | Workspace | Tech | Responsibility |
 | --- | --- | --- |
 | `apps/chronos` | Hono + Drizzle + better-auth | API server, auth, scheduled jobs, database |
 | `apps/iris` | React 19 + Vite + TanStack Router/Query/Form | Web frontend |
+| `apps/kiosk` | React 19 + Vite + TanStack Router/Query | Kiosk and TV displays (static bundle, talks to the API by absolute URL) |
 | `packages/api` (`@filcdev/api`) | zod + TypeScript | Shared wire schemas, envelope/error types, permission constants, typed API client |
+| `packages/ui` (`@filcdev/ui`) | React + Tailwind | Shared design-system primitives, consumed as source |
+| `packages/navigator-3d` (`@filcdev/navigator-3d`) | three.js + React | Campus 3D viewer/editor used by iris and kiosk |
+| `packages/timetable-import` (`@filcdev/timetable-import`) | TypeScript + zod | Format-agnostic timetable importer core, used by chronos |
 
 ## Request flow
 

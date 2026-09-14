@@ -43,74 +43,23 @@ import {
   getActiveTimetableId,
   getTimetableIdForDate,
 } from '#utils/timetable/active';
+import {
+  getWeekdayInBudapest,
+  isMatchingWeekday,
+} from '#utils/timetable/weekday';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'lesson']);
-
-const normalizeDayText = (value: string): string =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-const getWeekdayInBudapest = (value: Date): number => {
-  const weekdayName = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Budapest',
-    weekday: 'short',
-  }).format(value);
-  const weekdayIndex = {
-    Fri: 5,
-    Mon: 1,
-    Sat: 6,
-    Sun: 0,
-    Thu: 4,
-    Tue: 2,
-    Wed: 3,
-  }[weekdayName];
-  if (weekdayIndex === undefined) {
-    throw new Error(`Unsupported weekday value: ${weekdayName}`);
-  }
-  return weekdayIndex;
-};
-
-const weekdayAliases: Record<number, string[]> = {
-  0: ['vasarnap', 'va', 'v', 'sunday', 'sun'],
-  1: ['hetfo', 'he', 'h', 'monday', 'mon'],
-  2: ['kedd', 'ke', 'k', 'tuesday', 'tue'],
-  3: ['szerda', 'sze', 'sz', 'wednesday', 'wed'],
-  4: ['csutortok', 'cs', 'thursday', 'thu'],
-  5: ['pentek', 'pe', 'p', 'friday', 'fri'],
-  6: ['szombat', 'szo', 'saturday', 'sat'],
-};
-
-const isMatchingWeekday = (
-  weekdayIndex: number,
-  dayName: string,
-  dayShort?: string
-): boolean => {
-  const aliases = (weekdayAliases[weekdayIndex] ?? []).map(normalizeDayText);
-  const normalizedName = normalizeDayText(dayName);
-  const normalizedShort = dayShort ? normalizeDayText(dayShort) : '';
-
-  const matchesAlias = (alias: string): boolean => {
-    if (normalizedName === alias || normalizedShort === alias) {
-      return true;
-    }
-    if (alias.length <= 3) {
-      return normalizedName.startsWith(alias);
-    }
-    return normalizedName.includes(alias);
-  };
-  return aliases.some(matchesAlias);
-};
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   if (lessons.length === 0) {
     return [];
   }
 
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const subjectIds = Array.from(
+    new Set(lessons.map((l) => l.subjectId))
+  ).filter((id): id is string => id != null);
   const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
   const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
   const teacherIds = Array.from(
@@ -147,7 +96,9 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
     groupRows,
     weekDefinitions,
   ] = await Promise.all([
-    db.select().from(subject).where(inArray(subject.id, subjectIds)),
+    subjectIds.length
+      ? db.select().from(subject).where(inArray(subject.id, subjectIds))
+      : Promise.resolve([] as (typeof subject.$inferSelect)[]),
     db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
     db.select().from(period).where(inArray(period.id, periodIds)),
     teacherIds.length
@@ -271,7 +222,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
       })(),
       periodsPerWeek: l.periodsPerWeek,
       subject: (() => {
-        const s = subjMap.get(l.subjectId);
+        const s = subjMap.get(l.subjectId ?? '');
         return s ? { id: s.id, name: s.name, short: s.short } : null;
       })(),
       teachers: tIds
@@ -538,6 +489,10 @@ type CandidateLessonEntry = {
   subjectShort: string | null;
 };
 
+// The aSc timetable export encodes substitution ("Helyettesítés") lessons as a
+// single subject with short "H"; older exports used "H1"/"H2".
+const SUBSTITUTION_SUBJECT_SHORTS = new Set(['H', 'H1', 'H2']);
+
 function computeCandidateFlags(
   teacherLessons: CandidateLessonEntry[],
   selectedPeriods: number[]
@@ -554,7 +509,9 @@ function computeCandidateFlags(
       continue;
     }
 
-    const hasH1AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H1');
+    const hasH1AtPeriod = lessonsAtPeriod.some(
+      (l) => l.subjectShort === 'H' || l.subjectShort === 'H1'
+    );
     const hasH2AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H2');
 
     if (hasH1AtPeriod) {
@@ -565,7 +522,9 @@ function computeCandidateFlags(
     }
 
     const hasConflictLesson = lessonsAtPeriod.some(
-      (l) => l.subjectShort !== 'H1' && l.subjectShort !== 'H2'
+      (l) =>
+        l.subjectShort === null ||
+        !SUBSTITUTION_SUBJECT_SHORTS.has(l.subjectShort)
     );
     if (hasConflictLesson) {
       return { hasConflict: true, hasH1, hasH2 };
@@ -879,10 +838,9 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     const enrichedMissingTeacherLessons = await enrichLessons(
       missingTeacherLessons
     );
-    const EXCLUDED_SUBJECT_SHORTS = ['H1', 'H2'];
 
-    const availableLessons = enrichedMissingTeacherLessons
-      .filter((currentLesson) =>
+    const availableLessons = enrichedMissingTeacherLessons.filter(
+      (currentLesson) =>
         currentLesson.day
           ? isMatchingWeekday(
               weekday,
@@ -890,14 +848,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
               currentLesson.day.short
             )
           : false
-      )
-      .filter(
-        (currentLesson) =>
-          !(
-            currentLesson.subject?.short &&
-            EXCLUDED_SUBJECT_SHORTS.includes(currentLesson.subject.short)
-          )
-      );
+    );
 
     const selectedLessonIdsSet = new Set(selectedLessonIds);
     const selectedLessons = availableLessons.filter((currentLesson) =>

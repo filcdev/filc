@@ -82,7 +82,9 @@ export async function enrichLessons(
     return [];
   }
 
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const subjectIds = Array.from(
+    new Set(lessons.map((l) => l.subjectId))
+  ).filter((id): id is string => id != null);
   const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
   const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
   const teacherIds = Array.from(
@@ -168,7 +170,7 @@ export async function enrichLessons(
       })(),
       periodsPerWeek: l.periodsPerWeek,
       subject: (() => {
-        const s = subjMap.get(l.subjectId);
+        const s = subjMap.get(l.subjectId ?? '');
         return s ? { id: s.id, name: s.name, short: s.short } : null;
       })(),
       teachers: tIds

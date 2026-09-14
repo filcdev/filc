@@ -1,13 +1,17 @@
-import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@filcdev/ui/components/collapsible';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { ChevronDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';

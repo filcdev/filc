@@ -1,3 +1,16 @@
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { Combobox } from '@filcdev/ui/components/combobox';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import { Label } from '@filcdev/ui/components/label';
+import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -6,21 +19,8 @@ import {
   parseResponse,
 } from 'hono/client';
 import { Hand, Save } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
-import { DatePicker } from '@/components/ui/date-picker';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   type SubstitutionItem,
   type Teacher,
@@ -29,6 +29,7 @@ import {
   useSubstitutionTeachers,
   useUpdateSubstitution,
 } from '@/hooks/substitutions';
+import { getIntlLocale } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
@@ -46,7 +47,6 @@ type SubstitutionFormValues = InferRequestType<
   typeof api.timetable.substitutions.$post
 >['json'] & {
   manualCohort: string;
-  manualDay: string;
   manualPeriod: string;
   manualSubject: string;
   manualSubstituter: string;
@@ -78,32 +78,7 @@ type SubstitutionFormApi = ReturnType<
 type SubjectApiResponse = InferResponseType<typeof api.timetable.subjects.$get>;
 type Subject = NonNullable<SubjectApiResponse['data']>[number];
 
-type DayDefinition = NonNullable<EnrichedLesson['day']>;
 type Period = NonNullable<EnrichedLesson['period']>;
-
-// Build unique day options from the available lessons of all teachers.
-function dedupeDays(lessons: TeacherLesson[]): DayDefinition[] {
-  const seen = new Map<string, DayDefinition>();
-  for (const lesson of lessons) {
-    const day = lesson.day;
-    if (day?.id && !seen.has(day.id)) {
-      seen.set(day.id, day);
-    }
-  }
-  return [...seen.values()];
-}
-
-// Build unique period options from the available lessons of all teachers.
-function dedupePeriods(lessons: TeacherLesson[]): Period[] {
-  const seen = new Map<string, Period>();
-  for (const lesson of lessons) {
-    const period = lesson.period;
-    if (period?.id && !seen.has(period.id)) {
-      seen.set(period.id, period);
-    }
-  }
-  return [...seen.values()];
-}
 
 type SubstitutionDialogProps = BaseDialogProps & {
   item?: SubstitutionItem | null;
@@ -177,7 +152,6 @@ function compareSubOptions(
 
 type ManualSubstitutionFieldsProps = {
   cohorts: NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>;
-  days: DayDefinition[];
   form: SubstitutionFormApi;
   periods: Period[];
   subjects: Subject[];
@@ -186,7 +160,6 @@ type ManualSubstitutionFieldsProps = {
 
 function ManualSubstitutionFields({
   cohorts,
-  days,
   form,
   periods,
   subjects,
@@ -215,44 +188,23 @@ function ManualSubstitutionFields({
         </form.Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>{t('substitution.day')}</Label>
-          <form.Field name="manualDay">
-            {(field) => (
-              <Combobox
-                emptyMessage={t('substitution.noDaysFound')}
-                onValueChange={(value) => field.handleChange(value)}
-                options={days.map((day) => ({
-                  label: day.name,
-                  value: day.id,
-                }))}
-                placeholder={t('substitution.dayPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-        </div>
-
-        <div className="space-y-2">
-          <Label>{t('substitution.period')}</Label>
-          <form.Field name="manualPeriod">
-            {(field) => (
-              <Combobox
-                emptyMessage={t('substitution.noPeriodsFound')}
-                onValueChange={(value) => field.handleChange(value)}
-                options={periods.map((period) => ({
-                  label: `${period.period}. (${period.startTime.slice(0, 5)} - ${period.endTime.slice(0, 5)})`,
-                  value: period.id,
-                }))}
-                placeholder={t('substitution.periodPlaceholder')}
-                searchPlaceholder={t('search')}
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-        </div>
+      <div className="space-y-2">
+        <Label>{t('substitution.period')}</Label>
+        <form.Field name="manualPeriod">
+          {(field) => (
+            <Combobox
+              emptyMessage={t('substitution.noPeriodsFound')}
+              onValueChange={(value) => field.handleChange(value)}
+              options={periods.map((period) => ({
+                label: `${period.period}. (${period.startTime.slice(0, 5)} - ${period.endTime.slice(0, 5)})`,
+                value: period.id,
+              }))}
+              placeholder={t('substitution.periodPlaceholder')}
+              searchPlaceholder={t('search')}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
       </div>
 
       <div className="space-y-2">
@@ -497,9 +449,7 @@ function isSubstitutionValid(params: {
   formLessonIds: string[];
   manual: boolean;
   manualCohort: string;
-  manualDay: string;
   manualPeriod: string;
-  manualSubject: string;
   manualTeacher: string;
 }): boolean {
   const {
@@ -507,21 +457,12 @@ function isSubstitutionValid(params: {
     formLessonIds,
     manual,
     manualCohort,
-    manualDay,
     manualPeriod,
-    manualSubject,
     manualTeacher,
   } = params;
 
   if (manual) {
-    return (
-      !!formDate &&
-      !!manualTeacher &&
-      !!manualDay &&
-      !!manualPeriod &&
-      !!manualSubject &&
-      !!manualCohort
-    );
+    return !!formDate && !!manualTeacher && !!manualPeriod && !!manualCohort;
   }
 
   return !!formDate && formLessonIds.length > 0;
@@ -564,8 +505,10 @@ export function SubstitutionDialog({
   onOpenChange,
   open,
 }: SubstitutionDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
+  const formId = useId();
+  const commentId = useId();
   const createMutation = useCreateSubstitution({ onSaved: close });
   const updateMutation = useUpdateSubstitution({ onSaved: close });
   const manualMutation = useCreateManualSubstitution({ onSaved: close });
@@ -576,7 +519,6 @@ export function SubstitutionDialog({
     () => ({
       ...initialState(item),
       manualCohort: '',
-      manualDay: '',
       manualPeriod: '',
       manualSubject: '',
       manualSubstituter: '',
@@ -605,7 +547,6 @@ export function SubstitutionDialog({
         : value.substituter;
       const {
         manualCohort: _c,
-        manualDay: _d,
         manualPeriod: _p,
         manualSubject: _s,
         manualSubstituter: _ms,
@@ -628,7 +569,6 @@ export function SubstitutionDialog({
     date: formDate,
     lessonIds: formLessonIds,
     manualCohort,
-    manualDay,
     manualPeriod,
     manualSubject,
     manualSubstituter,
@@ -672,6 +612,20 @@ export function SubstitutionDialog({
       return res.data;
     },
     queryKey: queryKeys.cohorts(),
+  });
+
+  const periodsQuery = useQuery({
+    enabled: manual,
+    queryFn: async (): Promise<Period[]> => {
+      const res = await parseResponse(
+        api.timetable.periods.getAll.$get({ query: {} })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load periods');
+      }
+      return res.data as Period[];
+    },
+    queryKey: queryKeys.timetable.periods(null),
   });
 
   const substituteCandidatesQuery = useQuery({
@@ -718,24 +672,50 @@ export function SubstitutionDialog({
   const parallelTeachers = useMemo(() => {
     const parallelLessons =
       substituteCandidatesQuery.data?.parallelLessons ?? [];
+    const selectedLessons = availableLessons.filter((lesson) =>
+      formLessonIds.includes(lesson.id)
+    );
     const selectedSubjectIds = new Set(
-      availableLessons
-        .filter((l) => formLessonIds.includes(l.id) && l.subject)
-        .map((l) => l.subject?.id)
+      selectedLessons
+        .filter((lesson) => lesson.subject)
+        .map((lesson) => lesson.subject?.id)
     );
     const seen = new Map<string, { id: string; name: string }>();
+
+    const addTeachers = (
+      teacherList: { id: string; name: string }[] | undefined
+    ) => {
+      for (const teacher of teacherList ?? []) {
+        // Never offer the absent teacher as their own substitute.
+        if (teacher.id === selectedMissingTeacher || seen.has(teacher.id)) {
+          continue;
+        }
+        seen.set(teacher.id, { id: teacher.id, name: teacher.name });
+      }
+    };
+
+    // Co-teachers of the selected lessons: a multi-group practical block is a
+    // single lesson carrying several teachers, so there is no sibling lesson
+    // for `parallelLessons` to find.
+    for (const lesson of selectedLessons) {
+      addTeachers(lesson.teachers);
+    }
+
+    // Teachers of parallel sibling lessons (split lessons stored separately).
     for (const lesson of parallelLessons) {
       if (!(lesson.subject && selectedSubjectIds.has(lesson.subject.id))) {
         continue;
       }
-      for (const teacher of lesson.teachers ?? []) {
-        if (!seen.has(teacher.id)) {
-          seen.set(teacher.id, { id: teacher.id, name: teacher.name });
-        }
-      }
+      addTeachers(lesson.teachers);
     }
+
     return [...seen.values()];
-  }, [substituteCandidatesQuery.data, availableLessons, formLessonIds]);
+  }, [
+    availableLessons,
+    formLessonIds,
+    selectedMissingTeacher,
+    substituteCandidatesQuery.data,
+  ]);
 
   const substituteOptions = useMemo(() => {
     const candidates =
@@ -771,9 +751,7 @@ export function SubstitutionDialog({
     formLessonIds,
     manual,
     manualCohort,
-    manualDay,
     manualPeriod,
-    manualSubject,
     manualTeacher,
   });
 
@@ -782,10 +760,10 @@ export function SubstitutionDialog({
       cohortId: manualCohort,
       comment: formComment || null,
       date: formDate,
-      dayDefinitionId: manualDay,
       periodId: manualPeriod,
-      subjectId: manualSubject,
-      substituter: manualSubstituter || null,
+      subjectId: manualSubject || null,
+      substituter:
+        manualSubstituter === '__none__' ? null : manualSubstituter || null,
       teacherId: manualTeacher,
     });
   };
@@ -809,7 +787,7 @@ export function SubstitutionDialog({
 
           <form
             className="mt-4 space-y-4"
-            id="substitutionForm"
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               if (manual) {
@@ -823,6 +801,7 @@ export function SubstitutionDialog({
               <Label>{t('substitution.date')}</Label>
               <DatePicker
                 date={formDate}
+                locale={getIntlLocale(i18n.language)}
                 onDateChange={(d) => {
                   form.setFieldValue('date', toUTCDate(d ?? new Date()));
                   form.setFieldValue('lessonIds', []);
@@ -835,15 +814,8 @@ export function SubstitutionDialog({
             {manual ? (
               <ManualSubstitutionFields
                 cohorts={cohortsQuery.data ?? []}
-                days={dedupeDays(
-                  (substituteCandidatesQuery.data?.availableLessons ??
-                    []) as TeacherLesson[]
-                )}
                 form={form}
-                periods={dedupePeriods(
-                  (substituteCandidatesQuery.data?.availableLessons ??
-                    []) as TeacherLesson[]
-                )}
+                periods={periodsQuery.data ?? []}
                 subjects={subjectsQuery.data ?? []}
                 teachers={teachers}
               />
@@ -863,13 +835,11 @@ export function SubstitutionDialog({
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="substitution-comment">
-                {t('substitution.comment')}
-              </Label>
+              <Label htmlFor={commentId}>{t('substitution.comment')}</Label>
               <form.Field name="comment">
                 {(field) => (
                   <Textarea
-                    id="substitution-comment"
+                    id={commentId}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value || null)}
                     placeholder={t('substitution.commentPlaceholder')}
@@ -883,8 +853,10 @@ export function SubstitutionDialog({
 
         <DialogFooter className="border-t p-4">
           <Button
-            disabled={!isValid || form.state.isSubmitting}
-            form="substitutionForm"
+            disabled={
+              !isValid || form.state.isSubmitting || manualMutation.isPending
+            }
+            form={formId}
             type="submit"
           >
             <Save className="h-4 w-4" />

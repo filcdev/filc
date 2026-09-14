@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { importTimetable } from '@filcdev/timetable-import/import';
 import { omanTimetableImportAdapter } from '@filcdev/timetable-import/oman';
 import { checkbox, confirm } from '@inquirer/prompts';

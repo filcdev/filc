@@ -1,8 +1,10 @@
-import { pdf } from '@react-pdf/renderer';
+import { Empty } from '@filcdev/ui/components/empty';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { CalendarX } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
@@ -14,20 +16,20 @@ import {
   filterLessonsForWeek,
   type WeekFilter,
 } from '@/components/timetable/helpers';
-import { TimetablePDF } from '@/components/timetable/pdf/document';
 import { PrintDialog } from '@/components/timetable/print-dialog';
 import { TimetableCardView } from '@/components/timetable/secondary';
 import type { SecondaryTimetableHeader } from '@/components/timetable/secondary/types';
 import type {
+  ClassroomItem,
+  CohortItem,
   FilterType,
   LessonItem,
   PeriodItem,
   SelectionsType,
+  TeacherItem,
   TimetableItem,
   TimetableViewModel,
 } from '@/components/timetable/types';
-import { Empty } from '@/components/ui/empty';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useTimetableGroupDisplay } from '@/hooks/timetable-groups';
 import {
   useClassrooms,
@@ -61,6 +63,132 @@ const getActiveSelectionId = (
     default:
       return null;
   }
+};
+
+/** The URL search params that seed the initial filter and selection. */
+type TimetableSearchParams = {
+  cohort?: string;
+  room?: string;
+  teacher?: string;
+};
+
+/** The filter and entry a selection resolution settled on. */
+type ResolvedSelection = { filter: FilterType; id: string };
+
+/** The entries each filter can select from, in the order the API returned them. */
+type FilterLists = {
+  class: CohortItem[];
+  classroom: ClassroomItem[];
+  teacher: TeacherItem[];
+};
+
+/**
+ * The filter and entry encoded in the URL, validated against the loaded
+ * reference data: a search param is only honoured while it matches a loaded
+ * record. `null` when the URL carries no usable selection.
+ */
+const resolveSearchSelection = (
+  search: TimetableSearchParams,
+  lists: FilterLists
+): ResolvedSelection | null => {
+  if (search.cohort && lists.class.some((item) => item.id === search.cohort)) {
+    return { filter: 'class', id: search.cohort };
+  }
+
+  if (
+    search.teacher &&
+    lists.teacher.some((item) => item.id === search.teacher)
+  ) {
+    return { filter: 'teacher', id: search.teacher };
+  }
+
+  if (search.room && lists.classroom.some((item) => item.id === search.room)) {
+    return { filter: 'classroom', id: search.room };
+  }
+
+  return null;
+};
+
+/** Set one filter's selection, leaving the other selections untouched. */
+const applySelection = (
+  setSelections: Dispatch<SetStateAction<SelectionsType>>,
+  filter: FilterType,
+  id: string | null
+) => {
+  setSelections((selections) => {
+    switch (filter) {
+      case 'class':
+        return { ...selections, class: id };
+      case 'teacher':
+        return { ...selections, teacher: id };
+      case 'classroom':
+        return { ...selections, classroom: id };
+      default:
+        return selections;
+    }
+  });
+};
+
+/**
+ * Apply the initial filter and selection once the URL, the session and the
+ * reference data have resolved. Precedence: a validated search param, then
+ * the signed-in teacher's own profile, then a class fallback: the user's own
+ * cohort, else the first loaded one.
+ */
+const applyInitialSelection = (params: {
+  fallbackCohortId: string | null;
+  lists: FilterLists;
+  myTeacher: TeacherItem | null;
+  search: TimetableSearchParams;
+  setActiveFilter: (filter: FilterType) => void;
+  setSelections: Dispatch<SetStateAction<SelectionsType>>;
+}) => {
+  const {
+    fallbackCohortId,
+    lists,
+    myTeacher,
+    search,
+    setActiveFilter,
+    setSelections,
+  } = params;
+
+  const searchSelection = resolveSearchSelection(search, lists);
+  if (searchSelection) {
+    setActiveFilter(searchSelection.filter);
+    applySelection(setSelections, searchSelection.filter, searchSelection.id);
+    return;
+  }
+
+  if (myTeacher) {
+    setActiveFilter('teacher');
+    applySelection(setSelections, 'teacher', myTeacher.id);
+    return;
+  }
+
+  setActiveFilter('class');
+  const fallbackId =
+    lists.class.find((cohort) => cohort.id === fallbackCohortId)?.id ??
+    lists.class[0]?.id ??
+    null;
+  applySelection(setSelections, 'class', fallbackId);
+};
+
+/**
+ * The selection to fall back to for the active filter: the first entry of the
+ * matching list, unless that filter already has a selection.
+ */
+const resolveDefaultSelection = (params: {
+  filter: FilterType;
+  lists: FilterLists;
+  selections: SelectionsType;
+}): ResolvedSelection | null => {
+  const { filter, lists, selections } = params;
+  const first = lists[filter][0];
+  if (!first || selections[filter]) {
+    return null;
+  }
+
+  return { filter, id: first.id };
 };
 
 /**
@@ -263,7 +391,6 @@ export function TimetableView() {
     );
 
   // Initialize from URL or defaults
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
   useEffect(() => {
     // The teacher profile loads after auth resolves; wait for it before
     // deciding the default so a teacher isn't defaulted to their class.
@@ -278,45 +405,24 @@ export function TimetableView() {
       return;
     }
 
-    // Validate search params against available data
-    const cohortClass =
-      search.cohort && cohortsQuery.data.some((c) => c.id === search.cohort)
-        ? search.cohort
-        : null;
+    const lists = {
+      class: cohortsQuery.data,
+      classroom: classroomsQuery.data,
+      teacher: teachersQuery.data,
+    };
 
-    const cohortTeacher =
-      search.teacher &&
-      teachersQuery.data.some((teacher) => teacher.id === search.teacher)
-        ? search.teacher
-        : null;
-
-    const cohortClassroom =
-      search.room && classroomsQuery.data.some((c) => c.id === search.room)
-        ? search.room
-        : null;
-
-    if (cohortClass) {
-      setActiveFilter('class');
-      setSelections((s) => ({ ...s, class: cohortClass }));
-    } else if (cohortTeacher) {
-      setActiveFilter('teacher');
-      setSelections((s) => ({ ...s, teacher: cohortTeacher }));
-    } else if (cohortClassroom) {
-      setActiveFilter('classroom');
-      setSelections((s) => ({ ...s, classroom: cohortClassroom }));
-    } else if (myTeacher) {
-      setActiveFilter('teacher');
-      setSelections((s) => ({ ...s, teacher: myTeacher.id }));
-    } else {
-      const userClassId = session?.user?.cohortId ?? null;
-      const userDefault = cohortsQuery.data?.find(
-        (cohort) => cohort.id === userClassId
-      )?.id;
-      const firstCohort = cohortsQuery.data[0]?.id ?? null;
-      const fallbackClass = userDefault ?? firstCohort;
-      setActiveFilter('class');
-      setSelections((s) => ({ ...s, class: fallbackClass }));
-    }
+    applyInitialSelection({
+      fallbackCohortId: session?.user?.cohortId ?? null,
+      lists,
+      myTeacher,
+      search: {
+        cohort: search.cohort,
+        room: search.room,
+        teacher: search.teacher,
+      },
+      setActiveFilter,
+      setSelections,
+    });
 
     setInitialized(true);
   }, [
@@ -335,34 +441,31 @@ export function TimetableView() {
   ]);
 
   // Set default selection when filter changes
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO
   useEffect(() => {
     if (!initialized) {
       return;
     }
 
-    const firstCohort = cohortsQuery.data?.[0];
-    const firstTeacher = teachersQuery.data?.[0];
-    const firstClassroom = classroomsQuery.data?.[0];
+    const defaultSelection = resolveDefaultSelection({
+      filter: activeFilter,
+      lists: {
+        class: cohortsQuery.data ?? [],
+        classroom: classroomsQuery.data ?? [],
+        teacher: teachersQuery.data ?? [],
+      },
+      selections: {
+        class: selections.class,
+        classroom: selections.classroom,
+        teacher: selections.teacher,
+      },
+    });
 
-    switch (activeFilter) {
-      case 'class':
-        if (!selections.class && firstCohort) {
-          setSelections((s) => ({ ...s, class: firstCohort.id }));
-        }
-        break;
-      case 'teacher':
-        if (!selections.teacher && firstTeacher) {
-          setSelections((s) => ({ ...s, teacher: firstTeacher.id }));
-        }
-        break;
-      case 'classroom':
-        if (!selections.classroom && firstClassroom) {
-          setSelections((s) => ({ ...s, classroom: firstClassroom.id }));
-        }
-        break;
-      default:
-        break;
+    if (defaultSelection) {
+      applySelection(
+        setSelections,
+        defaultSelection.filter,
+        defaultSelection.id
+      );
     }
   }, [
     initialized,
@@ -497,6 +600,13 @@ export function TimetableView() {
       month: '2-digit',
       year: 'numeric',
     });
+
+    // Deliberately dynamic: keeps the heavy PDF renderer out of the entry
+    // chunk until the user actually requests a printout.
+    const [{ pdf }, { TimetablePDF }] = await Promise.all([
+      import('@react-pdf/renderer'),
+      import('@/components/timetable/pdf/document'),
+    ]);
 
     const blob = await pdf(
       <TimetablePDF

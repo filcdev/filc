@@ -1,6 +1,6 @@
+import { Button } from '@filcdev/ui/components/button';
+import { cn } from '@filcdev/ui/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/utils';
 import type { WeekFilter } from './helpers';
 
 type WeekSelectorProps = {

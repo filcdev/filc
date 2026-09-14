@@ -1,5 +1,15 @@
 import { permissions } from '@filcdev/api/permissions';
-
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Input } from '@filcdev/ui/components/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import {
@@ -16,17 +26,6 @@ import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
