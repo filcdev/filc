@@ -1,0 +1,4 @@
+# Alpine v3.24 main + community. `cage` (the Wayland kiosk compositor) and
+# chromium are in community, so both repositories are required.
+https://dl-cdn.alpinelinux.org/alpine/v3.24/main
+https://dl-cdn.alpinelinux.org/alpine/v3.24/community

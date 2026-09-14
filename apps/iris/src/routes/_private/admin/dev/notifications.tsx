@@ -1,24 +1,27 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { useForm, useStore } from '@tanstack/react-form';
-import { createFileRoute, Navigate } from '@tanstack/react-router';
-import { Eye, Send } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Textarea } from '@filcdev/ui/components/textarea';
+import { useForm, useStore } from '@tanstack/react-form';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Eye, Send } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import {
   NOTIFICATION_MOCKS,

@@ -1,12 +1,12 @@
-import { Palette } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/utils';
+} from '@filcdev/ui/components/dropdown-menu';
+import { cn } from '@filcdev/ui/lib/utils';
+import { Palette } from 'lucide-react';
 
 /** 12-color rainbow palette matching ACCENT_COLORS in helpers.ts */
 const COLOR_SWATCHES = [

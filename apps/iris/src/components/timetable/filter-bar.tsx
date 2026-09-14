@@ -1,3 +1,20 @@
+import { Button } from '@filcdev/ui/components/button';
+import { ButtonGroup } from '@filcdev/ui/components/button-group';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@filcdev/ui/components/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@filcdev/ui/components/popover';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
   CheckIcon,
@@ -10,23 +27,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/utils';
 import type { WeekFilter } from './helpers';
 import { TimetableSelector } from './timetable-selector';
 import type {

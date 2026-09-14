@@ -1,4 +1,4 @@
-import { cn } from '@/utils';
+import { cn } from '@filcdev/ui/lib/utils';
 import { getLessonWeekType } from './helpers';
 import type { LessonItem } from './types';
 

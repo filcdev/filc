@@ -5,6 +5,7 @@
 - This is a Bun + Turborepo monorepo. Shared scripts live in [package.json](package.json), task wiring lives in [turbo.json](turbo.json), and lint rules live in [biome.jsonc](biome.jsonc).
 - [apps/chronos](apps/chronos) is the Hono + Drizzle backend.
 - [packages/api](packages/api) is the shared API contract package (`@filcdev/api`): zod wire schemas per domain, envelope/error types, permission constants, and a typed client factory consumed by Chronos and Iris alike. Future apps calling the Chronos API should depend on this package instead of the Chronos workspace.
+- [packages/ui](packages/ui) is the shared design system (`@filcdev/ui`): the shadcn-style primitives, `cn`, `useIsMobile` and the theme tokens in `globals.css`. Iris imports them as `@filcdev/ui/components/*`, `@filcdev/ui/lib/utils`, `@filcdev/ui/hooks/*` and `@import "@filcdev/ui/globals.css"` (plus an `@source` for the package). App-agnostic primitives belong here; app-specific composition stays in the app.
 - [apps/iris](apps/iris) is the React + Vite frontend.
 
 ## Commands
@@ -58,7 +59,7 @@
 - TanStack Form is the default form pattern: `useForm`, `useStore(form.store, selector)`, `<form.Field>{(field) => ...}</form.Field>` (see [apps/iris/src/components/doorlock/card-dialog.tsx](apps/iris/src/components/doorlock/card-dialog.tsx)).
 - `form.reset(values)` takes raw values, not `{ values }`; `form.reset` and `form.setFieldValue` are not stable `useEffect` dependencies, so omit them from dependency arrays.
 - Base UI dropdown wrappers use `onClick`, not Radix-style `onSelect`, unless the local component exposes a different API.
-- [apps/iris/src/components/ui/chart.tsx](apps/iris/src/components/ui/chart.tsx) already owns `ResponsiveContainer`; do not wrap chart children in another one.
+- [packages/ui/src/components/chart.tsx](packages/ui/src/components/chart.tsx) already owns `ResponsiveContainer`; do not wrap chart children in another one.
 - Keep public timetable filter state in TanStack Router search params instead of duplicating it in unrelated local state.
 
 ### Data Flow

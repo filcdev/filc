@@ -1,15 +1,15 @@
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import type { InferResponseType } from 'hono/client';
-import { Ban, DoorOpen, IdCard, MapPin, Snowflake } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@filcdev/ui/components/card';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import type { InferResponseType } from 'hono/client';
+import { Ban, DoorOpen, IdCard, MapPin, Snowflake } from 'lucide-react';
 import type { api } from '@/utils/hc';
 
 dayjs.extend(relativeTime);

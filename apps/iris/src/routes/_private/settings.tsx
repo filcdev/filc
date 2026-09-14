@@ -1,40 +1,28 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Alert, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import { useApiMutation, useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type PreferencesData = {
-  language: string;
-  theme: string;
-  timetableView: string;
-  notificationPreferences: {
-    substitution: boolean;
-    movedLesson: boolean;
-    announcement: boolean;
-    systemMessage: boolean;
-    blogPost: boolean;
-    doorlockCardUsed: boolean;
-    channelsEnabled: boolean;
-  };
-};
+} from '@filcdev/ui/components/card';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import { createFileRoute } from '@tanstack/react-router';
+import { useTheme } from 'next-themes';
+import { useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  useNotificationSettings,
+  useUpdateNotificationSettings,
+} from '@/hooks/notifications';
 
 const NOTIFICATION_TYPES = [
   {
@@ -63,7 +51,7 @@ export const Route = createFileRoute('/_private/settings')({
 
 function SettingsPage() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
+  const channelsId = useId();
   const { setTheme: applyTheme } = useTheme();
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
@@ -78,13 +66,7 @@ function SettingsPage() {
     systemMessage: true,
   });
 
-  const {
-    data: settings,
-    isLoading,
-    isError,
-  } = useApiQuery<PreferencesData>(() => api.notifications.settings.$get(), {
-    queryKey: queryKeys.notifications.settings(),
-  });
+  const { data: settings, isLoading, isError } = useNotificationSettings(true);
 
   useEffect(() => {
     if (!settings) {
@@ -96,25 +78,9 @@ function SettingsPage() {
     setPrefs(settings.notificationPreferences);
   }, [settings]);
 
-  const saveMutation = useApiMutation({
-    mutationFn: () =>
-      api.notifications.settings.$patch({
-        json: {
-          language,
-          notificationPreferences: prefs,
-          theme,
-          timetableView,
-        },
-      }),
-    onError: () => {
-      toast.error(t('preferences.saveError'));
-    },
-    onSuccess: () => {
+  const saveMutation = useUpdateNotificationSettings({
+    onSaved: () => {
       applyTheme(theme);
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.settings(),
-      });
-      toast.success(t('preferences.saveSuccess'));
     },
   });
 
@@ -213,13 +179,13 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <label
               className="cursor-pointer font-medium text-sm leading-none"
-              htmlFor="channelsEnabled"
+              htmlFor={channelsId}
             >
               {t('preferences.channelsEnabled')}
             </label>
             <Checkbox
               checked={prefs.channelsEnabled}
-              id="channelsEnabled"
+              id={channelsId}
               onCheckedChange={() => togglePref('channelsEnabled')}
             />
           </div>
@@ -244,7 +210,14 @@ function SettingsPage() {
       <Button
         className="w-full"
         disabled={saveMutation.isPending}
-        onClick={() => saveMutation.mutate(undefined)}
+        onClick={() =>
+          saveMutation.mutate({
+            language,
+            notificationPreferences: prefs,
+            theme,
+            timetableView,
+          })
+        }
       >
         {saveMutation.isPending && <Spinner className="mr-2 h-4 w-4" />}
         {t('common.accept')}

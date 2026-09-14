@@ -1,12 +1,12 @@
-import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
-import { type CSSProperties, Fragment, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/utils';
+} from '@filcdev/ui/components/popover';
+import { cn } from '@filcdev/ui/lib/utils';
+import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
+import { type CSSProperties, Fragment, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSubjectColor, toHHMM } from '../helpers';
 import type { LessonItem, PeriodItem } from '../types';
 import { WeekBadge } from '../week-badge';

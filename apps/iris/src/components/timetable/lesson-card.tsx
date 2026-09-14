@@ -1,10 +1,10 @@
-import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/utils';
+} from '@filcdev/ui/components/popover';
+import { cn } from '@filcdev/ui/lib/utils';
+import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import { ColorPicker } from './color-picker';
 import {
   formatCohorts,

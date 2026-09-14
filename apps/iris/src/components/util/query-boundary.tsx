@@ -1,6 +1,10 @@
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import type { ReactNode } from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type QueryBoundaryProps<T> = {
   /** The React Query result (or any object with isLoading/isError/error). */
