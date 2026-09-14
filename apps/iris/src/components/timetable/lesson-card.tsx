@@ -1,9 +1,9 @@
 import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/utils';
 import { ColorPicker } from './color-picker';
 import {
@@ -77,8 +77,9 @@ export function LessonCard({
   const timeRange = `${startTime} - ${endTime}`;
 
   return (
-    <Tooltip>
-      <TooltipTrigger
+    <Popover>
+      <PopoverTrigger
+        openOnHover
         render={
           <div
             className={cn(
@@ -91,7 +92,13 @@ export function LessonCard({
             <WeekBadge className="absolute top-1 left-1" lesson={lesson} />
 
             {onColorChange && subject !== '—' && (
-              <div className="absolute top-0.5 right-0.5 z-10">
+              // biome-ignore lint/a11y/useKeyWithClickEvents: positioning wrapper; stops click from reaching the popover trigger
+              // biome-ignore lint/a11y/noStaticElementInteractions: positioning wrapper; stops click from reaching the popover trigger
+              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: positioning wrapper; stops click from reaching the popover trigger
+              <div
+                className="absolute top-0.5 right-0.5 z-10"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <ColorPicker
                   currentIndex={userColors?.[subject]}
                   onSelect={(idx) => onColorChange(subject, idx)}
@@ -122,7 +129,7 @@ export function LessonCard({
           </div>
         }
       />
-      <TooltipContent
+      <PopoverContent
         className={cn(
           'w-72 border bg-card p-0 text-foreground shadow-2xl',
           color.border
@@ -170,7 +177,7 @@ export function LessonCard({
             )}
           </div>
         </div>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   );
 }
