@@ -1,7 +1,8 @@
 # Local development stack.
 #
 # PostgreSQL 18 (Alpine) backs Chronos; Mailpit captures outbound SMTP
-# from local dev runs so notification emails are viewable, not sent.
+# from local dev runs so notification emails are viewable, not sent; Garage
+# is the S3 object store announcement images live in.
 #
 #   docker compose up           # run both services in the foreground
 #   docker compose up -d        # run detached
@@ -10,6 +11,11 @@
 # Mailpit web UI:  http://localhost:8025
 # Mailpit SMTP:    localhost:1025
 # PostgreSQL:      postgresql://postgres:postgres@localhost:5432/postgres
+# Garage S3 API:   http://localhost:3900, bucket filc-dev
+#
+# Garage needs credentials before it will start: export
+# GARAGE_DEFAULT_ACCESS_KEY and GARAGE_DEFAULT_SECRET_KEY in `.env` or your
+# shell first (see CONTRIBUTING.md).
 #
 # This is an alternative to the pg-dispo script documented in CONTRIBUTING.md;
 # do not run both at once — they share host port 5432.
@@ -45,6 +51,26 @@ services:
     volumes:
       - mailpit-data:/data
 
+  garage:
+    image: dxflrs/garage:v2.4.1
+    container_name: filc-garage
+    restart: unless-stopped
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    ports:
+      - "127.0.0.1:3900:3900" # S3 API
+      - "127.0.0.1:3901:3901" # cluster RPC
+      - "127.0.0.1:3903:3903" # admin/metrics API
+    environment:
+      GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_DEFAULT_ACCESS_KEY:?set me}
+      GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_DEFAULT_SECRET_KEY:?set me}
+      GARAGE_DEFAULT_BUCKET: ${GARAGE_DEFAULT_BUCKET:-filc-dev}
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage-data:/var/lib/garage/data
+      - garage-meta:/var/lib/garage/meta
+
 volumes:
   postgres-data:
   mailpit-data:
+  garage-data:
+  garage-meta:

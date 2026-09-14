@@ -1,3 +1,5 @@
+import { Button } from '@filcdev/ui/components/button';
+import { Input } from '@filcdev/ui/components/input';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -5,8 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { USERS_PAGE_SIZE, useCohorts, useUsers } from '@/hooks/admin-users';
 

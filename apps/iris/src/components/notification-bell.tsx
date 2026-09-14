@@ -1,10 +1,5 @@
-import { Bell, MailCheck } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { NotificationHistoryDialog } from '@/components/notification-history-dialog';
-import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +8,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@filcdev/ui/components/dropdown-menu';
+import { Bell, MailCheck } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { NotificationHistoryDialog } from '@/components/notification-history-dialog';
+import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
 import {
   type NotificationItem,
   useMarkAllNotificationsRead,

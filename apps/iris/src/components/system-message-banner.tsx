@@ -1,8 +1,8 @@
+import { Button } from '@filcdev/ui/components/button';
 import type { InferResponseType } from 'hono/client';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
 import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';

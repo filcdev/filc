@@ -1,13 +1,20 @@
+import { cn } from '@filcdev/ui/lib/utils';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/utils';
 import {
   filterLessonsForGroupDisplay,
   type GroupDisplay,
   getLessonGroupEmphasis,
 } from './helpers';
 import { LessonCard } from './lesson-card';
-import type { FilterType, TimetableViewModel } from './types';
+import type {
+  DayColumn,
+  FilterType,
+  GridCell,
+  LessonItem,
+  TimeSlot,
+  TimetableViewModel,
+} from './types';
 
 type TimetableGridProps = {
   model: TimetableViewModel;
@@ -22,6 +29,189 @@ type TimetableGridProps = {
   /** How split lessons are shown. `'none'` disables group handling. */
   groupDisplay?: GroupDisplay;
 };
+
+type DayHeaderCellProps = {
+  day: DayColumn;
+  isEmpty: boolean;
+  showBorder: boolean;
+};
+
+function DayHeaderCell({ day, isEmpty, showBorder }: DayHeaderCellProps) {
+  return (
+    <div
+      className={cn(
+        'p-3 text-center',
+        showBorder && 'border-border border-r-2'
+      )}
+    >
+      <span
+        className={cn(
+          'font-bold text-[11px] uppercase tracking-widest',
+          isEmpty ? 'text-muted-foreground/40' : 'text-foreground'
+        )}
+      >
+        {day.label}
+      </span>
+    </div>
+  );
+}
+
+function TimeCell({ slot }: { slot: TimeSlot }) {
+  return (
+    <div className="flex flex-col items-center justify-center border-border border-r bg-muted/30 py-2">
+      <span className="font-medium text-[10px] text-muted-foreground">
+        {slot.start.format('HH:mm')}
+      </span>
+      <span className="font-bold text-muted-foreground text-xs">
+        {slot.index}.
+      </span>
+      <span className="font-medium text-[10px] text-muted-foreground">
+        {slot.end.format('HH:mm')}
+      </span>
+    </div>
+  );
+}
+
+type SplitLessonsProps = {
+  borderClass: string;
+  lessons: LessonItem[];
+  onColorChange?: (subject: string, colorIndex: number) => void;
+  selectedDivisionTags?: Set<string>;
+  selectedGroupIds?: Set<string>;
+  showCohorts: boolean;
+  userColors?: Record<string, number>;
+};
+
+function SplitLessons({
+  borderClass,
+  lessons,
+  onColorChange,
+  selectedDivisionTags,
+  selectedGroupIds,
+  showCohorts,
+  userColors,
+}: SplitLessonsProps) {
+  return (
+    <div className={cn('min-h-24 p-0.5', borderClass)}>
+      <div
+        className={cn(
+          'h-full gap-0.5 overflow-hidden rounded-md bg-muted',
+          getSplitGridClass(lessons.length)
+        )}
+      >
+        {lessons.map((lesson, idx) => (
+          <LessonCard
+            emphasis={getLessonGroupEmphasis(
+              lesson,
+              selectedGroupIds,
+              selectedDivisionTags
+            )}
+            key={lesson.id ?? idx}
+            lesson={lesson}
+            onColorChange={onColorChange}
+            showCohorts={showCohorts}
+            userColors={userColors}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type DayCellProps = {
+  borderClass: string;
+  cellKey: string;
+  day: DayColumn;
+  emptyDayKeys: Set<string>;
+  grid: Map<string, GridCell>;
+  groupDisplay: GroupDisplay;
+  midSlot: number;
+  noLessonsLabel: string;
+  onColorChange?: (subject: string, colorIndex: number) => void;
+  selectedDivisionTags?: Set<string>;
+  selectedGroupIds?: Set<string>;
+  showCohorts: boolean;
+  slotIndex: number;
+  userColors?: Record<string, number>;
+};
+
+function DayCell({
+  borderClass,
+  cellKey,
+  day,
+  emptyDayKeys,
+  grid,
+  groupDisplay,
+  midSlot,
+  noLessonsLabel,
+  onColorChange,
+  selectedDivisionTags,
+  selectedGroupIds,
+  showCohorts,
+  slotIndex,
+  userColors,
+}: DayCellProps) {
+  if (emptyDayKeys.has(day.key)) {
+    return (
+      <div
+        className={cn(
+          'min-h-24 bg-muted/20',
+          borderClass,
+          slotIndex === midSlot && 'flex items-center justify-center p-2'
+        )}
+      >
+        {slotIndex === midSlot && (
+          <span className="text-center text-[11px] text-muted-foreground/50 leading-tight">
+            {noLessonsLabel}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const rawLessons = grid.get(cellKey)?.lessons ?? [];
+  const lessons = filterLessonsForGroupDisplay(
+    rawLessons,
+    groupDisplay,
+    selectedGroupIds,
+    selectedDivisionTags
+  );
+
+  if (lessons.length === 0) {
+    return <div className={cn('min-h-24 p-0.5', borderClass)} />;
+  }
+
+  const firstLesson = lessons[0];
+  if (lessons.length === 1 && firstLesson) {
+    return (
+      <div className={cn('min-h-24 p-0.5', borderClass)}>
+        <LessonCard
+          emphasis={getLessonGroupEmphasis(
+            firstLesson,
+            selectedGroupIds,
+            selectedDivisionTags
+          )}
+          lesson={firstLesson}
+          onColorChange={onColorChange}
+          showCohorts={showCohorts}
+          userColors={userColors}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <SplitLessons
+      borderClass={borderClass}
+      lessons={lessons}
+      onColorChange={onColorChange}
+      selectedDivisionTags={selectedDivisionTags}
+      selectedGroupIds={selectedGroupIds}
+      showCohorts={showCohorts}
+      userColors={userColors}
+    />
+  );
+}
 
 export function TimetableGrid({
   model,
@@ -71,27 +261,14 @@ export function TimetableGrid({
           style={{ gridTemplateColumns: colTemplate }}
         >
           <div className="p-2" />
-          {days.map((day, i) => {
-            const isEmpty = emptyDayKeys.has(day.key);
-            return (
-              <div
-                className={cn(
-                  'p-3 text-center',
-                  i < days.length - 1 && 'border-border border-r-2'
-                )}
-                key={day.key}
-              >
-                <span
-                  className={cn(
-                    'font-bold text-[11px] uppercase tracking-widest',
-                    isEmpty ? 'text-muted-foreground/40' : 'text-foreground'
-                  )}
-                >
-                  {day.label}
-                </span>
-              </div>
-            );
-          })}
+          {days.map((day, i) => (
+            <DayHeaderCell
+              day={day}
+              isEmpty={emptyDayKeys.has(day.key)}
+              key={day.key}
+              showBorder={i < days.length - 1}
+            />
+          ))}
         </div>
 
         {/* Body */}
@@ -108,114 +285,31 @@ export function TimetableGrid({
                 style={{ gridTemplateColumns: colTemplate }}
               >
                 {/* Time Cell */}
-                <div className="flex flex-col items-center justify-center border-border border-r bg-muted/30 py-2">
-                  <span className="font-medium text-[10px] text-muted-foreground">
-                    {slot.start.format('HH:mm')}
-                  </span>
-                  <span className="font-bold text-muted-foreground text-xs">
-                    {slot.index}.
-                  </span>
-                  <span className="font-medium text-[10px] text-muted-foreground">
-                    {slot.end.format('HH:mm')}
-                  </span>
-                </div>
+                <TimeCell slot={slot} />
 
                 {/* Day Cells */}
-                {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: multiple render branches kept inline */}
                 {days.map((day, i) => {
                   const cellKey = `${day.key}-${slot.start.format('HH:mm')}`;
-                  const rawLessons = grid.get(cellKey)?.lessons ?? [];
-
-                  const lessons = filterLessonsForGroupDisplay(
-                    rawLessons,
-                    groupDisplay,
-                    selectedGroupIds,
-                    selectedDivisionTags
-                  );
-                  const isEmptyDay = emptyDayKeys.has(day.key);
-                  const borderClass =
-                    i < days.length - 1 ? 'border-border border-r-2' : '';
-
-                  if (isEmptyDay) {
-                    return (
-                      <div
-                        className={cn(
-                          'min-h-24 bg-muted/20',
-                          borderClass,
-                          slotIndex === midSlot &&
-                            'flex items-center justify-center p-2'
-                        )}
-                        key={cellKey}
-                      >
-                        {slotIndex === midSlot && (
-                          <span className="text-center text-[11px] text-muted-foreground/50 leading-tight">
-                            {noLessonsLabel}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  if (lessons.length === 0) {
-                    return (
-                      <div
-                        className={cn('min-h-24 p-0.5', borderClass)}
-                        key={cellKey}
-                      />
-                    );
-                  }
-
-                  const isSingle = lessons.length === 1;
-                  const firstLesson = lessons[0];
-
-                  if (isSingle && firstLesson) {
-                    return (
-                      <div
-                        className={cn('min-h-24 p-0.5', borderClass)}
-                        key={cellKey}
-                      >
-                        <LessonCard
-                          emphasis={getLessonGroupEmphasis(
-                            firstLesson,
-                            selectedGroupIds,
-                            selectedDivisionTags
-                          )}
-                          lesson={firstLesson}
-                          onColorChange={onColorChange}
-                          showCohorts={showCohorts}
-                          userColors={userColors}
-                        />
-                      </div>
-                    );
-                  }
-
                   return (
-                    <div
-                      className={cn('min-h-24 p-0.5', borderClass)}
+                    <DayCell
+                      borderClass={
+                        i < days.length - 1 ? 'border-border border-r-2' : ''
+                      }
+                      cellKey={cellKey}
+                      day={day}
+                      emptyDayKeys={emptyDayKeys}
+                      grid={grid}
+                      groupDisplay={groupDisplay}
                       key={cellKey}
-                    >
-                      <div
-                        className={cn(
-                          'h-full gap-0.5 overflow-hidden rounded-md bg-muted',
-                          getSplitGridClass(lessons.length)
-                        )}
-                      >
-                        {lessons.map((lesson, idx) => (
-                          <LessonCard
-                            emphasis={getLessonGroupEmphasis(
-                              lesson,
-                              selectedGroupIds,
-                              selectedDivisionTags
-                            )}
-                            key={lesson.id ?? idx}
-                            lesson={lesson}
-                            onColorChange={onColorChange}
-                            showCohorts={showCohorts}
-                            userColors={userColors}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                      midSlot={midSlot}
+                      noLessonsLabel={noLessonsLabel}
+                      onColorChange={onColorChange}
+                      selectedDivisionTags={selectedDivisionTags}
+                      selectedGroupIds={selectedGroupIds}
+                      showCohorts={showCohorts}
+                      slotIndex={slotIndex}
+                      userColors={userColors}
+                    />
                   );
                 })}
               </div>

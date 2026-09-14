@@ -1,20 +1,20 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { Save } from 'lucide-react';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import { Textarea } from '@filcdev/ui/components/textarea';
+import { useForm, useStore } from '@tanstack/react-form';
+import { Save } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type AnnouncementItem,
   type AnnouncementPayload,
@@ -26,8 +26,8 @@ import {
   useUpdateAnnouncement,
   useUpdateSystemMessage,
 } from '@/hooks/news';
+import { getIntlLocale } from '@/utils/date-locale';
 import { newsItemSchema } from '@/utils/form-schemas';
-
 import type { BaseDialogProps } from './admin.types';
 
 type NewsItemLike = AnnouncementItem | SystemMessageItem;
@@ -75,7 +75,7 @@ export function NewsItemDialog({
   onOpenChange,
   open,
 }: NewsItemDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const close = () => onOpenChange(false);
   const createAnnouncement = useCreateAnnouncement({ onSaved: close });
   const updateAnnouncement = useUpdateAnnouncement({ onSaved: close });
@@ -201,6 +201,7 @@ export function NewsItemDialog({
                   <FieldLabel>{t(`${titleKey}.validFrom`)}</FieldLabel>
                   <DatePicker
                     date={field.state.value}
+                    locale={getIntlLocale(i18n.language)}
                     onDateChange={(date) =>
                       field.handleChange(startOfDay(date ?? new Date()))
                     }
@@ -215,6 +216,7 @@ export function NewsItemDialog({
                   <FieldLabel>{t(`${titleKey}.validUntil`)}</FieldLabel>
                   <DatePicker
                     date={field.state.value}
+                    locale={getIntlLocale(i18n.language)}
                     onDateChange={(date) =>
                       field.handleChange(endOfDay(date ?? new Date()))
                     }

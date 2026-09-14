@@ -9,8 +9,14 @@ import { I18nextProvider } from 'react-i18next';
 import { routeTree } from './route-tree.gen';
 
 import './global.css';
-import { reactErrorHandler } from '@sentry/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ApiError } from '@filcdev/api/errors';
+import { captureException, reactErrorHandler } from '@sentry/react';
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { i18n } from '@/utils/i18n';
 import { initializeTelemetry } from '@/utils/telemetry';
 import { reportWebVitals } from '@/utils/web-vitals';
@@ -32,7 +38,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) =>
+        failureCount < 1 &&
+        !(
+          error instanceof ApiError &&
+          error.status !== undefined &&
+          error.status < 500
+        ),
+      staleTime: 30_000,
+    },
+  },
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      captureException(error);
+    },
+  }),
+  queryCache: new QueryCache({
+    onError: (error) => {
+      captureException(error);
+    },
+  }),
+});
 
 initializeTelemetry();
 

@@ -1,0 +1,67 @@
+@import "@filcdev/ui/globals.css";
+@import "@fontsource-variable/host-grotesk/wght.css";
+
+/* The shared UI package ships its own utility classes. */
+@source "../../../packages/ui/src";
+
+html,
+body,
+#app {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+}
+
+/* PetrikTV renders its ticker at 190% so it is legible from across the room.
+   Scoped to the TV shell: the navigator kiosk is an interactive touch UI and
+   must keep the browser's 1:1 scale. */
+.tv main {
+  font-family: "Host Grotesk Variable", sans-serif;
+  zoom: 190%;
+}
+
+/* Ticker panels: the card surface, translucent over the board's gradient. */
+.box {
+  @apply rounded-lg bg-card/30 shadow-lg;
+}
+
+.text-shadow {
+  text-shadow: 2px 2px 2px rgba(0, 0, 0, 1);
+}
+
+/* Marquee: one doubled track translated by half its width, so the loop does
+   not jump. `Marquee` supplies the duration (text-length dependent). */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+/* Takeover progress: one fill per dwell interval, so a viewer can see how long
+   the current item stays. The duration comes from the box's config. */
+@keyframes takeover-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.takeover-progress {
+  transform-origin: left center;
+  animation-name: takeover-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}

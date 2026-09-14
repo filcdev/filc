@@ -1,0 +1,28 @@
+# Base system + kernel (BIOS boot, serial console for headless debugging).
+alpine-base
+linux-lts
+e2fsprogs
+dosfstools
+# Kiosk session: cage is a Wayland kiosk compositor, seatd hands it the DRM and
+# input devices, mesa-dri-gallium provides the GPU drivers, udev populates /dev.
+chromium
+cage
+seatd
+# Chromium's software GL lives in subpackages that are not dependencies: without
+# chromium-swiftshader the SwiftShader Vulkan ICD is absent, SwANGLE cannot
+# initialize, and Chromium kills the browser outright when its GPU process keeps
+# failing ("GPU process isn't usable. Goodbye.") -- the box then looped between a
+# black screen and a restarted session. chromium-lang is what makes the
+# launcher's --lang=hu reach Chromium's own error pages and dialogs (the
+# renderers otherwise ran with --lang=en-US).
+chromium-swiftshader
+chromium-lang
+# Alpine's cage links Xwayland and refuses to start without the binary.
+xwayland
+udev
+mesa-dri-gallium
+xkeyboard-config
+ttf-dejavu
+# Clock: boxes lose power with no clean shutdown, chrony re-syncs at boot.
+chrony
+tzdata
