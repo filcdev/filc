@@ -1,1 +1,0 @@
-ALTER TABLE "announcement" ADD COLUMN "kiosk_only" boolean DEFAULT false NOT NULL;

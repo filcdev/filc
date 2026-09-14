@@ -178,9 +178,16 @@ export function useRoomChanges() {
         continue;
       }
 
+      // The affected lessons carry the cohorts and their original rooms; the
+      // moved lesson itself carries the target room.
+      const cohorts = item.lessons.flatMap((lesson) => lesson.cohorts);
+      const fromRooms = item.lessons.flatMap((lesson) =>
+        lesson.classrooms.map((room) => room.name)
+      );
+
       result.push({
-        class: item.cohortNames.join('/'),
-        from: item.fromRoomNames.join('/'),
+        class: [...new Set(cohorts)].join('/'),
+        from: [...new Set(fromRooms)].join('/'),
         lesson: item.period.period,
         to: item.classroom.name,
       });
