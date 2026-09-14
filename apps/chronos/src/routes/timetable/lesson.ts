@@ -489,6 +489,10 @@ type CandidateLessonEntry = {
   subjectShort: string | null;
 };
 
+// The aSc timetable export encodes substitution ("Helyettesítés") lessons as a
+// single subject with short "H"; older exports used "H1"/"H2".
+const SUBSTITUTION_SUBJECT_SHORTS = new Set(['H', 'H1', 'H2']);
+
 function computeCandidateFlags(
   teacherLessons: CandidateLessonEntry[],
   selectedPeriods: number[]
@@ -505,7 +509,9 @@ function computeCandidateFlags(
       continue;
     }
 
-    const hasH1AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H1');
+    const hasH1AtPeriod = lessonsAtPeriod.some(
+      (l) => l.subjectShort === 'H' || l.subjectShort === 'H1'
+    );
     const hasH2AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H2');
 
     if (hasH1AtPeriod) {
@@ -516,7 +522,9 @@ function computeCandidateFlags(
     }
 
     const hasConflictLesson = lessonsAtPeriod.some(
-      (l) => l.subjectShort !== 'H1' && l.subjectShort !== 'H2'
+      (l) =>
+        l.subjectShort === null ||
+        !SUBSTITUTION_SUBJECT_SHORTS.has(l.subjectShort)
     );
     if (hasConflictLesson) {
       return { hasConflict: true, hasH1, hasH2 };
