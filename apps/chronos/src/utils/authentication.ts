@@ -165,7 +165,10 @@ const authOptions = {
   socialProviders: {
     microsoft: {
       clientId: env.entraClientId,
-      clientSecret: env.entraClientSecret,
+      // A proxied environment (a preview) never exchanges a code itself — the
+      // proxy origin does — so it runs without an Entra client secret. The
+      // provider type still requires a string.
+      clientSecret: env.entraClientSecret ?? '',
       enabled: true,
       prompt: env.mode === 'development' ? 'consent' : undefined,
       tenantId: env.entraTenantId,

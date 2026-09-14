@@ -32,6 +32,9 @@ CHRONOS_ENTRA_CLIENT_SECRET=your-client-secret
 
 The callback is served by better-auth at `{CHRONOS_BASE_URL}/api/auth/callback/microsoft` — keep the redirect URI in sync with `CHRONOS_BASE_URL`.
 
+Previews are the one exception to `CHRONOS_ENTRA_CLIENT_SECRET`: they hand the
+code exchange to production, so they run without it — see §4.
+
 ## 4. Preview deployments
 
 Entra does not accept wildcard redirect URIs, and registering one URI per pull
@@ -58,7 +61,12 @@ The flow: the preview redirects to Entra asking for the *production* callback �
 production exchanges the code, then redirects the browser to the preview's
 `/api/auth/oauth-proxy-callback` with an encrypted profile → the preview
 decrypts it and creates the user and session in its own database. Production
-never writes preview users, and previews never hold an Entra secret.
+never writes preview users, and a preview never holds the Entra client secret:
+it needs only `CHRONOS_ENTRA_CLIENT_ID` and `CHRONOS_ENTRA_TENANT_ID`, which are
+enough to build the authorization redirect. Chronos enforces the same split —
+`CHRONOS_ENTRA_CLIENT_SECRET` is required unless `CHRONOS_OAUTH_PROXY_URL`
+points at another origin — so the origin that terminates the flow still refuses
+to start without it.
 
 Chronos sets the plugin's `currentURL` from `CHRONOS_BASE_URL`, which each
 preview container sets to its own hostname; that value is where the profile is
