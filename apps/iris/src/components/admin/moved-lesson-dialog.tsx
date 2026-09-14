@@ -968,9 +968,15 @@ export function MovedLessonDialog({
                 <Label>{t('movedLesson.targetPeriod')}</Label>
                 <Combobox
                   emptyMessage={t('movedLesson.noPeriodsFound')}
-                  onValueChange={(value) =>
-                    form.setFieldValue('startingPeriod', value || undefined)
-                  }
+                  onValueChange={(value) => {
+                    const startingPeriod = value || undefined;
+                    if (
+                      startingPeriod !== form.getFieldValue('startingPeriod')
+                    ) {
+                      form.setFieldValue('room', undefined);
+                    }
+                    form.setFieldValue('startingPeriod', startingPeriod);
+                  }}
                   options={(periodsQuery.data ?? []).map((period) => ({
                     label: formatPeriodLabel(period),
                     value: period.id,
