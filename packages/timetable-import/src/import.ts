@@ -43,7 +43,7 @@ type LessonDraft = {
 const LESSON_INSERT_CHUNK = 100;
 
 const makeLessonKey = (args: {
-  subjectId: string;
+  subjectId: string | null;
   dayDefinitionId: string;
   weekDefinitionId: string;
   periodId: string;

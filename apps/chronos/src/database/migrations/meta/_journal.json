@@ -148,6 +148,13 @@
       "when": 1789345464055,
       "tag": "0020_daffy_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789390484814,
+      "tag": "0021_bored_darkhawk",
+      "breakpoints": true
     }
   ]
 }

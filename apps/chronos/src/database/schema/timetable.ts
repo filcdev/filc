@@ -186,9 +186,7 @@ export const lesson = pgTable('lesson', {
     .notNull()
     .references(() => period.id),
   periodsPerWeek: integer('periods_per_week').notNull(),
-  subjectId: text('subject_id')
-    .notNull()
-    .references(() => subject.id),
+  subjectId: text('subject_id').references(() => subject.id),
   teacherIds: text('teacher_ids').array(),
   termDefinitionId: text('term_definition_id')
     // .notNull()

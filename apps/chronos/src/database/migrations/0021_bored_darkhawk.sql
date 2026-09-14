@@ -1,0 +1,1 @@
+ALTER TABLE "lesson" ALTER COLUMN "subject_id" DROP NOT NULL;
