@@ -718,24 +718,50 @@ export function SubstitutionDialog({
   const parallelTeachers = useMemo(() => {
     const parallelLessons =
       substituteCandidatesQuery.data?.parallelLessons ?? [];
+    const selectedLessons = availableLessons.filter((lesson) =>
+      formLessonIds.includes(lesson.id)
+    );
     const selectedSubjectIds = new Set(
-      availableLessons
-        .filter((l) => formLessonIds.includes(l.id) && l.subject)
-        .map((l) => l.subject?.id)
+      selectedLessons
+        .filter((lesson) => lesson.subject)
+        .map((lesson) => lesson.subject?.id)
     );
     const seen = new Map<string, { id: string; name: string }>();
+
+    const addTeachers = (
+      teacherList: { id: string; name: string }[] | undefined
+    ) => {
+      for (const teacher of teacherList ?? []) {
+        // Never offer the absent teacher as their own substitute.
+        if (teacher.id === selectedMissingTeacher || seen.has(teacher.id)) {
+          continue;
+        }
+        seen.set(teacher.id, { id: teacher.id, name: teacher.name });
+      }
+    };
+
+    // Co-teachers of the selected lessons: a multi-group practical block is a
+    // single lesson carrying several teachers, so there is no sibling lesson
+    // for `parallelLessons` to find.
+    for (const lesson of selectedLessons) {
+      addTeachers(lesson.teachers);
+    }
+
+    // Teachers of parallel sibling lessons (split lessons stored separately).
     for (const lesson of parallelLessons) {
       if (!(lesson.subject && selectedSubjectIds.has(lesson.subject.id))) {
         continue;
       }
-      for (const teacher of lesson.teachers ?? []) {
-        if (!seen.has(teacher.id)) {
-          seen.set(teacher.id, { id: teacher.id, name: teacher.name });
-        }
-      }
+      addTeachers(lesson.teachers);
     }
+
     return [...seen.values()];
-  }, [substituteCandidatesQuery.data, availableLessons, formLessonIds]);
+  }, [
+    availableLessons,
+    formLessonIds,
+    selectedMissingTeacher,
+    substituteCandidatesQuery.data,
+  ]);
 
   const substituteOptions = useMemo(() => {
     const candidates =
