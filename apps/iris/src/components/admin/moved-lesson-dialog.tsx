@@ -1,5 +1,6 @@
 import { useForm, useStore } from '@tanstack/react-form';
-import type { InferRequestType } from 'hono/client';
+import { useQuery } from '@tanstack/react-query';
+import { type InferRequestType, parseResponse } from 'hono/client';
 import { ArrowRightLeft, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +48,8 @@ type MovedLessonDialogProps = BaseDialogProps & {
 // Cohort entries can arrive as plain names (from substitutions/moved lessons)
 // or as objects (from the per-cohort lessons endpoint); normalise for display.
 type CohortLike = string | { id: string; name: string; short?: string };
+
+type Period = NonNullable<EnrichedLesson['period']>;
 
 type LessonForLabel = {
   id: string;
@@ -336,10 +339,27 @@ export function MovedLessonDialog({
     form.store,
     (state) => state.values.startingDay
   );
+  const formStartingPeriod = useStore(
+    form.store,
+    (state) => state.values.startingPeriod
+  );
   const formRoom = useStore(form.store, (state) => state.values.room);
 
-  // The period selector is gone, so the target period is the first selected
-  // lesson's current period (the slot it sits in).
+  const periodsQuery = useQuery({
+    enabled: mode === 'day',
+    queryFn: async (): Promise<Period[]> => {
+      const res = await parseResponse(
+        api.timetable.periods.getAll.$get({ query: {} })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load periods');
+      }
+      return res.data as Period[];
+    },
+    queryKey: queryKeys.timetable.periods(null),
+  });
+
+  // The selected lesson's current period (the slot it sits in).
   const selectedPeriodId = useMemo(() => {
     const firstId = (formLessonIds ?? [])[0];
     if (!firstId) {
@@ -409,13 +429,21 @@ export function MovedLessonDialog({
 
   // Keep the target period in sync with the selected lesson's period.
   useEffect(() => {
-    if (
-      selectedPeriodId &&
-      form.getFieldValue('startingPeriod') !== selectedPeriodId
-    ) {
+    if (!selectedPeriodId) {
+      return;
+    }
+    if (mode === 'room') {
+      if (form.getFieldValue('startingPeriod') !== selectedPeriodId) {
+        form.setFieldValue('startingPeriod', selectedPeriodId);
+      }
+      return;
+    }
+    // Day move: default the target period to the selected lesson's period when
+    // the user has not picked one yet; the selector can override it.
+    if (!form.getFieldValue('startingPeriod')) {
       form.setFieldValue('startingPeriod', selectedPeriodId);
     }
-  }, [form, selectedPeriodId]);
+  }, [form, mode, selectedPeriodId]);
 
   // Normalised target date string, shared by the availability query and the
   // stored-slot comparison so both always refer to the same queried slot.
@@ -433,14 +461,14 @@ export function MovedLessonDialog({
       item != null &&
       dateParam === item.movedLesson.date &&
       formStartingDay === item.movedLesson.startingDay &&
-      selectedPeriodId === item.movedLesson.startingPeriod,
-    [dateParam, formStartingDay, item, selectedPeriodId]
+      formStartingPeriod === item.movedLesson.startingPeriod,
+    [dateParam, formStartingDay, formStartingPeriod, item]
   );
 
   const availableClassroomsQuery = useApiQuery<Classroom[]>(
     () => {
       const sd = formStartingDay;
-      const sp = selectedPeriodId;
+      const sp = formStartingPeriod;
 
       if (!(sd && sp)) {
         return [] as never;
@@ -455,11 +483,11 @@ export function MovedLessonDialog({
       });
     },
     {
-      enabled: !!formDate && !!formStartingDay && !!selectedPeriodId,
+      enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
       queryKey: queryKeys.timetable.availableClassrooms(
         formDate,
         formStartingDay,
-        selectedPeriodId
+        formStartingPeriod
       ),
     }
   );
@@ -479,7 +507,7 @@ export function MovedLessonDialog({
   );
 
   const availabilityKnown = Boolean(
-    formDate && formStartingDay && selectedPeriodId
+    formDate && formStartingDay && formStartingPeriod
   );
 
   const roomOptions = useMemo(() => {
@@ -523,10 +551,10 @@ export function MovedLessonDialog({
       !!formDate &&
       !!formRoom &&
       !!formStartingDay &&
-      !!selectedPeriodId &&
+      !!formStartingPeriod &&
       !!(formLessonIds && formLessonIds.length > 0)
     );
-  }, [formDate, formLessonIds, formRoom, formStartingDay, selectedPeriodId]);
+  }, [formDate, formLessonIds, formRoom, formStartingDay, formStartingPeriod]);
 
   // Whether the lessons list has enough context to render: a day always, plus
   // a from-room in room-move mode.
@@ -707,6 +735,25 @@ export function MovedLessonDialog({
                   date={formDate instanceof Date ? formDate : undefined}
                   onDateChange={handleTargetDateChange}
                   placeholder={t('movedLesson.datePlaceholder')}
+                />
+              </div>
+            )}
+
+            {mode === 'day' && (
+              <div className="space-y-2">
+                <Label>{t('movedLesson.targetPeriod')}</Label>
+                <Combobox
+                  emptyMessage={t('movedLesson.noPeriodsFound')}
+                  onValueChange={(value) =>
+                    form.setFieldValue('startingPeriod', value || undefined)
+                  }
+                  options={(periodsQuery.data ?? []).map((period) => ({
+                    label: formatPeriodLabel(period),
+                    value: period.id,
+                  }))}
+                  placeholder={t('movedLesson.targetPeriodPlaceholder')}
+                  searchPlaceholder={t('search')}
+                  value={formStartingPeriod ?? ''}
                 />
               </div>
             )}
