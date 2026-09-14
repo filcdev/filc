@@ -42,6 +42,11 @@ const envSchema = z.object({
 
   CHRONOS_NOTIFICATION_DELAY_SUBSTITUTION: z.coerce.number().default(60),
   CHRONOS_NOTIFICATION_DELAY_SYSTEM_MESSAGE: z.coerce.number().default(60),
+  CHRONOS_OAUTH_PROXY_SECRET: z.string().optional(),
+  // OAuth proxy: lets preview deployments sign in through the production
+  // origin, because Entra rejects wildcard redirect URIs. Both must be set for
+  // the plugin to be registered; see docs/entra-setup.md.
+  CHRONOS_OAUTH_PROXY_URL: z.url().optional(),
   CHRONOS_PORT: z.coerce
     .number()
     .min(MIN_PORT)

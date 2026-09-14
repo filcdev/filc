@@ -1,7 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { customSession } from 'better-auth/plugins';
+import { customSession, oAuthProxy } from 'better-auth/plugins';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { Context } from '#_types/globals';
@@ -16,6 +16,28 @@ import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
+
+/**
+ * Preview deployments sign in through the production origin: Entra rejects
+ * wildcard redirect URIs, and registering one URI per pull request does not
+ * scale. Production terminates the real OAuth flow, then hands an encrypted
+ * profile back to the preview, which creates the session in its own database.
+ *
+ * `currentURL` is set explicitly because behind a reverse proxy the request URL
+ * is plain HTTP, and this value is what the encrypted profile is redirected to.
+ * On production the two origins match, so the plugin stands down and the
+ * ordinary callback runs. Without both variables the plugin is not registered.
+ */
+const oauthProxyPlugin =
+  env.oauthProxyUrl && env.oauthProxySecret
+    ? [
+        oAuthProxy({
+          currentURL: env.baseUrl,
+          productionURL: env.oauthProxyUrl,
+          secret: env.oauthProxySecret,
+        }),
+      ]
+    : [];
 
 const authOptions = {
   account: {
@@ -138,7 +160,7 @@ const authOptions = {
       logger[level]({ message, ...args });
     },
   },
-  plugins: [],
+  plugins: [...oauthProxyPlugin],
   secret: env.authSecret,
   socialProviders: {
     microsoft: {
