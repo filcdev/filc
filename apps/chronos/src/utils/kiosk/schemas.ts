@@ -66,6 +66,21 @@ export const kioskWeatherResponseSchema = z.object({
   success: z.literal(true),
 });
 
+export const kioskPetrikNewsResponseSchema = z.object({
+  data: z.object({
+    items: z.array(
+      z.object({
+        body: z.string(),
+        imageUrl: z.string().nullable(),
+        publishedAt: z.string(),
+        title: z.string(),
+        url: z.string(),
+      })
+    ),
+  }),
+  success: z.literal(true),
+});
+
 export const kioskDeparturesResponseSchema = z.object({
   data: z.object({
     departures: z.array(

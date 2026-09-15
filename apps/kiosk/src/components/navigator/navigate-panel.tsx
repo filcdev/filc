@@ -4,7 +4,7 @@ import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Label } from '@filcdev/ui/components/label';
-import { useId, useMemo, useState } from 'react';
+import { memo, useId, useMemo, useState } from 'react';
 import { SearchableDropdown } from '@/components/searchable-dropdown';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 import { searchClassrooms } from '@/utils/classroom-search';
@@ -30,7 +30,7 @@ const POSITION_ID = '-1';
 
 /** Routing controls: pick a start (or the saved position), toggle barrier
  *  free, and see why no route is drawn. */
-export function NavigatePanel({
+export const NavigatePanel = memo(function NavigatePanelImpl({
   barrierFree,
   endId,
   graph,
@@ -158,4 +158,4 @@ export function NavigatePanel({
       )}
     </Card>
   );
-}
+});
