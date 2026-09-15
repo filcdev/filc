@@ -1,8 +1,8 @@
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@filcdev/ui/components/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@filcdev/ui/components/popover';
 import { cn } from '@filcdev/ui/lib/utils';
 import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import { type CSSProperties, Fragment, useMemo } from 'react';
@@ -73,8 +73,10 @@ function LessonEntry({
   const color = getSubjectColor(subject);
 
   return (
-    <Tooltip>
-      <TooltipTrigger
+    <Popover>
+      <PopoverTrigger
+        nativeButton={false}
+        openOnHover
         render={
           <div
             className={cn(
@@ -109,7 +111,7 @@ function LessonEntry({
           </div>
         }
       />
-      <TooltipContent
+      <PopoverContent
         className={cn(
           'w-72 border bg-card p-0 text-foreground shadow-2xl',
           color.border
@@ -153,8 +155,8 @@ function LessonEntry({
             )}
           </div>
         </div>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   );
 }
 
