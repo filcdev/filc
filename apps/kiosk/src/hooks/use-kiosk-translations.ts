@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { api, useApiQuery } from '@/utils/api';
-import type { Translator } from '@/utils/classroom-search';
+import type { Resolver, Translator } from '@/utils/classroom-search';
 import { UI_STRINGS } from '@/utils/ui-strings';
 
 /** The kiosk speaks Hungarian; the campus codenames are stored per language. */
@@ -13,10 +13,15 @@ const LANGUAGE = 'hu';
  * shows up as `ui.something` instead of an empty label. `{{n}}` placeholders
  * are filled from the options (i18next's own syntax, which the upstream bundles
  * use for floor numbers).
+ *
+ * `resolve` is the same lookup without the codename fallback: it returns
+ * `fallback` when the key has no row, so callers can tell "has a row" from
+ * "missing" (used to resolve the derived `classroom.desc.*` keys).
  */
 export function useKioskTranslations(): {
   isError: boolean;
   isLoading: boolean;
+  resolve: Resolver;
   t: Translator;
 } {
   const query = useApiQuery<Record<string, string>>(
@@ -44,5 +49,15 @@ export function useKioskTranslations(): {
     [bundle]
   );
 
-  return { isError: query.isError, isLoading: query.isPending, t };
+  const resolve = useCallback<Resolver>(
+    (key, fallback) => bundle[key] ?? UI_STRINGS[key] ?? fallback,
+    [bundle]
+  );
+
+  return {
+    isError: query.isError,
+    isLoading: query.isPending,
+    resolve,
+    t,
+  };
 }

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavigatorPreview } from '@/components/admin/navigator/navigator-preview';
+import { TransferActions } from '@/components/admin/navigator/transfer-actions';
 import { StatCard } from '@/components/admin/stat-card';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import {
@@ -80,13 +81,16 @@ function NavigatorOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-bold text-3xl tracking-tight">
-          {t('navigator.overview.title')}
-        </h1>
-        <p className="text-muted-foreground">
-          {t('navigator.overview.description')}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-bold text-3xl tracking-tight">
+            {t('navigator.overview.title')}
+          </h1>
+          <p className="text-muted-foreground">
+            {t('navigator.overview.description')}
+          </p>
+        </div>
+        <TransferActions />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

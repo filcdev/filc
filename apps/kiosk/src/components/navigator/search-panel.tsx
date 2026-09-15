@@ -29,7 +29,7 @@ export const SearchPanel = memo(function SearchPanelImpl({
   selectedId,
   selectedTypeIds,
 }: SearchPanelProps) {
-  const { t } = useKioskTranslations();
+  const { resolve, t } = useKioskTranslations();
 
   const [query, setQuery] = useState('');
 
@@ -52,7 +52,7 @@ export const SearchPanel = memo(function SearchPanelImpl({
   }, [selectedId]);
 
   const results = useMemo(() => {
-    const found = searchClassrooms(graph, query, t);
+    const found = searchClassrooms(graph, query, t, resolve);
 
     if (selectedTypeIds.length === 0) {
       return found;
@@ -61,7 +61,7 @@ export const SearchPanel = memo(function SearchPanelImpl({
     return found.filter((classroom) =>
       selectedTypeIds.includes(classroom.type_id)
     );
-  }, [graph, query, selectedTypeIds, t]);
+  }, [graph, query, resolve, selectedTypeIds, t]);
 
   return (
     <Card className="min-h-0 flex-1 flex-col gap-2 p-3">
@@ -102,7 +102,7 @@ export const SearchPanel = memo(function SearchPanelImpl({
         {results.map((classroom) => (
           <ClassroomCard
             classroom={classroom}
-            info={classroomInfo(graph, classroom, t)}
+            info={classroomInfo(graph, classroom, t, resolve)}
             itemRefs={itemRefs}
             key={classroom.id}
             onNavigate={onNavigate}

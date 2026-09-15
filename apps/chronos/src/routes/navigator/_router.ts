@@ -37,6 +37,10 @@ import {
   updateStairRoute,
 } from '#routes/navigator/stairs';
 import {
+  exportNavigatorRoute,
+  importNavigatorRoute,
+} from '#routes/navigator/transfer';
+import {
   createTranslationRoute,
   deleteTranslationRoute,
   getTranslationBundleRoute,
@@ -48,6 +52,9 @@ import {
 export const navigatorRouter = navigatorFactory
   .createApp()
   .get('/graph', ...graphRoute)
+  // Transfer (export/import)
+  .get('/export', ...exportNavigatorRoute)
+  .post('/import', ...importNavigatorRoute)
   // Buildings
   .get('/buildings', ...listBuildingsRoute)
   .post('/buildings', ...createBuildingRoute)
