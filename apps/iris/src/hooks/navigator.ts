@@ -849,8 +849,8 @@ export function useImportNavigator({ onSaved }: MutationCallbacks = {}) {
       }
       return res;
     },
-    onError: (error: Error) => {
-      toast.error(error.message || t('navigator.transfer.importError'));
+    onError: () => {
+      toast.error(t('navigator.transfer.importError'));
     },
     onSuccess: () => {
       toast.success(t('navigator.transfer.importSuccess'));

@@ -34,7 +34,12 @@ export function TransferActions() {
   const [pendingPayload, setPendingPayload] =
     useState<NavigatorExportPayload | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const importMutation = useImportNavigator();
+  const importMutation = useImportNavigator({
+    onSaved: () => {
+      setPendingPayload(null);
+      setClearFirst(false);
+    },
+  });
 
   const handleExport = async () => {
     setExporting(true);
@@ -150,8 +155,6 @@ export function TransferActions() {
                     payload: pendingPayload,
                   });
                 }
-                setPendingPayload(null);
-                setClearFirst(false);
               }}
               type="button"
               variant="destructive"

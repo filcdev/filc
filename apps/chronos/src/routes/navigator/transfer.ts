@@ -1,6 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
-import { asc, sql } from 'drizzle-orm';
+import { asc, eq, isNotNull, sql } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import {
@@ -13,6 +13,7 @@ import {
   building as buildingTable,
   classroom as classroomTable,
   classroomType as classroomTypeTable,
+  movedLesson,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
 import { navigatorFactory } from '#routes/navigator/_factory';
@@ -20,6 +21,7 @@ import { badRequest, ok } from '#utils/http';
 import { isIntegrityViolation } from '#utils/navigator/errors';
 import {
   importQuerySchema,
+  type NavigatorTransfer,
   navigatorImportResponseSchema,
   navigatorImportSchema,
   navigatorTransferResponseSchema,
@@ -32,6 +34,9 @@ const { schema: navigatorImportRequestSchema } = await resolver(
 ).toOpenAPISchema();
 
 type NavigatorDeleteTx = Pick<typeof db, 'delete'>;
+type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+type MovedLessonRoom = { id: string; room: string | null };
 
 /**
  * Delete navigator rows in FK-safe order. The navigator-only tables always go
@@ -49,6 +54,109 @@ async function wipeNavigatorTables(tx: NavigatorDeleteTx, clearAll: boolean) {
     await tx.delete(classroomTable);
     await tx.delete(classroomTypeTable);
     await tx.delete(buildingTable);
+  }
+}
+
+/**
+ * The moved_lesson.room FK is NO ACTION, so `DELETE FROM classroom` aborts
+ * with 23503 whenever a moved lesson still points at a room. Lift those links
+ * first (remembering them) so the wipe can proceed; the caller restores the
+ * ones whose room survives the import afterwards. A merge never deletes the
+ * shared tables, so this dance is only needed for `clearAll`.
+ */
+async function liftMovedLessonRooms(
+  tx: TxOrDb,
+  clearAll: boolean
+): Promise<MovedLessonRoom[]> {
+  if (!clearAll) {
+    return [];
+  }
+  const rows = await tx
+    .select({ id: movedLesson.id, room: movedLesson.room })
+    .from(movedLesson)
+    .where(isNotNull(movedLesson.room));
+  await tx
+    .update(movedLesson)
+    .set({ room: null })
+    .where(isNotNull(movedLesson.room));
+  return rows;
+}
+
+/** Re-link the lifted moved lessons whose room is still in the payload. */
+async function restoreMovedLessonRooms(
+  tx: TxOrDb,
+  movedLessonRooms: MovedLessonRoom[],
+  keptRoomIds: Set<string>
+) {
+  for (const row of movedLessonRooms) {
+    if (row.room !== null && keptRoomIds.has(row.room)) {
+      await tx
+        .update(movedLesson)
+        .set({ room: row.room })
+        .where(eq(movedLesson.id, row.id));
+    }
+  }
+}
+
+/**
+ * lesson.classroom_ids and cohort.classroom_ids are unconstrained text[]; drop
+ * any id the import removed so nothing points at a deleted room. Plain SQL
+ * against the freshly-inserted classroom table, no parameters needed.
+ */
+async function dropDanglingRoomRefs(tx: TxOrDb) {
+  await tx.execute(sql`
+    UPDATE lesson
+    SET classroom_ids = ARRAY(
+      SELECT e FROM unnest(classroom_ids) AS e
+      WHERE EXISTS (SELECT 1 FROM classroom c WHERE c.id = e)
+    )
+    WHERE classroom_ids IS NOT NULL
+      AND classroom_ids <> ARRAY(
+        SELECT e FROM unnest(classroom_ids) AS e
+        WHERE EXISTS (SELECT 1 FROM classroom c WHERE c.id = e)
+      )
+  `);
+  await tx.execute(sql`
+    UPDATE cohort
+    SET classroom_ids = ARRAY(
+      SELECT e FROM unnest(classroom_ids) AS e
+      WHERE EXISTS (SELECT 1 FROM classroom c WHERE c.id = e)
+    )
+    WHERE classroom_ids IS NOT NULL
+      AND classroom_ids <> ARRAY(
+        SELECT e FROM unnest(classroom_ids) AS e
+        WHERE EXISTS (SELECT 1 FROM classroom c WHERE c.id = e)
+      )
+  `);
+}
+
+/**
+ * Insert the navigator-only collections. These tables were just emptied (or a
+ * merge is adding to them), so plain inserts preserve the file's ids.
+ * Translations carry a natural (lang_key, text_key) key, so they upsert
+ * defensively even though the table is now empty.
+ */
+async function insertNavigatorOnlyTables(
+  tx: TxOrDb,
+  payload: NavigatorTransfer
+) {
+  if (payload.corridors.length > 0) {
+    await tx.insert(navigatorCorridor).values(payload.corridors);
+  }
+  if (payload.lifts.length > 0) {
+    await tx.insert(navigatorLift).values(payload.lifts);
+  }
+  if (payload.stairs.length > 0) {
+    await tx.insert(navigatorStair).values(payload.stairs);
+  }
+  if (payload.translations.length > 0) {
+    await tx
+      .insert(navigatorTranslation)
+      .values(payload.translations)
+      .onConflictDoUpdate({
+        set: { text: sql`excluded.text` },
+        target: [navigatorTranslation.lang_key, navigatorTranslation.text_key],
+      });
   }
 }
 
@@ -73,49 +181,60 @@ export const exportNavigatorRoute = navigatorFactory.createHandlers(
   }),
   ...authRouter(permissions.navigatorManage),
   async (c) => {
-    const [
-      buildings,
-      classroomTypes,
-      classrooms,
-      corridors,
-      lifts,
-      stairs,
-      translations,
-    ] = await Promise.all([
-      db.select().from(buildingTable).orderBy(asc(buildingTable.name)),
-      db
-        .select()
-        .from(classroomTypeTable)
-        .orderBy(asc(classroomTypeTable.name)),
-      db
-        .select()
-        .from(classroomTable)
-        .orderBy(asc(classroomTable.name), asc(classroomTable.building_id)),
-      db.select().from(navigatorCorridor).orderBy(asc(navigatorCorridor.name)),
-      db.select().from(navigatorLift).orderBy(asc(navigatorLift.name)),
-      db.select().from(navigatorStair).orderBy(asc(navigatorStair.name)),
-      db
-        .select()
-        .from(navigatorTranslation)
-        .orderBy(
-          asc(navigatorTranslation.lang_key),
-          asc(navigatorTranslation.text_key)
-        ),
-    ]);
+    // Read every collection from one repeatable-read snapshot so the export
+    // payload cannot straddle a concurrent import/write halfway through.
+    const payload = await db.transaction(
+      async (tx) => {
+        const [
+          buildings,
+          classroomTypes,
+          classrooms,
+          corridors,
+          lifts,
+          stairs,
+          translations,
+        ] = await Promise.all([
+          tx.select().from(buildingTable).orderBy(asc(buildingTable.name)),
+          tx
+            .select()
+            .from(classroomTypeTable)
+            .orderBy(asc(classroomTypeTable.name)),
+          tx
+            .select()
+            .from(classroomTable)
+            .orderBy(asc(classroomTable.name), asc(classroomTable.building_id)),
+          tx
+            .select()
+            .from(navigatorCorridor)
+            .orderBy(asc(navigatorCorridor.name)),
+          tx.select().from(navigatorLift).orderBy(asc(navigatorLift.name)),
+          tx.select().from(navigatorStair).orderBy(asc(navigatorStair.name)),
+          tx
+            .select()
+            .from(navigatorTranslation)
+            .orderBy(
+              asc(navigatorTranslation.lang_key),
+              asc(navigatorTranslation.text_key)
+            ),
+        ]);
 
-    // Zod reorders the output to the transfer schema's shape (version first)
-    // and drops nothing extra: the omit()s already removed the timestamps.
-    const payload = navigatorTransferSchema.parse({
-      buildings,
-      classrooms,
-      classroomTypes,
-      corridors,
-      exportedAt: new Date().toISOString(),
-      lifts,
-      stairs,
-      translations,
-      version: 1,
-    });
+        // Zod reorders the output to the transfer schema's shape (version
+        // first) and drops nothing extra: the omit()s already removed the
+        // timestamps.
+        return navigatorTransferSchema.parse({
+          buildings,
+          classrooms,
+          classroomTypes,
+          corridors,
+          exportedAt: new Date().toISOString(),
+          lifts,
+          stairs,
+          translations,
+          version: 1,
+        });
+      },
+      { isolationLevel: 'repeatable read' }
+    );
 
     return ok(c, payload);
   }
@@ -171,6 +290,8 @@ export const importNavigatorRoute = navigatorFactory.createHandlers(
 
     try {
       await db.transaction(async (tx) => {
+        const movedLessonRooms = await liftMovedLessonRooms(tx, clearAll);
+
         await wipeNavigatorTables(tx, clearAll);
 
         // Upsert parents before children. The timetable-shared tables are
@@ -232,28 +353,15 @@ export const importNavigatorRoute = navigatorFactory.createHandlers(
         }
 
         // Navigator-only tables were just emptied; plain inserts preserve the
-        // file's ids. Translations carry a natural (lang_key, text_key) key,
-        // so they upsert defensively even though the table is now empty.
-        if (payload.corridors.length > 0) {
-          await tx.insert(navigatorCorridor).values(payload.corridors);
-        }
-        if (payload.lifts.length > 0) {
-          await tx.insert(navigatorLift).values(payload.lifts);
-        }
-        if (payload.stairs.length > 0) {
-          await tx.insert(navigatorStair).values(payload.stairs);
-        }
-        if (payload.translations.length > 0) {
-          await tx
-            .insert(navigatorTranslation)
-            .values(payload.translations)
-            .onConflictDoUpdate({
-              set: { text: sql`excluded.text` },
-              target: [
-                navigatorTranslation.lang_key,
-                navigatorTranslation.text_key,
-              ],
-            });
+        // file's ids.
+        await insertNavigatorOnlyTables(tx, payload);
+
+        if (clearAll) {
+          const keptRoomIds = new Set(
+            payload.classrooms.map((classroom) => classroom.id)
+          );
+          await restoreMovedLessonRooms(tx, movedLessonRooms, keptRoomIds);
+          await dropDanglingRoomRefs(tx);
         }
       });
     } catch (err) {
