@@ -361,6 +361,8 @@
     "targetDate": "Céldátum",
     "targetDay": "Célnap",
     "targetPeriod": "Célóra",
+    "targetPeriodPlaceholder": "Válassz egy óraidőpontot",
+    "noPeriodsFound": "Nincsenek óraidőpontok.",
     "targetRoom": "Célterem",
     "moveMode": "Áthelyezés típusa",
     "roomMove": "Teremcsere",

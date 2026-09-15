@@ -361,6 +361,8 @@
     "targetDate": "Target Date",
     "targetDay": "Target Day",
     "targetPeriod": "Target Period",
+    "targetPeriodPlaceholder": "Select a period",
+    "noPeriodsFound": "No periods found.",
     "targetRoom": "Target Room",
     "moveMode": "Move mode",
     "roomMove": "Room move",
