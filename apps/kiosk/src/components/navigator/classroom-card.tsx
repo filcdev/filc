@@ -33,7 +33,7 @@ export function ClassroomCard({
 
   useLayoutEffect(() => {
     const element = textRef.current;
-    if (!(element && info.classroom.description)) {
+    if (!(element && info.description)) {
       return;
     }
 
@@ -47,7 +47,7 @@ export function ClassroomCard({
     observer.observe(element);
 
     return () => observer.disconnect();
-  }, [info.classroom.description]);
+  }, [info.description]);
 
   const selected = classroom.id === selectedId;
 
@@ -103,17 +103,17 @@ export function ClassroomCard({
           </p>
         </div>
 
-        {classroom.description && (
+        {info.description && (
           <p
             className={`opacity-80 ${expanded ? '' : 'line-clamp-2'}`}
             ref={textRef}
           >
-            {t(classroom.description)}
+            {info.description}
           </p>
         )}
       </div>
 
-      {classroom.description && (isOverflowing || expanded) && (
+      {info.description && (isOverflowing || expanded) && (
         <div className="mt-1 flex">
           <Button
             onClick={() => setExpanded((previous) => !previous)}
