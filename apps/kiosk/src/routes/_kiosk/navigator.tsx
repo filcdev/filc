@@ -1,3 +1,9 @@
+import {
+  DEFAULT_IDLE_RESET_SECONDS,
+  DEFAULT_PETRIK_NEWS_DWELL_SECONDS,
+  DEFAULT_PETRIK_NEWS_ENABLED,
+  DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
+} from '@filcdev/api/domains/kiosk/config';
 import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
@@ -16,9 +22,10 @@ import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VirtualKeyboardProvider } from '@/components/keyboard/virtual-keyboard-context';
 import { NavigatePanel } from '@/components/navigator/navigate-panel';
+import { PetrikNewsOverlay } from '@/components/navigator/petrik-news';
 import { SearchPanel } from '@/components/navigator/search-panel';
 import { TypeHighlighter } from '@/components/navigator/type-highlighter';
 import { useKioskHeartbeat } from '@/hooks/kiosk';
@@ -33,10 +40,6 @@ export const Route = createFileRoute('/_kiosk/navigator')({
 });
 
 type View = 'search' | 'navigate';
-
-/** Reset the kiosk after this long with no user input, unless the kiosk's own
- *  configuration says otherwise. */
-const DEFAULT_IDLE_MS = 60_000;
 
 /** Route to draw: an explicit start wins, otherwise the kiosk's configured
  *  location. Anything shorter than two waypoints is not a route. */
@@ -159,8 +162,28 @@ function NavigatorKioskPage() {
   const config = heartbeat?.state === 'navigator' ? heartbeat.config : null;
   // The marker is owned by the kiosk record in Chronos, not by the box.
   const myLocation = config?.startLocation ?? null;
+  // Whether the petrik.hu news slideshow is enabled for this box.
+  const petrikNewsEnabled =
+    config?.petrikNewsEnabled ?? DEFAULT_PETRIK_NEWS_ENABLED;
+
+  // The news takeover's two thresholds, in milliseconds (the schema stores
+  // seconds). Hoisted so the `?.`/`??` live in this memo, not the component.
+  const petrikNewsTimings = useMemo(
+    () => ({
+      dwellMs:
+        (config?.petrikNewsDwellSeconds ?? DEFAULT_PETRIK_NEWS_DWELL_SECONDS) *
+        1000,
+      idleMs:
+        (config?.petrikNewsIdleSeconds ?? DEFAULT_PETRIK_NEWS_IDLE_SECONDS) *
+        1000,
+    }),
+    [config]
+  );
 
   const [view, setView] = useState<View>('search');
+
+  // Whether the petrik.hu news slideshow has taken over the screen.
+  const [newsVisible, setNewsVisible] = useState(false);
 
   // The classroom chosen in search → becomes the navigation target.
   const [targetId, setTargetId] = useState<string | null>(null);
@@ -200,18 +223,38 @@ function NavigatorKioskPage() {
     setViewResetToken((previous) => previous + 1);
   }, []);
 
-  useIdleTimer(resetAll, config?.idleResetMs ?? DEFAULT_IDLE_MS);
+  useIdleTimer(
+    resetAll,
+    (config?.idleResetSeconds ?? DEFAULT_IDLE_RESET_SECONDS) * 1000
+  );
 
-  const selectTarget = (id: string) => {
-    setTargetId(id);
-    const classroom = classroomById.get(id);
-    if (classroom) {
-      setIsolatedFloor({
-        buildingId: classroom.building_id,
-        storey: classroom.storey,
-      });
+  // The petrik.hu news slideshow has its own idle threshold; a stable callback
+  // keeps the hook from tearing down its listeners on every render.
+  const showNews = useCallback(() => setNewsVisible(true), []);
+  const dismissNews = useCallback(() => setNewsVisible(false), []);
+  useIdleTimer(showNews, petrikNewsTimings.idleMs, petrikNewsEnabled);
+
+  // A toggle-off in Iris hides the slideshow immediately and keeps it hidden
+  // until the switch is flipped back on.
+  useEffect(() => {
+    if (!petrikNewsEnabled) {
+      setNewsVisible(false);
     }
-  };
+  }, [petrikNewsEnabled]);
+
+  const selectTarget = useCallback(
+    (id: string) => {
+      setTargetId(id);
+      const classroom = classroomById.get(id);
+      if (classroom) {
+        setIsolatedFloor({
+          buildingId: classroom.building_id,
+          storey: classroom.storey,
+        });
+      }
+    },
+    [classroomById]
+  );
 
   const onObjectClick = (node: KioskNode) => {
     if (node.kind !== 'classroom') {
@@ -380,6 +423,13 @@ function NavigatorKioskPage() {
           </div>
         </main>
       </div>
+      {petrikNewsEnabled && newsVisible && (
+        <PetrikNewsOverlay
+          dwellMs={petrikNewsTimings.dwellMs}
+          machine={machine}
+          onDismiss={dismissNews}
+        />
+      )}
     </VirtualKeyboardProvider>
   );
 }

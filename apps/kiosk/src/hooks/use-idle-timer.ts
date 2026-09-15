@@ -18,8 +18,16 @@ const ACTIVITY_EVENTS = [
  * `pointermove`/`touchmove` are throttled so dragging the 3D view doesn't
  * reset the timer on every frame.
  */
-export function useIdleTimer(onIdle: () => void, timeoutMs = 60_000): void {
+export function useIdleTimer(
+  onIdle: () => void,
+  timeoutMs = 60_000,
+  enabled = true
+): void {
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     let timer: number;
     let lastMove = 0;
 
@@ -52,5 +60,5 @@ export function useIdleTimer(onIdle: () => void, timeoutMs = 60_000): void {
         window.removeEventListener(event, onActivity);
       }
     };
-  }, [onIdle, timeoutMs]);
+  }, [onIdle, timeoutMs, enabled]);
 }

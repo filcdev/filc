@@ -9,6 +9,7 @@ import {
 } from '#routes/kiosk/index';
 import { kioskNewsRoute } from '#routes/kiosk/news';
 import { kioskNewsImageRoute } from '#routes/kiosk/news-image';
+import { kioskPetrikNewsRoute } from '#routes/kiosk/petrik-news';
 import { kioskWeatherRoute } from '#routes/kiosk/weather';
 
 export const kioskRouter = kioskFactory
@@ -17,6 +18,7 @@ export const kioskRouter = kioskFactory
   .post('/heartbeat', ...kioskHeartbeatRoute)
   .get('/news', ...kioskNewsRoute)
   .get('/news/:id/image', ...kioskNewsImageRoute)
+  .get('/petrik-news', ...kioskPetrikNewsRoute)
   .get('/weather', ...kioskWeatherRoute)
   .post('/departures', ...kioskDeparturesRoute)
   // Kiosk registry

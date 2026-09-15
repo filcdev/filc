@@ -1,4 +1,10 @@
 import {
+  DEFAULT_IDLE_RESET_SECONDS,
+  DEFAULT_PETRIK_NEWS_DWELL_SECONDS,
+  DEFAULT_PETRIK_NEWS_ENABLED,
+  DEFAULT_PETRIK_NEWS_FEED_URL,
+  DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
+  DEFAULT_PETRIK_NEWS_MAX_ITEMS,
   type KioskKind,
   navigatorKioskConfigSchema,
   tvKioskConfigSchema,
@@ -45,20 +51,24 @@ type KioskFormValues = {
   departures: DepartureGroupForm[];
   enabled: boolean;
   highlightedNews: boolean;
-  idleResetMs: number;
+  idleResetSeconds: number;
   kind: KioskKind;
   machineId: string;
   name: string;
   newsImages: boolean;
   newsSlideSeconds: number;
   newsTickerSeconds: number;
+  petrikNewsDwellSeconds: number;
+  petrikNewsEnabled: boolean;
+  petrikNewsFeedUrl: string;
+  petrikNewsIdleSeconds: number;
+  petrikNewsMaxItems: number;
   startBuildingId: string;
   startStorey: number;
   startX: number;
   startY: number;
 };
 
-const DEFAULT_IDLE_RESET_MS = 60_000;
 const DEFAULT_NEWS_SLIDE_SECONDS = 20;
 const DEFAULT_NEWS_TICKER_SECONDS = 60;
 
@@ -69,13 +79,18 @@ function toFormValues(kiosk: KioskRow | null): KioskFormValues {
       departures: [],
       enabled: true,
       highlightedNews: true,
-      idleResetMs: DEFAULT_IDLE_RESET_MS,
+      idleResetSeconds: DEFAULT_IDLE_RESET_SECONDS,
       kind: 'tv',
       machineId: '',
       name: '',
       newsImages: true,
       newsSlideSeconds: DEFAULT_NEWS_SLIDE_SECONDS,
       newsTickerSeconds: DEFAULT_NEWS_TICKER_SECONDS,
+      petrikNewsDwellSeconds: DEFAULT_PETRIK_NEWS_DWELL_SECONDS,
+      petrikNewsEnabled: DEFAULT_PETRIK_NEWS_ENABLED,
+      petrikNewsFeedUrl: DEFAULT_PETRIK_NEWS_FEED_URL,
+      petrikNewsIdleSeconds: DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
+      petrikNewsMaxItems: DEFAULT_PETRIK_NEWS_MAX_ITEMS,
       startBuildingId: '',
       startStorey: 0,
       startX: 0,
@@ -88,6 +103,14 @@ function toFormValues(kiosk: KioskRow | null): KioskFormValues {
   const startLocation = navigatorConfig.success
     ? navigatorConfig.data.startLocation
     : null;
+  const navigatorNews = navigatorConfig.success
+    ? navigatorConfig.data
+    : {
+        petrikNewsDwellSeconds: DEFAULT_PETRIK_NEWS_DWELL_SECONDS,
+        petrikNewsFeedUrl: DEFAULT_PETRIK_NEWS_FEED_URL,
+        petrikNewsIdleSeconds: DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
+        petrikNewsMaxItems: DEFAULT_PETRIK_NEWS_MAX_ITEMS,
+      };
   const departures =
     kiosk.kind === 'tv' && tvConfig.success
       ? tvConfig.data.departures.map((group) => ({
@@ -105,9 +128,9 @@ function toFormValues(kiosk: KioskRow | null): KioskFormValues {
     departures,
     enabled: kiosk.enabled,
     highlightedNews: tvConfig.success ? tvConfig.data.highlightedNews : true,
-    idleResetMs: navigatorConfig.success
-      ? navigatorConfig.data.idleResetMs
-      : DEFAULT_IDLE_RESET_MS,
+    idleResetSeconds: navigatorConfig.success
+      ? navigatorConfig.data.idleResetSeconds
+      : DEFAULT_IDLE_RESET_SECONDS,
     kind: kiosk.kind,
     machineId: kiosk.machineId,
     name: kiosk.name,
@@ -118,6 +141,13 @@ function toFormValues(kiosk: KioskRow | null): KioskFormValues {
     newsTickerSeconds: tvConfig.success
       ? tvConfig.data.newsTickerSeconds
       : DEFAULT_NEWS_TICKER_SECONDS,
+    petrikNewsDwellSeconds: navigatorNews.petrikNewsDwellSeconds,
+    petrikNewsEnabled: navigatorConfig.success
+      ? navigatorConfig.data.petrikNewsEnabled
+      : DEFAULT_PETRIK_NEWS_ENABLED,
+    petrikNewsFeedUrl: navigatorNews.petrikNewsFeedUrl,
+    petrikNewsIdleSeconds: navigatorNews.petrikNewsIdleSeconds,
+    petrikNewsMaxItems: navigatorNews.petrikNewsMaxItems,
     startBuildingId: startLocation?.buildingId ?? '',
     startStorey: startLocation?.storey ?? 0,
     startX: startLocation?.x ?? 0,
@@ -183,7 +213,12 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
       }
 
       const config = navigatorKioskConfigSchema.safeParse({
-        idleResetMs: value.idleResetMs,
+        idleResetSeconds: value.idleResetSeconds,
+        petrikNewsDwellSeconds: value.petrikNewsDwellSeconds,
+        petrikNewsEnabled: value.petrikNewsEnabled,
+        petrikNewsFeedUrl: value.petrikNewsFeedUrl,
+        petrikNewsIdleSeconds: value.petrikNewsIdleSeconds,
+        petrikNewsMaxItems: value.petrikNewsMaxItems,
         startLocation: value.startBuildingId
           ? {
               buildingId: value.startBuildingId,
@@ -530,14 +565,16 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              <form.Field name="idleResetMs">
+              <form.Field name="idleResetSeconds">
                 {(field) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>
-                      {t('kiosk.fields.idleResetMs')}
+                      {t('kiosk.fields.idleResetSeconds')}
                     </FieldLabel>
                     <Input
                       id={field.name}
+                      max={600}
+                      min={10}
                       onChange={(event) =>
                         field.handleChange(Number(event.target.value))
                       }
@@ -547,6 +584,101 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
                   </Field>
                 )}
               </form.Field>
+              <form.Field name="petrikNewsEnabled">
+                {(field) => (
+                  <Field orientation="horizontal">
+                    <FieldLabel htmlFor={field.name}>
+                      {t('kiosk.fields.petrikNewsEnabled')}
+                    </FieldLabel>
+                    <Checkbox
+                      checked={field.state.value}
+                      id={field.name}
+                      onCheckedChange={(checked) =>
+                        field.handleChange(checked === true)
+                      }
+                    />
+                  </Field>
+                )}
+              </form.Field>
+              {values.petrikNewsEnabled && (
+                <>
+                  <form.Field name="petrikNewsIdleSeconds">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          {t('kiosk.fields.petrikNewsIdleSeconds')}
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          max={600}
+                          min={10}
+                          onChange={(event) =>
+                            field.handleChange(Number(event.target.value))
+                          }
+                          type="number"
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                  <form.Field name="petrikNewsDwellSeconds">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          {t('kiosk.fields.petrikNewsDwellSeconds')}
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          max={120}
+                          min={5}
+                          onChange={(event) =>
+                            field.handleChange(Number(event.target.value))
+                          }
+                          type="number"
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                  <form.Field name="petrikNewsFeedUrl">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          {t('kiosk.fields.petrikNewsFeedUrl')}
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          onChange={(event) =>
+                            field.handleChange(event.target.value)
+                          }
+                          placeholder={DEFAULT_PETRIK_NEWS_FEED_URL}
+                          type="text"
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                  <form.Field name="petrikNewsMaxItems">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          {t('kiosk.fields.petrikNewsMaxItems')}
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          max={30}
+                          min={1}
+                          onChange={(event) =>
+                            field.handleChange(Number(event.target.value))
+                          }
+                          type="number"
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                </>
+              )}
               <div className="grid gap-4 sm:grid-cols-3">
                 <form.Field name="startBuildingId">
                   {(field) => (

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { api, useApiQuery } from '@/utils/api';
 import type { Translator } from '@/utils/classroom-search';
 import { UI_STRINGS } from '@/utils/ui-strings';
@@ -27,7 +27,7 @@ export function useKioskTranslations(): {
     }
   );
 
-  const bundle = query.data ?? {};
+  const bundle = useMemo(() => query.data ?? {}, [query.data]);
 
   const t = useCallback<Translator>(
     (key, options) => {
