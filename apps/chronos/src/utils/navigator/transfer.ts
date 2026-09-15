@@ -86,15 +86,6 @@ export const navigatorImportSchema = navigatorTransferSchema.extend({
   stairs: z.array(stairImportRowSchema),
 });
 
-/**
- * Query options for the import route. `clear` is a string enum (not a coerced
- * boolean, since `Boolean('false')` is `true`): only `"true"` wipes existing
- * navigator data first.
- */
-export const importQuerySchema = z.object({
-  clear: z.enum(['true', 'false']).optional(),
-});
-
 export const navigatorTransferResponseSchema = z.object({
   data: navigatorTransferSchema,
   success: z.literal(true),

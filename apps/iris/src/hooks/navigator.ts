@@ -826,23 +826,14 @@ export async function exportNavigatorJson(): Promise<void> {
   );
 }
 
-/** Replace all navigator data with the contents of an export JSON payload. */
+/** Insert or update all navigator data from an export JSON payload. */
 export function useImportNavigator({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateNavigator();
   const { t } = useTranslation();
   return useMutation({
-    mutationFn: async ({
-      payload,
-      clear,
-    }: {
-      payload: NavigatorExportPayload;
-      clear: boolean;
-    }) => {
+    mutationFn: async (payload: NavigatorExportPayload) => {
       const res = await parseResponse(
-        api.navigator.import.$post({
-          json: payload,
-          query: { clear: clear ? 'true' : 'false' },
-        })
+        api.navigator.import.$post({ json: payload })
       );
       if (!res.success) {
         throw new Error('Failed to import navigator data');
