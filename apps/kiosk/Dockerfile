@@ -1,4 +1,4 @@
-FROM oven/bun:1.4.0-alpine AS base
+FROM oven/bun:1.4.2-alpine AS base
 RUN apk update && apk add --no-cache libc6-compat && rm -rf /var/cache/apk/*
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY --from=prepare /app/out/full/ .
 
 RUN bun run build --filter=@filcdev/kiosk
 
-FROM nginx:1.29-alpine AS release
+FROM nginx:1.31-alpine AS release
 COPY --from=builder /app/apps/kiosk/nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /app/apps/kiosk/dist /usr/share/nginx/html
 EXPOSE 80/tcp
