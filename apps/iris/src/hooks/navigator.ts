@@ -34,7 +34,7 @@ import type {
   UpdateTranslationInput,
 } from '@filcdev/api/domains/navigator/translation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { InferResponseType } from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -790,6 +790,80 @@ export function useDeleteNavigatorTranslation({
     onSuccess: () => {
       toast.success(t('navigator.translations.deleteSuccess'));
       invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+/** The versioned JSON payload the import endpoint accepts. */
+export type NavigatorExportPayload = InferRequestType<
+  typeof api.navigator.import.$post
+>['json'];
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Download the full navigator data as a JSON file. Not a React hook: the
+ * caller drives the busy state and surfaces errors via a toast.
+ */
+export async function exportNavigatorJson(): Promise<void> {
+  const res = await parseResponse(api.navigator.export.$get());
+  if (!res.success) {
+    throw new Error('Failed to export navigator data');
+  }
+  downloadBlob(
+    new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' }),
+    `navigator-export-${new Date().toISOString().slice(0, 10)}.json`
+  );
+}
+
+/** Replace all navigator data with the contents of an export JSON payload. */
+export function useImportNavigator({ onSaved }: MutationCallbacks = {}) {
+  const invalidate = useInvalidateNavigator();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({
+      payload,
+      clear,
+    }: {
+      payload: NavigatorExportPayload;
+      clear: boolean;
+    }) => {
+      const res = await parseResponse(
+        api.navigator.import.$post({
+          json: payload,
+          query: { clear: clear ? 'true' : 'false' },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to import navigator data');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('navigator.transfer.importError'));
+    },
+    onSuccess: () => {
+      toast.success(t('navigator.transfer.importSuccess'));
+      invalidate([
+        queryKeys.navigator.buildings(),
+        queryKeys.navigator.classroomTypes(),
+        queryKeys.navigator.classrooms(),
+        queryKeys.navigator.corridors(),
+        queryKeys.navigator.lifts(),
+        queryKeys.navigator.stairs(),
+        queryKeys.navigator.translations(),
+        queryKeys.navigator.availableLanguages(),
+      ]);
       onSaved?.();
     },
   });

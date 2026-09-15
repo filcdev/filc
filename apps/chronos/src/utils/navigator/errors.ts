@@ -20,3 +20,24 @@ export const isReferencedRowError = (error: unknown) => {
   }
   return false;
 };
+
+/**
+ * Whether the error (or any wrapped cause) is a Postgres integrity-constraint
+ * violation: SQLSTATE class 23 (unique, foreign-key, not-null, check, ...).
+ * Bun surfaces the SQLSTATE as `errno` and Drizzle wraps the driver error, so
+ * the cause chain has to be walked.
+ */
+export const isIntegrityViolation = (error: unknown): boolean => {
+  let current: unknown = error;
+  while (current instanceof Error) {
+    const { code, errno } = current as { code?: string; errno?: string };
+    if (
+      (typeof code === 'string' && code.startsWith('23')) ||
+      (typeof errno === 'string' && errno.startsWith('23'))
+    ) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+};

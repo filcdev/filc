@@ -884,6 +884,17 @@
     "preview": {
       "title": "Campus preview",
       "description": "Read-only view of the whole campus"
+    },
+    "transfer": {
+      "export": "Export JSON",
+      "exportInProgress": "Exporting…",
+      "import": "Import JSON",
+      "importConfirm": "Import the selected navigator data file? Existing rows are updated; new ones are added.",
+      "clearFirst": "Delete all existing navigator data first (buildings, rooms, types, corridors, lifts, stairs, translations)",
+      "importSuccess": "Navigator data imported successfully",
+      "importError": "Import failed",
+      "exportError": "Export failed",
+      "invalidFile": "The selected file is not a valid navigator export"
     }
   },
   "kiosk": {

@@ -884,6 +884,17 @@
     "preview": {
       "title": "Kampusz előnézet",
       "description": "A teljes kampusz csak olvasható nézete"
+    },
+    "transfer": {
+      "export": "JSON exportálása",
+      "exportInProgress": "Exportálás…",
+      "import": "JSON importálása",
+      "importConfirm": "Importálja a kiválasztott navigátor adatfájlt? A meglévő sorok frissülnek, az újak hozzáadódnak.",
+      "clearFirst": "Előbb törölje az összes meglévő navigátor adatot (épületek, termek, típusok, folyosók, liftek, lépcsők, fordítások)",
+      "importSuccess": "A navigátor adatok importálása sikeres",
+      "importError": "Hiba történt az importálás során",
+      "exportError": "Hiba történt az exportálás során",
+      "invalidFile": "A kiválasztott fájl nem érvényes navigátor export"
     }
   },
   "kiosk": {
