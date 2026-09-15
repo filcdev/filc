@@ -42,11 +42,11 @@ export function NavigatePanel({
   setBarrierFree,
   startId,
 }: NavigatePanelProps) {
-  const { t } = useKioskTranslations();
+  const { resolve, t } = useKioskTranslations();
   const barrierFreeId = useId();
   const [query, setQuery] = useState('');
 
-  const results = searchClassrooms(graph, query, t);
+  const results = searchClassrooms(graph, query, t, resolve);
 
   // The synthetic "my position" item carries already-translated text; real
   // classroom items carry a human name that is translated at render.
