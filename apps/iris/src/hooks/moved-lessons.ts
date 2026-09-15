@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { SubstitutionItem } from '@/hooks/substitutions';
+import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -87,7 +88,7 @@ export function useMovedLessonCohorts(enabled: boolean) {
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return res.data as Cohort[];
+      return sortCohorts(res.data) as Cohort[];
     },
     queryKey: queryKeys.cohorts(),
   });

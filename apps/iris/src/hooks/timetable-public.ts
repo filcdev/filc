@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { type InferResponseType, parseResponse } from 'hono/client';
+import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 import type { MovedLessonItem } from './moved-lessons';
@@ -117,7 +118,7 @@ export function useTimetableCohorts(timetableId: string | null | undefined) {
       if (!(res.success && res.data)) {
         throw new Error('Failed to load cohorts');
       }
-      return res.data as PublicCohort[];
+      return sortCohorts(res.data) as PublicCohort[];
     },
     queryKey: queryKeys.timetable.cohorts(timetableId),
   });

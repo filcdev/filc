@@ -29,6 +29,7 @@ import {
   useSubstitutionTeachers,
   useUpdateSubstitution,
 } from '@/hooks/substitutions';
+import { sortCohorts } from '@/utils/cohort';
 import { getIntlLocale } from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -609,7 +610,7 @@ export function SubstitutionDialog({
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return res.data;
+      return sortCohorts(res.data);
     },
     queryKey: queryKeys.cohorts(),
   });

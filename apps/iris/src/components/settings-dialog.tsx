@@ -35,6 +35,7 @@ import {
 } from '@/hooks/notifications';
 import { useApiQuery } from '@/utils/api';
 import { authClient } from '@/utils/authentication';
+import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -316,7 +317,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const cohortQuery = useApiQuery<CohortItem[]>(() => api.cohort.index.$get(), {
     enabled: open,
     queryKey: queryKeys.cohorts(),
-    select: (data) => data ?? [],
+    select: (data) => sortCohorts(data ?? []),
   });
 
   useEffect(() => {

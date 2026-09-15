@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type InferResponseType, parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -80,7 +81,7 @@ export function useCohortSelector(userCohortId: string | null) {
       if (!res.success) {
         throw new Error('Failed to load cohorts');
       }
-      return res.data as CohortsData;
+      return sortCohorts(res.data) as CohortsData;
     },
     queryKey: queryKeys.timetable.cohorts(timetableId),
   });
