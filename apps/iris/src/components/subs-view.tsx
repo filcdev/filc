@@ -46,6 +46,7 @@ import {
   useTimetables,
 } from '@/hooks/timetable-public';
 import { authClient } from '@/utils/authentication';
+import { compareClassNames } from '@/utils/cohort';
 import { SubsV } from './subs';
 
 const groupByDate = (data: Subs[]) =>
@@ -254,7 +255,7 @@ const getCohortsForDate = (
         ml.lessons.flatMap((lesson) => lesson.cohorts)
       ),
     ]),
-  ].sort();
+  ].sort(compareClassNames);
 
 // SubsFilterBar
 

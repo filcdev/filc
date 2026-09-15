@@ -3,6 +3,7 @@ import type { InferRequestType, InferResponseType } from 'hono/client';
 import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -106,7 +107,7 @@ export function useCohorts(enabled: boolean) {
       if (!(res.success && res.data)) {
         throw new Error('Failed to load cohorts');
       }
-      return res.data as Cohort[];
+      return sortCohorts(res.data) as Cohort[];
     },
     queryKey: queryKeys.cohorts(),
   });
