@@ -14,7 +14,9 @@ import { ApiHttpError, ok } from '#utils/http';
 import { assertAllowedFeedUrl } from '#utils/kiosk/feed-url';
 import {
   type PetrikNewsItem,
+  parseFeaturedImages,
   parsePetrikNewsFeed,
+  stripTrailingSlash,
 } from '#utils/kiosk/petrik-news';
 import { kioskPetrikNewsResponseSchema } from '#utils/kiosk/schemas';
 import { filcExt } from '#utils/openapi';
@@ -23,6 +25,7 @@ import { kioskFactory } from './_factory';
 const PETRIK_NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
 const PETRIK_NEWS_TIMEOUT_MS = 10_000;
 const MAX_FEED_BYTES = 1_048_576;
+const MAX_JSON_BYTES = 4 * 1024 * 1024;
 
 const petrikNewsQuerySchema = z.object({
   machine: z.string().min(1).optional(),
@@ -39,12 +42,16 @@ const feedCache = new Map<
 >();
 
 /**
- * Read the feed body up to a hard size cap, decoding as UTF-8. A null body or
- * a body over the cap is an unusable feed and surfaces as a 502.
+ * Read a response body up to a hard size cap, decoding as UTF-8. A null body
+ * or a body over the cap throws; callers decide whether that is fatal (the
+ * feed, wrapped into a 502) or best-effort (the REST fallback).
  */
-async function readFeedBody(response: Response): Promise<string> {
+async function readCappedText(
+  response: Response,
+  maxBytes: number
+): Promise<string> {
   if (!response.body) {
-    throw new Error('petrik.hu feed returned an empty body');
+    throw new Error('petrik.hu returned an empty body');
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -57,11 +64,9 @@ async function readFeedBody(response: Response): Promise<string> {
         break;
       }
       total += value.byteLength;
-      if (total > MAX_FEED_BYTES) {
+      if (total > maxBytes) {
         await reader.cancel();
-        throw new ApiHttpError(StatusCodes.BAD_GATEWAY, {
-          message: 'petrik.hu feed is too large',
-        });
+        throw new Error('petrik.hu response is too large');
       }
       chunks.push(decoder.decode(value, { stream: true }));
     }
@@ -70,6 +75,38 @@ async function readFeedBody(response: Response): Promise<string> {
   }
   chunks.push(decoder.decode());
   return chunks.join('');
+}
+
+/**
+ * Fetch featured images from the WordPress REST API at the feed's own origin.
+ * petrik.hu's RSS carries no featured image, so posts whose body has no
+ * `<img>` get their picture from `wp/v2/posts` as a best-effort fallback —
+ * the REST host is the feed's own origin, already validated by
+ * `assertAllowedFeedUrl`. A non-ok response means "no fallback available".
+ */
+async function fetchFeaturedImages(
+  feedUrl: string
+): Promise<Map<string, string>> {
+  const restUrl = new URL('/wp-json/wp/v2/posts', feedUrl);
+  restUrl.searchParams.set('per_page', '100');
+  restUrl.searchParams.set('_embed', 'wp:featuredmedia');
+  // `_fields` is deliberately omitted: WordPress drops `_embedded` whenever
+  // `_fields` is set, so restricting fields would strip the `source_url` the
+  // fallback needs. The uncapped response is bounded by `MAX_JSON_BYTES`.
+
+  const response = await fetch(restUrl, {
+    headers: { 'user-agent': 'filc-kiosk/1.0 (+https://filc.petrik.hu)' },
+    redirect: 'manual',
+    signal: AbortSignal.timeout(PETRIK_NEWS_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    return new Map();
+  }
+
+  return parseFeaturedImages(
+    JSON.parse(await readCappedText(response, MAX_JSON_BYTES))
+  );
 }
 
 type ResolvedFeed = {
@@ -154,7 +191,7 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
         throw new Error(`petrik.hu responded with ${response.status}`);
       }
 
-      xml = await readFeedBody(response);
+      xml = await readCappedText(response, MAX_FEED_BYTES);
     } catch (error) {
       if (error instanceof ApiHttpError) {
         throw error;
@@ -166,6 +203,22 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
     }
 
     const items = parsePetrikNewsFeed(xml);
+
+    // petrik.hu's feed never exposes the featured image, so items whose body
+    // has no `<img>` fall back to the WordPress REST API. This is best-effort:
+    // a failed lookup leaves the parsed items (and their in-body images)
+    // untouched.
+    if (items.some((item) => item.imageUrl === null)) {
+      try {
+        const featured = await fetchFeaturedImages(feed.feedUrl);
+        for (const item of items) {
+          item.imageUrl =
+            item.imageUrl ?? featured.get(stripTrailingSlash(item.url)) ?? null;
+        }
+      } catch {
+        // Best-effort fallback; keep the parsed items as-is on any failure.
+      }
+    }
 
     feedCache.set(feed.feedUrl, {
       expiresAt: Date.now() + PETRIK_NEWS_CACHE_TTL_MS,

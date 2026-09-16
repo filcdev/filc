@@ -36,6 +36,7 @@ const BODY_MAX_CHARS = 400;
 
 const HTML_TAG_RE = /<[^>]*>/g;
 const ENTITY_RE = /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi;
+const TRAILING_SLASH_RE = /\/+$/;
 
 /** The trailing WordPress excerpt marker `[…]`, after `&hellip;` is decoded. */
 const EXCERPT_MARKER = '[\u2026]';
@@ -69,6 +70,14 @@ function asString(value: unknown): string | null {
 function stripFragment(link: string): string {
   const hash = link.indexOf('#');
   return hash === -1 ? link : link.slice(0, hash);
+}
+
+/**
+ * Strip trailing slashes so an RSS item URL and a WordPress REST `link` with
+ * different slash styles still compare equal.
+ */
+export function stripTrailingSlash(url: string): string {
+  return url.replace(TRAILING_SLASH_RE, '');
 }
 
 /**
@@ -176,4 +185,62 @@ export function parsePetrikNewsFeed(xml: string): PetrikNewsItem[] {
   }
 
   return result.slice(0, MAX_PARSED_ITEMS);
+}
+
+/**
+ * Extract `[link, sourceUrl]` from one untrusted REST post entry, or null when
+ * the entry has no usable featured image (`featured_media: 0`, or a missing
+ * `_embedded['wp:featuredmedia'][0].source_url`).
+ */
+function featuredImageEntry(entry: unknown): [string, string] | null {
+  if (entry == null || typeof entry !== 'object') {
+    return null;
+  }
+  const post = entry as Record<string, unknown>;
+  if (post.featured_media === 0) {
+    return null;
+  }
+
+  const link = asString(post.link);
+  if (!link) {
+    return null;
+  }
+
+  const embedded = post._embedded;
+  if (embedded == null || typeof embedded !== 'object') {
+    return null;
+  }
+  const featuredMedia = (embedded as Record<string, unknown>)[
+    'wp:featuredmedia'
+  ];
+  if (!Array.isArray(featuredMedia) || featuredMedia.length === 0) {
+    return null;
+  }
+  const sourceUrl = asString(
+    (featuredMedia[0] as Record<string, unknown> | null | undefined)?.source_url
+  );
+  return sourceUrl ? [link, sourceUrl] : null;
+}
+
+/**
+ * Build a `post link → featured image URL` map from an untrusted WordPress
+ * REST `/wp/v2/posts` response. petrik.hu's RSS never carries the featured
+ * image, so the kiosk uses the open REST API as a best-effort fallback;
+ * malformed entries and posts without a banner (`featured_media: 0`) are
+ * skipped rather than failing the whole lookup.
+ */
+export function parseFeaturedImages(json: unknown): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!Array.isArray(json)) {
+    return map;
+  }
+
+  for (const entry of json) {
+    const pair = featuredImageEntry(entry);
+    if (pair) {
+      map.set(stripTrailingSlash(pair[0]), pair[1]);
+    }
+  }
+
+  return map;
 }
