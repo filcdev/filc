@@ -1,5 +1,6 @@
 import {
   cohortIdParamsSchema,
+  manualCreateSchema,
   movedLessonIdParamsSchema,
   updateSchema,
 } from '@filcdev/api/domains/timetable/moved-lesson';
@@ -12,12 +13,15 @@ import z from 'zod';
 import { db } from '#database';
 import {
   classroom,
+  cohort,
   dayDefinition,
   lesson,
   lessonCohortMTM,
   movedLesson,
   movedLessonLessonMTM,
   period,
+  termDefinition,
+  weekDefinition,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
 import { created, ok } from '#utils/http';
@@ -32,6 +36,10 @@ import {
   enrichedLessonSchema,
   enrichLessons,
 } from '#utils/timetable/enrich-lessons';
+import {
+  findOrCreateManualLesson,
+  getDayDefinitionIdForDate,
+} from '#utils/timetable/manual-lesson';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -43,7 +51,7 @@ const ensurePeriodExists = async (periodId: string) => {
 
   if (!existingPeriod) {
     throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: 'Invalid starting period provided',
+      message: 'Invalid period provided',
     });
   }
 };
@@ -70,6 +78,19 @@ const ensureClassroomExists = async (classroomId: string) => {
   if (!existingRoom) {
     throw new HTTPException(StatusCodes.BAD_REQUEST, {
       message: 'Invalid classroom provided',
+    });
+  }
+};
+
+const ensureCohortExists = async (cohortId: string) => {
+  const [existingCohort] = await db
+    .select({ cohortId: cohort.id })
+    .from(cohort)
+    .where(eq(cohort.id, cohortId));
+
+  if (!existingCohort) {
+    throw new HTTPException(StatusCodes.BAD_REQUEST, {
+      message: 'Invalid cohort provided',
     });
   }
 };
@@ -587,6 +608,132 @@ export const createMovedLesson = timetableFactory.createHandlers(
     }
 
     return created(c, newMovedLesson);
+  }
+);
+
+export const createManualMovedLesson = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('MovedLesson', '@unit MovedLesson', true),
+    description:
+      'Create a moved lesson manually, specifying the source and target by hand.',
+    requestBody: {
+      content: {
+        'application/json':
+          await resolver(manualCreateSchema).toOpenAPISchema(),
+      },
+      description: 'The data for the manually created moved lesson.',
+    },
+    responses: {
+      201: {
+        content: {
+          'application/json': {
+            schema: resolver(createResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
+  ...authRouter('movedLesson:create'),
+  zValidator('json', manualCreateSchema),
+  async (c) => {
+    const {
+      cohortId,
+      comment,
+      sourceDate,
+      sourcePeriodId,
+      sourceRoomId,
+      targetDate,
+      targetPeriodId,
+      targetRoomId,
+    } = c.req.valid('json');
+
+    await Promise.all([
+      ensureCohortExists(cohortId),
+      ensurePeriodExists(sourcePeriodId),
+      ensurePeriodExists(targetPeriodId),
+      ensureClassroomExists(sourceRoomId),
+      ensureClassroomExists(targetRoomId),
+    ]);
+
+    const timetableId = await getActiveTimetableId();
+    if (!timetableId) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'No active timetable found',
+      });
+    }
+
+    const sourceDayDefinitionId = await getDayDefinitionIdForDate(sourceDate);
+    const targetDayDefinitionId = await getDayDefinitionIdForDate(targetDate);
+    if (!(sourceDayDefinitionId && targetDayDefinitionId)) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No day definition found for the given date',
+      });
+    }
+
+    const [[weekDef], [termDef]] = await Promise.all([
+      db.select({ id: weekDefinition.id }).from(weekDefinition).limit(1),
+      db.select({ id: termDefinition.id }).from(termDefinition).limit(1),
+    ]);
+
+    if (!weekDef) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'No week definition found',
+      });
+    }
+
+    const result = await db.transaction(
+      async (tx) => {
+        const lessonId = await findOrCreateManualLesson(tx, {
+          classroomIds: [sourceRoomId],
+          cohortId,
+          dayDefinitionId: sourceDayDefinitionId,
+          periodId: sourcePeriodId,
+          subjectId: null,
+          teacherIds: [],
+          termDefinitionId: termDef?.id ?? null,
+          timetableId,
+          weeksDefinitionId: weekDef.id,
+        });
+
+        const [inserted] = await tx
+          .insert(movedLesson)
+          .values({
+            comment: comment ?? null,
+            date: targetDate,
+            id: crypto.randomUUID(),
+            room: targetRoomId,
+            startingDay: targetDayDefinitionId,
+            startingPeriod: targetPeriodId,
+          })
+          .returning();
+
+        if (!inserted) {
+          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+            message: 'Failed to create moved lesson.',
+          });
+        }
+
+        await tx.insert(movedLessonLessonMTM).values({
+          lessonId,
+          movedLessonId: inserted.id,
+        });
+
+        return { inserted, lessonId };
+      },
+      { isolationLevel: 'serializable' }
+    );
+
+    dispatchPendingNotification(result.inserted.id, 'moved_lesson', {
+      date: targetDate,
+      lessonIds: [result.lessonId],
+      room: targetRoomId,
+      startingDay: targetDayDefinitionId,
+      startingPeriod: targetPeriodId,
+    });
+
+    return created(c, result.inserted);
   }
 );
 

@@ -44,6 +44,10 @@ type CreatePayload = InferRequestType<
 const updateMovedLessonEndpoint = api.timetable.movedLessons[':id'].$put;
 type UpdatePayload = InferRequestType<typeof updateMovedLessonEndpoint>['json'];
 
+type ManualPayload = InferRequestType<
+  typeof api.timetable.movedLessons.manual.$post
+>['json'];
+
 /** Options accepted by every mutation hook: react to a successful save. */
 export type MutationCallbacks = {
   /** Called after success toast + cache invalidation; use to close dialogs. */
@@ -151,6 +155,33 @@ export function useCreateMovedLesson({ onSaved }: MutationCallbacks = {}) {
     mutationFn: async (payload: CreatePayload) => {
       const res = await parseResponse(
         api.timetable.movedLessons.$post({ json: payload })
+      );
+      if (!res.success) {
+        throw new Error('Failed to create moved lesson');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('movedLesson.createError'));
+    },
+    onSuccess: () => {
+      toast.success(t('movedLesson.createSuccess'));
+      invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+/** Create a moved lesson manually from explicit source/target fields. */
+export function useCreateManualMovedLesson({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const invalidate = useInvalidateMovedLessons();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (payload: ManualPayload) => {
+      const res = await parseResponse(
+        api.timetable.movedLessons.manual.$post({ json: payload })
       );
       if (!res.success) {
         throw new Error('Failed to create moved lesson');
