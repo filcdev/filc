@@ -378,6 +378,7 @@
     "selectDayHint": "Select a day to see all lessons on that day.",
     "free": "free",
     "occupied": "occupied",
+    "occupiedWarning": "This room is already in use for the selected slot. Moving here may cause a conflict.",
     "noChange": "No change",
     "lessons": "Affected Lessons",
     "lessonsCount": "Lessons",

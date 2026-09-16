@@ -378,6 +378,7 @@
     "selectDayHint": "Válassz napot az aznapi összes óra megtekintéséhez.",
     "free": "szabad",
     "occupied": "foglalt",
+    "occupiedWarning": "Ez a terem már foglalt a kiválasztott idősávban. Az áthelyezés ütközést okozhat.",
     "noChange": "Nincs változás",
     "lessons": "Érintett órák",
     "lessonsCount": "Órák",

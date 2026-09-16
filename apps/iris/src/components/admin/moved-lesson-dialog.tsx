@@ -310,7 +310,12 @@ function resolveRoomModeSlot(
   return synced;
 }
 
-type RoomOption = { disabled: boolean; label: string; value: string };
+type RoomOption = {
+  disabled: boolean;
+  label: string;
+  occupied: boolean;
+  value: string;
+};
 
 function buildRoomOptions(params: {
   availableClassrooms?: Classroom[];
@@ -339,8 +344,9 @@ function buildRoomOptions(params: {
       ? `${cr.name} (${cr.short}) — ${isFree ? labels.free : labels.occupied}`
       : `${cr.name} (${cr.short})`;
     return {
-      disabled: availabilityKnown && !freeRoomIds.has(cr.id),
+      disabled: false,
       label,
+      occupied: availabilityKnown && !isFree,
       value: cr.id,
     };
   });
@@ -571,6 +577,7 @@ function TargetDateField({ date, locale, onChange }: TargetDateFieldProps) {
 
 type TargetRoomFieldProps = {
   isLoading: boolean;
+  isOccupied: boolean;
   onChange: (value: string) => void;
   options: RoomOption[];
   value: string;
@@ -579,6 +586,7 @@ type TargetRoomFieldProps = {
 // Target-room picker, annotated with the queried slot's availability.
 function TargetRoomField({
   isLoading,
+  isOccupied,
   onChange,
   options,
   value,
@@ -601,6 +609,11 @@ function TargetRoomField({
         searchPlaceholder={t('search')}
         value={value}
       />
+      {isOccupied && (
+        <p className="text-destructive text-xs">
+          {t('movedLesson.occupiedWarning')}
+        </p>
+      )}
     </div>
   );
 }
@@ -832,6 +845,13 @@ export function MovedLessonDialog({
 
   const isCreate = !item;
 
+  const selectedRoomOccupied = useMemo(
+    () =>
+      roomOptions.find((option) => option.value === formRoom)?.occupied ??
+      false,
+    [roomOptions, formRoom]
+  );
+
   const isValid = useMemo(
     () =>
       isMoveComplete({
@@ -990,6 +1010,7 @@ export function MovedLessonDialog({
 
             <TargetRoomField
               isLoading={availableClassroomsQuery.isLoading}
+              isOccupied={selectedRoomOccupied}
               onChange={handleTargetRoomChange}
               options={roomOptions}
               value={formRoom ?? ''}
