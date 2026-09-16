@@ -1,4 +1,5 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './button';
@@ -14,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 type ComboboxOption = {
   disabled?: boolean;
+  /** Optional visual marker rendered before the label. */
+  indicator?: ReactNode;
   label: string;
   value: string;
 };
@@ -38,7 +41,8 @@ export function Combobox({
   value,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
-  const selectedLabel = options.find((o) => o.value === value)?.label;
+  const selectedOption = options.find((o) => o.value === value);
+  const selectedLabel = selectedOption?.label;
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -53,6 +57,7 @@ export function Combobox({
             translate="no"
             variant="outline"
           >
+            {selectedOption?.indicator}
             <span className="truncate">{selectedLabel ?? placeholder}</span>
             <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
           </Button>
@@ -74,6 +79,7 @@ export function Combobox({
                   }}
                   value={option.label}
                 >
+                  {option.indicator}
                   {option.label}
                   <Check
                     className={cn(

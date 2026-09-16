@@ -4,7 +4,7 @@ import {
   substitutionIdParamsSchema,
 } from '@filcdev/api/domains/timetable/substitution';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -13,7 +13,6 @@ import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   cohort,
-  dayDefinition,
   lesson,
   lessonCohortMTM,
   period,
@@ -39,9 +38,10 @@ import {
   enrichLessons,
 } from '#utils/timetable/enrich-lessons';
 import {
-  getWeekdayInBudapest,
-  isMatchingWeekday,
-} from '#utils/timetable/weekday';
+  findOrCreateManualLesson,
+  getDayDefinitionIdForDate,
+  type TxOrDb,
+} from '#utils/timetable/manual-lesson';
 import {
   createInsertSchema,
   createSelectSchema,
@@ -80,9 +80,6 @@ const cohortSubstitutionsResponseSchema = z.object({
   }),
   success: z.boolean(),
 });
-
-// Type for both database and transaction instances used by helpers
-type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 function areLessonsCompatible(
   aId: string,
@@ -669,76 +666,6 @@ const manualCreateResponseSchema = z.object({
   success: z.boolean(),
 });
 
-// Find an existing lesson that matches the manual substitution parameters, or
-// create one if none exists yet. Returns the lesson id.
-async function findOrCreateManualLesson(
-  tx: TxOrDb,
-  params: {
-    cohortId: string;
-    dayDefinitionId: string;
-    periodId: string;
-    subjectId: string | null;
-    teacherId: string;
-    timetableId: string;
-    weeksDefinitionId: string;
-    termDefinitionId: string | null;
-  }
-): Promise<string> {
-  const {
-    cohortId,
-    dayDefinitionId,
-    periodId,
-    subjectId,
-    teacherId,
-    timetableId,
-    weeksDefinitionId,
-    termDefinitionId,
-  } = params;
-
-  const subjectCondition =
-    subjectId === null
-      ? isNull(lesson.subjectId)
-      : eq(lesson.subjectId, subjectId);
-
-  const existing = await tx
-    .select({ lessonId: lessonCohortMTM.lessonId })
-    .from(lessonCohortMTM)
-    .innerJoin(lesson, eq(lessonCohortMTM.lessonId, lesson.id))
-    .where(
-      and(
-        eq(lessonCohortMTM.cohortId, cohortId),
-        eq(lesson.timetableId, timetableId),
-        eq(lesson.dayDefinitionId, dayDefinitionId),
-        eq(lesson.periodId, periodId),
-        subjectCondition,
-        // teacherIds is a text array; check it contains exactly the teacher
-        sql`${lesson.teacherIds} @> ARRAY[${teacherId}]::text[]`
-      )
-    )
-    .limit(1);
-
-  if (existing.length > 0) {
-    return existing[0]?.lessonId ?? '';
-  }
-
-  const lessonId = crypto.randomUUID();
-  await tx.insert(lesson).values({
-    classroomIds: [],
-    dayDefinitionId,
-    groupsIds: [],
-    id: lessonId,
-    periodId,
-    periodsPerWeek: 1,
-    subjectId,
-    teacherIds: [teacherId],
-    termDefinitionId,
-    timetableId,
-    weeksDefinitionId,
-  });
-  await tx.insert(lessonCohortMTM).values({ cohortId, lessonId });
-  return lessonId;
-}
-
 async function lockAndValidateTeachers(
   tx: TxOrDb,
   teacherId: string,
@@ -769,24 +696,6 @@ async function lockAndValidateTeachers(
       });
     }
   }
-}
-
-// Manual substitution only takes a date; resolve the matching day definition
-// from the standalone day-definition table via the date's weekday.
-async function getDayDefinitionIdForDate(date: Date): Promise<string | null> {
-  const weekday = getWeekdayInBudapest(date);
-  const rows = await db
-    .select({
-      id: dayDefinition.id,
-      name: dayDefinition.name,
-      short: dayDefinition.short,
-    })
-    .from(dayDefinition);
-
-  const match = rows.find((row) =>
-    isMatchingWeekday(weekday, row.name, row.short)
-  );
-  return match?.id ?? null;
 }
 
 export const createManualSubstitution = timetableFactory.createHandlers(
@@ -917,11 +826,12 @@ export const createManualSubstitution = timetableFactory.createHandlers(
         await lockAndValidateTeachers(tx, teacherId, substituter);
 
         const lessonId = await findOrCreateManualLesson(tx, {
+          classroomIds: [],
           cohortId,
           dayDefinitionId,
           periodId,
           subjectId,
-          teacherId,
+          teacherIds: [teacherId],
           termDefinitionId: termDef?.id ?? null,
           timetableId,
           weeksDefinitionId: weekDef.id,

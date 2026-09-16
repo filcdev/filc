@@ -27,3 +27,24 @@ export const updateSchema = z.object({
 });
 
 export type UpdateMovedLessonInput = z.infer<typeof updateSchema>;
+
+/**
+ * Payload for creating a moved lesson manually, without knowing the source
+ * lesson id. The backend finds (or creates) the source lesson from the source
+ * date/period/cohort/room and links it to the new moved lesson.
+ */
+export const manualCreateSchema = z.object({
+  cohortId: z.uuid(),
+  comment: z.string().nullable().optional(),
+  sourceDate: z.coerce.date<Date>(),
+  sourcePeriodId: z.uuid(),
+  // classroom ids are text keys (imported rooms are not UUIDs)
+  sourceRoomId: z.string().min(1),
+  subjectId: z.uuid().nullable().optional(),
+  targetDate: z.coerce.date<Date>(),
+  targetPeriodId: z.uuid(),
+  targetRoomId: z.string().min(1),
+  teacherIds: z.uuid().array().optional(),
+});
+
+export type ManualCreateMovedLessonInput = z.infer<typeof manualCreateSchema>;

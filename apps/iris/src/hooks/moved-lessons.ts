@@ -37,12 +37,26 @@ export type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
 export type Cohort = NonNullable<CohortApiResponse['data']>[number];
 
+type SubjectsApiResponse = InferResponseType<
+  typeof api.timetable.subjects.$get
+>;
+export type Subject = NonNullable<SubjectsApiResponse['data']>[number];
+
+type TeachersApiResponse = InferResponseType<
+  typeof api.timetable.teachers.getAll.$get
+>;
+export type Teacher = NonNullable<TeachersApiResponse['data']>[number];
+
 type CreatePayload = InferRequestType<
   typeof api.timetable.movedLessons.$post
 >['json'];
 
 const updateMovedLessonEndpoint = api.timetable.movedLessons[':id'].$put;
 type UpdatePayload = InferRequestType<typeof updateMovedLessonEndpoint>['json'];
+
+type ManualPayload = InferRequestType<
+  typeof api.timetable.movedLessons.manual.$post
+>['json'];
 
 /** Options accepted by every mutation hook: react to a successful save. */
 export type MutationCallbacks = {
@@ -91,6 +105,36 @@ export function useMovedLessonCohorts(enabled: boolean) {
       return sortCohorts(res.data) as Cohort[];
     },
     queryKey: queryKeys.cohorts(),
+  });
+}
+
+/** Subject list for the manual move picker; only fetched when enabled. */
+export function useMovedLessonSubjects(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<Subject[]> => {
+      const res = await parseResponse(api.timetable.subjects.$get());
+      if (!(res.success && res.data)) {
+        throw new Error('Failed to load subjects');
+      }
+      return res.data as Subject[];
+    },
+    queryKey: queryKeys.subjects(),
+  });
+}
+
+/** Teacher list for the manual move picker; only fetched when enabled. */
+export function useMovedLessonTeachers(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<Teacher[]> => {
+      const res = await parseResponse(api.timetable.teachers.getAll.$get());
+      if (!(res.success && res.data)) {
+        throw new Error('Failed to load teachers');
+      }
+      return res.data as Teacher[];
+    },
+    queryKey: queryKeys.teachers(),
   });
 }
 
@@ -163,6 +207,63 @@ export function useCreateMovedLesson({ onSaved }: MutationCallbacks = {}) {
     onSuccess: () => {
       toast.success(t('movedLesson.createSuccess'));
       invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+/** Create a moved lesson manually from explicit source/target fields. */
+export function useCreateManualMovedLesson({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const invalidate = useInvalidateMovedLessons();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (payload: ManualPayload) => {
+      const res = await parseResponse(
+        api.timetable.movedLessons.manual.$post({ json: payload })
+      );
+      if (!res.success) {
+        throw new Error('Failed to create moved lesson');
+      }
+      return res;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('movedLesson.createError'));
+    },
+    onSuccess: () => {
+      toast.success(t('movedLesson.createSuccess'));
+      invalidate();
+      onSaved?.();
+    },
+  });
+}
+
+/** Create several moved lessons sequentially (one per period). */
+export function useCreateMovedLessonsBatch({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const invalidate = useInvalidateMovedLessons();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (payloads: CreatePayload[]) => {
+      for (const payload of payloads) {
+        const res = await parseResponse(
+          api.timetable.movedLessons.$post({ json: payload })
+        );
+        if (!res.success) {
+          throw new Error('Failed to create moved lesson');
+        }
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('movedLesson.createError'));
+    },
+    onSettled: () => {
+      invalidate();
+    },
+    onSuccess: () => {
+      toast.success(t('movedLesson.createSuccess'));
       onSaved?.();
     },
   });

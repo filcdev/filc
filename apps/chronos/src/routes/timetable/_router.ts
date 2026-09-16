@@ -25,6 +25,7 @@ import {
   getSubstitutionCandidates,
 } from '#routes/timetable/lesson';
 import {
+  createManualMovedLesson,
   createMovedLesson,
   deleteMovedLesson,
   getAllMovedLessons,
@@ -84,6 +85,7 @@ export const timetableRouter = timetableFactory
     ...getRelevantMovedLessonsForCohort
   )
   .post('/movedLessons', ...createMovedLesson)
+  .post('/movedLessons/manual', ...createManualMovedLesson)
   .put('/movedLessons/:id', ...updateMovedLesson)
   .delete('/movedLessons/:id', ...deleteMovedLesson)
   // Lesson routes
