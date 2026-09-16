@@ -366,7 +366,7 @@
     "targetRoom": "Target Room",
     "moveMode": "Move mode",
     "roomMove": "Room move",
-    "roomMoveHint": "Move the lesson to a different room on the same day.",
+    "roomMoveHint": "Move one or more lessons to a different room on the same day.",
     "dayMove": "Day move",
     "dayMoveHint": "Move the lesson to a different room on a different day.",
     "fromRoom": "From Room",

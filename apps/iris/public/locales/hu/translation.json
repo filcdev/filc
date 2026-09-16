@@ -366,7 +366,7 @@
     "targetRoom": "Célterem",
     "moveMode": "Áthelyezés típusa",
     "roomMove": "Teremcsere",
-    "roomMoveHint": "Az órát másik terembe helyezed ugyanazon a napon.",
+    "roomMoveHint": "Egy vagy több órát helyezhetsz át másik terembe ugyanazon a napon.",
     "dayMove": "Napcsere",
     "dayMoveHint": "Az órát másik napon másik terembe helyezed.",
     "fromRoom": "Inneni terem",
