@@ -225,9 +225,10 @@ function featuredImageEntry(entry: unknown): [string, string] | null {
 /**
  * Build a `post link → featured image URL` map from an untrusted WordPress
  * REST `/wp/v2/posts` response. petrik.hu's RSS never carries the featured
- * image, so the kiosk uses the open REST API as a best-effort fallback;
- * malformed entries and posts without a banner (`featured_media: 0`) are
- * skipped rather than failing the whole lookup.
+ * image, so the kiosk uses the open REST API as the primary picture source —
+ * the first in-body `<img>` is only the fallback. Malformed entries and posts
+ * without a banner (`featured_media: 0`) are skipped rather than failing the
+ * whole lookup.
  */
 export function parseFeaturedImages(json: unknown): Map<string, string> {
   const map = new Map<string, string>();

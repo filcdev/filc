@@ -79,10 +79,11 @@ async function readCappedText(
 
 /**
  * Fetch featured images from the WordPress REST API at the feed's own origin.
- * petrik.hu's RSS carries no featured image, so posts whose body has no
- * `<img>` get their picture from `wp/v2/posts` as a best-effort fallback —
- * the REST host is the feed's own origin, already validated by
- * `assertAllowedFeedUrl`. A non-ok response means "no fallback available".
+ * petrik.hu's RSS carries no featured image, so `wp/v2/posts` is the primary
+ * picture source — a post's banner replaces its first in-body `<img>` as the
+ * default. The REST host is the feed's own origin, already validated by
+ * `assertAllowedFeedUrl`. A non-ok response means "no featured images
+ * available", leaving the in-body fallback in place.
  */
 async function fetchFeaturedImages(
   feedUrl: string
@@ -204,16 +205,17 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
 
     const items = parsePetrikNewsFeed(xml);
 
-    // petrik.hu's feed never exposes the featured image, so items whose body
-    // has no `<img>` fall back to the WordPress REST API. This is best-effort:
-    // a failed lookup leaves the parsed items (and their in-body images)
-    // untouched.
-    if (items.some((item) => item.imageUrl === null)) {
+    // petrik.hu's feed never exposes the featured image, so resolve the
+    // WordPress REST featured map and apply it as the primary picture; a post
+    // with no featured image (featured_media: 0) keeps its first in-body
+    // `<img>` as the fallback. This is best-effort: a failed lookup leaves the
+    // parsed items (and their in-body images) untouched.
+    if (items.length > 0) {
       try {
         const featured = await fetchFeaturedImages(feed.feedUrl);
         for (const item of items) {
           item.imageUrl =
-            item.imageUrl ?? featured.get(stripTrailingSlash(item.url)) ?? null;
+            featured.get(stripTrailingSlash(item.url)) ?? item.imageUrl;
         }
       } catch {
         // Best-effort fallback; keep the parsed items as-is on any failure.
