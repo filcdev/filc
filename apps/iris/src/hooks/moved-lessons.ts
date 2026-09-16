@@ -259,9 +259,11 @@ export function useCreateMovedLessonsBatch({
     onError: (error: Error) => {
       toast.error(error.message || t('movedLesson.createError'));
     },
+    onSettled: () => {
+      invalidate();
+    },
     onSuccess: () => {
       toast.success(t('movedLesson.createSuccess'));
-      invalidate();
       onSaved?.();
     },
   });

@@ -1138,7 +1138,7 @@ export function MovedLessonDialog({
   >({
     defaultValues,
     onSubmit: async ({ value }) => {
-      if (mode === 'manual') {
+      if (mode === 'manual' && !item) {
         await manualMutation.mutateAsync(buildManualCreatePayload(value));
         return;
       }
