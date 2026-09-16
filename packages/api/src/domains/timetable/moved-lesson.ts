@@ -38,10 +38,11 @@ export const manualCreateSchema = z.object({
   comment: z.string().nullable().optional(),
   sourceDate: z.coerce.date<Date>(),
   sourcePeriodId: z.uuid(),
-  sourceRoomId: z.uuid(),
+  // classroom ids are text keys (imported rooms are not UUIDs)
+  sourceRoomId: z.string().min(1),
   targetDate: z.coerce.date<Date>(),
   targetPeriodId: z.uuid(),
-  targetRoomId: z.uuid(),
+  targetRoomId: z.string().min(1),
 });
 
 export type ManualCreateMovedLessonInput = z.infer<typeof manualCreateSchema>;
