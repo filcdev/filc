@@ -16,7 +16,7 @@ export const DEFAULT_PETRIK_NEWS_MAX_ITEMS = 10;
 /** Idle time before the navigator resets to the default view, in seconds. */
 export const DEFAULT_IDLE_RESET_SECONDS = 60;
 /** Whether the petrik.hu news slideshow is enabled by default. */
-export const DEFAULT_PETRIK_NEWS_ENABLED = true;
+export const DEFAULT_PETRIK_NEWS_ENABLED = false;
 
 /** Only https feed URLs are allowed for the petrik.hu news slideshow. */
 const HTTPS_URL_RE = /^https:\/\//i;
@@ -81,10 +81,13 @@ function migrateLegacyNavigatorConfig(input: unknown): unknown {
   if (input === null || typeof input !== 'object') {
     return input;
   }
-  const value = input as LegacyNavigatorConfig;
-  if (!('idleResetMs' in value) || 'idleResetSeconds' in value) {
+  const source = input as LegacyNavigatorConfig;
+  if (!('idleResetMs' in source) || 'idleResetSeconds' in source) {
     return input;
   }
+  // Copy before rewriting so a failed validation never leaves the caller's
+  // object mutated.
+  const value = { ...source };
   const rawMs = value.idleResetMs;
   if (typeof rawMs === 'number' && Number.isFinite(rawMs)) {
     const seconds = Math.round(rawMs / 1000);

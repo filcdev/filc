@@ -133,12 +133,14 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
       return ok(c, { items: [] });
     }
 
-    await assertAllowedFeedUrl(feed.feedUrl);
-
+    // Serve the cache without a DNS round-trip; only a miss reaches the SSRF
+    // guard, so a warm cache never pays for `assertAllowedFeedUrl`.
     const cached = feedCache.get(feed.feedUrl);
     if (cached && cached.expiresAt > Date.now()) {
       return ok(c, { items: cached.items.slice(0, feed.maxItems) });
     }
+
+    await assertAllowedFeedUrl(feed.feedUrl);
 
     let xml: string;
     try {

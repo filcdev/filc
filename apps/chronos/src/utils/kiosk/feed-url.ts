@@ -187,6 +187,18 @@ function isPrivateIpv6(bytes: Ipv6Bytes): boolean {
   if (isZeroRange(bytes, 0, 10) && bytes[10] === 0xff && bytes[11] === 0xff) {
     return isPrivateIpv4([bytes[12], bytes[13], bytes[14], bytes[15]]);
   }
+  // NAT64 `64:ff9b::/96`: the last 32 bits are an embedded IPv4 literal that
+  // can carry a private destination. (6to4/Teredo are deliberately ignored —
+  // they encode tunnel endpoints, not the final destination.)
+  if (
+    isZeroRange(bytes, 4, 12) &&
+    bytes[0] === 0x00 &&
+    bytes[1] === 0x64 &&
+    bytes[2] === 0xff &&
+    bytes[3] === 0x9b
+  ) {
+    return isPrivateIpv4([bytes[12], bytes[13], bytes[14], bytes[15]]);
+  }
   // Unique local `fc00::/7`.
   if (bytes[0] >= 0xfc && bytes[0] <= 0xfd) {
     return true;
@@ -238,11 +250,17 @@ export async function assertAllowedFeedUrl(url: string): Promise<void> {
 
   const hostname = parsed.hostname.replace(HOST_BRACKETS_RE, '');
 
+  // A literal IP (v4 or v6) carries no DNS name to sanity-check; it is
+  // evaluated by `isPrivateAddress` below instead of the hostname rules.
+  const isIpLiteral =
+    parseIpv4(hostname) !== null || parseIpv6(hostname) !== null;
+
   if (
-    hostname === 'localhost' ||
-    hostname.endsWith('.local') ||
-    hostname.endsWith('.internal') ||
-    !hostname.includes('.')
+    !isIpLiteral &&
+    (hostname === 'localhost' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      !hostname.includes('.'))
   ) {
     throw feedNotAllowed();
   }

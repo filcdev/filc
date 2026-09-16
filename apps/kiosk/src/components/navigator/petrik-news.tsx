@@ -32,14 +32,18 @@ export function PetrikNewsOverlay({
 
   const imageCount = items.filter((item) => item.imageUrl !== null).length;
 
-  // A feed whose images all fail to load would otherwise pin the screen
-  // forever; dismiss once every image has errored. Title-only items are not
-  // counted, so a text-only feed keeps the overlay alive.
+  // Dismiss only when there is genuinely nothing left to show: every item has
+  // an image AND all of them failed. A mixed feed (some title-only items) stays
+  // alive, since title-only items never fail to load.
   useEffect(() => {
-    if (imageCount > 0 && failedUrls.size >= imageCount) {
+    if (
+      imageCount === items.length &&
+      imageCount > 0 &&
+      failedUrls.size >= imageCount
+    ) {
       onDismiss();
     }
-  }, [imageCount, failedUrls, onDismiss]);
+  }, [imageCount, items.length, failedUrls, onDismiss]);
 
   useEffect(() => {
     const dismiss = () => onDismiss();
