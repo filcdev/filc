@@ -14,7 +14,8 @@ import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
 import { type InferRequestType, parseResponse } from 'hono/client';
-import { ArrowRightLeft, Save } from 'lucide-react';
+import { ArrowRightLeft, CircleAlert, Save } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -312,6 +313,7 @@ function resolveRoomModeSlot(
 
 type RoomOption = {
   disabled: boolean;
+  indicator?: ReactNode;
   label: string;
   occupied: boolean;
   value: string;
@@ -343,10 +345,14 @@ function buildRoomOptions(params: {
     const label = availabilityKnown
       ? `${cr.name} (${cr.short}) — ${isFree ? labels.free : labels.occupied}`
       : `${cr.name} (${cr.short})`;
+    const isOccupied = availabilityKnown && !isFree;
     return {
       disabled: false,
+      indicator: isOccupied ? (
+        <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
+      ) : undefined,
       label,
-      occupied: availabilityKnown && !isFree,
+      occupied: isOccupied,
       value: cr.id,
     };
   });
@@ -610,9 +616,10 @@ function TargetRoomField({
         value={value}
       />
       {isOccupied && (
-        <p className="text-destructive text-xs">
+        <div className="flex items-center gap-2 rounded-md bg-warning/15 px-2 py-1.5 text-warning-foreground text-xs">
+          <CircleAlert className="size-3.5 shrink-0" />
           {t('movedLesson.occupiedWarning')}
-        </p>
+        </div>
       )}
     </div>
   );
