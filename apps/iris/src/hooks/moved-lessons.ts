@@ -239,6 +239,34 @@ export function useCreateManualMovedLesson({
   });
 }
 
+/** Create several moved lessons sequentially (one per period). */
+export function useCreateMovedLessonsBatch({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const invalidate = useInvalidateMovedLessons();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (payloads: CreatePayload[]) => {
+      for (const payload of payloads) {
+        const res = await parseResponse(
+          api.timetable.movedLessons.$post({ json: payload })
+        );
+        if (!res.success) {
+          throw new Error('Failed to create moved lesson');
+        }
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('movedLesson.createError'));
+    },
+    onSuccess: () => {
+      toast.success(t('movedLesson.createSuccess'));
+      invalidate();
+      onSaved?.();
+    },
+  });
+}
+
 /** Update an existing moved lesson by id. */
 export function useUpdateMovedLesson({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateMovedLessons();
