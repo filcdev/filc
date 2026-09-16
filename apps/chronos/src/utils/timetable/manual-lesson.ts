@@ -122,3 +122,46 @@ export async function findOrCreateManualLesson(
   await tx.insert(lessonCohortMTM).values({ cohortId, lessonId });
   return lessonId;
 }
+
+/**
+ * Resolve the single lesson occupying a cohort's slot in the active timetable.
+ * Matches on cohort + day + period (+ room when given), regardless of subject or
+ * teacher, so the caller can reuse the real lesson's teachers/subject.
+ * Returns null when there is no match or when the match is ambiguous.
+ */
+export async function findLessonForSlot(
+  tx: TxOrDb,
+  params: {
+    cohortId: string;
+    dayDefinitionId: string;
+    periodId: string;
+    roomId?: string;
+    timetableId: string;
+  }
+): Promise<string | null> {
+  const { cohortId, dayDefinitionId, periodId, roomId, timetableId } = params;
+
+  const conditions = [
+    eq(lessonCohortMTM.cohortId, cohortId),
+    eq(lesson.timetableId, timetableId),
+    eq(lesson.dayDefinitionId, dayDefinitionId),
+    eq(lesson.periodId, periodId),
+  ];
+
+  if (roomId) {
+    conditions.push(sql`${lesson.classroomIds} @> ARRAY[${roomId}]::text[]`);
+  }
+
+  const rows = await tx
+    .select({ lessonId: lessonCohortMTM.lessonId })
+    .from(lessonCohortMTM)
+    .innerJoin(lesson, eq(lessonCohortMTM.lessonId, lesson.id))
+    .where(and(...conditions))
+    .limit(2);
+
+  if (rows.length !== 1) {
+    return null;
+  }
+
+  return rows[0]?.lessonId ?? null;
+}

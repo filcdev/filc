@@ -20,8 +20,6 @@ import {
   movedLesson,
   movedLessonLessonMTM,
   period,
-  termDefinition,
-  weekDefinition,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
 import { created, ok } from '#utils/http';
@@ -37,7 +35,7 @@ import {
   enrichLessons,
 } from '#utils/timetable/enrich-lessons';
 import {
-  findOrCreateManualLesson,
+  findLessonForSlot,
   getDayDefinitionIdForDate,
 } from '#utils/timetable/manual-lesson';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
@@ -672,30 +670,29 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       });
     }
 
-    const [[weekDef], [termDef]] = await Promise.all([
-      db.select({ id: weekDefinition.id }).from(weekDefinition).limit(1),
-      db.select({ id: termDefinition.id }).from(termDefinition).limit(1),
-    ]);
-
-    if (!weekDef) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'No week definition found',
-      });
-    }
-
     const result = await db.transaction(
       async (tx) => {
-        const lessonId = await findOrCreateManualLesson(tx, {
-          classroomIds: [sourceRoomId],
-          cohortId,
-          dayDefinitionId: sourceDayDefinitionId,
-          periodId: sourcePeriodId,
-          subjectId: null,
-          teacherIds: [],
-          termDefinitionId: termDef?.id ?? null,
-          timetableId,
-          weeksDefinitionId: weekDef.id,
-        });
+        const lessonId =
+          (await findLessonForSlot(tx, {
+            cohortId,
+            dayDefinitionId: sourceDayDefinitionId,
+            periodId: sourcePeriodId,
+            roomId: sourceRoomId,
+            timetableId,
+          })) ??
+          (await findLessonForSlot(tx, {
+            cohortId,
+            dayDefinitionId: sourceDayDefinitionId,
+            periodId: sourcePeriodId,
+            timetableId,
+          }));
+
+        if (!lessonId) {
+          throw new HTTPException(StatusCodes.BAD_REQUEST, {
+            message:
+              'No lesson found in the active timetable for the given source date, period, class and room',
+          });
+        }
 
         const [inserted] = await tx
           .insert(movedLesson)

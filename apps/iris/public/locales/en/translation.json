@@ -370,7 +370,7 @@
     "dayMove": "Day move",
     "dayMoveHint": "Move the lesson to a different room on a different day.",
     "manualMove": "Manual move",
-    "manualMoveHint": "Specify the source and target of the move manually.",
+    "manualMoveHint": "The lesson and teacher are matched from the timetable using the source date, period, class and room.",
     "sourceDate": "Source Date",
     "sourcePeriod": "Source Period",
     "sourcePeriodPlaceholder": "Select a source period",
