@@ -23,8 +23,12 @@ import {
   type DayDefinition,
   type EnrichedLesson,
   type MovedLessonItem,
+  type Subject,
+  type Teacher,
   useCreateManualMovedLesson,
   useCreateMovedLesson,
+  useMovedLessonSubjects,
+  useMovedLessonTeachers,
   useUpdateMovedLesson,
 } from '@/hooks/moved-lessons';
 import { useApiQuery } from '@/utils/api';
@@ -323,9 +327,11 @@ function resetForMoveMode(next: MoveMode, form: MovedLessonFormApi): void {
   form.setFieldValue('manualSourceDate', undefined);
   form.setFieldValue('manualSourcePeriod', '');
   form.setFieldValue('manualSourceRoom', '');
+  form.setFieldValue('manualSubject', '');
   form.setFieldValue('manualTargetDate', undefined);
   form.setFieldValue('manualTargetPeriod', '');
   form.setFieldValue('manualTargetRoom', '');
+  form.setFieldValue('manualTeachers', []);
 
   form.setFieldValue('lessonIds', []);
   form.setFieldValue('startingPeriod', undefined);
@@ -429,9 +435,11 @@ type MovedLessonFormValues = InferRequestType<
   manualSourceDate: Date | undefined;
   manualSourcePeriod: string;
   manualSourceRoom: string;
+  manualSubject: string;
   manualTargetDate: Date | undefined;
   manualTargetPeriod: string;
   manualTargetRoom: string;
+  manualTeachers: string[];
 };
 
 /**
@@ -466,9 +474,11 @@ const initialState = (
   manualSourceDate: undefined,
   manualSourcePeriod: '',
   manualSourceRoom: '',
+  manualSubject: '',
   manualTargetDate: undefined,
   manualTargetPeriod: '',
   manualTargetRoom: '',
+  manualTeachers: [],
   room: item?.movedLesson.room || undefined,
   startingDay: item?.movedLesson.startingDay || undefined,
   startingPeriod: item?.movedLesson.startingPeriod || undefined,
@@ -715,6 +725,8 @@ type ManualMoveFieldsProps = {
   form: MovedLessonFormApi;
   locale: string;
   periods: Period[];
+  subjects?: Subject[];
+  teachers?: Teacher[];
 };
 
 // Manual move fields: the admin specifies the source and target entirely by
@@ -725,6 +737,8 @@ function ManualMoveFields({
   form,
   locale,
   periods,
+  subjects = [],
+  teachers = [],
 }: ManualMoveFieldsProps) {
   const { t } = useTranslation();
 
@@ -797,6 +811,66 @@ function ManualMoveFields({
               searchPlaceholder={t('search')}
               value={field.state.value}
             />
+          )}
+        </form.Field>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('movedLesson.subject')}</Label>
+        <form.Field name="manualSubject">
+          {(field) => (
+            <Combobox
+              emptyMessage={t('movedLesson.noSubjectsFound')}
+              onValueChange={(value) => field.handleChange(value)}
+              options={subjects.map((subject) => ({
+                label: `${subject.name} (${subject.short})`,
+                value: subject.id,
+              }))}
+              placeholder={t('movedLesson.subjectPlaceholder')}
+              searchPlaceholder={t('search')}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('movedLesson.teacher')}</Label>
+        <form.Field name="manualTeachers">
+          {(field) => (
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
+              {teachers.length === 0 && (
+                <p className="p-2 text-muted-foreground text-sm">
+                  {t('movedLesson.noTeachersFound')}
+                </p>
+              )}
+              {teachers.map((teacher) => {
+                const isChecked = field.state.value.includes(teacher.id);
+                return (
+                  <label
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                    htmlFor={`ml-teacher-${teacher.id}`}
+                    key={teacher.id}
+                  >
+                    <Checkbox
+                      checked={isChecked}
+                      id={`ml-teacher-${teacher.id}`}
+                      onCheckedChange={(checked) => {
+                        const next = checked
+                          ? Array.from(
+                              new Set([...field.state.value, teacher.id])
+                            )
+                          : field.state.value.filter((id) => id !== teacher.id);
+                        field.handleChange(next);
+                      }}
+                    />
+                    <span>
+                      {`${teacher.firstName} ${teacher.lastName} (${teacher.short})`}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           )}
         </form.Field>
       </div>
@@ -910,9 +984,11 @@ export function MovedLessonDialog({
           sourceDate: value.manualSourceDate as Date,
           sourcePeriodId: value.manualSourcePeriod,
           sourceRoomId: value.manualSourceRoom,
+          subjectId: value.manualSubject || null,
           targetDate: value.manualTargetDate as Date,
           targetPeriodId: value.manualTargetPeriod,
           targetRoomId: value.manualTargetRoom,
+          teacherIds: value.manualTeachers,
         });
         return;
       }
@@ -922,9 +998,11 @@ export function MovedLessonDialog({
         manualSourceDate: _manualSourceDate,
         manualSourcePeriod: _manualSourcePeriod,
         manualSourceRoom: _manualSourceRoom,
+        manualSubject: _manualSubject,
         manualTargetDate: _manualTargetDate,
         manualTargetPeriod: _manualTargetPeriod,
         manualTargetRoom: _manualTargetRoom,
+        manualTeachers: _manualTeachers,
         ...payload
       } = value;
 
@@ -1007,6 +1085,9 @@ export function MovedLessonDialog({
     },
     queryKey: queryKeys.timetable.periods(null),
   });
+
+  const subjectsQuery = useMovedLessonSubjects(mode === 'manual');
+  const teachersQuery = useMovedLessonTeachers(mode === 'manual');
 
   // The selected lesson's current period (the slot it sits in).
   const selectedPeriodId = useMemo(() => {
@@ -1268,6 +1349,8 @@ export function MovedLessonDialog({
                 form={form}
                 locale={getIntlLocale(i18n.language)}
                 periods={periodsQuery.data ?? []}
+                subjects={subjectsQuery.data}
+                teachers={teachersQuery.data}
               />
             ) : (
               <>

@@ -20,6 +20,10 @@ import {
   movedLesson,
   movedLessonLessonMTM,
   period,
+  subject,
+  teacher,
+  termDefinition,
+  weekDefinition,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
 import { created, ok } from '#utils/http';
@@ -35,7 +39,7 @@ import {
   enrichLessons,
 } from '#utils/timetable/enrich-lessons';
 import {
-  findLessonForSlot,
+  findOrCreateManualLesson,
   getDayDefinitionIdForDate,
 } from '#utils/timetable/manual-lesson';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
@@ -642,9 +646,11 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       sourceDate,
       sourcePeriodId,
       sourceRoomId,
+      subjectId,
       targetDate,
       targetPeriodId,
       targetRoomId,
+      teacherIds,
     } = c.req.valid('json');
 
     await Promise.all([
@@ -654,6 +660,31 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       ensureClassroomExists(sourceRoomId),
       ensureClassroomExists(targetRoomId),
     ]);
+
+    if (subjectId != null) {
+      const [refSubject] = await db
+        .select({ id: subject.id })
+        .from(subject)
+        .where(eq(subject.id, subjectId))
+        .limit(1);
+      if (!refSubject) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: 'Invalid subject provided',
+        });
+      }
+    }
+
+    if (teacherIds && teacherIds.length > 0) {
+      const teacherCount = await db.$count(
+        teacher,
+        inArray(teacher.id, teacherIds)
+      );
+      if (teacherCount !== teacherIds.length) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: 'Invalid teacher(s) provided',
+        });
+      }
+    }
 
     const timetableId = await getActiveTimetableId();
     if (!timetableId) {
@@ -670,29 +701,30 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       });
     }
 
+    const [[weekDef], [termDef]] = await Promise.all([
+      db.select({ id: weekDefinition.id }).from(weekDefinition).limit(1),
+      db.select({ id: termDefinition.id }).from(termDefinition).limit(1),
+    ]);
+
+    if (!weekDef) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'No week definition found',
+      });
+    }
+
     const result = await db.transaction(
       async (tx) => {
-        const lessonId =
-          (await findLessonForSlot(tx, {
-            cohortId,
-            dayDefinitionId: sourceDayDefinitionId,
-            periodId: sourcePeriodId,
-            roomId: sourceRoomId,
-            timetableId,
-          })) ??
-          (await findLessonForSlot(tx, {
-            cohortId,
-            dayDefinitionId: sourceDayDefinitionId,
-            periodId: sourcePeriodId,
-            timetableId,
-          }));
-
-        if (!lessonId) {
-          throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message:
-              'No lesson found in the active timetable for the given source date, period, class and room',
-          });
-        }
+        const lessonId = await findOrCreateManualLesson(tx, {
+          classroomIds: [sourceRoomId],
+          cohortId,
+          dayDefinitionId: sourceDayDefinitionId,
+          periodId: sourcePeriodId,
+          subjectId: subjectId ?? null,
+          teacherIds: teacherIds ?? [],
+          termDefinitionId: termDef?.id ?? null,
+          timetableId,
+          weeksDefinitionId: weekDef.id,
+        });
 
         const [inserted] = await tx
           .insert(movedLesson)

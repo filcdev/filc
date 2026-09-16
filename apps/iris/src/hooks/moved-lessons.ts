@@ -37,6 +37,16 @@ export type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 type CohortApiResponse = InferResponseType<typeof api.cohort.index.$get>;
 export type Cohort = NonNullable<CohortApiResponse['data']>[number];
 
+type SubjectsApiResponse = InferResponseType<
+  typeof api.timetable.subjects.$get
+>;
+export type Subject = NonNullable<SubjectsApiResponse['data']>[number];
+
+type TeachersApiResponse = InferResponseType<
+  typeof api.timetable.teachers.getAll.$get
+>;
+export type Teacher = NonNullable<TeachersApiResponse['data']>[number];
+
 type CreatePayload = InferRequestType<
   typeof api.timetable.movedLessons.$post
 >['json'];
@@ -95,6 +105,36 @@ export function useMovedLessonCohorts(enabled: boolean) {
       return sortCohorts(res.data) as Cohort[];
     },
     queryKey: queryKeys.cohorts(),
+  });
+}
+
+/** Subject list for the manual move picker; only fetched when enabled. */
+export function useMovedLessonSubjects(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<Subject[]> => {
+      const res = await parseResponse(api.timetable.subjects.$get());
+      if (!(res.success && res.data)) {
+        throw new Error('Failed to load subjects');
+      }
+      return res.data as Subject[];
+    },
+    queryKey: queryKeys.subjects(),
+  });
+}
+
+/** Teacher list for the manual move picker; only fetched when enabled. */
+export function useMovedLessonTeachers(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryFn: async (): Promise<Teacher[]> => {
+      const res = await parseResponse(api.timetable.teachers.getAll.$get());
+      if (!(res.success && res.data)) {
+        throw new Error('Failed to load teachers');
+      }
+      return res.data as Teacher[];
+    },
+    queryKey: queryKeys.teachers(),
   });
 }
 
