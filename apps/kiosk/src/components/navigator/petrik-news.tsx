@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePetrikNews, usePetrikNewsSlideshow } from '@/hooks/petrik-news';
 
 type PetrikNewsOverlayProps = {
@@ -21,6 +21,25 @@ export function PetrikNewsOverlay({
 }: PetrikNewsOverlayProps) {
   const { items } = usePetrikNews(machine);
   const { advance, current } = usePetrikNewsSlideshow(items, dwellMs);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
+
+  // A refetched feed can change length; restart failure tracking so stale
+  // failures cannot dismiss a freshly loaded overlay.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the length is the trigger, not a value the effect reads
+  useEffect(() => {
+    setFailedUrls(new Set());
+  }, [items.length]);
+
+  const imageCount = items.filter((item) => item.imageUrl !== null).length;
+
+  // A feed whose images all fail to load would otherwise pin the screen
+  // forever; dismiss once every image has errored. Title-only items are not
+  // counted, so a text-only feed keeps the overlay alive.
+  useEffect(() => {
+    if (imageCount > 0 && failedUrls.size >= imageCount) {
+      onDismiss();
+    }
+  }, [imageCount, failedUrls, onDismiss]);
 
   useEffect(() => {
     const dismiss = () => onDismiss();
@@ -43,6 +62,15 @@ export function PetrikNewsOverlay({
     return null;
   }
 
+  const handleImageError = () => {
+    setFailedUrls((previous) => {
+      const next = new Set(previous);
+      next.add(current.url);
+      return next;
+    });
+    advance();
+  };
+
   return (
     <div className="fixed inset-0 z-[1100] flex flex-col bg-background text-foreground">
       {/* Top-of-screen progress bar: how long this item still stays. Keyed by
@@ -58,7 +86,7 @@ export function PetrikNewsOverlay({
           alt=""
           className="min-h-0 w-full flex-1 object-contain"
           height={1080}
-          onError={advance}
+          onError={handleImageError}
           src={current.imageUrl}
           width={1920}
         />

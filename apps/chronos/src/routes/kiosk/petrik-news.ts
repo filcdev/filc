@@ -11,6 +11,7 @@ import z from 'zod';
 import { db } from '#database';
 import { kiosk } from '#database/schema/kiosk';
 import { ApiHttpError, ok } from '#utils/http';
+import { assertAllowedFeedUrl } from '#utils/kiosk/feed-url';
 import {
   type PetrikNewsItem,
   parsePetrikNewsFeed,
@@ -21,6 +22,7 @@ import { kioskFactory } from './_factory';
 
 const PETRIK_NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
 const PETRIK_NEWS_TIMEOUT_MS = 10_000;
+const MAX_FEED_BYTES = 1_048_576;
 
 const petrikNewsQuerySchema = z.object({
   machine: z.string().min(1).optional(),
@@ -35,6 +37,74 @@ const feedCache = new Map<
   string,
   { expiresAt: number; items: PetrikNewsItem[] }
 >();
+
+/**
+ * Read the feed body up to a hard size cap, decoding as UTF-8. A null body or
+ * a body over the cap is an unusable feed and surfaces as a 502.
+ */
+async function readFeedBody(response: Response): Promise<string> {
+  if (!response.body) {
+    throw new Error('petrik.hu feed returned an empty body');
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      total += value.byteLength;
+      if (total > MAX_FEED_BYTES) {
+        await reader.cancel();
+        throw new ApiHttpError(StatusCodes.BAD_GATEWAY, {
+          message: 'petrik.hu feed is too large',
+        });
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  chunks.push(decoder.decode());
+  return chunks.join('');
+}
+
+type ResolvedFeed = {
+  enabled: boolean;
+  feedUrl: string;
+  maxItems: number;
+};
+
+/**
+ * Resolve a machine's stored feed URL, item cap and enable flag, falling back
+ * to the default feed when the machine is unknown or its config does not
+ * parse. A disabled takeover still resolves, so the handler can short-circuit.
+ */
+async function resolveFeed(machine: string | undefined): Promise<ResolvedFeed> {
+  let enabled = true;
+  let feedUrl = DEFAULT_PETRIK_NEWS_FEED_URL;
+  let maxItems = DEFAULT_PETRIK_NEWS_MAX_ITEMS;
+
+  if (machine) {
+    const [row] = await db
+      .select()
+      .from(kiosk)
+      .where(eq(kiosk.machineId, machine));
+    if (row) {
+      const parsed = navigatorKioskConfigSchema.safeParse(row.config);
+      if (parsed.success) {
+        enabled = parsed.data.petrikNewsEnabled;
+        feedUrl = parsed.data.petrikNewsFeedUrl;
+        maxItems = parsed.data.petrikNewsMaxItems;
+      }
+    }
+  }
+
+  return { enabled, feedUrl, maxItems };
+}
 
 export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
   describeRoute({
@@ -57,32 +127,24 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
   zValidator('query', petrikNewsQuerySchema),
   async (c) => {
     const { machine } = c.req.valid('query');
+    const feed = await resolveFeed(machine);
 
-    let feedUrl = DEFAULT_PETRIK_NEWS_FEED_URL;
-    let maxItems = DEFAULT_PETRIK_NEWS_MAX_ITEMS;
-    if (machine) {
-      const [row] = await db
-        .select()
-        .from(kiosk)
-        .where(eq(kiosk.machineId, machine));
-      if (row) {
-        const parsed = navigatorKioskConfigSchema.safeParse(row.config);
-        if (parsed.success) {
-          feedUrl = parsed.data.petrikNewsFeedUrl;
-          maxItems = parsed.data.petrikNewsMaxItems;
-        }
-      }
+    if (!feed.enabled) {
+      return ok(c, { items: [] });
     }
 
-    const cached = feedCache.get(feedUrl);
+    await assertAllowedFeedUrl(feed.feedUrl);
+
+    const cached = feedCache.get(feed.feedUrl);
     if (cached && cached.expiresAt > Date.now()) {
-      return ok(c, { items: cached.items.slice(0, maxItems) });
+      return ok(c, { items: cached.items.slice(0, feed.maxItems) });
     }
 
     let xml: string;
     try {
-      const response = await fetch(feedUrl, {
+      const response = await fetch(feed.feedUrl, {
         headers: { 'user-agent': 'filc-kiosk/1.0 (+https://filc.petrik.hu)' },
+        redirect: 'manual',
         signal: AbortSignal.timeout(PETRIK_NEWS_TIMEOUT_MS),
       });
 
@@ -90,8 +152,11 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
         throw new Error(`petrik.hu responded with ${response.status}`);
       }
 
-      xml = await response.text();
+      xml = await readFeedBody(response);
     } catch (error) {
+      if (error instanceof ApiHttpError) {
+        throw error;
+      }
       throw new ApiHttpError(StatusCodes.BAD_GATEWAY, {
         cause: error,
         message: 'Failed to fetch petrik.hu news',
@@ -100,11 +165,11 @@ export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
 
     const items = parsePetrikNewsFeed(xml);
 
-    feedCache.set(feedUrl, {
+    feedCache.set(feed.feedUrl, {
       expiresAt: Date.now() + PETRIK_NEWS_CACHE_TTL_MS,
       items,
     });
 
-    return ok(c, { items: items.slice(0, maxItems) });
+    return ok(c, { items: items.slice(0, feed.maxItems) });
   }
 );
