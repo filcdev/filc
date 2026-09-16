@@ -1,7 +1,7 @@
 import type { ClassroomType } from '@filcdev/api/domains/navigator/classroom-type';
 import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
-import type { Dispatch, SetStateAction } from 'react';
+import { type Dispatch, memo, type SetStateAction } from 'react';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 
 type TypeHighlighterProps = {
@@ -11,7 +11,7 @@ type TypeHighlighterProps = {
 };
 
 /** Toggling a classroom type dims every other room in the 3D view. */
-export function TypeHighlighter({
+export const TypeHighlighter = memo(function TypeHighlighterImpl({
   selectedIds,
   setSelectedIds,
   types,
@@ -56,4 +56,4 @@ export function TypeHighlighter({
       </div>
     </Card>
   );
-}
+});

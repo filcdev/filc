@@ -2,8 +2,7 @@ import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
 import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react';
-import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
-import type { ClassroomInfo } from '@/utils/classroom-search';
+import type { ClassroomInfo, Translator } from '@/utils/classroom-search';
 
 type ClassroomCardProps = {
   classroom: Classroom;
@@ -12,6 +11,7 @@ type ClassroomCardProps = {
   onNavigate: (id: string) => void;
   onSelect: (id: string) => void;
   selectedId: string | null;
+  t: Translator;
 };
 
 /** One search result: name, type, location and a clamped description that can
@@ -24,8 +24,8 @@ export function ClassroomCard({
   onNavigate,
   onSelect,
   selectedId,
+  t,
 }: ClassroomCardProps) {
-  const { t } = useKioskTranslations();
   const [expanded, setExpanded] = useState(false);
 
   const textRef = useRef<HTMLParagraphElement | null>(null);

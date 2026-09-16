@@ -1,9 +1,16 @@
 import {
+  DEFAULT_IDLE_RESET_SECONDS,
+  DEFAULT_PETRIK_NEWS_DWELL_SECONDS,
+  DEFAULT_PETRIK_NEWS_ENABLED,
+  DEFAULT_PETRIK_NEWS_FEED_URL,
+  DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
+  DEFAULT_PETRIK_NEWS_MAX_ITEMS,
   type NavigatorKioskConfig,
   navigatorKioskConfigSchema,
   type TvKioskConfig,
   tvKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
+import { useMemo } from 'react';
 import { api, useApiQuery } from '@/utils/api';
 import {
   DEFAULT_NEWS_SLIDE_SECONDS,
@@ -79,7 +86,15 @@ function normalizeHeartbeat(raw: HeartbeatResponse): KioskStatus {
   return {
     config: parsed.success
       ? parsed.data
-      : { idleResetMs: 60_000, startLocation: null },
+      : {
+          idleResetSeconds: DEFAULT_IDLE_RESET_SECONDS,
+          petrikNewsDwellSeconds: DEFAULT_PETRIK_NEWS_DWELL_SECONDS,
+          petrikNewsEnabled: DEFAULT_PETRIK_NEWS_ENABLED,
+          petrikNewsFeedUrl: DEFAULT_PETRIK_NEWS_FEED_URL,
+          petrikNewsIdleSeconds: DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
+          petrikNewsMaxItems: DEFAULT_PETRIK_NEWS_MAX_ITEMS,
+          startLocation: null,
+        },
     kiosk,
     state: 'navigator',
   };
@@ -106,5 +121,13 @@ export function useKioskHeartbeat(machineId: string): KioskStatus | undefined {
     }
   );
 
-  return query.data ? normalizeHeartbeat(query.data) : undefined;
+  // Memoize on the stable React Query data reference (structural sharing keeps
+  // it referentially equal across re-renders and equal refetches) so the
+  // normalized `config`/`startLocation` are reference-stable. Downstream memos
+  // (the path builder and the 3D sync effect) key off that identity and would
+  // otherwise recompute on every unrelated render.
+  return useMemo(
+    () => (query.data ? normalizeHeartbeat(query.data) : undefined),
+    [query.data]
+  );
 }
