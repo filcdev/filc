@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
 import { Label } from '@filcdev/ui/components/label';
 import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
@@ -741,6 +742,19 @@ function ManualMoveFields({
   teachers = [],
 }: ManualMoveFieldsProps) {
   const { t } = useTranslation();
+  const [teacherSearch, setTeacherSearch] = useState('');
+
+  const filteredTeachers = useMemo(() => {
+    const query = teacherSearch.trim().toLowerCase();
+    if (!query) {
+      return teachers;
+    }
+    return teachers.filter((teacher) =>
+      `${teacher.firstName} ${teacher.lastName} ${teacher.short}`
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [teacherSearch, teachers]);
 
   return (
     <>
@@ -836,15 +850,26 @@ function ManualMoveFields({
 
       <div className="space-y-2">
         <Label>{t('movedLesson.teacher')}</Label>
+        <Input
+          onChange={(e) => setTeacherSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+            }
+          }}
+          placeholder={t('search')}
+          type="text"
+          value={teacherSearch}
+        />
         <form.Field name="manualTeachers">
           {(field) => (
             <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
-              {teachers.length === 0 && (
+              {filteredTeachers.length === 0 && (
                 <p className="p-2 text-muted-foreground text-sm">
                   {t('movedLesson.noTeachersFound')}
                 </p>
               )}
-              {teachers.map((teacher) => {
+              {filteredTeachers.map((teacher) => {
                 const isChecked = field.state.value.includes(teacher.id);
                 return (
                   <label

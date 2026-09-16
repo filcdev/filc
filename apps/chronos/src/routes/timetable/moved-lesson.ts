@@ -661,6 +661,8 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       ensureClassroomExists(targetRoomId),
     ]);
 
+    const dedupedTeacherIds = teacherIds ? Array.from(new Set(teacherIds)) : [];
+
     if (subjectId != null) {
       const [refSubject] = await db
         .select({ id: subject.id })
@@ -674,12 +676,12 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       }
     }
 
-    if (teacherIds && teacherIds.length > 0) {
+    if (dedupedTeacherIds.length > 0) {
       const teacherCount = await db.$count(
         teacher,
-        inArray(teacher.id, teacherIds)
+        inArray(teacher.id, dedupedTeacherIds)
       );
-      if (teacherCount !== teacherIds.length) {
+      if (teacherCount !== dedupedTeacherIds.length) {
         throw new HTTPException(StatusCodes.BAD_REQUEST, {
           message: 'Invalid teacher(s) provided',
         });
@@ -720,7 +722,7 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
           dayDefinitionId: sourceDayDefinitionId,
           periodId: sourcePeriodId,
           subjectId: subjectId ?? null,
-          teacherIds: teacherIds ?? [],
+          teacherIds: dedupedTeacherIds,
           termDefinitionId: termDef?.id ?? null,
           timetableId,
           weeksDefinitionId: weekDef.id,
