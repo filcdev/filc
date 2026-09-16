@@ -24,26 +24,27 @@ export function PetrikNewsOverlay({
   const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
 
   // A refetched feed can change length; restart failure tracking so stale
-  // failures cannot dismiss a freshly loaded overlay.
+  // failures cannot dismiss a freshly loaded overlay. This is a convenience
+  // reset only: the dismissal check below keys on the current items' URLs, so
+  // any leftover entries are harmless regardless.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the length is the trigger, not a value the effect reads
   useEffect(() => {
     setFailedUrls(new Set());
   }, [items.length]);
 
-  const imageCount = items.filter((item) => item.imageUrl !== null).length;
-
-  // Dismiss only when there is genuinely nothing left to show: every item has
-  // an image AND all of them failed. A mixed feed (some title-only items) stays
-  // alive, since title-only items never fail to load.
+  // Dismiss only when there is genuinely nothing left to show: every current
+  // item has an image AND its URL has failed. Requiring every *current* item
+  // to have failed means stale failures from a previous feed (which may share
+  // `items.length` but not URLs) cannot dismiss a new one. A mixed feed (some
+  // title-only items) stays alive, since title-only items never fail to load.
   useEffect(() => {
     if (
-      imageCount === items.length &&
-      imageCount > 0 &&
-      failedUrls.size >= imageCount
+      items.length > 0 &&
+      items.every((item) => item.imageUrl !== null && failedUrls.has(item.url))
     ) {
       onDismiss();
     }
-  }, [imageCount, items.length, failedUrls, onDismiss]);
+  }, [items, failedUrls, onDismiss]);
 
   useEffect(() => {
     const dismiss = () => onDismiss();
