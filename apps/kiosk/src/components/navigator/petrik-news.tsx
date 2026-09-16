@@ -1,5 +1,7 @@
+import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
 import { usePetrikNews, usePetrikNewsSlideshow } from '@/hooks/petrik-news';
+import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 
 type PetrikNewsOverlayProps = {
   /** Milliseconds each item stays on screen. */
@@ -21,6 +23,7 @@ export function PetrikNewsOverlay({
 }: PetrikNewsOverlayProps) {
   const { items } = usePetrikNews(machine);
   const { advance, current } = usePetrikNewsSlideshow(items, dwellMs);
+  const { t } = useKioskTranslations();
   const [failedUrls, setFailedUrls] = useState<Set<string>>(() => new Set());
 
   // A refetched feed can change length; restart failure tracking so stale
@@ -101,14 +104,33 @@ export function PetrikNewsOverlay({
           current.imageUrl ? 'shrink-0' : 'flex flex-1 flex-col justify-center'
         }`}
       >
-        <h2 className="font-bold text-5xl leading-tight md:text-6xl">
-          {current.title}
-        </h2>
-        {current.body && (
-          <p className="mt-4 text-2xl text-muted-foreground leading-snug md:text-3xl">
-            {current.body}
-          </p>
-        )}
+        <div className="flex items-start gap-8">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold text-5xl leading-tight md:text-6xl">
+              {current.title}
+            </h2>
+            {current.body && (
+              <p className="mt-4 text-2xl text-muted-foreground leading-snug md:text-3xl">
+                {current.body}
+              </p>
+            )}
+          </div>
+          {current.url && (
+            <div className="shrink-0 text-center">
+              <div className="rounded-lg bg-white p-3">
+                <QRCodeSVG
+                  level="M"
+                  marginSize={4}
+                  size={180}
+                  value={current.url}
+                />
+              </div>
+              <p className="mt-2 text-lg text-muted-foreground">
+                {t('ui.kiosk.scan_to_open')}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

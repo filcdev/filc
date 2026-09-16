@@ -31,6 +31,7 @@ export const UI_STRINGS: Record<string, string> = {
   'ui.kiosk.loading': 'Betöltés...',
 
   'ui.kiosk.reset': 'Visszaállítás',
+  'ui.kiosk.scan_to_open': 'Nyisd meg a telefonodon!',
   'ui.navigate.back': 'Vissza',
   'ui.navigate.barrier_free': 'Akadálymentes útvonal',
   'ui.navigate.choose_room': 'Válassz termet',
