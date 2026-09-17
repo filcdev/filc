@@ -1,14 +1,13 @@
 import { Eye, EyeOff } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { cn } from '../lib/utils';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-} from '@/components/ui/input-group';
-import { cn } from '@/utils';
+} from './input-group';
 
 function PasswordInput({
   className,
@@ -16,7 +15,6 @@ function PasswordInput({
   ...props
 }: ComponentProps<'input'>) {
   const [showPassword, setShowPassword] = useState(false);
-  const { t } = useTranslation();
 
   return (
     <InputGroup
@@ -30,11 +28,7 @@ function PasswordInput({
       />
       <InputGroupAddon align="inline-end">
         <InputGroupButton
-          aria-label={
-            showPassword
-              ? t('common.hidePassword', 'Hide password')
-              : t('common.showPassword', 'Show password')
-          }
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
           className="cursor-pointer"
           disabled={disabled}
           onClick={() => setShowPassword((prev) => !prev)}
