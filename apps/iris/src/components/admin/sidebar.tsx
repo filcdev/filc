@@ -30,9 +30,7 @@ import {
   Layers,
   LayoutDashboard,
   List,
-  Map as MapIcon,
   Microchip,
-  MonitorPlay,
   MonitorSmartphone,
   Palette,
   RefreshCw,
@@ -45,6 +43,7 @@ import {
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasPermission } from '@/hooks/use-has-permission';
+import { useWifiStatus } from '@/hooks/wifi';
 import { authClient } from '@/utils/authentication';
 
 type MenuIcon = typeof List;
@@ -67,6 +66,7 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
   const userPermissions = session?.user?.permissions;
+  const wifiStatus = useWifiStatus();
 
   const handleNavigate = (url: string) => {
     navigate({ to: url });
@@ -162,35 +162,39 @@ export function AdminSidebar() {
         ],
         label: t('admin.doorlock'),
       },
-      {
-        items: [
-          {
-            icon: Wifi,
-            permission: permissions.wifiRead,
-            title: t('wifiAdminDashboard.title'),
-            url: '/admin/wifi',
-          },
-          {
-            icon: Users,
-            permission: permissions.wifiRead,
-            title: t('wifiAdminUsers.title'),
-            url: '/admin/wifi/users',
-          },
-          {
-            icon: HardDrive,
-            permission: permissions.wifiRead,
-            title: t('wifiAdminNas.title'),
-            url: '/admin/wifi/nas',
-          },
-          {
-            icon: Gauge,
-            permission: permissions.wifiRead,
-            title: t('wifiAdminProfiles.title'),
-            url: '/admin/wifi/speed-profiles',
-          },
-        ],
-        label: t('admin.wifi'),
-      },
+      ...(wifiStatus.data?.enabled
+        ? [
+            {
+              items: [
+                {
+                  icon: Wifi,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminDashboard.title'),
+                  url: '/admin/wifi',
+                },
+                {
+                  icon: Users,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminUsers.title'),
+                  url: '/admin/wifi/users',
+                },
+                {
+                  icon: HardDrive,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminNas.title'),
+                  url: '/admin/wifi/nas',
+                },
+                {
+                  icon: Gauge,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminProfiles.title'),
+                  url: '/admin/wifi/speed-profiles',
+                },
+              ],
+              label: t('admin.wifi'),
+            },
+          ]
+        : []),
       {
         items: [
           {
@@ -300,7 +304,7 @@ export function AdminSidebar() {
           ]
         : []),
     ],
-    [t]
+    [t, wifiStatus.data?.enabled]
   );
 
   const visibleCategories = useMemo(
