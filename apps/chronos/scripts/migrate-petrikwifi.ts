@@ -19,19 +19,23 @@ async function main() {
   const userIdMap = new Map<number, string>();
 
   const existingUsers = await db
-    .select({ id: systemUser.id, email: systemUser.email })
+    .select({ email: systemUser.email, id: systemUser.id })
     .from(systemUser);
-  
+
   const emailToId = new Map(
     existingUsers.map((u) => [u.email.toLowerCase(), u.id])
   );
   const usernameToId = new Map(
-    existingUsers.map((u) => [(u.email.split('@')[0] || '').toLowerCase(), u.id])
+    existingUsers.map((u) => [
+      (u.email.split('@')[0] || '').toLowerCase(),
+      u.id,
+    ])
   );
 
   for (const user of users) {
     const wifiUsername = (user.username || '').toLowerCase();
-    const userId = emailToId.get(wifiUsername) || usernameToId.get(wifiUsername) || null;
+    const userId =
+      emailToId.get(wifiUsername) || usernameToId.get(wifiUsername) || null;
 
     const allowedDevices = user.allowedDevices
       ? JSON.parse(user.allowedDevices)

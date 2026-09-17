@@ -387,6 +387,7 @@ function WifiUsersPage() {
           </div>
         ) : (
           <div className="flex w-full flex-col">
+            {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: JSX map function */}
             {filteredData.map((user) => {
               const isOrphan = user.isOrphan;
 
@@ -429,7 +430,7 @@ function WifiUsersPage() {
                           )}
                           {!isOrphan && user.createdBy === null && (
                             <Badge
-                              className="font-normal border-destructive/50 text-destructive"
+                              className="border-destructive/50 font-normal text-destructive"
                               variant="secondary"
                             >
                               {t(
@@ -438,17 +439,22 @@ function WifiUsersPage() {
                               )}
                             </Badge>
                           )}
-                          {!isOrphan && user.createdBy !== null && user.userId !== user.createdBy && (
-                            <Badge className="font-normal" variant="secondary">
-                              {t(
-                                'wifiAdminUsers.createdByHint',
-                                'Created by: {{name}}',
-                                {
-                                  name: user.creatorName ?? 'Admin',
-                                }
-                              )}
-                            </Badge>
-                          )}
+                          {!isOrphan &&
+                            user.createdBy !== null &&
+                            user.userId !== user.createdBy && (
+                              <Badge
+                                className="font-normal"
+                                variant="secondary"
+                              >
+                                {t(
+                                  'wifiAdminUsers.createdByHint',
+                                  'Created by: {{name}}',
+                                  {
+                                    name: user.creatorName ?? 'Admin',
+                                  }
+                                )}
+                              </Badge>
+                            )}
                         </div>
                         <div className="hidden text-muted-foreground text-sm md:flex">
                           {user.comment && (

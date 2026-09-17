@@ -97,7 +97,7 @@ const authOptions = {
               const wifiUsername = userEmail.split('@')[0] || '';
               await db
                 .update(wifiUser)
-                .set({ userId: session.userId, createdBy: session.userId })
+                .set({ createdBy: session.userId, userId: session.userId })
                 .where(
                   and(
                     or(
