@@ -60,7 +60,6 @@ eap {
 		tls = tls-common
 		cipher_list = "ALL:ADH:!EXPORT:!eNULL:!SSLv2"
 		authority_identity = "petrikwifi.hu"
-		pac_opaque_key = "YUMvkOeT7IwUq42rgtDDX12Kl9bodeY0"
 		pac_opaque_key = "FILL_ME_IN"
 		virtual_server = inner-tunnel
 	}

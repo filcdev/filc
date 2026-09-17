@@ -4,7 +4,6 @@ import {
   radiusAuthorizeResponseSchema,
 } from '@filcdev/api/domains/wifi/radius';
 import { zValidator } from '@hono/zod-validator';
-import { getLogger } from '@logtape/logtape';
 import { getConnInfo } from 'hono/bun';
 import { describeRoute, resolver } from 'hono-openapi';
 import { env } from '#utils/environment';
@@ -12,8 +11,6 @@ import { filcExt } from '#utils/openapi';
 import type { RadiusAuthorizeRequest } from '#utils/wifi/radius';
 import { authorizeRadius } from '#utils/wifi/radius';
 import { wifiFactory } from './_factory';
-
-const logger = getLogger(['chronos', 'wifi', 'radius']);
 
 const { schema: radiusAuthorizeRequestOpenApiSchema } = await resolver(
   radiusAuthorizeRequestSchema
@@ -60,11 +57,6 @@ export const authorizeRadiusRoute = wifiFactory.createHandlers(
     const request = c.req.valid('json');
     const sharedSecret =
       c.req.header('X-FreeRADIUS-Secret') ?? request.sharedSecret;
-
-    // Log the secret to see what we actually received from FreeRadius
-    logger.debug('Received X-FreeRADIUS-Secret header: {secret}', {
-      secret: sharedSecret,
-    });
 
     const result = await authorizeRadius(
       { ...request, sharedSecret } as RadiusAuthorizeRequest,
