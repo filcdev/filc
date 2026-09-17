@@ -190,7 +190,7 @@
     "passwordChangeWarning": "Újrahitelesítés szükséges",
     "passwordChangeWarningDescription": "A jelszó megváltoztatása után az összes Wi-Fi hálózathoz csatlakoztatott eszközt újra hitelesítenie kell az új jelszóval.",
     "passwordSecurityWarning": "Fontos biztonsági figyelmeztetés",
-    "passwordSecurityWarningDescription": "A Wi-Fi jelszó visszafordítható formában van tárolva a hálózat kompatibilitása érdekében. Egy olyan jelszót használj, amelyet nem használsz sehol máshol.",
+    "passwordSecurityWarningDescription": "A Wi-Fi jelszó könnyen feltörthető formában van tárolva a hálózat kompatibilitása érdekében. Egy olyan jelszót használj, amelyet nem használsz sehol máshol.",
     "editDevice": "Eszköz nevének szerkesztése",
     "certificate": "CA tanúsítvány",
     "downloadCertificate": "Tanúsítvány letöltése",
