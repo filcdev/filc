@@ -26,6 +26,26 @@ export const listTeachersResponseSchema = z.object({
 
 export type ListTeachersResponse = z.infer<typeof listTeachersResponseSchema>;
 
+/**
+ * Public teacher shape exposed by the timetable list and `/me` endpoints:
+ * non-sensitive columns only (no email or linked user).
+ */
+export const publicTeacherSchema = z.object({
+  firstName: z.string(),
+  id: z.string(),
+  lastName: z.string(),
+  short: z.string(),
+});
+
+export type PublicTeacher = z.infer<typeof publicTeacherSchema>;
+
+export const getMyTeacherResponseSchema = z.object({
+  data: publicTeacherSchema.nullable(),
+  success: z.boolean(),
+});
+
+export type GetMyTeacherResponse = z.infer<typeof getMyTeacherResponseSchema>;
+
 export const getTeacherParamsSchema = z.object({
   id: z.uuid(),
 });

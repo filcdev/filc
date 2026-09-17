@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type InferResponseType, parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
@@ -39,6 +40,55 @@ export function useTimetables() {
   });
 }
 
+type LatestValidTimetableData = NonNullable<
+  InferResponseType<typeof api.timetable.timetables.latestValid.$get>['data']
+>;
+type CohortsData = NonNullable<
+  InferResponseType<typeof api.cohort.index.$get>['data']
+>;
+
+/** Active timetable (when the user has no cohort) plus the cohort options. */
+export function useCohortSelector(userCohortId: string | null) {
+  const activeTimetableQuery = useQuery({
+    enabled: !userCohortId,
+    queryFn: async (): Promise<LatestValidTimetableData> => {
+      const res = await parseResponse(
+        api.timetable.timetables.latestValid.$get()
+      );
+      if (!res.success) {
+        throw new Error('Failed to load timetable');
+      }
+      return res.data as LatestValidTimetableData;
+    },
+    queryKey: queryKeys.timetables.latestValid(),
+  });
+
+  const timetableId = userCohortId ?? activeTimetableQuery.data?.id ?? null;
+
+  const cohortQuery = useQuery({
+    enabled: !!timetableId,
+    queryFn: async (): Promise<CohortsData> => {
+      if (!timetableId) {
+        throw new Error('Failed to load cohorts');
+      }
+      const res = await parseResponse(
+        userCohortId
+          ? api.cohort.index.$get()
+          : api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
+              param: { timetableId },
+            })
+      );
+      if (!res.success) {
+        throw new Error('Failed to load cohorts');
+      }
+      return sortCohorts(res.data) as CohortsData;
+    },
+    queryKey: queryKeys.timetable.cohorts(timetableId),
+  });
+
+  return { activeTimetableQuery, cohortQuery };
+}
+
 /** Preview of what deleting a timetable would remove. */
 export function useDeletePreview(timetableId: string | null | undefined) {
   return useQuery({
@@ -67,6 +117,8 @@ function useInvalidateTimetableGraph() {
     queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
     queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
     queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.teachers() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminTeachers() });
   };
 }
 

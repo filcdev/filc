@@ -1,16 +1,16 @@
-import { useNavigate } from '@tanstack/react-router';
-import { MailCheck, MailX } from 'lucide-react';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@filcdev/ui/components/dialog';
+import { useNavigate } from '@tanstack/react-router';
+import { MailCheck, MailX } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   type NotificationItem,
   useMarkNotificationRead,

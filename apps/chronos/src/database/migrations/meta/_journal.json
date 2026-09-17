@@ -131,8 +131,36 @@
     {
       "idx": 18,
       "version": "7",
-      "when": 1788442157446,
-      "tag": "0018_wifi_tables",
+      "when": 1788556112340,
+      "tag": "0018_smart_warbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789117983743,
+      "tag": "0019_complex_cobalt_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789345464055,
+      "tag": "0020_daffy_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789390484814,
+      "tag": "0021_bored_darkhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1789663537673,
+      "tag": "0022_wifi_tables",
       "breakpoints": true
     }
   ]

@@ -1,13 +1,21 @@
 import { permissions } from '@filcdev/api/permissions';
-
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { createFileRoute } from '@tanstack/react-router';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
 import { DoorOpenChart } from '@/components/doorlock/door-open-chart';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {

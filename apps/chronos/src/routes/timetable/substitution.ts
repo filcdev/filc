@@ -4,7 +4,7 @@ import {
   substitutionIdParamsSchema,
 } from '@filcdev/api/domains/timetable/substitution';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -12,7 +12,6 @@ import z from 'zod';
 import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
-  classroom,
   cohort,
   dayDefinition,
   lesson,
@@ -36,6 +35,14 @@ import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitutio
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
+  enrichedLessonSchema,
+  enrichLessons,
+} from '#utils/timetable/enrich-lessons';
+import {
+  getWeekdayInBudapest,
+  isMatchingWeekday,
+} from '#utils/timetable/weekday';
+import {
   createInsertSchema,
   createSelectSchema,
   createUpdateSchema,
@@ -44,37 +51,10 @@ import { timetableFactory } from './_factory';
 
 const substitutionSchema = createSelectSchema(substitution);
 
-// Enriched lesson schema for substitution endpoints
-const enrichedSubstitutionLessonSchema = z.object({
-  classrooms: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  cohorts: z.array(z.string()),
-  day: createSelectSchema(dayDefinition).optional(),
-  id: z.string(),
-  period: z
-    .object({
-      endTime: z.string(),
-      id: z.string(),
-      period: z.number(),
-      startTime: z.string(),
-    })
-    .nullable(),
-  periodsPerWeek: z.number(),
-  subject: z
-    .object({ id: z.string(), name: z.string(), short: z.string() })
-    .nullable(),
-  teachers: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  termDefinitionId: z.string().nullable(),
-  weeksDefinitionId: z.string(),
-});
-
 const allSubstitutionsResponseSchema = z.object({
   data: z.array(
     z.object({
-      lessons: z.array(enrichedSubstitutionLessonSchema),
+      lessons: z.array(enrichedLessonSchema),
       substitution: substitutionSchema,
       teacher: createSelectSchema(teacher).nullable(),
     })
@@ -101,126 +81,97 @@ const cohortSubstitutionsResponseSchema = z.object({
   success: z.boolean(),
 });
 
-// Helper to enrich lessons with their related data
-async function enrichLessons(lessonIds: string[]) {
-  if (lessonIds.length === 0) {
-    return [];
+// Type for both database and transaction instances used by helpers
+type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function areLessonsCompatible(
+  aId: string,
+  bId: string,
+  lessonCohorts: Map<string, Set<string>>
+): boolean {
+  if (aId === bId) {
+    return true;
+  }
+  const aCohorts = lessonCohorts.get(aId);
+  const bCohorts = lessonCohorts.get(bId);
+  if (!(aCohorts && bCohorts)) {
+    return false;
+  }
+  for (const cohortId of aCohorts) {
+    if (bCohorts.has(cohortId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// A substituter may cover multiple lessons in the same period only when those
+// lessons are the same lesson or share a cohort. Check the incoming lessons
+// against each other before any of the existing-substitution early returns.
+async function assertIncomingLessonsCompatible(
+  dbOrTx: TxOrDb,
+  incomingLessons: { id: string; periodId: string | null }[]
+): Promise<void> {
+  if (incomingLessons.length < 2) {
+    return;
   }
 
-  const lessons = await db
-    .select()
-    .from(lesson)
-    .where(inArray(lesson.id, lessonIds));
-
-  if (lessons.length === 0) {
-    return [];
-  }
-
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
-  const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
-  const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
-  const teacherIds = Array.from(
-    new Set(
-      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
-    )
-  );
-  const classroomIds = Array.from(
-    new Set(
-      lessons.flatMap((l) =>
-        Array.isArray(l.classroomIds) ? l.classroomIds : []
-      )
-    )
-  );
-
-  // Get lesson-cohort relationships
-  const lessonCohorts = await db
+  const cohortLinks = await dbOrTx
     .select({
       cohortId: lessonCohortMTM.cohortId,
-      cohortName: cohort.name,
       lessonId: lessonCohortMTM.lessonId,
     })
     .from(lessonCohortMTM)
-    .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-    .where(inArray(lessonCohortMTM.lessonId, lessonIds));
+    .where(
+      inArray(
+        lessonCohortMTM.lessonId,
+        incomingLessons.map((l) => l.id)
+      )
+    );
 
-  // Create a map of lesson ID to cohort names
-  const lessonCohortMap = new Map<string, string[]>();
-  for (const lc of lessonCohorts) {
-    if (!lessonCohortMap.has(lc.lessonId)) {
-      lessonCohortMap.set(lc.lessonId, []);
-    }
-    lessonCohortMap.get(lc.lessonId)?.push(lc.cohortName);
+  const lessonCohorts = new Map<string, Set<string>>();
+  for (const link of cohortLinks) {
+    const cohorts = lessonCohorts.get(link.lessonId) ?? new Set<string>();
+    cohorts.add(link.cohortId);
+    lessonCohorts.set(link.lessonId, cohorts);
   }
 
-  const [subjects, days, periods, teachers, classrooms] = await Promise.all([
-    db.select().from(subject).where(inArray(subject.id, subjectIds)),
-    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-    db.select().from(period).where(inArray(period.id, periodIds)),
-    teacherIds.length
-      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-    classroomIds.length
-      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-  ]);
+  const lessonsByPeriod = new Map<string, string[]>();
+  for (const current of incomingLessons) {
+    if (current.periodId == null) {
+      continue;
+    }
+    const ids = lessonsByPeriod.get(current.periodId) ?? [];
+    ids.push(current.id);
+    lessonsByPeriod.set(current.periodId, ids);
+  }
 
-  const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
-  const dayMap = new Map(days.map((d) => [d.id, d] as const));
-  const periodMap = new Map(periods.map((p) => [p.id, p] as const));
-  const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
-  const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
-
-  return lessons.map((l) => {
-    const tIds = (Array.isArray(l.teacherIds) ? l.teacherIds : []) as string[];
-    const cIds = (
-      Array.isArray(l.classroomIds) ? l.classroomIds : []
-    ) as string[];
-    const cohortNames = lessonCohortMap.get(l.id) || [];
-
-    return {
-      classrooms: cIds
-        .map((id) => classroomMap.get(id))
-        .filter(Boolean)
-        .map((cr) => ({
-          id: (cr as (typeof classrooms)[number]).id,
-          name: (cr as (typeof classrooms)[number]).name,
-          short: (cr as (typeof classrooms)[number]).short,
-        })),
-      cohorts: cohortNames,
-      day: dayMap.get(l.dayDefinitionId),
-      id: l.id,
-      period: (() => {
-        const p = periodMap.get(l.periodId);
-        return p
-          ? {
-              endTime: String(p.endTime),
-              id: p.id,
-              period: p.period,
-              startTime: String(p.startTime),
-            }
-          : null;
-      })(),
-      periodsPerWeek: l.periodsPerWeek,
-      subject: (() => {
-        const s = subjMap.get(l.subjectId);
-        return s ? { id: s.id, name: s.name, short: s.short } : null;
-      })(),
-      teachers: tIds
-        .map((id) => teacherMap.get(id))
-        .filter(Boolean)
-        .map((t) => ({
-          id: (t as (typeof teachers)[number]).id,
-          name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-          short: (t as (typeof teachers)[number]).short,
-        })),
-      termDefinitionId: l.termDefinitionId,
-      weeksDefinitionId: l.weeksDefinitionId,
-    };
-  });
+  assertPeriodsCompatible(lessonsByPeriod, lessonCohorts);
 }
 
-// Type for both database and transaction instances used by helpers
-type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+// Throw 409 CONFLICT when any two lessons sharing a period are unrelated.
+function assertPeriodsCompatible(
+  lessonsByPeriod: Map<string, string[]>,
+  lessonCohorts: Map<string, Set<string>>
+): void {
+  for (const ids of lessonsByPeriod.values()) {
+    for (let i = 0; i < ids.length; i += 1) {
+      for (let j = i + 1; j < ids.length; j += 1) {
+        const a = ids[i];
+        const b = ids[j];
+        if (a === undefined || b === undefined) {
+          continue;
+        }
+        if (!areLessonsCompatible(a, b, lessonCohorts)) {
+          throw new HTTPException(StatusCodes.CONFLICT, {
+            message:
+              'Teacher already has a substitution in the same period on this date',
+          });
+        }
+      }
+    }
+  }
+}
 
 // Check if a teacher already has a substitution in any of the same periods
 // on the same date. Throws 409 CONFLICT if an overlap is detected.
@@ -241,9 +192,9 @@ async function checkTeacherSubstitutionConflict(
     return;
   }
 
-  // Get period IDs for the incoming lessons
+  // Get IDs and period IDs for the incoming lessons
   const incomingLessons = await dbOrTx
-    .select({ periodId: lesson.periodId })
+    .select({ id: lesson.id, periodId: lesson.periodId })
     .from(lesson)
     .where(inArray(lesson.id, lessonIds));
 
@@ -252,6 +203,10 @@ async function checkTeacherSubstitutionConflict(
       .map((l) => l.periodId)
       .filter((id): id is string => id != null)
   );
+
+  // Reject assigning the substituter to unrelated incoming lessons in the same
+  // period, even when there is no existing substitution to compare against.
+  await assertIncomingLessonsCompatible(dbOrTx, incomingLessons);
 
   // Find existing substitutions for the same date and substituter
   const conditions = [
@@ -285,9 +240,9 @@ async function checkTeacherSubstitutionConflict(
     return;
   }
 
-  // Get period IDs for those linked lessons
+  // Get IDs and period IDs for those linked lessons
   const existingLessonPeriods = await dbOrTx
-    .select({ periodId: lesson.periodId })
+    .select({ id: lesson.id, periodId: lesson.periodId })
     .from(lesson)
     .where(inArray(lesson.id, existingLessonIds));
 
@@ -297,14 +252,66 @@ async function checkTeacherSubstitutionConflict(
       .filter((id): id is string => id != null)
   );
 
-  // Check for overlap
-  for (const periodId of incomingPeriodIds) {
-    if (existingPeriodIds.has(periodId)) {
-      throw new HTTPException(StatusCodes.CONFLICT, {
-        message:
-          'Teacher already has a substitution in the same period on this date',
-      });
+  // Compute the periods shared by incoming and existing lessons
+  const overlappingPeriodIds = [...incomingPeriodIds].filter((periodId) =>
+    existingPeriodIds.has(periodId)
+  );
+
+  if (overlappingPeriodIds.length === 0) {
+    return;
+  }
+
+  // Fetch cohort links for every involved lesson in a single query so we can
+  // allow overlaps where the lessons are the same or share a cohort.
+  const allLessonIds = Array.from(
+    new Set([
+      ...incomingLessons.map((l) => l.id),
+      ...existingLessonPeriods.map((l) => l.id),
+    ])
+  );
+
+  const cohortLinks = await dbOrTx
+    .select({
+      cohortId: lessonCohortMTM.cohortId,
+      lessonId: lessonCohortMTM.lessonId,
+    })
+    .from(lessonCohortMTM)
+    .where(inArray(lessonCohortMTM.lessonId, allLessonIds));
+
+  const lessonCohorts = new Map<string, Set<string>>();
+  for (const link of cohortLinks) {
+    if (!lessonCohorts.has(link.lessonId)) {
+      lessonCohorts.set(link.lessonId, new Set());
     }
+    lessonCohorts.get(link.lessonId)?.add(link.cohortId);
+  }
+
+  for (const periodId of overlappingPeriodIds) {
+    const incomingInPeriod = incomingLessons.filter(
+      (l) => l.periodId === periodId
+    );
+    const existingInPeriod = existingLessonPeriods.filter(
+      (l) => l.periodId === periodId
+    );
+
+    // Only allow the overlap when every incoming/existing lesson pair in this
+    // period is the same lesson or shares a cohort. A single unrelated pair
+    // means the substituter would cover two different classes at once, which
+    // is a real conflict.
+    const allPairsCompatible = incomingInPeriod.every((incoming) =>
+      existingInPeriod.every((existing) =>
+        areLessonsCompatible(incoming.id, existing.id, lessonCohorts)
+      )
+    );
+
+    if (allPairsCompatible) {
+      continue;
+    }
+
+    throw new HTTPException(StatusCodes.CONFLICT, {
+      message:
+        'Teacher already has a substitution in the same period on this date',
+    });
   }
 }
 
@@ -319,7 +326,8 @@ async function validateUpdateTeacherConflict(
   },
   existing: { date: Date; substituter: string | null }
 ): Promise<void> {
-  const effectiveSubstituter = body.substituter ?? existing.substituter;
+  const effectiveSubstituter =
+    'substituter' in body ? body.substituter : existing.substituter;
   if (effectiveSubstituter == null) {
     return;
   }
@@ -412,7 +420,9 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       new Set(substitutions.flatMap((s) => s.lessonIds))
     );
 
-    // Enrich lessons in one batch
+    // Enrich every linked lesson. A substitution keeps pointing at the lesson
+    // it was created for, even after that lesson's timetable is retired, so
+    // this must not be scoped to the active timetable.
     const enrichedLessons = await enrichLessons(allLessonIds);
     const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
 
@@ -667,7 +677,7 @@ async function findOrCreateManualLesson(
     cohortId: string;
     dayDefinitionId: string;
     periodId: string;
-    subjectId: string;
+    subjectId: string | null;
     teacherId: string;
     timetableId: string;
     weeksDefinitionId: string;
@@ -685,6 +695,11 @@ async function findOrCreateManualLesson(
     termDefinitionId,
   } = params;
 
+  const subjectCondition =
+    subjectId === null
+      ? isNull(lesson.subjectId)
+      : eq(lesson.subjectId, subjectId);
+
   const existing = await tx
     .select({ lessonId: lessonCohortMTM.lessonId })
     .from(lessonCohortMTM)
@@ -695,7 +710,7 @@ async function findOrCreateManualLesson(
         eq(lesson.timetableId, timetableId),
         eq(lesson.dayDefinitionId, dayDefinitionId),
         eq(lesson.periodId, periodId),
-        eq(lesson.subjectId, subjectId),
+        subjectCondition,
         // teacherIds is a text array; check it contains exactly the teacher
         sql`${lesson.teacherIds} @> ARRAY[${teacherId}]::text[]`
       )
@@ -722,6 +737,56 @@ async function findOrCreateManualLesson(
   });
   await tx.insert(lessonCohortMTM).values({ cohortId, lessonId });
   return lessonId;
+}
+
+async function lockAndValidateTeachers(
+  tx: TxOrDb,
+  teacherId: string,
+  substituter: string | null | undefined
+): Promise<void> {
+  // Lock the teacher and substituter rows (when set) in a deterministic
+  // sorted order, so concurrent requests with reversed teacherId/substituter
+  // values can't deadlock on the second FOR UPDATE. Locking before validating
+  // either row also keeps a concurrent cleanup from deleting a referenced
+  // teacher mid-flight.
+  const teacherIdsToLock = Array.from(
+    new Set([teacherId, ...(substituter ? [substituter] : [])])
+  ).sort();
+
+  for (const id of teacherIdsToLock) {
+    const [lockedTeacher] = await tx
+      .select({ id: teacher.id })
+      .from(teacher)
+      .where(eq(teacher.id, id))
+      .for('update');
+
+    if (!lockedTeacher) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message:
+          id === teacherId
+            ? 'Invalid teacher provided'
+            : 'Invalid substituter provided',
+      });
+    }
+  }
+}
+
+// Manual substitution only takes a date; resolve the matching day definition
+// from the standalone day-definition table via the date's weekday.
+async function getDayDefinitionIdForDate(date: Date): Promise<string | null> {
+  const weekday = getWeekdayInBudapest(date);
+  const rows = await db
+    .select({
+      id: dayDefinition.id,
+      name: dayDefinition.name,
+      short: dayDefinition.short,
+    })
+    .from(dayDefinition);
+
+  const match = rows.find((row) =>
+    isMatchingWeekday(weekday, row.name, row.short)
+  );
+  return match?.id ?? null;
 }
 
 export const createManualSubstitution = timetableFactory.createHandlers(
@@ -755,7 +820,6 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       cohortId,
       comment,
       date,
-      dayDefinitionId,
       periodId,
       subjectId,
       substituter,
@@ -763,43 +827,27 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     } = c.req.valid('json');
 
     // Validate that all referenced entities exist.
-    const [[refTeacher], [refDay], [refPeriod], [refSubject], [refCohort]] =
-      await Promise.all([
-        db
-          .select({ id: teacher.id })
-          .from(teacher)
-          .where(eq(teacher.id, teacherId))
-          .limit(1),
-        db
-          .select({ id: dayDefinition.id })
-          .from(dayDefinition)
-          .where(eq(dayDefinition.id, dayDefinitionId))
-          .limit(1),
-        db
-          .select({ id: period.id })
-          .from(period)
-          .where(eq(period.id, periodId))
-          .limit(1),
-        db
-          .select({ id: subject.id })
-          .from(subject)
-          .where(eq(subject.id, subjectId))
-          .limit(1),
-        db
-          .select({ id: cohort.id })
-          .from(cohort)
-          .where(eq(cohort.id, cohortId))
-          .limit(1),
-      ]);
+    const [[refTeacher], [refPeriod], [refCohort]] = await Promise.all([
+      db
+        .select({ id: teacher.id })
+        .from(teacher)
+        .where(eq(teacher.id, teacherId))
+        .limit(1),
+      db
+        .select({ id: period.id })
+        .from(period)
+        .where(eq(period.id, periodId))
+        .limit(1),
+      db
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(eq(cohort.id, cohortId))
+        .limit(1),
+    ]);
 
     if (!refTeacher) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Invalid teacher provided',
-      });
-    }
-    if (!refDay) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid day provided',
       });
     }
     if (!refPeriod) {
@@ -807,15 +855,22 @@ export const createManualSubstitution = timetableFactory.createHandlers(
         message: 'Invalid period provided',
       });
     }
-    if (!refSubject) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid subject provided',
-      });
-    }
     if (!refCohort) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
         message: 'Invalid cohort provided',
       });
+    }
+    if (subjectId !== null) {
+      const [refSubject] = await db
+        .select({ id: subject.id })
+        .from(subject)
+        .where(eq(subject.id, subjectId))
+        .limit(1);
+      if (!refSubject) {
+        throw new HTTPException(StatusCodes.BAD_REQUEST, {
+          message: 'Invalid subject provided',
+        });
+      }
     }
 
     if (substituter) {
@@ -838,6 +893,13 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       });
     }
 
+    const dayDefinitionId = await getDayDefinitionIdForDate(date);
+    if (!dayDefinitionId) {
+      throw new HTTPException(StatusCodes.BAD_REQUEST, {
+        message: 'No day definition found for the given date',
+      });
+    }
+
     const [[weekDef], [termDef]] = await Promise.all([
       db.select({ id: weekDefinition.id }).from(weekDefinition).limit(1),
       db.select({ id: termDefinition.id }).from(termDefinition).limit(1),
@@ -852,6 +914,8 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     let manualLessonId = '';
     const result = await db.transaction(
       async (tx) => {
+        await lockAndValidateTeachers(tx, teacherId, substituter);
+
         const lessonId = await findOrCreateManualLesson(tx, {
           cohortId,
           dayDefinitionId,

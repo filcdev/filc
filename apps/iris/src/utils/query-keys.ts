@@ -31,9 +31,23 @@ export const queryKeys = {
     selfCards: () => ['doorlock', 'self-cards'] as const,
     stats: () => ['doorlock', 'stats'] as const,
   },
+  kiosks: () => ['kiosks'] as const,
   lessons: () => ['lessons'] as const,
   movedLessons: () => ['movedLessons'] as const,
+  myTeacher: () => ['my-teacher'] as const,
 
+  navigator: {
+    availableLanguages: () =>
+      ['navigator', 'translations', 'available'] as const,
+    buildings: () => ['navigator', 'buildings'] as const,
+    classrooms: () => ['navigator', 'classrooms'] as const,
+    classroomTypes: () => ['navigator', 'classroom-types'] as const,
+    corridors: () => ['navigator', 'corridors'] as const,
+    graph: () => ['navigator', 'graph'] as const,
+    lifts: () => ['navigator', 'lifts'] as const,
+    stairs: () => ['navigator', 'stairs'] as const,
+    translations: () => ['navigator', 'translations'] as const,
+  },
   news: {
     adminSystemMessages: () => ['admin-system-messages'] as const,
     announcements: () => ['announcements'] as const,
@@ -79,8 +93,6 @@ export const queryKeys = {
       selectionId: string | null,
       timetableId: string | null
     ) => ['lessons', filter, selectionId, timetableId] as const,
-    lessonsByCohort: (cohortId: string | null | undefined) =>
-      ['lessons', 'cohort', cohortId] as const,
     periods: (timetableId: string | null | undefined) =>
       ['timetable', 'periods', timetableId] as const,
     /** Used to broadly invalidate all timetable-related data after import */

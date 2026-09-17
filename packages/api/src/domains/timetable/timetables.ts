@@ -50,11 +50,12 @@ export const previewDeleteResponseSchema = z.object({
   success: z.literal(true),
 });
 
-/** Response for cleaning up cohorts orphaned by a timetable deletion. */
+/** Response for cleaning up cohorts orphaned by a timetable deletion and teachers that are no longer assigned to any lesson. */
 export const cleanupOrphanedCohortsResponseSchema = z.object({
   data: z.object({
     affectedUserCount: z.number(),
     deletedCohortIds: z.array(z.string()),
+    deletedTeacherIds: z.array(z.string()),
   }),
   success: z.literal(true),
 });

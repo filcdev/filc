@@ -21,6 +21,7 @@ import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
+import { Route as PrivateAdminKiosksRouteImport } from './routes/_private/admin/kiosks'
 import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
@@ -29,6 +30,15 @@ import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private
 import { Route as PrivateAdminDoorlockCardsRouteImport } from './routes/_private/admin/doorlock/cards'
 import { Route as PrivateAdminDoorlockDevicesRouteImport } from './routes/_private/admin/doorlock/devices'
 import { Route as PrivateAdminDoorlockLogsRouteImport } from './routes/_private/admin/doorlock/logs'
+import { Route as PrivateAdminNavigatorIndexRouteImport } from './routes/_private/admin/navigator/index'
+import { Route as PrivateAdminNavigatorBuildingsRouteImport } from './routes/_private/admin/navigator/buildings'
+import { Route as PrivateAdminNavigatorClassroomTypesRouteImport } from './routes/_private/admin/navigator/classroom-types'
+import { Route as PrivateAdminNavigatorClassroomsRouteImport } from './routes/_private/admin/navigator/classrooms'
+import { Route as PrivateAdminNavigatorCorridorsRouteImport } from './routes/_private/admin/navigator/corridors'
+import { Route as PrivateAdminNavigatorLiftsRouteImport } from './routes/_private/admin/navigator/lifts'
+import { Route as PrivateAdminNavigatorPreviewRouteImport } from './routes/_private/admin/navigator/preview'
+import { Route as PrivateAdminNavigatorStairsRouteImport } from './routes/_private/admin/navigator/stairs'
+import { Route as PrivateAdminNavigatorTranslationsRouteImport } from './routes/_private/admin/navigator/translations'
 import { Route as PrivateAdminNewsAnnouncementsRouteImport } from './routes/_private/admin/news/announcements'
 import { Route as PrivateAdminNewsSystemMessagesRouteImport } from './routes/_private/admin/news/system-messages'
 import { Route as PrivateAdminTimetableImportRouteImport } from './routes/_private/admin/timetable/import'
@@ -99,6 +109,11 @@ const PrivateAdminBugReportsRoute = PrivateAdminBugReportsRouteImport.update({
   path: '/bug-reports',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PrivateAdminKiosksRoute = PrivateAdminKiosksRouteImport.update({
+  id: '/kiosks',
+  path: '/kiosks',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 const PrivateAdminRolesRoute = PrivateAdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -142,6 +157,60 @@ const PrivateAdminDoorlockLogsRoute =
   PrivateAdminDoorlockLogsRouteImport.update({
     id: '/doorlock/logs',
     path: '/doorlock/logs',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorIndexRoute =
+  PrivateAdminNavigatorIndexRouteImport.update({
+    id: '/navigator/',
+    path: '/navigator/',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorBuildingsRoute =
+  PrivateAdminNavigatorBuildingsRouteImport.update({
+    id: '/navigator/buildings',
+    path: '/navigator/buildings',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorClassroomTypesRoute =
+  PrivateAdminNavigatorClassroomTypesRouteImport.update({
+    id: '/navigator/classroom-types',
+    path: '/navigator/classroom-types',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorClassroomsRoute =
+  PrivateAdminNavigatorClassroomsRouteImport.update({
+    id: '/navigator/classrooms',
+    path: '/navigator/classrooms',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorCorridorsRoute =
+  PrivateAdminNavigatorCorridorsRouteImport.update({
+    id: '/navigator/corridors',
+    path: '/navigator/corridors',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorLiftsRoute =
+  PrivateAdminNavigatorLiftsRouteImport.update({
+    id: '/navigator/lifts',
+    path: '/navigator/lifts',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorPreviewRoute =
+  PrivateAdminNavigatorPreviewRouteImport.update({
+    id: '/navigator/preview',
+    path: '/navigator/preview',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorStairsRoute =
+  PrivateAdminNavigatorStairsRouteImport.update({
+    id: '/navigator/stairs',
+    path: '/navigator/stairs',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminNavigatorTranslationsRoute =
+  PrivateAdminNavigatorTranslationsRouteImport.update({
+    id: '/navigator/translations',
+    path: '/navigator/translations',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
 const PrivateAdminNewsAnnouncementsRoute =
@@ -219,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
+  '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/cards/': typeof PrivateCardsIndexRoute
@@ -226,6 +296,14 @@ export interface FileRoutesByFullPath {
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
+  '/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
+  '/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
+  '/admin/navigator/corridors': typeof PrivateAdminNavigatorCorridorsRoute
+  '/admin/navigator/lifts': typeof PrivateAdminNavigatorLiftsRoute
+  '/admin/navigator/preview': typeof PrivateAdminNavigatorPreviewRoute
+  '/admin/navigator/stairs': typeof PrivateAdminNavigatorStairsRoute
+  '/admin/navigator/translations': typeof PrivateAdminNavigatorTranslationsRoute
   '/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/admin/news/system-messages': typeof PrivateAdminNewsSystemMessagesRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
@@ -237,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/admin/wifi/speed-profiles': typeof PrivateAdminWifiSpeedProfilesRoute
   '/admin/wifi/users': typeof PrivateAdminWifiUsersRoute
   '/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
+  '/admin/navigator/': typeof PrivateAdminNavigatorIndexRoute
   '/admin/wifi/': typeof PrivateAdminWifiIndexRoute
 }
 export interface FileRoutesByTo {
@@ -250,6 +329,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
+  '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/cards': typeof PrivateCardsIndexRoute
@@ -257,6 +337,14 @@ export interface FileRoutesByTo {
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
+  '/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
+  '/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
+  '/admin/navigator/corridors': typeof PrivateAdminNavigatorCorridorsRoute
+  '/admin/navigator/lifts': typeof PrivateAdminNavigatorLiftsRoute
+  '/admin/navigator/preview': typeof PrivateAdminNavigatorPreviewRoute
+  '/admin/navigator/stairs': typeof PrivateAdminNavigatorStairsRoute
+  '/admin/navigator/translations': typeof PrivateAdminNavigatorTranslationsRoute
   '/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/admin/news/system-messages': typeof PrivateAdminNewsSystemMessagesRoute
   '/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
@@ -268,6 +356,7 @@ export interface FileRoutesByTo {
   '/admin/wifi/speed-profiles': typeof PrivateAdminWifiSpeedProfilesRoute
   '/admin/wifi/users': typeof PrivateAdminWifiUsersRoute
   '/admin/doorlock': typeof PrivateAdminDoorlockIndexRoute
+  '/admin/navigator': typeof PrivateAdminNavigatorIndexRoute
   '/admin/wifi': typeof PrivateAdminWifiIndexRoute
 }
 export interface FileRoutesById {
@@ -284,6 +373,7 @@ export interface FileRoutesById {
   '/auth/welcome': typeof AuthWelcomeRoute
   '/_public/': typeof PublicIndexRoute
   '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
+  '/_private/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
   '/_private/admin/users': typeof PrivateAdminUsersRoute
   '/_private/cards/': typeof PrivateCardsIndexRoute
@@ -291,6 +381,14 @@ export interface FileRoutesById {
   '/_private/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/_private/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/_private/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/_private/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
+  '/_private/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
+  '/_private/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
+  '/_private/admin/navigator/corridors': typeof PrivateAdminNavigatorCorridorsRoute
+  '/_private/admin/navigator/lifts': typeof PrivateAdminNavigatorLiftsRoute
+  '/_private/admin/navigator/preview': typeof PrivateAdminNavigatorPreviewRoute
+  '/_private/admin/navigator/stairs': typeof PrivateAdminNavigatorStairsRoute
+  '/_private/admin/navigator/translations': typeof PrivateAdminNavigatorTranslationsRoute
   '/_private/admin/news/announcements': typeof PrivateAdminNewsAnnouncementsRoute
   '/_private/admin/news/system-messages': typeof PrivateAdminNewsSystemMessagesRoute
   '/_private/admin/timetable/import': typeof PrivateAdminTimetableImportRoute
@@ -302,6 +400,7 @@ export interface FileRoutesById {
   '/_private/admin/wifi/speed-profiles': typeof PrivateAdminWifiSpeedProfilesRoute
   '/_private/admin/wifi/users': typeof PrivateAdminWifiUsersRoute
   '/_private/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
+  '/_private/admin/navigator/': typeof PrivateAdminNavigatorIndexRoute
   '/_private/admin/wifi/': typeof PrivateAdminWifiIndexRoute
 }
 export interface FileRouteTypes {
@@ -317,6 +416,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/admin/bug-reports'
+    | '/admin/kiosks'
     | '/admin/roles'
     | '/admin/users'
     | '/cards/'
@@ -324,6 +424,14 @@ export interface FileRouteTypes {
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
+    | '/admin/navigator/buildings'
+    | '/admin/navigator/classroom-types'
+    | '/admin/navigator/classrooms'
+    | '/admin/navigator/corridors'
+    | '/admin/navigator/lifts'
+    | '/admin/navigator/preview'
+    | '/admin/navigator/stairs'
+    | '/admin/navigator/translations'
     | '/admin/news/announcements'
     | '/admin/news/system-messages'
     | '/admin/timetable/import'
@@ -335,6 +443,7 @@ export interface FileRouteTypes {
     | '/admin/wifi/speed-profiles'
     | '/admin/wifi/users'
     | '/admin/doorlock/'
+    | '/admin/navigator/'
     | '/admin/wifi/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -348,6 +457,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/admin/bug-reports'
+    | '/admin/kiosks'
     | '/admin/roles'
     | '/admin/users'
     | '/cards'
@@ -355,6 +465,14 @@ export interface FileRouteTypes {
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
+    | '/admin/navigator/buildings'
+    | '/admin/navigator/classroom-types'
+    | '/admin/navigator/classrooms'
+    | '/admin/navigator/corridors'
+    | '/admin/navigator/lifts'
+    | '/admin/navigator/preview'
+    | '/admin/navigator/stairs'
+    | '/admin/navigator/translations'
     | '/admin/news/announcements'
     | '/admin/news/system-messages'
     | '/admin/timetable/import'
@@ -366,6 +484,7 @@ export interface FileRouteTypes {
     | '/admin/wifi/speed-profiles'
     | '/admin/wifi/users'
     | '/admin/doorlock'
+    | '/admin/navigator'
     | '/admin/wifi'
   id:
     | '__root__'
@@ -381,6 +500,7 @@ export interface FileRouteTypes {
     | '/auth/welcome'
     | '/_public/'
     | '/_private/admin/bug-reports'
+    | '/_private/admin/kiosks'
     | '/_private/admin/roles'
     | '/_private/admin/users'
     | '/_private/cards/'
@@ -388,6 +508,14 @@ export interface FileRouteTypes {
     | '/_private/admin/doorlock/cards'
     | '/_private/admin/doorlock/devices'
     | '/_private/admin/doorlock/logs'
+    | '/_private/admin/navigator/buildings'
+    | '/_private/admin/navigator/classroom-types'
+    | '/_private/admin/navigator/classrooms'
+    | '/_private/admin/navigator/corridors'
+    | '/_private/admin/navigator/lifts'
+    | '/_private/admin/navigator/preview'
+    | '/_private/admin/navigator/stairs'
+    | '/_private/admin/navigator/translations'
     | '/_private/admin/news/announcements'
     | '/_private/admin/news/system-messages'
     | '/_private/admin/timetable/import'
@@ -399,6 +527,7 @@ export interface FileRouteTypes {
     | '/_private/admin/wifi/speed-profiles'
     | '/_private/admin/wifi/users'
     | '/_private/admin/doorlock/'
+    | '/_private/admin/navigator/'
     | '/_private/admin/wifi/'
   fileRoutesById: FileRoutesById
 }
@@ -496,6 +625,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminBugReportsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/kiosks': {
+      id: '/_private/admin/kiosks'
+      path: '/kiosks'
+      fullPath: '/admin/kiosks'
+      preLoaderRoute: typeof PrivateAdminKiosksRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/roles': {
       id: '/_private/admin/roles'
       path: '/roles'
@@ -550,6 +686,69 @@ declare module '@tanstack/react-router' {
       path: '/doorlock/logs'
       fullPath: '/admin/doorlock/logs'
       preLoaderRoute: typeof PrivateAdminDoorlockLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/': {
+      id: '/_private/admin/navigator/'
+      path: '/navigator'
+      fullPath: '/admin/navigator/'
+      preLoaderRoute: typeof PrivateAdminNavigatorIndexRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/buildings': {
+      id: '/_private/admin/navigator/buildings'
+      path: '/navigator/buildings'
+      fullPath: '/admin/navigator/buildings'
+      preLoaderRoute: typeof PrivateAdminNavigatorBuildingsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/classroom-types': {
+      id: '/_private/admin/navigator/classroom-types'
+      path: '/navigator/classroom-types'
+      fullPath: '/admin/navigator/classroom-types'
+      preLoaderRoute: typeof PrivateAdminNavigatorClassroomTypesRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/classrooms': {
+      id: '/_private/admin/navigator/classrooms'
+      path: '/navigator/classrooms'
+      fullPath: '/admin/navigator/classrooms'
+      preLoaderRoute: typeof PrivateAdminNavigatorClassroomsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/corridors': {
+      id: '/_private/admin/navigator/corridors'
+      path: '/navigator/corridors'
+      fullPath: '/admin/navigator/corridors'
+      preLoaderRoute: typeof PrivateAdminNavigatorCorridorsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/lifts': {
+      id: '/_private/admin/navigator/lifts'
+      path: '/navigator/lifts'
+      fullPath: '/admin/navigator/lifts'
+      preLoaderRoute: typeof PrivateAdminNavigatorLiftsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/preview': {
+      id: '/_private/admin/navigator/preview'
+      path: '/navigator/preview'
+      fullPath: '/admin/navigator/preview'
+      preLoaderRoute: typeof PrivateAdminNavigatorPreviewRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/stairs': {
+      id: '/_private/admin/navigator/stairs'
+      path: '/navigator/stairs'
+      fullPath: '/admin/navigator/stairs'
+      preLoaderRoute: typeof PrivateAdminNavigatorStairsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/navigator/translations': {
+      id: '/_private/admin/navigator/translations'
+      path: '/navigator/translations'
+      fullPath: '/admin/navigator/translations'
+      preLoaderRoute: typeof PrivateAdminNavigatorTranslationsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/news/announcements': {
@@ -634,12 +833,21 @@ declare module '@tanstack/react-router' {
 
 interface PrivateAdminRouteRouteChildren {
   PrivateAdminBugReportsRoute: typeof PrivateAdminBugReportsRoute
+  PrivateAdminKiosksRoute: typeof PrivateAdminKiosksRoute
   PrivateAdminRolesRoute: typeof PrivateAdminRolesRoute
   PrivateAdminUsersRoute: typeof PrivateAdminUsersRoute
   PrivateAdminDevNotificationsRoute: typeof PrivateAdminDevNotificationsRoute
   PrivateAdminDoorlockCardsRoute: typeof PrivateAdminDoorlockCardsRoute
   PrivateAdminDoorlockDevicesRoute: typeof PrivateAdminDoorlockDevicesRoute
   PrivateAdminDoorlockLogsRoute: typeof PrivateAdminDoorlockLogsRoute
+  PrivateAdminNavigatorBuildingsRoute: typeof PrivateAdminNavigatorBuildingsRoute
+  PrivateAdminNavigatorClassroomTypesRoute: typeof PrivateAdminNavigatorClassroomTypesRoute
+  PrivateAdminNavigatorClassroomsRoute: typeof PrivateAdminNavigatorClassroomsRoute
+  PrivateAdminNavigatorCorridorsRoute: typeof PrivateAdminNavigatorCorridorsRoute
+  PrivateAdminNavigatorLiftsRoute: typeof PrivateAdminNavigatorLiftsRoute
+  PrivateAdminNavigatorPreviewRoute: typeof PrivateAdminNavigatorPreviewRoute
+  PrivateAdminNavigatorStairsRoute: typeof PrivateAdminNavigatorStairsRoute
+  PrivateAdminNavigatorTranslationsRoute: typeof PrivateAdminNavigatorTranslationsRoute
   PrivateAdminNewsAnnouncementsRoute: typeof PrivateAdminNewsAnnouncementsRoute
   PrivateAdminNewsSystemMessagesRoute: typeof PrivateAdminNewsSystemMessagesRoute
   PrivateAdminTimetableImportRoute: typeof PrivateAdminTimetableImportRoute
@@ -651,17 +859,29 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminWifiSpeedProfilesRoute: typeof PrivateAdminWifiSpeedProfilesRoute
   PrivateAdminWifiUsersRoute: typeof PrivateAdminWifiUsersRoute
   PrivateAdminDoorlockIndexRoute: typeof PrivateAdminDoorlockIndexRoute
+  PrivateAdminNavigatorIndexRoute: typeof PrivateAdminNavigatorIndexRoute
   PrivateAdminWifiIndexRoute: typeof PrivateAdminWifiIndexRoute
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminBugReportsRoute: PrivateAdminBugReportsRoute,
+  PrivateAdminKiosksRoute: PrivateAdminKiosksRoute,
   PrivateAdminRolesRoute: PrivateAdminRolesRoute,
   PrivateAdminUsersRoute: PrivateAdminUsersRoute,
   PrivateAdminDevNotificationsRoute: PrivateAdminDevNotificationsRoute,
   PrivateAdminDoorlockCardsRoute: PrivateAdminDoorlockCardsRoute,
   PrivateAdminDoorlockDevicesRoute: PrivateAdminDoorlockDevicesRoute,
   PrivateAdminDoorlockLogsRoute: PrivateAdminDoorlockLogsRoute,
+  PrivateAdminNavigatorBuildingsRoute: PrivateAdminNavigatorBuildingsRoute,
+  PrivateAdminNavigatorClassroomTypesRoute:
+    PrivateAdminNavigatorClassroomTypesRoute,
+  PrivateAdminNavigatorClassroomsRoute: PrivateAdminNavigatorClassroomsRoute,
+  PrivateAdminNavigatorCorridorsRoute: PrivateAdminNavigatorCorridorsRoute,
+  PrivateAdminNavigatorLiftsRoute: PrivateAdminNavigatorLiftsRoute,
+  PrivateAdminNavigatorPreviewRoute: PrivateAdminNavigatorPreviewRoute,
+  PrivateAdminNavigatorStairsRoute: PrivateAdminNavigatorStairsRoute,
+  PrivateAdminNavigatorTranslationsRoute:
+    PrivateAdminNavigatorTranslationsRoute,
   PrivateAdminNewsAnnouncementsRoute: PrivateAdminNewsAnnouncementsRoute,
   PrivateAdminNewsSystemMessagesRoute: PrivateAdminNewsSystemMessagesRoute,
   PrivateAdminTimetableImportRoute: PrivateAdminTimetableImportRoute,
@@ -675,6 +895,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminWifiSpeedProfilesRoute: PrivateAdminWifiSpeedProfilesRoute,
   PrivateAdminWifiUsersRoute: PrivateAdminWifiUsersRoute,
   PrivateAdminDoorlockIndexRoute: PrivateAdminDoorlockIndexRoute,
+  PrivateAdminNavigatorIndexRoute: PrivateAdminNavigatorIndexRoute,
   PrivateAdminWifiIndexRoute: PrivateAdminWifiIndexRoute,
 }
 

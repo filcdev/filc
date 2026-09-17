@@ -1,3 +1,20 @@
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@filcdev/ui/components/avatar';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@filcdev/ui/components/dropdown-menu';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import { cn } from '@filcdev/ui/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -14,23 +31,11 @@ import {
   X,
 } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BugReportDialog } from '@/components/bug-report-dialog';
 import { NotificationBell } from '@/components/notification-bell';
 import { SettingsDialog } from '@/components/settings-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Spinner } from '@/components/ui/spinner';
 import { LanguageSelector } from '@/components/util/language-selector';
 import {
   ADMIN_UI_PERMISSIONS,
@@ -38,7 +43,6 @@ import {
 } from '@/hooks/use-has-permission';
 import { useWifiStatus } from '@/hooks/wifi';
 import type { FileRoutesByTo } from '@/route-tree.gen';
-import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
 
 type NavbarProps = {
@@ -82,6 +86,7 @@ export function Navbar({
   const wifiStatus = useWifiStatus();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileNavId = useId();
 
   const canSeeAdminUi = useHasPermission(
     ADMIN_UI_PERMISSIONS,
@@ -98,7 +103,7 @@ export function Navbar({
             {children}
             {data && showLinks && (
               <Button
-                aria-controls="mobile-nav"
+                aria-controls={mobileNavId}
                 aria-expanded={mobileMenuOpen}
                 aria-label={
                   mobileMenuOpen
@@ -264,7 +269,7 @@ export function Navbar({
               ? 'grid-rows-[1fr] border-b'
               : 'grid-rows-[0fr] border-b-0'
           )}
-          id="mobile-nav"
+          id={mobileNavId}
         >
           <div className="overflow-hidden">
             {mobileMenuOpen && (

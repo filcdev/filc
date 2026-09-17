@@ -17,14 +17,14 @@ import { timetableFactory } from './_factory';
 
 const getClassroomsResponseSchema = z.object({
   data: createSelectSchema(classroom, {
-    buildingId: z.string().nullable(),
+    building_id: z.string().nullable(),
   }).array(),
   success: z.boolean(),
 });
 
 const getAvailableClassroomsResponseSchema = z.object({
   data: createSelectSchema(classroom, {
-    buildingId: z.string().nullable(),
+    building_id: z.string().nullable(),
   }).array(),
   success: z.boolean(),
 });

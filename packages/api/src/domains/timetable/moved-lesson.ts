@@ -9,13 +9,6 @@ export type MovedLessonIdParamsInput = z.infer<
   typeof movedLessonIdParamsSchema
 >;
 
-/** Path parameters for moved lesson endpoints scoped to a timetable. */
-export const timetableIdParamsSchema = z.object({
-  timetableId: z.uuid(),
-});
-
-export type TimetableIdParamsInput = z.infer<typeof timetableIdParamsSchema>;
-
 /** Path parameters for moved lesson endpoints scoped to a cohort. */
 export const cohortIdParamsSchema = z.object({
   cohortId: z.uuid(),
@@ -25,8 +18,9 @@ export type CohortIdParamsInput = z.infer<typeof cohortIdParamsSchema>;
 
 /** Payload for updating an existing moved lesson. */
 export const updateSchema = z.object({
+  comment: z.string().nullable().optional(),
   date: z.coerce.date(),
-  lessonIds: z.uuid().array(),
+  lessonIds: z.uuid().array().min(1),
   room: z.string(),
   startingDay: z.uuid(),
   startingPeriod: z.uuid(),

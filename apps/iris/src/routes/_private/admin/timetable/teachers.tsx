@@ -1,12 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { createFileRoute } from '@tanstack/react-router';
-import { Pen } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { TeacherDialog } from '@/components/admin/teacher-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@filcdev/ui/components/button';
+import { Input } from '@filcdev/ui/components/input';
 import {
   Table,
   TableBody,
@@ -14,7 +8,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import { Pen } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { TeacherDialog } from '@/components/admin/teacher-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';

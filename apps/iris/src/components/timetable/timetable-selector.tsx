@@ -1,20 +1,21 @@
-import { CalendarCheck, ChevronsUpDownIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@filcdev/ui/components/dropdown-menu';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import dayjs from 'dayjs';
+import { CalendarCheck, ChevronsUpDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { TimetableItem } from './types';
 
 type TimetableStatus = 'current' | 'past' | 'upcoming';
 
 function getTimetableStatus(item: TimetableItem): TimetableStatus {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dayjs().format('YYYY-MM-DD');
   const from = item.validFrom ?? null;
   const to = item.validTo ?? null;
 

@@ -16,10 +16,11 @@ export const ADMIN_UI_PERMISSIONS = [
   permissions.bugReportsWrite,
 ] as const;
 
-export function useHasPermission(
+/** Permission predicate. Safe to call from callbacks and non-component code. */
+export const hasPermission = (
   permission: string | readonly string[],
   userPermissions?: string[] | null
-): boolean {
+): boolean => {
   if (!userPermissions) {
     return false;
   }
@@ -32,4 +33,7 @@ export function useHasPermission(
   }
 
   return userPermissions.includes(permission);
-}
+};
+
+/** Component-body alias kept for existing call sites. */
+export const useHasPermission = hasPermission;

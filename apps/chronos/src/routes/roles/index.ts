@@ -4,13 +4,14 @@ import {
   updateRoleSchema,
 } from '@filcdev/api/domains/roles';
 import { zValidator } from '@hono/zod-validator';
+import { SQL } from 'bun';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
 import { authRouter } from '#middleware/auth';
 import { rolesFactory } from '#routes/roles/_factory';
 import { rbac } from '#utils/authorization';
-import { created, ok } from '#utils/http';
+import { ApiHttpError, conflict, created, ok } from '#utils/http';
 
 export const listPermissions = rolesFactory.createHandlers(
   describeRoute({
@@ -73,11 +74,15 @@ export const createRole = rolesFactory.createHandlers(
 
     try {
       await rbac.createRole(name, permissions);
-    } catch (_error) {
-      // Catch unique constraint violations from concurrent requests
-      throw new HTTPException(StatusCodes.CONFLICT, {
-        message: `Role "${name}" already exists`,
-      });
+    } catch (error) {
+      if (error instanceof ApiHttpError) {
+        throw error;
+      }
+      // Postgres unique-violation from a concurrent create.
+      if (error instanceof SQL.PostgresError && error.code === '23505') {
+        throw conflict(`Role "${name}" already exists`);
+      }
+      throw error;
     }
 
     return created(c, { can: permissions, name });

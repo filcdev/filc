@@ -1,19 +1,27 @@
-import { MailCheck, MailX } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Card, CardContent } from '@filcdev/ui/components/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@filcdev/ui/components/dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { MailCheck, MailX } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
