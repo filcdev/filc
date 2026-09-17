@@ -207,7 +207,8 @@
 
         "noNodejsModules": "off",
         "noPrivateImports": "error",
-        "noProcessGlobal": "error",
+        // Bun provides process globally; explicit imports clutter the code.
+        "noProcessGlobal": "off",
         "noUndeclaredDependencies": "error",
         // Bun's resolver does not need extensions and the repo never writes
         // them (1289 findings); leaving the rule off avoids a mass rewrite

@@ -1,3 +1,4 @@
+import { permissions as permissionConstants } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
@@ -22,7 +23,9 @@ class RBAC {
 
   /** Return every permission that has been registered via middleware or manually. */
   getAllPermissions(): string[] {
-    return [...this.registeredPermissions].sort();
+    return [...this.registeredPermissions].sort((left, right) =>
+      left.localeCompare(right)
+    );
   }
 
   loadRoles(roles: Record<string, RoleDefinition>): void {
@@ -135,6 +138,11 @@ export const initializeRBAC = async () => {
     .values([
       { can: ['*'], name: 'admin' },
       { can: [], name: 'user' },
+      { can: [permissionConstants.wifiRead], name: 'wifi-viewer' },
+      {
+        can: [permissionConstants.wifiRead, permissionConstants.wifiWrite],
+        name: 'wifi-admin',
+      },
     ])
     .onConflictDoNothing();
 

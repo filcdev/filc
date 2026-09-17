@@ -1,0 +1,67 @@
+# Virtual server for inner-tunnel requests (EAP-TTLS and PEAP)
+server inner-tunnel {
+	listen {
+		ipaddr = 127.0.0.1
+		port = 18120
+		type = auth
+	}
+
+	authorize {
+		update control {
+			MS-CHAP-Use-NTLM-Auth := No
+		}
+		# Calls the REST module to query Chronos for authorization
+		rest
+		inner-eap
+		chap
+		pap
+		mschap
+	}
+
+	authenticate {
+		inner-eap
+		Auth-Type CHAP {
+			chap
+		}
+		Auth-Type PAP {
+			pap
+		}
+		Auth-Type MS-CHAP {
+			mschap
+		}
+	}
+
+	session {
+		radutmp
+	}
+
+	post-auth {
+		update outer.session-state {
+			User-Name := &User-Name
+		}
+		-sql
+		if (1) {
+			update reply {
+				User-Name !* ANY
+				Message-Authenticator !* ANY
+				EAP-Message !* ANY
+				Proxy-State !* ANY
+				MS-MPPE-Encryption-Types !* ANY
+				MS-MPPE-Encryption-Policy !* ANY
+				MS-MPPE-Send-Key !* ANY
+				MS-MPPE-Recv-Key !* ANY
+			}
+			update outer.session-state {
+				Session-Timeout := &reply:Session-Timeout
+			}
+		}
+
+		Post-Auth-Type REJECT {
+			-sql
+			attr_filter.access_reject
+			update outer.session-state {
+				&Module-Failure-Message := &request:Module-Failure-Message
+			}
+		}
+	}
+}

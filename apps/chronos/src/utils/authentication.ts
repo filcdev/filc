@@ -11,6 +11,7 @@ import {
   user as userTable,
 } from '#database/schema/authentication';
 import { teacher } from '#database/schema/timetable';
+import { wifiUser } from '#database/schema/wifi';
 import { getUserPermissions } from '#utils/authorization';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
@@ -92,6 +93,20 @@ const authOptions = {
                     )
                   )
                 );
+
+              const wifiUsername = userEmail.split('@')[0] || '';
+              await db
+                .update(wifiUser)
+                .set({ createdBy: session.userId, userId: session.userId })
+                .where(
+                  and(
+                    or(
+                      eq(sql`lower(${wifiUser.username})`, wifiUsername),
+                      eq(sql`lower(${wifiUser.username})`, userEmail)
+                    ),
+                    isNull(wifiUser.userId)
+                  )
+                );
             }
 
             const fullName = linkedUser.name?.trim().toLowerCase();
@@ -132,7 +147,7 @@ const authOptions = {
               }
             }
           } catch (err) {
-            logger.error('Failed to link user to teacher', {
+            logger.error('Failed to link user to teacher or wifi user', {
               err,
               userId: session.userId,
             });

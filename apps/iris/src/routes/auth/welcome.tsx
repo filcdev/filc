@@ -25,7 +25,14 @@ import { Spinner } from '@filcdev/ui/components/spinner';
 import Stepper, { Step } from '@filcdev/ui/components/stepper';
 import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  CircleCheck,
+  Mail,
+  User,
+  Wifi,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -34,6 +41,7 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
+import { useWifiStatus } from '@/hooks/wifi';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
 
@@ -111,6 +119,9 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
     user.cohortId ?? null
   );
+
+  const wifiStatus = useWifiStatus();
+  const showWifiStep = wifiStatus.data?.enabled === true;
 
   const isStaff = useHasPermission(ADMIN_UI_PERMISSIONS, user.permissions);
 
@@ -194,6 +205,9 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
       return normalizedNickname ? t('common.next') : t('common.skip');
     }
     if (currentStep === 3 && isStaff) {
+      return t('common.skip');
+    }
+    if (currentStep === 4 && showWifiStep) {
       return t('common.skip');
     }
     return t('common.next');
@@ -289,6 +303,31 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
             />
           </div>
         </Step>
+
+        {showWifiStep && (
+          <Step>
+            <div className="space-y-4">
+              <h2 className="font-bold text-2xl">{t('wifi.setup')}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t('welcome.wifiDescription')}
+              </p>
+              <Card className="mb-1 shadow-sm">
+                <CardContent className="pt-6 text-center">
+                  <Wifi className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p className="mb-4">{t('welcome.wifiPrompt')}</p>
+                  <Button
+                    onClick={() => {
+                      window.open('/wifi', '_blank');
+                    }}
+                    variant="outline"
+                  >
+                    {t('wifi.goToSetup')}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </Step>
+        )}
 
         <Step>
           <div className="space-y-4 text-center">

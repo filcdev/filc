@@ -25,6 +25,8 @@ export const permissions = {
   systemMessagesManage: 'system-messages:manage',
   teacherManage: 'teacher:manage',
   usersRead: 'users:read',
+  wifiRead: 'wifi:read',
+  wifiWrite: 'wifi:write',
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];

@@ -27,6 +27,7 @@ import {
   LogOut,
   Menu,
   UserCog,
+  Wifi,
   X,
 } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
@@ -40,6 +41,7 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
+import { useWifiStatus } from '@/hooks/wifi';
 import type { FileRoutesByTo } from '@/route-tree.gen';
 import { authClient } from '@/utils/authentication';
 
@@ -62,6 +64,16 @@ const NAV_ITEMS: NavItem[] = [
   { adminOnly: true, icon: UserCog, labelKey: 'adminDashboard', to: '/admin' },
 ];
 
+function getNavItems(showWifi: boolean): NavItem[] {
+  const items: NavItem[] = [...NAV_ITEMS];
+
+  if (showWifi) {
+    items.push({ icon: Wifi, labelKey: 'wifi.title', to: '/wifi' });
+  }
+
+  return items;
+}
+
 export function Navbar({
   children,
   showLinks = true,
@@ -71,6 +83,7 @@ export function Navbar({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data, isPending } = authClient.useSession();
+  const wifiStatus = useWifiStatus();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavId = useId();
@@ -79,6 +92,8 @@ export function Navbar({
     ADMIN_UI_PERMISSIONS,
     data?.user?.permissions
   );
+  const showWifiMenuItem = Boolean(data?.user && wifiStatus.data?.enabled);
+  const navItems = getNavItems(showWifiMenuItem);
 
   return (
     <>
@@ -121,6 +136,7 @@ export function Navbar({
 
           {data && showLinks && (
             <NavLinks
+              navItems={navItems}
               userPermissions={data.user ? data.user.permissions : []}
             />
           )}
@@ -258,22 +274,22 @@ export function Navbar({
           <div className="overflow-hidden">
             {mobileMenuOpen && (
               <div className="flex flex-col gap-1 px-4 py-3">
-                {NAV_ITEMS.filter(
-                  (item) => !item.adminOnly || canSeeAdminUi
-                ).map((item) => (
-                  <Button
-                    className="justify-start gap-3"
-                    key={item.to}
-                    onClick={() => {
-                      navigate({ to: item.to });
-                      setMobileMenuOpen(false);
-                    }}
-                    variant="ghost"
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {t(item.labelKey)}
-                  </Button>
-                ))}
+                {navItems
+                  .filter((item) => !item.adminOnly || canSeeAdminUi)
+                  .map((item) => (
+                    <Button
+                      className="justify-start gap-3"
+                      key={item.to}
+                      onClick={() => {
+                        navigate({ to: item.to });
+                        setMobileMenuOpen(false);
+                      }}
+                      variant="ghost"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {t(item.labelKey)}
+                    </Button>
+                  ))}
               </div>
             )}
           </div>
@@ -284,7 +300,13 @@ export function Navbar({
   );
 }
 
-function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
+function NavLinks({
+  navItems,
+  userPermissions,
+}: {
+  navItems: NavItem[];
+  userPermissions?: string[];
+}) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -292,8 +314,9 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
 
   return (
     <div className="ml-8 hidden items-center gap-6 md:flex">
-      {NAV_ITEMS.filter((item) => !item.adminOnly || canSeeAdminUi).map(
-        (item) => (
+      {navItems
+        .filter((item) => !item.adminOnly || canSeeAdminUi)
+        .map((item) => (
           <Button
             className="text-muted-foreground hover:text-foreground"
             key={item.to}
@@ -304,8 +327,7 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
             <item.icon />
             {t(item.labelKey)}
           </Button>
-        )
-      )}
+        ))}
     </div>
   );
 }
