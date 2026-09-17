@@ -1,5 +1,5 @@
+import { Spinner } from '@filcdev/ui/components/spinner';
 import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
-import { Spinner } from '@/components/ui/spinner';
 import { authClient } from '@/utils/authentication';
 
 export const Route = createFileRoute('/_private')({

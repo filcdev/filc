@@ -1,20 +1,12 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { createFileRoute } from '@tanstack/react-router';
-import dayjs from 'dayjs';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
-import { SubstitutionExportButton } from '@/components/admin/substitution-export';
 import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/date-range-picker';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
   Table,
   TableBody,
@@ -32,7 +24,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import dayjs from 'dayjs';
+import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
+import { SubstitutionExportButton } from '@/components/admin/substitution-export';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/date-range-picker';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
 import {
@@ -56,6 +59,7 @@ export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
 
 function SubstitutionsPage() {
   const { i18n, t } = useTranslation();
+  const showPastId = useId();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -206,12 +210,12 @@ function SubstitutionsPage() {
         <div className="flex items-center gap-2">
           <Checkbox
             checked={showPast}
-            id="show-past"
+            id={showPastId}
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
             className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor="show-past"
+            htmlFor={showPastId}
           >
             {t('substitution.showPast')}
           </label>

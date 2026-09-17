@@ -59,7 +59,10 @@
     "complete": "Complete",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "edit": "Edit",
+    "no": "No",
     "save": "Save",
+    "yes": "Yes",
     "showPassword": "Show password",
     "hidePassword": "Hide password"
   },
@@ -143,6 +146,15 @@
       "dialogTitle": "Open a Door",
       "dialogDescription": "Choose which door to open using {{cardName}}.",
       "dialogNoDevices": "This card has no authorized devices."
+    },
+    "ota": {
+      "titleDevice": "Update \"{{name}}\"",
+      "titleAll": "Update all devices",
+      "descriptionDevice": "Push an OTA firmware update to {{name}}. The device will download and install the firmware from the provided URL automatically.",
+      "descriptionAll": "Push an OTA firmware update to all registered devices. Each connected device will download and install the firmware from the provided URL.",
+      "urlLabel": "Firmware URL",
+      "submitDevice": "Update device",
+      "submitAll": "Update all devices"
     }
   },
   "wifi": {
@@ -219,7 +231,9 @@
     "users": "Users",
     "roles": "Roles",
     "bugReports": "Bug reports",
-    "developer": "Developer"
+    "developer": "Developer",
+    "kiosks": "Kiosks",
+    "navigator": "Navigator"
   },
   "timetable": {
     "selectClass": "Select class",
@@ -316,10 +330,13 @@
     "currentTimetables": "Current",
     "upcomingTimetables": "Upcoming",
     "clean": "Clean",
-    "cleanupConfirmTitle": "Clean Up Orphaned Cohorts",
-    "cleanupConfirmDescription": "This will delete all cohorts that are no longer linked to any timetable. Users referencing those cohorts will have their cohort assignment removed. This action cannot be undone.",
-    "cleanupOrphanedCohortsSuccess": "Orphaned cohorts cleaned up",
-    "cleanupOrphanedCohortsError": "Failed to clean up orphaned cohorts"
+    "cleanupConfirmTitle": "Clean Up Orphaned Timetable Data",
+    "cleanupConfirmDescription": "This will delete all cohorts that are no longer linked to any timetable, and all teachers that are not assigned to any lesson. Users referencing deleted cohorts will have their cohort assignment removed. Teachers still referenced by cohorts, cohort groups, or substitutions are kept. This action cannot be undone.",
+    "cleanupOrphanedCohortsSuccess": "Orphaned timetable data cleaned up",
+    "cleanupOrphanedCohortsError": "Failed to clean up orphaned timetable data",
+    "weekA": "Week A",
+    "weekB": "Week B",
+    "weekAll": "All weeks"
   },
   "navigation": {
     "title": "Navigation",
@@ -344,7 +361,7 @@
     "selectLessonsFirst": "Select teacher and lessons first.",
     "loadingSubstituteTeachers": "Filtering substitute teachers...",
     "nearbyTeacherTag": "H1 / H2",
-    "h1Tag": "H1",
+    "h1Tag": "H",
     "h2Tag": "H2",
     "cancelled": "Cancelled",
     "merged": "Merged Lesson",
@@ -368,7 +385,7 @@
     "periodPlaceholder": "Select a period",
     "noPeriodsFound": "No periods found.",
     "subject": "Subject",
-    "subjectPlaceholder": "Select a subject",
+    "subjectPlaceholder": "Select a subject (optional)",
     "noSubjectsFound": "No subjects found.",
     "cohort": "Class",
     "cohortPlaceholder": "Select a class",
@@ -379,6 +396,7 @@
     "commentPlaceholder": "Optional note about this substitution",
     "createSuccess": "Substitution created successfully",
     "createError": "Failed to create substitution",
+    "conflictError": "This teacher already has a substitution in this period on this date.",
     "updateSuccess": "Substitution updated successfully",
     "updateError": "Failed to update substitution",
     "deleteSuccess": "Substitution deleted successfully",
@@ -410,24 +428,36 @@
     "showPast": "Show past",
     "date": "Date",
     "datePlaceholder": "Select a date",
+    "targetDate": "Target Date",
     "targetDay": "Target Day",
     "targetPeriod": "Target Period",
+    "targetPeriodPlaceholder": "Select a period",
+    "noPeriodsFound": "No periods found.",
     "targetRoom": "Target Room",
+    "moveMode": "Move mode",
+    "roomMove": "Room move",
+    "roomMoveHint": "Move the lesson to a different room on the same day.",
+    "dayMove": "Day move",
+    "dayMoveHint": "Move the lesson to a different room on a different day.",
+    "fromRoom": "From Room",
+    "toRoom": "To Room",
+    "class": "Class",
+    "selectCohortPlaceholder": "Select a class",
+    "noCohortFound": "No class found.",
+    "selectSlotHint": "Select a day and room to see the lessons in that room.",
+    "selectDayHint": "Select a day to see all lessons on that day.",
+    "free": "free",
+    "occupied": "occupied",
     "noChange": "No change",
-    "periodLabel": "Period {{num}} ({{start}} – {{end}})",
     "lessons": "Affected Lessons",
     "lessonsCount": "Lessons",
     "actions": "Actions",
     "noLessons": "No lessons available",
-    "loadingLessons": "Loading lessons…",
     "loadingRooms": "Loading available rooms…",
-    "selectCohort": "Filter by Class",
-    "selectCohortPlaceholder": "Select a class to see lessons",
-    "noCohortFound": "No class found.",
-    "noDayFound": "No day found.",
-    "noPeriodFound": "No period found.",
     "noRoomFound": "No room found.",
     "noMovedLessons": "No moved lessons found",
+    "comment": "Comment",
+    "commentPlaceholder": "Optional note about this move",
     "createSuccess": "Moved lesson created successfully",
     "createError": "Failed to create moved lesson",
     "updateSuccess": "Moved lesson updated successfully",
@@ -480,7 +510,24 @@
     "date": "Date",
     "setDateRange": "Set date range",
     "showPast": "Show past news items",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "highlighted": "Highlighted on kiosk",
+    "kioskOnly": "Kiosk only (hidden on the web)",
+    "kiosks": "Kiosks",
+    "allKiosks": "All kiosks",
+    "allKiosksHint": "The takeover shows on every TV kiosk.",
+    "kiosksHint": "The takeover shows only on the selected kiosks.",
+    "kiosk": "Kiosk",
+    "notOnKiosk": "—",
+    "image": "Image",
+    "imageHint": "JPEG, PNG or WebP, max 8 MiB",
+    "imageOnSave": "The image is uploaded when you save.",
+    "imageUpload": "Upload",
+    "imageRemove": "Remove image",
+    "imageUploadSuccess": "Image uploaded",
+    "imageUploadError": "Failed to upload the image",
+    "imageRemoveSuccess": "Image removed",
+    "imageRemoveError": "Failed to remove the image"
   },
   "systemMessages": {
     "title": "System Messages",
@@ -702,11 +749,6 @@
     "timetable": "Timetable | Filc",
     "substitutions": "Substitutions | Filc",
     "adminPanel": "Admin Panel | Filc"
-  },
-  "cohortReselectionBanner": {
-    "title": "Cohort selection required",
-    "description": "Your assigned class or group is no longer available. Please select a new one.",
-    "selectCohort": "Select Cohort"
   },
   "doorlockCards": {
     "title": "Doorlock Cards",
@@ -971,5 +1013,162 @@
   },
   "close": "Close",
   "save": "Save",
-  "leaveBlankToKeep": "Leave blank to keep current"
+  "leaveBlankToKeep": "Leave blank to keep current",
+  "ui": {
+    "common": {
+      "delete": "Delete",
+      "less": "Less",
+      "more": "More",
+      "no_data": "No data",
+      "unknown": "Unknown"
+    }
+  },
+  "navigator": {
+    "overview": {
+      "title": "Navigator",
+      "description": "Campus editor and overview"
+    },
+    "refresh": "Refresh",
+    "deleteConfirmTitle": "Delete entity",
+    "deleteConfirmDescription": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+    "createSuccess": "Created successfully",
+    "createError": "Failed to create entity",
+    "updateSuccess": "Saved successfully",
+    "updateError": "Failed to update entity",
+    "deleteSuccess": "Deleted successfully",
+    "deleteError": "Failed to delete entity",
+    "fields": {
+      "name": "Name",
+      "description": "Description",
+      "short": "Short code",
+      "x": "X",
+      "y": "Y",
+      "building": "Building",
+      "type": "Type",
+      "storey": "Storey",
+      "capacity": "Capacity",
+      "rotation": "Rotation (°)",
+      "sizeX": "Size X (m)",
+      "sizeY": "Size Y (m)",
+      "sizeZ": "Size Z (m)",
+      "minStorey": "Min storey",
+      "maxStorey": "Max storey",
+      "width": "Width (m)",
+      "x1": "Start X",
+      "y1": "Start Y",
+      "x2": "End X",
+      "y2": "End Y",
+      "barrierFree": "Barrier free",
+      "isOutdoor": "Outdoor",
+      "colorhex": "Colour"
+    },
+    "notPlaced": "Not placed on the map",
+    "buildings": {
+      "title": "Buildings",
+      "description": "Campus buildings",
+      "add": "New building"
+    },
+    "classroomTypes": {
+      "title": "Classroom types",
+      "description": "Room categories and their colours",
+      "add": "New type",
+      "editTitle": "Edit classroom type",
+      "createTitle": "New classroom type",
+      "colorError": "Colour must be a hex value like #1a2b3c"
+    },
+    "classrooms": {
+      "title": "Classrooms",
+      "description": "Rooms with their position, size and type",
+      "add": "New classroom"
+    },
+    "corridors": {
+      "title": "Corridors",
+      "description": "Corridor segments on each storey",
+      "add": "New corridor"
+    },
+    "lifts": {
+      "title": "Lifts",
+      "description": "Lift shafts connecting storeys",
+      "add": "New lift"
+    },
+    "stairs": {
+      "title": "Stairs",
+      "description": "Staircases connecting storeys",
+      "add": "New stair"
+    },
+    "translations": {
+      "title": "Translations",
+      "description": "Campus codenames per language",
+      "add": "New codename",
+      "key": "Codename",
+      "editTitle": "Edit translation",
+      "createTitle": "New translation",
+      "searchPlaceholder": "Search codenames...",
+      "saveSuccess": "Translations saved",
+      "saveError": "Failed to save translations",
+      "deleteSuccess": "Translation deleted",
+      "deleteError": "Failed to delete translation"
+    },
+    "preview": {
+      "title": "Campus preview",
+      "description": "Read-only view of the whole campus"
+    },
+    "transfer": {
+      "export": "Export JSON",
+      "exportInProgress": "Exporting…",
+      "import": "Import JSON",
+      "importConfirm": "Import the selected navigator data file? Existing rows are updated and new ones are added; nothing is deleted.",
+      "importSuccess": "Navigator data imported successfully",
+      "importError": "Import failed",
+      "exportError": "Export failed",
+      "invalidFile": "The selected file is not a valid navigator export"
+    }
+  },
+  "kiosk": {
+    "title": "Kiosks",
+    "description": "Enrolled kiosk boxes and their configuration",
+    "create": "New kiosk",
+    "editTitle": "Edit kiosk",
+    "createTitle": "New kiosk",
+    "never": "Never",
+    "deleteConfirmTitle": "Delete kiosk",
+    "deleteConfirmDescription": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+    "configError": "The configuration is invalid",
+    "addGroup": "Add group",
+    "addStop": "Add stop",
+    "removeGroup": "Remove group",
+    "removeStop": "Remove stop",
+    "kindTv": "TV",
+    "kindNavigator": "Navigator",
+    "createSuccess": "Kiosk created",
+    "createError": "Failed to create kiosk",
+    "updateSuccess": "Kiosk updated",
+    "updateError": "Failed to update kiosk",
+    "deleteSuccess": "Kiosk deleted",
+    "deleteError": "Failed to delete kiosk",
+    "fields": {
+      "name": "Name",
+      "machineId": "Machine ID",
+      "kind": "Kind",
+      "enabled": "Enabled",
+      "groupLabel": "Group label",
+      "stopId": "Stop ID",
+      "routeFilter": "Route filter",
+      "idleResetSeconds": "Idle reset (s)",
+      "petrikNewsEnabled": "Petrik news enabled",
+      "petrikNewsIdleSeconds": "Petrik news idle timeout (s)",
+      "petrikNewsDwellSeconds": "Petrik news slide time (s)",
+      "petrikNewsFeedUrl": "Petrik news RSS feed URL",
+      "petrikNewsMaxItems": "Petrik news post count",
+      "highlightedNews": "Highlighted news",
+      "newsImages": "News images",
+      "newsSlideSeconds": "News slide (s)",
+      "newsTickerSeconds": "Ticker between news (s)",
+      "building": "Start building",
+      "storey": "Storey",
+      "x": "X",
+      "y": "Y",
+      "lastSeen": "Last seen"
+    }
+  }
 }

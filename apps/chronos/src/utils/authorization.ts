@@ -1,9 +1,10 @@
 import { permissions as permissionConstants } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user as dbUser } from '#database/schema/authentication';
 import { role as dbRole } from '#database/schema/authorization';
+import { conflict } from '#utils/http';
 
 const logger = getLogger(['chronos', 'rbac']);
 
@@ -73,7 +74,7 @@ class RBAC {
       .returning();
 
     if (!inserted) {
-      throw new Error(`Role "${name}" already exists`);
+      throw conflict(`Role "${name}" already exists`);
     }
 
     this.roles.set(name, { can: [...permissions] });
@@ -228,4 +229,74 @@ export const getUserPermissions = async (userId: string): Promise<string[]> => {
   }
 
   return Array.from(permissionsSet);
+};
+
+/**
+ * Permissions per role name, creating any role that a user references but
+ * that is missing from the role table (mirrors `getUserPermissions`).
+ */
+const permissionsByRoleName = async (roleNames: string[]) => {
+  const permissionsByRole = new Map<string, string[]>();
+  if (roleNames.length > 0) {
+    const roles = await db
+      .select({ can: dbRole.can, name: dbRole.name })
+      .from(dbRole)
+      .where(inArray(dbRole.name, roleNames));
+    for (const role of roles) {
+      permissionsByRole.set(role.name, role.can);
+    }
+  }
+
+  for (const name of roleNames) {
+    if (!permissionsByRole.has(name)) {
+      logger.warn(`Role ${name} not found in the database.`);
+      const can = name === 'admin' ? ['*'] : [];
+      await rbac.createRole(name, can);
+      permissionsByRole.set(name, can);
+    }
+  }
+
+  return permissionsByRole;
+};
+
+/** Union of the permissions of every role, in stored order, deduplicated. */
+const unionRolePermissions = (
+  roles: string[],
+  permissionsByRole: Map<string, string[]>
+): string[] => {
+  const permissions = new Set<string>();
+  for (const name of roles) {
+    for (const permission of permissionsByRole.get(name) ?? []) {
+      permissions.add(permission);
+    }
+  }
+  return Array.from(permissions);
+};
+
+/**
+ * Resolve permissions for many users with a fixed number of queries:
+ * one for the users' roles, one for the roles' permissions.
+ */
+export const getUserPermissionsBulk = async (
+  userIds: string[]
+): Promise<Map<string, string[]>> => {
+  const result = new Map<string, string[]>();
+  if (userIds.length === 0) {
+    return result;
+  }
+
+  const users = await db
+    .select({ id: dbUser.id, roles: dbUser.roles })
+    .from(dbUser)
+    .where(inArray(dbUser.id, userIds));
+
+  const permissionsByRole = await permissionsByRoleName([
+    ...new Set(users.flatMap((u) => u.roles)),
+  ]);
+
+  for (const user of users) {
+    result.set(user.id, unionRolePermissions(user.roles, permissionsByRole));
+  }
+
+  return result;
 };

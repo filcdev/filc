@@ -1,0 +1,28 @@
+{
+  "name": "@filcdev/navigator-3d",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./axis-gizmo": "./src/axis-gizmo.tsx",
+    "./editor-view": "./src/editor-view.tsx",
+    "./kiosk-view": "./src/kiosk-view.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@filcdev/api": "workspace:*",
+    "three": "^0.184.0"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/react": "^19.2.18",
+    "@types/three": "^0.184.1",
+    "typescript": "catalog:"
+  }
+}

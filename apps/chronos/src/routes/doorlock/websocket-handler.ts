@@ -21,6 +21,7 @@ import {
   type OutgoingMessage,
   outgoingMessageSchema,
 } from '#utils/doorlock/schemas';
+import { unauthorized } from '#utils/http';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
@@ -272,7 +273,7 @@ export const websocketHandler = doorlockFactory.createHandlers(
     const device = c.get('device') as { id: string; name: string } | undefined;
 
     if (!device) {
-      throw new Error('Device not found in context');
+      throw unauthorized('Device not found in context');
     }
 
     return {

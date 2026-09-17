@@ -1,18 +1,10 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import type { InferResponseType } from 'hono/client';
+import { Button } from '@filcdev/ui/components/button';
 import {
-  Check,
-  ChevronDown,
-  CircleCheck,
-  Mail,
-  User,
-  Wifi,
-} from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
 import {
   Command,
   CommandEmpty,
@@ -20,28 +12,33 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@filcdev/ui/components/command';
+import { Input } from '@filcdev/ui/components/input';
+import { Label } from '@filcdev/ui/components/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import Stepper, { Step } from '@/components/ui/stepper';
+} from '@filcdev/ui/components/popover';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
+import Stepper, { Step } from '@filcdev/ui/components/stepper';
+import { cn } from '@filcdev/ui/lib/utils';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Check, ChevronDown, CircleCheck, Mail, User, Wifi } from 'lucide-react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { useCohortSelector } from '@/hooks/timetables-admin';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
+import type { InferResponseType } from 'hono/client';
 import { useWifiStatus } from '@/hooks/wifi';
-import { cn } from '@/utils';
 import { useApiQuery } from '@/utils/api';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
 
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
@@ -108,6 +105,7 @@ const normalizeNickname = (value?: string | null) =>
 
 const WelcomeStepper = ({ user }: { user: UserType }) => {
   const { t } = useTranslation();
+  const nicknameId = useId();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -214,6 +212,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Stepper
         backButtonText={t('common.back')}
+        completeButtonText={t('common.complete')}
         nextButtonLoading={isSubmitting}
         nextButtonText={getNextButtonText()}
         onFinalStepCompleted={handleFinalStepCompleted}
@@ -259,10 +258,10 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
               {t('welcome.nicknameDescription')}
             </p>
             <div className="space-y-2">
-              <Label htmlFor="nickname">{t('account.nickname')}</Label>
+              <Label htmlFor={nicknameId}>{t('account.nickname')}</Label>
               <Input
                 autoComplete="off"
-                id="nickname"
+                id={nicknameId}
                 maxLength={NICKNAME_MAX_LENGTH}
                 onChange={(event) => {
                   setNicknameInput(event.target.value);
@@ -352,28 +351,8 @@ const CohortSelectorStep = (props: {
   const [updating, setIsUpdating] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const activeTimetableQuery = useApiQuery<
-    InferResponseType<typeof api.timetable.timetables.latestValid.$get>['data']
-  >(() => api.timetable.timetables.latestValid.$get(), {
-    enabled: !props.userCohortId,
-    queryKey: ['timetables', 'latestValid'] as const,
-  });
-
-  const cohortQuery = useApiQuery<
-    InferResponseType<typeof api.cohort.index.$get>['data']
-  >(
-    () =>
-      props.userCohortId
-        ? api.cohort.index.$get()
-        : api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-            param: { timetableId: activeTimetableQuery.data?.id as string },
-          }),
-    {
-      enabled: !!(props.userCohortId || activeTimetableQuery.data?.id),
-      queryKey: queryKeys.timetable.cohorts(
-        props.userCohortId ?? activeTimetableQuery.data?.id ?? null
-      ),
-    }
+  const { activeTimetableQuery, cohortQuery } = useCohortSelector(
+    props.userCohortId
   );
 
   const updateCohort = async (cohortId: string) => {

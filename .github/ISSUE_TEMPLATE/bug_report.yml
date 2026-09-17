@@ -1,6 +1,5 @@
 name: Bug report
 description: Report a bug in Filc
-title: "[Bug]: "
 labels: ["bug"]
 body:
   - type: textarea

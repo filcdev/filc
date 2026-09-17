@@ -1,12 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { createFileRoute } from '@tanstack/react-router';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -14,8 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
 import {
   Table,
   TableBody,
@@ -23,7 +18,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import { ImageIcon, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -48,6 +48,7 @@ export const Route = createFileRoute('/_private/admin/news/announcements')({
 
 function AnnouncementsPage() {
   const { i18n, t } = useTranslation();
+  const showPastId = useId();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -170,12 +171,12 @@ function AnnouncementsPage() {
         <div className="flex items-center gap-2">
           <Checkbox
             checked={showPast}
-            id="show-past"
+            id={showPastId}
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
             className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor="show-past"
+            htmlFor={showPastId}
           >
             {t('announcements.showPast')}
           </label>
@@ -209,7 +210,7 @@ function AnnouncementsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    className="w-[30%] cursor-pointer select-none hover:bg-muted/50"
+                    className="w-[25%] cursor-pointer select-none hover:bg-muted/50"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-2">
@@ -248,7 +249,7 @@ function AnnouncementsPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="w-[20%] cursor-pointer select-none hover:bg-muted/50"
+                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
                     onClick={() => handleSort('cohorts')}
                   >
                     <div className="flex items-center gap-2">
@@ -259,6 +260,9 @@ function AnnouncementsPage() {
                         direction={sortDirection}
                       />
                     </div>
+                  </TableHead>
+                  <TableHead className="w-[15%]">
+                    {t('announcements.kiosk')}
                   </TableHead>
                   {hasWritePermission && (
                     <TableHead className="w-[20%]">
@@ -296,6 +300,28 @@ function AnnouncementsPage() {
                             .join(', ')
                         : t('announcements.noCohorts')}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {announcement.highlighted && (
+                          <Badge variant="secondary">
+                            {t('announcements.highlighted')}
+                          </Badge>
+                        )}
+                        {announcement.kioskOnly && (
+                          <Badge variant="outline">
+                            {t('announcements.kioskOnly')}
+                          </Badge>
+                        )}
+                        {announcement.imageKey && (
+                          <ImageIcon className="h-4 w-4" />
+                        )}
+                        {!(
+                          announcement.highlighted ||
+                          announcement.imageKey ||
+                          announcement.kioskOnly
+                        ) && t('announcements.notOnKiosk')}
+                      </div>
+                    </TableCell>
                     {hasWritePermission && (
                       <TableCell>
                         <div className="flex gap-2">
@@ -326,7 +352,7 @@ function AnnouncementsPage() {
                   <TableRow>
                     <TableCell
                       className="text-muted-foreground"
-                      colSpan={hasWritePermission ? 5 : 4}
+                      colSpan={hasWritePermission ? 6 : 5}
                     >
                       {t('announcements.noAnnouncements')}
                     </TableCell>

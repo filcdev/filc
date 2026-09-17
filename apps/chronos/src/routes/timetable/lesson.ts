@@ -35,77 +35,31 @@ import {
   subject,
   substitutionLessonMTM,
   teacher,
+  weekDefinition,
 } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
+import {
+  getActiveTimetableId,
+  getTimetableIdForDate,
+} from '#utils/timetable/active';
+import {
+  getWeekdayInBudapest,
+  isMatchingWeekday,
+} from '#utils/timetable/weekday';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'lesson']);
-
-const normalizeDayText = (value: string): string =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-const getWeekdayInBudapest = (value: Date): number => {
-  const weekdayName = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Budapest',
-    weekday: 'short',
-  }).format(value);
-  const weekdayIndex = {
-    Fri: 5,
-    Mon: 1,
-    Sat: 6,
-    Sun: 0,
-    Thu: 4,
-    Tue: 2,
-    Wed: 3,
-  }[weekdayName];
-  if (weekdayIndex === undefined) {
-    throw new Error(`Unsupported weekday value: ${weekdayName}`);
-  }
-  return weekdayIndex;
-};
-
-const weekdayAliases: Record<number, string[]> = {
-  0: ['vasarnap', 'va', 'v', 'sunday', 'sun'],
-  1: ['hetfo', 'he', 'h', 'monday', 'mon'],
-  2: ['kedd', 'ke', 'k', 'tuesday', 'tue'],
-  3: ['szerda', 'sze', 'sz', 'wednesday', 'wed'],
-  4: ['csutortok', 'cs', 'thursday', 'thu'],
-  5: ['pentek', 'pe', 'p', 'friday', 'fri'],
-  6: ['szombat', 'szo', 'saturday', 'sat'],
-};
-
-const isMatchingWeekday = (
-  weekdayIndex: number,
-  dayName: string,
-  dayShort?: string
-): boolean => {
-  const aliases = (weekdayAliases[weekdayIndex] ?? []).map(normalizeDayText);
-  const normalizedName = normalizeDayText(dayName);
-  const normalizedShort = dayShort ? normalizeDayText(dayShort) : '';
-
-  const matchesAlias = (alias: string): boolean => {
-    if (normalizedName === alias || normalizedShort === alias) {
-      return true;
-    }
-    if (alias.length <= 3) {
-      return normalizedName.startsWith(alias);
-    }
-    return normalizedName.includes(alias);
-  };
-  return aliases.some(matchesAlias);
-};
 
 async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   if (lessons.length === 0) {
     return [];
   }
 
-  const subjectIds = Array.from(new Set(lessons.map((l) => l.subjectId)));
+  const subjectIds = Array.from(
+    new Set(lessons.map((l) => l.subjectId))
+  ).filter((id): id is string => id != null);
   const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
   const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
   const teacherIds = Array.from(
@@ -126,43 +80,62 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
     )
   );
 
+  const weekDefinitionIds = Array.from(
+    new Set(lessons.map((l) => l.weeksDefinitionId))
+  );
+
   const lessonIds = lessons.map((l) => l.id);
 
-  const [subjects, days, periods, teachers, classrooms, cohortRows, groupRows] =
-    await Promise.all([
-      db.select().from(subject).where(inArray(subject.id, subjectIds)),
-      db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-      db.select().from(period).where(inArray(period.id, periodIds)),
-      teacherIds.length
-        ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-        : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-      classroomIds.length
-        ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-        : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-      lessonIds.length
-        ? db
-            .select({
-              cohortId: cohort.id,
-              cohortName: cohort.name,
-              cohortShort: cohort.short,
-              lessonId: lessonCohortMTM.lessonId,
-            })
-            .from(lessonCohortMTM)
-            .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-            .where(inArray(lessonCohortMTM.lessonId, lessonIds))
-        : Promise.resolve([] as never[]),
-      groupIds.length
-        ? db
-            .select({
-              divisionTag: cohortGroup.divisionTag,
-              entireClass: cohortGroup.entireClass,
-              id: cohortGroup.id,
-              name: cohortGroup.name,
-            })
-            .from(cohortGroup)
-            .where(inArray(cohortGroup.id, groupIds))
-        : Promise.resolve([] as never[]),
-    ]);
+  const [
+    subjects,
+    days,
+    periods,
+    teachers,
+    classrooms,
+    cohortRows,
+    groupRows,
+    weekDefinitions,
+  ] = await Promise.all([
+    subjectIds.length
+      ? db.select().from(subject).where(inArray(subject.id, subjectIds))
+      : Promise.resolve([] as (typeof subject.$inferSelect)[]),
+    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
+    db.select().from(period).where(inArray(period.id, periodIds)),
+    teacherIds.length
+      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
+      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
+    classroomIds.length
+      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
+      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
+    lessonIds.length
+      ? db
+          .select({
+            cohortId: cohort.id,
+            cohortName: cohort.name,
+            cohortShort: cohort.short,
+            lessonId: lessonCohortMTM.lessonId,
+          })
+          .from(lessonCohortMTM)
+          .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+          .where(inArray(lessonCohortMTM.lessonId, lessonIds))
+      : Promise.resolve([] as never[]),
+    groupIds.length
+      ? db
+          .select({
+            divisionTag: cohortGroup.divisionTag,
+            entireClass: cohortGroup.entireClass,
+            id: cohortGroup.id,
+            name: cohortGroup.name,
+          })
+          .from(cohortGroup)
+          .where(inArray(cohortGroup.id, groupIds))
+      : Promise.resolve([] as never[]),
+
+    db
+      .select()
+      .from(weekDefinition)
+      .where(inArray(weekDefinition.id, weekDefinitionIds)),
+  ]);
 
   const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
   const dayMap = new Map(days.map((d) => [d.id, d] as const));
@@ -182,6 +155,9 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
           },
         ] as const
     )
+  );
+  const weekDefinitionMap = new Map(
+    weekDefinitions.map((week) => [week.id, week] as const)
   );
   const cohortMap = new Map<
     string,
@@ -246,7 +222,7 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
       })(),
       periodsPerWeek: l.periodsPerWeek,
       subject: (() => {
-        const s = subjMap.get(l.subjectId);
+        const s = subjMap.get(l.subjectId ?? '');
         return s ? { id: s.id, name: s.name, short: s.short } : null;
       })(),
       teachers: tIds
@@ -258,6 +234,18 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
           short: (t as (typeof teachers)[number]).short,
         })),
       termDefinitionId: l.termDefinitionId,
+      weekDefinition: (() => {
+        const week = weekDefinitionMap.get(l.weeksDefinitionId);
+
+        return week
+          ? {
+              id: week.id,
+              name: week.name,
+              short: week.short,
+              weeks: Array.isArray(week.weeks) ? week.weeks : [],
+            }
+          : null;
+      })(),
       weeksDefinitionId: l.weeksDefinitionId,
     };
   });
@@ -297,6 +285,14 @@ const enrichedLessonSchema = z.object({
     z.object({ id: z.string(), name: z.string(), short: z.string() })
   ),
   termDefinitionId: z.string().nullable(),
+  weekDefinition: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      short: z.string(),
+      weeks: z.array(z.string()),
+    })
+    .nullable(),
   weeksDefinitionId: z.string(),
 });
 
@@ -364,12 +360,17 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       });
     }
 
-    const whereClause = timetableId
-      ? and(
-          eq(lessonCohortMTM.cohortId, cohortId),
-          eq(lesson.timetableId, timetableId)
-        )
-      : eq(lessonCohortMTM.cohortId, cohortId);
+    const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!effectiveTimetableId) {
+      return ok(c, []);
+    }
+
+    const whereClause = and(
+      eq(lessonCohortMTM.cohortId, cohortId),
+      eq(lesson.timetableId, effectiveTimetableId)
+    );
 
     const lessonRows = await db
       .select({ lesson })
@@ -434,12 +435,17 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       });
     }
 
-    const whereClause = timetableId
-      ? and(
-          arrayContains(lesson.teacherIds, [teacherId]),
-          eq(lesson.timetableId, timetableId)
-        )
-      : arrayContains(lesson.teacherIds, [teacherId]);
+    const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!effectiveTimetableId) {
+      return ok(c, []);
+    }
+
+    const whereClause = and(
+      arrayContains(lesson.teacherIds, [teacherId]),
+      eq(lesson.timetableId, effectiveTimetableId)
+    );
 
     const lessons = await db.select().from(lesson).where(whereClause);
 
@@ -483,6 +489,10 @@ type CandidateLessonEntry = {
   subjectShort: string | null;
 };
 
+// The aSc timetable export encodes substitution ("Helyettesítés") lessons as a
+// single subject with short "H"; older exports used "H1"/"H2".
+const SUBSTITUTION_SUBJECT_SHORTS = new Set(['H', 'H1', 'H2']);
+
 function computeCandidateFlags(
   teacherLessons: CandidateLessonEntry[],
   selectedPeriods: number[]
@@ -499,7 +509,9 @@ function computeCandidateFlags(
       continue;
     }
 
-    const hasH1AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H1');
+    const hasH1AtPeriod = lessonsAtPeriod.some(
+      (l) => l.subjectShort === 'H' || l.subjectShort === 'H1'
+    );
     const hasH2AtPeriod = lessonsAtPeriod.some((l) => l.subjectShort === 'H2');
 
     if (hasH1AtPeriod) {
@@ -510,7 +522,9 @@ function computeCandidateFlags(
     }
 
     const hasConflictLesson = lessonsAtPeriod.some(
-      (l) => l.subjectShort !== 'H1' && l.subjectShort !== 'H2'
+      (l) =>
+        l.subjectShort === null ||
+        !SUBSTITUTION_SUBJECT_SHORTS.has(l.subjectShort)
     );
     if (hasConflictLesson) {
       return { hasConflict: true, hasH1, hasH2 };
@@ -549,12 +563,18 @@ function compareSubstituteCandidates(
 
 async function buildCandidateLessonsMap(
   candidateTeacherIds: string[],
-  weekday: number
+  weekday: number,
+  timetableId: string
 ): Promise<Map<string, CandidateLessonEntry[]>> {
   const candidateLessons = await db
     .select()
     .from(lesson)
-    .where(arrayOverlaps(lesson.teacherIds, candidateTeacherIds));
+    .where(
+      and(
+        arrayOverlaps(lesson.teacherIds, candidateTeacherIds),
+        eq(lesson.timetableId, timetableId)
+      )
+    );
 
   const enrichedCandidateLessons = await enrichLessons(candidateLessons);
   const map = new Map<string, CandidateLessonEntry[]>();
@@ -597,7 +617,8 @@ async function buildCandidateLessonsMap(
 
 async function getParallelLessons(
   selectedLessons: Awaited<ReturnType<typeof enrichLessons>>,
-  missingTeacherId: string
+  missingTeacherId: string,
+  timetableId: string
 ): Promise<Awaited<ReturnType<typeof enrichLessons>>> {
   const periodIds = [
     ...new Set(
@@ -651,7 +672,8 @@ async function getParallelLessons(
       and(
         inArray(lesson.id, parallelLessonIds),
         inArray(lesson.periodId, periodIds),
-        inArray(lesson.dayDefinitionId, dayIds)
+        inArray(lesson.dayDefinitionId, dayIds),
+        eq(lesson.timetableId, timetableId)
       )
     );
 
@@ -703,13 +725,23 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
       return ok(c, []);
     }
 
+    const timetableId = await getActiveTimetableId();
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!timetableId) {
+      return ok(c, []);
+    }
+
     const lessons = await db
       .select()
       .from(lesson)
       .where(
-        or(
-          ...existingTeacherIds.map((id) =>
-            arrayContains(lesson.teacherIds, [id])
+        and(
+          eq(lesson.timetableId, timetableId),
+          or(
+            ...existingTeacherIds.map((id) =>
+              arrayContains(lesson.teacherIds, [id])
+            )
           )
         )
       );
@@ -783,19 +815,32 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
     }
 
     const weekday = getWeekdayInBudapest(date);
+    const timetableId = await getTimetableIdForDate(date);
+
+    if (!timetableId) {
+      return ok(c, {
+        availableLessons: [],
+        parallelLessons: [],
+        substituteCandidates: [],
+      });
+    }
 
     const missingTeacherLessons = await db
       .select()
       .from(lesson)
-      .where(arrayContains(lesson.teacherIds, [missingTeacherId]));
+      .where(
+        and(
+          arrayContains(lesson.teacherIds, [missingTeacherId]),
+          eq(lesson.timetableId, timetableId)
+        )
+      );
 
     const enrichedMissingTeacherLessons = await enrichLessons(
       missingTeacherLessons
     );
-    const EXCLUDED_SUBJECT_SHORTS = ['H1', 'H2'];
 
-    const availableLessons = enrichedMissingTeacherLessons
-      .filter((currentLesson) =>
+    const availableLessons = enrichedMissingTeacherLessons.filter(
+      (currentLesson) =>
         currentLesson.day
           ? isMatchingWeekday(
               weekday,
@@ -803,14 +848,7 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
               currentLesson.day.short
             )
           : false
-      )
-      .filter(
-        (currentLesson) =>
-          !(
-            currentLesson.subject?.short &&
-            EXCLUDED_SUBJECT_SHORTS.includes(currentLesson.subject.short)
-          )
-      );
+    );
 
     const selectedLessonIdsSet = new Set(selectedLessonIds);
     const selectedLessons = availableLessons.filter((currentLesson) =>
@@ -834,7 +872,8 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
 
     const parallelLessons = await getParallelLessons(
       selectedLessons,
-      missingTeacherId
+      missingTeacherId,
+      timetableId
     );
 
     const candidateTeacherIds = normalizedTeacherIds.filter(
@@ -861,7 +900,8 @@ export const getSubstitutionCandidates = timetableFactory.createHandlers(
 
     const candidateLessonsByTeacherId = await buildCandidateLessonsMap(
       candidateTeacherIds,
-      weekday
+      weekday,
+      timetableId
     );
 
     const substituteCandidates = candidateTeachers
@@ -937,12 +977,17 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       });
     }
 
-    const whereClause = timetableId
-      ? and(
-          arrayContains(lesson.classroomIds, [classroomId]),
-          eq(lesson.timetableId, timetableId)
-        )
-      : arrayContains(lesson.classroomIds, [classroomId]);
+    const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
+
+    // No active timetable: yield no lessons rather than every timetable.
+    if (!effectiveTimetableId) {
+      return ok(c, []);
+    }
+
+    const whereClause = and(
+      arrayContains(lesson.classroomIds, [classroomId]),
+      eq(lesson.timetableId, effectiveTimetableId)
+    );
 
     const lessons = await db.select().from(lesson).where(whereClause);
 

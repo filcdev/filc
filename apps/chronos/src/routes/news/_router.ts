@@ -2,9 +2,11 @@ import { newsFactory } from '#routes/news/_factory';
 import {
   createAnnouncement,
   deleteAnnouncement,
+  deleteAnnouncementImage,
   getAnnouncement,
   listAnnouncements,
   updateAnnouncement,
+  uploadAnnouncementImage,
 } from '#routes/news/announcements';
 import {
   createBlog,
@@ -29,6 +31,8 @@ const announcementsRouter = newsFactory
   .createApp()
   .get('/', ...listAnnouncements)
   .get('/:id', ...getAnnouncement)
+  .post('/:id/image', ...uploadAnnouncementImage)
+  .delete('/:id/image', ...deleteAnnouncementImage)
   .post('/', ...createAnnouncement)
   .patch('/:id', ...updateAnnouncement)
   .delete('/:id', ...deleteAnnouncement);

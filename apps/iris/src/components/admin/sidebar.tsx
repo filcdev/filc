@@ -1,27 +1,4 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { Link, useNavigate } from '@tanstack/react-router';
-import {
-  ArrowRightLeft,
-  Bell,
-  Bug,
-  DoorOpen,
-  FlaskConical,
-  Gauge,
-  GraduationCap,
-  HardDrive,
-  IdCard,
-  LayoutDashboard,
-  List,
-  Microchip,
-  RefreshCw,
-  Shield,
-  UserRound,
-  Users,
-  Wifi,
-} from 'lucide-react';
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Sidebar,
   SidebarContent,
@@ -34,7 +11,40 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar';
+} from '@filcdev/ui/components/sidebar';
+import { Link, useNavigate } from '@tanstack/react-router';
+import {
+  ArrowRightLeft,
+  ArrowUpDown,
+  Bell,
+  Bug,
+  Building2,
+  DoorOpen,
+  Eye,
+  FlaskConical,
+  Gauge,
+  GraduationCap,
+  HardDrive,
+  IdCard,
+  Languages,
+  Layers,
+  LayoutDashboard,
+  List,
+  Map as MapIcon,
+  Microchip,
+  MonitorPlay,
+  MonitorSmartphone,
+  Palette,
+  RefreshCw,
+  Route,
+  Shield,
+  UserRound,
+  Users,
+  Wifi,
+} from 'lucide-react';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { hasPermission } from '@/hooks/use-has-permission';
 import { authClient } from '@/utils/authentication';
 
 type MenuIcon = typeof List;
@@ -56,6 +66,7 @@ export function AdminSidebar() {
   const { data: session } = authClient.useSession();
   const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
+  const userPermissions = session?.user?.permissions;
 
   const handleNavigate = (url: string) => {
     navigate({ to: url });
@@ -203,6 +214,76 @@ export function AdminSidebar() {
         ],
         label: t('admin.management'),
       },
+      {
+        items: [
+          {
+            icon: LayoutDashboard,
+            permission: permissions.navigatorManage,
+            title: t('navigator.overview.title'),
+            url: '/admin/navigator',
+          },
+          {
+            icon: Building2,
+            permission: permissions.navigatorManage,
+            title: t('navigator.buildings.title'),
+            url: '/admin/navigator/buildings',
+          },
+          {
+            icon: Palette,
+            permission: permissions.navigatorManage,
+            title: t('navigator.classroomTypes.title'),
+            url: '/admin/navigator/classroom-types',
+          },
+          {
+            icon: DoorOpen,
+            permission: permissions.navigatorManage,
+            title: t('navigator.classrooms.title'),
+            url: '/admin/navigator/classrooms',
+          },
+          {
+            icon: Route,
+            permission: permissions.navigatorManage,
+            title: t('navigator.corridors.title'),
+            url: '/admin/navigator/corridors',
+          },
+          {
+            icon: ArrowUpDown,
+            permission: permissions.navigatorManage,
+            title: t('navigator.lifts.title'),
+            url: '/admin/navigator/lifts',
+          },
+          {
+            icon: Layers,
+            permission: permissions.navigatorManage,
+            title: t('navigator.stairs.title'),
+            url: '/admin/navigator/stairs',
+          },
+          {
+            icon: Languages,
+            permission: permissions.navigatorManage,
+            title: t('navigator.translations.title'),
+            url: '/admin/navigator/translations',
+          },
+          {
+            icon: Eye,
+            permission: permissions.navigatorManage,
+            title: t('navigator.preview.title'),
+            url: '/admin/navigator/preview',
+          },
+        ],
+        label: t('admin.navigator'),
+      },
+      {
+        items: [
+          {
+            icon: MonitorSmartphone,
+            permission: permissions.kiosksManage,
+            title: t('kiosk.title'),
+            url: '/admin/kiosks',
+          },
+        ],
+        label: t('admin.kiosks'),
+      },
       ...(import.meta.env.MODE === 'development'
         ? [
             {
@@ -226,19 +307,15 @@ export function AdminSidebar() {
     () =>
       categories
         .map((category) => {
-          const visibleItems = category.items.filter((item) => {
-            if (session?.user?.permissions.includes('*')) {
-              return true;
-            }
-            if (!item.permission) {
-              return true;
-            }
-            return session?.user?.permissions?.includes(item.permission);
-          });
+          const visibleItems = category.items.filter(
+            (item) =>
+              !item.permission ||
+              hasPermission(item.permission, userPermissions)
+          );
           return { ...category, items: visibleItems };
         })
         .filter((category) => category.items.length > 0),
-    [categories, session?.user?.permissions]
+    [categories, userPermissions]
   );
 
   return (

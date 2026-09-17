@@ -28,10 +28,21 @@ export const securityMiddleware = secureHeaders({
     upgradeInsecureRequests: [],
     workerSrc: ["'self'"],
   },
+  // The kiosk SPA is served from a host of its own (a static build with nothing
+  // proxying /api) and shows announcement images straight from this API, so its
+  // responses must stay embeddable across origins. Left as `same-origin`, the
+  // browser blocks the image with ERR_BLOCKED_BY_RESPONSE.NotSameOrigin.
+  crossOriginResourcePolicy: 'cross-origin',
 });
 
 export const corsMiddleware = cors({
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  origin: env.mode === 'development' ? '*' : env.baseUrl,
+  // Local dev accepts any origin; a deployment only accepts its own origins —
+  // the API itself plus the static apps (the kiosk build) that call it by
+  // absolute URL from a host of their own.
+  origin:
+    env.mode === 'development'
+      ? '*'
+      : [env.baseUrl, ...(env.trustedOrigins ?? [])],
 });

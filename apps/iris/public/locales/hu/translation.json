@@ -128,6 +128,15 @@
       "dialogTitle": "Ajtó nyitása",
       "dialogDescription": "Melyik ajtót szeretnéd kinyitni ezzel: {{cardName}}?",
       "dialogNoDevices": "Ennek a kártyának nincs engedélyezett eszköze."
+    },
+    "ota": {
+      "titleDevice": "\"{{name}}\" frissítése",
+      "titleAll": "Összes eszköz frissítése",
+      "descriptionDevice": "OTA firmware-frissítés küldése a következő eszköznek: {{name}}. Az eszköz automatikusan letölti és telepíti a firmware-t a megadott URL-ről.",
+      "descriptionAll": "OTA firmware-frissítés küldése minden regisztrált eszköznek. Minden csatlakozott eszköz automatikusan letölti és telepíti a firmware-t a megadott URL-ről.",
+      "urlLabel": "Firmware URL",
+      "submitDevice": "Eszköz frissítése",
+      "submitAll": "Összes frissítése"
     }
   },
   "wifi": {
@@ -204,7 +213,9 @@
     "users": "Felhasználók",
     "roles": "Szerepkörök",
     "bugReports": "Hibajelentések",
-    "developer": "Fejlesztő"
+    "developer": "Fejlesztő",
+    "kiosks": "Kijelzők",
+    "navigator": "Navigátor"
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
@@ -301,10 +312,13 @@
     "currentTimetables": "Aktuális",
     "upcomingTimetables": "Közelgő",
     "clean": "Tisztítás",
-    "cleanupConfirmTitle": "Árva csoportok törlése",
-    "cleanupConfirmDescription": "Ez törölni fog minden olyan csoportot, amely már nincs hozzárendelve egyetlen órarendhez sem. Az ilyen csoportokra hivatkozó felhasználók csoport-hozzárendelése törlődik. Ez a művelet nem vonható vissza.",
-    "cleanupOrphanedCohortsSuccess": "Árva csoportok kitakarítva",
-    "cleanupOrphanedCohortsError": "Nem sikerült az árva csoportok tisztítása"
+    "cleanupConfirmTitle": "Árva órarendi adatok törlése",
+    "cleanupConfirmDescription": "Ez törölni fog minden olyan csoportot, amely már nincs hozzárendelve egyetlen órarendhez sem, valamint minden olyan tanárt, akihez egyetlen óra sincs hozzárendelve. A törölt csoportokra hivatkozó felhasználók csoport-hozzárendelése elvész. A csoportokhoz, csoportegységekhez vagy helyettesítésekhez tartozó tanárok megmaradnak. Ez a művelet nem vonható vissza.",
+    "cleanupOrphanedCohortsSuccess": "Az árva órarendi adatok kitakarítva",
+    "cleanupOrphanedCohortsError": "Nem sikerült az árva órarendi adatok tisztítása",
+    "weekA": "A hét",
+    "weekB": "B hét",
+    "weekAll": "Mindkettő"
   },
   "common": {
     "cancel": "Mégsem",
@@ -317,7 +331,10 @@
     "complete": "Befejezés",
     "delete": "Törlés",
     "deleting": "Törlés...",
+    "edit": "Szerkesztés",
+    "no": "Nem",
     "save": "Mentés",
+    "yes": "Igen",
     "showPassword": "Jelszó megjelenítése",
     "hidePassword": "Jelszó elrejtése"
   },
@@ -344,7 +361,7 @@
     "selectLessonsFirst": "Előbb válassz tanárt és órát.",
     "loadingSubstituteTeachers": "Helyettesítő tanárok szűrése…",
     "nearbyTeacherTag": "H1 / H2",
-    "h1Tag": "H1",
+    "h1Tag": "H",
     "h2Tag": "H2",
     "cancelled": "Elmarad",
     "merged": "Összevont óra",
@@ -368,7 +385,7 @@
     "periodPlaceholder": "Válassz egy óraidoőpontot",
     "noPeriodsFound": "Nincsenek óraidoőpontok.",
     "subject": "Tantárgy",
-    "subjectPlaceholder": "Válassz egy tantárgyat",
+    "subjectPlaceholder": "Válassz egy tantárgyat (opcionális)",
     "noSubjectsFound": "Nincsenek tantárgyak.",
     "cohort": "Osztály",
     "cohortPlaceholder": "Válassz egy osztályt",
@@ -379,6 +396,7 @@
     "commentPlaceholder": "Opcionális megjegyzés a helyettesítéshez",
     "createSuccess": "Helyettesítés sikeresen létrehozva",
     "createError": "Nem sikerült létrehozni a helyettesítést",
+    "conflictError": "Ennek a tanárnak ebben az órában már van helyettesítése ezen a napon.",
     "updateSuccess": "Helyettesítés sikeresen frissítve",
     "updateError": "Nem sikerült frissíteni a helyettesítést",
     "deleteSuccess": "Helyettesítés sikeresen törölve",
@@ -410,24 +428,36 @@
     "showPast": "Múltbeliek is",
     "date": "Dátum",
     "datePlaceholder": "Válassz egy dátumot",
+    "targetDate": "Céldátum",
     "targetDay": "Célnap",
     "targetPeriod": "Célóra",
+    "targetPeriodPlaceholder": "Válassz egy óraidőpontot",
+    "noPeriodsFound": "Nincsenek óraidőpontok.",
     "targetRoom": "Célterem",
+    "moveMode": "Áthelyezés típusa",
+    "roomMove": "Teremcsere",
+    "roomMoveHint": "Az órát másik terembe helyezed ugyanazon a napon.",
+    "dayMove": "Napcsere",
+    "dayMoveHint": "Az órát másik napon másik terembe helyezed.",
+    "fromRoom": "Inneni terem",
+    "toRoom": "Célterem",
+    "class": "Osztály",
+    "selectCohortPlaceholder": "Válassz egy osztályt",
+    "noCohortFound": "Nem található osztály.",
+    "selectSlotHint": "Válassz napot és termet az adott teremben lévő órák megtekintéséhez.",
+    "selectDayHint": "Válassz napot az aznapi összes óra megtekintéséhez.",
+    "free": "szabad",
+    "occupied": "foglalt",
     "noChange": "Nincs változás",
-    "periodLabel": "{{num}}. óra ({{start}} – {{end}})",
     "lessons": "Érintett órák",
     "lessonsCount": "Órák",
     "actions": "Műveletek",
     "noLessons": "Nincsenek elérhető órák",
-    "loadingLessons": "Órák betöltése…",
     "loadingRooms": "Elérhető termek betöltése…",
-    "selectCohort": "Szűrés osztály szerint",
-    "selectCohortPlaceholder": "Válassz egy osztályt az órák megtekintéséhez",
-    "noCohortFound": "Nem található osztály.",
-    "noDayFound": "Nem található nap.",
-    "noPeriodFound": "Nem található óra.",
     "noRoomFound": "Nem található terem.",
     "noMovedLessons": "Nincsenek áthelyezett órák",
+    "comment": "Megjegyzés",
+    "commentPlaceholder": "Opcionális megjegyzés az áthelyezéshez",
     "createSuccess": "Áthelyezett óra sikeresen létrehozva",
     "createError": "Nem sikerült létrehozni az áthelyezett órát",
     "updateSuccess": "Áthelyezett óra sikeresen frissítve",
@@ -480,7 +510,24 @@
     "date": "Dátum",
     "setDateRange": "Dátumtartomány beállítása",
     "showPast": "Múltbeli hírek mutatása",
-    "untitled": "Cím nélkül"
+    "untitled": "Cím nélkül",
+    "highlighted": "Kiemelt a kijelzőn",
+    "kioskOnly": "Csak kijelzőn (a weben rejtve)",
+    "kiosks": "Kijelzők",
+    "allKiosks": "Minden kijelző",
+    "allKiosksHint": "A teljes képernyős hír minden TV-kijelzőn megjelenik.",
+    "kiosksHint": "A teljes képernyős hír csak a kiválasztott kijelzőkön jelenik meg.",
+    "kiosk": "Kijelző",
+    "notOnKiosk": "—",
+    "image": "Kép",
+    "imageHint": "JPEG, PNG vagy WebP, legfeljebb 8 MiB",
+    "imageOnSave": "A kép mentéskor töltődik fel.",
+    "imageUpload": "Feltöltés",
+    "imageRemove": "Kép törlése",
+    "imageUploadSuccess": "Kép feltöltve",
+    "imageUploadError": "Nem sikerült feltölteni a képet",
+    "imageRemoveSuccess": "Kép törölve",
+    "imageRemoveError": "Nem sikerült törölni a képet"
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",
@@ -702,11 +749,6 @@
     "timetable": "Órarend | Filc",
     "substitutions": "Helyettesítések | Filc",
     "adminPanel": "Adminisztrációs felület | Filc"
-  },
-  "cohortReselectionBanner": {
-    "title": "Csoport kiválasztása szükséges",
-    "description": "A hozzárendelt osztályod vagy csoportod már nem elérhető. Kérjük, válassz újat.",
-    "selectCohort": "Csoport kiválasztása"
   },
   "doorlockCards": {
     "title": "Ajtózár kártyák",
@@ -971,5 +1013,162 @@
   },
   "close": "Bezárás",
   "save": "Mentés",
-  "leaveBlankToKeep": "Hagyja üresen a jelenlegi megtartásához"
+  "leaveBlankToKeep": "Hagyja üresen a jelenlegi megtartásához",
+  "ui": {
+    "common": {
+      "delete": "Törlés",
+      "less": "Kevesebb",
+      "more": "Több",
+      "no_data": "Nincs adat",
+      "unknown": "Ismeretlen"
+    }
+  },
+  "navigator": {
+    "overview": {
+      "title": "Navigátor",
+      "description": "Kampusz szerkesztő és áttekintés"
+    },
+    "refresh": "Frissítés",
+    "deleteConfirmTitle": "Bejegyzés törlése",
+    "deleteConfirmDescription": "Biztosan törlöd: {{name}}? Ez a művelet nem visszavonható.",
+    "createSuccess": "Sikeresen létrehozva",
+    "createError": "Nem sikerült létrehozni a bejegyzést",
+    "updateSuccess": "Sikeresen mentve",
+    "updateError": "Nem sikerült menteni a bejegyzést",
+    "deleteSuccess": "Sikeresen törölve",
+    "deleteError": "Nem sikerült törölni a bejegyzést",
+    "fields": {
+      "name": "Név",
+      "description": "Leírás",
+      "short": "Rövid kód",
+      "x": "X",
+      "y": "Y",
+      "building": "Épület",
+      "type": "Típus",
+      "storey": "Szint",
+      "capacity": "Kapacitás",
+      "rotation": "Elforgatás (°)",
+      "sizeX": "X méret (m)",
+      "sizeY": "Y méret (m)",
+      "sizeZ": "Z méret (m)",
+      "minStorey": "Legalsó szint",
+      "maxStorey": "Legfelső szint",
+      "width": "Szélesség (m)",
+      "x1": "Kezdő X",
+      "y1": "Kezdő Y",
+      "x2": "Vég X",
+      "y2": "Vég Y",
+      "barrierFree": "Akadálymentes",
+      "isOutdoor": "Kültéri",
+      "colorhex": "Szín"
+    },
+    "notPlaced": "Nincs a térképen",
+    "buildings": {
+      "title": "Épületek",
+      "description": "Kampusz épületei",
+      "add": "Új épület"
+    },
+    "classroomTypes": {
+      "title": "Teremtípusok",
+      "description": "Teremkategóriák és színeik",
+      "add": "Új típus",
+      "editTitle": "Teremtípus szerkesztése",
+      "createTitle": "Új teremtípus",
+      "colorError": "A szín hex érték legyen, például #1a2b3c"
+    },
+    "classrooms": {
+      "title": "Termek",
+      "description": "Termek pozícióval, mérettel és típussal",
+      "add": "Új terem"
+    },
+    "corridors": {
+      "title": "Folyosók",
+      "description": "Folyosószakaszok szintenként",
+      "add": "Új folyosó"
+    },
+    "lifts": {
+      "title": "Liftek",
+      "description": "Szinteket összekötő liftek",
+      "add": "Új lift"
+    },
+    "stairs": {
+      "title": "Lépcsők",
+      "description": "Szinteket összekötő lépcsők",
+      "add": "Új lépcső"
+    },
+    "translations": {
+      "title": "Fordítások",
+      "description": "Kampusz kódnevek nyelvenként",
+      "add": "Új kódnév",
+      "key": "Kódnév",
+      "editTitle": "Fordítás szerkesztése",
+      "createTitle": "Új fordítás",
+      "searchPlaceholder": "Kódnevek keresése...",
+      "saveSuccess": "Fordítások elmentve",
+      "saveError": "Nem sikerült menteni a fordításokat",
+      "deleteSuccess": "Fordítás törölve",
+      "deleteError": "Nem sikerült törölni a fordítást"
+    },
+    "preview": {
+      "title": "Kampusz előnézet",
+      "description": "A teljes kampusz csak olvasható nézete"
+    },
+    "transfer": {
+      "export": "JSON exportálása",
+      "exportInProgress": "Exportálás…",
+      "import": "JSON importálása",
+      "importConfirm": "Importálja a kiválasztott navigátor adatfájlt? A meglévő sorok frissülnek, az újak hozzáadódnak; semmi sem törlődik.",
+      "importSuccess": "A navigátor adatok importálása sikeres",
+      "importError": "Hiba történt az importálás során",
+      "exportError": "Hiba történt az exportálás során",
+      "invalidFile": "A kiválasztott fájl nem érvényes navigátor export"
+    }
+  },
+  "kiosk": {
+    "title": "Kijelzők",
+    "description": "Regisztrált kijelzők és konfigurációjuk",
+    "create": "Új kijelző",
+    "editTitle": "Kijelző szerkesztése",
+    "createTitle": "Új kijelző",
+    "never": "Soha",
+    "deleteConfirmTitle": "Kijelző törlése",
+    "deleteConfirmDescription": "Biztosan törlöd: {{name}}? Ez a művelet nem visszavonható.",
+    "configError": "A konfiguráció érvénytelen",
+    "addGroup": "Csoport hozzáadása",
+    "addStop": "Megálló hozzáadása",
+    "removeGroup": "Csoport törlése",
+    "removeStop": "Megálló törlése",
+    "kindTv": "TV",
+    "kindNavigator": "Navigátor",
+    "createSuccess": "Kijelző létrehozva",
+    "createError": "Nem sikerült létrehozni a kijelzőt",
+    "updateSuccess": "Kijelző mentve",
+    "updateError": "Nem sikerült menteni a kijelzőt",
+    "deleteSuccess": "Kijelző törölve",
+    "deleteError": "Nem sikerült törölni a kijelzőt",
+    "fields": {
+      "name": "Név",
+      "machineId": "Gépazonosító",
+      "kind": "Típus",
+      "enabled": "Engedélyezve",
+      "groupLabel": "Csoport címke",
+      "stopId": "Megálló azonosító",
+      "routeFilter": "Járat szűrő",
+      "idleResetSeconds": "Tétlenség visszaállítás (s)",
+      "petrikNewsEnabled": "Petrik hírek engedélyezve",
+      "petrikNewsIdleSeconds": "Petrik hírek tétlenségi idő (s)",
+      "petrikNewsDwellSeconds": "Petrik hír megjelenítési idő (s)",
+      "petrikNewsFeedUrl": "Petrik hírek RSS csatorna URL",
+      "petrikNewsMaxItems": "Petrik hírek darabszám",
+      "highlightedNews": "Kiemelt hírek",
+      "newsImages": "Hírek képei",
+      "newsSlideSeconds": "Hírcsúszda (mp)",
+      "newsTickerSeconds": "Szalag a hírek között (mp)",
+      "building": "Kezdő épület",
+      "storey": "Szint",
+      "x": "X",
+      "y": "Y",
+      "lastSeen": "Utoljára látva"
+    }
+  }
 }

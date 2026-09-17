@@ -4,6 +4,8 @@ import type {
   CohortRouter,
   DashboardRouter,
   DoorlockRouter,
+  KioskRouter,
+  NavigatorRouter,
   NewsRouter,
   NotificationsRouter,
   PingRouter,
@@ -19,11 +21,16 @@ const clientOptions = {
   } satisfies RequestInit,
 };
 
+/** The API base as a URL prefix: image URLs are built from it by hand. */
+export const apiBaseUrl = '/api';
+
 export const api = {
   bugReport: createApiClient<BugReportRouter>('/api/bug-report', clientOptions),
   cohort: createApiClient<CohortRouter>('/api/cohort', clientOptions),
   dashboard: createApiClient<DashboardRouter>('/api/dashboard', clientOptions),
   doorlock: createApiClient<DoorlockRouter>('/api/doorlock', clientOptions),
+  kiosk: createApiClient<KioskRouter>('/api/kiosk', clientOptions),
+  navigator: createApiClient<NavigatorRouter>('/api/navigator', clientOptions),
   news: createApiClient<NewsRouter>('/api/news', clientOptions),
   notifications: createApiClient<NotificationsRouter>(
     '/api/notifications',

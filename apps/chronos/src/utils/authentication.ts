@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { customSession } from 'better-auth/plugins';
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { customSession, oAuthProxy } from 'better-auth/plugins';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { Context } from '#_types/globals';
 import { db } from '#database';
@@ -12,9 +12,32 @@ import {
 } from '#database/schema/authentication';
 import { teacher } from '#database/schema/timetable';
 import { getUserPermissions } from '#utils/authorization';
+import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
+
+/**
+ * Preview deployments sign in through the production origin: Entra rejects
+ * wildcard redirect URIs, and registering one URI per pull request does not
+ * scale. Production terminates the real OAuth flow, then hands an encrypted
+ * profile back to the preview, which creates the session in its own database.
+ *
+ * `currentURL` is set explicitly because behind a reverse proxy the request URL
+ * is plain HTTP, and this value is what the encrypted profile is redirected to.
+ * On production the two origins match, so the plugin stands down and the
+ * ordinary callback runs. Without both variables the plugin is not registered.
+ */
+const oauthProxyPlugin =
+  env.oauthProxyUrl && env.oauthProxySecret
+    ? [
+        oAuthProxy({
+          currentURL: env.baseUrl,
+          productionURL: env.oauthProxyUrl,
+          secret: env.oauthProxySecret,
+        }),
+      ]
+    : [];
 
 const authOptions = {
   account: {
@@ -39,33 +62,77 @@ const authOptions = {
   databaseHooks: {
     session: {
       create: {
-        // Link the user account to any teacher row whose email matches. This
-        // runs on both registration and login (a session is created either
-        // way), so an import carrying teacher emails gets reconciled with user
-        // accounts over time.
+        // Link the user account to any teacher row whose email or full name
+        // matches. This runs on both registration and login (a session is
+        // created either way), so an import carrying teacher emails/names gets
+        // reconciled with user accounts over time.
         after: async (session) => {
           try {
             const [linkedUser] = await db
-              .select({ email: userTable.email })
+              .select({ email: userTable.email, name: userTable.name })
               .from(userTable)
               .where(eq(userTable.id, session.userId))
               .limit(1);
-            const userEmail = linkedUser?.email?.toLowerCase();
-            if (!userEmail) {
+            if (!linkedUser) {
               return;
             }
-            await db
-              .update(teacher)
-              .set({ userId: session.userId })
-              .where(
-                and(
-                  eq(teacher.email, userEmail),
-                  // Never clobber a manual assignment made in the teacher UI.
-                  or(isNull(teacher.userId), eq(teacher.userId, session.userId))
-                )
-              );
+
+            const userEmail = linkedUser.email?.toLowerCase();
+            if (userEmail) {
+              await db
+                .update(teacher)
+                .set({ userId: session.userId })
+                .where(
+                  and(
+                    eq(sql`lower(${teacher.email})`, userEmail),
+                    // Never clobber a manual assignment made in the teacher UI.
+                    or(
+                      isNull(teacher.userId),
+                      eq(teacher.userId, session.userId)
+                    )
+                  )
+                );
+            }
+
+            const fullName = linkedUser.name?.trim().toLowerCase();
+            if (fullName) {
+              // Select candidates first and link only when the name resolves
+              // to exactly one unlinked/owned teacher row. A name collision
+              // (e.g. a student sharing a teacher's name) must not attach the
+              // account to the wrong person, so ambiguous matches are skipped.
+              const candidates = await db
+                .select({ id: teacher.id })
+                .from(teacher)
+                .where(
+                  and(
+                    eq(
+                      sql`lower(trim(concat(${teacher.firstName}, ' ', ${teacher.lastName})))`,
+                      fullName
+                    ),
+                    or(
+                      isNull(teacher.userId),
+                      eq(teacher.userId, session.userId)
+                    )
+                  )
+                );
+              const [candidate] = candidates;
+              if (candidates.length === 1 && candidate) {
+                await db
+                  .update(teacher)
+                  .set({ userId: session.userId })
+                  .where(
+                    and(
+                      eq(teacher.id, candidate.id),
+                      or(
+                        isNull(teacher.userId),
+                        eq(teacher.userId, session.userId)
+                      )
+                    )
+                  );
+              }
+            }
           } catch (err) {
-            logger.error('Failed to link user to teacher by email', {
+            logger.error('Failed to link user to teacher', {
               err,
               userId: session.userId,
             });
@@ -93,15 +160,25 @@ const authOptions = {
       logger[level]({ message, ...args });
     },
   },
-  plugins: [],
+  plugins: [...oauthProxyPlugin],
   secret: env.authSecret,
   socialProviders: {
     microsoft: {
       clientId: env.entraClientId,
-      clientSecret: env.entraClientSecret,
+      // A proxied environment (a preview) never exchanges a code itself — the
+      // proxy origin does — so it runs without an Entra client secret. The
+      // provider type still requires a string.
+      clientSecret: env.entraClientSecret ?? '',
       enabled: true,
       prompt: env.mode === 'development' ? 'consent' : undefined,
       tenantId: env.entraTenantId,
+      // Clients that sign in natively (Mergen) submit an Entra ID token to
+      // `/api/auth/sign-in/social`; Better Auth's built-in Microsoft verifier rejects all of
+      // them, so the token is verified against the tenant's JWKS here instead.
+      verifyIdToken: createEntraIdTokenVerifier({
+        clientId: env.entraClientId,
+        tenantId: env.entraTenantId,
+      }),
     },
   },
   telemetry: {

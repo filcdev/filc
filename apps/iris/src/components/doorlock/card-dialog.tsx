@@ -1,20 +1,20 @@
-import { useForm, useStore } from '@tanstack/react-form';
-import { Save } from 'lucide-react';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
+import { Combobox } from '@filcdev/ui/components/combobox';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
+import { useForm, useStore } from '@tanstack/react-form';
+import { Save } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import {
   useUpsertCardFromLog,
   useUpsertDoorlockCard,

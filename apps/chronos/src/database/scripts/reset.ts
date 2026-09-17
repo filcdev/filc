@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import { getTableName, sql } from 'drizzle-orm';

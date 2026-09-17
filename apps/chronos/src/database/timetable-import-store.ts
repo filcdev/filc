@@ -272,6 +272,23 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
       );
   },
 
+  async findUserIdsByName(tx, names) {
+    if (!names.length) {
+      return [];
+    }
+    // One row per matching user, duplicates preserved (no dedupe by name), so
+    // the caller can skip ambiguous names that resolve to several accounts.
+    return await tx
+      .select({ id: userTable.id, name: userTable.name })
+      .from(userTable)
+      .where(
+        inArray(
+          sql`lower(${userTable.name})`,
+          names.map((name) => name.toLowerCase())
+        )
+      );
+  },
+
   async findWeekDefinitionByName(tx, name): Promise<string | null> {
     const [existing] = await tx
       .select({ id: weekTable.id })
@@ -295,7 +312,13 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   async insertClassroom(tx, row: NewClassroom): Promise<string | null> {
     const [inserted] = await tx
       .insert(classroomTable)
-      .values(row)
+      .values({
+        building_id: row.buildingId,
+        capacity: row.capacity,
+        id: row.id,
+        name: row.name,
+        short: row.short,
+      })
       .returning({ insertedId: classroomTable.id });
     return inserted?.insertedId ?? null;
   },
@@ -331,6 +354,26 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   },
 
   async insertLessons(tx, rows: NewLesson[]): Promise<string[]> {
+    // Serialize with teacher cleanup by locking the referenced teacher rows.
+    // A concurrent cleanup holds FOR UPDATE on all teacher rows, so this
+    // blocks until it commits; if a referenced teacher was deleted, fail so
+    // the import transaction rolls back instead of referencing a dangling id.
+    const teacherIds = [...new Set(rows.flatMap((r) => r.teacherIds))];
+    if (teacherIds.length > 0) {
+      const locked = await tx
+        .select({ id: teacherTable.id })
+        .from(teacherTable)
+        .where(inArray(teacherTable.id, teacherIds))
+        .for('update');
+      const lockedIds = new Set(locked.map((r) => r.id));
+      const missing = teacherIds.filter((id) => !lockedIds.has(id));
+      if (missing.length > 0) {
+        throw new Error(
+          `Import aborted: referenced teacher(s) no longer exist: ${missing.join(', ')}`
+        );
+      }
+    }
+
     const inserted = await tx
       .insert(lessonTable)
       .values(rows)

@@ -1,3 +1,20 @@
+import { Button } from '@filcdev/ui/components/button';
+import { ButtonGroup } from '@filcdev/ui/components/button-group';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@filcdev/ui/components/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@filcdev/ui/components/popover';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
   CheckIcon,
@@ -6,7 +23,7 @@ import {
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NewsPanel } from '@/components/news-panel';
 import type {
@@ -16,35 +33,20 @@ import type {
   SelectionsType,
   TeacherItem,
 } from '@/components/timetable/types';
-import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   useClassrooms,
   useLatestValidTimetable,
+  useMyTeacher,
   usePublicMovedLessons,
   usePublicSubstitutions,
   useTeachers,
   useTimetableCohorts,
   useTimetables,
 } from '@/hooks/timetable-public';
-import { cn } from '@/utils';
 import { authClient } from '@/utils/authentication';
+import { compareClassNames } from '@/utils/cohort';
 import { SubsV } from './subs';
 
 const groupByDate = (data: Subs[]) =>
@@ -136,16 +138,6 @@ const getEmptyMessage = (
   return translate(messages[activeFilter]);
 };
 
-const getSelectedValue = (filter: FilterType, sel: SelectionsType): string => {
-  if (filter === 'class') {
-    return sel.class ?? '';
-  }
-  if (filter === 'teacher') {
-    return sel.teacher ?? '';
-  }
-  return sel.classroom ?? '';
-};
-
 const getActiveSelectionId = (
   filter: FilterType,
   selections: SelectionsType
@@ -217,25 +209,53 @@ const filterSubs = (
 const filterMovedLessons = (
   data: MovedLessonItem[],
   activeFilter: FilterType,
-  selectionId: string | null
+  selectionId: string | null,
+  cohorts: CohortItem[] | undefined
 ): MovedLessonItem[] => {
   if (!selectionId) {
     return data;
   }
-  if (activeFilter !== 'classroom') {
-    return [];
+  if (activeFilter === 'class') {
+    const cohortName = cohorts?.find((c) => c.id === selectionId)?.name;
+    if (!cohortName) {
+      return [];
+    }
+    return data
+      .map((ml) => ({
+        ...ml,
+        lessons: ml.lessons.filter((lesson) =>
+          lesson.cohorts.includes(cohortName)
+        ),
+      }))
+      .filter((ml) => ml.lessons.length > 0);
+  }
+  if (activeFilter === 'teacher') {
+    return data
+      .map((ml) => ({
+        ...ml,
+        lessons: ml.lessons.filter((lesson) =>
+          lesson.teachers.some((teacher) => teacher.id === selectionId)
+        ),
+      }))
+      .filter((ml) => ml.lessons.length > 0);
   }
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
 
-const getCohortsForDate = (subs: Subs[]): string[] =>
+const getCohortsForDate = (
+  subs: Subs[],
+  movedLessons: MovedLessonItem[]
+): string[] =>
   [
-    ...new Set(
-      subs.flatMap((sub) =>
+    ...new Set([
+      ...subs.flatMap((sub) =>
         sub.lessons.flatMap((lesson) => lesson?.cohorts ?? [])
-      )
-    ),
-  ].sort();
+      ),
+      ...movedLessons.flatMap((ml) =>
+        ml.lessons.flatMap((lesson) => lesson.cohorts)
+      ),
+    ]),
+  ].sort(compareClassNames);
 
 // SubsFilterBar
 
@@ -267,7 +287,7 @@ function SubsFilterBar({
   const { t } = useTranslation();
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
-  const selectedValue = getSelectedValue(activeFilter, selections);
+  const selectedValue = getActiveSelectionId(activeFilter, selections) ?? '';
   const selectWidthClassName =
     activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
 
@@ -399,7 +419,7 @@ function SubsFilterBar({
 // SubstitutionView
 
 export function SubstitutionView() {
-  const { isPending } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const { t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
@@ -408,6 +428,38 @@ export function SubstitutionView() {
     classroom: null,
     teacher: null,
   });
+
+  const isAuthenticated = !isPending && !!session;
+  const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
+  const myTeacher = myTeacherQuery.data ?? null;
+
+  // Default the view to the user's linked teacher, else their profile class.
+  const defaultInitialized = useRef(false);
+  useEffect(() => {
+    if (defaultInitialized.current || isPending) {
+      return;
+    }
+    // Wait until the teacher profile resolves before defaulting.
+    if (isAuthenticated && myTeacherQuery.isPending) {
+      return;
+    }
+    defaultInitialized.current = true;
+    if (myTeacher) {
+      setActiveFilter('teacher');
+      setSelections((s) => ({ ...s, teacher: myTeacher.id }));
+      return;
+    }
+    const cohortId = session?.user?.cohortId ?? null;
+    if (cohortId) {
+      setSelections((s) => (s.class === null ? { ...s, class: cohortId } : s));
+    }
+  }, [
+    isPending,
+    isAuthenticated,
+    myTeacher,
+    myTeacherQuery.isPending,
+    session?.user?.cohortId,
+  ]);
 
   const timetablesQuery = useTimetables();
 
@@ -438,7 +490,8 @@ export function SubstitutionView() {
   const filteredMovedLessons = filterMovedLessons(
     movedLessonsQuery.data ?? [],
     activeFilter,
-    activeSelectionId
+    activeSelectionId,
+    cohortsQuery.data
   );
 
   const isLoading =
@@ -472,7 +525,7 @@ export function SubstitutionView() {
   const renderDateCards = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
-    const cohorts = getCohortsForDate(dateSubs);
+    const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
 
     if (cohorts.length === 0) {
       return [
@@ -491,17 +544,28 @@ export function SubstitutionView() {
         data={dateSubs.filter((sub) =>
           sub.lessons.some((l) => l?.cohorts.includes(cohort))
         )}
+        date={date}
         key={`${date}-${cohort}`}
+        movedLessons={dateMovedLessons
+          .map((ml) => ({
+            ...ml,
+            lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+          }))
+          .filter((ml) => ml.lessons.length > 0)}
       />
     ));
 
+    const unassignedMovedLessons = dateMovedLessons.filter(
+      (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+    );
+
     const movedCard =
-      dateMovedLessons.length > 0 ? (
+      unassignedMovedLessons.length > 0 ? (
         <SubsV
           data={[]}
           date={date}
           key={`${date}-moved`}
-          movedLessons={dateMovedLessons}
+          movedLessons={unassignedMovedLessons}
         />
       ) : null;
 
@@ -545,7 +609,7 @@ export function SubstitutionView() {
           />
         </div>
       </div>
-      <NewsPanel />
+      <NewsPanel classId={selections.class} />
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />

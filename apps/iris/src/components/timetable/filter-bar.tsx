@@ -1,3 +1,20 @@
+import { Button } from '@filcdev/ui/components/button';
+import { ButtonGroup } from '@filcdev/ui/components/button-group';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@filcdev/ui/components/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@filcdev/ui/components/popover';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
   CheckIcon,
@@ -10,25 +27,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/utils';
+import type { WeekFilter } from './helpers';
 import { TimetableSelector } from './timetable-selector';
-
 import type {
   ClassroomItem,
   CohortItem,
@@ -36,6 +36,7 @@ import type {
   TeacherItem,
   TimetableItem,
 } from './types';
+import { WeekSelector } from './week-selector';
 
 const teacherLabel = (t: TeacherItem, fallback: string): string =>
   `${t.firstName} ${t.lastName}`.trim() || fallback;
@@ -54,10 +55,13 @@ const getFilterOptions = (
     return (cohorts ?? []).map((c) => ({ label: c.name, value: c.id }));
   }
   if (activeFilter === 'teacher') {
-    return (teachers ?? []).map((teacher) => ({
-      label: teacherLabel(teacher, t('timetable.teacherFallback')),
-      value: teacher.id,
-    }));
+    // Ascending alphabetical order on the displayed label so the picker reads A → Z.
+    return (teachers ?? [])
+      .map((teacher) => ({
+        label: teacherLabel(teacher, t('timetable.teacherFallback')),
+        value: teacher.id,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
   return (classrooms ?? []).map((c) => ({ label: c.name, value: c.id }));
 };
@@ -133,6 +137,8 @@ export function FilterBar({
   disabled,
   view,
   onViewChange,
+  weekFilter,
+  onWeekFilterChange,
 }: {
   activeFilter: FilterType;
   onFilterChange: (value: FilterType) => void;
@@ -155,6 +161,8 @@ export function FilterBar({
   view: 'grid' | 'card';
   /** Change the active timetable view mode. */
   onViewChange: (view: 'grid' | 'card') => void;
+  weekFilter: WeekFilter;
+  onWeekFilterChange: (value: WeekFilter) => void;
 }) {
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
@@ -249,40 +257,52 @@ export function FilterBar({
 
   return (
     <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-      {/*
-        On mobile: two stacked rows.
-        On desktop (sm+): sm:contents makes this wrapper transparent to the
-        parent flex, so ButtonGroup + selects flow directly in the parent row.
-      */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        {/* Mobile row 1: filter toggles + print icon */}
-        <div className="flex items-center gap-2">
-          <ButtonGroup>
+      <div className="flex min-w-0 flex-col gap-2">
+        {/* Week selector — own row on mobile */}
+        <div className="w-full sm:hidden">
+          <WeekSelector
+            disabled={disabled}
+            onChange={onWeekFilterChange}
+            value={weekFilter}
+          />
+        </div>
+
+        {/* Filter buttons */}
+        <div className="flex w-full items-center gap-2">
+          <ButtonGroup className="w-full sm:w-auto">
             <Button
+              className="flex-1 sm:flex-none"
               disabled={activeFilter === 'class'}
               onClick={() => onFilterChange('class')}
               variant="outline"
             >
-              <GraduationCap /> {t('timetable.filterByClass')}
+              <GraduationCap />
+              {t('timetable.filterByClass')}
             </Button>
+
             <Button
+              className="flex-1 sm:flex-none"
               disabled={activeFilter === 'teacher'}
               onClick={() => onFilterChange('teacher')}
               variant="outline"
             >
-              <UserRound /> {t('timetable.filterByTeacher')}
+              <UserRound />
+              {t('timetable.filterByTeacher')}
             </Button>
+
             <Button
+              className="flex-1 sm:flex-none"
               disabled={activeFilter === 'classroom'}
               onClick={() => onFilterChange('classroom')}
               variant="outline"
             >
-              <Building2 /> {t('timetable.filterByClassroom')}
+              <Building2 />
+              {t('timetable.filterByClassroom')}
             </Button>
           </ButtonGroup>
-          {/* Print icon — mobile only, pushed to the right */}
+
           <Button
-            className="ml-auto sm:hidden"
+            className="ml-auto shrink-0 sm:hidden"
             disabled={disabled}
             onClick={onPrint}
             size="sm"
@@ -292,52 +312,65 @@ export function FilterBar({
           </Button>
         </div>
 
-        {/* Mobile row 2 / desktop inline: cohort select + timetable select */}
-        <div className="flex items-center gap-2 sm:contents">
-          <div className="min-w-0">{renderSelect()}</div>
-          <TimetableSelector
-            loading={!timetables}
-            onSelect={onSelectTimetable}
-            selectedId={selectedTimetableId}
-            timetables={timetables}
-          />
+        {/* Class/teacher/room + timetable */}
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <div className="min-w-0 flex-1 sm:flex-none">{renderSelect()}</div>
+
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <TimetableSelector
+              loading={!timetables}
+              onSelect={onSelectTimetable}
+              selectedId={selectedTimetableId}
+              timetables={timetables}
+            />
+          </div>
         </div>
       </div>
 
-      {/* View toggle + print — far right */}
-      <div className="flex items-center gap-2">
-        <ButtonGroup>
-          <Button
+      {/* Desktop week selector + view selector */}
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="hidden sm:block">
+          <WeekSelector
             disabled={disabled}
-            onClick={() => onViewChange('grid')}
-            size="sm"
-            variant={view === 'grid' ? 'secondary' : 'outline'}
-          >
-            <LayoutGrid />
-            {t('timetable.viewGrid')}
-          </Button>
-          <Button
-            disabled={disabled}
-            onClick={() => onViewChange('card')}
-            size="sm"
-            variant={view === 'card' ? 'secondary' : 'outline'}
-          >
-            <Table2 />
-            {t('timetable.viewCard')}
-          </Button>
-        </ButtonGroup>
+            onChange={onWeekFilterChange}
+            value={weekFilter}
+          />
+        </div>
 
-        {/* Print with label — desktop only, sits at the far right */}
-        <Button
-          className="hidden sm:flex"
-          disabled={disabled}
-          onClick={onPrint}
-          size="sm"
-          variant="outline"
-        >
-          <Printer />
-          {t('timetable.printPdf')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ButtonGroup>
+            <Button
+              disabled={disabled}
+              onClick={() => onViewChange('grid')}
+              size="sm"
+              variant={view === 'grid' ? 'secondary' : 'outline'}
+            >
+              <LayoutGrid />
+              {t('timetable.viewGrid')}
+            </Button>
+
+            <Button
+              disabled={disabled}
+              onClick={() => onViewChange('card')}
+              size="sm"
+              variant={view === 'card' ? 'secondary' : 'outline'}
+            >
+              <Table2 />
+              {t('timetable.viewCard')}
+            </Button>
+          </ButtonGroup>
+
+          <Button
+            className="hidden sm:flex"
+            disabled={disabled}
+            onClick={onPrint}
+            size="sm"
+            variant="outline"
+          >
+            <Printer />
+            {t('timetable.printPdf')}
+          </Button>
+        </div>
       </div>
     </div>
   );

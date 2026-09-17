@@ -1,14 +1,15 @@
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@filcdev/ui/components/popover';
+import { cn } from '@filcdev/ui/lib/utils';
 import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import { type CSSProperties, Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/utils';
 import { getSubjectColor, toHHMM } from '../helpers';
 import type { LessonItem, PeriodItem } from '../types';
+import { WeekBadge } from '../week-badge';
 import {
   buildSecondaryModel,
   formatGroupCode,
@@ -72,8 +73,10 @@ function LessonEntry({
   const color = getSubjectColor(subject);
 
   return (
-    <Tooltip>
-      <TooltipTrigger
+    <Popover>
+      <PopoverTrigger
+        nativeButton={false}
+        openOnHover
         render={
           <div
             className={cn(
@@ -81,6 +84,12 @@ function LessonEntry({
               half ? 'text-sm' : 'text-base'
             )}
           >
+            <WeekBadge
+              className="absolute top-1 left-1"
+              lesson={lesson}
+              variant="plain"
+            />
+
             <span className="max-w-full truncate font-semibold text-foreground leading-tight">
               {subjectShort}
             </span>
@@ -102,7 +111,7 @@ function LessonEntry({
           </div>
         }
       />
-      <TooltipContent
+      <PopoverContent
         className={cn(
           'w-72 border bg-card p-0 text-foreground shadow-2xl',
           color.border
@@ -146,8 +155,8 @@ function LessonEntry({
             )}
           </div>
         </div>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -238,7 +247,7 @@ export function TimetableCardView({
   }
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto overscroll-x-contain">
       <div
         className="mx-auto w-fit overflow-hidden rounded-xl border border-border bg-card"
         style={{ minWidth: gridWidth }}

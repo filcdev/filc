@@ -1,19 +1,11 @@
 import { permissions } from '@filcdev/api/permissions';
-
-import { createFileRoute } from '@tanstack/react-router';
-import dayjs from 'dayjs';
-import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MovedLessonDialog } from '@/components/admin/moved-lesson-dialog';
-import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
 import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/date-range-picker';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Button } from '@filcdev/ui/components/button';
+import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +13,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@filcdev/ui/components/dialog';
+import { Input } from '@filcdev/ui/components/input';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
   Table,
   TableBody,
@@ -31,7 +23,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import dayjs from 'dayjs';
+import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  MovedLessonDialog,
+  type MoveMode,
+} from '@/components/admin/moved-lesson-dialog';
+import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/date-range-picker';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { SortIcon } from '@/components/util/sort-icon';
 import {
@@ -88,22 +94,65 @@ function extractFromSubstitutions(
         continue;
       }
       lessonMap.set(lesson.id, lesson);
-      if (lesson.period) {
-        periodMap.set(lesson.period.id, lesson.period);
-      }
-      if (lesson.day) {
-        dayMap.set(lesson.day.id, {
-          days: [],
-          id: lesson.day.id,
-          name: lesson.day.name,
-          short: lesson.day.short,
-        });
-      }
+      registerLessonSchedule(lesson, periodMap, dayMap);
     }
   }
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex extraction logic for reference data
+/** Register a lesson's own period and day in the reference maps. */
+function registerLessonSchedule(
+  lesson: EnrichedLesson,
+  periodMap: Map<string, Period>,
+  dayMap: Map<string, DayDefinition>
+) {
+  if (lesson.period) {
+    periodMap.set(lesson.period.id, lesson.period);
+  }
+  if (lesson.day) {
+    dayMap.set(lesson.day.id, {
+      days: [],
+      id: lesson.day.id,
+      name: lesson.day.name,
+      short: lesson.day.short,
+    });
+  }
+}
+
+// Also extract periods from cohort lessons
+function extractFromCohortLessons(
+  cohortLessonsLists: Array<{ lessons: EnrichedLesson[] }>,
+  periodMap: Map<string, Period>,
+  dayMap: Map<string, DayDefinition>,
+  lessonMap: Map<string, EnrichedLesson>
+) {
+  for (const cohortLessons of cohortLessonsLists) {
+    for (const lesson of cohortLessons.lessons) {
+      if (!lesson) {
+        continue;
+      }
+      lessonMap.set(lesson.id, lesson);
+      registerLessonSchedule(lesson, periodMap, dayMap);
+    }
+  }
+}
+
+// Also include lessons from moved lessons (already enriched).
+function extractFromMovedLessonLessons(
+  movedLessons: MovedLessonItem[],
+  periodMap: Map<string, Period>,
+  dayMap: Map<string, DayDefinition>,
+  lessonMap: Map<string, EnrichedLesson>
+) {
+  for (const ml of movedLessons) {
+    for (const lesson of ml.lessons) {
+      if (!lessonMap.has(lesson.id)) {
+        lessonMap.set(lesson.id, lesson);
+      }
+      registerLessonSchedule(lesson, periodMap, dayMap);
+    }
+  }
+}
+
 function extractReferenceData(
   movedLessons: MovedLessonItem[],
   subs: SubstitutionItem[],
@@ -115,60 +164,39 @@ function extractReferenceData(
 
   extractFromMovedLessons(movedLessons, periodMap, dayMap);
   extractFromSubstitutions(subs, periodMap, dayMap, lessonMap);
-
-  // Also extract periods from cohort lessons
-  for (const cohortLessons of cohortLessonsLists) {
-    for (const lesson of cohortLessons.lessons) {
-      if (!lesson) {
-        continue;
-      }
-      lessonMap.set(lesson.id, lesson);
-      if (lesson.period) {
-        periodMap.set(lesson.period.id, lesson.period);
-      }
-      if (lesson.day) {
-        dayMap.set(lesson.day.id, {
-          days: [],
-          id: lesson.day.id,
-          name: lesson.day.name,
-          short: lesson.day.short,
-        });
-      }
-    }
-  }
-
-  // Also include lessons from moved lessons
-  for (const ml of movedLessons) {
-    for (const lessonId of ml.lessons) {
-      // Find lesson from subs or cohortLessons
-      const foundLesson = Array.from(lessonMap.values()).find(
-        (l) => l.id === lessonId
-      );
-      if (foundLesson && !lessonMap.has(lessonId)) {
-        lessonMap.set(lessonId, foundLesson);
-      }
-    }
-  }
-
-  const sortedDays = Array.from(dayMap.values()).sort((a, b) => {
-    const aOrder = getDayOrder(a.name, a.short);
-    const bOrder = getDayOrder(b.name, b.short);
-    return aOrder - bOrder;
-  });
+  extractFromCohortLessons(cohortLessonsLists, periodMap, dayMap, lessonMap);
+  extractFromMovedLessonLessons(movedLessons, periodMap, dayMap, lessonMap);
 
   return {
     allLessons: Array.from(lessonMap.values()),
-    days: sortedDays,
+    days: Array.from(dayMap.values()).sort(
+      (a, b) => getDayOrder(a.name, a.short) - getDayOrder(b.name, b.short)
+    ),
     periods: Array.from(periodMap.values()).sort((a, b) => a.period - b.period),
   };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex form with multiple queries and state
+// A move that keeps the lesson's own day/period is a room move; otherwise it
+// is a day move.
+function detectMoveMode(item: MovedLessonItem): MoveMode {
+  const firstLesson = item.lessons[0];
+  if (
+    firstLesson &&
+    item.movedLesson.startingDay === firstLesson.day?.id &&
+    item.movedLesson.startingPeriod === firstLesson.period?.id
+  ) {
+    return 'room';
+  }
+  return 'day';
+}
+
 function MovedLessonsPage() {
   const { i18n, t } = useTranslation();
+  const showPastId = useId();
   const { data: session } = authClient.useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [moveMode, setMoveMode] = useState<MoveMode>('room');
   const [selectedItem, setSelectedItem] = useState<MovedLessonItem | null>(
     null
   );
@@ -205,8 +233,8 @@ function MovedLessonsPage() {
     hasWritePermission
   );
 
-  // Extract unique periods and day definitions from moved lessons data
-  const { allLessons, days, periods } = useMemo(
+  // Extract unique day definitions from moved lessons data
+  const { allLessons, days } = useMemo(
     () =>
       extractReferenceData(
         movedLessonsQuery.data ?? [],
@@ -246,34 +274,9 @@ function MovedLessonsPage() {
 
     // Rendezés
     if (sortColumn && sortDirection) {
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: sorting logic
-      list = [...list].sort((a, b) => {
-        // Special handling for 'day' column - order by week day sequence
-        if (sortColumn === 'day') {
-          const aOrder = getDayOrder(
-            a.dayDefinition?.name ?? '',
-            a.dayDefinition?.short
-          );
-          const bOrder = getDayOrder(
-            b.dayDefinition?.name ?? '',
-            b.dayDefinition?.short
-          );
-          const comparison = aOrder - bOrder;
-          return sortDirection === 'asc' ? comparison : -comparison;
-        }
-
-        const aVal = getMovedLessonSortValue(a, sortColumn);
-        const bVal = getMovedLessonSortValue(b, sortColumn);
-
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-          const comparison = aVal.localeCompare(bVal);
-          return sortDirection === 'asc' ? comparison : -comparison;
-        }
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-          return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-        }
-        return 0;
-      });
+      list = [...list].sort((a, b) =>
+        compareMovedLessons(a, b, sortColumn, sortDirection)
+      );
     }
 
     return list;
@@ -334,12 +337,12 @@ function MovedLessonsPage() {
         <div className="flex items-center gap-2">
           <Checkbox
             checked={showPast}
-            id="show-past-moved"
+            id={showPastId}
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
             className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor="show-past-moved"
+            htmlFor={showPastId}
           >
             {t('movedLesson.showPast')}
           </label>
@@ -362,6 +365,7 @@ function MovedLessonsPage() {
               aria-label={t('movedLesson.create')}
               onClick={() => {
                 setSelectedItem(null);
+                setMoveMode('room');
                 setDialogOpen(true);
               }}
             >
@@ -456,6 +460,7 @@ function MovedLessonsPage() {
                     />
                   </div>
                 </TableHead>
+                <TableHead>{t('movedLesson.comment')}</TableHead>
                 {hasWritePermission && (
                   <TableHead>{t('movedLesson.actions')}</TableHead>
                 )}
@@ -486,12 +491,22 @@ function MovedLessonsPage() {
                       {ml.lessons.length}
                     </div>
                   </TableCell>
+                  <TableCell>
+                    {ml.movedLesson.comment ? (
+                      <span className="whitespace-pre-wrap text-sm">
+                        {ml.movedLesson.comment}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   {hasWritePermission && (
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
                             setSelectedItem(ml);
+                            setMoveMode(detectMoveMode(ml));
                             setDialogOpen(true);
                           }}
                           size="icon"
@@ -516,7 +531,7 @@ function MovedLessonsPage() {
                 <TableRow>
                   <TableCell
                     className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 6 : 5}
+                    colSpan={hasWritePermission ? 7 : 6}
                   >
                     {t('movedLesson.noMovedLessons')}
                   </TableCell>
@@ -531,18 +546,19 @@ function MovedLessonsPage() {
         <MovedLessonDialog
           allLessons={allLessons}
           classrooms={classroomsQuery.data ?? []}
-          cohortLessonsData={cohortLessonsQueries.data ?? []}
           cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
+          mode={moveMode}
+          onModeChange={setMoveMode}
           onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) {
               setSelectedItem(null);
+              setMoveMode('room');
             }
           }}
           open={dialogOpen}
-          periods={periods}
         />
       )}
 
@@ -605,4 +621,45 @@ function getMovedLessonSortValue(
     default:
       return '';
   }
+}
+
+// Special handling for 'day' column - order by week day sequence
+function compareByDayOrder(
+  a: MovedLessonItem,
+  b: MovedLessonItem,
+  sortDirection: 'asc' | 'desc'
+) {
+  const aOrder = getDayOrder(
+    a.dayDefinition?.name ?? '',
+    a.dayDefinition?.short
+  );
+  const bOrder = getDayOrder(
+    b.dayDefinition?.name ?? '',
+    b.dayDefinition?.short
+  );
+  const comparison = aOrder - bOrder;
+  return sortDirection === 'asc' ? comparison : -comparison;
+}
+
+function compareMovedLessons(
+  a: MovedLessonItem,
+  b: MovedLessonItem,
+  sortColumn: 'date' | 'day' | 'period' | 'room' | 'count',
+  sortDirection: 'asc' | 'desc'
+) {
+  if (sortColumn === 'day') {
+    return compareByDayOrder(a, b, sortDirection);
+  }
+
+  const aVal = getMovedLessonSortValue(a, sortColumn);
+  const bVal = getMovedLessonSortValue(b, sortColumn);
+
+  if (typeof aVal === 'string' && typeof bVal === 'string') {
+    const comparison = aVal.localeCompare(bVal);
+    return sortDirection === 'asc' ? comparison : -comparison;
+  }
+  if (typeof aVal === 'number' && typeof bVal === 'number') {
+    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+  }
+  return 0;
 }

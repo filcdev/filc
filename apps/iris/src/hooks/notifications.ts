@@ -212,3 +212,28 @@ export function useUpdateNotificationSettings({
     },
   });
 }
+
+/**
+ * Opt out of every notification channel via an unsubscribe token. The backend
+ * answers an HTML page (not a JSON envelope), so this hook deliberately does
+ * not go through `parseResponse`, and it emits no toast because the public
+ * page renders its own result panel.
+ */
+export function useUnsubscribe() {
+  return useMutation({
+    mutationFn: async ({
+      token,
+      userId,
+    }: {
+      token: string;
+      userId: string;
+    }) => {
+      const response = await api.notifications.unsubscribe.$post({
+        form: { token, userId },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update preferences');
+      }
+    },
+  });
+}

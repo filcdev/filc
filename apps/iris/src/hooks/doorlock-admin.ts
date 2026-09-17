@@ -79,6 +79,97 @@ export function useDoorlockCards({ enabled }: { enabled?: boolean } = {}) {
   });
 }
 
+type SelfCardsData = NonNullable<
+  InferResponseType<typeof api.doorlock.self.cards.$get>['data']
+>;
+/** A card owned by the signed-in user. */
+export type SelfCard = SelfCardsData['cards'][number];
+
+/** Access cards belonging to the signed-in user. */
+export function useSelfCards() {
+  return useQuery({
+    queryFn: async (): Promise<SelfCardsData> => {
+      const res = await parseResponse(api.doorlock.self.cards.$get());
+      if (!res.success) {
+        throw new Error('Failed to load cards');
+      }
+      return res.data as SelfCardsData;
+    },
+    queryKey: queryKeys.doorlock.selfCards(),
+  });
+}
+
+/** Freeze or unfreeze one of the signed-in user's cards. */
+export function useFreezeSelfCard({ onSaved }: MutationCallbacks = {}) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ id, frozen }: { frozen: boolean; id: string }) => {
+      const res = await parseResponse(
+        api.doorlock.self.cards[':id'].frozen.$put({
+          json: { frozen },
+          param: { id },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to update card');
+      }
+      return res;
+    },
+    onError: (error) => {
+      toast.error(error.message || t('doorlock.selfCards.freezeError'));
+    },
+    onSuccess: (_res, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.doorlock.selfCards(),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
+      toast.success(
+        variables.frozen
+          ? t('doorlock.selfCards.freezeSuccess')
+          : t('doorlock.selfCards.unfreezeSuccess')
+      );
+      onSaved?.();
+    },
+  });
+}
+
+/** Activate one of the signed-in user's cards on a reader. */
+export function useActivateSelfCard({ onSaved }: MutationCallbacks = {}) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({
+      cardId,
+      deviceId,
+    }: {
+      cardId: string;
+      deviceId: string;
+    }) => {
+      const res = await parseResponse(
+        api.doorlock.self.cards[':id'].activate.$post({
+          json: { deviceId },
+          param: { id: cardId },
+        })
+      );
+      if (!res.success) {
+        throw new Error('Failed to activate card');
+      }
+      return res;
+    },
+    onError: (error) => {
+      toast.error(error.message || t('doorlock.selfCards.activateError'));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.doorlock.selfCards(),
+      });
+      toast.success(t('doorlock.selfCards.activateSuccess'));
+      onSaved?.();
+    },
+  });
+}
+
 /** Card owner candidates; only fetched when enabled. */
 export function useCardUsers({ enabled }: { enabled?: boolean } = {}) {
   return useQuery({

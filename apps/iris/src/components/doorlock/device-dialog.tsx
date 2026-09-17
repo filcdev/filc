@@ -1,3 +1,13 @@
+import { Button } from '@filcdev/ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@filcdev/ui/components/dialog';
+import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
+import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
 import { RotateCw, Save } from 'lucide-react';
 import { useEffect } from 'react';
@@ -6,16 +16,6 @@ import type {
   DeviceFormValues,
   DeviceLike,
 } from '@/components/doorlock/doorlock.types';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { useUpsertDoorlockDevice } from '@/hooks/doorlock-admin';
 import { deviceSchema } from '@/utils/form-schemas';
 
