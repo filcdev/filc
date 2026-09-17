@@ -1,7 +1,7 @@
+import { cn } from '@filcdev/ui/lib/utils';
 import { differenceInDays, formatDistanceToNowStrict } from 'date-fns';
 import { enUS, hu } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/utils';
 
 type RelativeTimeProps = {
   date: string | Date | null | undefined;
