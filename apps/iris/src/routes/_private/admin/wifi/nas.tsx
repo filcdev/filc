@@ -3,8 +3,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Pencil, Plus, RefreshCw, Search, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@filcdev/ui/components/button';
+import { Input } from '@filcdev/ui/components/input';
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
 import { WifiNasDialog } from '@/components/wifi/wifi-dialogs';
 import { useDeleteWifiNas, useWifiNas } from '@/hooks/wifi-admin';
 

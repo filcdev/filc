@@ -1,6 +1,6 @@
 import { Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
+import { Button } from '@filcdev/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,8 +15,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+} from '@filcdev/ui/components/dropdown-menu';
+import { Input } from '@filcdev/ui/components/input';
 import { useWifiSpeedProfiles } from '@/hooks/wifi-admin';
 
 export type WifiFilterState = {

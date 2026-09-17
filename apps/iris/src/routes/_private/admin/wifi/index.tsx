@@ -9,17 +9,17 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@filcdev/ui/components/card';
+import { Input } from '@filcdev/ui/components/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@filcdev/ui/components/select';
 import {
   Table,
   TableBody,
@@ -27,7 +27,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@filcdev/ui/components/table';
 import { RelativeTime } from '@/components/wifi/relative-time';
 import { WifiAuthChart } from '@/components/wifi/wifi-auth-chart';
 import { useWifiAdminStatsOverview, useWifiAuthLogs } from '@/hooks/wifi-admin';

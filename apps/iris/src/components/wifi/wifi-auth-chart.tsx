@@ -8,7 +8,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from '@/components/ui/chart';
+} from '@filcdev/ui/components/chart';
 
 const chartConfig = {
   accepted: {

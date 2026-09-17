@@ -5,14 +5,14 @@ import { AlertCircle, ArrowLeft, Download, Edit2, Wifi, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navbar } from '@/components/navbar';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/password-input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+import { Alert, AlertDescription, AlertTitle } from '@filcdev/ui/components/alert';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@filcdev/ui/components/card';
+import { Input } from '@filcdev/ui/components/input';
+import { PasswordInput } from '@filcdev/ui/components/password-input';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
 import { RelativeTime } from '@/components/wifi/relative-time';
 import {
   useCreateWifiAccount,
