@@ -167,7 +167,7 @@ function WifiUsersPage() {
           'Devices not linked to any specific user.'
         ),
         createdAt: new Date().toISOString(),
-        createdBy: '',
+        createdBy: null,
         devices: orphans,
         id: 'orphan',
         isOrphan: true,
@@ -427,7 +427,18 @@ function WifiUsersPage() {
                               {t('wifiAdminUsers.inactiveWarning', 'Inactive')}
                             </Badge>
                           )}
-                          {!isOrphan && user.userId !== user.createdBy && (
+                          {!isOrphan && user.createdBy === null && (
+                            <Badge
+                              className="font-normal border-destructive/50 text-destructive"
+                              variant="secondary"
+                            >
+                              {t(
+                                'wifiAdminUsers.createdByDeletedAdmin',
+                                'Created by: Deleted Admin'
+                              )}
+                            </Badge>
+                          )}
+                          {!isOrphan && user.createdBy !== null && user.userId !== user.createdBy && (
                             <Badge className="font-normal" variant="secondary">
                               {t(
                                 'wifiAdminUsers.createdByHint',

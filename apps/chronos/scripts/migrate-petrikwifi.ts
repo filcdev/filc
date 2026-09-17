@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import { db } from '../src/database';
+import { user as systemUser } from '../src/database/schema/authentication';
 import { wifiDevice, wifiNas, wifiUser } from '../src/database/schema/wifi';
-import { WIFI_ENTRA_CREATOR_ID } from '../src/utils/wifi/constants';
 import { canonicalizeMac } from '../src/utils/wifi/mac';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Legacy migration script
@@ -18,7 +18,21 @@ async function main() {
   // We need to map old SQLite integer userID to new UUIDs
   const userIdMap = new Map<number, string>();
 
+  const existingUsers = await db
+    .select({ id: systemUser.id, email: systemUser.email })
+    .from(systemUser);
+  
+  const emailToId = new Map(
+    existingUsers.map((u) => [u.email.toLowerCase(), u.id])
+  );
+  const usernameToId = new Map(
+    existingUsers.map((u) => [(u.email.split('@')[0] || '').toLowerCase(), u.id])
+  );
+
   for (const user of users) {
+    const wifiUsername = (user.username || '').toLowerCase();
+    const userId = emailToId.get(wifiUsername) || usernameToId.get(wifiUsername) || null;
+
     const allowedDevices = user.allowedDevices
       ? JSON.parse(user.allowedDevices)
       : [];
@@ -29,9 +43,10 @@ async function main() {
         allowedMacAddresses: allowedDevices,
         banned: Boolean(user.banned),
         comment: user.comment,
-        createdBy: WIFI_ENTRA_CREATOR_ID,
+        createdBy: userId || null,
         encryptedPassword: user.password,
         salt: user.salt,
+        userId: userId || null,
         username: user.username,
       })
       .returning({ id: wifiUser.id });

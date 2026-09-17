@@ -927,6 +927,7 @@
     "filterMultipleMacs": "Shared MACs",
     "filterManual": "Manually created users",
     "createdByHint": "Created by: {{name}}",
+    "createdByDeletedAdmin": "Created by: Deleted Admin",
     "minDevices": "Min devices",
     "macUsedMultipleTimes": "This MAC is shared by multiple users",
     "inactiveWarning": "Inactive for more than 45 days",

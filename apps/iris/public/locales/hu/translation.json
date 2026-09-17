@@ -927,6 +927,7 @@
     "filterMultipleMacs": "Megosztott MAC",
     "filterManual": "Kézzel létrehozott fiókok",
     "createdByHint": "Létrehozta: {{name}}",
+    "createdByDeletedAdmin": "Létrehozta: Törölt Admin",
     "minDevices": "Min eszköz",
     "macUsedMultipleTimes": "Ezt a MAC címet több felhasználó is használja",
     "inactiveWarning": "Több mint 45 napja inaktív",

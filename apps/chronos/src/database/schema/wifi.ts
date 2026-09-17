@@ -21,7 +21,9 @@ export const wifiUser = pgTable(
     allowedMacAddresses: text('allowed_mac_addresses').array(),
     banned: boolean('banned').default(false).notNull(),
     comment: text('comment'),
-    createdBy: uuid('created_by').notNull(),
+    createdBy: uuid('created_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
     encryptedPassword: text('encrypted_password').notNull(),
     id: uuid('id').primaryKey().defaultRandom(),
     salt: text('salt').notNull(),

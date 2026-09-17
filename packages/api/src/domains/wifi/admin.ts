@@ -20,7 +20,7 @@ export const wifiUserSchema = z.object({
   banned: z.boolean(),
   comment: z.string().nullable(),
   createdAt: z.iso.datetime(),
-  createdBy: z.uuid(),
+  createdBy: z.uuid().nullable(),
   creatorName: z.string().nullable().optional(),
   id: z.uuid(),
   lastActiveAt: z.iso.datetime().nullable(),
