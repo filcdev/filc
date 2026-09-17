@@ -1,4 +1,3 @@
-import process from 'node:process';
 import { swaggerUI } from '@hono/swagger-ui';
 import { getLogger } from '@logtape/logtape';
 import type { Session } from 'better-auth';

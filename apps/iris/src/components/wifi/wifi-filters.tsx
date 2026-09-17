@@ -1,5 +1,3 @@
-import { Filter } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@filcdev/ui/components/button';
 import {
   DropdownMenu,
@@ -17,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from '@filcdev/ui/components/dropdown-menu';
 import { Input } from '@filcdev/ui/components/input';
+import { Filter } from 'lucide-react';
+import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWifiSpeedProfiles } from '@/hooks/wifi-admin';
 
 export type WifiFilterState = {
@@ -48,6 +49,7 @@ export function WifiFilters({ filters, onChange }: WifiFiltersProps) {
   const profilesQuery = useWifiSpeedProfiles();
   const profiles = profilesQuery.data ?? [];
   const { t } = useTranslation();
+  const minDevicesId = useId();
 
   const handleToggle = (key: keyof WifiFilterState) => {
     onChange({
@@ -145,11 +147,15 @@ export function WifiFilters({ filters, onChange }: WifiFiltersProps) {
 
         <DropdownMenuSeparator />
         <div className="p-2">
-          <label className="mb-1 block font-medium text-muted-foreground text-xs">
+          <label
+            className="mb-1 block font-medium text-muted-foreground text-xs"
+            htmlFor={minDevicesId}
+          >
             {t('wifiAdminUsers.minDevices', 'Min devices')}
           </label>
           <Input
             className="h-8"
+            id={minDevicesId}
             min={0}
             onChange={handleMinDevicesChange}
             placeholder="0"

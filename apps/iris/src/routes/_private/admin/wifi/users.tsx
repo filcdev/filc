@@ -1,18 +1,4 @@
 import type { WifiDevice, WifiUser } from '@filcdev/api/domains/wifi/admin';
-import { createFileRoute } from '@tanstack/react-router';
-import { differenceInDays } from 'date-fns';
-import {
-  AlertTriangle,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Search,
-  ShieldAlert,
-  Trash,
-  Users,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -37,6 +23,20 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import { differenceInDays } from 'date-fns';
+import {
+  AlertTriangle,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  Trash,
+  Users,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RelativeTime } from '@/components/wifi/relative-time';
 import {
   WifiDeviceDialog,
@@ -138,9 +138,15 @@ function WifiUsersPage() {
     const result = users.map((u) => {
       const userDevices = devicesByUserId.get(u.id) ?? [];
       const lastActiveAt = userDevices.reduce<string | null>((latest, d) => {
-        if (!d.lastActiveAt) return latest;
-        if (!latest) return d.lastActiveAt;
-        return new Date(d.lastActiveAt) > new Date(latest) ? d.lastActiveAt : latest;
+        if (!d.lastActiveAt) {
+          return latest;
+        }
+        if (!latest) {
+          return d.lastActiveAt;
+        }
+        return new Date(d.lastActiveAt) > new Date(latest)
+          ? d.lastActiveAt
+          : latest;
       }, null);
 
       return {
@@ -182,122 +188,132 @@ function WifiUsersPage() {
   const filteredData = useMemo(() => {
     const s = search.toLowerCase();
 
-    return combined
-      .map((user) => {
-        let keepUser = true;
+    return (
+      combined
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Legacy
+        .map((user) => {
+          let keepUser = true;
 
-        const userMatchesSearch =
-          !s ||
-          user.username.toLowerCase().includes(s) ||
-          (user.comment?.toLowerCase() || '').includes(s);
-
-        const filteredDevices = user.devices.filter((d) => {
-          if (
-            s &&
-            !userMatchesSearch &&
-            !(
-              d.macAddress.toLowerCase().includes(s) ||
-              (d.nickname?.toLowerCase() || '').includes(s)
-            )
-          ) {
-            return false;
-          }
-
-          if (filters.bannedOnly && !d.banned && !user.banned) {
-            return false;
-          }
-
-          if (filters.inactiveOnly) {
-            if (!d.lastActiveAt) {
-              return false;
-            }
-            const diff = differenceInDays(new Date(), new Date(d.lastActiveAt));
-            if (diff <= 45) {
-              return false;
-            }
-          }
-
-          if (filters.activeOnly) {
-            if (!d.lastActiveAt) {
-              return false;
-            }
-            const diff = differenceInDays(new Date(), new Date(d.lastActiveAt));
-            if (diff > 45) {
-              return false;
-            }
-          }
-
-          if (filters.sharedMacsOnly) {
-            const count = macCounts.get(d.macAddress.toLowerCase()) ?? 1;
-            if (count <= 1) {
-              return false;
-            }
-          }
-
-          return true;
-        });
-
-        if (s && !userMatchesSearch && filteredDevices.length === 0) {
-          keepUser = false;
-        }
-
-        if (
-          filters.bannedOnly &&
-          !user.banned &&
-          filteredDevices.length === 0
-        ) {
-          keepUser = false;
-        }
-
-        if (
-          (filters.inactiveOnly ||
-            filters.activeOnly ||
-            filters.sharedMacsOnly) &&
-          filteredDevices.length === 0
-        ) {
-          keepUser = false;
-        }
-
-        if (
-          filters.minDevices > 0 &&
-          user.devices.length < filters.minDevices
-        ) {
-          keepUser = false;
-        }
-
-        if (
-          filters.speedProfileId !== undefined &&
-          filters.speedProfileId !== null &&
-          user.speedProfileId !==
-            (filters.speedProfileId === 'none'
-              ? null
-              : filters.speedProfileId) &&
-          !user.isOrphan
-        ) {
-          keepUser = false;
-        }
-
-        if (
-          filters.manualOnly &&
-          !user.isOrphan &&
-          user.userId === user.createdBy
-        ) {
-          keepUser = false;
-        }
-
-        return {
-          ...user,
-          filteredDevices,
-          keepUser,
-        };
-      })
-      .filter(
-        (u) =>
-          u.keepUser &&
-          (u.filteredDevices.length > 0 ||
+          const userMatchesSearch =
             !s ||
-            u.username.toLowerCase().includes(s))
-      );
+            user.username.toLowerCase().includes(s) ||
+            (user.comment?.toLowerCase() || '').includes(s);
+
+          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Legacy
+          const filteredDevices = user.devices.filter((d) => {
+            if (
+              s &&
+              !userMatchesSearch &&
+              !(
+                d.macAddress.toLowerCase().includes(s) ||
+                (d.nickname?.toLowerCase() || '').includes(s)
+              )
+            ) {
+              return false;
+            }
+
+            if (filters.bannedOnly && !d.banned && !user.banned) {
+              return false;
+            }
+
+            if (filters.inactiveOnly) {
+              if (!d.lastActiveAt) {
+                return false;
+              }
+              const diff = differenceInDays(
+                new Date(),
+                new Date(d.lastActiveAt)
+              );
+              if (diff <= 45) {
+                return false;
+              }
+            }
+
+            if (filters.activeOnly) {
+              if (!d.lastActiveAt) {
+                return false;
+              }
+              const diff = differenceInDays(
+                new Date(),
+                new Date(d.lastActiveAt)
+              );
+              if (diff > 45) {
+                return false;
+              }
+            }
+
+            if (filters.sharedMacsOnly) {
+              const count = macCounts.get(d.macAddress.toLowerCase()) ?? 1;
+              if (count <= 1) {
+                return false;
+              }
+            }
+
+            return true;
+          });
+
+          if (s && !userMatchesSearch && filteredDevices.length === 0) {
+            keepUser = false;
+          }
+
+          if (
+            filters.bannedOnly &&
+            !user.banned &&
+            filteredDevices.length === 0
+          ) {
+            keepUser = false;
+          }
+
+          if (
+            (filters.inactiveOnly ||
+              filters.activeOnly ||
+              filters.sharedMacsOnly) &&
+            filteredDevices.length === 0
+          ) {
+            keepUser = false;
+          }
+
+          if (
+            filters.minDevices > 0 &&
+            user.devices.length < filters.minDevices
+          ) {
+            keepUser = false;
+          }
+
+          if (
+            filters.speedProfileId !== undefined &&
+            filters.speedProfileId !== null &&
+            user.speedProfileId !==
+              (filters.speedProfileId === 'none'
+                ? null
+                : filters.speedProfileId) &&
+            !user.isOrphan
+          ) {
+            keepUser = false;
+          }
+
+          if (
+            filters.manualOnly &&
+            !user.isOrphan &&
+            user.userId === user.createdBy
+          ) {
+            keepUser = false;
+          }
+
+          return {
+            ...user,
+            filteredDevices,
+            keepUser,
+          };
+        })
+        .filter(
+          (u) =>
+            u.keepUser &&
+            (u.filteredDevices.length > 0 ||
+              !s ||
+              u.username.toLowerCase().includes(s))
+        )
+    );
   }, [combined, search, filters, macCounts]);
 
   const isLoading = usersQuery.isFetching || devicesQuery.isFetching;
@@ -412,10 +428,14 @@ function WifiUsersPage() {
                             </Badge>
                           )}
                           {!isOrphan && user.userId !== user.createdBy && (
-                            <Badge variant="secondary" className="font-normal">
-                              {t('wifiAdminUsers.createdByHint', 'Created by: {{name}}', {
-                                name: user.creatorName ?? 'Admin',
-                              })}
+                            <Badge className="font-normal" variant="secondary">
+                              {t(
+                                'wifiAdminUsers.createdByHint',
+                                'Created by: {{name}}',
+                                {
+                                  name: user.creatorName ?? 'Admin',
+                                }
+                              )}
                             </Badge>
                           )}
                         </div>

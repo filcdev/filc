@@ -25,7 +25,14 @@ import { Spinner } from '@filcdev/ui/components/spinner';
 import Stepper, { Step } from '@filcdev/ui/components/stepper';
 import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, ChevronDown, CircleCheck, Mail, User, Wifi } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  CircleCheck,
+  Mail,
+  User,
+  Wifi,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -34,9 +41,7 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
-import type { InferResponseType } from 'hono/client';
 import { useWifiStatus } from '@/hooks/wifi';
-import { useApiQuery } from '@/utils/api';
 import type { User as UserType } from '@/utils/authentication';
 import { authClient } from '@/utils/authentication';
 

@@ -1,8 +1,7 @@
-import type { WifiSpeedProfile } from '@filcdev/api/domains/wifi/admin';
-import { createFileRoute } from '@tanstack/react-router';
-import { Pencil, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import type {
+  WifiRoleSpeedProfile,
+  WifiSpeedProfile,
+} from '@filcdev/api/domains/wifi/admin';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -13,6 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import { Pencil, Plus, RefreshCw, Trash } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   WifiRoleProfileDialog,
   WifiSpeedProfileDialog,
@@ -36,7 +39,9 @@ function WifiSpeedProfilesPage() {
   const [editingProfile, setEditingProfile] = useState<
     WifiSpeedProfile | undefined
   >();
-  const [editingMapping, setEditingMapping] = useState<any | undefined>();
+  const [editingMapping, setEditingMapping] = useState<
+    WifiRoleSpeedProfile | undefined
+  >();
 
   const profilesQuery = useWifiSpeedProfiles();
   const mappingsQuery = useWifiRoleProfiles();
@@ -56,6 +61,7 @@ function WifiSpeedProfilesPage() {
 
   const handleDeleteProfile = (profile: WifiSpeedProfile) => {
     if (
+      // biome-ignore lint/suspicious/noAlert: Admin UI
       window.confirm(
         t('wifiAdminProfiles.deleteConfirmTitle', 'Delete Profile')
       )
@@ -64,7 +70,7 @@ function WifiSpeedProfilesPage() {
     }
   };
 
-  const handleEditMapping = (mapping: any) => {
+  const handleEditMapping = (mapping: WifiRoleSpeedProfile) => {
     setEditingMapping(mapping);
     setIsMappingOpen(true);
   };
@@ -74,8 +80,9 @@ function WifiSpeedProfilesPage() {
     setIsMappingOpen(true);
   };
 
-  const handleDeleteMapping = (mapping: any) => {
+  const handleDeleteMapping = (mapping: WifiRoleSpeedProfile) => {
     if (
+      // biome-ignore lint/suspicious/noAlert: Admin UI
       window.confirm(
         t('wifiAdminProfiles.deleteMappingConfirmTitle', 'Delete Mapping')
       )
@@ -152,26 +159,32 @@ function WifiSpeedProfilesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {profilesQuery.isLoading ? (
-                <TableRow>
-                  <TableCell className="h-24 text-center" colSpan={4}>
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : profiles.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    className="h-24 text-center text-muted-foreground"
-                    colSpan={4}
-                  >
-                    {t(
-                      'wifiAdminProfiles.noProfilesFound',
-                      'No profiles found.'
-                    )}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                profiles
+              {(() => {
+                if (profilesQuery.isLoading) {
+                  return (
+                    <TableRow>
+                      <TableCell className="h-24 text-center" colSpan={4}>
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                if (profiles.length === 0) {
+                  return (
+                    <TableRow>
+                      <TableCell
+                        className="h-24 text-center text-muted-foreground"
+                        colSpan={4}
+                      >
+                        {t(
+                          'wifiAdminProfiles.noProfilesFound',
+                          'No profiles found.'
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                return profiles
                   .filter((p) => p.name !== 'Default')
                   .map((p) => (
                     <TableRow key={p.id}>
@@ -221,8 +234,8 @@ function WifiSpeedProfilesPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-              )}
+                  ));
+              })()}
             </TableBody>
           </Table>
         </div>
@@ -262,26 +275,32 @@ function WifiSpeedProfilesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mappingsQuery.isLoading ? (
-                <TableRow>
-                  <TableCell className="h-24 text-center" colSpan={6}>
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : mappings.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    className="h-24 text-center text-muted-foreground"
-                    colSpan={6}
-                  >
-                    {t(
-                      'wifiAdminProfiles.noMappingsFound',
-                      'No mappings found.'
-                    )}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                mappings.map((m) => {
+              {(() => {
+                if (mappingsQuery.isLoading) {
+                  return (
+                    <TableRow>
+                      <TableCell className="h-24 text-center" colSpan={6}>
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                if (mappings.length === 0) {
+                  return (
+                    <TableRow>
+                      <TableCell
+                        className="h-24 text-center text-muted-foreground"
+                        colSpan={6}
+                      >
+                        {t(
+                          'wifiAdminProfiles.noMappingsFound',
+                          'No mappings found.'
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                return mappings.map((m) => {
                   const profile = profiles.find(
                     (p) => p.id === m.speedProfileId
                   );
@@ -303,26 +322,22 @@ function WifiSpeedProfilesPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {!profile ? (
-                          '-'
-                        ) : profile.downloadSpeedMbps === null ? (
+                        {!profile && '-'}
+                        {profile && profile.downloadSpeedMbps === null && (
                           <Badge variant="secondary">
                             {t('wifiAdminProfiles.unlimited', 'Unlimited')}
                           </Badge>
-                        ) : (
-                          profile.downloadSpeedMbps
                         )}
+                        {profile?.downloadSpeedMbps}
                       </TableCell>
                       <TableCell>
-                        {!profile ? (
-                          '-'
-                        ) : profile.uploadSpeedMbps === null ? (
+                        {!profile && '-'}
+                        {profile && profile.uploadSpeedMbps === null && (
                           <Badge variant="secondary">
                             {t('wifiAdminProfiles.unlimited', 'Unlimited')}
                           </Badge>
-                        ) : (
-                          profile.uploadSpeedMbps
                         )}
+                        {profile?.uploadSpeedMbps}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -345,8 +360,8 @@ function WifiSpeedProfilesPage() {
                       </TableCell>
                     </TableRow>
                   );
-                })
-              )}
+                });
+              })()}
             </TableBody>
           </Table>
         </div>

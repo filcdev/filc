@@ -85,6 +85,7 @@ const envShape = z.object({
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()
   ),
+  CHRONOS_WEATHER_API_KEY: z.string().optional(),
   CHRONOS_WIFI_CA_CERT_PATH: z.string().optional(),
   CHRONOS_WIFI_CONTROLLER_PROVIDER: z.enum(['none', 'unifi']).default('none'),
   CHRONOS_WIFI_ENABLED: boolean.default(true),
@@ -95,7 +96,6 @@ const envShape = z.object({
   UNIFI_PASSWORD: z.string().optional(),
   UNIFI_PORT: z.coerce.number().min(MIN_PORT).max(MAX_PORT).default(8443),
   UNIFI_USERNAME: z.string().optional(),
-  CHRONOS_WEATHER_API_KEY: z.string().optional(),
 });
 
 const envSchema = envShape.refine(

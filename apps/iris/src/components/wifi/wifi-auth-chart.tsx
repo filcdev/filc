@@ -1,14 +1,14 @@
 import type { WifiStatsOverview } from '@filcdev/api/domains/wifi/stats';
-import dayjs from 'dayjs';
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@filcdev/ui/components/chart';
+import dayjs from 'dayjs';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 const chartConfig = {
   accepted: {

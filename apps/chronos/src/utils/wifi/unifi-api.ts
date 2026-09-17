@@ -237,7 +237,9 @@ export class UnifiClient {
         method: 'POST',
       }
     );
-    if (!res[0]) throw new Error('UniFi returned empty array');
+    if (!res[0]) {
+      throw new Error('UniFi returned empty array');
+    }
     return res[0];
   };
 
@@ -259,7 +261,9 @@ export class UnifiClient {
         method: 'PUT',
       }
     );
-    if (!res[0]) throw new Error('UniFi returned empty array');
+    if (!res[0]) {
+      throw new Error('UniFi returned empty array');
+    }
     return res[0];
   };
 

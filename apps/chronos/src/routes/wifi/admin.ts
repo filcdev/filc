@@ -516,7 +516,7 @@ export const createWifiSpeedProfileRoute = wifiFactory.createHandlers(
     const controller = configured();
     const payload = c.req.valid('json');
     const profile = await controller.createSpeedProfile(payload);
-    
+
     await db.insert(wifiSpeedProfile).values({
       downloadSpeedMbps: profile.downloadSpeedMbps ?? null,
       id: profile.id,
@@ -547,7 +547,7 @@ export const updateWifiSpeedProfileRoute = wifiFactory.createHandlers(
   async (c) => {
     const controller = configured();
     const payload = c.req.valid('json');
-    
+
     const [current] = await db
       .select()
       .from(wifiSpeedProfile)
@@ -568,14 +568,14 @@ export const updateWifiSpeedProfileRoute = wifiFactory.createHandlers(
           payload.uploadSpeedMbps ?? current.uploadSpeedMbps ?? -1,
       }
     );
-    
+
     const [dbProfile] = await db
       .update(wifiSpeedProfile)
       .set({
         downloadSpeedMbps: profile.downloadSpeedMbps ?? null,
         name: profile.name,
-        uploadSpeedMbps: profile.uploadSpeedMbps ?? null,
         syncedAt: new Date(),
+        uploadSpeedMbps: profile.uploadSpeedMbps ?? null,
       })
       .where(eq(wifiSpeedProfile.id, profile.id))
       .returning({ isWlanDefault: wifiSpeedProfile.isWlanDefault });

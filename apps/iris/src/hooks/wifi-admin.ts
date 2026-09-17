@@ -16,12 +16,9 @@ import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
 
 export function useWifiAdminStatsOverview() {
-  return useApiQuery<WifiStatsOverview>(
-    () => api.wifi.stats.overview.$get() as any,
-    {
-      queryKey: queryKeys.wifi.admin.stats(),
-    }
-  );
+  return useApiQuery<WifiStatsOverview>(() => api.wifi.stats.overview.$get(), {
+    queryKey: queryKeys.wifi.admin.stats(),
+  });
 }
 
 export function useWifiUsers(query: WifiListQuery) {
@@ -32,7 +29,7 @@ export function useWifiUsers(query: WifiListQuery) {
           ...query,
           limit: query.limit?.toString(),
           offset: query.offset?.toString(),
-        } as any,
+        } as Record<string, unknown>,
       }),
     {
       queryKey: queryKeys.wifi.admin.users(query),
@@ -48,7 +45,7 @@ export function useWifiDevices(query: WifiDeviceListQuery) {
           ...query,
           limit: query.limit?.toString(),
           offset: query.offset?.toString(),
-        } as any,
+        } as Record<string, unknown>,
       }),
     {
       queryKey: queryKeys.wifi.admin.devices(query),
@@ -59,6 +56,11 @@ export function useWifiDevices(query: WifiDeviceListQuery) {
 export function useWifiAuthLogs(
   query: import('@filcdev/api/domains/wifi/admin').WifiAuthLogListQuery
 ) {
+  let resultStr: string | undefined;
+  if (query.result !== undefined) {
+    resultStr = query.result ? 'true' : 'false';
+  }
+
   return useApiQuery<import('@filcdev/api/domains/wifi/admin').WifiAuthLog[]>(
     () =>
       api.wifi['auth-logs'].$get({
@@ -66,13 +68,8 @@ export function useWifiAuthLogs(
           ...query,
           limit: query.limit?.toString(),
           offset: query.offset?.toString(),
-          result:
-            query.result === undefined
-              ? undefined
-              : query.result
-                ? 'true'
-                : 'false',
-        } as any,
+          result: resultStr,
+        } as Record<string, unknown>,
       }),
     {
       queryKey: queryKeys.wifi.admin.authLogs(query),
@@ -81,14 +78,14 @@ export function useWifiAuthLogs(
 }
 
 export function useWifiNas() {
-  return useApiQuery<WifiNas[]>(() => api.wifi.nas.$get() as any, {
+  return useApiQuery<WifiNas[]>(() => api.wifi.nas.$get(), {
     queryKey: queryKeys.wifi.admin.nas(),
   });
 }
 
 export function useWifiSpeedProfiles() {
   return useApiQuery<WifiSpeedProfile[]>(
-    () => api.wifi['speed-profiles'].$get() as any,
+    () => api.wifi['speed-profiles'].$get(),
     {
       queryKey: queryKeys.wifi.admin.speedProfiles(),
     }
@@ -97,7 +94,7 @@ export function useWifiSpeedProfiles() {
 
 export function useWifiRoleProfiles() {
   return useApiQuery<WifiRoleSpeedProfile[]>(
-    () => api.wifi['role-speed-profiles'].$get() as any,
+    () => api.wifi['role-speed-profiles'].$get(),
     {
       queryKey: queryKeys.wifi.admin.roleProfiles(),
     }
@@ -109,6 +106,7 @@ export function useCreateWifiUser(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async (json: any) => {
       const res = await api.wifi.users.$post({ json });
       if (!res.ok) {
@@ -133,6 +131,7 @@ export function useUpdateWifiUser(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async ({ id, json }: { id: string; json: any }) => {
       const res = await api.wifi.users[':id'].$put({ json, param: { id } });
       if (!res.ok) {
@@ -179,6 +178,7 @@ export function useCreateWifiDevice(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async (json: any) => {
       const res = await api.wifi.devices.$post({ json });
       if (!res.ok) {
@@ -208,6 +208,7 @@ export function useUpdateWifiDevice(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async ({ id, json }: { id: string; json: any }) => {
       const res = await api.wifi.devices[':id'].$put({ json, param: { id } });
       if (!res.ok) {
@@ -262,6 +263,7 @@ export function useCreateWifiNas(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async (json: any) => {
       const res = await api.wifi.nas.$post({ json });
       if (!res.ok) {
@@ -284,6 +286,7 @@ export function useUpdateWifiNas(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async ({ id, json }: { id: string; json: any }) => {
       const res = await api.wifi.nas[':id'].$put({ json, param: { id } });
       if (!res.ok) {
@@ -326,6 +329,7 @@ export function useCreateWifiSpeedProfile(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async (json: any) => {
       const res = await api.wifi['speed-profiles'].$post({ json });
       if (!res.ok) {
@@ -352,6 +356,7 @@ export function useUpdateWifiSpeedProfile(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async ({ id, json }: { id: string; json: any }) => {
       const res = await api.wifi['speed-profiles'][':id'].$put({
         json,
@@ -405,6 +410,7 @@ export function useCreateWifiRoleProfile(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async (json: any) => {
       const res = await api.wifi['role-speed-profiles'].$post({ json });
       if (!res.ok) {
@@ -431,6 +437,7 @@ export function useUpdateWifiRoleProfile(options?: { onSaved?: () => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // biome-ignore lint/suspicious/noExplicitAny: API workaround
     mutationFn: async ({ id, json }: { id: string; json: any }) => {
       const res = await api.wifi['role-speed-profiles'][':id'].$put({
         json,

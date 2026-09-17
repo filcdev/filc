@@ -1,18 +1,27 @@
 import { ApiError } from '@filcdev/api/errors';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@filcdev/ui/components/alert';
+import { Badge } from '@filcdev/ui/components/badge';
+import { Button } from '@filcdev/ui/components/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
+import { Input } from '@filcdev/ui/components/input';
+import { PasswordInput } from '@filcdev/ui/components/password-input';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { Spinner } from '@filcdev/ui/components/spinner';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { AlertCircle, ArrowLeft, Download, Edit2, Wifi, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navbar } from '@/components/navbar';
-import { Alert, AlertDescription, AlertTitle } from '@filcdev/ui/components/alert';
-import { Badge } from '@filcdev/ui/components/badge';
-import { Button } from '@filcdev/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@filcdev/ui/components/card';
-import { Input } from '@filcdev/ui/components/input';
-import { PasswordInput } from '@filcdev/ui/components/password-input';
-import { Skeleton } from '@filcdev/ui/components/skeleton';
-import { Spinner } from '@filcdev/ui/components/spinner';
 import { RelativeTime } from '@/components/wifi/relative-time';
 import {
   useCreateWifiAccount,
@@ -67,6 +76,25 @@ function WifiPage() {
         {state.isLoading && <WifiLoadingState />}
         {!state.isLoading && state.account ? (
           <>
+            {state.account.banned && (
+              <Alert variant="destructive">
+                <AlertCircle className="size-4" />
+                <AlertTitle>{t('wifi.accountBannedTitle')}</AlertTitle>
+                <AlertDescription>
+                  {t('wifi.accountBannedDescription')}
+                </AlertDescription>
+              </Alert>
+            )}
+            {!state.account.banned &&
+              state.account.devices.some((d) => d.banned) && (
+                <Alert variant="destructive">
+                  <AlertCircle className="size-4" />
+                  <AlertTitle>{t('wifi.deviceBannedTitle')}</AlertTitle>
+                  <AlertDescription>
+                    {t('wifi.deviceBannedDescription')}
+                  </AlertDescription>
+                </Alert>
+              )}
             <AccountSummary account={state.account} ssid={state.ssid} t={t} />
             <PasswordChangeForm t={t} />
             <CertificateDownload t={t} />
@@ -463,6 +491,7 @@ function DeviceList({
   );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Legacy rendering logic
 function DeviceItem({
   device,
   isEditing,

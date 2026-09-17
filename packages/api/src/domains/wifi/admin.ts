@@ -149,19 +149,19 @@ export type WifiSpeedProfile = z.infer<typeof wifiSpeedProfileSchema>;
 export type WifiRoleSpeedProfile = z.infer<typeof wifiRoleSpeedProfileSchema>;
 
 export const wifiAuthLogSchema = z.object({
+  deviceNickname: z.string().nullable().optional(),
+  deviceReportedHostname: z.string().nullable().optional(),
   failureReason: z.string().nullable(),
   id: z.number(),
   macAddress: z.string(),
+  nasComment: z.string().nullable().optional(),
   nasIpAddress: z.string().nullable(),
   nasMacAddress: z.string().nullable(),
   result: z.boolean(),
   timestamp: z.iso.datetime(),
+  userComment: z.string().nullable().optional(),
   username: z.string(),
   wifiUserId: z.uuid().nullable(),
-  nasComment: z.string().nullable().optional(),
-  deviceNickname: z.string().nullable().optional(),
-  deviceReportedHostname: z.string().nullable().optional(),
-  userComment: z.string().nullable().optional(),
 });
 
 export const wifiAuthLogListQuerySchema = wifiListQuerySchema.extend({

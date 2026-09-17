@@ -1,8 +1,4 @@
 import type { WifiNas } from '@filcdev/api/domains/wifi/admin';
-import { createFileRoute } from '@tanstack/react-router';
-import { Pencil, Plus, RefreshCw, Search, Trash } from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@filcdev/ui/components/button';
 import { Input } from '@filcdev/ui/components/input';
 import {
@@ -13,6 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import { Pencil, Plus, RefreshCw, Search, Trash } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WifiNasDialog } from '@/components/wifi/wifi-dialogs';
 import { useDeleteWifiNas, useWifiNas } from '@/hooks/wifi-admin';
 
@@ -40,6 +40,7 @@ function WifiNasPage() {
   };
 
   const handleDelete = (nas: WifiNas) => {
+    // biome-ignore lint/suspicious/noAlert: Admin UI
     if (window.confirm(t('wifiAdminNas.deleteConfirmTitle'))) {
       deleteMutation.mutate(nas.id);
     }
@@ -107,56 +108,63 @@ function WifiNasPage() {
               </TableHead>
             </TableRow>
           </TableHeader>
-            <TableBody>
-              {(() => {
-                if (query.isLoading) {
-                  return (
-                    <TableRow>
-                      <TableCell className="text-center" colSpan={4}>
-                        {t('common.loading')}
-                      </TableCell>
-                    </TableRow>
-                  );
-                }
-
-                if (filteredNas.length === 0) {
-                  return (
-                    <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={4}>
-                        {t('wifiAdminNas.noNasFound')}
-                      </TableCell>
-                    </TableRow>
-                  );
-                }
-
-                return filteredNas.map((nas) => (
-                  <TableRow key={nas.id}>
-                    <TableCell className="font-mono text-xs">{nas.ipAddress}</TableCell>
-                    <TableCell className="font-mono text-xs">{nas.macAddress}</TableCell>
-                    <TableCell>{nas.comment ?? '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          onClick={() => handleEdit(nas)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          className="text-destructive"
-                          onClick={() => handleDelete(nas)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
+          <TableBody>
+            {(() => {
+              if (query.isLoading) {
+                return (
+                  <TableRow>
+                    <TableCell className="text-center" colSpan={4}>
+                      {t('common.loading')}
                     </TableCell>
                   </TableRow>
-                ));
-              })()}
-            </TableBody>
+                );
+              }
+
+              if (filteredNas.length === 0) {
+                return (
+                  <TableRow>
+                    <TableCell
+                      className="text-center text-muted-foreground"
+                      colSpan={4}
+                    >
+                      {t('wifiAdminNas.noNasFound')}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+
+              return filteredNas.map((nas) => (
+                <TableRow key={nas.id}>
+                  <TableCell className="font-mono text-xs">
+                    {nas.ipAddress}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {nas.macAddress}
+                  </TableCell>
+                  <TableCell>{nas.comment ?? '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        onClick={() => handleEdit(nas)}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        className="text-destructive"
+                        onClick={() => handleDelete(nas)}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ));
+            })()}
+          </TableBody>
         </Table>
       </div>
 

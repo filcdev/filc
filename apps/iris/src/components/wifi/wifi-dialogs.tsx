@@ -17,9 +17,6 @@ import {
   wifiUserCreateSchema,
   wifiUserUpdateSchema,
 } from '@filcdev/api/domains/wifi/admin';
-import { useForm, useStore } from '@tanstack/react-form';
-import { useTranslation } from 'react-i18next';
-import type z from 'zod';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
@@ -39,6 +36,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filcdev/ui/components/select';
+import { useForm, useStore } from '@tanstack/react-form';
+import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
+import type z from 'zod';
 import { useRoles } from '@/hooks/admin-users';
 import {
   useCreateWifiDevice,
@@ -68,6 +69,7 @@ export function WifiUserDialog({
   const create = useCreateWifiUser({ onSaved: () => onOpenChange(false) });
   const update = useUpdateWifiUser({ onSaved: () => onOpenChange(false) });
   const isEditing = !!user;
+  const bannedId = useId();
 
   const profilesQuery = useWifiSpeedProfiles();
   const profiles = profilesQuery.data ?? [];
@@ -81,6 +83,7 @@ export function WifiUserDialog({
       username: user?.username ?? '',
     },
     onSubmit: ({ value }) => {
+      // biome-ignore lint/suspicious/noExplicitAny: API workaround
       const payload: any = { ...value };
       if (!payload.password) {
         payload.password = undefined;
@@ -94,10 +97,12 @@ export function WifiUserDialog({
     validators: {
       onChange: isEditing
         ? wifiUserUpdateSchema
-        : (wifiUserCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API type mismatch workaround
+          (wifiUserCreateSchema as any),
       onSubmit: isEditing
         ? wifiUserUpdateSchema
-        : (wifiUserCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API type mismatch workaround
+          (wifiUserCreateSchema as any),
     },
   });
 
@@ -208,12 +213,12 @@ export function WifiUserDialog({
                 <div className="flex items-center space-x-2 pt-2">
                   <Checkbox
                     checked={field.state.value}
-                    id="banned"
+                    id={bannedId}
                     onCheckedChange={(c) => field.handleChange(c === true)}
                   />
                   <label
                     className="font-medium text-sm leading-none"
-                    htmlFor="banned"
+                    htmlFor={bannedId}
                   >
                     {t('wifiAdminUsers.banned', 'Banned')}
                   </label>
@@ -250,6 +255,7 @@ export function WifiDeviceDialog({
   const create = useCreateWifiDevice({ onSaved: () => onOpenChange(false) });
   const update = useUpdateWifiDevice({ onSaved: () => onOpenChange(false) });
   const isEditing = !!device;
+  const bannedId = useId();
 
   const form = useForm({
     defaultValues: {
@@ -274,10 +280,12 @@ export function WifiDeviceDialog({
     validators: {
       onChange: isEditing
         ? wifiDeviceUpdateSchema
-        : (wifiDeviceCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiDeviceCreateSchema as any),
       onSubmit: isEditing
         ? wifiDeviceUpdateSchema
-        : (wifiDeviceCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiDeviceCreateSchema as any),
     },
   });
 
@@ -359,12 +367,12 @@ export function WifiDeviceDialog({
               <div className="flex items-center space-x-2 pt-2">
                 <Checkbox
                   checked={field.state.value}
-                  id="device-banned"
+                  id={bannedId}
                   onCheckedChange={(c) => field.handleChange(c === true)}
                 />
                 <label
                   className="font-medium text-sm leading-none"
-                  htmlFor="device-banned"
+                  htmlFor={bannedId}
                 >
                   {t('wifiAdminUsers.bannedDevice', 'Banned Device')}
                 </label>
@@ -419,8 +427,14 @@ export function WifiNasDialog({
       }
     },
     validators: {
-      onChange: isEditing ? wifiNasUpdateSchema : (wifiNasCreateSchema as any),
-      onSubmit: isEditing ? wifiNasUpdateSchema : (wifiNasCreateSchema as any),
+      onChange: isEditing
+        ? wifiNasUpdateSchema
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiNasCreateSchema as any),
+      onSubmit: isEditing
+        ? wifiNasUpdateSchema
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiNasCreateSchema as any),
     },
   });
 
@@ -537,18 +551,22 @@ export function WifiSpeedProfileDialog({
           value.uploadSpeedMbps === -1 ? null : value.uploadSpeedMbps,
       };
       if (isEditing) {
+        // biome-ignore lint/suspicious/noExplicitAny: API workaround
         update.mutate({ id: profile.id, json: payload as any });
       } else {
+        // biome-ignore lint/suspicious/noExplicitAny: API workaround
         create.mutate(payload as any);
       }
     },
     validators: {
       onChange: isEditing
         ? wifiSpeedProfileUpdateSchema
-        : (wifiSpeedProfileCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiSpeedProfileCreateSchema as any),
       onSubmit: isEditing
         ? wifiSpeedProfileUpdateSchema
-        : (wifiSpeedProfileCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiSpeedProfileCreateSchema as any),
     },
   });
 
@@ -683,18 +701,22 @@ export function WifiRoleProfileDialog({
           value.uploadSpeedMbps === -1 ? null : value.uploadSpeedMbps,
       };
       if (isEditing) {
+        // biome-ignore lint/suspicious/noExplicitAny: API workaround
         update.mutate({ id: mapping.roleName, json: payload as any });
       } else {
+        // biome-ignore lint/suspicious/noExplicitAny: API workaround
         create.mutate(payload as any);
       }
     },
     validators: {
       onChange: isEditing
         ? wifiRoleSpeedProfileUpdateSchema
-        : (wifiRoleSpeedProfileCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiRoleSpeedProfileCreateSchema as any),
       onSubmit: isEditing
         ? wifiRoleSpeedProfileUpdateSchema
-        : (wifiRoleSpeedProfileCreateSchema as any),
+        : // biome-ignore lint/suspicious/noExplicitAny: API workaround
+          (wifiRoleSpeedProfileCreateSchema as any),
     },
   });
 
@@ -758,7 +780,8 @@ export function WifiRoleProfileDialog({
                 >
                   <SelectTrigger>
                     <SelectValue>
-                      {profiles.find((p) => p.id === field.state.value)?.name ?? field.state.value}
+                      {profiles.find((p) => p.id === field.state.value)?.name ??
+                        field.state.value}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>

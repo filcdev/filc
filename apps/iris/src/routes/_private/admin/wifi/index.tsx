@@ -1,17 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  Smartphone,
-  Users,
-  Wifi,
-} from 'lucide-react';
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@filcdev/ui/components/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@filcdev/ui/components/card';
 import { Input } from '@filcdev/ui/components/input';
 import {
   Select,
@@ -28,6 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
+import { createFileRoute } from '@tanstack/react-router';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Smartphone,
+  Users,
+  Wifi,
+} from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RelativeTime } from '@/components/wifi/relative-time';
 import { WifiAuthChart } from '@/components/wifi/wifi-auth-chart';
 import { useWifiAdminStatsOverview, useWifiAuthLogs } from '@/hooks/wifi-admin';
@@ -166,11 +171,18 @@ function WifiAuthLogs() {
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue>
-                {resultFilter === 'success'
-                  ? t('wifiAdminDashboard.successOnly', 'Success only')
-                  : resultFilter === 'failure'
-                    ? t('wifiAdminDashboard.failuresOnly', 'Failures only')
-                    : t('wifiAdminDashboard.allResults', 'All results')}
+                {(() => {
+                  if (resultFilter === 'success') {
+                    return t('wifiAdminDashboard.successOnly', 'Success only');
+                  }
+                  if (resultFilter === 'failure') {
+                    return t(
+                      'wifiAdminDashboard.failuresOnly',
+                      'Failures only'
+                    );
+                  }
+                  return t('wifiAdminDashboard.allResults', 'All results');
+                })()}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -248,21 +260,26 @@ function WifiAuthLogs() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-mono text-xs">{log.macAddress}</span>
-                        {log.deviceNickname ? (
+                        <span className="font-mono text-xs">
+                          {log.macAddress}
+                        </span>
+                        {log.deviceNickname && (
                           <span className="text-muted-foreground text-xs">
                             {log.deviceNickname}
                           </span>
-                        ) : log.deviceReportedHostname ? (
+                        )}
+                        {!log.deviceNickname && log.deviceReportedHostname && (
                           <span className="text-muted-foreground text-xs">
                             {log.deviceReportedHostname}
                           </span>
-                        ) : null}
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-mono text-xs">{log.nasIpAddress ?? '-'}</span>
+                        <span className="font-mono text-xs">
+                          {log.nasIpAddress ?? '-'}
+                        </span>
                         <span className="font-mono text-muted-foreground text-xs">
                           {log.nasMacAddress ?? ''}
                         </span>
