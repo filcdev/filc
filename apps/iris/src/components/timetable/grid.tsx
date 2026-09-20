@@ -1,6 +1,7 @@
 import { cn } from '@filcdev/ui/lib/utils';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePinchZoom } from '@/hooks/use-pinch-zoom';
 import {
   filterLessonsForGroupDisplay,
   type GroupDisplay,
@@ -224,6 +225,7 @@ export function TimetableGrid({
 }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
+  const { ref: scrollRef, scale } = usePinchZoom<HTMLDivElement>();
   const showCohorts =
     activeFilter === 'teacher' || activeFilter === 'classroom';
 
@@ -250,10 +252,14 @@ export function TimetableGrid({
   const midSlot = Math.floor(timeSlots.length / 2);
 
   return (
-    <div className="overflow-x-auto rounded-xl">
+    <div
+      className="overflow-x-auto rounded-xl"
+      ref={scrollRef}
+      style={{ touchAction: 'pan-x pan-y' }}
+    >
       <div
         className="rounded-xl border border-border bg-card"
-        style={{ minWidth }}
+        style={{ minWidth, zoom: scale }}
       >
         {/* Sticky header */}
         <div
