@@ -1136,6 +1136,9 @@ export function MovedLessonDialog({
   const [fromRoom, setFromRoom] = useState<string>('');
   const [sourceDate, setSourceDate] = useState<Date | undefined>();
   const [selectedCohort, setSelectedCohort] = useState<string>('');
+  // Generated once per batch (on dialog open) and reused across retries so a
+  // repeated submission of the same batch cannot create duplicate rows.
+  const [batchKey, setBatchKey] = useState<string>('');
 
   const defaultValues = useMemo(() => initialState(item), [item]);
 
@@ -1200,9 +1203,10 @@ export function MovedLessonDialog({
           },
         });
       } else if (mode === 'room') {
-        await createBatchMutation.mutateAsync(
-          buildRoomBatchPayloads(value, allLessons)
-        );
+        await createBatchMutation.mutateAsync({
+          idempotencyKey: batchKey,
+          items: buildRoomBatchPayloads(value, allLessons),
+        });
       } else {
         await createMutation.mutateAsync(payload);
       }
@@ -1311,6 +1315,7 @@ export function MovedLessonDialog({
 
     setFromRoom(fromRoomId);
     setSelectedCohort('');
+    setBatchKey(crypto.randomUUID());
 
     setSourceDate(resolveInitialSourceDate(item, days, sourceWeekdayId));
   }, [days, defaultValues, form, item, open]);

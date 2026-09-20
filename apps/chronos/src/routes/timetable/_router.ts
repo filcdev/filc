@@ -27,6 +27,7 @@ import {
 import {
   createManualMovedLesson,
   createMovedLesson,
+  createMovedLessonsBatch,
   deleteMovedLesson,
   getAllMovedLessons,
   getMovedLessonsForCohort,
@@ -85,6 +86,7 @@ export const timetableRouter = timetableFactory
     ...getRelevantMovedLessonsForCohort
   )
   .post('/movedLessons', ...createMovedLesson)
+  .post('/movedLessons/batch', ...createMovedLessonsBatch)
   .post('/movedLessons/manual', ...createManualMovedLesson)
   .put('/movedLessons/:id', ...updateMovedLesson)
   .delete('/movedLessons/:id', ...deleteMovedLesson)

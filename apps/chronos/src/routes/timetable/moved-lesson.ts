@@ -1,4 +1,5 @@
 import {
+  batchCreateSchema,
   cohortIdParamsSchema,
   manualCreateSchema,
   movedLessonIdParamsSchema,
@@ -18,6 +19,7 @@ import {
   lesson,
   lessonCohortMTM,
   movedLesson,
+  movedLessonBatch,
   movedLessonLessonMTM,
   period,
   subject,
@@ -42,6 +44,7 @@ import {
 import {
   findOrCreateManualLesson,
   getDayDefinitionIdsForDate,
+  type TxOrDb,
 } from '#utils/timetable/manual-lesson';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -520,6 +523,49 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   }
 );
 
+// Insert one moved lesson plus its linked lessons. Shared by the single create
+// and the batch create so both write rows identically.
+const insertMovedLessonRow = async (
+  executor: TxOrDb,
+  body: {
+    comment: string | null | undefined;
+    date: Date;
+    lessonIds: string[];
+    room: string | null | undefined;
+    startingDay: string | null | undefined;
+    startingPeriod: string | null | undefined;
+  }
+): Promise<typeof movedLesson.$inferSelect> => {
+  const [inserted] = await executor
+    .insert(movedLesson)
+    .values({
+      comment: body.comment,
+      date: body.date,
+      id: crypto.randomUUID(),
+      room: body.room,
+      startingDay: body.startingDay,
+      startingPeriod: body.startingPeriod,
+    })
+    .returning();
+
+  if (!inserted) {
+    throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      message: 'Failed to create moved lesson',
+    });
+  }
+
+  if (body.lessonIds.length > 0) {
+    await executor.insert(movedLessonLessonMTM).values(
+      body.lessonIds.map((lessonId) => ({
+        lessonId,
+        movedLessonId: inserted.id,
+      }))
+    );
+  }
+
+  return inserted;
+};
+
 const createSchema = createInsertSchema(movedLesson)
   .omit({ id: true })
   .extend({
@@ -574,43 +620,118 @@ export const createMovedLesson = timetableFactory.createHandlers(
       startingPeriod,
     });
 
-    const [newMovedLesson] = await db
-      .insert(movedLesson)
-      .values({
-        comment,
-        date,
-        id: crypto.randomUUID(),
-        room,
-        startingDay,
-        startingPeriod,
-      })
-      .returning();
+    const newMovedLesson = await insertMovedLessonRow(db, {
+      comment,
+      date,
+      lessonIds: lessonIds ?? [],
+      room,
+      startingDay,
+      startingPeriod,
+    });
 
-    if (
-      lessonIds &&
-      Array.isArray(lessonIds) &&
-      lessonIds.length > 0 &&
-      newMovedLesson
-    ) {
-      await db.insert(movedLessonLessonMTM).values(
-        lessonIds.map((lessonId: string) => ({
-          lessonId,
-          movedLessonId: newMovedLesson.id,
-        }))
-      );
-    }
+    dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
+      date: body.date,
+      lessonIds: lessonIds ?? [],
+      room,
+      startingDay,
+      startingPeriod,
+    });
 
-    if (newMovedLesson) {
-      dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
-        date: body.date,
-        lessonIds: lessonIds ?? [],
-        room,
-        startingDay,
-        startingPeriod,
+    return created(c, newMovedLesson);
+  }
+);
+
+const batchCreateResponseSchema = z.object({
+  data: z.array(createSelectSchema(movedLesson)),
+  success: z.boolean(),
+});
+
+export const createMovedLessonsBatch = timetableFactory.createHandlers(
+  describeRoute({
+    ...filcExt('MovedLesson', '@listof MovedLesson', true),
+    description:
+      'Create several moved lessons atomically (one per period) with an idempotency key.',
+    requestBody: {
+      content: {
+        'application/json': await resolver(batchCreateSchema).toOpenAPISchema(),
+      },
+      description:
+        'The batch of room-move payloads plus the idempotency key for the batch.',
+    },
+    responses: {
+      200: {
+        content: {
+          'application/json': {
+            schema: resolver(batchCreateResponseSchema),
+          },
+        },
+        description: 'Successful Response',
+      },
+    },
+    tags: ['Moved Lesson'],
+  }),
+  ...authRouter('movedLesson:create'),
+  zValidator('json', batchCreateSchema),
+  async (c) => {
+    const { idempotencyKey, items } = c.req.valid('json');
+
+    // Validate every item up front so an invalid item fails the whole batch
+    // with nothing committed.
+    for (const item of items) {
+      await validateMovedLessonReferences({
+        lessonIds: item.lessonIds,
+        room: item.room,
+        startingDay: item.startingDay,
+        startingPeriod: item.startingPeriod,
       });
     }
 
-    return created(c, newMovedLesson);
+    const createdRows = await db.transaction(async (tx) => {
+      // Idempotency: claiming the key with `onConflictDoNothing` makes a retry
+      // of the same batch a no-op. A concurrent identical request blocks on the
+      // unique key until the first transaction commits or rolls back, so it can
+      // never double-insert.
+      const [claimed] = await tx
+        .insert(movedLessonBatch)
+        .values({ id: idempotencyKey })
+        .onConflictDoNothing()
+        .returning();
+
+      if (!claimed) {
+        return [];
+      }
+
+      const rows: (typeof movedLesson.$inferSelect)[] = [];
+      for (const item of items) {
+        rows.push(
+          await insertMovedLessonRow(tx, {
+            comment: item.comment,
+            date: item.date,
+            lessonIds: item.lessonIds,
+            room: item.room,
+            startingDay: item.startingDay,
+            startingPeriod: item.startingPeriod,
+          })
+        );
+      }
+      return rows;
+    });
+
+    for (const [index, row] of createdRows.entries()) {
+      const item = items[index];
+      if (!item) {
+        continue;
+      }
+      dispatchPendingNotification(row.id, 'moved_lesson', {
+        date: item.date,
+        lessonIds: item.lessonIds,
+        room: item.room,
+        startingDay: item.startingDay,
+        startingPeriod: item.startingPeriod,
+      });
+    }
+
+    return created(c, createdRows);
   }
 );
 

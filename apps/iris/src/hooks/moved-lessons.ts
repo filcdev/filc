@@ -58,6 +58,10 @@ type ManualPayload = InferRequestType<
   typeof api.timetable.movedLessons.manual.$post
 >['json'];
 
+type BatchCreatePayload = InferRequestType<
+  typeof api.timetable.movedLessons.batch.$post
+>['json'];
+
 /** Options accepted by every mutation hook: react to a successful save. */
 export type MutationCallbacks = {
   /** Called after success toast + cache invalidation; use to close dialogs. */
@@ -278,31 +282,28 @@ export function useCreateManualMovedLesson({
   });
 }
 
-/** Create several moved lessons sequentially (one per period). */
+/** Create one moved lesson per period in a single atomic, idempotent batch. */
 export function useCreateMovedLessonsBatch({
   onSaved,
 }: MutationCallbacks = {}) {
   const invalidate = useInvalidateMovedLessons();
   const { t } = useTranslation();
   return useMutation({
-    mutationFn: async (payloads: CreatePayload[]) => {
-      for (const payload of payloads) {
-        const res = await parseResponse(
-          api.timetable.movedLessons.$post({ json: payload })
-        );
-        if (!res.success) {
-          throw new Error('Failed to create moved lesson');
-        }
+    mutationFn: async (payload: BatchCreatePayload) => {
+      const res = await parseResponse(
+        api.timetable.movedLessons.batch.$post({ json: payload })
+      );
+      if (!res.success) {
+        throw new Error(t('movedLesson.createError'));
       }
+      return res;
     },
-    onError: (error: Error) => {
-      toast.error(error.message || t('movedLesson.createError'));
-    },
-    onSettled: () => {
-      invalidate();
+    onError: () => {
+      toast.error(t('movedLesson.createError'));
     },
     onSuccess: () => {
       toast.success(t('movedLesson.createSuccess'));
+      invalidate();
       onSaved?.();
     },
   });

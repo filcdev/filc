@@ -48,3 +48,30 @@ export const manualCreateSchema = z.object({
 });
 
 export type ManualCreateMovedLessonInput = z.infer<typeof manualCreateSchema>;
+
+/** A single room-move period within a batch create. */
+export const movedLessonBatchItemSchema = z.object({
+  comment: z.string().nullable().optional(),
+  date: z.coerce.date(),
+  lessonIds: z.uuid().array().min(1),
+  // classroom ids are text keys (imported rooms are not UUIDs)
+  room: z.string().min(1),
+  startingDay: z.uuid(),
+  startingPeriod: z.uuid(),
+});
+
+export type MovedLessonBatchItemInput = z.infer<
+  typeof movedLessonBatchItemSchema
+>;
+
+/**
+ * Payload for creating one moved lesson per selected period in a single atomic
+ * transaction. `idempotencyKey` is generated once by the client for a batch so
+ * a retry of the same batch does not create duplicate rows.
+ */
+export const batchCreateSchema = z.object({
+  idempotencyKey: z.uuid(),
+  items: z.array(movedLessonBatchItemSchema).min(1),
+});
+
+export type BatchCreateMovedLessonInput = z.infer<typeof batchCreateSchema>;
