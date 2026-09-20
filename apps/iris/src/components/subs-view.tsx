@@ -17,13 +17,14 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
+  CalendarDays,
   CheckIcon,
   ChevronsUpDownIcon,
   GraduationCap,
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NewsPanel } from '@/components/news-panel';
 import type {
@@ -47,6 +48,7 @@ import {
 } from '@/hooks/timetable-public';
 import { authClient } from '@/utils/authentication';
 import { compareClassNames } from '@/utils/cohort';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { SubsV } from './subs';
 
 const groupByDate = (data: Subs[]) =>
@@ -420,7 +422,7 @@ function SubsFilterBar({
 
 export function SubstitutionView() {
   const { data: session, isPending } = authClient.useSession();
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
   const [selections, setSelections] = useState<SelectionsType>({
@@ -522,13 +524,15 @@ export function SubstitutionView() {
     classroomsQuery.isLoading
   );
 
-  const renderDateCards = (date: string) => {
+  const renderDateSection = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
     const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
 
+    let boxes: ReactNode[] = [];
+
     if (cohorts.length === 0) {
-      return [
+      boxes = [
         <SubsV
           data={dateSubs}
           date={date}
@@ -536,40 +540,76 @@ export function SubstitutionView() {
           movedLessons={dateMovedLessons}
         />,
       ];
+    } else {
+      const cohortCards = cohorts.map((cohort) => (
+        <SubsV
+          cohortFilter={cohort}
+          data={dateSubs.filter((sub) =>
+            sub.lessons.some((l) => l?.cohorts.includes(cohort))
+          )}
+          date={date}
+          key={`${date}-${cohort}`}
+          movedLessons={dateMovedLessons
+            .map((ml) => ({
+              ...ml,
+              lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+            }))
+            .filter((ml) => ml.lessons.length > 0)}
+        />
+      ));
+
+      const unassignedMovedLessons = dateMovedLessons.filter(
+        (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+      );
+
+      const movedCard =
+        unassignedMovedLessons.length > 0 ? (
+          <SubsV
+            data={[]}
+            date={date}
+            key={`${date}-moved`}
+            movedLessons={unassignedMovedLessons}
+          />
+        ) : null;
+
+      boxes = [...cohortCards, movedCard].filter(Boolean);
     }
 
-    const cohortCards = cohorts.map((cohort) => (
-      <SubsV
-        cohortFilter={cohort}
-        data={dateSubs.filter((sub) =>
-          sub.lessons.some((l) => l?.cohorts.includes(cohort))
-        )}
-        date={date}
-        key={`${date}-${cohort}`}
-        movedLessons={dateMovedLessons
-          .map((ml) => ({
-            ...ml,
-            lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
-          }))
-          .filter((ml) => ml.lessons.length > 0)}
-      />
-    ));
+    const boxCount = boxes.length;
+    const isToday = new Date(date).toDateString() === new Date().toDateString();
 
-    const unassignedMovedLessons = dateMovedLessons.filter(
-      (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+    return (
+      <section className="space-y-3" key={date}>
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+              isToday
+                ? 'bg-primary/15 text-primary'
+                : 'bg-muted text-muted-foreground'
+            )}
+          >
+            <CalendarDays className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-semibold text-foreground text-lg">
+              {formatLocalizedDate(date, i18n.language, {
+                day: '2-digit',
+                month: 'long',
+                weekday: 'long',
+                year: 'numeric',
+              })}
+            </h2>
+            {boxCount > 0 && (
+              <p className="text-muted-foreground text-sm">
+                {t('substitution.classCount', { count: boxCount })}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="grid gap-3">{boxes}</div>
+      </section>
     );
-
-    const movedCard =
-      unassignedMovedLessons.length > 0 ? (
-        <SubsV
-          data={[]}
-          date={date}
-          key={`${date}-moved`}
-          movedLessons={unassignedMovedLessons}
-        />
-      ) : null;
-
-    return [...cohortCards, movedCard].filter(Boolean);
   };
 
   return (
@@ -627,7 +667,7 @@ export function SubstitutionView() {
       )}
       <div className="w-full max-w-5xl space-y-4">
         {!(isLoading || hasError) && hasFutureSubstitutions
-          ? allDates.flatMap((date) => renderDateCards(date))
+          ? allDates.map((date) => renderDateSection(date))
           : !(isLoading || hasError) && (
               <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">
                 <div className="flex flex-col items-center gap-2">
