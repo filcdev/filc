@@ -15,11 +15,12 @@ export type TxOrDb =
   | typeof db
   | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// Resolve the matching day definition from the standalone day-definition table
-// via the date's weekday.
-export async function getDayDefinitionIdForDate(
+// Resolve every matching day definition from the standalone day-definition
+// table via the date's weekday. Imports can create several definitions, so
+// callers must decide how to handle ambiguity.
+export async function getDayDefinitionIdsForDate(
   date: Date
-): Promise<string | null> {
+): Promise<string[]> {
   const weekday = getWeekdayInBudapest(date);
   const rows = await db
     .select({
@@ -29,10 +30,9 @@ export async function getDayDefinitionIdForDate(
     })
     .from(dayDefinition);
 
-  const match = rows.find((row) =>
-    isMatchingWeekday(weekday, row.name, row.short)
-  );
-  return match?.id ?? null;
+  return rows
+    .filter((row) => isMatchingWeekday(weekday, row.name, row.short))
+    .map((row) => row.id);
 }
 
 // Find an existing lesson that matches the manual parameters, or create one if
@@ -40,24 +40,24 @@ export async function getDayDefinitionIdForDate(
 export async function findOrCreateManualLesson(
   tx: TxOrDb,
   params: {
-    classroomIds?: string[];
+    classroomIds?: string[] | undefined;
     cohortId: string;
     dayDefinitionId: string;
     periodId: string;
     subjectId: string | null;
-    teacherIds?: string[];
+    teacherIds?: string[] | undefined;
     termDefinitionId: string | null;
     timetableId: string;
     weeksDefinitionId: string;
   }
 ): Promise<string> {
   const {
-    classroomIds = [],
+    classroomIds,
     cohortId,
     dayDefinitionId,
     periodId,
     subjectId,
-    teacherIds = [],
+    teacherIds,
     termDefinitionId,
     timetableId,
     weeksDefinitionId,
@@ -76,20 +76,23 @@ export async function findOrCreateManualLesson(
     subjectCondition,
   ];
 
-  // Array containment only when there is something to match against; an empty
-  // array would match everything.
-  if (teacherIds.length > 0) {
+  // An omitted array is a wildcard (no constraint); a present array must match
+  // the stored array exactly, including an empty one. `coalesce` normalises
+  // null arrays to empty so a lesson with no teachers/classrooms matches `[]`.
+  if (teacherIds !== undefined) {
     conditions.push(
-      sql`${lesson.teacherIds} @> ARRAY[${sql.join(
-        teacherIds.map((id) => sql`${id}`)
+      sql`coalesce(${lesson.teacherIds}, ARRAY[]::text[]) = ARRAY[${sql.join(
+        teacherIds.map((id) => sql`${id}`),
+        sql`, `
       )}]::text[]`
     );
   }
 
-  if (classroomIds.length > 0) {
+  if (classroomIds !== undefined) {
     conditions.push(
-      sql`${lesson.classroomIds} @> ARRAY[${sql.join(
-        classroomIds.map((id) => sql`${id}`)
+      sql`coalesce(${lesson.classroomIds}, ARRAY[]::text[]) = ARRAY[${sql.join(
+        classroomIds.map((id) => sql`${id}`),
+        sql`, `
       )}]::text[]`
     );
   }

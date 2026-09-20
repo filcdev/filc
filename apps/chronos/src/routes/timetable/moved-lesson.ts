@@ -40,7 +40,7 @@ import {
 } from '#utils/timetable/enrich-lessons';
 import {
   findOrCreateManualLesson,
-  getDayDefinitionIdForDate,
+  getDayDefinitionIdsForDate,
 } from '#utils/timetable/manual-lesson';
 import { createInsertSchema, createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
@@ -695,24 +695,41 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
       });
     }
 
-    const sourceDayDefinitionId = await getDayDefinitionIdForDate(sourceDate);
-    const targetDayDefinitionId = await getDayDefinitionIdForDate(targetDate);
-    if (!(sourceDayDefinitionId && targetDayDefinitionId)) {
+    const sourceDayDefinitionIds = await getDayDefinitionIdsForDate(sourceDate);
+    const targetDayDefinitionIds = await getDayDefinitionIdsForDate(targetDate);
+    const sourceDayDefinitionId = sourceDayDefinitionIds[0];
+    const targetDayDefinitionId = targetDayDefinitionIds[0];
+
+    if (
+      sourceDayDefinitionIds.length !== 1 ||
+      targetDayDefinitionIds.length !== 1 ||
+      !sourceDayDefinitionId ||
+      !targetDayDefinitionId
+    ) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No day definition found for the given date',
+        message: 'No unambiguous day definition found for the given date',
       });
     }
 
-    const [[weekDef], [termDef]] = await Promise.all([
-      db.select({ id: weekDefinition.id }).from(weekDefinition).limit(1),
-      db.select({ id: termDefinition.id }).from(termDefinition).limit(1),
+    const [weekDefs, termDefs] = await Promise.all([
+      db.select({ id: weekDefinition.id }).from(weekDefinition),
+      db.select({ id: termDefinition.id }).from(termDefinition),
     ]);
 
-    if (!weekDef) {
+    const weekDef = weekDefs[0];
+    if (weekDefs.length !== 1 || !weekDef) {
       throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'No week definition found',
+        message: 'No unambiguous week definition found',
       });
     }
+
+    if (termDefs.length > 1) {
+      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        message: 'Multiple term definitions found',
+      });
+    }
+
+    const termDef = termDefs[0] ?? null;
 
     const result = await db.transaction(
       async (tx) => {

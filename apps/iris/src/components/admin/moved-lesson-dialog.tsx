@@ -1,4 +1,3 @@
-import { unwrapResponse } from '@filcdev/api/client';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Combobox } from '@filcdev/ui/components/combobox';
@@ -28,6 +27,7 @@ import {
   type MovedLessonItem,
   type Subject,
   type Teacher,
+  useAvailableClassrooms,
   useCreateManualMovedLesson,
   useCreateMovedLesson,
   useCreateMovedLessonsBatch,
@@ -122,6 +122,13 @@ function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
     }
   }
   return -1;
+}
+
+// Weekend days have no day-definition rows, so the manual move endpoint cannot
+// resolve them; disable them in the manual date pickers.
+function isWeekend(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
 }
 
 // Sortable class label for a lesson, normalising cohorts that can arrive as
@@ -385,6 +392,7 @@ function resolveIsValid(params: {
 function resetForMoveMode(next: MoveMode, form: MovedLessonFormApi): void {
   if (next === 'manual') {
     form.setFieldValue('lessonIds', []);
+    form.setFieldValue('room', undefined);
     form.setFieldValue('startingPeriod', undefined);
     return;
   }
@@ -400,6 +408,7 @@ function resetForMoveMode(next: MoveMode, form: MovedLessonFormApi): void {
   form.setFieldValue('manualTeachers', []);
 
   form.setFieldValue('lessonIds', []);
+  form.setFieldValue('room', undefined);
   form.setFieldValue('startingPeriod', undefined);
   if (next === 'day') {
     form.setFieldValue('date', undefined);
@@ -493,30 +502,6 @@ function buildRoomOptions(params: {
       value: cr.id,
     };
   });
-}
-
-// Fetch the classrooms free for each requested period and intersect them, so a
-// target room counts as free only when it is free in every period.
-async function fetchAvailableClassrooms(
-  date: string,
-  startingDay: string,
-  periodIds: string[]
-): Promise<Classroom[]> {
-  const results = await Promise.all(
-    periodIds.map((periodId) =>
-      unwrapResponse<Classroom[]>(
-        api.timetable.classrooms.getAvailable.$get({
-          query: { date, startingDay, startingPeriod: periodId },
-        }) as never
-      )
-    )
-  );
-  const [first, ...rest] = results;
-  if (!first) {
-    return [];
-  }
-  const restSets = rest.map((list) => new Set(list.map((room) => room.id)));
-  return first.filter((room) => restSets.every((set) => set.has(room.id)));
 }
 
 type MovedLessonFormValues = InferRequestType<
@@ -899,6 +884,7 @@ function ManualMoveFields({
           {(field) => (
             <DatePicker
               date={field.state.value}
+              disabledDays={isWeekend}
               locale={locale}
               onDateChange={(date) => field.handleChange(date)}
               placeholder={t('movedLesson.datePlaceholder')}
@@ -1041,6 +1027,7 @@ function ManualMoveFields({
           {(field) => (
             <DatePicker
               date={field.state.value}
+              disabledDays={isWeekend}
               locale={locale}
               onDateChange={(date) => field.handleChange(date)}
               placeholder={t('movedLesson.datePlaceholder')}
@@ -1363,32 +1350,16 @@ export function MovedLessonDialog({
     return formStartingPeriod ? [formStartingPeriod] : [];
   }, [mode, selectedPeriodIds, formStartingPeriod]);
 
-  const availabilityPeriodKey = useMemo(
-    () =>
-      mode === 'room'
-        ? selectedPeriodIds.join(',')
-        : (formStartingPeriod ?? ''),
-    [mode, selectedPeriodIds, formStartingPeriod]
-  );
-
   const availabilityKnown = Boolean(
     formDate && formStartingDay && availabilityPeriodIds.length
   );
 
-  const availableClassroomsQuery = useQuery<Classroom[]>({
-    enabled: availabilityKnown,
-    queryFn: () =>
-      fetchAvailableClassrooms(
-        dateParam,
-        formStartingDay as string,
-        availabilityPeriodIds
-      ),
-    queryKey: queryKeys.timetable.availableClassrooms(
-      formDate,
-      formStartingDay,
-      availabilityPeriodKey
-    ),
-  });
+  const availableClassroomsQuery = useAvailableClassrooms(
+    dateParam,
+    formStartingDay as string,
+    availabilityPeriodIds,
+    availabilityKnown
+  );
 
   // Lessons in the selected source slot (de-duplicated by lesson id). A day
   // move lists every lesson on the day; a room move narrows to the from-room.

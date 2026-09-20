@@ -39,7 +39,7 @@ import {
 } from '#utils/timetable/enrich-lessons';
 import {
   findOrCreateManualLesson,
-  getDayDefinitionIdForDate,
+  getDayDefinitionIdsForDate,
   type TxOrDb,
 } from '#utils/timetable/manual-lesson';
 import {
@@ -826,10 +826,11 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       });
     }
 
-    const dayDefinitionId = await getDayDefinitionIdForDate(date);
-    if (!dayDefinitionId) {
+    const dayDefinitionIds = await getDayDefinitionIdsForDate(date);
+    const dayDefinitionId = dayDefinitionIds[0];
+    if (dayDefinitionIds.length !== 1 || !dayDefinitionId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No day definition found for the given date',
+        message: 'No unambiguous day definition found for the given date',
       });
     }
 
@@ -850,7 +851,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
         await lockAndValidateTeachers(tx, teacherId, substituter);
 
         const lessonId = await findOrCreateManualLesson(tx, {
-          classroomIds: [],
+          classroomIds: undefined,
           cohortId,
           dayDefinitionId,
           periodId,

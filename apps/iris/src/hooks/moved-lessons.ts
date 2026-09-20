@@ -93,6 +93,45 @@ export function useMovedLessonClassrooms(enabled: boolean) {
   });
 }
 
+/** Classrooms free for every requested period, intersected. */
+export function useAvailableClassrooms(
+  date: string,
+  startingDay: string,
+  periodIds: string[],
+  enabled: boolean
+) {
+  return useQuery<Classroom[]>({
+    enabled: enabled && periodIds.length > 0,
+    queryFn: async (): Promise<Classroom[]> => {
+      const results = await Promise.all(
+        periodIds.map(async (periodId) => {
+          const res = await parseResponse(
+            api.timetable.classrooms.getAvailable.$get({
+              query: { date, startingDay, startingPeriod: periodId },
+            })
+          );
+          if (!(res.success && res.data)) {
+            throw new Error('Failed to load available classrooms');
+          }
+          return res.data as Classroom[];
+        })
+      );
+
+      const [first, ...rest] = results;
+      if (!first) {
+        return [];
+      }
+      const restSets = rest.map((list) => new Set(list.map((room) => room.id)));
+      return first.filter((room) => restSets.every((set) => set.has(room.id)));
+    },
+    queryKey: queryKeys.timetable.availableClassrooms(
+      date,
+      startingDay,
+      periodIds.join(',')
+    ),
+  });
+}
+
 /** Cohort list for the moved-lesson picker; only fetched when enabled. */
 export function useMovedLessonCohorts(enabled: boolean) {
   return useQuery({
