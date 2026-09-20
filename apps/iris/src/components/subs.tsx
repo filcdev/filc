@@ -610,7 +610,7 @@ export function SubsV({
   });
 
   return (
-    <Card className="w-full overflow-hidden border-accent/50 bg-linear-to-br from-background to-accent/5 shadow-sm">
+    <Card className="w-full overflow-hidden border-accent/50 shadow-sm">
       <CardHeader className="border-accent/20 border-b pb-4">
         <CardTitle className="font-semibold text-foreground text-lg">
           {cohortFilter ?? dateLabel}
