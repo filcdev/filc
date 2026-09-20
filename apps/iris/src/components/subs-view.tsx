@@ -595,6 +595,8 @@ export function SubstitutionView() {
     );
   };
 
+  const newsClassId = activeFilter === 'class' ? selections.class : null;
+
   return (
     <div className="flex grow flex-col items-center gap-6 p-6">
       <div className="w-full max-w-5xl">
@@ -632,7 +634,7 @@ export function SubstitutionView() {
           />
         </div>
       </div>
-      <NewsPanel classId={selections.class} />
+      <NewsPanel classId={newsClassId} />
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />
