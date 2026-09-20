@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NewsPanel } from '@/components/news-panel';
 import type {
   ClassroomItem,
   CohortItem,
@@ -35,6 +34,7 @@ import type {
   TeacherItem,
 } from '@/components/timetable/types';
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
+import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   useClassrooms,
@@ -49,6 +49,7 @@ import {
 import { authClient } from '@/utils/authentication';
 import { compareClassNames } from '@/utils/cohort';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { DayNews } from './news-panel';
 import { SubsV } from './subs';
 
 const groupByDate = (data: Subs[]) =>
@@ -267,6 +268,35 @@ const filterMovedLessons = (
       .filter((ml) => ml.lessons.length > 0);
   }
   return data.filter((ml) => ml.classroom?.id === selectionId);
+};
+
+const getAnnouncementsForDay = (
+  announcements: AnnouncementItem[] | undefined,
+  date: string,
+  classId: string | null
+): AnnouncementItem[] => {
+  if (!announcements?.length) {
+    return [];
+  }
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return announcements
+    .filter((a) => {
+      const from = new Date(a.validFrom);
+      const until = new Date(a.validUntil);
+      if (from > end || until < start) {
+        return false;
+      }
+      return (
+        !classId || a.cohortIds.length === 0 || a.cohortIds.includes(classId)
+      );
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime()
+    );
 };
 
 const getCohortsForDate = (
@@ -557,6 +587,8 @@ export function SubstitutionView() {
 
   const movedLessonsQuery = usePublicMovedLessons(!isPending);
 
+  const announcementsQuery = useAnnouncementsPanel(!isPending);
+
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
   const activeCohortName = getActiveCohortName(
@@ -612,6 +644,11 @@ export function SubstitutionView() {
   const renderDateSection = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
+    const dayAnnouncements = getAnnouncementsForDay(
+      announcementsQuery.data,
+      date,
+      newsClassId
+    );
 
     let boxes: ReactNode[] = [];
 
@@ -663,6 +700,7 @@ export function SubstitutionView() {
             )}
           </div>
         </div>
+        {dayAnnouncements.length > 0 && <DayNews items={dayAnnouncements} />}
         <div className="grid gap-3">{boxes}</div>
       </section>
     );
@@ -707,7 +745,6 @@ export function SubstitutionView() {
           />
         </div>
       </div>
-      <NewsPanel classId={newsClassId} />
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />

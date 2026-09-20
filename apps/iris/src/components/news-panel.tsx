@@ -176,3 +176,37 @@ export function NewsPanel({ classId }: { classId?: string | null }) {
     </div>
   );
 }
+
+export function DayNews({ items }: { items: AnnouncementItem[] }) {
+  const { i18n } = useTranslation();
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <Alert key={item.id}>
+          <AlertTitle
+            className="font-semibold text-base sm:text-lg"
+            translate="yes"
+          >
+            {item.title ?? 'Untitled'}
+          </AlertTitle>
+          <AlertDescription
+            className="mt-2 whitespace-pre-wrap text-sm sm:text-base"
+            translate="yes"
+          >
+            {renderBlockContent(item.content)}
+          </AlertDescription>
+          <div className="mt-2 text-muted-foreground text-xs">
+            {(() => {
+              const from = formatLocalizedDate(item.validFrom, i18n.language);
+              const until = formatLocalizedDate(item.validUntil, i18n.language);
+              return from === until ? from : `${from} – ${until}`;
+            })()}
+          </div>
+        </Alert>
+      ))}
+    </div>
+  );
+}
