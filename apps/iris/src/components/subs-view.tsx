@@ -152,6 +152,17 @@ const getActiveSelectionId = (
   return selections.classroom;
 };
 
+const getActiveCohortName = (
+  activeFilter: FilterType,
+  selectionId: string | null,
+  cohorts: CohortItem[] | undefined
+): string | null => {
+  if (activeFilter !== 'class' || !selectionId) {
+    return null;
+  }
+  return cohorts?.find((c) => c.id === selectionId)?.name ?? null;
+};
+
 const getSelectorLoading = (
   filter: FilterType,
   cohortsLoading: boolean,
@@ -271,6 +282,58 @@ const getCohortsForDate = (
       ),
     ]),
   ].sort(compareClassNames);
+
+const buildDateCohortBoxes = (
+  date: string,
+  dateSubs: Subs[],
+  dateMovedLessons: MovedLessonItem[]
+): ReactNode[] => {
+  const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
+
+  if (cohorts.length === 0) {
+    return [
+      <SubsV
+        data={dateSubs}
+        date={date}
+        key={date}
+        movedLessons={dateMovedLessons}
+      />,
+    ];
+  }
+
+  const cohortCards = cohorts.map((cohort) => (
+    <SubsV
+      cohortFilter={cohort}
+      data={dateSubs.filter((sub) =>
+        sub.lessons.some((l) => l?.cohorts.includes(cohort))
+      )}
+      date={date}
+      key={`${date}-${cohort}`}
+      movedLessons={dateMovedLessons
+        .map((ml) => ({
+          ...ml,
+          lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+        }))
+        .filter((ml) => ml.lessons.length > 0)}
+    />
+  ));
+
+  const unassignedMovedLessons = dateMovedLessons.filter(
+    (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+  );
+
+  const movedCard =
+    unassignedMovedLessons.length > 0 ? (
+      <SubsV
+        data={[]}
+        date={date}
+        key={`${date}-moved`}
+        movedLessons={unassignedMovedLessons}
+      />
+    ) : null;
+
+  return [...cohortCards, movedCard].filter(Boolean);
+};
 
 // SubsFilterBar
 
@@ -463,6 +526,12 @@ export function SubstitutionView() {
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
+  const activeCohortName = getActiveCohortName(
+    activeFilter,
+    activeSelectionId,
+    cohortsQuery.data
+  );
+
   const filteredSubs = filterSubs(
     substitutionsQuery.data ?? [],
     activeFilter,
@@ -510,52 +579,23 @@ export function SubstitutionView() {
   const renderDateSection = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
-    const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
 
     let boxes: ReactNode[] = [];
 
-    if (cohorts.length === 0) {
-      boxes = [
-        <SubsV
-          data={dateSubs}
-          date={date}
-          key={date}
-          movedLessons={dateMovedLessons}
-        />,
-      ];
-    } else {
-      const cohortCards = cohorts.map((cohort) => (
-        <SubsV
-          cohortFilter={cohort}
-          data={dateSubs.filter((sub) =>
-            sub.lessons.some((l) => l?.cohorts.includes(cohort))
-          )}
-          date={date}
-          key={`${date}-${cohort}`}
-          movedLessons={dateMovedLessons
-            .map((ml) => ({
-              ...ml,
-              lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
-            }))
-            .filter((ml) => ml.lessons.length > 0)}
-        />
-      ));
-
-      const unassignedMovedLessons = dateMovedLessons.filter(
-        (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
-      );
-
-      const movedCard =
-        unassignedMovedLessons.length > 0 ? (
+    if (activeCohortName) {
+      if (dateSubs.length > 0 || dateMovedLessons.length > 0) {
+        boxes = [
           <SubsV
-            data={[]}
+            cohortFilter={activeCohortName}
+            data={dateSubs}
             date={date}
-            key={`${date}-moved`}
-            movedLessons={unassignedMovedLessons}
-          />
-        ) : null;
-
-      boxes = [...cohortCards, movedCard].filter(Boolean);
+            key={`${date}-${activeCohortName}`}
+            movedLessons={dateMovedLessons}
+          />,
+        ];
+      }
+    } else {
+      boxes = buildDateCohortBoxes(date, dateSubs, dateMovedLessons);
     }
 
     const boxCount = boxes.length;
