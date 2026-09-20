@@ -246,7 +246,7 @@ function LessonReturn(data: Subs[], cohortFilter?: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return data
+  const flatData = data
     .filter((sub) => new Date(sub.substitution.date) >= today)
     .flatMap((sub) =>
       sub.lessons
@@ -255,45 +255,59 @@ function LessonReturn(data: Subs[], cohortFilter?: string) {
           (lesson) =>
             !cohortFilter || (lesson.cohorts?.includes(cohortFilter) ?? false)
         )
-        .map((lesson) => (
-          <TableRow
-            className="border-accent/10 transition-colors hover:bg-accent/5"
-            key={`${sub.substitution.id}-${lesson.id}`}
-          >
-            <LessonRow
-              comment={sub.substitution.comment}
-              lesson={lesson}
-              substituter={`${sub.teacher?.firstName ?? ''} ${sub.teacher?.lastName ?? ''}`.trim()}
-            />
-          </TableRow>
-        ))
+        .map((lesson) => ({ lesson, sub }))
     );
+
+  flatData.sort(
+    (a, b) =>
+      (a.lesson.period?.period ?? Number.MAX_SAFE_INTEGER) -
+      (b.lesson.period?.period ?? Number.MAX_SAFE_INTEGER)
+  );
+
+  return flatData.map(({ lesson, sub }) => (
+    <TableRow
+      className="border-accent/10 transition-colors hover:bg-accent/5"
+      key={`${sub.substitution.id}-${lesson.id}`}
+    >
+      <LessonRow
+        comment={sub.substitution.comment}
+        lesson={lesson}
+        substituter={`${sub.teacher?.firstName ?? ''} ${sub.teacher?.lastName ?? ''}`.trim()}
+      />
+    </TableRow>
+  ));
 }
 
 function MovedLessonReturn(data: MovedLessonItem[]) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return data
+  const flatData = data
     .filter((ml) => new Date(ml.movedLesson.date) >= today)
-    .flatMap((ml) =>
-      ml.lessons.map((lesson) => (
-        <TableRow
-          className="border-accent/10 transition-colors hover:bg-accent/5"
-          key={`${ml.movedLesson.id}-${lesson.id}`}
-        >
-          <MovedLessonRow
-            comment={ml.movedLesson.comment}
-            lesson={lesson}
-            movedTarget={{
-              classroom: ml.classroom,
-              day: ml.dayDefinition,
-              period: ml.period,
-            }}
-          />
-        </TableRow>
-      ))
-    );
+    .flatMap((ml) => ml.lessons.map((lesson) => ({ lesson, ml })));
+
+  flatData.sort(
+    (a, b) =>
+      (a.lesson.period?.period ?? Number.MAX_SAFE_INTEGER) -
+      (b.lesson.period?.period ?? Number.MAX_SAFE_INTEGER)
+  );
+
+  return flatData.map(({ lesson, ml }) => (
+    <TableRow
+      className="border-accent/10 transition-colors hover:bg-accent/5"
+      key={`${ml.movedLesson.id}-${lesson.id}`}
+    >
+      <MovedLessonRow
+        comment={ml.movedLesson.comment}
+        lesson={lesson}
+        movedTarget={{
+          classroom: ml.classroom,
+          day: ml.dayDefinition,
+          period: ml.period,
+        }}
+      />
+    </TableRow>
+  ));
 }
 
 export function SubsV({

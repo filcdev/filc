@@ -4,7 +4,7 @@ import {
   substitutionIdParamsSchema,
 } from '@filcdev/api/domains/timetable/substitution';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, ne, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -430,6 +430,25 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       teacher: s.teacher,
     }));
 
+    // Sort by date ascending, then by lowest lesson period number ascending
+    // so that e.g. 1st Period appears before 4th Period on the same day.
+    result.sort((a, b) => {
+      const dateDiff =
+        new Date(a.substitution.date).getTime() -
+        new Date(b.substitution.date).getTime();
+      if (dateDiff !== 0) {
+        return dateDiff;
+      }
+
+      const minPeriod = (entry: (typeof result)[number]) =>
+        Math.min(
+          ...entry.lessons.map(
+            (l) => l?.period?.period ?? Number.MAX_SAFE_INTEGER
+          )
+        );
+      return minPeriod(a) - minPeriod(b);
+    });
+
     return ok(c, result);
   }
 );
@@ -469,8 +488,11 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
         substitutionLessonMTM,
         eq(substitution.id, substitutionLessonMTM.substitutionId)
       )
+      .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+      .leftJoin(period, eq(lesson.periodId, period.id))
       .where(gte(substitution.date, today))
-      .groupBy(substitution.id, teacher.id);
+      .groupBy(substitution.id, teacher.id)
+      .orderBy(asc(substitution.date), asc(sql`MIN(${period.period})`));
 
     return ok(c, substitutions);
   }
@@ -532,10 +554,12 @@ export const getRelevantSubstitutionsForCohort =
           eq(substitution.id, substitutionLessonMTM.substitutionId)
         )
         .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+        .leftJoin(period, eq(lesson.periodId, period.id))
         .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
         .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
         .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
-        .groupBy(substitution.id, teacher.id);
+        .groupBy(substitution.id, teacher.id)
+        .orderBy(asc(substitution.date), asc(sql`MIN(${period.period})`));
 
       return ok(c, {
         cohortId,
