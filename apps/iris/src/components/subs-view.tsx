@@ -24,7 +24,7 @@ import {
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NewsPanel } from '@/components/news-panel';
 import type {
@@ -39,7 +39,6 @@ import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   useClassrooms,
   useLatestValidTimetable,
-  useMyTeacher,
   usePublicMovedLessons,
   usePublicSubstitutions,
   useTeachers,
@@ -435,7 +434,7 @@ function SubsFilterBar({
 // SubstitutionView
 
 export function SubstitutionView() {
-  const { data: session, isPending } = authClient.useSession();
+  const { isPending } = authClient.useSession();
   const { i18n, t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
@@ -444,38 +443,6 @@ export function SubstitutionView() {
     classroom: null,
     teacher: null,
   });
-
-  const isAuthenticated = !isPending && !!session;
-  const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
-  const myTeacher = myTeacherQuery.data ?? null;
-
-  // Default the view to the user's linked teacher, else their profile class.
-  const defaultInitialized = useRef(false);
-  useEffect(() => {
-    if (defaultInitialized.current || isPending) {
-      return;
-    }
-    // Wait until the teacher profile resolves before defaulting.
-    if (isAuthenticated && myTeacherQuery.isPending) {
-      return;
-    }
-    defaultInitialized.current = true;
-    if (myTeacher) {
-      setActiveFilter('teacher');
-      setSelections((s) => ({ ...s, teacher: myTeacher.id }));
-      return;
-    }
-    const cohortId = session?.user?.cohortId ?? null;
-    if (cohortId) {
-      setSelections((s) => (s.class === null ? { ...s, class: cohortId } : s));
-    }
-  }, [
-    isPending,
-    isAuthenticated,
-    myTeacher,
-    myTeacherQuery.isPending,
-    session?.user?.cohortId,
-  ]);
 
   const timetablesQuery = useTimetables();
 
