@@ -195,6 +195,20 @@ const filterSubs = (
   if (!selectionId) {
     return data;
   }
+  if (activeFilter === 'class') {
+    const cohortName = cohorts?.find((c) => c.id === selectionId)?.name;
+    if (!cohortName) {
+      return [];
+    }
+    return data
+      .map((sub) => ({
+        ...sub,
+        lessons: sub.lessons.filter((lesson) =>
+          lesson?.cohorts.includes(cohortName)
+        ),
+      }))
+      .filter((sub) => sub.lessons.length > 0);
+  }
   return data.filter((sub) => {
     if (activeFilter === 'teacher' && sub.teacher?.id === selectionId) {
       return true;
