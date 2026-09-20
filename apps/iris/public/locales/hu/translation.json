@@ -344,7 +344,8 @@
     "export": "Exportálás",
     "exportTitle": "Helyettesítések exportálása",
     "exportSuccess": "Export sikeresen letöltve",
-    "exportError": "Nem sikerült exportálni a helyettesítéseket"
+    "exportError": "Nem sikerült exportálni a helyettesítéseket",
+    "classCount_other": "{{count}} osztály"
   },
   "movedLesson": {
     "title": "Áthelyezett órák",
