@@ -1,17 +1,12 @@
 import { getAvailableClassroomsQuerySchema } from '@filcdev/api/domains/timetable/room';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, notInArray, sql } from 'drizzle-orm';
 import { describeRoute, resolver } from 'hono-openapi';
 import z from 'zod';
 import { db } from '#database';
-import {
-  classroom,
-  lesson,
-  movedLesson,
-  movedLessonLessonMTM,
-} from '#database/schema/timetable';
+import { classroom } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
+import { getOccupiedClassroomIds } from '#utils/timetable/availability';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -113,61 +108,18 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
     const { date, startingDay, startingPeriod, timetableId } =
       c.req.valid('query');
 
-    // Get available classrooms in one query
-    const availableClassrooms = await db
-      .select()
-      .from(classroom)
-      .where(
-        and(
-          // Not occupied by moved lessons
-          notInArray(
-            classroom.id,
-            db
-              .select({ roomId: movedLesson.room })
-              .from(movedLesson)
-              .where(
-                and(
-                  eq(movedLesson.date, date),
-                  eq(movedLesson.startingDay, startingDay),
-                  eq(movedLesson.startingPeriod, startingPeriod),
-                  sql`${movedLesson.room} IS NOT NULL`
-                )
-              )
-          ),
-          // Not occupied by lessons (excluding moved ones)
-          notInArray(
-            classroom.id,
-            db
-              .select({ roomId: sql<string>`unnest(${lesson.classroomIds})` })
-              .from(lesson)
-              .where(
-                and(
-                  eq(lesson.dayDefinitionId, startingDay),
-                  eq(lesson.periodId, startingPeriod),
-                  timetableId ? eq(lesson.timetableId, timetableId) : undefined,
-                  notInArray(
-                    lesson.id,
-                    db
-                      .select({ lessonId: movedLessonLessonMTM.lessonId })
-                      .from(movedLesson)
-                      .innerJoin(
-                        movedLessonLessonMTM,
-                        eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
-                      )
-                      .where(
-                        and(
-                          eq(movedLesson.date, date),
-                          eq(movedLesson.startingDay, startingDay),
-                          eq(movedLesson.startingPeriod, startingPeriod)
-                        )
-                      )
-                  )
-                )
-              )
-          )
-        )
-      );
+    const occupiedRoomIds = await getOccupiedClassroomIds(db, {
+      date,
+      startingDay,
+      startingPeriod,
+      timetableId,
+    });
+    const occupied = new Set(occupiedRoomIds);
 
-    return ok(c, availableClassrooms);
+    const classrooms = await db.select().from(classroom);
+    return ok(
+      c,
+      classrooms.filter((room) => !occupied.has(room.id))
+    );
   }
 );

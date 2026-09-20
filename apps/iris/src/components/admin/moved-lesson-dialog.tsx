@@ -387,6 +387,36 @@ function resolveIsValid(params: {
   return true;
 }
 
+// The manual move's target availability slot, derived from its target date and
+// period. The date is normalised to the same YYYY-MM-DD form the room/day move
+// availability query uses, and the day id is resolved from the date's weekday.
+function resolveManualTargetSlot(params: {
+  days: DayDefinition[];
+  isManual: boolean;
+  targetDate: Date | undefined;
+  targetPeriod: string;
+}): {
+  dateParam: string;
+  enabled: boolean;
+  periodIds: string[];
+  startingDay: string;
+} {
+  const { days, isManual, targetDate, targetPeriod } = params;
+  const dateParam =
+    targetDate instanceof Date
+      ? targetDate.toISOString().slice(0, 10)
+      : String(targetDate ?? '');
+  const startingDay =
+    targetDate instanceof Date ? getWeekdayId(targetDate, days) : '';
+  const periodIds = targetPeriod ? [targetPeriod] : [];
+  return {
+    dateParam,
+    enabled: isManual && Boolean(targetDate && startingDay && targetPeriod),
+    periodIds,
+    startingDay,
+  };
+}
+
 // Reset cross-mode form state when switching move modes. Entering manual mode
 // clears lesson-based state; leaving it clears the manual fields.
 function resetForMoveMode(next: MoveMode, form: MovedLessonFormApi): void {
@@ -841,6 +871,7 @@ function TargetRoomField({
 }
 
 type ManualMoveFieldsProps = {
+  availableTargetRooms?: Classroom[];
   classrooms: Classroom[];
   cohorts: Cohort[];
   form: MovedLessonFormApi;
@@ -853,6 +884,7 @@ type ManualMoveFieldsProps = {
 // Manual move fields: the admin specifies the source and target entirely by
 // hand instead of picking existing lessons.
 function ManualMoveFields({
+  availableTargetRooms,
   classrooms,
   cohorts,
   form,
@@ -875,6 +907,13 @@ function ManualMoveFields({
         .includes(query)
     );
   }, [teacherSearch, teachers]);
+
+  // Once the target slot's availability is known, only rooms free for that
+  // slot are offered; before then (or while loading) every room is listed.
+  const targetRoomOptions = (availableTargetRooms ?? classrooms).map((c) => ({
+    label: `${c.name} (${c.short})`,
+    value: c.id,
+  }));
 
   return (
     <>
@@ -1062,10 +1101,7 @@ function ManualMoveFields({
             <Combobox
               emptyMessage={t('movedLesson.noRoomFound')}
               onValueChange={(value) => field.handleChange(value)}
-              options={classrooms.map((c) => ({
-                label: `${c.name} (${c.short})`,
-                value: c.id,
-              }))}
+              options={targetRoomOptions}
               placeholder={t('movedLesson.toRoom')}
               searchPlaceholder={t('search')}
               value={field.state.value}
@@ -1361,6 +1397,22 @@ export function MovedLessonDialog({
     availabilityKnown
   );
 
+  // Manual mode checks availability for its own target slot (date + period),
+  // reusing the same hook as the room/day move modes.
+  const manualTargetSlot = resolveManualTargetSlot({
+    days,
+    isManual: mode === 'manual',
+    targetDate: formManualTargetDate,
+    targetPeriod: formManualTargetPeriod,
+  });
+
+  const manualAvailableClassroomsQuery = useAvailableClassrooms(
+    manualTargetSlot.dateParam,
+    manualTargetSlot.startingDay,
+    manualTargetSlot.periodIds,
+    manualTargetSlot.enabled
+  );
+
   // Lessons in the selected source slot (de-duplicated by lesson id). A day
   // move lists every lesson on the day; a room move narrows to the from-room.
   const visibleLessons = useMemo(
@@ -1523,6 +1575,7 @@ export function MovedLessonDialog({
           >
             {mode === 'manual' ? (
               <ManualMoveFields
+                availableTargetRooms={manualAvailableClassroomsQuery.data}
                 classrooms={classrooms}
                 cohorts={cohorts}
                 form={form}

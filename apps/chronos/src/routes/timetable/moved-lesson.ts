@@ -26,13 +26,14 @@ import {
   weekDefinition,
 } from '#database/schema/timetable';
 import { authRouter } from '#middleware/auth';
-import { created, ok } from '#utils/http';
+import { conflict, created, ok } from '#utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
+import { getOccupiedClassroomIds } from '#utils/timetable/availability';
 import {
   type EnrichedLesson,
   enrichedLessonSchema,
@@ -733,6 +734,20 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
 
     const result = await db.transaction(
       async (tx) => {
+        // The target room must be free for the target slot. Run this inside the
+        // serializable transaction so a concurrent move cannot race it.
+        const occupiedRoomIds = await getOccupiedClassroomIds(tx, {
+          date: targetDate,
+          startingDay: targetDayDefinitionId,
+          startingPeriod: targetPeriodId,
+          timetableId,
+        });
+        if (occupiedRoomIds.includes(targetRoomId)) {
+          throw conflict(
+            'The target classroom is already occupied for the selected period'
+          );
+        }
+
         const lessonId = await findOrCreateManualLesson(tx, {
           classroomIds: [sourceRoomId],
           cohortId,
