@@ -31,6 +31,27 @@ export function normalizeDayText(value: string): string {
     .toLowerCase();
 }
 
+/** Weekday index (0 = Sunday … 6 = Saturday) for a date in Europe/Budapest. */
+export function getWeekdayInBudapest(value: Date): number {
+  const weekdayName = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Budapest',
+    weekday: 'short',
+  }).format(value);
+  const weekdayIndex = {
+    Fri: 5,
+    Mon: 1,
+    Sat: 6,
+    Sun: 0,
+    Thu: 4,
+    Tue: 2,
+    Wed: 3,
+  }[weekdayName];
+  if (weekdayIndex === undefined) {
+    throw new Error(`Unsupported weekday value: ${weekdayName}`);
+  }
+  return weekdayIndex;
+}
+
 const weekdayAliases: Record<number, string[]> = {
   0: ['vasarnap', 'va', 'v', 'sunday', 'sun'],
   1: ['hetfo', 'he', 'h', 'monday', 'mon'],

@@ -828,9 +828,9 @@ export const createManualSubstitution = timetableFactory.createHandlers(
 
     const dayDefinitionIds = await getDayDefinitionIdsForDate(date);
     const dayDefinitionId = dayDefinitionIds[0];
-    if (dayDefinitionIds.length !== 1 || !dayDefinitionId) {
+    if (!dayDefinitionId) {
       throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No unambiguous day definition found for the given date',
+        message: 'No day definition found for the given date',
       });
     }
 
@@ -854,6 +854,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
           classroomIds: undefined,
           cohortId,
           dayDefinitionId,
+          match: 'contains',
           periodId,
           subjectId,
           teacherIds: [teacherId],

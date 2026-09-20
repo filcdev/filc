@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { type InferRequestType, parseResponse } from 'hono/client';
 import { ArrowRightLeft, CircleAlert, Save } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type Classroom,
@@ -35,7 +35,11 @@ import {
   useMovedLessonTeachers,
   useUpdateMovedLesson,
 } from '@/hooks/moved-lessons';
-import { getIntlLocale, isMatchingWeekday } from '@/utils/date-locale';
+import {
+  getIntlLocale,
+  getWeekdayInBudapest,
+  isMatchingWeekday,
+} from '@/utils/date-locale';
 import { api } from '@/utils/hc';
 import { formatPeriodLabel } from '@/utils/period';
 import { queryKeys } from '@/utils/query-keys';
@@ -103,7 +107,9 @@ function formatLessonLabel(lesson: LessonForLabel): string {
 
 // Map a calendar date to the id of the day definition matching its weekday.
 function getWeekdayId(date: Date, days: DayDefinition[]): string {
-  const weekdayIndex = date.getDay(); // 0 = Sunday … 6 = Saturday
+  // Resolve the weekday in the server's Europe/Budapest timezone so the UI and
+  // backend agree on which day-definition a date maps to.
+  const weekdayIndex = getWeekdayInBudapest(date); // 0 = Sunday … 6 = Saturday
   return (
     days.find((day) => isMatchingWeekday(weekdayIndex, day.name, day.short))
       ?.id ?? ''
@@ -127,7 +133,7 @@ function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
 // Weekend days have no day-definition rows, so the manual move endpoint cannot
 // resolve them; disable them in the manual date pickers.
 function isWeekend(date: Date): boolean {
-  const day = date.getDay();
+  const day = getWeekdayInBudapest(date);
   return day === 0 || day === 6;
 }
 
@@ -621,6 +627,20 @@ function buildRoomBatchPayloads(
     startingDay: value.startingDay as string,
     startingPeriod,
   }));
+}
+
+// Mint or reuse the idempotency key for a room-move batch. Reuses the stored
+// key when the payload is unchanged (a genuine retry), otherwise mints a fresh
+// one so an edited resubmit is not mistaken for the already-committed batch.
+function resolveBatchIdempotencyKey(
+  ref: { current: { key: string; fingerprint: string } },
+  items: unknown[]
+): string {
+  const fingerprint = JSON.stringify(items);
+  if (ref.current.fingerprint !== fingerprint) {
+    ref.current = { fingerprint, key: crypto.randomUUID() };
+  }
+  return ref.current.key;
 }
 
 type MoveModeToggleProps = {
@@ -1136,9 +1156,13 @@ export function MovedLessonDialog({
   const [fromRoom, setFromRoom] = useState<string>('');
   const [sourceDate, setSourceDate] = useState<Date | undefined>();
   const [selectedCohort, setSelectedCohort] = useState<string>('');
-  // Generated once per batch (on dialog open) and reused across retries so a
-  // repeated submission of the same batch cannot create duplicate rows.
-  const [batchKey, setBatchKey] = useState<string>('');
+  // Idempotency key for the room-move batch. Reused across retries of the same
+  // payload (so a genuine retry dedupes), but regenerated whenever the payload
+  // changes (so an edited resubmit is not mistaken for the already-committed one).
+  const batchKeyRef = useRef<{ key: string; fingerprint: string }>({
+    fingerprint: '',
+    key: '',
+  });
 
   const defaultValues = useMemo(() => initialState(item), [item]);
 
@@ -1203,9 +1227,10 @@ export function MovedLessonDialog({
           },
         });
       } else if (mode === 'room') {
+        const items = buildRoomBatchPayloads(value, allLessons);
         await createBatchMutation.mutateAsync({
-          idempotencyKey: batchKey,
-          items: buildRoomBatchPayloads(value, allLessons),
+          idempotencyKey: resolveBatchIdempotencyKey(batchKeyRef, items),
+          items,
         });
       } else {
         await createMutation.mutateAsync(payload);
@@ -1315,7 +1340,9 @@ export function MovedLessonDialog({
 
     setFromRoom(fromRoomId);
     setSelectedCohort('');
-    setBatchKey(crypto.randomUUID());
+    // A freshly opened dialog is a fresh batch: reset the idempotency key so the
+    // first submit of the new batch mints a new key.
+    batchKeyRef.current = { fingerprint: '', key: '' };
 
     setSourceDate(resolveInitialSourceDate(item, days, sourceWeekdayId));
   }, [days, defaultValues, form, item, open]);

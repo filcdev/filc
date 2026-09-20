@@ -873,6 +873,7 @@ export const createManualMovedLesson = timetableFactory.createHandlers(
           classroomIds: [sourceRoomId],
           cohortId,
           dayDefinitionId: sourceDayDefinitionId,
+          match: 'exact',
           periodId: sourcePeriodId,
           subjectId: subjectId ?? null,
           teacherIds: dedupedTeacherIds,

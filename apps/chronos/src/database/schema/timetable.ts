@@ -279,6 +279,7 @@ export const movedLessonLessonMTM = pgTable(
  * Idempotency marker for a batch of room moves. One row per batch request,
  * keyed by the client-generated idempotency key. The primary-key uniqueness
  * makes a retried batch a no-op instead of double-inserting moved lessons.
+ * Deliberately a minimal, ever-growing marker table — no retention needed.
  */
 export const movedLessonBatch = pgTable('moved_lesson_batch', {
   id: text('id').primaryKey(),

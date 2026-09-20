@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import { db } from '#database';
 import {
   dayDefinition,
@@ -43,6 +43,8 @@ export async function findOrCreateManualLesson(
     classroomIds?: string[] | undefined;
     cohortId: string;
     dayDefinitionId: string;
+    /** How the teacher/classroom arrays are matched against stored lessons. */
+    match?: 'exact' | 'contains';
     periodId: string;
     subjectId: string | null;
     teacherIds?: string[] | undefined;
@@ -55,6 +57,7 @@ export async function findOrCreateManualLesson(
     classroomIds,
     cohortId,
     dayDefinitionId,
+    match = 'exact',
     periodId,
     subjectId,
     teacherIds,
@@ -68,7 +71,31 @@ export async function findOrCreateManualLesson(
       ? isNull(lesson.subjectId)
       : eq(lesson.subjectId, subjectId);
 
-  const conditions = [
+  // Build the array-match condition. `undefined` is always a wildcard (no
+  // constraint). In `contains` mode an empty array is also a wildcard, because
+  // an empty containment test would match every lesson; in `exact` mode an
+  // empty array matches lessons with no entries. `coalesce` normalises null
+  // arrays to empty so exact matching treats null and [] alike.
+  const arrayCondition = (
+    column: typeof lesson.teacherIds | typeof lesson.classroomIds,
+    value: string[] | undefined
+  ): SQL<unknown> | undefined => {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (match === 'contains' && value.length === 0) {
+      return undefined;
+    }
+    const list = sql.join(
+      value.map((id) => sql`${id}`),
+      sql`, `
+    );
+    return match === 'contains'
+      ? sql`${column} @> ARRAY[${list}]::text[]`
+      : sql`coalesce(${column}, ARRAY[]::text[]) = ARRAY[${list}]::text[]`;
+  };
+
+  const conditions: SQL<unknown>[] = [
     eq(lessonCohortMTM.cohortId, cohortId),
     eq(lesson.timetableId, timetableId),
     eq(lesson.dayDefinitionId, dayDefinitionId),
@@ -76,25 +103,14 @@ export async function findOrCreateManualLesson(
     subjectCondition,
   ];
 
-  // An omitted array is a wildcard (no constraint); a present array must match
-  // the stored array exactly, including an empty one. `coalesce` normalises
-  // null arrays to empty so a lesson with no teachers/classrooms matches `[]`.
-  if (teacherIds !== undefined) {
-    conditions.push(
-      sql`coalesce(${lesson.teacherIds}, ARRAY[]::text[]) = ARRAY[${sql.join(
-        teacherIds.map((id) => sql`${id}`),
-        sql`, `
-      )}]::text[]`
-    );
+  const teacherCondition = arrayCondition(lesson.teacherIds, teacherIds);
+  if (teacherCondition) {
+    conditions.push(teacherCondition);
   }
 
-  if (classroomIds !== undefined) {
-    conditions.push(
-      sql`coalesce(${lesson.classroomIds}, ARRAY[]::text[]) = ARRAY[${sql.join(
-        classroomIds.map((id) => sql`${id}`),
-        sql`, `
-      )}]::text[]`
-    );
+  const classroomCondition = arrayCondition(lesson.classroomIds, classroomIds);
+  if (classroomCondition) {
+    conditions.push(classroomCondition);
   }
 
   const existing = await tx
@@ -110,14 +126,16 @@ export async function findOrCreateManualLesson(
 
   const lessonId = crypto.randomUUID();
   await tx.insert(lesson).values({
-    classroomIds,
+    // `undefined` is only a match wildcard; a created lesson stores [] (never
+    // NULL) so nothing that reads the array as required breaks.
+    classroomIds: classroomIds ?? [],
     dayDefinitionId,
     groupsIds: [],
     id: lessonId,
     periodId,
     periodsPerWeek: 1,
     subjectId,
-    teacherIds,
+    teacherIds: teacherIds ?? [],
     termDefinitionId,
     timetableId,
     weeksDefinitionId,

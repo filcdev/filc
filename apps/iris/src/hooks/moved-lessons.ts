@@ -1,3 +1,4 @@
+import { ApiError } from '@filcdev/api/errors';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type InferRequestType,
@@ -7,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { SubstitutionItem } from '@/hooks/substitutions';
+import { useApiMutation } from '@/utils/api';
 import { sortCohorts } from '@/utils/cohort';
 import { api } from '@/utils/hc';
 import { queryKeys } from '@/utils/query-keys';
@@ -255,24 +257,25 @@ export function useCreateMovedLesson({ onSaved }: MutationCallbacks = {}) {
   });
 }
 
-/** Create a moved lesson manually from explicit source/target fields. */
+/**
+ * Create a moved lesson manually from explicit source/target fields. A CONFLICT
+ * here means the target room is already occupied for the selected slot, so it
+ * gets a translated message; everything else falls back to the generic error.
+ */
 export function useCreateManualMovedLesson({
   onSaved,
 }: MutationCallbacks = {}) {
   const invalidate = useInvalidateMovedLessons();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (payload: ManualPayload) => {
-      const res = await parseResponse(
-        api.timetable.movedLessons.manual.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to create moved lesson');
-      }
-      return res;
-    },
+  return useApiMutation<unknown, ManualPayload>({
+    mutationFn: (payload) =>
+      api.timetable.movedLessons.manual.$post({ json: payload }),
     onError: (error: Error) => {
-      toast.error(error.message || t('movedLesson.createError'));
+      toast.error(
+        error instanceof ApiError && error.code === 'CONFLICT'
+          ? t('movedLesson.targetRoomOccupied')
+          : t('movedLesson.createError')
+      );
     },
     onSuccess: () => {
       toast.success(t('movedLesson.createSuccess'));
@@ -288,18 +291,15 @@ export function useCreateMovedLessonsBatch({
 }: MutationCallbacks = {}) {
   const invalidate = useInvalidateMovedLessons();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (payload: BatchCreatePayload) => {
-      const res = await parseResponse(
-        api.timetable.movedLessons.batch.$post({ json: payload })
+  return useApiMutation<unknown, BatchCreatePayload>({
+    mutationFn: (payload) =>
+      api.timetable.movedLessons.batch.$post({ json: payload }),
+    onError: (error: Error) => {
+      toast.error(
+        error instanceof ApiError && error.code === 'CONFLICT'
+          ? t('movedLesson.targetRoomOccupied')
+          : t('movedLesson.createError')
       );
-      if (!res.success) {
-        throw new Error(t('movedLesson.createError'));
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('movedLesson.createError'));
     },
     onSuccess: () => {
       toast.success(t('movedLesson.createSuccess'));

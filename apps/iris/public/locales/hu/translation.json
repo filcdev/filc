@@ -391,6 +391,7 @@
     "free": "szabad",
     "occupied": "foglalt",
     "occupiedWarning": "Ez a terem már foglalt a kiválasztott idősávban. Az áthelyezés ütközést okozhat.",
+    "targetRoomOccupied": "A célterem már foglalt a kiválasztott időpontban.",
     "noChange": "Nincs változás",
     "lessons": "Érintett órák",
     "lessonsCount": "Órák",

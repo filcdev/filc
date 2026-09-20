@@ -391,6 +391,7 @@
     "free": "free",
     "occupied": "occupied",
     "occupiedWarning": "This room is already in use for the selected slot. Moving here may cause a conflict.",
+    "targetRoomOccupied": "The target room is already occupied for the selected period.",
     "noChange": "No change",
     "lessons": "Affected Lessons",
     "lessonsCount": "Lessons",
