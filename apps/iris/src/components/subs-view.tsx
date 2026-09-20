@@ -506,12 +506,14 @@ export function SubstitutionView() {
   const groupedData = groupByDate(filteredSubs);
   const groupedMovedLessons = groupMovedLessonsByDate(filteredMovedLessons);
 
-  const allDates = Array.from(
-    new Set([...Object.keys(groupedData), ...Object.keys(groupedMovedLessons)])
-  ).sort((a, b) => a.localeCompare(b));
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const allDates = Array.from(
+    new Set([...Object.keys(groupedData), ...Object.keys(groupedMovedLessons)])
+  )
+    .filter((date) => new Date(date) >= today)
+    .sort((a, b) => a.localeCompare(b));
 
   const hasFutureSubstitutions =
     filteredSubs.some((sub) => new Date(sub.substitution.date) >= today) ||
