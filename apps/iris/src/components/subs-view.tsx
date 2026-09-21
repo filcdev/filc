@@ -17,15 +17,15 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
+  CalendarDays,
   CheckIcon,
   ChevronsUpDownIcon,
   GraduationCap,
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NewsPanel } from '@/components/news-panel';
 import type {
   ClassroomItem,
   CohortItem,
@@ -34,6 +34,7 @@ import type {
   TeacherItem,
 } from '@/components/timetable/types';
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
+import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   useClassrooms,
@@ -47,12 +48,22 @@ import {
 } from '@/hooks/timetable-public';
 import { authClient } from '@/utils/authentication';
 import { compareClassNames } from '@/utils/cohort';
+import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
+import { DayNews } from './news-panel';
 import { SubsV } from './subs';
+
+/** Local calendar day as `YYYY-MM-DD`; the key format used for date sections. */
+const toDateKey = (value: string | Date): string => {
+  const date = value instanceof Date ? value : parseDateOnly(value);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
 
 const groupByDate = (data: Subs[]) =>
   data.reduce(
     (acc, curr) => {
-      const date = curr.substitution.date;
+      const date = toDateKey(curr.substitution.date);
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -65,7 +76,7 @@ const groupByDate = (data: Subs[]) =>
 const groupMovedLessonsByDate = (data: MovedLessonItem[]) =>
   data.reduce(
     (acc, curr) => {
-      const date = curr.movedLesson.date;
+      const date = toDateKey(curr.movedLesson.date);
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -151,6 +162,17 @@ const getActiveSelectionId = (
   return selections.classroom;
 };
 
+const getActiveCohortName = (
+  activeFilter: FilterType,
+  selectionId: string | null,
+  cohorts: CohortItem[] | undefined
+): string | null => {
+  if (activeFilter !== 'class' || !selectionId) {
+    return null;
+  }
+  return cohorts?.find((c) => c.id === selectionId)?.name ?? null;
+};
+
 const getSelectorLoading = (
   filter: FilterType,
   cohortsLoading: boolean,
@@ -192,6 +214,20 @@ const filterSubs = (
 ): Subs[] => {
   if (!selectionId) {
     return data;
+  }
+  if (activeFilter === 'class') {
+    const cohortName = cohorts?.find((c) => c.id === selectionId)?.name;
+    if (!cohortName) {
+      return [];
+    }
+    return data
+      .map((sub) => ({
+        ...sub,
+        lessons: sub.lessons.filter((lesson) =>
+          lesson?.cohorts.includes(cohortName)
+        ),
+      }))
+      .filter((sub) => sub.lessons.length > 0);
   }
   return data.filter((sub) => {
     if (activeFilter === 'teacher' && sub.teacher?.id === selectionId) {
@@ -242,6 +278,64 @@ const filterMovedLessons = (
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
 
+const getAnnouncementsForDay = (
+  announcements: AnnouncementItem[] | undefined,
+  date: string,
+  classId: string | null
+): AnnouncementItem[] => {
+  if (!announcements?.length) {
+    return [];
+  }
+  const start = parseDateOnly(date);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return announcements
+    .filter((a) => {
+      const from = new Date(a.validFrom);
+      const until = new Date(a.validUntil);
+      if (from > end || until < start) {
+        return false;
+      }
+      return (
+        !classId || a.cohortIds.length === 0 || a.cohortIds.includes(classId)
+      );
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime()
+    );
+};
+
+const getAnnouncementDates = (
+  announcements: AnnouncementItem[],
+  classId: string | null,
+  today: Date,
+  now: Date
+): string[] =>
+  announcements
+    .filter(
+      (announcement) =>
+        !classId ||
+        announcement.cohortIds.length === 0 ||
+        announcement.cohortIds.includes(classId)
+    )
+    // One bounded display date per relevant announcement: its start date, or
+    // today when it has already started. A long validity range stays one section.
+    .map((announcement) => {
+      const start = new Date(announcement.validFrom);
+      return toDateKey(start <= now ? today : start);
+    });
+
+const hasVisibleContent = (
+  subs: Subs[],
+  movedLessons: MovedLessonItem[],
+  today: Date,
+  announcementCount: number
+): boolean =>
+  subs.some((sub) => parseDateOnly(sub.substitution.date) >= today) ||
+  movedLessons.some((ml) => parseDateOnly(ml.movedLesson.date) >= today) ||
+  announcementCount > 0;
+
 const getCohortsForDate = (
   subs: Subs[],
   movedLessons: MovedLessonItem[]
@@ -256,6 +350,58 @@ const getCohortsForDate = (
       ),
     ]),
   ].sort(compareClassNames);
+
+const buildDateCohortBoxes = (
+  date: string,
+  dateSubs: Subs[],
+  dateMovedLessons: MovedLessonItem[]
+): ReactNode[] => {
+  const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
+
+  if (cohorts.length === 0) {
+    return [
+      <SubsV
+        data={dateSubs}
+        date={date}
+        key={date}
+        movedLessons={dateMovedLessons}
+      />,
+    ];
+  }
+
+  const cohortCards = cohorts.map((cohort) => (
+    <SubsV
+      cohortFilter={cohort}
+      data={dateSubs.filter((sub) =>
+        sub.lessons.some((l) => l?.cohorts.includes(cohort))
+      )}
+      date={date}
+      key={`${date}-${cohort}`}
+      movedLessons={dateMovedLessons
+        .map((ml) => ({
+          ...ml,
+          lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+        }))
+        .filter((ml) => ml.lessons.length > 0)}
+    />
+  ));
+
+  const unassignedMovedLessons = dateMovedLessons.filter(
+    (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+  );
+
+  const movedCard =
+    unassignedMovedLessons.length > 0 ? (
+      <SubsV
+        data={[]}
+        date={date}
+        key={`${date}-moved`}
+        movedLessons={unassignedMovedLessons}
+      />
+    ) : null;
+
+  return [...cohortCards, movedCard].filter(Boolean);
+};
 
 // SubsFilterBar
 
@@ -420,7 +566,7 @@ function SubsFilterBar({
 
 export function SubstitutionView() {
   const { data: session, isPending } = authClient.useSession();
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
   const [selections, setSelections] = useState<SelectionsType>({
@@ -431,7 +577,7 @@ export function SubstitutionView() {
 
   const isAuthenticated = !isPending && !!session;
   const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
-  const myTeacher = myTeacherQuery.data ?? null;
+  const myTeacher = myTeacherQuery.data;
 
   // Default the view to the user's linked teacher, else their profile class.
   const defaultInitialized = useRef(false);
@@ -478,7 +624,17 @@ export function SubstitutionView() {
 
   const movedLessonsQuery = usePublicMovedLessons(!isPending);
 
+  const announcementsQuery = useAnnouncementsPanel(!isPending);
+
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
+
+  const newsClassId = activeFilter === 'class' ? selections.class : null;
+
+  const activeCohortName = getActiveCohortName(
+    activeFilter,
+    activeSelectionId,
+    cohortsQuery.data
+  );
 
   const filteredSubs = filterSubs(
     substitutionsQuery.data ?? [],
@@ -504,16 +660,34 @@ export function SubstitutionView() {
   const groupedData = groupByDate(filteredSubs);
   const groupedMovedLessons = groupMovedLessonsByDate(filteredMovedLessons);
 
-  const allDates = Array.from(
-    new Set([...Object.keys(groupedData), ...Object.keys(groupedMovedLessons)])
-  ).sort((a, b) => a.localeCompare(b));
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const hasFutureSubstitutions =
-    filteredSubs.some((sub) => new Date(sub.substitution.date) >= today) ||
-    filteredMovedLessons.some((ml) => new Date(ml.movedLesson.date) >= today);
+  const now = new Date();
+
+  const announcementDates = getAnnouncementDates(
+    announcementsQuery.data ?? [],
+    newsClassId,
+    today,
+    now
+  );
+
+  const allDates = Array.from(
+    new Set([
+      ...Object.keys(groupedData),
+      ...Object.keys(groupedMovedLessons),
+      ...announcementDates,
+    ])
+  )
+    .filter((date) => parseDateOnly(date) >= today)
+    .sort((a, b) => a.localeCompare(b));
+
+  const hasContent = hasVisibleContent(
+    filteredSubs,
+    filteredMovedLessons,
+    today,
+    announcementDates.length
+  );
 
   const selectorLoading = getSelectorLoading(
     activeFilter,
@@ -522,54 +696,74 @@ export function SubstitutionView() {
     classroomsQuery.isLoading
   );
 
-  const renderDateCards = (date: string) => {
+  const renderDateSection = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
-    const cohorts = getCohortsForDate(dateSubs, dateMovedLessons);
-
-    if (cohorts.length === 0) {
-      return [
-        <SubsV
-          data={dateSubs}
-          date={date}
-          key={date}
-          movedLessons={dateMovedLessons}
-        />,
-      ];
-    }
-
-    const cohortCards = cohorts.map((cohort) => (
-      <SubsV
-        cohortFilter={cohort}
-        data={dateSubs.filter((sub) =>
-          sub.lessons.some((l) => l?.cohorts.includes(cohort))
-        )}
-        date={date}
-        key={`${date}-${cohort}`}
-        movedLessons={dateMovedLessons
-          .map((ml) => ({
-            ...ml,
-            lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
-          }))
-          .filter((ml) => ml.lessons.length > 0)}
-      />
-    ));
-
-    const unassignedMovedLessons = dateMovedLessons.filter(
-      (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+    const dayAnnouncements = getAnnouncementsForDay(
+      announcementsQuery.data,
+      date,
+      newsClassId
     );
 
-    const movedCard =
-      unassignedMovedLessons.length > 0 ? (
-        <SubsV
-          data={[]}
-          date={date}
-          key={`${date}-moved`}
-          movedLessons={unassignedMovedLessons}
-        />
-      ) : null;
+    let boxes: ReactNode[] = [];
 
-    return [...cohortCards, movedCard].filter(Boolean);
+    if (activeCohortName) {
+      if (dateSubs.length > 0 || dateMovedLessons.length > 0) {
+        boxes = [
+          <SubsV
+            cohortFilter={activeCohortName}
+            data={dateSubs}
+            date={date}
+            key={`${date}-${activeCohortName}`}
+            movedLessons={dateMovedLessons}
+          />,
+        ];
+      }
+    } else {
+      boxes = buildDateCohortBoxes(date, dateSubs, dateMovedLessons);
+    }
+
+    // Under a class filter exactly one card is rendered for the active class;
+    // otherwise count the distinct cohorts that have lessons that day.
+    const cohortCount = activeCohortName
+      ? boxes.length
+      : getCohortsForDate(dateSubs, dateMovedLessons).length;
+    const isToday =
+      parseDateOnly(date).toDateString() === new Date().toDateString();
+
+    return (
+      <section className="space-y-3" key={date}>
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+              isToday
+                ? 'bg-primary/15 text-primary'
+                : 'bg-muted text-muted-foreground'
+            )}
+          >
+            <CalendarDays className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-semibold text-foreground text-lg">
+              {formatLocalizedDate(parseDateOnly(date), i18n.language, {
+                day: '2-digit',
+                month: 'long',
+                weekday: 'long',
+                year: 'numeric',
+              })}
+            </h2>
+            {cohortCount > 0 && (
+              <p className="text-muted-foreground text-sm">
+                {t('substitution.classCount', { count: cohortCount })}
+              </p>
+            )}
+          </div>
+        </div>
+        {dayAnnouncements.length > 0 && <DayNews items={dayAnnouncements} />}
+        <div className="grid gap-3">{boxes}</div>
+      </section>
+    );
   };
 
   return (
@@ -609,7 +803,6 @@ export function SubstitutionView() {
           />
         </div>
       </div>
-      <NewsPanel classId={selections.class} />
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />
@@ -626,8 +819,8 @@ export function SubstitutionView() {
         </div>
       )}
       <div className="w-full max-w-5xl space-y-4">
-        {!(isLoading || hasError) && hasFutureSubstitutions
-          ? allDates.flatMap((date) => renderDateCards(date))
+        {!(isLoading || hasError) && hasContent
+          ? allDates.map((date) => renderDateSection(date))
           : !(isLoading || hasError) && (
               <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">
                 <div className="flex flex-col items-center gap-2">
