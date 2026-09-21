@@ -221,15 +221,12 @@ type MovedLessonRow = {
 };
 
 // Enrich the linked lesson ids of a batch of moved-lesson rows, preserving the
-// target joins and the per-moved-lesson lesson order. `timetableId` scopes
-// enrichment to a single timetable so retired timetables' lessons don't leak
-// into the list.
-async function attachEnrichedLessons(
-  rows: MovedLessonRow[],
-  timetableId?: string | null
-) {
+// target joins and the per-moved-lesson lesson order. A moved lesson keeps
+// pointing at the lesson it was created for, even after that lesson's timetable
+// is retired, so this must not be scoped to the active timetable.
+async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   const allLessonIds = Array.from(new Set(rows.flatMap((r) => r.lessons)));
-  const enriched = await enrichLessons(allLessonIds, timetableId);
+  const enriched = await enrichLessons(allLessonIds);
   const lessonMap = new Map(enriched.map((l) => [l.id, l]));
 
   return rows.map((r) => ({
@@ -263,11 +260,6 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   async (c) => {
-    const timetableId = await getActiveTimetableId();
-
-    if (!timetableId) {
-      return ok(c, []);
-    }
     const movedLessons = await db
       .select({
         classroom,
@@ -287,11 +279,9 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
         movedLessonLessonMTM,
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
-      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .where(eq(lesson.timetableId, timetableId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
@@ -312,12 +302,6 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
     tags: ['Moved Lesson'],
   }),
   async (c) => {
-    const timetableId = await getActiveTimetableId();
-
-    if (!timetableId) {
-      return ok(c, []);
-    }
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -340,13 +324,10 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
         movedLessonLessonMTM,
         eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
       )
-      .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
-      .where(
-        and(gte(movedLesson.date, today), eq(lesson.timetableId, timetableId))
-      )
+      .where(gte(movedLesson.date, today))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
@@ -382,12 +363,6 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
-    const timetableId = await getActiveTimetableId();
-
-    if (!timetableId) {
-      return ok(c, []);
-    }
-
     const movedLessons = await db
       .select({
         classroom,
@@ -409,15 +384,10 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       )
       .leftJoin(lesson, eq(movedLessonLessonMTM.lessonId, lesson.id))
       .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-      .where(
-        and(
-          eq(lessonCohortMTM.cohortId, cohortId),
-          eq(lesson.timetableId, timetableId)
-        )
-      )
+      .where(eq(lessonCohortMTM.cohortId, cohortId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
@@ -453,12 +423,6 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
   async (c) => {
     const { cohortId } = c.req.valid('param');
 
-    const timetableId = await getActiveTimetableId();
-
-    if (!timetableId) {
-      return ok(c, []);
-    }
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -486,13 +450,12 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       .where(
         and(
           eq(lessonCohortMTM.cohortId, cohortId),
-          gte(movedLesson.date, today),
-          eq(lesson.timetableId, timetableId)
+          gte(movedLesson.date, today)
         )
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons, timetableId));
+    return ok(c, await attachEnrichedLessons(movedLessons));
   }
 );
 
