@@ -48,14 +48,22 @@ import {
 } from '@/hooks/timetable-public';
 import { authClient } from '@/utils/authentication';
 import { compareClassNames } from '@/utils/cohort';
-import { formatLocalizedDate } from '@/utils/date-locale';
+import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
 import { DayNews } from './news-panel';
 import { SubsV } from './subs';
+
+/** Local calendar day as `YYYY-MM-DD`; the key format used for date sections. */
+const toDateKey = (value: string | Date): string => {
+  const date = value instanceof Date ? value : parseDateOnly(value);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
 
 const groupByDate = (data: Subs[]) =>
   data.reduce(
     (acc, curr) => {
-      const date = curr.substitution.date;
+      const date = toDateKey(curr.substitution.date);
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -68,7 +76,7 @@ const groupByDate = (data: Subs[]) =>
 const groupMovedLessonsByDate = (data: MovedLessonItem[]) =>
   data.reduce(
     (acc, curr) => {
-      const date = curr.movedLesson.date;
+      const date = toDateKey(curr.movedLesson.date);
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -278,8 +286,7 @@ const getAnnouncementsForDay = (
   if (!announcements?.length) {
     return [];
   }
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
+  const start = parseDateOnly(date);
   const end = new Date(start);
   end.setHours(23, 59, 59, 999);
   return announcements
@@ -298,6 +305,36 @@ const getAnnouncementsForDay = (
         new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime()
     );
 };
+
+const getAnnouncementDates = (
+  announcements: AnnouncementItem[],
+  classId: string | null,
+  today: Date,
+  now: Date
+): string[] =>
+  announcements
+    .filter(
+      (announcement) =>
+        !classId ||
+        announcement.cohortIds.length === 0 ||
+        announcement.cohortIds.includes(classId)
+    )
+    // One bounded display date per relevant announcement: its start date, or
+    // today when it has already started. A long validity range stays one section.
+    .map((announcement) => {
+      const start = new Date(announcement.validFrom);
+      return toDateKey(start <= now ? today : start);
+    });
+
+const hasVisibleContent = (
+  subs: Subs[],
+  movedLessons: MovedLessonItem[],
+  today: Date,
+  announcementCount: number
+): boolean =>
+  subs.some((sub) => parseDateOnly(sub.substitution.date) >= today) ||
+  movedLessons.some((ml) => parseDateOnly(ml.movedLesson.date) >= today) ||
+  announcementCount > 0;
 
 const getCohortsForDate = (
   subs: Subs[],
@@ -591,6 +628,8 @@ export function SubstitutionView() {
 
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
+  const newsClassId = activeFilter === 'class' ? selections.class : null;
+
   const activeCohortName = getActiveCohortName(
     activeFilter,
     activeSelectionId,
@@ -624,15 +663,31 @@ export function SubstitutionView() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const now = new Date();
+
+  const announcementDates = getAnnouncementDates(
+    announcementsQuery.data ?? [],
+    newsClassId,
+    today,
+    now
+  );
+
   const allDates = Array.from(
-    new Set([...Object.keys(groupedData), ...Object.keys(groupedMovedLessons)])
+    new Set([
+      ...Object.keys(groupedData),
+      ...Object.keys(groupedMovedLessons),
+      ...announcementDates,
+    ])
   )
-    .filter((date) => new Date(date) >= today)
+    .filter((date) => parseDateOnly(date) >= today)
     .sort((a, b) => a.localeCompare(b));
 
-  const hasFutureSubstitutions =
-    filteredSubs.some((sub) => new Date(sub.substitution.date) >= today) ||
-    filteredMovedLessons.some((ml) => new Date(ml.movedLesson.date) >= today);
+  const hasContent = hasVisibleContent(
+    filteredSubs,
+    filteredMovedLessons,
+    today,
+    announcementDates.length
+  );
 
   const selectorLoading = getSelectorLoading(
     activeFilter,
@@ -668,8 +723,9 @@ export function SubstitutionView() {
       boxes = buildDateCohortBoxes(date, dateSubs, dateMovedLessons);
     }
 
-    const boxCount = boxes.length;
-    const isToday = new Date(date).toDateString() === new Date().toDateString();
+    const cohortCount = getCohortsForDate(dateSubs, dateMovedLessons).length;
+    const isToday =
+      parseDateOnly(date).toDateString() === new Date().toDateString();
 
     return (
       <section className="space-y-3" key={date}>
@@ -686,16 +742,16 @@ export function SubstitutionView() {
           </div>
           <div className="min-w-0">
             <h2 className="font-semibold text-foreground text-lg">
-              {formatLocalizedDate(date, i18n.language, {
+              {formatLocalizedDate(parseDateOnly(date), i18n.language, {
                 day: '2-digit',
                 month: 'long',
                 weekday: 'long',
                 year: 'numeric',
               })}
             </h2>
-            {boxCount > 0 && (
+            {cohortCount > 0 && (
               <p className="text-muted-foreground text-sm">
-                {t('substitution.classCount', { count: boxCount })}
+                {t('substitution.classCount', { count: cohortCount })}
               </p>
             )}
           </div>
@@ -705,8 +761,6 @@ export function SubstitutionView() {
       </section>
     );
   };
-
-  const newsClassId = activeFilter === 'class' ? selections.class : null;
 
   return (
     <div className="flex grow flex-col items-center gap-6 p-6">
@@ -761,7 +815,7 @@ export function SubstitutionView() {
         </div>
       )}
       <div className="w-full max-w-5xl space-y-4">
-        {!(isLoading || hasError) && hasFutureSubstitutions
+        {!(isLoading || hasError) && hasContent
           ? allDates.map((date) => renderDateSection(date))
           : !(isLoading || hasError) && (
               <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">

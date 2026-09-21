@@ -22,6 +22,7 @@ import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   formatLocalizedDate,
   getLocalizedWeekdayName,
+  parseDateOnly,
 } from '@/utils/date-locale';
 import { formatPeriodLabel } from '@/utils/period';
 
@@ -73,7 +74,7 @@ function getSubstitutionRows(
   today.setHours(0, 0, 0, 0);
 
   const rows = data
-    .filter((sub) => new Date(sub.substitution.date) >= today)
+    .filter((sub) => parseDateOnly(sub.substitution.date) >= today)
     .flatMap((sub) =>
       sub.lessons
         .filter((lesson): lesson is Lesson => lesson !== null)
@@ -100,7 +101,7 @@ function getMovedLessonRows(data: MovedLessonItem[]): MovedLessonRow[] {
   today.setHours(0, 0, 0, 0);
 
   const rows = data
-    .filter((ml) => new Date(ml.movedLesson.date) >= today)
+    .filter((ml) => parseDateOnly(ml.movedLesson.date) >= today)
     .flatMap((ml) => ml.lessons.map((lesson) => ({ lesson, ml })));
 
   rows.sort(
@@ -242,31 +243,44 @@ function MovedTimeCell({
   lesson: Lesson;
   movedTarget: MovedTarget;
 }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const originalPeriod = lesson.period;
   const targetPeriod = movedTarget.period ?? null;
+  const targetDay = movedTarget.day;
 
-  if (originalPeriod) {
-    if (targetPeriod && targetPeriod.id !== originalPeriod.id) {
-      return (
-        <span className="font-medium">
-          {formatPeriodLabel(originalPeriod)} →{' '}
-          {formatPeriodLabel(targetPeriod)}
-        </span>
-      );
-    }
+  let periodLabel: string | null = null;
+  if (originalPeriod && targetPeriod && targetPeriod.id !== originalPeriod.id) {
+    periodLabel = `${formatPeriodLabel(originalPeriod)} → ${formatPeriodLabel(targetPeriod)}`;
+  } else if (originalPeriod) {
+    periodLabel = formatPeriodLabel(originalPeriod);
+  } else if (targetPeriod) {
+    periodLabel = formatPeriodLabel(targetPeriod);
+  }
+
+  // The desktop table has no day column; without this a cross-weekday move
+  // looks like a same-day move when the target period is unchanged.
+  const dayLabel = targetDay
+    ? getLocalizedWeekdayName(
+        targetDay.name,
+        targetDay.short,
+        i18n.language,
+        'long'
+      )
+    : null;
+
+  if (!(dayLabel || periodLabel)) {
     return (
-      <span className="font-medium">{formatPeriodLabel(originalPeriod)}</span>
+      <span className="text-muted-foreground">
+        {t('substitution.notAvailable')}
+      </span>
     );
   }
-  if (targetPeriod) {
-    return (
-      <span className="font-medium">{formatPeriodLabel(targetPeriod)}</span>
-    );
-  }
+
   return (
-    <span className="text-muted-foreground">
-      {t('substitution.notAvailable')}
+    <span className="font-medium">
+      {dayLabel}
+      {dayLabel && periodLabel ? ' · ' : ''}
+      {periodLabel}
     </span>
   );
 }
@@ -587,9 +601,9 @@ export function SubsV({
 
   const hasContent =
     !!cardDate &&
-    new Date(cardDate) >= today &&
+    parseDateOnly(cardDate) >= today &&
     (data.length > 0 ||
-      movedLessons.some((ml) => new Date(ml.movedLesson.date) >= today));
+      movedLessons.some((ml) => parseDateOnly(ml.movedLesson.date) >= today));
 
   if (!hasContent) {
     return null;
@@ -602,12 +616,16 @@ export function SubsV({
   const movedCount = movedRows.length;
   const hasSections = subsCount > 0 || movedCount > 0;
 
-  const dateLabel = formatLocalizedDate(cardDate, i18n.language, {
-    day: '2-digit',
-    month: 'long',
-    weekday: 'long',
-    year: 'numeric',
-  });
+  const dateLabel = formatLocalizedDate(
+    parseDateOnly(cardDate),
+    i18n.language,
+    {
+      day: '2-digit',
+      month: 'long',
+      weekday: 'long',
+      year: 'numeric',
+    }
+  );
 
   return (
     <Card className="w-full overflow-hidden border-accent/50 shadow-sm">
