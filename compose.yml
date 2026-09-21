@@ -40,7 +40,7 @@ services:
       retries: 5
 
   mailpit:
-    image: axllent/mailpit:v1.31.0
+    image: axllent/mailpit:v1.31.1
     container_name: filc-mailpit
     restart: unless-stopped
     ports:
