@@ -723,7 +723,11 @@ export function SubstitutionView() {
       boxes = buildDateCohortBoxes(date, dateSubs, dateMovedLessons);
     }
 
-    const cohortCount = getCohortsForDate(dateSubs, dateMovedLessons).length;
+    // Under a class filter exactly one card is rendered for the active class;
+    // otherwise count the distinct cohorts that have lessons that day.
+    const cohortCount = activeCohortName
+      ? boxes.length
+      : getCohortsForDate(dateSubs, dateMovedLessons).length;
     const isToday =
       parseDateOnly(date).toDateString() === new Date().toDateString();
 
