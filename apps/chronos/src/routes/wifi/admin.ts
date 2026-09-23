@@ -2,6 +2,7 @@ import {
   wifiAuthLogListQuerySchema,
   wifiAuthLogSchema,
   wifiDeviceCreateSchema,
+  wifiDeviceListQuerySchema,
   wifiDeviceSchema,
   wifiDeviceUpdateSchema,
   wifiIdParamSchema,
@@ -22,7 +23,7 @@ import {
 } from '@filcdev/api/domains/wifi/admin';
 import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
-import { and, asc, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, isNull, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -283,16 +284,27 @@ export const listWifiDevicesRoute = wifiFactory.createHandlers(
     tags: ['WiFi'],
   }),
   ...authRouter(permissions.wifiRead),
-  zValidator('query', wifiListQuerySchema),
+  zValidator('query', wifiDeviceListQuerySchema),
   async (c) => {
-    const { limit, offset, search } = c.req.valid('query');
+    const { limit, offset, search, wifiUserId } = c.req.valid('query');
+    
+    const whereConditions = and(
+      search ? ilike(wifiDevice.macAddress, `%${search}%`) : undefined,
+      wifiUserId !== undefined
+        ? wifiUserId === null
+          ? isNull(wifiDevice.wifiUserId)
+          : eq(wifiDevice.wifiUserId, wifiUserId)
+        : undefined
+    );
+
     const devices = await db
       .select()
       .from(wifiDevice)
-      .where(search ? ilike(wifiDevice.macAddress, `%${search}%`) : undefined)
+      .where(whereConditions)
       .orderBy(desc(wifiDevice.updatedAt))
       .limit(limit)
       .offset(offset);
+
     return ok(c, devices);
   }
 );
