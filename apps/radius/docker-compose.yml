@@ -1,6 +1,8 @@
 services:
   freeradius:
-    image: freeradius/freeradius-server:latest-alpine
+    build:
+      context: ./freeradius
+    image: filc-freeradius:latest
     ports:
       - "1812:1812/udp"
       - "1812:1812/tcp"

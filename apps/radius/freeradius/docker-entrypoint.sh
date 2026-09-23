@@ -37,8 +37,7 @@ if [ -f /eapol_test.conf.template ]; then
   sed "s/IDHERE/$RADTEST_USER/g" /eapol_test.conf.template | sed -e "s/PASSHERE/$RADTEST_PASS/g" > /eapol_test.conf
 fi
 
-apk update
-apk add wpa_supplicant tzdata
+
 
 if [ "$#" -eq 0 ] || [ "${1#-}" != "$1" ]; then
     set -- radiusd "$@"
