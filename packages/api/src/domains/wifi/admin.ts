@@ -14,9 +14,8 @@ export const wifiListQuerySchema = z.object({
 export const wifiDeviceListQuerySchema = wifiListQuerySchema.extend({
   wifiUserId: z
     .union([z.uuid(), z.literal('null'), z.literal('')])
-    .nullable()
-    .optional()
-    .transform((val) => (val === 'null' || val === '' ? null : val)),
+    .transform((val) => (val === 'null' || val === '' ? null : val))
+    .optional(),
 });
 
 export const wifiUserSchema = z.object({
