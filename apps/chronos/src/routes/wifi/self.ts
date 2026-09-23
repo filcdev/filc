@@ -20,7 +20,7 @@ import { db } from '#database';
 import { wifiDevice, wifiUser } from '#database/schema/wifi';
 import { authRouter } from '#middleware/auth';
 import { env } from '#utils/environment';
-import { notFound, ok } from '#utils/http';
+import { created, notFound, ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
 import { encryptPassword } from '#utils/wifi/encryptor';
 import { resolveEffectiveSpeedProfileDetails } from '#utils/wifi/speed-profile';
@@ -154,7 +154,7 @@ export const createSelfWifiRoute = wifiFactory.createHandlers(
       .from(wifiDevice)
       .where(eq(wifiDevice.wifiUserId, account.id));
 
-    return ok(c, {
+    return created(c, {
       wifi: {
         banned: account.banned,
         devices,
