@@ -418,7 +418,9 @@
     "export": "Export",
     "exportTitle": "Substitutions export",
     "exportSuccess": "Export downloaded successfully",
-    "exportError": "Failed to export substitutions"
+    "exportError": "Failed to export substitutions",
+    "classCount_one": "{{count}} class",
+    "classCount_other": "{{count}} classes"
   },
   "movedLesson": {
     "title": "Moved Lessons",

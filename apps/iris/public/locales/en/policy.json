@@ -1,0 +1,157 @@
+{
+  "pageTitle": "Privacy Policy – Filc Mergen",
+  "title": "Privacy Policy",
+  "subtitle": "Filc Mergen",
+  "effectiveDate": "Effective: 23 September 2026",
+  "lastUpdated": "Last updated: 23 September 2026",
+  "sections": [
+    {
+      "title": "Introduction",
+      "paragraphs": [
+        "This Privacy Policy applies to the Filc Mergen mobile application (hereinafter: “Mergen” or the “Application”).",
+        "Mergen is designed to provide the community of BMSZC Petrik Lajos Bilingual Technical School with quick and convenient access to school-related information, including news, announcements, current substitutions, personalized content and notifications."
+      ]
+    },
+    {
+      "title": "1. Data controller",
+      "paragraphs": [
+        "Petrik Foundation (Petrik Alapítvány)",
+        "Registered address: 1146 Budapest, Thököly út 48–54., Hungary",
+        "E-mail: info@petrik.hu",
+        "Privacy enquiries: gdpr@petrik.hu",
+        "Questions concerning this Privacy Policy or the processing of personal data may be submitted using the contact details above."
+      ]
+    },
+    {
+      "title": "2. What data may the Application process?",
+      "paragraphs": [
+        "Mergen processes only data necessary for the operation of the Application and for providing the features used by the user.",
+        "Depending on the features used, processed data may include the following categories:"
+      ],
+      "bullets": [
+        "Login and identification data: a user identifier required to identify the user, as well as session or access tokens created during authentication.",
+        "User and school-related data: for example, the class, group or other information associated with the user that is necessary to display personalized school information.",
+        "Settings and preferences: for example, notification settings, followed information or local settings related to the operation of the Application.",
+        "Technical data required for notifications: the push notification identifier/token associated with the Application installation or device.",
+        "Technical and security data: for example IP address, time of the request, application and operating-system version and technical log data required for operation or troubleshooting.",
+        "Viewing publicly available school news and announcements does not in itself require the user to provide personal data."
+      ]
+    },
+    {
+      "title": "3. Login data",
+      "paragraphs": [
+        "Certain features are available only to authenticated users.",
+        "Data provided during login is used solely to identify the user, verify authorization and provide content available to that user.",
+        "The Application is not intended to maintain a separate database of users’ passwords. After successful authentication, technical authentication data or tokens may be used to maintain the session."
+      ]
+    },
+    {
+      "title": "4. Personalized content",
+      "paragraphs": [
+        "After login, the Application may display personalized content based on information associated with the user.",
+        "This may include substitutions, announcements, news or notifications relevant to the user.",
+        "Such data is used only to provide the relevant service."
+      ]
+    },
+    {
+      "title": "5. Push notifications",
+      "paragraphs": [
+        "Mergen may send notifications about new news items, announcements, substitutions or other important school changes.",
+        "The Application may use a technical push notification identifier to deliver notifications.",
+        "Notifications can be disabled in the device or Application settings.",
+        "Depending on the platform, Google Firebase Cloud Messaging or Apple Push Notification Service infrastructure may be involved in delivering push notifications."
+      ]
+    },
+    {
+      "title": "6. Purposes of processing",
+      "paragraphs": [
+        "Personal data may be processed solely for operating the Application; identifying users and verifying authorization; providing personalized school information; delivering notifications; preserving user settings; identifying and resolving errors; and maintaining the security of the Application and related IT systems.",
+        "Mergen does not use personal data for targeted advertising and does not sell personal data to third parties."
+      ]
+    },
+    {
+      "title": "7. Legal basis",
+      "paragraphs": [
+        "Depending on the feature, the legal basis for processing may in particular be Article 6(1)(b) GDPR where processing is necessary to provide a service requested by the user, or Article 6(1)(f) GDPR where processing is based on legitimate interests, especially the secure operation of IT systems and the prevention of abuse.",
+        "Where consent is required for an optional feature, processing is based on Article 6(1)(a) GDPR. Consent may be withdrawn at any time.",
+        "Where processing is required to comply with a legal obligation, Article 6(1)(c) GDPR may apply."
+      ]
+    },
+    {
+      "title": "8. Data sharing and processors",
+      "paragraphs": [
+        "Personal data is not sold or disclosed to third parties for their own marketing or advertising purposes.",
+        "To operate the Application, we may use IT service providers that technically assist with activities such as server operation, hosting, backups or the delivery of push notifications.",
+        "These service providers may access data only to the extent necessary to provide the relevant service.",
+        "Where services provided by Google or Apple are used, certain technical data may be processed outside the European Economic Area. In such cases, data transfers may take place in accordance with applicable data protection rules and appropriate safeguards provided by the relevant service provider."
+      ]
+    },
+    {
+      "title": "9. Data retention",
+      "paragraphs": [
+        "Personal data is retained only for as long as necessary for the relevant feature or to fulfil the purpose of processing.",
+        "Data associated with a login session may be processed until the session expires, is revoked or the user logs out.",
+        "Push notification tokens may be processed while the notification service associated with the Application installation remains active.",
+        "Application settings stored on the device can be removed by deleting the Application data or uninstalling the Application.",
+        "Security and technical logs are retained only for as long as necessary for troubleshooting, security checks and operation of the service."
+      ]
+    },
+    {
+      "title": "10. Data deletion",
+      "paragraphs": [
+        "Users may request deletion of personal data associated with Mergen where there is no legal or other valid basis for continued processing.",
+        "Deletion requests may be submitted to gdpr@petrik.hu.",
+        "If Mergen uses an account created in another institutional system for login, deletion of the original institutional account may not be performed within Mergen. Users may nevertheless request deletion of data processed by Mergen in connection with them."
+      ]
+    },
+    {
+      "title": "11. Data security",
+      "paragraphs": [
+        "Appropriate technical and organizational measures are applied to protect personal data against unauthorized access, alteration, disclosure, loss or destruction.",
+        "Modern encrypted HTTPS/TLS connections may be used to protect data transmitted between the Application and related servers.",
+        "Access is restricted to authorized users and systems."
+      ]
+    },
+    {
+      "title": "12. Children and minors",
+      "paragraphs": [
+        "Mergen operates in an educational environment and may therefore be used by minors.",
+        "Particular attention is paid to data minimization: we aim to process only data necessary to provide a specific feature of the Application.",
+        "The Application does not display personalized advertising and does not sell users’ personal data for advertising or marketing purposes."
+      ]
+    },
+    {
+      "title": "13. Data subject rights",
+      "paragraphs": [
+        "Under applicable data protection law, users may request information about the processing of their personal data, obtain access to their personal data, request correction of inaccurate data, request deletion or restriction of processing, object to certain processing and, where applicable, exercise the right to data portability.",
+        "Where processing is based on consent, consent may be withdrawn at any time.",
+        "Requests relating to data protection rights may be sent to gdpr@petrik.hu."
+      ]
+    },
+    {
+      "title": "14. Complaints",
+      "paragraphs": [
+        "If a user believes that the processing of their personal data does not comply with applicable data protection requirements, they may lodge a complaint with the Hungarian National Authority for Data Protection and Freedom of Information.",
+        "Hungarian National Authority for Data Protection and Freedom of Information (NAIH)",
+        "Address: 1055 Budapest, Falk Miksa utca 9–11., Hungary",
+        "Postal address: 1363 Budapest, Pf. 9., Hungary",
+        "E-mail: ugyfelszolgalat@naih.hu",
+        "Web: https://www.naih.hu/"
+      ]
+    },
+    {
+      "title": "15. Third-party content and services",
+      "paragraphs": [
+        "Mergen may use server-side services and other IT systems to display school information.",
+        "Where the Application displays a link to an external website or service, the processing of data by that external service is governed by its own privacy terms."
+      ]
+    },
+    {
+      "title": "16. Changes to this Privacy Policy",
+      "paragraphs": [
+        "This Privacy Policy may be amended from time to time, in particular where the Application’s features, technologies or the legal environment change.",
+        "The current version is always available on this page."
+      ]
+    }
+  ]
+}
