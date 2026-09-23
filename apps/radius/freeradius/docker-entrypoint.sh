@@ -17,7 +17,8 @@ ln -s /opt/etc/raddb/mods-available/inner-eap /opt/etc/raddb/mods-enabled/inner-
 # Enable rest module to connect to Chronos backend
 chmod o-w /opt/etc/raddb/mods-available/rest
 rm -f /opt/etc/raddb/mods-enabled/rest || true
-sed "s/SECRET_HERE/$FREERADIUS_SHARED_SECRET/g" /opt/etc/raddb/mods-available/rest > /opt/etc/raddb/mods-enabled/rest
+ESCAPED_SECRET=$(printf '%s\n' "$FREERADIUS_SHARED_SECRET" | sed -e 's/[\\/&]/\\&/g')
+sed "s/SECRET_HERE/$ESCAPED_SECRET/g" /opt/etc/raddb/mods-available/rest > /opt/etc/raddb/mods-enabled/rest
 
 # Secure certs
 chmod o-w /opt/etc/raddb/certs
