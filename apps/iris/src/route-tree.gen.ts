@@ -14,6 +14,7 @@ import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
 import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as PublicPolicyRouteImport } from './routes/_public/policy'
 import { Route as PublicSubsRouteImport } from './routes/_public/subs'
 import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscribe'
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
@@ -67,6 +68,11 @@ const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
 const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const PublicPolicyRoute = PublicPolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
   getParentRoute: () => PublicRouteRoute,
 } as any)
 const PublicSubsRoute = PublicSubsRouteImport.update({
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/settings': typeof PrivateSettingsRoute
+  '/policy': typeof PublicPolicyRoute
   '/subs': typeof PublicSubsRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
   '/auth/error': typeof AuthErrorRoute
@@ -286,6 +293,7 @@ export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
   '/settings': typeof PrivateSettingsRoute
+  '/policy': typeof PublicPolicyRoute
   '/subs': typeof PublicSubsRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
   '/auth/error': typeof AuthErrorRoute
@@ -324,6 +332,7 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteRouteWithChildren
   '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
   '/_private/settings': typeof PrivateSettingsRoute
+  '/_public/policy': typeof PublicPolicyRoute
   '/_public/subs': typeof PublicSubsRoute
   '/_public/unsubscribe': typeof PublicUnsubscribeRoute
   '/auth/error': typeof AuthErrorRoute
@@ -363,6 +372,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/settings'
+    | '/policy'
     | '/subs'
     | '/unsubscribe'
     | '/auth/error'
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/settings'
+    | '/policy'
     | '/subs'
     | '/unsubscribe'
     | '/auth/error'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/_public'
     | '/_private/admin'
     | '/_private/settings'
+    | '/_public/policy'
     | '/_public/subs'
     | '/_public/unsubscribe'
     | '/auth/error'
@@ -513,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/policy': {
+      id: '/_public/policy'
+      path: '/policy'
+      fullPath: '/policy'
+      preLoaderRoute: typeof PublicPolicyRouteImport
       parentRoute: typeof PublicRouteRoute
     }
     '/_public/subs': {
@@ -815,12 +834,14 @@ const PrivateRouteRouteWithChildren = PrivateRouteRoute._addFileChildren(
 )
 
 interface PublicRouteRouteChildren {
+  PublicPolicyRoute: typeof PublicPolicyRoute
   PublicSubsRoute: typeof PublicSubsRoute
   PublicUnsubscribeRoute: typeof PublicUnsubscribeRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
+  PublicPolicyRoute: PublicPolicyRoute,
   PublicSubsRoute: PublicSubsRoute,
   PublicUnsubscribeRoute: PublicUnsubscribeRoute,
   PublicIndexRoute: PublicIndexRoute,
