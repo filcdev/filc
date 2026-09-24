@@ -1111,11 +1111,11 @@ const processLesson = (
   termMap: Map<string, string>,
   timetableId: string,
   logger: TimetableImportLogger
-): LessonDraft | null => {
+): LessonDraft[] => {
   const periodId = maps.periodMap.get(lesson.periodId);
   if (!periodId) {
     logger.error(`Period: ${lesson.periodId} not found in periodMap.`);
-    return null;
+    return [];
   }
 
   const subjectId = maps.subjectMap.get(lesson.subjectId);
@@ -1126,7 +1126,7 @@ const processLesson = (
       lessonId: lesson.id,
       subjectId: lesson.subjectId,
     });
-    return null;
+    return [];
   }
 
   const cohortIds: string[] = [];
@@ -1155,40 +1155,55 @@ const processLesson = (
       lessonId: lesson.id,
       weekId: lesson.weekId,
     });
-    return null;
+    return [];
   }
 
   const termDefinitionId = lesson.termId
     ? (termMap.get(lesson.termId) ?? null)
     : null;
 
-  const row: NewLesson = {
-    classroomIds,
-    dayDefinitionId,
-    groupsIds,
-    id: randomId(),
-    periodId,
-    periodsPerWeek: lesson.periodsPerWeek ?? 1,
-    subjectId,
-    teacherIds,
-    termDefinitionId,
-    timetableId,
-    weeksDefinitionId,
-  };
+  const uniqueTeacherIds = [...new Set(teacherIds)];
+  // Split a multi-teacher source lesson into one draft per teacher, so a
+  // substitution or moved lesson can target a single teacher independently.
+  const teacherLists =
+    uniqueTeacherIds.length > 1
+      ? uniqueTeacherIds.map((teacherId) => [teacherId])
+      : [teacherIds];
 
-  const key = makeLessonKey({
-    classroomIds,
-    cohortIds,
-    dayDefinitionId,
-    groupsIds,
-    periodId,
-    subjectId,
-    teacherIds,
-    termDefinitionId,
-    weekDefinitionId: weeksDefinitionId,
+  return teacherLists.map((teacherIdsForDraft, i) => {
+    const row: NewLesson = {
+      classroomIds,
+      dayDefinitionId,
+      groupsIds,
+      id: randomId(),
+      periodId,
+      periodsPerWeek: lesson.periodsPerWeek ?? 1,
+      subjectId,
+      teacherIds: teacherIdsForDraft,
+      termDefinitionId,
+      timetableId,
+      weeksDefinitionId,
+    };
+
+    const key = makeLessonKey({
+      classroomIds,
+      cohortIds,
+      dayDefinitionId,
+      groupsIds,
+      periodId,
+      subjectId,
+      teacherIds: teacherIdsForDraft,
+      termDefinitionId,
+      weekDefinitionId: weeksDefinitionId,
+    });
+
+    return {
+      cohortIds,
+      key,
+      row,
+      scheduleKey: `${lessonIndex}:${i}`,
+    };
   });
-
-  return { cohortIds, key, row, scheduleKey: `${lessonIndex}` };
 };
 
 const loadLessons = async <Tx>(
@@ -1241,9 +1256,7 @@ const loadLessons = async <Tx>(
       timetableId,
       logger
     );
-    if (processed) {
-      drafts.push(processed);
-    }
+    drafts.push(...processed);
   }
 
   if (!drafts.length) {
