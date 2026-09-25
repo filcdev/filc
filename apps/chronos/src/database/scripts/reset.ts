@@ -1,4 +1,3 @@
-import process from 'node:process';
 import { confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import { getTableName, sql } from 'drizzle-orm';
@@ -8,6 +7,7 @@ import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#database/schema/doorlock';
 import { timetableSchema } from '#database/schema/timetable';
+import { wifiSchema } from '#database/schema/wifi';
 import { configureLogger } from '#utils/logger';
 
 await configureLogger('chronos');
@@ -39,6 +39,7 @@ const reset = async () => {
     ...(nukeAuth ? apiKeySchema : {}),
     ...doorlockSchema,
     ...timetableSchema,
+    ...wifiSchema,
   };
 
   // disable foreign key checks

@@ -1,8 +1,10 @@
 import { getLogger } from '@logtape/logtape';
 import Baker from 'cronbake';
 import { cleanUpOldDeviceAuditLogs } from '#utils/doorlock/cards';
+import { env } from '#utils/environment';
 import { cleanUpOldNotifications } from '#utils/notifications/cleanup';
 import { cleanupOrphanedCohorts } from '#utils/timetable/cleanup';
+import { cleanUpWifiAuthLogs } from '#utils/wifi/cleanup';
 
 const logger = getLogger(['chronos', 'cron']);
 
@@ -26,6 +28,23 @@ export const setupCronJobs = () => {
     cron: '@daily',
     name: 'clean-up-old-notifications',
   });
+
+  if (env.wifiEnabled) {
+    baker.add({
+      callback: cleanUpWifiAuthLogs,
+      cron: '@monthly',
+      name: 'clean-up-wifi-auth-logs',
+    });
+
+    baker.add({
+      callback: async () => {
+        const { syncSpeedProfiles } = await import('#utils/wifi/sync');
+        await syncSpeedProfiles();
+      },
+      cron: '@hourly',
+      name: 'sync-wifi-speed-profiles',
+    });
+  }
 
   baker.add({
     callback: async () => {

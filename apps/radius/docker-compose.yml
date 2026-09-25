@@ -1,0 +1,37 @@
+services:
+  freeradius:
+    build:
+      context: ./freeradius
+    image: filc-freeradius:latest
+    ports:
+      - "1812:1812/udp"
+      - "1812:1812/tcp"
+      - "1813:1813/udp"
+      - "1813:1813/tcp"
+    volumes:
+      - './freeradius/clients.conf:/opt/etc/raddb/clients.conf'
+      - './freeradius/default:/opt/etc/raddb/sites-available/default'
+      - './freeradius/rest:/opt/etc/raddb/mods-available/rest'
+      - './freeradius/docker-entrypoint.sh:/docker-entrypoint.sh'
+      - './freeradius/inner-tunnel:/opt/etc/raddb/sites-available/inner-tunnel'
+      - './freeradius/inner-eap:/opt/etc/raddb/mods-available/inner-eap'
+      - './freeradius/eap:/opt/etc/raddb/mods-available/eap'
+      - './certs:/opt/etc/raddb/certs'
+      - './freeradius/eapol_test.conf:/eapol_test.conf.template'
+    command: radiusd -X # Running with -X for debugging
+    healthcheck:
+      test: eapol_test -c /eapol_test.conf -s $$RADTEST_SECRET || exit 1
+      interval: 30s
+      timeout: 20s
+      retries: 5
+    restart: always
+    env_file:
+      - .env
+#    networks:
+#      filc-network:
+#        ipv4_address: 172.18.1.2
+
+#networks:
+#  default:
+#    name: filc-network
+#    external: true

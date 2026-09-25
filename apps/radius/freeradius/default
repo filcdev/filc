@@ -1,0 +1,70 @@
+# Default virtual server for outer authentication
+server default {
+	listen {
+		type = auth
+		ipaddr = *
+		port = 0
+		limit {
+			max_connections = 100
+			idle_timeout = 30
+		}
+	}
+	listen {
+		ipaddr = *
+		port = 0
+		type = acct
+	}
+
+	authorize {
+		eap
+	}
+
+	authenticate {
+		eap
+	}
+
+	preacct {
+		preprocess
+		acct_unique
+		suffix
+	}
+
+	# Forward accounting to REST backend (Chronos)
+	accounting {
+		detail
+		unix
+		-sql
+		exec
+		attr_filter.accounting_response
+	}
+
+	session {}
+
+	post-auth {
+		update reply {
+			Session-Timeout := &session-state:Session-Timeout
+			Idle-Timeout := 300
+			Termination-Action := 0
+		}
+
+		if (session-state:User-Name && reply:User-Name && request:User-Name && (reply:User-Name == request:User-Name)) {
+			update reply {
+				&User-Name !* ANY
+			}
+		}
+		update {
+			&reply: += &session-state:
+		}
+
+		-sql
+		exec
+		remove_reply_message_if_eap
+
+		Post-Auth-Type REJECT {
+			-sql
+			attr_filter.access_reject
+			eap
+			remove_reply_message_if_eap
+		}
+	}
+}
