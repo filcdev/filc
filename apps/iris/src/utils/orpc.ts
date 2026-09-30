@@ -5,7 +5,8 @@ import type {
   QueryKey,
 } from '@tanstack/react-query';
 import { createIsomorphicFn } from '@tanstack/react-start';
-import { getRequest, getRequestHeaders } from '@tanstack/react-start/server';
+import { getRequestHeaders } from '@tanstack/react-start/server';
+import { requestOrigin } from '@/utils/request';
 
 /** The API base as a URL prefix: image URLs are built from it by hand. */
 export const apiBaseUrl = '/api';
@@ -20,9 +21,11 @@ const client = createIsomorphicFn()
   .server(() =>
     createApiClient({
       headers: () => new Headers(getRequestHeaders()),
-      // The request origin, so a server render talks to the same deployment the
-      // browser would (iris and Chronos share one public origin).
-      url: () => `${new URL(getRequest().url).origin}${apiBaseUrl}/rpc`,
+      // The origin the request came in on, so a server render talks to the
+      // same deployment the browser would (iris and Chronos share one public
+      // origin). `requestOrigin` honours `x-forwarded-*`, which `getRequest`
+      // does not — behind the platform proxy the two disagree.
+      url: () => `${requestOrigin() ?? apiBaseUrl}/rpc`,
     })
   )();
 
