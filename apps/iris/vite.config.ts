@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { devtools } from '@tanstack/devtools-vite';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
@@ -11,11 +11,7 @@ export default defineConfig({
     sourcemap: true,
   },
   plugins: [
-    tanstackRouter({
-      autoCodeSplitting: true,
-      generatedRouteTree: 'src/route-tree.gen.ts',
-      target: 'react',
-    }),
+    tanstackStart(),
     viteReact(),
     tailwindcss(),
     devtools(),

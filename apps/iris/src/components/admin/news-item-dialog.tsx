@@ -91,16 +91,16 @@ export function NewsItemDialog({
       if (isAnnouncement) {
         if (item) {
           await updateAnnouncement.mutateAsync({
+            ...(value as AnnouncementPayload),
             id: item.id,
-            payload: value as AnnouncementPayload,
           });
         } else {
           await createAnnouncement.mutateAsync(value as AnnouncementPayload);
         }
       } else if (item) {
         await updateSystemMessage.mutateAsync({
+          ...(value as SystemMessagePayload),
           id: item.id,
-          payload: value as SystemMessagePayload,
         });
       } else {
         await createSystemMessage.mutateAsync(value as SystemMessagePayload);

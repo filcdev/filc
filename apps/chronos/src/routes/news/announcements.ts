@@ -1,18 +1,8 @@
-import {
-  type AnnouncementUpdateInput,
-  announcementCreateSchema,
-  announcementImageUploadSchema,
-  announcementQuerySchema,
-  announcementUpdateSchema,
-} from '@filcdev/api/domains/news/announcements';
+import type { AnnouncementUpdateInput } from '@filcdev/api/domains/news/announcements';
 import { permissions } from '@filcdev/api/permissions';
-import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
+import { ORPCError } from '@orpc/server';
 import { and, count, eq, type SQL, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -20,26 +10,21 @@ import {
   announcementCohortMtm,
   announcementKioskMtm,
 } from '#database/schema/news';
-import { authRouter } from '#middleware/auth';
-import { newsFactory } from '#routes/news/_factory';
-import { ApiHttpError, badRequest, notFound, ok } from '#utils/http';
+import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { badRequest, notFound, serviceUnavailable } from '#utils/http';
 import { activeAnnouncementConditions } from '#utils/news/announcements';
 import { validateCohortIds } from '#utils/news/cohort';
 import { validateKioskIds } from '#utils/news/kiosks';
 import {
-  announcementBaseDetailResponseSchema,
-  announcementDetailResponseSchema,
-  announcementListResponseSchema,
   announcementSelect,
   authorSelect,
   resolveTitle,
-  successResponseSchema,
 } from '#utils/news/shared';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
-import { filcExt } from '#utils/openapi';
 import {
   announcementImageKey,
   deleteObject,
@@ -167,44 +152,12 @@ async function setAnnouncementTargeting(
   }
 }
 
-const { schema: createRequestSchema } = await resolver(
-  announcementCreateSchema
-).toOpenAPISchema();
-const { schema: updateRequestSchema } = await resolver(
-  announcementUpdateSchema
-).toOpenAPISchema();
-const { schema: uploadRequestSchema } = await resolver(
-  announcementImageUploadSchema
-).toOpenAPISchema();
-
-export const listAnnouncements = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Announcement',
-      '@listof Announcement @field(.author, Author)',
-      true
-    ),
-    description:
-      'List active announcements within date range, cohort-filtered by default; includeAll=true returns everything',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(announcementListResponseSchema),
-          },
-        },
-        description: 'Paginated list of announcements',
-      },
-    },
-    tags: ['News / Announcements'],
-  }),
-  ...authRouter(),
-  zValidator('query', announcementQuerySchema),
-  async (c) => {
+export const listAnnouncements = base.news.announcements.list
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
     const { limit, offset, includeExpired, includeAll, includeKioskOnly } =
-      c.req.valid('query');
-    const currentUser = c.var.user;
-    const userCohortId = currentUser.cohortId;
+      input;
+    const userCohortId = context.user?.cohortId;
 
     // Any signed-in user may request all announcements (e.g. the public panel's
     // "Everyone" option) via includeAll=true.
@@ -282,35 +235,13 @@ export const listAnnouncements = newsFactory.createHandlers(
         .map((m) => m.kioskId),
     }));
 
-    return ok(c, data, StatusCodes.OK, { total: totalResult[0]?.count ?? 0 });
-  }
-);
+    return { data, total: totalResult[0]?.count ?? 0 };
+  });
 
-export const getAnnouncement = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Announcement',
-      '@unit Announcement @field(.author, Author)',
-      true
-    ),
-    description: 'Get a single announcement by ID',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(announcementDetailResponseSchema),
-          },
-        },
-        description: 'Announcement details',
-      },
-      404: { description: 'Announcement not found' },
-    },
-    tags: ['News / Announcements'],
-  }),
-  ...authRouter(),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const getAnnouncement = base.news.announcements.get
+  .use(requireAuthentication)
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [item] = await db
       .select({ ...announcementSelect, author: authorSelect })
@@ -319,47 +250,20 @@ export const getAnnouncement = newsFactory.createHandlers(
       .where(eq(announcement.id, id));
 
     if (!item) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Announcement not found',
-      });
+      throw notFound('Announcement not found');
     }
 
     const cohortIds = await announcementCohortIds(id);
     const kioskIds = await announcementKioskIds(id);
 
-    return ok(c, { ...item, cohortIds, kioskIds });
-  }
-);
+    return { ...item, cohortIds, kioskIds };
+  });
 
-export const createAnnouncement = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Announcement', '@unit Announcement', true),
-    description: 'Create a new announcement',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: createRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(announcementBaseDetailResponseSchema),
-          },
-        },
-        description: 'Announcement created',
-      },
-      400: { description: 'Invalid input or cohort IDs' },
-    },
-    tags: ['News / Announcements'],
-  }),
-  ...authRouter(permissions.announcementsCreate),
-  zValidator('json', announcementCreateSchema),
-  async (c) => {
-    const body = c.req.valid('json');
-    const currentUser = c.var.user;
+export const createAnnouncement = base.news.announcements.create
+  .use(requireAuthorization(permissions.announcementsCreate))
+  .handler(async ({ context, input }) => {
+    const body = input;
+    const authorId = context.session.userId;
 
     assertFeaturedAnnouncementIsTitled(body.highlighted ?? false, body.title);
 
@@ -368,7 +272,7 @@ export const createAnnouncement = newsFactory.createHandlers(
     const [created] = await db
       .insert(announcement)
       .values({
-        authorId: currentUser.id,
+        authorId,
         content: body.content,
         highlighted: body.highlighted ?? false,
         kioskOnly: body.kioskOnly ?? false,
@@ -378,7 +282,7 @@ export const createAnnouncement = newsFactory.createHandlers(
       })
       .returning();
     if (!created) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
         message: 'Failed to create announcement',
       });
     }
@@ -396,49 +300,18 @@ export const createAnnouncement = newsFactory.createHandlers(
       });
     }
 
-    return ok(
-      c,
-      {
-        ...created,
-        cohortIds: body.cohortIds ?? [],
-        kioskIds: body.kioskIds ?? [],
-      },
-      StatusCodes.CREATED
-    );
-  }
-);
+    return {
+      ...created,
+      cohortIds: body.cohortIds ?? [],
+      kioskIds: body.kioskIds ?? [],
+    };
+  });
 
-export const updateAnnouncement = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Announcement', '@unit Announcement', true),
-    description: 'Update an existing announcement',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(announcementBaseDetailResponseSchema),
-          },
-        },
-        description: 'Announcement updated',
-      },
-      400: { description: 'Invalid input or date range' },
-      404: { description: 'Announcement not found' },
-    },
-    tags: ['News / Announcements'],
-  }),
-  ...authRouter(permissions.announcementsCreate),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  zValidator('json', announcementUpdateSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const body = c.req.valid('json');
+export const updateAnnouncement = base.news.announcements.update
+  .use(requireAuthorization(permissions.announcementsCreate))
+  .handler(async ({ input }) => {
+    const { id } = input;
+    const body: AnnouncementUpdateInput = input;
 
     const [existing] = await db
       .select()
@@ -446,18 +319,14 @@ export const updateAnnouncement = newsFactory.createHandlers(
       .where(eq(announcement.id, id));
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Announcement not found',
-      });
+      throw notFound('Announcement not found');
     }
 
     // Validate date range with existing values
     const validFrom = body.validFrom ?? existing.validFrom;
     const validUntil = body.validUntil ?? existing.validUntil;
     if (validUntil < validFrom) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'validUntil must be on or after validFrom',
-      });
+      throw badRequest('validUntil must be on or after validFrom');
     }
 
     // Same invariant as on create, judged against the row this update produces.
@@ -481,9 +350,7 @@ export const updateAnnouncement = newsFactory.createHandlers(
         .where(eq(announcement.id, id))
         .returning();
       if (!row) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Announcement not found',
-        });
+        throw notFound('Announcement not found');
       }
       updated = row;
     }
@@ -503,31 +370,13 @@ export const updateAnnouncement = newsFactory.createHandlers(
       });
     }
 
-    return ok(c, { ...updated, cohortIds, kioskIds });
-  }
-);
+    return { ...updated, cohortIds, kioskIds };
+  });
 
-export const deleteAnnouncement = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Announcement', '@nodata', true),
-    description: 'Delete an announcement',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(successResponseSchema),
-          },
-        },
-        description: 'Announcement deleted',
-      },
-      404: { description: 'Announcement not found' },
-    },
-    tags: ['News / Announcements'],
-  }),
-  ...authRouter(permissions.announcementsCreate),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteAnnouncement = base.news.announcements.delete
+  .use(requireAuthorization(permissions.announcementsCreate))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [deleted] = await db
       .delete(announcement)
@@ -535,9 +384,7 @@ export const deleteAnnouncement = newsFactory.createHandlers(
       .returning();
 
     if (!deleted) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Announcement not found',
-      });
+      throw notFound('Announcement not found');
     }
 
     // The row is gone either way; a failed object delete must not turn a
@@ -555,47 +402,13 @@ export const deleteAnnouncement = newsFactory.createHandlers(
 
     cancelPendingNotification(id, 'announcement');
 
-    return ok(c, undefined);
-  }
-);
+    return { id };
+  });
 
-export const uploadAnnouncementImage = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Announcement', '@unit Announcement', true),
-    description: 'Upload the image this announcement shows on the kiosk',
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          schema: uploadRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(announcementBaseDetailResponseSchema),
-          },
-        },
-        description: 'Image uploaded',
-      },
-      400: {
-        description:
-          'Unsupported image type, image too large, or the announcement has no title',
-      },
-      404: { description: 'Announcement not found' },
-      503: { description: 'Object storage is not configured' },
-    },
-    tags: ['News / Announcements'],
-  }),
-  // Authenticate before the form validator so an anonymous request cannot
-  // force the whole upload into memory (`z.file()` is unbounded).
-  ...authRouter(permissions.announcementsCreate),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  zValidator('form', announcementImageUploadSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const { file } = c.req.valid('form');
+export const uploadAnnouncementImage = base.news.announcements.uploadImage
+  .use(requireAuthorization(permissions.announcementsCreate))
+  .handler(async ({ input }) => {
+    const { file, id } = input;
 
     const [existing] = await db
       .select()
@@ -607,9 +420,7 @@ export const uploadAnnouncementImage = newsFactory.createHandlers(
     }
 
     if (!isObjectStorageConfigured()) {
-      throw new ApiHttpError(StatusCodes.SERVICE_UNAVAILABLE, {
-        message: 'Object storage is not configured',
-      });
+      throw serviceUnavailable('Object storage is not configured');
     }
 
     const extension = ANNOUNCEMENT_IMAGE_EXTENSIONS[file.type];
@@ -658,35 +469,17 @@ export const uploadAnnouncementImage = newsFactory.createHandlers(
       }
     }
 
-    return ok(c, {
+    return {
       ...updated,
       cohortIds: await announcementCohortIds(id),
       kioskIds: await announcementKioskIds(id),
-    });
-  }
-);
+    };
+  });
 
-export const deleteAnnouncementImage = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Announcement', '@unit Announcement', true),
-    description: 'Delete the image attached to an announcement',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(announcementBaseDetailResponseSchema),
-          },
-        },
-        description: 'Image deleted',
-      },
-      404: { description: 'Announcement not found, or it has no image' },
-    },
-    tags: ['News / Announcements'],
-  }),
-  ...authRouter(permissions.announcementsCreate),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteAnnouncementImage = base.news.announcements.deleteImage
+  .use(requireAuthorization(permissions.announcementsCreate))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [existing] = await db
       .select()
@@ -725,10 +518,9 @@ export const deleteAnnouncementImage = newsFactory.createHandlers(
       logger.warn('Failed to delete an announcement image', { error, key });
     }
 
-    return ok(c, {
+    return {
       ...updated,
       cohortIds: await announcementCohortIds(id),
       kioskIds: await announcementKioskIds(id),
-    });
-  }
-);
+    };
+  });

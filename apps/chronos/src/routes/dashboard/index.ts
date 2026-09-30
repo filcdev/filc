@@ -1,17 +1,9 @@
-import {
-  dashboardStatsResponseSchema,
-  statsQuerySchema,
-} from '@filcdev/api/domains/dashboard';
-import { zValidator } from '@hono/zod-validator';
 import { and, count, desc, gte, isNotNull, lte } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { role } from '#database/schema/authorization';
 import { cohort, movedLesson, substitution } from '#database/schema/timetable';
-import { dashboardFactory } from '#routes/dashboard/_factory';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
+import { base } from '#orpc';
 import { getActiveTimetableId } from '#utils/timetable/active';
 
 function fmtDate(d: Date): string {
@@ -21,25 +13,9 @@ function fmtDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export const getDashboardStats = dashboardFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Dashboard', '@unit DashboardStatsResponse'),
-    description: 'Get aggregated dashboard statistics',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(dashboardStatsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Dashboard'],
-  }),
-  zValidator('query', statsQuerySchema),
-  async (c) => {
-    const { days } = c.req.valid('query');
+export const getDashboardStats = base.dashboard.stats.handler(
+  async ({ input }) => {
+    const { days } = input;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -118,7 +94,7 @@ export const getDashboardStats = dashboardFactory.createHandlers(
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, counts]) => ({ date, ...counts }));
 
-    return ok(c, {
+    return {
       stats: {
         chartData,
         chartTotalMovedLessons: movedLessonDates.length,
@@ -129,6 +105,6 @@ export const getDashboardStats = dashboardFactory.createHandlers(
         totalSubstitutions: liveSubsRow?.count ?? 0,
         totalUsers: usersRow?.count ?? 0,
       },
-    });
+    };
   }
 );

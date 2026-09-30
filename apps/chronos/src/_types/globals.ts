@@ -1,29 +1,15 @@
-import type { ErrorCode } from '@filcdev/api/errors';
-
 import type { auth } from '#utils/authentication';
 
-export type Context = {
-  Variables: {
-    anonymousId: string | null;
-    user: typeof auth.$Infer.Session.user | null;
-    session: typeof auth.$Infer.Session.session | null;
-  };
-};
-
-export type AuthenticatedContext = {
-  Variables: {
-    user: NonNullable<typeof auth.$Infer.Session.user>;
-    session: NonNullable<typeof auth.$Infer.Session.session>;
-  };
-};
-
-export type SuccessResponse<T = undefined> = [T] extends [undefined]
-  ? { success: true; data?: T }
-  : { success: true; data: T };
-export type ErrorResponse = {
-  cause?: unknown;
-  code: ErrorCode;
-  data?: unknown;
-  error: string;
-  success: false;
+/**
+ * Everything the transport knows before a procedure runs, built once per
+ * request in `src/index.ts` and handed to both oRPC handlers.
+ */
+export type ChronosContext = {
+  anonymousId: string | null;
+  clientIp: string;
+  reqHeaders: Headers;
+  /** Injected by `ResponseHeadersPlugin`; a procedure can add to the response. */
+  resHeaders?: Headers;
+  session: (typeof auth.$Infer.Session)['session'] | null;
+  user: (typeof auth.$Infer.Session)['user'] | null;
 };

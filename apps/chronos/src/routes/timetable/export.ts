@@ -1,10 +1,6 @@
-import {
-  type DateRangeQueryInput,
-  dateRangeQuerySchema,
-} from '@filcdev/api/domains/timetable/export';
+import type { DateRangeQueryInput } from '@filcdev/api/domains/timetable/export';
 import { permissions } from '@filcdev/api/permissions';
 import { and, desc, eq, gte, inArray, lte, type SQL } from 'drizzle-orm';
-import { describeRoute } from 'hono-openapi';
 import { db } from '#database';
 import {
   classroom,
@@ -21,8 +17,7 @@ import {
   teacher,
 } from '#database/schema/timetable';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { filcExt } from '#utils/openapi';
-import { timetableFactory } from './_factory';
+import { base } from '#orpc';
 
 const buildDateFilters = (
   filters: SQL<unknown>[],
@@ -61,29 +56,11 @@ const toCsv = (header: string[], rows: Record<string, unknown>[]): string => {
 const buildFilename = (prefix: string): string =>
   `${prefix}-export-${new Date().toISOString().slice(0, 10)}.csv`;
 
-export const exportSubstitutionsRoute = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', 'Export substitutions as CSV', true),
-    description:
-      'Export substitutions as a CSV file over an optional date range.',
-    responses: {
-      200: {
-        content: {
-          'text/csv': {
-            schema: { format: 'binary', type: 'string' },
-          },
-        },
-        description: 'CSV file with the requested substitutions',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  requireAuthentication,
-  requireAuthorization(permissions.substitutionCreate),
-  async (c) => {
-    const url = new URL(c.req.url);
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    const query = dateRangeQuerySchema.parse(queryParams);
+export const exportSubstitutionsRoute = base.timetable.substitutions.export
+  .use(requireAuthentication)
+  .use(requireAuthorization(permissions.substitutionCreate))
+  .handler(async ({ input }) => {
+    const query = input;
 
     const filters: SQL<unknown>[] = [];
     buildDateFilters(
@@ -191,35 +168,14 @@ export const exportSubstitutionsRoute = timetableFactory.createHandlers(
 
     const csv = toCsv(header, rows);
     const filename = buildFilename('substitutions');
-    c.header('Content-Type', 'text/csv; charset=utf-8');
-    c.header('Content-Disposition', `attachment; filename="${filename}"`);
-    return c.body(csv);
-  }
-);
+    return new File([csv], filename, { type: 'text/csv; charset=utf-8' });
+  });
 
-export const exportMovedLessonsRoute = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', 'Export moved lessons as CSV', true),
-    description:
-      'Export moved lessons as a CSV file over an optional date range.',
-    responses: {
-      200: {
-        content: {
-          'text/csv': {
-            schema: { format: 'binary', type: 'string' },
-          },
-        },
-        description: 'CSV file with the requested moved lessons',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  requireAuthentication,
-  requireAuthorization(permissions.movedLessonCreate),
-  async (c) => {
-    const url = new URL(c.req.url);
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    const query = dateRangeQuerySchema.parse(queryParams);
+export const exportMovedLessonsRoute = base.timetable.movedLessons.export
+  .use(requireAuthentication)
+  .use(requireAuthorization(permissions.movedLessonCreate))
+  .handler(async ({ input }) => {
+    const query = input;
 
     const filters: SQL<unknown>[] = [];
     buildDateFilters(
@@ -330,8 +286,5 @@ export const exportMovedLessonsRoute = timetableFactory.createHandlers(
 
     const csv = toCsv(header, rows);
     const filename = buildFilename('moved-lessons');
-    c.header('Content-Type', 'text/csv; charset=utf-8');
-    c.header('Content-Disposition', `attachment; filename="${filename}"`);
-    return c.body(csv);
-  }
-);
+    return new File([csv], filename, { type: 'text/csv; charset=utf-8' });
+  });

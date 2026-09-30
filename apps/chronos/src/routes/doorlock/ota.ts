@@ -1,40 +1,19 @@
-import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
-import { otaPayloadSchema } from '@filcdev/api/domains/doorlock/ota';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { describeRoute } from 'hono-openapi';
 import { db } from '#database';
 import { device as lockDevice } from '#database/schema/doorlock';
-import { authRouter } from '#middleware/auth';
-import { sendMessage } from '#routes/doorlock/websocket-handler';
-import { notFound, ok } from '#utils/http';
-import { doorlockFactory } from './_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { sendMessage } from '#routes/doorlock/device-socket';
+import { notFound } from '#utils/http';
 
 const logger = getLogger(['chronos', 'doorlock', 'ota']);
 
-export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    description: 'Trigger an OTA update on a specific device',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: { properties: { url: { type: 'string' } }, type: 'object' },
-        },
-      },
-    },
-    responses: {
-      200: { description: 'OTA update triggered' },
-      404: { description: 'Device not found' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:devices:write'),
-  zValidator('param', idParamSchema),
-  zValidator('json', otaPayloadSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const { url } = c.req.valid('json');
+export const triggerDeviceOta = base.doorlock.devices.triggerOta
+  .use(requireAuthorization(permissions.doorlockDevicesWrite))
+  .handler(async ({ input }) => {
+    const { id, url } = input;
 
     const [dev] = await db
       .select({ id: lockDevice.id, name: lockDevice.name })
@@ -53,29 +32,13 @@ export const triggerDeviceOtaRoute = doorlockFactory.createHandlers(
 
     sendMessage({ type: 'update', url }, dev.id);
 
-    return ok(c, undefined);
-  }
-);
+    return { ok: true as const };
+  });
 
-export const triggerBulkOtaRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    description: 'Trigger an OTA update on all devices',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: { properties: { url: { type: 'string' } }, type: 'object' },
-        },
-      },
-    },
-    responses: {
-      200: { description: 'OTA update triggered on all devices' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:devices:write'),
-  zValidator('json', otaPayloadSchema),
-  async (c) => {
-    const { url } = c.req.valid('json');
+export const triggerBulkOta = base.doorlock.devices.updateAll
+  .use(requireAuthorization(permissions.doorlockDevicesWrite))
+  .handler(async ({ input }) => {
+    const { url } = input;
 
     const devices = await db
       .select({ id: lockDevice.id, name: lockDevice.name })
@@ -90,6 +53,5 @@ export const triggerBulkOtaRoute = doorlockFactory.createHandlers(
       sendMessage({ type: 'update', url }, dev.id);
     }
 
-    return ok(c, { count: devices.length });
-  }
-);
+    return { count: devices.length };
+  });

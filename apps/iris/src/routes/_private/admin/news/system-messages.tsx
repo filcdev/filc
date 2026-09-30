@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Dialog,
@@ -32,8 +33,8 @@ import {
   useDeleteSystemMessage,
 } from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/news/system-messages')({
   component: () => (
@@ -41,11 +42,19 @@ export const Route = createFileRoute('/_private/admin/news/system-messages')({
       <SystemMessagesPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.news.systemMessages.list.queryOptions({ input: {} })
+      ),
+      prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+    ]),
 });
 
 function SystemMessagesPage() {
   const { i18n, t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -132,7 +141,7 @@ function SystemMessagesPage() {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      deleteMutation.mutateAsync(itemToDelete.id);
+      deleteMutation.mutateAsync({ id: itemToDelete.id });
     }
   };
 

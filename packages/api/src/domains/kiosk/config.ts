@@ -39,6 +39,15 @@ export const kioskDeparturesRequestSchema = z.object({
 });
 
 /**
+ * Query for the petrik.hu news feed: the machine id whose stored feed URL,
+ * item cap and enable flag are used. An unknown machine falls back to the
+ * default feed.
+ */
+export const kioskPetrikNewsQuerySchema = z.object({
+  machine: z.string().min(1).optional(),
+});
+
+/**
  * `kind: 'tv'` configuration: the departure cards under the timetable plus the
  * full-screen news takeover. Strict, like the navigator one: a payload carrying
  * the other kind's keys must be a loud 400, not a silent reset of the stored

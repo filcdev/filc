@@ -1,12 +1,9 @@
-import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
-import {
-  type DoorlockStatsOverview,
-  deviceStatsResponseSchema,
-  statsResponseSchema,
+import type {
+  DeviceHealthStat,
+  DoorlockStatsOverview,
 } from '@filcdev/api/domains/doorlock/stats';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
 import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -15,10 +12,8 @@ import {
   device,
   deviceHealth,
 } from '#database/schema/doorlock';
-import { authRouter } from '#middleware/auth';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { doorlockFactory } from './_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 
 const sevenDaysAgo = () => {
   const date = new Date();
@@ -26,28 +21,9 @@ const sevenDaysAgo = () => {
   return date;
 };
 
-export const doorlockStatsRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DoorlockStatsResponse @field(.stats, DoorlockStats)',
-      true
-    ),
-    description: 'Get aggregated doorlock statistics',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(statsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:stats:read'),
-  async (c) => {
+export const doorlockStats = base.doorlock.stats.overview
+  .use(requireAuthorization(permissions.doorlockStatsRead))
+  .handler(async () => {
     const cardCount = count(card.id);
     const deviceCount = count(device.id);
     const successCount = count(auditLog.id);
@@ -116,34 +92,13 @@ export const doorlockStatsRoute = doorlockFactory.createHandlers(
       totalSuccessfulOpens: Number(totalSuccessfulOpensRow[0]?.count ?? 0),
     };
 
-    return ok(c, { stats });
-  }
-);
+    return { stats };
+  });
 
-export const deviceStatsRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DeviceStatsResponse @field(.stats, List<DeviceHealthStat>)',
-      true
-    ),
-    description: 'Get device health statistics',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(deviceStatsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:stats:read'),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const { id: deviceId } = c.req.valid('param');
+export const deviceStats = base.doorlock.devices.stats
+  .use(requireAuthorization(permissions.doorlockStatsRead))
+  .handler(async ({ input }) => {
+    const deviceId = input.id;
 
     const stats = await db
       .select({
@@ -157,7 +112,7 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
       .limit(100);
 
     // map bigint to number for JSON serialization
-    const formattedStats = stats.map((stat) => ({
+    const formattedStats: DeviceHealthStat[] = stats.map((stat) => ({
       ...stat,
       deviceMeta: {
         ...stat.deviceMeta,
@@ -170,6 +125,5 @@ export const deviceStatsRoute = doorlockFactory.createHandlers(
       },
     }));
 
-    return ok(c, formattedStats);
-  }
-);
+    return formattedStats;
+  });

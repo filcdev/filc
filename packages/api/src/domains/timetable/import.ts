@@ -1,8 +1,8 @@
 import z from 'zod';
 
-/** Response for timetable XML import. */
-export const importResponseSchema = z.object({
-  success: z.literal(true),
+/** Payload of a successful timetable XML import. */
+export const importPayloadSchema = z.object({
+  ok: z.literal(true),
 });
 
 /** A `YYYY-MM-DD` value that is also a real calendar date (e.g. not 2026-02-30). */

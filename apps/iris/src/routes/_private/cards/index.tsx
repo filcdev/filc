@@ -31,19 +31,22 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  type SelfCard,
+  type DoorlockCard,
   useActivateSelfCard,
   useFreezeSelfCard,
   useSelfCards,
 } from '@/hooks/doorlock-admin';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/cards/')({
   component: CardsPage,
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.doorlock.self.cards.list.queryOptions()),
 });
 
 function CardsPage() {
   const { t } = useTranslation();
-  const [activateCard, setActivateCard] = useState<SelfCard | null>(null);
+  const [activateCard, setActivateCard] = useState<DoorlockCard | null>(null);
 
   const cardsQuery = useSelfCards();
   const freezeMutation = useFreezeSelfCard({
@@ -132,8 +135,8 @@ function CardsPage() {
             return;
           }
           activateMutation.mutate({
-            cardId: activateCard.id,
             deviceId,
+            id: activateCard.id,
           });
         }}
         onOpenChange={(open) => {
@@ -152,7 +155,7 @@ function CardItem({
   onActivate,
   onToggleFreeze,
 }: {
-  card: SelfCard;
+  card: DoorlockCard;
   isFreezing: boolean;
   onActivate: () => void;
   onToggleFreeze: () => void;
@@ -252,7 +255,7 @@ function ActivateDoorDialog({
   onActivate,
   onOpenChange,
 }: {
-  card: SelfCard | null;
+  card: DoorlockCard | null;
   isActivating: boolean;
   activatingDeviceId: string | null;
   onActivate: (deviceId: string) => void;

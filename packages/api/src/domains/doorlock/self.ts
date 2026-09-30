@@ -1,4 +1,5 @@
 import z from 'zod';
+import { doorlockAuditLogSchema } from './logs';
 
 /** Payload for updating the frozen state of a user-owned card. */
 export const updateFrozenSchema = z.object({
@@ -14,3 +15,8 @@ export type UpdateFrozenInput = z.infer<typeof updateFrozenSchema>;
 export type ActivateVirtualCardInput = z.infer<
   typeof activateVirtualCardSchema
 >;
+
+/** Payload of `POST /doorlock/self/cards/{id}/activate`. */
+export const doorlockActivationResponseSchema = z.object({
+  log: doorlockAuditLogSchema,
+});

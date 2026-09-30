@@ -1,8 +1,7 @@
 import { sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
 import { db } from '#database';
 import { cohort } from '#database/schema/timetable';
+import { badRequest } from '#utils/http';
 
 /** Throw 400 if any of the provided cohort IDs do not exist. */
 export const validateCohortIds = async (cohortIds: string[]) => {
@@ -13,8 +12,6 @@ export const validateCohortIds = async (cohortIds: string[]) => {
   const existingIds = new Set(existingCohorts.map((co) => co.id));
   const invalid = cohortIds.filter((cid) => !existingIds.has(cid));
   if (invalid.length > 0) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `Invalid cohort IDs: ${invalid.join(', ')}`,
-    });
+    throw badRequest(`Invalid cohort IDs: ${invalid.join(', ')}`);
   }
 };

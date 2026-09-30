@@ -100,7 +100,7 @@ export function SystemMessagesDialog({
         validUntil: value.validUntil,
       } as SystemMessagePayload;
       if (item) {
-        await updateMutation.mutateAsync({ id: item.id, payload });
+        await updateMutation.mutateAsync({ ...payload, id: item.id });
       } else {
         await createMutation.mutateAsync(payload);
       }

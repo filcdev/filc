@@ -1,6 +1,7 @@
 /**
  * Shared type definitions for doorlock components.
- * API-derived types (InferResponseType etc.) remain co-located with their routes.
+ * API-derived types (`Awaited<ReturnType<typeof api.x.y>>`) remain co-located
+ * with their routes.
  */
 
 export type DeviceOption = { id: string; name: string };

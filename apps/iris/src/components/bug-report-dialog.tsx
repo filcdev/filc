@@ -1,4 +1,3 @@
-import { unwrapResponse } from '@filcdev/api/client';
 import { createBugReportSchema } from '@filcdev/api/domains/bug-report';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -19,7 +18,7 @@ import { Bug, Send } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
+import { api } from '@/utils/orpc';
 
 type BugReportForm = {
   description: string;
@@ -43,15 +42,11 @@ export function BugReportDialog() {
     onSubmit: async ({ value }) => {
       setSubmitting(true);
       try {
-        await unwrapResponse<{ id: string }>(
-          api.bugReport.index.$post({
-            json: {
-              description: value.description,
-              page: router.state.location.pathname,
-              subject: value.subject,
-            },
-          }) as never
-        );
+        await api.bugReport.create({
+          description: value.description,
+          page: router.state.location.pathname,
+          subject: value.subject,
+        });
 
         toast.success(t('bugReport.success'));
         form.reset(initialState);

@@ -1,31 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { api, apiBaseUrl, orpc } from '@/utils/orpc';
 
-type NotificationListResponse = InferResponseType<
-  typeof api.notifications.index.$get
+type NotificationListPayload = Awaited<
+  ReturnType<typeof api.notifications.list>
 >;
 
-/** Success-branch envelope of the list endpoint, with optional total. */
-export type NotificationListResult = {
-  data: NonNullable<
-    Extract<NotificationListResponse, { success: true }>['data']
-  >;
-  success: true;
-  total?: number;
-};
+/** One page of notifications plus how many match the filters in total. */
+export type NotificationListResult = NotificationListPayload;
 
 /** A single notification as returned by the list endpoint. */
-export type NotificationItem = NonNullable<
-  NotificationListResult['data']
->[number];
+export type NotificationItem = NotificationListPayload['items'][number];
+
+/** Per-user notification settings, including timetable class colors. */
+export type NotificationSettings = Awaited<
+  ReturnType<typeof api.notifications.settings>
+>;
 
 type NotificationListFilters = {
   dateFrom: string;
@@ -35,80 +26,57 @@ type NotificationListFilters = {
   type: string;
   unread: string;
 };
+
 export function useNotifications(
   filters: NotificationListFilters,
   options: { enabled?: boolean } = {}
 ) {
   const { dateFrom, dateTo, page, pageSize, type, unread } = filters;
   const enabled = options.enabled ?? true;
-  return useQuery<NotificationListResult>({
+  return useQuery({
+    ...orpc.notifications.list.queryOptions({
+      input: {
+        limit: pageSize,
+        offset: page * pageSize,
+        ...(type === 'all' ? {} : { type }),
+        ...(unread === 'true' || unread === 'false' ? { unread } : {}),
+        ...(dateFrom ? { dateFrom } : {}),
+        ...(dateTo ? { dateTo } : {}),
+      },
+    }),
     enabled,
-    queryFn: () => {
-      const query: Record<string, string | undefined> = {
-        limit: String(pageSize),
-        offset: String(page * pageSize),
-      };
-      if (type !== 'all') {
-        query.type = type;
-      }
-      if (unread === 'true' || unread === 'false') {
-        query.unread = unread;
-      }
-      if (dateFrom) {
-        query.dateFrom = dateFrom;
-      }
-      if (dateTo) {
-        query.dateTo = dateTo;
-      }
-      return parseResponse(
-        api.notifications.index.$get({ query })
-      ) as unknown as NotificationListResult;
-    },
-    queryKey: [
-      ...queryKeys.notifications.list({
-        dateFrom,
-        dateTo,
-        page,
-        type,
-        unread,
-      }),
-      pageSize,
-    ],
   });
 }
 
 /** Mark a single notification as read. */
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) =>
-      api.notifications[':id'].read.$patch({ param: { id } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-    },
-  });
+  return useMutation(
+    orpc.notifications.markAsRead.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.notifications.key() });
+      },
+    })
+  );
 }
 
 /** Mark every notification as read. */
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: () => api.notifications['read-all'].$patch(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.all(),
-      });
-      toast.success(t('notifications.history.markRead'));
-    },
-  });
+  return useMutation(
+    orpc.notifications.markAllAsRead.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.notifications.key() });
+        toast.success(t('notifications.history.markRead'));
+      },
+    })
+  );
 }
 
-type UpdateSettingsPayload = InferRequestType<
-  typeof api.notifications.settings.$patch
->['json'];
+type UpdateSettingsPayload = Parameters<
+  typeof api.notifications.updateSettings
+>[0];
 
 /** Options accepted by useUpdateNotificationSettings. */
 type UpdateSettingsCallbacks = {
@@ -121,15 +89,10 @@ type UpdateSettingsCallbacks = {
 /** Unread notification count for the badge; polls every 30s while signed in. */
 export function useUnreadNotificationCount(userId: string | undefined) {
   return useQuery({
+    ...orpc.notifications.unreadCount.queryOptions(),
     enabled: !!userId,
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications['unread-count'].$get());
-      if (!res.success) {
-        throw new Error('Failed to load unread notification count');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.notifications.unreadCount(userId ?? ''),
+    // Scoped to the user so a different account never reuses this count.
+    queryKey: [...orpc.notifications.unreadCount.key(), userId ?? ''],
     refetchInterval: 30_000,
   });
 }
@@ -137,36 +100,25 @@ export function useUnreadNotificationCount(userId: string | undefined) {
 /** Five most recent unread notifications; polls every 30s while signed in. */
 export function useRecentNotifications(userId: string | undefined) {
   return useQuery({
+    ...orpc.notifications.list.queryOptions({
+      input: { limit: 5, offset: 0, unread: 'true' },
+    }),
     enabled: !!userId,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.notifications.index.$get({
-          query: { limit: '5', offset: '0', unread: 'true' },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load recent notifications');
-      }
-      return (res.data ?? []) as NotificationItem[];
-    },
-    queryKey: queryKeys.notifications.recent(userId ?? ''),
+    // Scoped to the user so a different account never reuses this page.
+    queryKey: [
+      ...orpc.notifications.list.key({
+        input: { limit: 5, offset: 0, unread: 'true' },
+      }),
+      userId ?? '',
+    ],
     refetchInterval: 30_000,
+    select: (payload) => payload.items,
   });
 }
 
 /** Notification preference settings for the signed-in user. */
 export function useNotificationSettings(enabled: boolean) {
-  return useQuery({
-    enabled,
-    queryFn: async () => {
-      const res = await parseResponse(api.notifications.settings.$get());
-      if (!res.success) {
-        throw new Error('Failed to load notification settings');
-      }
-      return res.data;
-    },
-    queryKey: queryKeys.notifications.settings(),
-  });
+  return useQuery({ ...orpc.notifications.settings.queryOptions(), enabled });
 }
 
 /** Save notification preference settings. */
@@ -178,12 +130,7 @@ export function useUpdateNotificationSettings({
   const { t } = useTranslation();
   return useMutation({
     mutationFn: async (payload: UpdateSettingsPayload) => {
-      const res = await parseResponse(
-        api.notifications.settings.$patch({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save settings');
-      }
+      const settings = await api.notifications.updateSettings(payload);
       if (updateCohort) {
         try {
           await updateCohort();
@@ -191,7 +138,7 @@ export function useUpdateNotificationSettings({
           throw new Error('Failed to update cohort');
         }
       }
-      return res;
+      return settings;
     },
     onError: (error) => {
       if (
@@ -205,7 +152,7 @@ export function useUpdateNotificationSettings({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.settings(),
+        queryKey: orpc.notifications.settings.key(),
       });
       toast.success(t('preferences.saveSuccess'));
       onSaved?.();
@@ -215,9 +162,8 @@ export function useUpdateNotificationSettings({
 
 /**
  * Opt out of every notification channel via an unsubscribe token. The backend
- * answers an HTML page (not a JSON envelope), so this hook deliberately does
- * not go through `parseResponse`, and it emits no toast because the public
- * page renders its own result panel.
+ * answers an HTML page (not an oRPC procedure), so this hook posts the form
+ * directly and emits no toast: the public page renders its own result panel.
  */
 export function useUnsubscribe() {
   return useMutation({
@@ -228,8 +174,10 @@ export function useUnsubscribe() {
       token: string;
       userId: string;
     }) => {
-      const response = await api.notifications.unsubscribe.$post({
-        form: { token, userId },
+      const response = await fetch(`${apiBaseUrl}/notifications/unsubscribe`, {
+        body: new URLSearchParams({ token, userId }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        method: 'POST',
       });
       if (!response.ok) {
         throw new Error('Failed to update preferences');

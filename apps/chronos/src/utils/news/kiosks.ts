@@ -1,8 +1,7 @@
 import { sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
 import { db } from '#database';
 import { kiosk } from '#database/schema/kiosk';
+import { badRequest } from '#utils/http';
 
 /** Throw 400 if any of the provided kiosk IDs do not exist. */
 export const validateKioskIds = async (kioskIds: string[]) => {
@@ -13,8 +12,6 @@ export const validateKioskIds = async (kioskIds: string[]) => {
   const existingIds = new Set(existingKiosks.map((row) => row.id));
   const invalid = kioskIds.filter((id) => !existingIds.has(id));
   if (invalid.length > 0) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `Invalid kiosk IDs: ${invalid.join(', ')}`,
-    });
+    throw badRequest(`Invalid kiosk IDs: ${invalid.join(', ')}`);
   }
 };

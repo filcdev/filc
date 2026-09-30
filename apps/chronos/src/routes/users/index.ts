@@ -1,68 +1,16 @@
-import {
-  listUsersQuerySchema,
-  userUpdatePayload,
-} from '@filcdev/api/domains/users';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
 import { count, desc, eq, ilike, or } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { authRouter } from '#middleware/auth';
-import { usersFactory } from '#routes/users/_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 import { getUserPermissionsBulk } from '#utils/authorization';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
+import { notFound } from '#utils/http';
 
-const updateUserBodySchema = (
-  await resolver(userUpdatePayload).toOpenAPISchema()
-).schema;
-
-const userSchema = createSelectSchema(user).extend({
-  displayName: z.string(),
-  permissions: z.array(z.string()),
-});
-
-const listUsersResponseSchema = z.object({
-  data: z.object({
-    total: z.number(),
-    users: z.array(userSchema),
-  }),
-  success: z.boolean(),
-});
-
-const updateUserResponseSchema = z.object({
-  data: userSchema,
-  success: z.boolean(),
-});
-
-export const listUsers = usersFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Users',
-      '@unit UserListResponse @field(.users, List<User>) @field(.total, Int)',
-      true
-    ),
-    description: 'List users',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(listUsersResponseSchema),
-          },
-        },
-        description: 'List of users',
-      },
-    },
-    tags: ['Users'],
-  }),
-  ...authRouter('users:manage'),
-  zValidator('query', listUsersQuerySchema),
-  async (c) => {
-    const { limit, offset, search } = c.req.valid('query');
+export const listUsers = base.users.list
+  .use(requireAuthorization(permissions.usersManage))
+  .handler(async ({ input }) => {
+    const { limit, offset, search } = input;
 
     const whereClause = search
       ? or(
@@ -95,41 +43,13 @@ export const listUsers = usersFactory.createHandlers(
       .from(user)
       .where(whereClause);
 
-    return ok(c, { total: countResult?.count ?? 0, users });
-  }
-);
+    return { total: countResult?.count ?? 0, users };
+  });
 
-export const updateUser = usersFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Users', '@unit User', true),
-    description: 'Update user',
-    requestBody: {
-      content: {
-        'application/json': { schema: updateUserBodySchema },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(updateUserResponseSchema),
-          },
-        },
-        description: 'User updated',
-      },
-    },
-    tags: ['Users'],
-  }),
-  ...authRouter('users:manage'),
-  zValidator('json', userUpdatePayload),
-  async (c) => {
-    const userId = c.req.param('id');
-    if (!userId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'User ID is required',
-      });
-    }
-    const { cohortId, nickname, roles } = c.req.valid('json');
+export const updateUser = base.users.update
+  .use(requireAuthorization(permissions.usersManage))
+  .handler(async ({ input }) => {
+    const { id: userId, cohortId, nickname, roles } = input;
 
     const [updatedUser] = await db
       .update(user)
@@ -142,11 +62,16 @@ export const updateUser = usersFactory.createHandlers(
       .returning();
 
     if (!updatedUser) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'User not found',
-      });
+      throw notFound('User not found');
     }
 
-    return ok(c, updatedUser);
-  }
-);
+    const permissionsByUser = await getUserPermissionsBulk([updatedUser.id]);
+
+    return {
+      ...updatedUser,
+      displayName: updatedUser.nickname
+        ? updatedUser.nickname
+        : updatedUser.name || 'Unknown user',
+      permissions: permissionsByUser.get(updatedUser.id) ?? [],
+    };
+  });

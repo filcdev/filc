@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import {
   Alert,
   AlertDescription,
@@ -44,8 +45,8 @@ import {
   useSubstitutions,
 } from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
   {
@@ -54,13 +55,24 @@ export const Route = createFileRoute('/_private/admin/timetable/substitutions')(
         <SubstitutionsPage />
       </PermissionGuard>
     ),
+    loader: ({ context }) =>
+      Promise.all([
+        prefetch(
+          context.queryClient,
+          orpc.timetable.substitutions.list.queryOptions()
+        ),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.teachers.getAll.queryOptions()
+        ),
+      ]),
   }
 );
 
 function SubstitutionsPage() {
   const { i18n, t } = useTranslation();
   const showPastId = useId();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -130,7 +142,7 @@ function SubstitutionsPage() {
           .join(' ')
           .toLowerCase();
         return (
-          sub.substitution.date.includes(term) ||
+          sub.substitution.date.toISOString().includes(term) ||
           teacherName.includes(term) ||
           replacedTeachers.includes(term) ||
           lessonSubjects.includes(term) ||
@@ -184,7 +196,7 @@ function SubstitutionsPage() {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      deleteMutation.mutateAsync(itemToDelete.substitution.id);
+      deleteMutation.mutateAsync({ id: itemToDelete.substitution.id });
     }
   };
 
@@ -512,7 +524,7 @@ function getSortValue(
 ): string {
   switch (sortColumn) {
     case 'date':
-      return a.substitution.date;
+      return a.substitution.date.toISOString();
     case 'teacher':
       return a.teacher ? `${a.teacher.firstName} ${a.teacher.lastName}` : '';
     case 'lessons':

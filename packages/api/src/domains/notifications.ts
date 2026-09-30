@@ -104,3 +104,87 @@ export const previewTestNotificationSchema = z.object({
 export type PreviewTestNotificationInput = z.infer<
   typeof previewTestNotificationSchema
 >;
+
+/** The per-type email/push toggles stored in `user_preferences.notification_preferences`. */
+export const notificationPreferencesSchema = z.object({
+  announcement: z.boolean(),
+  blogPost: z.boolean(),
+  channelsEnabled: z.boolean(),
+  doorlockCardUsed: z.boolean(),
+  movedLesson: z.boolean(),
+  substitution: z.boolean(),
+  systemMessage: z.boolean(),
+});
+
+export type NotificationPreferences = z.infer<
+  typeof notificationPreferencesSchema
+>;
+
+/** One `notification` row: a single inbox entry. */
+export const notificationRowSchema = z.object({
+  content: z.string(),
+  createdAt: z.date(),
+  id: z.uuid(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  read: z.boolean(),
+  title: z.string(),
+  type: z.string(),
+  userId: z.uuid(),
+});
+
+export type NotificationRow = z.infer<typeof notificationRowSchema>;
+
+/**
+ * Paged notification history. The row count used to travel in the response
+ * envelope's `total`; it is part of the payload now.
+ */
+export const notificationListResponseSchema = z.object({
+  items: z.array(notificationRowSchema),
+  total: z.number(),
+});
+
+export type NotificationListResponse = z.infer<
+  typeof notificationListResponseSchema
+>;
+
+/** Unread badge count for the signed-in user. */
+export const unreadCountResponseSchema = z.object({ count: z.number() });
+
+export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
+
+/** One `user_preferences` row: notification, language and timetable settings. */
+export const userPreferencesSchema = z.object({
+  createdAt: z.date(),
+  id: z.uuid(),
+  language: z.string(),
+  notificationPreferences: notificationPreferencesSchema,
+  theme: z.string(),
+  timetableClassColors: z.record(z.string(), z.number()),
+  timetableGroupDisplay: z.string(),
+  timetableView: z.string(),
+  updatedAt: z.date(),
+  userId: z.uuid(),
+});
+
+export type UserPreferences = z.infer<typeof userPreferencesSchema>;
+
+/** Which channels a dev-only test notification actually went out on. */
+export const sendTestResultSchema = z.object({
+  email: z.boolean(),
+  inApp: z.boolean(),
+  push: z.boolean(),
+});
+
+export type SendTestResult = z.infer<typeof sendTestResultSchema>;
+
+/** Rendered HTML of a notification template, for the dev preview pane. */
+export const previewTestResponseSchema = z.object({ html: z.string() });
+
+export type PreviewTestResponse = z.infer<typeof previewTestResponseSchema>;
+
+/** Payload of the notification writes that have nothing to return. */
+export const notificationsOkResponseSchema = z.object({ ok: z.literal(true) });
+
+export type NotificationsOkResponse = z.infer<
+  typeof notificationsOkResponseSchema
+>;

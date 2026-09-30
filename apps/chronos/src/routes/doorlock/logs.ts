@@ -1,35 +1,12 @@
-import {
-  type LogsQueryInput,
-  logsQuerySchema,
-} from '@filcdev/api/domains/doorlock/logs';
+import type { LogsQueryInput } from '@filcdev/api/domains/doorlock/logs';
+import { permissions } from '@filcdev/api/permissions';
 import type { SQL } from 'drizzle-orm';
 import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
-import { authRouter } from '#middleware/auth';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-import { doorlockFactory } from './_factory';
-
-const auditLogSelectSchema = createSelectSchema(auditLog);
-const deviceSummarySchema = createSelectSchema(device).pick({
-  id: true,
-  name: true,
-});
-const cardSummarySchema = createSelectSchema(card).pick({
-  id: true,
-  name: true,
-});
-const userSummarySchema = createSelectSchema(user).pick({
-  email: true,
-  id: true,
-  name: true,
-  nickname: true,
-});
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
 type CardSummary = Pick<typeof card.$inferSelect, 'id' | 'name'>;
@@ -43,19 +20,6 @@ export type DoorlockLogEntry = typeof auditLog.$inferSelect & {
   card?: CardSummary | null;
   owner?: UserSummary | null;
 };
-
-const logsResponseSchema = z.object({
-  data: z.object({
-    logs: z.array(
-      auditLogSelectSchema.extend({
-        card: cardSummarySchema.nullable().optional(),
-        device: deviceSummarySchema.nullable().optional(),
-        owner: userSummarySchema.nullable().optional(),
-      })
-    ),
-  }),
-  success: z.literal(true),
-});
 
 const appendBaseFilters = (filters: SQL<unknown>[], query: LogsQueryInput) => {
   if (query.cardId) {
@@ -160,32 +124,9 @@ const mapRowsToLogs = (
     userId: row.userId,
   }));
 
-export const listLogsRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DoorlockLogListResponse @field(.logs, List<DoorlockLogEntry>)',
-      true
-    ),
-    description: 'List audit log entries',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(logsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:logs:read'),
-  async (c) => {
-    const url = new URL(c.req.url);
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    const query = logsQuerySchema.parse(queryParams);
-
+export const listLogs = base.doorlock.logs.list
+  .use(requireAuthorization(permissions.doorlockLogsRead))
+  .handler(async ({ input: query }) => {
     const rows = await db
       .select({
         buttonPressed: auditLog.buttonPressed,
@@ -215,6 +156,5 @@ export const listLogsRoute = doorlockFactory.createHandlers(
 
     const logs = mapRowsToLogs(rows);
 
-    return ok(c, { logs });
-  }
-);
+    return { logs };
+  });

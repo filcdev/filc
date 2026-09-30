@@ -1,50 +1,11 @@
-import { getCohortsForTimetableParamsSchema } from '@filcdev/api/domains/timetable/cohort';
-import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
-import z from 'zod';
 import { db } from '#database';
 import { cohort, cohortTimetableMtm } from '#database/schema/timetable';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-import { timetableFactory } from './_factory';
+import { base } from '#orpc';
 
-const getForTimetableResponseSchema = z.object({
-  data: createSelectSchema(cohort).array(),
-  success: z.boolean(),
-});
-
-export const getCohortsForTimetable = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Cohort', '@listof Cohort', true),
-    description: 'Get cohorts for a given timetable from the database.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'timetableId',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the timetable.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getForTimetableResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Cohort'],
-  }),
-  zValidator('param', getCohortsForTimetableParamsSchema),
-  async (c) => {
-    const { timetableId } = c.req.valid('param');
+export const getCohortsForTimetable =
+  base.timetable.cohorts.getAllForTimetable.handler(async ({ input }) => {
+    const { timetableId } = input;
 
     const cohortRows = await db
       .select()
@@ -54,6 +15,5 @@ export const getCohortsForTimetable = timetableFactory.createHandlers(
 
     const cohorts = cohortRows.map((r) => r.cohort);
 
-    return ok(c, cohorts);
-  }
-);
+    return cohorts;
+  });

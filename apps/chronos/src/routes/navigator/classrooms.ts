@@ -1,12 +1,6 @@
-import {
-  createClassroomSchema,
-  updateClassroomSchema,
-} from '@filcdev/api/domains/navigator/classroom';
-import { navigatorIdParamsSchema } from '@filcdev/api/domains/navigator/params';
 import { permissions } from '@filcdev/api/permissions';
-import { zValidator } from '@hono/zod-validator';
+import { ORPCError } from '@orpc/server';
 import { asc, eq, sql } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import {
   classroom as classroomTable,
@@ -14,120 +8,42 @@ import {
   lesson,
   movedLesson,
 } from '#database/schema/timetable';
-import { authRouter } from '#middleware/auth';
-import { navigatorFactory } from '#routes/navigator/_factory';
-import { conflict, created, notFound, ok } from '#utils/http';
-import {
-  classroomResponseSchema,
-  classroomsResponseSchema,
-} from '#utils/navigator/schemas';
-import { filcExt } from '#utils/openapi';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { conflict, notFound } from '#utils/http';
 
-const { schema: createClassroomRequestSchema } = await resolver(
-  createClassroomSchema
-).toOpenAPISchema();
-const { schema: updateClassroomRequestSchema } = await resolver(
-  updateClassroomSchema
-).toOpenAPISchema();
-
-export const listClassroomsRoute = navigatorFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Navigator', '@listof Classroom'),
-    description:
-      'List the classrooms, including the ones the campus has not placed yet',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(classroomsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Navigator'],
-  }),
-  async (c) => {
+export const listClassroomsRoute = base.navigator.classrooms.list.handler(
+  async () => {
     const classrooms = await db
       .select()
       .from(classroomTable)
       .orderBy(asc(classroomTable.name));
 
-    return ok(c, { classrooms });
+    return { classrooms };
   }
 );
 
-export const createClassroomRoute = navigatorFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Navigator', '@unit Classroom', true),
-    description: 'Create a classroom',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: createClassroomRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(classroomResponseSchema),
-          },
-        },
-        description: 'Classroom created',
-      },
-      401: { description: 'Unauthorized' },
-      403: { description: 'Forbidden' },
-    },
-    tags: ['Navigator'],
-  }),
-  ...authRouter(permissions.navigatorManage),
-  zValidator('json', createClassroomSchema),
-  async (c) => {
-    const payload = c.req.valid('json');
-
+export const createClassroomRoute = base.navigator.classrooms.create
+  .use(requireAuthorization(permissions.navigatorManage))
+  .handler(async ({ input }) => {
     const [classroom] = await db
       .insert(classroomTable)
-      .values({ id: crypto.randomUUID(), mapped: true, ...payload })
+      .values({ id: crypto.randomUUID(), mapped: true, ...input })
       .returning();
 
-    return created(c, { classroom });
-  }
-);
+    if (!classroom) {
+      throw new ORPCError('INTERNAL', {
+        message: 'Failed to create classroom',
+      });
+    }
 
-export const updateClassroomRoute = navigatorFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Navigator', '@unit Classroom', true),
-    description: 'Update a classroom',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateClassroomRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(classroomResponseSchema),
-          },
-        },
-        description: 'Classroom updated',
-      },
-      401: { description: 'Unauthorized' },
-      403: { description: 'Forbidden' },
-      404: { description: 'Classroom not found' },
-    },
-    tags: ['Navigator'],
-  }),
-  ...authRouter(permissions.navigatorManage),
-  zValidator('json', updateClassroomSchema),
-  zValidator('param', navigatorIdParamsSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const payload = c.req.valid('json');
+    return { classroom };
+  });
+
+export const updateClassroomRoute = base.navigator.classrooms.update
+  .use(requireAuthorization(permissions.navigatorManage))
+  .handler(async ({ input }) => {
+    const { id, ...payload } = input;
 
     // An empty patch is a legal (if pointless) request, and Drizzle refuses to
     // build an `update … set` with no values. A campus save is an admin
@@ -148,35 +64,13 @@ export const updateClassroomRoute = navigatorFactory.createHandlers(
       throw notFound('Classroom not found');
     }
 
-    return ok(c, { classroom });
-  }
-);
+    return { classroom };
+  });
 
-export const deleteClassroomRoute = navigatorFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Navigator', '@unit Classroom', true),
-    description:
-      'Delete a classroom; rooms the timetable still uses are refused',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(classroomResponseSchema),
-          },
-        },
-        description: 'Classroom deleted',
-      },
-      401: { description: 'Unauthorized' },
-      403: { description: 'Forbidden' },
-      404: { description: 'Classroom not found' },
-      409: { description: 'The timetable still uses the classroom' },
-    },
-    tags: ['Navigator'],
-  }),
-  ...authRouter(permissions.navigatorManage),
-  zValidator('param', navigatorIdParamsSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteClassroomRoute = base.navigator.classrooms.delete
+  .use(requireAuthorization(permissions.navigatorManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     // The room rows are the timetable's too, and nothing in the timetable
     // cascades: refuse the delete while any of its own rows still points here,
@@ -218,6 +112,5 @@ export const deleteClassroomRoute = navigatorFactory.createHandlers(
       throw notFound('Classroom not found');
     }
 
-    return ok(c, { classroom });
-  }
-);
+    return { classroom };
+  });

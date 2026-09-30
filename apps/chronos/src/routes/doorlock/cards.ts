@@ -1,18 +1,11 @@
-import {
-  createCardSchema,
-  updateCardSchema,
-} from '@filcdev/api/domains/doorlock/cards';
-import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { eq, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { card, device } from '#database/schema/doorlock';
-import { authRouter } from '#middleware/auth';
+import { card } from '#database/schema/doorlock';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
@@ -21,53 +14,7 @@ import {
   replaceCardDevices,
 } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
-import { created, notFound, ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-import { doorlockFactory } from './_factory';
-
-const cardSelectSchema = createSelectSchema(card);
-const deviceSummarySchema = createSelectSchema(device).pick({
-  id: true,
-  name: true,
-});
-const userSummarySchema = createSelectSchema(user).pick({
-  email: true,
-  id: true,
-  name: true,
-  nickname: true,
-});
-
-export const cardWithRelationsSchema = cardSelectSchema.extend({
-  authorizedDevices: z.array(deviceSummarySchema),
-  owner: userSummarySchema.nullable().optional(),
-});
-
-export const cardsResponseSchema = z.object({
-  data: z.object({
-    cards: z.array(cardWithRelationsSchema),
-  }),
-  success: z.literal(true),
-});
-
-export const cardResponseSchema = z.object({
-  data: z.object({
-    card: cardWithRelationsSchema,
-  }),
-  success: z.literal(true),
-});
-
-const usersResponseSchema = z.object({
-  data: z.object({
-    users: z.array(userSummarySchema),
-  }),
-  success: z.literal(true),
-});
-
-const { schema: createCardRequestSchema } =
-  await resolver(createCardSchema).toOpenAPISchema();
-const { schema: updateCardRequestSchema } =
-  await resolver(updateCardSchema).toOpenAPISchema();
+import { notFound } from '#utils/http';
 
 const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
   if (!cardRecord) {
@@ -76,56 +23,17 @@ const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
   return cardRecord;
 };
 
-export const listCardsRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit CardListResponse @field(.cards, List<Card>)',
-      true
-    ),
-    description: 'List all access cards',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(cardsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:cards:read'),
-  async (c) => {
+export const listCards = base.doorlock.cards.list
+  .use(requireAuthorization(permissions.doorlockCardsRead))
+  .handler(async () => {
     const cards = await fetchCards();
 
-    return ok(c, { cards });
-  }
-);
+    return { cards };
+  });
 
-export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DoorlockUserListResponse @field(.users, List<DoorlockUser>)',
-      true
-    ),
-    description: 'List users eligible for card ownership',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(usersResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:cards:write'),
-  async (c) => {
+export const listDoorlockUsers = base.doorlock.cards.users
+  .use(requireAuthorization(permissions.doorlockCardsWrite))
+  .handler(async () => {
     const usersList = await db
       .select({
         email: user.email,
@@ -136,38 +44,12 @@ export const listDoorlockUsersRoute = doorlockFactory.createHandlers(
       .from(user)
       .orderBy(sql`coalesce(${user.nickname}, ${user.name})`);
 
-    return ok(c, { users: usersList });
-  }
-);
+    return { users: usersList };
+  });
 
-export const createCardRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Doorlock', '@unit CardResponse @field(.card, Card)', true),
-    description: 'Create a new access card',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: createCardRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(cardResponseSchema),
-          },
-        },
-        description: 'Card created',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:cards:write'),
-  zValidator('json', createCardSchema),
-  async (c) => {
-    const payload = c.req.valid('json');
-
+export const createCard = base.doorlock.cards.create
+  .use(requireAuthorization(permissions.doorlockCardsWrite))
+  .handler(async ({ input: payload }) => {
     const cardId = await db.transaction(async (tx) => {
       const [inserted] = await tx
         .insert(card)
@@ -181,7 +63,7 @@ export const createCardRoute = doorlockFactory.createHandlers(
         .returning({ id: card.id });
 
       if (!inserted) {
-        throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+        throw new ORPCError('INTERNAL', {
           message: 'Failed to create card',
         });
       }
@@ -206,40 +88,13 @@ export const createCardRoute = doorlockFactory.createHandlers(
       )
     );
 
-    return created(c, { card: createdCard });
-  }
-);
+    return { card: createdCard };
+  });
 
-export const updateCardRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Doorlock', '@unit CardResponse @field(.card, Card)', true),
-    description: 'Update an access card',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateCardRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(cardResponseSchema),
-          },
-        },
-        description: 'Card updated',
-      },
-      404: { description: 'Card not found' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:cards:write'),
-  zValidator('json', updateCardSchema),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const { id: cardId } = c.req.valid('param');
-    const payload = c.req.valid('json');
+export const updateCard = base.doorlock.cards.update
+  .use(requireAuthorization(permissions.doorlockCardsWrite))
+  .handler(async ({ input }) => {
+    const { id: cardId, ...payload } = input;
 
     await db.transaction(async (tx) => {
       const [updated] = await tx
@@ -254,9 +109,7 @@ export const updateCardRoute = doorlockFactory.createHandlers(
         .returning({ id: card.id });
 
       if (!updated) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Card not found',
-        });
+        throw notFound('Card not found');
       }
 
       await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
@@ -270,24 +123,13 @@ export const updateCardRoute = doorlockFactory.createHandlers(
       )
     );
 
-    return ok(c, { card: updatedCard });
-  }
-);
+    return { card: updatedCard };
+  });
 
-export const deleteCardRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Doorlock', '@nodata', true),
-    description: 'Delete an access card',
-    responses: {
-      200: { description: 'Card deleted' },
-      404: { description: 'Card not found' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:cards:write'),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const { id: cardId } = c.req.valid('param');
+export const deleteCard = base.doorlock.cards.delete
+  .use(requireAuthorization(permissions.doorlockCardsWrite))
+  .handler(async ({ input }) => {
+    const cardId = input.id;
 
     const existingCard = await fetchCardById(cardId);
     if (!existingCard) {
@@ -308,6 +150,5 @@ export const deleteCardRoute = doorlockFactory.createHandlers(
       )
     );
 
-    return ok(c, undefined);
-  }
-);
+    return deleted;
+  });

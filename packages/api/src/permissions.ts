@@ -19,11 +19,18 @@ export const permissions = {
   importTimetable: 'import:timetable',
   kiosksManage: 'kiosks:manage',
   movedLessonCreate: 'movedLesson:create',
+  movedLessonDelete: 'movedLesson:delete',
+  movedLessonUpdate: 'movedLesson:update',
   navigatorManage: 'navigator:manage',
+  newsBlogsManage: 'news:blogs',
+  rolesManage: 'roles:manage',
   rolesRead: 'roles:read',
   substitutionCreate: 'substitution:create',
+  substitutionDelete: 'substitution:delete',
+  substitutionUpdate: 'substitution:update',
   systemMessagesManage: 'system-messages:manage',
   teacherManage: 'teacher:manage',
+  usersManage: 'users:manage',
   usersRead: 'users:read',
 } as const;
 

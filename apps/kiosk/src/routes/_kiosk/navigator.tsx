@@ -5,7 +5,6 @@ import {
   DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
 } from '@filcdev/api/domains/kiosk/config';
 import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
-import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
 import type { KioskNode } from '@filcdev/navigator-3d/kiosk/types';
 import type {
@@ -21,6 +20,7 @@ import { Alert, AlertDescription } from '@filcdev/ui/components/alert';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Spinner } from '@filcdev/ui/components/spinner';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VirtualKeyboardProvider } from '@/components/keyboard/virtual-keyboard-context';
@@ -31,9 +31,9 @@ import { TypeHighlighter } from '@/components/navigator/type-highlighter';
 import { useKioskHeartbeat } from '@/hooks/kiosk';
 import { useIdleTimer } from '@/hooks/use-idle-timer';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
-import { api, useApiQuery } from '@/utils/api';
 import type { Translator } from '@/utils/classroom-search';
 import { REFETCH_INTERVALS } from '@/utils/constants';
+import { orpc } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_kiosk/navigator')({
   component: NavigatorKioskPage,
@@ -153,8 +153,8 @@ function NavigatorKioskPage() {
   const { t } = useKioskTranslations();
   const heartbeat = useKioskHeartbeat(machine);
 
-  const graphQuery = useApiQuery<FullGraph>(() => api.navigator.graph.$get(), {
-    queryKey: ['navigator', 'graph'],
+  const graphQuery = useQuery({
+    ...orpc.navigator.graph.queryOptions({}),
     refetchInterval: REFETCH_INTERVALS.navigatorGraph,
   });
   const graph = graphQuery.data ?? null;

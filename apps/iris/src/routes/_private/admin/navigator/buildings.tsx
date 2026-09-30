@@ -1,6 +1,5 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
 import { permissions } from '@filcdev/api/permissions';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Field, FieldLabel } from '@filcdev/ui/components/field';
@@ -14,6 +13,7 @@ import {
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -23,6 +23,11 @@ import {
   useNavigatorGraph,
   useUpdateBuilding,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
+
+// The 3D editor is three.js (~560 kB). It is the bulk of this page, so it
+// loads into its own chunk instead of with the route that hosts the preview.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 export const Route = createFileRoute('/_private/admin/navigator/buildings')({
   component: () => (
@@ -30,6 +35,14 @@ export const Route = createFileRoute('/_private/admin/navigator/buildings')({
       <BuildingsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.navigator.buildings.list.queryOptions()
+      ),
+      prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
+    ]),
 });
 
 type BuildingFormValues = {
@@ -57,7 +70,7 @@ function BuildingsPage() {
     onSubmit: ({ value }) => {
       const { id, ...payload } = value;
       if (id) {
-        updateBuilding.mutate({ id, payload });
+        updateBuilding.mutate({ ...payload, id });
       } else {
         createBuilding.mutate(payload);
       }
@@ -246,7 +259,9 @@ function BuildingsPage() {
                   columns={columns}
                   getRowId={(building) => building.id}
                   getRowLabel={(building) => building.name}
-                  onDelete={(building) => deleteBuilding.mutate(building.id)}
+                  onDelete={(building) =>
+                    deleteBuilding.mutate({ id: building.id })
+                  }
                   onEdit={startEdit}
                   onHover={(building) =>
                     editor.setHoveredId(building?.id ?? null)
@@ -259,12 +274,13 @@ function BuildingsPage() {
         </div>
 
         <div className="h-[70vh] overflow-hidden rounded-xl border">
-          <EditorView3D
+          <Lazy
             appearance={editor.appearance}
             edit={editor.edit}
             emptyLabel={t('ui.common.no_data')}
             graph={graph.data ?? null}
             initialDistance={120}
+            load={loadEditorView3D}
             onTransform={editor.foldPatch}
             showAxes
           />

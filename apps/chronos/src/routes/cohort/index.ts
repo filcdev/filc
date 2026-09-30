@@ -1,36 +1,9 @@
-import { describeRoute, resolver } from 'hono-openapi';
-import { z } from 'zod';
 import { db } from '#database';
 import { cohort } from '#database/schema/timetable';
-import { cohortFactory } from '#routes/cohort/_factory';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
+import { base } from '#orpc';
 
-const listCohortsResponseSchema = z.object({
-  data: z.array(createSelectSchema(cohort)),
-  success: z.literal(true),
+export const listCohorts = base.cohort.cohort.handler(async () => {
+  const cohorts = await db.select().from(cohort);
+
+  return cohorts;
 });
-
-export const listCohorts = cohortFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Cohort', '@listof Cohort'),
-    description: 'List all cohorts',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(listCohortsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Cohort'],
-  }),
-  async (c) => {
-    const cohorts = await db.select().from(cohort);
-
-    return ok(c, cohorts);
-  }
-);

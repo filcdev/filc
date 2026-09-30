@@ -1,4 +1,3 @@
-import { usersFactory } from '#routes/users/_factory';
 import {
   createApiKeyRoute,
   listApiKeysRoute,
@@ -6,11 +5,14 @@ import {
 } from '#routes/users/api-keys';
 import { listUsers, updateUser } from '#routes/users/index';
 
-export const usersRouter = usersFactory
-  .createApp()
-  .get('/', ...listUsers)
-  .patch('/:id', ...updateUser)
-  // API key management (scoped to the authenticated user)
-  .get('/me/api-keys', ...listApiKeysRoute)
-  .post('/me/api-keys', ...createApiKeyRoute)
-  .delete('/me/api-keys/:id', ...revokeApiKeyRoute);
+export const usersRouter = {
+  list: listUsers,
+  me: {
+    apiKeys: {
+      create: createApiKeyRoute,
+      delete: revokeApiKeyRoute,
+      list: listApiKeysRoute,
+    },
+  },
+  update: updateUser,
+};

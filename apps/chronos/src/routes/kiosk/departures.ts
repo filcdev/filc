@@ -1,12 +1,6 @@
-import { kioskDeparturesRequestSchema } from '@filcdev/api/domains/kiosk/config';
-import { zValidator } from '@hono/zod-validator';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
+import { base } from '#orpc';
 import { env } from '#utils/environment';
-import { ApiHttpError, ok } from '#utils/http';
-import { kioskDeparturesResponseSchema } from '#utils/kiosk/schemas';
-import { filcExt } from '#utils/openapi';
-import { kioskFactory } from './_factory';
+import { badGateway } from '#utils/http';
 
 const BKK_URL =
   'https://futar.bkk.hu/api/query/v1/ws/otp/api/where/arrivals-and-departures-for-stop';
@@ -38,10 +32,6 @@ const departuresCache = new Map<
   string,
   { expiresAt: number; value: Departure | null }
 >();
-
-const { schema: departuresRequestSchema } = await resolver(
-  kioskDeparturesRequestSchema
-).toOpenAPISchema();
 
 type BkkReferences = NonNullable<BkkResponse['data']>['references'];
 
@@ -155,61 +145,29 @@ async function getDeparturesForStop(
   return value;
 }
 
-export const kioskDeparturesRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Kiosk',
-      '@unit KioskDeparturesResponse @field(.departures, List<KioskDeparture>)'
-    ),
-    description:
-      'Next departure per configured group, trying each stop in order',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: departuresRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskDeparturesResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-      502: { description: 'BKK Futár unavailable or unconfigured' },
-    },
-    tags: ['Kiosk'],
-  }),
-  zValidator('json', kioskDeparturesRequestSchema),
-  async (c) => {
-    if (!env.bkkApiKey) {
-      throw new ApiHttpError(StatusCodes.BAD_GATEWAY, {
-        message: 'BKK API key is not configured',
-      });
-    }
-
-    const { groups } = c.req.valid('json');
-
-    const departures = await Promise.all(
-      groups.map(async (group) => {
-        for (const stop of group.stops) {
-          const departure = await getDeparturesForStop(
-            stop.stopId,
-            stop.routeFilter
-          );
-
-          if (departure) {
-            return { label: group.label, ...departure };
-          }
-        }
-
-        return null;
-      })
-    );
-
-    return ok(c, { departures });
+export const departures = base.kiosk.departures.handler(async ({ input }) => {
+  if (!env.bkkApiKey) {
+    throw badGateway('BKK API key is not configured');
   }
-);
+
+  const { groups } = input;
+
+  const next = await Promise.all(
+    groups.map(async (group) => {
+      for (const stop of group.stops) {
+        const departure = await getDeparturesForStop(
+          stop.stopId,
+          stop.routeFilter
+        );
+
+        if (departure) {
+          return { label: group.label, ...departure };
+        }
+      }
+
+      return null;
+    })
+  );
+
+  return { departures: next };
+});

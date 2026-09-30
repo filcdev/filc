@@ -1,18 +1,12 @@
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
-import type { InferResponseType } from 'hono/client';
+import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useApiQuery } from '@/utils/api';
-import { authClient } from '@/utils/authentication';
+import type { SystemMessageItem } from '@/hooks/news';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type SystemMessageApiResponse = InferResponseType<
-  (typeof api.news)['system-messages']['$get']
->;
-type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
+import { orpc } from '@/utils/orpc';
 
 type BlockContent = {
   content: string;
@@ -35,17 +29,15 @@ const renderBlockContent = (content: unknown): string => {
 };
 
 export function SystemMessageBanner() {
-  const { isPending } = authClient.useSession();
+  const { isPending } = useSession();
   const { i18n, t } = useTranslation();
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
-  const systemMessagesQuery = useApiQuery<SystemMessageItem[]>(
-    () => api.news['system-messages'].$get({ query: {} }),
-    {
-      enabled: !isPending,
-      queryKey: queryKeys.news.systemMessagesBanner(),
-    }
-  );
+  const systemMessagesQuery = useQuery({
+    ...orpc.news.systemMessages.list.queryOptions({ input: {} }),
+    enabled: !isPending,
+    select: (payload): SystemMessageItem[] => payload.data,
+  });
 
   const visibleMessages = useMemo(() => {
     const dismissed = new Set(dismissedIds);

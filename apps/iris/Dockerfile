@@ -16,10 +16,13 @@ COPY --from=prepare /app/out/full/ .
 
 RUN bun run build --filter=@filcdev/iris
 
-FROM nginx:1.31-alpine AS release
-COPY --from=builder /app/apps/iris/nginx.conf /etc/nginx/nginx.conf
-COPY --from=builder /app/apps/iris/dist /usr/share/nginx/html
-EXPOSE 80/tcp
+FROM base AS release
+ENV NODE_ENV=production
+ENV PORT=3000
+COPY --from=builder /app/apps/iris/dist ./dist
+COPY --from=builder /app/apps/iris/server.ts ./server.ts
+USER bun
+EXPOSE 3000/tcp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -q --spider http://127.0.0.1/healthz || exit 1
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+  CMD wget -q --spider http://127.0.0.1:${PORT}/healthz || exit 1
+ENTRYPOINT ["bun", "run", "server.ts"]

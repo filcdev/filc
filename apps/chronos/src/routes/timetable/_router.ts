@@ -1,11 +1,7 @@
-import { timetableFactory } from '#routes/timetable/_factory';
-import { getCohortsForTimetable } from '#routes/timetable/cohort';
-import {
-  exportMovedLessonsRoute,
-  exportSubstitutionsRoute,
-} from '#routes/timetable/export';
-import { getGroupsForCohort, selectGroup } from '#routes/timetable/groups';
-import { importRoute } from '#routes/timetable/import';
+import { curriculumRouter } from './_curriculum-router';
+import { getCohortsForTimetable } from './cohort';
+import { getGroupsForCohort, selectGroup } from './groups';
+import { importRoute } from './import';
 import {
   cleanupOrphanedCohortsHandler,
   deleteTimetable,
@@ -14,35 +10,9 @@ import {
   getLatestValidTimetable,
   previewDeleteTimetable,
   updateTimetable,
-} from '#routes/timetable/index';
-import {
-  getLessonForId,
-  getLessonsForCohort,
-  getLessonsForRoom,
-  getLessonsForTeacher,
-  getLessonsForTeachers,
-  getSubjects,
-  getSubstitutionCandidates,
-} from '#routes/timetable/lesson';
-import {
-  createMovedLesson,
-  deleteMovedLesson,
-  getAllMovedLessons,
-  getMovedLessonsForCohort,
-  getRelevantMovedLessons,
-  getRelevantMovedLessonsForCohort,
-  updateMovedLesson,
-} from '#routes/timetable/moved-lesson';
-import { getPeriodsForTimetable } from '#routes/timetable/period';
-import {
-  createManualSubstitution,
-  createSubstitution,
-  deleteSubstitution,
-  getAllSubstitutions,
-  getRelevantSubstitutions,
-  getRelevantSubstitutionsForCohort,
-  updateSubstitution,
-} from '#routes/timetable/substitution';
+} from './index';
+import { getSubjects } from './lesson';
+import { getPeriodsForTimetable } from './period';
 import { getAvailableClassrooms, getClassrooms } from './room';
 import {
   getMyTeacher,
@@ -51,61 +21,52 @@ import {
   updateTeacher,
 } from './teacher';
 
-export const timetableRouter = timetableFactory
-  .createApp()
-  // Timetable routes
-  .get('/timetables', ...getAllTimetables)
-  .get('/timetables/latestValid', ...getLatestValidTimetable)
-  .get('/timetables/valid', ...getAllValidTimetables)
-  .patch('/timetables/:id', ...updateTimetable)
-  .get('/timetables/:id/preview-delete', ...previewDeleteTimetable)
-  .delete('/timetables/:id', ...deleteTimetable)
-  .post(
-    '/timetables/cleanup-orphaned-cohorts',
-    ...cleanupOrphanedCohortsHandler
-  )
-  .post('/import', ...importRoute)
-  // Substitution routes
-  .get('/substitutions', ...getAllSubstitutions)
-  .get('/substitutions/relevant', ...getRelevantSubstitutions)
-  .get('/substitutions/export', ...exportSubstitutionsRoute)
-  .get('/substitutions/cohort/:cohortId', ...getRelevantSubstitutionsForCohort)
-  .post('/substitutions', ...createSubstitution)
-  .post('/substitutions/manual', ...createManualSubstitution)
-  .put('/substitutions/:id', ...updateSubstitution)
-  .delete('/substitutions/:id', ...deleteSubstitution)
-  // Moved lesson routes
-  .get('/movedLessons', ...getAllMovedLessons)
-  .get('/movedLessons/relevant', ...getRelevantMovedLessons)
-  .get('/movedLessons/export', ...exportMovedLessonsRoute)
-  .get('/movedLessons/cohort/:cohortId', ...getMovedLessonsForCohort)
-  .get(
-    '/movedLessons/cohort/:cohortId/relevant',
-    ...getRelevantMovedLessonsForCohort
-  )
-  .post('/movedLessons', ...createMovedLesson)
-  .put('/movedLessons/:id', ...updateMovedLesson)
-  .delete('/movedLessons/:id', ...deleteMovedLesson)
-  // Lesson routes
-  .get('/lessons/getForCohort/:cohortId', ...getLessonsForCohort)
-  .get('/lessons/getForTeacher/:teacherId', ...getLessonsForTeacher)
-  .post('/lessons/getForTeachers', ...getLessonsForTeachers)
-  .post('/lessons/getSubstitutionCandidates', ...getSubstitutionCandidates)
-  .get('/lessons/getForRoom/:classroomId', ...getLessonsForRoom)
-  .get('/lessons/getForId/:lessonId', ...getLessonForId)
-  .get('/subjects', ...getSubjects)
-  // Period routes
-  .get('/periods/getAll', ...getPeriodsForTimetable)
-  // Classroom routes
-  .get('/classrooms/getAvailable', ...getAvailableClassrooms)
-  .get('/classrooms/getAll', ...getClassrooms)
-  // Cohort routes
-  .get('/cohorts/getAllForTimetable/:timetableId', ...getCohortsForTimetable)
-  // Group routes
-  .get('/groups/getForCohort/:cohortId', ...getGroupsForCohort)
-  .post('/groups/select', ...selectGroup)
-  // Teacher routes
-  .get('/teachers/getAll', ...getTeachers)
-  .get('/teachers', ...listTeachersAdmin)
-  .get('/teachers/me', ...getMyTeacher)
-  .patch('/teachers/:id', ...updateTeacher);
+const timetables = {
+  timetables: {
+    cleanupOrphanedCohorts: cleanupOrphanedCohortsHandler,
+    delete: deleteTimetable,
+    latestValid: getLatestValidTimetable,
+    list: getAllTimetables,
+    previewDelete: previewDeleteTimetable,
+    update: updateTimetable,
+    valid: getAllValidTimetables,
+  },
+};
+
+const importRouter = { import: importRoute };
+
+const peopleRouter = {
+  classrooms: {
+    getAll: getClassrooms,
+    getAvailable: getAvailableClassrooms,
+  },
+  cohorts: {
+    getAllForTimetable: getCohortsForTimetable,
+  },
+  groups: {
+    getForCohort: getGroupsForCohort,
+    select: selectGroup,
+  },
+  periods: {
+    getAll: getPeriodsForTimetable,
+  },
+  subjects: getSubjects,
+  teachers: {
+    getAll: getTeachers,
+    list: listTeachersAdmin,
+    me: getMyTeacher,
+    update: updateTeacher,
+  },
+};
+
+/**
+ * Every `timetable.*` procedure, mirroring the contract's nesting: the
+ * timetables themselves, the XML import, the people and rooms behind them, and
+ * the curriculum taught in them.
+ */
+export const timetableRouter = {
+  ...timetables,
+  ...importRouter,
+  ...peopleRouter,
+  ...curriculumRouter,
+};

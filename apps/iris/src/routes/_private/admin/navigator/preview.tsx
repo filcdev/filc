@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { NavigatorPreview } from '@/components/admin/navigator/navigator-preview';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/navigator/preview')({
   component: () => (
@@ -10,6 +11,8 @@ export const Route = createFileRoute('/_private/admin/navigator/preview')({
       <NavigatorPreviewPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
 });
 
 function NavigatorPreviewPage() {

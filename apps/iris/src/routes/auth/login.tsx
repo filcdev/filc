@@ -1,3 +1,4 @@
+import { authClient } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
@@ -11,7 +12,6 @@ import { FingerprintPattern, Shield } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { authClient } from '@/utils/authentication';
 
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,

@@ -1,7 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
-import { zValidator } from '@hono/zod-validator';
 import { asc, sql } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import {
   navigatorCorridor,
@@ -14,22 +12,15 @@ import {
   classroom as classroomTable,
   classroomType as classroomTypeTable,
 } from '#database/schema/timetable';
-import { authRouter } from '#middleware/auth';
-import { navigatorFactory } from '#routes/navigator/_factory';
-import { badRequest, ok } from '#utils/http';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { badRequest } from '#utils/http';
 import { isIntegrityViolation } from '#utils/navigator/errors';
 import {
   type NavigatorTransfer,
-  navigatorImportResponseSchema,
   navigatorImportSchema,
-  navigatorTransferResponseSchema,
   navigatorTransferSchema,
 } from '#utils/navigator/transfer';
-import { filcExt } from '#utils/openapi';
-
-const { schema: navigatorImportRequestSchema } = await resolver(
-  navigatorImportSchema
-).toOpenAPISchema();
 
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -107,27 +98,9 @@ async function upsertNavigatorOnlyTables(
   }
 }
 
-export const exportNavigatorRoute = navigatorFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Navigator', '@unit NavigatorTransfer', true),
-    description:
-      'Export every navigator row (buildings, classroom types, classrooms, corridors, lifts, stairs and translations) as a versioned JSON payload.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(navigatorTransferResponseSchema),
-          },
-        },
-        description: 'Navigator export payload',
-      },
-      401: { description: 'Unauthorized' },
-      403: { description: 'Forbidden' },
-    },
-    tags: ['Navigator'],
-  }),
-  ...authRouter(permissions.navigatorManage),
-  async (c) => {
+export const exportNavigatorRoute = base.navigator.export
+  .use(requireAuthorization(permissions.navigatorManage))
+  .handler(async () => {
     // Read every collection from one repeatable-read snapshot so the export
     // payload cannot straddle a concurrent import/write halfway through.
     const payload = await db.transaction(
@@ -183,41 +156,28 @@ export const exportNavigatorRoute = navigatorFactory.createHandlers(
       { isolationLevel: 'repeatable read' }
     );
 
-    return ok(c, payload);
-  }
-);
+    // The download is the file the import procedure accepts back: the same
+    // pretty-printed JSON the admin UI used to build client-side.
+    return new File(
+      [JSON.stringify(payload, null, 2)],
+      `navigator-export-${new Date().toISOString().slice(0, 10)}.json`,
+      { type: 'application/json' }
+    );
+  });
 
-export const importNavigatorRoute = navigatorFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Navigator', '@unit NavigatorImport', true),
-    description:
-      'Insert or update every collection in a navigator export payload by its key, inside one transaction. Rows absent from the payload are never deleted.',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: navigatorImportRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(navigatorImportResponseSchema),
-          },
-        },
-        description: 'Import result with per-collection row counts',
-      },
-      400: { description: 'Invalid navigator export payload' },
-      401: { description: 'Unauthorized' },
-      403: { description: 'Forbidden' },
-    },
-    tags: ['Navigator'],
-  }),
-  ...authRouter(permissions.navigatorManage),
-  zValidator('json', navigatorImportSchema),
-  async (c) => {
-    const payload = c.req.valid('json');
+export const importNavigatorRoute = base.navigator.import
+  .use(requireAuthorization(permissions.navigatorManage))
+  .handler(async ({ input }) => {
+    // The upload is a navigator export file. A body that is not JSON and a
+    // body that fails the transfer schema are both the caller's fault.
+    let payload: NavigatorTransfer;
+    try {
+      payload = navigatorImportSchema.parse(
+        JSON.parse(await input.file.text())
+      );
+    } catch (error) {
+      throw badRequest('Navigator import payload is invalid', error);
+    }
 
     try {
       await db.transaction(async (tx) => {
@@ -291,7 +251,7 @@ export const importNavigatorRoute = navigatorFactory.createHandlers(
       throw err;
     }
 
-    return ok(c, {
+    return {
       buildings: payload.buildings.length,
       classrooms: payload.classrooms.length,
       classroomTypes: payload.classroomTypes.length,
@@ -299,6 +259,5 @@ export const importNavigatorRoute = navigatorFactory.createHandlers(
       lifts: payload.lifts.length,
       stairs: payload.stairs.length,
       translations: payload.translations.length,
-    });
-  }
-);
+    };
+  });

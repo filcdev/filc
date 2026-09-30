@@ -16,6 +16,7 @@ import {
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { type KioskRow, useDeleteKiosk, useKiosks } from '@/hooks/kiosks';
+import { orpc, prefetch } from '@/utils/orpc';
 
 dayjs.extend(relativeTime);
 
@@ -25,6 +26,8 @@ export const Route = createFileRoute('/_private/admin/kiosks')({
       <KiosksPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.kiosk.list.queryOptions()),
 });
 
 function KiosksPage() {
@@ -112,7 +115,7 @@ function KiosksPage() {
             deleteConfirmTitle={t('kiosk.deleteConfirmTitle')}
             getRowId={(kiosk) => kiosk.id}
             getRowLabel={(kiosk) => kiosk.name}
-            onDelete={(kiosk) => deleteKiosk.mutate(kiosk.id)}
+            onDelete={(kiosk) => deleteKiosk.mutate({ id: kiosk.id })}
             onEdit={startEdit}
             rows={rows}
           />

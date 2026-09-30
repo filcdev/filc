@@ -1,10 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { type InferResponseType, parseResponse } from 'hono/client';
 import { sortCohorts } from '@/utils/cohort';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-import type { MovedLessonItem } from './moved-lessons';
-import type { SubstitutionItem } from './substitutions';
+import { api, orpc } from '@/utils/orpc';
 
 /**
  * Query options shared by the cacheable public lookups: the timetable pages
@@ -17,134 +13,96 @@ const QUERY_OPTIONS = {
   staleTime: Number.POSITIVE_INFINITY,
 };
 
-type TimetablesResponse = InferResponseType<
-  typeof api.timetable.timetables.$get
+type TimetablesResponse = Awaited<
+  ReturnType<typeof api.timetable.timetables.list>
 >;
 
 /** A single entry of the public timetables list. */
-export type PublicTimetable = NonNullable<TimetablesResponse['data']>[number];
+export type PublicTimetable = TimetablesResponse[number];
 
-type CohortsForTimetableResponse = InferResponseType<
-  (typeof api.timetable.cohorts.getAllForTimetable)[':timetableId']['$get']
+type CohortsForTimetableResponse = Awaited<
+  ReturnType<typeof api.timetable.cohorts.getAllForTimetable>
 >;
 
 /** A cohort scoped to one timetable. */
-export type PublicCohort = NonNullable<
-  CohortsForTimetableResponse['data']
->[number];
+export type PublicCohort = CohortsForTimetableResponse[number];
 
-type TeachersResponse = InferResponseType<
-  typeof api.timetable.teachers.getAll.$get
+type TeachersResponse = Awaited<
+  ReturnType<typeof api.timetable.teachers.getAll>
 >;
 
 /** A teacher from the public teacher list. */
-export type PublicTeacher = NonNullable<TeachersResponse['data']>[number];
+export type PublicTeacher = TeachersResponse[number];
 
-type ClassroomsResponse = InferResponseType<
-  typeof api.timetable.classrooms.getAll.$get
+type ClassroomsResponse = Awaited<
+  ReturnType<typeof api.timetable.classrooms.getAll>
 >;
 
 /** A classroom from the public classroom list. */
-export type PublicClassroom = NonNullable<ClassroomsResponse['data']>[number];
+export type PublicClassroom = ClassroomsResponse[number];
 
-type PeriodsResponse = InferResponseType<
-  typeof api.timetable.periods.getAll.$get
->;
+type PeriodsResponse = Awaited<ReturnType<typeof api.timetable.periods.getAll>>;
 
 /** A period of the daily schedule for one timetable. */
-export type PublicPeriod = NonNullable<PeriodsResponse['data']>[number];
+export type PublicPeriod = PeriodsResponse[number];
 
-type LessonsResponse = InferResponseType<
-  (typeof api.timetable.lessons.getForCohort)[':cohortId']['$get']
+type LessonsResponse = Awaited<
+  ReturnType<typeof api.timetable.lessons.getForCohort>
 >;
 
 /** A lesson of a cohort/teacher/room timetable view. */
-export type PublicLesson = NonNullable<LessonsResponse['data']>[number];
-
-type NotificationSettingsResponse = InferResponseType<
-  typeof api.notifications.settings.$get
->;
+export type PublicLesson = LessonsResponse[number];
 
 /** Per-user notification settings, including timetable class colors. */
-export type TimetableUserSettings = NonNullable<
-  NotificationSettingsResponse['data']
+export type TimetableUserSettings = Awaited<
+  ReturnType<typeof api.notifications.settings>
 >;
 
 /** All timetables; shared by the public timetable and substitutions pages. */
 export function useTimetables() {
   return useQuery({
+    ...orpc.timetable.timetables.list.queryOptions(),
     ...QUERY_OPTIONS,
-    queryFn: async (): Promise<PublicTimetable[]> => {
-      const res = await parseResponse(api.timetable.timetables.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load timetables');
-      }
-      return res.data as PublicTimetable[];
-    },
-    queryKey: queryKeys.timetables.all(),
   });
 }
 
 /** The latest valid timetable, or `null` when none exists yet. */
 export function useLatestValidTimetable() {
   return useQuery({
+    ...orpc.timetable.timetables.latestValid.queryOptions(),
     ...QUERY_OPTIONS,
-    queryFn: async (): Promise<PublicTimetable | null> => {
-      const res = await parseResponse(
-        api.timetable.timetables.latestValid.$get()
-      );
-      if (!res.success) {
-        throw new Error('Failed to load the latest valid timetable');
-      }
-      return (res.data as PublicTimetable | null) ?? null;
-    },
-    queryKey: queryKeys.timetables.latestValid(),
+    // A school without a valid timetable is answered with a null body; the
+    // public pages branch on it.
+    select: (payload) => (payload ?? null) as PublicTimetable | null,
   });
 }
 
 /** Cohorts of one timetable; only fetched when the timetable id is known. */
 export function useTimetableCohorts(timetableId: string | null | undefined) {
   return useQuery({
+    ...orpc.timetable.cohorts.getAllForTimetable.queryOptions({
+      // Only ever fetched when the id is known; the empty string keeps the
+      // input well-formed while the query is disabled.
+      input: { timetableId: timetableId ?? '' },
+    }),
     ...QUERY_OPTIONS,
     enabled: !!timetableId,
-    queryFn: async (): Promise<PublicCohort[]> => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const id = timetableId!;
-      const res = await parseResponse(
-        api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-          param: { timetableId: id },
-        })
-      );
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load cohorts');
-      }
-      return sortCohorts(res.data) as PublicCohort[];
-    },
-    queryKey: queryKeys.timetable.cohorts(timetableId),
+    select: sortCohorts,
   });
 }
 
 /** Teacher list for the public filter bars. */
 export function useTeachers() {
   return useQuery({
+    ...orpc.timetable.teachers.getAll.queryOptions(),
     ...QUERY_OPTIONS,
-    queryFn: async (): Promise<PublicTeacher[]> => {
-      const res = await parseResponse(api.timetable.teachers.getAll.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load teachers');
-      }
-      return res.data as PublicTeacher[];
-    },
-    queryKey: queryKeys.teachers(),
   });
 }
 
-type MyTeacherResponse = InferResponseType<
-  typeof api.timetable.teachers.me.$get
->;
+type MyTeacherResponse = Awaited<ReturnType<typeof api.timetable.teachers.me>>;
 
 /** The signed-in user's linked teacher, or `null` when unlinked. */
-export type MyTeacher = NonNullable<MyTeacherResponse['data']>;
+export type MyTeacher = NonNullable<MyTeacherResponse>;
 
 /**
  * The signed-in user's linked teacher. Unlike the immutable reference data
@@ -158,15 +116,9 @@ export function useMyTeacher(
   userId: string | null | undefined
 ) {
   return useQuery({
+    ...orpc.timetable.teachers.me.queryOptions(),
     enabled,
-    queryFn: async (): Promise<MyTeacher | null> => {
-      const res = await parseResponse(api.timetable.teachers.me.$get());
-      if (!res.success) {
-        throw new Error('Failed to load your teacher profile');
-      }
-      return (res.data as MyTeacher | null) ?? null;
-    },
-    queryKey: [...queryKeys.myTeacher(), userId],
+    queryKey: [...orpc.timetable.teachers.me.key(), userId ?? ''],
     refetchOnMount: 'always',
     staleTime: 0,
   });
@@ -175,35 +127,21 @@ export function useMyTeacher(
 /** Classroom list for the public filter bars. */
 export function useClassrooms() {
   return useQuery({
+    ...orpc.timetable.classrooms.getAll.queryOptions(),
     ...QUERY_OPTIONS,
-    queryFn: async (): Promise<PublicClassroom[]> => {
-      const res = await parseResponse(api.timetable.classrooms.getAll.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load classrooms');
-      }
-      return res.data as PublicClassroom[];
-    },
-    queryKey: queryKeys.classrooms(),
   });
 }
 
 /** Periods of one timetable; only fetched when the timetable id is known. */
 export function useTimetablePeriods(timetableId: string | null | undefined) {
   return useQuery({
+    ...orpc.timetable.periods.getAll.queryOptions({
+      // Only ever fetched when the id is known; the empty string keeps the
+      // input well-formed while the query is disabled.
+      input: { timetableId: timetableId ?? '' },
+    }),
     ...QUERY_OPTIONS,
     enabled: !!timetableId,
-    queryFn: async (): Promise<PublicPeriod[]> => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const id = timetableId!;
-      const res = await parseResponse(
-        api.timetable.periods.getAll.$get({ query: { timetableId: id } })
-      );
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load periods');
-      }
-      return res.data as PublicPeriod[];
-    },
-    queryKey: queryKeys.timetable.periods(timetableId),
   });
 }
 
@@ -219,71 +157,45 @@ export function useTimetableLessons(
     queryFn: async (): Promise<PublicLesson[]> => {
       // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
       const selection = selectionId!;
-      const query = timetableId ? { timetableId } : {};
-      const load = async (): Promise<{
-        data?: PublicLesson[];
-        success: boolean;
-      }> => {
-        if (filter === 'class') {
-          return await parseResponse(
-            api.timetable.lessons.getForCohort[':cohortId'].$get({
-              param: { cohortId: selection },
-              query,
-            })
-          );
-        }
-        if (filter === 'classroom') {
-          return await parseResponse(
-            api.timetable.lessons.getForRoom[':classroomId'].$get({
-              param: { classroomId: selection },
-              query,
-            })
-          );
-        }
-        return await parseResponse(
-          api.timetable.lessons.getForTeacher[':teacherId'].$get({
-            param: { teacherId: selection },
-            query,
-          })
-        );
-      };
-      const res = await load();
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load lessons');
+      const timetable = timetableId ? { timetableId } : {};
+      if (filter === 'class') {
+        return await api.timetable.lessons.getForCohort({
+          cohortId: selection,
+          ...timetable,
+        });
       }
-      return res.data as PublicLesson[];
+      if (filter === 'classroom') {
+        return await api.timetable.lessons.getForRoom({
+          classroomId: selection,
+          ...timetable,
+        });
+      }
+      return await api.timetable.lessons.getForTeacher({
+        teacherId: selection,
+        ...timetable,
+      });
     },
-    queryKey: queryKeys.timetable.lessons(filter, selectionId, timetableId),
+    // One key per view: which of the three lesson endpoints answered is part
+    // of the selection, and every one of them is invalidated by the family key.
+    queryKey: orpc.timetable.lessons.key({
+      input: { filter, selectionId, timetableId },
+    }),
   });
 }
 
 /** Full substitution list for the public page; only fetched when enabled. */
 export function usePublicSubstitutions(enabled: boolean) {
   return useQuery({
+    ...orpc.timetable.substitutions.list.queryOptions(),
     enabled,
-    queryFn: async (): Promise<SubstitutionItem[]> => {
-      const res = await parseResponse(api.timetable.substitutions.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load substitutions');
-      }
-      return res.data as SubstitutionItem[];
-    },
-    queryKey: queryKeys.substitutions(),
   });
 }
 
 /** Moved-lesson list for the public page; only fetched when enabled. */
 export function usePublicMovedLessons(enabled: boolean) {
   return useQuery({
+    ...orpc.timetable.movedLessons.list.queryOptions(),
     enabled,
-    queryFn: async (): Promise<MovedLessonItem[]> => {
-      const res = await parseResponse(api.timetable.movedLessons.$get());
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load moved lessons');
-      }
-      return res.data as MovedLessonItem[];
-    },
-    queryKey: queryKeys.movedLessons(),
   });
 }
 
@@ -293,14 +205,7 @@ export function usePublicMovedLessons(enabled: boolean) {
  */
 export function useTimetableUserSettings(enabled: boolean) {
   return useQuery({
+    ...orpc.notifications.settings.queryOptions(),
     enabled,
-    queryFn: async (): Promise<TimetableUserSettings | null> => {
-      const res = await parseResponse(api.notifications.settings.$get());
-      if (!res.success) {
-        throw new Error('Failed to load user settings');
-      }
-      return (res.data as TimetableUserSettings | null) ?? null;
-    },
-    queryKey: queryKeys.notifications.settings(),
   });
 }

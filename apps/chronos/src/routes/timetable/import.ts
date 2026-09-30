@@ -1,8 +1,5 @@
 import type { ImportTimetableInput } from '@filcdev/api/domains/timetable/import';
-import {
-  importResponseSchema,
-  importSchema,
-} from '@filcdev/api/domains/timetable/import';
+import { permissions } from '@filcdev/api/permissions';
 import {
   findTimetableImportAdapter,
   listTimetableImportAdapters,
@@ -12,16 +9,13 @@ import { asc2012TimetableImportAdapter } from '@filcdev/timetable-import/asc2012
 import { importTimetable } from '@filcdev/timetable-import/import';
 import { omanTimetableImportAdapter } from '@filcdev/timetable-import/oman';
 import type { TimetableImportModel } from '@filcdev/timetable-import/types';
-import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
+import { ORPCError } from '@orpc/server';
 import { timetableImportStore } from '#database/timetable-import-store';
-import { authRouter } from '#middleware/auth';
-import { timetableFactory } from '#routes/timetable/_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 import { env } from '#utils/environment';
-import { ok } from '#utils/http';
+import { badRequest } from '#utils/http';
 
 const logger = getLogger(['chronos', 'timetable']);
 
@@ -41,8 +35,11 @@ const runImport = async (body: ImportTimetableInput): Promise<void> => {
   const { file, name, validFrom, validTo } = body;
 
   if (file.size > MAX_IMPORT_BYTES) {
-    throw new HTTPException(StatusCodes.REQUEST_TOO_LONG, {
+    // The pre-migration handler answered 413; the shared error map has no
+    // request-too-long code, so the status stays explicit.
+    throw new ORPCError('BAD_REQUEST', {
       message: 'The uploaded timetable file is too large.',
+      status: 413,
     });
   }
 
@@ -56,9 +53,7 @@ const runImport = async (body: ImportTimetableInput): Promise<void> => {
       candidate.detect?.(bytes)
     );
   if (!adapter) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: 'Unsupported file type',
-    });
+    throw badRequest('Unsupported file type');
   }
 
   let model: TimetableImportModel;
@@ -66,10 +61,10 @@ const runImport = async (body: ImportTimetableInput): Promise<void> => {
     model = adapter.parse(bytes, logger);
   } catch (e) {
     logger.error('Failed to parse XML', { error: e });
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      cause: env.mode === 'development' ? e : undefined,
-      message: 'Failed to parse XML',
-    });
+    throw badRequest(
+      'Failed to parse XML',
+      env.mode === 'development' ? e : undefined
+    );
   }
 
   try {
@@ -92,42 +87,19 @@ const runImport = async (body: ImportTimetableInput): Promise<void> => {
     });
   } catch (e) {
     logger.error('Failed to import timetable', { error: e });
-    throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+    throw new ORPCError('INTERNAL', {
       cause: env.mode === 'development' ? e : undefined,
       message: 'Failed to import timetable',
     });
   }
 };
 
-export const importRoute = timetableFactory.createHandlers(
-  describeRoute({
-    description: 'Import a timetable from an Oman or aSc 2012 XML file.',
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          schema: (await resolver(importSchema).toOpenAPISchema()).schema,
-        },
-      },
-      description: 'The data for the new timetable.',
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(importResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Timetable', 'Import'],
-  }),
-  // Authenticate before the form validator so unauthenticated requests cannot
-  // force the whole uploaded file into memory (z.file() is unbounded).
-  ...authRouter('import:timetable'),
-  zValidator('form', importSchema),
-  async (c) => {
-    await runImport(c.req.valid('form'));
-    return ok(c, undefined);
-  }
-);
+export const importRoute = base.timetable.import
+  // Authorize before the upload is parsed and persisted: an unauthenticated
+  // caller must not be able to trigger the import work.
+  .use(requireAuthorization(permissions.importTimetable))
+  .handler(async ({ input }) => {
+    await runImport(input);
+
+    return { ok: true } as const;
+  });

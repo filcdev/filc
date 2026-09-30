@@ -1,14 +1,8 @@
 import type { KioskKind } from '@filcdev/api/domains/kiosk/config';
-import type {
-  CreateKioskInput,
-  UpdateKioskInput,
-} from '@filcdev/api/domains/kiosk/crud';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { type api, orpc } from '@/utils/orpc';
 
 /** Options accepted by every mutation hook: react to a successful save. */
 export type KioskMutationCallbacks = {
@@ -16,116 +10,74 @@ export type KioskMutationCallbacks = {
   onSaved?: () => void;
 };
 
+type KioskListRow = Awaited<
+  ReturnType<typeof api.kiosk.list>
+>['kiosks'][number];
+
 /** One managed kiosk box as stored by Chronos. */
-export type KioskRow = {
-  appVersion: string | null;
-  config: unknown;
-  createdAt: string;
-  enabled: boolean;
-  id: string;
-  kind: KioskKind;
-  lastSeenAt: string | null;
-  lastSeenIp: string | null;
-  machineId: string;
-  name: string;
-  updatedAt: string;
-};
+export type KioskRow = Omit<KioskListRow, 'kind'> & { kind: KioskKind };
 
 /** Every enrolled kiosk, ordered by name; only fetched when enabled. */
 export function useKiosks(enabled = true) {
   return useQuery({
+    ...orpc.kiosk.list.queryOptions(),
     enabled,
-    queryFn: async (): Promise<KioskRow[]> => {
-      const res = await parseResponse(api.kiosk.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load kiosks');
-      }
-      return res.data.kiosks as KioskRow[];
-    },
-    queryKey: queryKeys.kiosks(),
+    // `kind` is a plain text column validated when written, so its values are
+    // always the enum the pickers expect.
+    select: (payload) => payload.kiosks as KioskRow[],
   });
-}
-
-function useInvalidateKiosks() {
-  const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: queryKeys.kiosks() });
 }
 
 /** Enrol a box; a duplicate machine id is rejected with a conflict. */
 export function useCreateKiosk({ onSaved }: KioskMutationCallbacks = {}) {
-  const invalidate = useInvalidateKiosks();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (payload: CreateKioskInput) => {
-      const res = await parseResponse(api.kiosk.index.$post({ json: payload }));
-      if (!res.success) {
-        throw new Error('Failed to create kiosk');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('kiosk.createError'));
-    },
-    onSuccess: () => {
-      toast.success(t('kiosk.createSuccess'));
-      invalidate();
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.kiosk.create.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('kiosk.createError'));
+      },
+      onSuccess: () => {
+        toast.success(t('kiosk.createSuccess'));
+        queryClient.invalidateQueries({ queryKey: orpc.kiosk.list.key() });
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /** Update a kiosk's name, kind, enabled flag or config. */
 export function useUpdateKiosk({ onSaved }: KioskMutationCallbacks = {}) {
-  const invalidate = useInvalidateKiosks();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateKioskInput;
-    }) => {
-      const res = await parseResponse(
-        api.kiosk[':id'].$put({ json: payload, param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update kiosk');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('kiosk.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('kiosk.updateSuccess'));
-      invalidate();
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.kiosk.update.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('kiosk.updateError'));
+      },
+      onSuccess: () => {
+        toast.success(t('kiosk.updateSuccess'));
+        queryClient.invalidateQueries({ queryKey: orpc.kiosk.list.key() });
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /** Remove a kiosk row. */
 export function useDeleteKiosk({ onSaved }: KioskMutationCallbacks = {}) {
-  const invalidate = useInvalidateKiosks();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.kiosk[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete kiosk');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('kiosk.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('kiosk.deleteSuccess'));
-      invalidate();
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.kiosk.delete.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('kiosk.deleteError'));
+      },
+      onSuccess: () => {
+        toast.success(t('kiosk.deleteSuccess'));
+        queryClient.invalidateQueries({ queryKey: orpc.kiosk.list.key() });
+        onSaved?.();
+      },
+    })
+  );
 }

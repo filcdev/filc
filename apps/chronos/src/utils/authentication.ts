@@ -1,10 +1,9 @@
+import { userAdditionalFields } from '@filcdev/auth';
 import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession, oAuthProxy } from 'better-auth/plugins';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
-import { Hono } from 'hono';
-import type { Context } from '#_types/globals';
 import { db } from '#database';
 import {
   authenticationSchema,
@@ -186,24 +185,7 @@ const authOptions = {
   },
   trustedOrigins: env.trustedOrigins ?? [env.baseUrl],
   user: {
-    additionalFields: {
-      cohortId: {
-        input: true,
-        required: false,
-        type: 'string',
-      },
-      nickname: {
-        input: true,
-        required: false,
-        type: 'string',
-      },
-      roles: {
-        defaultValue: ['user'],
-        input: false,
-        required: true,
-        type: 'string[]',
-      },
-    },
+    additionalFields: userAdditionalFields,
   },
 } satisfies BetterAuthOptions;
 
@@ -227,10 +209,6 @@ export const auth = betterAuth({
     }, authOptions),
   ],
 });
-
-export const authRouter = new Hono<Context>().on(['POST', 'GET'], '*', (c) =>
-  auth.handler(c.req.raw)
-);
 
 export type Session = typeof auth.$Infer.Session;
 export type User = (typeof auth.$Infer.Session)['user'];

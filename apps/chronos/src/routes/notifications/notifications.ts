@@ -1,17 +1,5 @@
-import {
-  fcmTokenSchema,
-  notificationIdParamsSchema,
-  paginationSchema,
-  previewTestNotificationSchema,
-  sendTestNotificationSchema,
-  tokenDeleteSchema,
-  unsubscribeSchema,
-  updateSettingsSchema,
-} from '@filcdev/api/domains/notifications';
-import { zValidator } from '@hono/zod-validator';
+import { ORPCError } from '@orpc/server';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import {
@@ -19,50 +7,19 @@ import {
   notification,
   userPreferences,
 } from '#database/schema/notifications';
-import { authRouter } from '#middleware/auth';
-import { notificationsFactory } from '#routes/notifications/_factory';
+import { requireAuthentication } from '#middleware/auth';
+import { base } from '#orpc';
 import { env } from '#utils/environment';
-import { created as createdResponse, notFound, ok } from '#utils/http';
+import { forbidden, notFound } from '#utils/http';
 import { sendPush } from '#utils/notifications/providers/fcm';
-import {
-  generateUnsubscribeToken,
-  renderEmail,
-  sendEmail,
-} from '#utils/notifications/providers/smtp';
+import { renderEmail, sendEmail } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
 
-/** HTML-escape a string for interpolation into markup (e.g. reflected tokens). */
-const escapeHtml = (value: string): string =>
-  value.replace(/[&<>"']/g, (ch) => {
-    switch (ch) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      default:
-        return '&#39;';
-    }
-  });
-
-const getUser = (c: { var: { user: { id: string } | null } }) => {
-  const user = c.var.user;
-  if (!user) {
-    throw new HTTPException(StatusCodes.UNAUTHORIZED);
-  }
-  return user;
-};
-
-export const listNotifications = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('query', paginationSchema),
-  async (c) => {
-    const { id: userId } = getUser(c);
-    const { limit, offset, type, unread, dateFrom, dateTo } =
-      c.req.valid('query');
+export const listNotifications = base.notifications.list
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const userId = context.session.userId;
+    const { limit, offset, type, unread, dateFrom, dateTo } = input;
 
     const conditions = [eq(notification.userId, userId)];
 
@@ -95,16 +52,13 @@ export const listNotifications = notificationsFactory.createHandlers(
         .where(and(...conditions)),
     ]);
 
-    return ok(c, items, StatusCodes.OK, {
-      total: totalResult[0]?.count ?? 0,
-    });
-  }
-);
+    return { items, total: totalResult[0]?.count ?? 0 };
+  });
 
-export const getUnreadCount = notificationsFactory.createHandlers(
-  ...authRouter(),
-  async (c) => {
-    const { id: userId } = getUser(c);
+export const getUnreadCount = base.notifications.unreadCount
+  .use(requireAuthentication)
+  .handler(async ({ context }) => {
+    const userId = context.session.userId;
 
     const [result] = await db
       .select({ count: count() })
@@ -113,16 +67,14 @@ export const getUnreadCount = notificationsFactory.createHandlers(
         sql`${notification.userId} = ${userId} AND ${notification.read} = false`
       );
 
-    return ok(c, { count: result?.count ?? 0 });
-  }
-);
+    return { count: result?.count ?? 0 };
+  });
 
-export const markAsRead = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('param', notificationIdParamsSchema),
-  async (c) => {
-    const { id: userId } = getUser(c);
-    const { id } = c.req.valid('param');
+export const markAsRead = base.notifications.markAsRead
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const userId = context.session.userId;
+    const { id } = input;
 
     const [updated] = await db
       .update(notification)
@@ -136,14 +88,13 @@ export const markAsRead = notificationsFactory.createHandlers(
       throw notFound('Notification not found');
     }
 
-    return ok(c, updated);
-  }
-);
+    return updated;
+  });
 
-export const markAllAsRead = notificationsFactory.createHandlers(
-  ...authRouter(),
-  async (c) => {
-    const { id: userId } = getUser(c);
+export const markAllAsRead = base.notifications.markAllAsRead
+  .use(requireAuthentication)
+  .handler(async ({ context }) => {
+    const userId = context.session.userId;
 
     await db
       .update(notification)
@@ -152,14 +103,13 @@ export const markAllAsRead = notificationsFactory.createHandlers(
         sql`${notification.userId} = ${userId} AND ${notification.read} = false`
       );
 
-    return ok(c, undefined);
-  }
-);
+    return { ok: true as const };
+  });
 
-export const getNotificationSettings = notificationsFactory.createHandlers(
-  ...authRouter(),
-  async (c) => {
-    const { id: userId } = getUser(c);
+export const getNotificationSettings = base.notifications.settings
+  .use(requireAuthentication)
+  .handler(async ({ context }) => {
+    const userId = context.session.userId;
 
     const [prefs] = await db
       .select()
@@ -167,7 +117,7 @@ export const getNotificationSettings = notificationsFactory.createHandlers(
       .where(eq(userPreferences.userId, userId));
 
     if (prefs) {
-      return ok(c, prefs);
+      return prefs;
     }
 
     const [created] = await db
@@ -175,16 +125,20 @@ export const getNotificationSettings = notificationsFactory.createHandlers(
       .values({ userId })
       .returning();
 
-    return ok(c, created);
-  }
-);
+    if (!created) {
+      throw new ORPCError('INTERNAL', {
+        message: 'Failed to create user preferences',
+      });
+    }
 
-export const updateNotificationSettings = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('json', updateSettingsSchema),
-  async (c) => {
-    const { id: userId } = getUser(c);
-    const body = c.req.valid('json');
+    return created;
+  });
+
+export const updateNotificationSettings = base.notifications.updateSettings
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const userId = context.session.userId;
+    const body = input;
 
     const values: Record<string, unknown> = {};
 
@@ -214,7 +168,7 @@ export const updateNotificationSettings = notificationsFactory.createHandlers(
       .returning();
 
     if (updated) {
-      return ok(c, updated);
+      return updated;
     }
 
     const [created] = await db
@@ -222,17 +176,21 @@ export const updateNotificationSettings = notificationsFactory.createHandlers(
       .values({ userId, ...values })
       .returning();
 
-    return ok(c, created);
-  }
-);
+    if (!created) {
+      throw new ORPCError('INTERNAL', {
+        message: 'Failed to create user preferences',
+      });
+    }
 
-export const registerFcmToken = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('json', fcmTokenSchema),
-  async (c) => {
-    const { id: userId } = getUser(c);
+    return created;
+  });
 
-    const { token: fcmTokenValue } = c.req.valid('json');
+export const registerFcmToken = base.notifications.fcmTokens.register
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const userId = context.session.userId;
+
+    const { token: fcmTokenValue } = input;
 
     const [existing] = await db
       .select()
@@ -243,26 +201,25 @@ export const registerFcmToken = notificationsFactory.createHandlers(
 
     if (!existing) {
       await db.insert(fcmToken).values({
-        deviceInfo: c.req.valid('json').deviceInfo ?? null,
+        deviceInfo: input.deviceInfo ?? null,
         token: fcmTokenValue,
         userId,
       });
     }
 
-    return createdResponse(c, undefined);
-  }
-);
+    return { ok: true as const };
+  });
 
-export const testNotification = notificationsFactory.createHandlers(
-  ...authRouter(),
-  async (c) => {
+export const testNotification = base.notifications.test
+  .use(requireAuthentication)
+  .handler(async ({ context }) => {
     if (env.mode !== 'development') {
-      throw new HTTPException(StatusCodes.FORBIDDEN, {
-        message: 'Test notifications can only be sent in development mode',
-      });
+      throw forbidden(
+        'Test notifications can only be sent in development mode'
+      );
     }
 
-    const { id: userId } = getUser(c);
+    const userId = context.session.userId;
 
     const [notif] = await db
       .insert(notification)
@@ -276,7 +233,7 @@ export const testNotification = notificationsFactory.createHandlers(
       .returning();
 
     if (!notif) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
         message: 'Failed to create test notification',
       });
     }
@@ -303,16 +260,14 @@ export const testNotification = notificationsFactory.createHandlers(
       userId,
     });
 
-    return ok(c, notif);
-  }
-);
+    return notif;
+  });
 
-export const unregisterFcmToken = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('json', tokenDeleteSchema),
-  async (c) => {
-    const { id: userId } = getUser(c);
-    const { token } = c.req.valid('json');
+export const unregisterFcmToken = base.notifications.fcmTokens.unregister
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const userId = context.session.userId;
+    const { token } = input;
 
     await db
       .delete(fcmToken)
@@ -320,102 +275,8 @@ export const unregisterFcmToken = notificationsFactory.createHandlers(
         sql`${fcmToken.userId} = ${userId} AND ${fcmToken.token} = ${token}`
       );
 
-    return ok(c, undefined);
-  }
-);
-
-export const getUnsubscribePage = notificationsFactory.createHandlers(
-  zValidator('query', unsubscribeSchema),
-  (c) => {
-    const { token, userId } = c.req.valid('query');
-
-    return c.html(`<!DOCTYPE html>
-<html lang="hu">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leiratkozás - Filc</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-    .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; }
-    h1 { margin: 0 0 16px; font-size: 24px; }
-    p { color: #666; margin: 0 0 24px; }
-    button { background: #d93025; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    button:hover { background: #c62828; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Leiratkozás az értesítésekről</h1>
-    <p>Szeretnéd lemondani az összes email értesítést a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
-    <form method="POST" action="/api/notifications/unsubscribe">
-      <input type="hidden" name="userId" value="${escapeHtml(userId)}">
-      <input type="hidden" name="token" value="${escapeHtml(token)}">
-      <button type="submit">Leiratkozás</button>
-    </form>
-  </div>
-</body>
-</html>`);
-  }
-);
-
-export const processUnsubscribe = notificationsFactory.createHandlers(
-  zValidator('form', unsubscribeSchema),
-  async (c) => {
-    const { token, userId } = c.req.valid('form');
-
-    const expected = generateUnsubscribeToken(userId);
-    if (expected !== token) {
-      return c.html(
-        `<!DOCTYPE html>
-<html lang="hu">
-<head><meta charset="utf-8"><title>Hiba - Filc</title></head>
-<body><h1>Érvénytelen leiratkozási token</h1><p>A token érvénytelen vagy lejárt.</p></body>
-</html>`,
-        StatusCodes.BAD_REQUEST
-      );
-    }
-
-    const allDisabled = {
-      announcement: false,
-      blogPost: false,
-      channelsEnabled: false,
-      doorlockCardUsed: false,
-      movedLesson: false,
-      substitution: false,
-      systemMessage: false,
-    };
-
-    await db
-      .insert(userPreferences)
-      .values({ notificationPreferences: allDisabled, userId })
-      .onConflictDoUpdate({
-        set: { notificationPreferences: allDisabled },
-        target: userPreferences.userId,
-      });
-
-    return c.html(`<!DOCTYPE html>
-<html lang="hu">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sikeres leiratkozás - Filc</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-    .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; }
-    h1 { margin: 0 0 16px; font-size: 24px; color: #2e7d32; }
-    p { color: #666; margin: 0; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Sikeres leiratkozás</h1>
-    <p>Innentől nem fogsz email értesítéseket kapni a Filc rendszertől.</p>
-  </div>
-</body>
-</html>`);
-  }
-);
+    return { ok: true as const };
+  });
 
 type TestTarget = {
   email: string;
@@ -477,18 +338,17 @@ async function resolveTestTarget(
   return target;
 }
 
-export const sendTestNotification = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('json', sendTestNotificationSchema),
-  async (c) => {
+export const sendTestNotification = base.notifications.sendTest
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
     if (env.mode !== 'development') {
-      throw new HTTPException(StatusCodes.FORBIDDEN, {
-        message: 'Test notifications can only be sent in development mode',
-      });
+      throw forbidden(
+        'Test notifications can only be sent in development mode'
+      );
     }
 
-    const { id: currentUserId } = getUser(c);
-    const body = c.req.valid('json');
+    const currentUserId = context.session.userId;
+    const body = input;
 
     const target = await resolveTestTarget(
       body.email,
@@ -523,21 +383,19 @@ export const sendTestNotification = notificationsFactory.createHandlers(
       results.push = await sendPush(target.id, subject, content);
     }
 
-    return ok(c, results);
-  }
-);
+    return results;
+  });
 
-export const previewTestNotification = notificationsFactory.createHandlers(
-  ...authRouter(),
-  zValidator('json', previewTestNotificationSchema),
-  async (c) => {
+export const previewTestNotification = base.notifications.previewTest
+  .use(requireAuthentication)
+  .handler(async ({ input }) => {
     if (env.mode !== 'development') {
-      throw new HTTPException(StatusCodes.FORBIDDEN, {
-        message: 'Test notifications can only be previewed in development mode',
-      });
+      throw forbidden(
+        'Test notifications can only be previewed in development mode'
+      );
     }
 
-    const body = c.req.valid('json');
+    const body = input;
     const subject = body.subject ?? 'Filc test message';
     const content =
       body.content ??
@@ -548,6 +406,5 @@ export const previewTestNotification = notificationsFactory.createHandlers(
       title: subject,
     });
 
-    return ok(c, { html });
-  }
-);
+    return { html };
+  });

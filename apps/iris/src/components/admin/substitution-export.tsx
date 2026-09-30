@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { api } from '@/utils/hc';
+import { api } from '@/utils/orpc';
 import { ExportButton, type ExportColumn } from '../export-button';
 
 const columns: ExportColumn[] = [
@@ -20,18 +20,11 @@ export function SubstitutionExportButton({
   const { t } = useTranslation();
 
   const fetchCsv = async (): Promise<string> => {
-    const query: Record<string, string> = {};
-    if (dateRange?.from) {
-      query.from = dateRange.from.toISOString().slice(0, 10);
-    }
-    if (dateRange?.to) {
-      query.to = dateRange.to.toISOString().slice(0, 10);
-    }
-    const res = await api.timetable.substitutions.export.$get({ query });
-    if (!res.ok) {
-      throw new Error('Export failed');
-    }
-    return res.text();
+    const file = await api.timetable.substitutions.export({
+      from: dateRange?.from?.toISOString().slice(0, 10),
+      to: dateRange?.to?.toISOString().slice(0, 10),
+    });
+    return await file.text();
   };
 
   return (

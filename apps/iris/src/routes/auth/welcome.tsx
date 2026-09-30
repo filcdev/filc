@@ -1,3 +1,5 @@
+import type { User as UserType } from '@filcdev/auth/client';
+import { authClient, useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
@@ -34,15 +36,13 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
-import type { User as UserType } from '@/utils/authentication';
-import { authClient } from '@/utils/authentication';
 
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data, error, isPending } = authClient.useSession();
+  const { data, error, isPending } = useSession();
   const navigate = useNavigate();
   const { t } = useTranslation();
 

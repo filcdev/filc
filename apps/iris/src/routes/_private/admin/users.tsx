@@ -9,6 +9,7 @@ import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { USERS_PAGE_SIZE, useCohorts, useUsers } from '@/hooks/admin-users';
+import { orpc, prefetch } from '@/utils/orpc';
 
 const searchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -17,6 +18,26 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
+  // The params come off the location rather than `loaderDeps`: a `loaderDeps`
+  // above `validateSearch` would fix the search type to `{}`, and biome sorts
+  // these keys.
+  loader: ({ context, location }) => {
+    const params = new URLSearchParams(location.searchStr);
+    const page = Number(params.get('page')) || 1;
+    return Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.users.list.queryOptions({
+          input: {
+            limit: USERS_PAGE_SIZE,
+            offset: (page - 1) * USERS_PAGE_SIZE,
+            search: params.get('search') ?? '',
+          },
+        })
+      ),
+      prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+    ]);
+  },
   validateSearch: searchSchema,
 });
 

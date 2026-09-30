@@ -1,66 +1,24 @@
-import { paginationSchema } from '@filcdev/api/domains/news/announcements';
-import {
-  blogCreateSchema,
-  blogUpdateSchema,
-} from '@filcdev/api/domains/news/blogs';
-import { zValidator } from '@hono/zod-validator';
+import type { BlogUpdateInput } from '@filcdev/api/domains/news/blogs';
+import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { and, count, eq, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { blogPost } from '#database/schema/news';
-import { authRouter } from '#middleware/auth';
-import { newsFactory } from '#routes/news/_factory';
-import { created, notFound, ok } from '#utils/http';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { badRequest, notFound } from '#utils/http';
 import { ensureUniqueSlug, generateSlug } from '#utils/news/schemas';
-import { successResponseSchema } from '#utils/news/shared';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
 
 const authorSelect = {
   id: user.id,
   image: user.image,
   name: user.name,
 };
-
-const blogSelectSchema = createSelectSchema(blogPost);
-const authorSchema = z.object({
-  id: z.string(),
-  image: z.string().nullable(),
-  name: z.string(),
-});
-
-const blogItemSchema = blogSelectSchema.extend({
-  author: authorSchema.nullable().optional(),
-});
-
-const blogListResponseSchema = z.object({
-  data: z.array(blogItemSchema),
-  success: z.literal(true),
-  total: z.number(),
-});
-
-const blogDetailResponseSchema = z.object({
-  data: blogItemSchema,
-  success: z.literal(true),
-});
-
-const blogBaseDetailResponseSchema = z.object({
-  data: blogSelectSchema,
-  success: z.literal(true),
-});
-
-const { schema: createBlogRequestSchema } =
-  await resolver(blogCreateSchema).toOpenAPISchema();
-const { schema: updateBlogRequestSchema } =
-  await resolver(blogUpdateSchema).toOpenAPISchema();
 
 const checkSlugExists = async (slug: string, excludeId?: string) => {
   const conditions = [eq(blogPost.slug, slug)];
@@ -74,25 +32,9 @@ const checkSlugExists = async (slug: string, excludeId?: string) => {
   return !!existing;
 };
 
-export const listPublishedBlogs = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author)'),
-    description: 'List published blog posts (public, no auth required)',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogListResponseSchema),
-          },
-        },
-        description: 'Paginated list of published blog posts',
-      },
-    },
-    tags: ['News / Blogs'],
-  }),
-  zValidator('query', paginationSchema),
-  async (c) => {
-    const { limit, offset } = c.req.valid('query');
+export const listPublishedBlogs = base.news.blogs.list.handler(
+  async ({ input }) => {
+    const { limit, offset } = input;
 
     const where = eq(blogPost.status, 'published');
 
@@ -119,78 +61,41 @@ export const listPublishedBlogs = newsFactory.createHandlers(
       db.select({ count: count() }).from(blogPost).where(where),
     ]);
 
-    return ok(c, items, StatusCodes.OK, {
-      total: totalResult[0]?.count ?? 0,
-    });
+    return { data: items, total: totalResult[0]?.count ?? 0 };
   }
 );
 
-export const getBlogBySlug = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author)'),
-    description: 'Get a published blog post by slug (public, no auth required)',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogDetailResponseSchema),
-          },
-        },
-        description: 'Blog post details',
-      },
-      404: { description: 'Blog post not found' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  zValidator('param', z.object({ slug: z.string() })),
-  async (c) => {
-    const { slug } = c.req.valid('param');
+export const getBlogBySlug = base.news.blogs.get.handler(async ({ input }) => {
+  const { slug } = input;
 
-    const [item] = await db
-      .select({
-        author: authorSelect,
-        authorId: blogPost.authorId,
-        content: blogPost.content,
-        createdAt: blogPost.createdAt,
-        id: blogPost.id,
-        publishedAt: blogPost.publishedAt,
-        slug: blogPost.slug,
-        status: blogPost.status,
-        title: blogPost.title,
-        updatedAt: blogPost.updatedAt,
-      })
-      .from(blogPost)
-      .leftJoin(user, eq(blogPost.authorId, user.id))
-      .where(and(eq(blogPost.slug, slug), eq(blogPost.status, 'published')));
+  const [item] = await db
+    .select({
+      author: authorSelect,
+      authorId: blogPost.authorId,
+      content: blogPost.content,
+      createdAt: blogPost.createdAt,
+      id: blogPost.id,
+      publishedAt: blogPost.publishedAt,
+      slug: blogPost.slug,
+      status: blogPost.status,
+      title: blogPost.title,
+      updatedAt: blogPost.updatedAt,
+    })
+    .from(blogPost)
+    .leftJoin(user, eq(blogPost.authorId, user.id))
+    .where(and(eq(blogPost.slug, slug), eq(blogPost.status, 'published')));
 
-    if (!item) {
-      throw notFound('Blog post not found');
-    }
-
-    return ok(c, item);
+  if (!item) {
+    throw notFound('Blog post not found');
   }
-);
 
-export const listDrafts = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@listof BlogPost @field(.author, Author)', true),
-    description: 'List all blog posts including drafts (requires permission)',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogListResponseSchema),
-          },
-        },
-        description: 'Paginated list of all blog posts',
-      },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('query', paginationSchema),
-  async (c) => {
-    const { limit, offset } = c.req.valid('query');
+  return item;
+});
+
+export const listDrafts = base.news.blogs.drafts
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ input }) => {
+    const { limit, offset } = input;
 
     const [items, totalResult] = await Promise.all([
       db
@@ -214,34 +119,13 @@ export const listDrafts = newsFactory.createHandlers(
       db.select({ count: count() }).from(blogPost),
     ]);
 
-    return ok(c, items, StatusCodes.OK, {
-      total: totalResult[0]?.count ?? 0,
-    });
-  }
-);
+    return { data: items, total: totalResult[0]?.count ?? 0 };
+  });
 
-export const getBlogById = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost @field(.author, Author)', true),
-    description:
-      'Get any blog post by ID including drafts (requires permission)',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogDetailResponseSchema),
-          },
-        },
-        description: 'Blog post details',
-      },
-      404: { description: 'Blog post not found' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const getBlogById = base.news.blogs.getById
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [item] = await db
       .select({
@@ -264,39 +148,14 @@ export const getBlogById = newsFactory.createHandlers(
       throw notFound('Blog post not found');
     }
 
-    return ok(c, item);
-  }
-);
+    return item;
+  });
 
-export const createBlog = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost', true),
-    description: 'Create a new blog post (defaults to draft)',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: createBlogRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(blogBaseDetailResponseSchema),
-          },
-        },
-        description: 'Blog post created',
-      },
-      400: { description: 'Invalid input' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('json', blogCreateSchema),
-  async (c) => {
-    const body = c.req.valid('json');
-    const currentUser = c.var.user;
+export const createBlog = base.news.blogs.create
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ context, input }) => {
+    const body = input;
+    const authorId = context.session.userId;
 
     const baseSlug = body.slug ?? generateSlug(body.title);
     const slug = await ensureUniqueSlug(baseSlug, (s) => checkSlugExists(s));
@@ -306,7 +165,7 @@ export const createBlog = newsFactory.createHandlers(
     const [row] = await db
       .insert(blogPost)
       .values({
-        authorId: currentUser.id,
+        authorId,
         content: body.content,
         publishedAt,
         slug,
@@ -315,40 +174,20 @@ export const createBlog = newsFactory.createHandlers(
       })
       .returning();
 
-    return created(c, row);
-  }
-);
+    if (!row) {
+      throw new ORPCError('INTERNAL', {
+        message: 'Failed to create blog post',
+      });
+    }
 
-export const updateBlog = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost', true),
-    description: 'Update a blog post',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateBlogRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogBaseDetailResponseSchema),
-          },
-        },
-        description: 'Blog post updated',
-      },
-      404: { description: 'Blog post not found' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  zValidator('json', blogUpdateSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const body = c.req.valid('json');
+    return row;
+  });
+
+export const updateBlog = base.news.blogs.update
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
+    const body: BlogUpdateInput = input;
 
     const [existing] = await db
       .select()
@@ -380,32 +219,17 @@ export const updateBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id))
       .returning();
 
-    return ok(c, updated);
-  }
-);
+    if (!updated) {
+      throw notFound('Blog post not found');
+    }
 
-export const publishBlog = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost', true),
-    description: 'Publish a blog post (draft → published)',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogBaseDetailResponseSchema),
-          },
-        },
-        description: 'Blog post published',
-      },
-      400: { description: 'Blog post is already published' },
-      404: { description: 'Blog post not found' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+    return updated;
+  });
+
+export const publishBlog = base.news.blogs.publish
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [existing] = await db
       .select()
@@ -417,9 +241,7 @@ export const publishBlog = newsFactory.createHandlers(
     }
 
     if (existing.status === 'published') {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Blog post is already published',
-      });
+      throw badRequest('Blog post is already published');
     }
 
     const [updated] = await db
@@ -428,37 +250,22 @@ export const publishBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id))
       .returning();
 
+    if (!updated) {
+      throw notFound('Blog post not found');
+    }
+
     dispatchPendingNotification(id, 'blog_post', {
       slug: existing.slug,
       title: existing.title,
     });
 
-    return ok(c, updated);
-  }
-);
+    return updated;
+  });
 
-export const unpublishBlog = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@unit BlogPost', true),
-    description: 'Unpublish a blog post (published → draft)',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(blogBaseDetailResponseSchema),
-          },
-        },
-        description: 'Blog post unpublished',
-      },
-      400: { description: 'Blog post is already a draft' },
-      404: { description: 'Blog post not found' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const unpublishBlog = base.news.blogs.unpublish
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [existing] = await db
       .select()
@@ -470,9 +277,7 @@ export const unpublishBlog = newsFactory.createHandlers(
     }
 
     if (existing.status === 'draft') {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Blog post is already a draft',
-      });
+      throw badRequest('Blog post is already a draft');
     }
 
     const [updated] = await db
@@ -481,33 +286,19 @@ export const unpublishBlog = newsFactory.createHandlers(
       .where(eq(blogPost.id, id))
       .returning();
 
+    if (!updated) {
+      throw notFound('Blog post not found');
+    }
+
     cancelPendingNotification(id, 'blog_post');
 
-    return ok(c, updated);
-  }
-);
+    return updated;
+  });
 
-export const deleteBlog = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('BlogPost', '@nodata', true),
-    description: 'Delete a blog post',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(successResponseSchema),
-          },
-        },
-        description: 'Blog post deleted',
-      },
-      404: { description: 'Blog post not found' },
-    },
-    tags: ['News / Blogs'],
-  }),
-  ...authRouter('news:blogs'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteBlog = base.news.blogs.delete
+  .use(requireAuthorization(permissions.newsBlogsManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [deleted] = await db
       .delete(blogPost)
@@ -518,6 +309,5 @@ export const deleteBlog = newsFactory.createHandlers(
       throw notFound('Blog post not found');
     }
 
-    return ok(c, undefined);
-  }
-);
+    return { id };
+  });

@@ -1,10 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
-import type { InferResponseType } from 'hono/client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useApiMutation, useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { type api, orpc } from '@/utils/orpc';
 
 export const bugReportStatuses = [
   'open',
@@ -15,9 +12,7 @@ export const bugReportStatuses = [
 
 export type BugReportStatus = (typeof bugReportStatuses)[number];
 
-type BugReportsListResponse = NonNullable<
-  InferResponseType<typeof api.bugReport.index.$get>['data']
->;
+type BugReportsListResponse = Awaited<ReturnType<typeof api.bugReport.list>>;
 
 export type BugReportItem = Omit<
   BugReportsListResponse['reports'][number],
@@ -40,44 +35,43 @@ const PAGE_SIZE = 20;
 
 /** Paged + filtered bug reports (admin view). */
 export function useBugReports(filters: BugReportFilters) {
-  return useApiQuery<BugReportsList>(
-    () =>
-      api.bugReport.index.$get({
-        query: {
-          dateFrom: filters.dateFrom || undefined,
-          dateTo: filters.dateTo || undefined,
-          limit: PAGE_SIZE.toString(),
-          page: filters.page.toString(),
-          search: filters.search || undefined,
-          status:
-            filters.status === 'all'
-              ? undefined
-              : (filters.status as BugReportStatus),
-        },
-      }),
-    { queryKey: queryKeys.bugReports.list(filters) }
-  );
+  return useQuery({
+    ...orpc.bugReport.list.queryOptions({
+      input: {
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+        limit: PAGE_SIZE,
+        page: filters.page,
+        search: filters.search || undefined,
+        status:
+          filters.status === 'all'
+            ? undefined
+            : (filters.status as BugReportStatus),
+      },
+    }),
+    // The status column is plain text in the database; the admin UI only ever
+    // shows the four statuses this hook's consumers already knew.
+    select: (payload): BugReportsList => ({
+      ...payload,
+      reports: payload.reports as BugReportItem[],
+    }),
+  });
 }
 
 /** Update a bug report's status (PATCH /:id/status). */
 export function useUpdateBugReportStatus() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useApiMutation<BugReportItem, { id: string; status: BugReportStatus }>(
-    {
-      mutationFn: ({ id, status }) =>
-        api.bugReport[':id'].status.$patch({
-          json: { status },
-          param: { id },
-        }),
+  return useMutation(
+    orpc.bugReport.updateStatus.mutationOptions({
       onError: () => {
         toast.error(t('bugReports.statusUpdateError'));
       },
       onSuccess: () => {
         toast.success(t('bugReports.statusUpdateSuccess'));
-        queryClient.invalidateQueries({ queryKey: queryKeys.bugReports.all() });
+        queryClient.invalidateQueries({ queryKey: orpc.bugReport.list.key() });
       },
-    }
+    })
   );
 }
 
@@ -85,15 +79,16 @@ export function useUpdateBugReportStatus() {
 export function useDeleteBugReport({ onSaved }: { onSaved?: () => void } = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useApiMutation<void, string>({
-    mutationFn: (id) => api.bugReport[':id'].$delete({ param: { id } }),
-    onError: () => {
-      toast.error(t('bugReports.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('bugReports.deleteSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.bugReports.all() });
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.bugReport.delete.mutationOptions({
+      onError: () => {
+        toast.error(t('bugReports.deleteError'));
+      },
+      onSuccess: () => {
+        toast.success(t('bugReports.deleteSuccess'));
+        queryClient.invalidateQueries({ queryKey: orpc.bugReport.list.key() });
+        onSaved?.();
+      },
+    })
+  );
 }

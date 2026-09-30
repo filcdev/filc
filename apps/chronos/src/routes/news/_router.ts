@@ -1,4 +1,3 @@
-import { newsFactory } from '#routes/news/_factory';
 import {
   createAnnouncement,
   deleteAnnouncement,
@@ -27,38 +26,32 @@ import {
   updateSystemMessage,
 } from '#routes/news/system-messages';
 
-const announcementsRouter = newsFactory
-  .createApp()
-  .get('/', ...listAnnouncements)
-  .get('/:id', ...getAnnouncement)
-  .post('/:id/image', ...uploadAnnouncementImage)
-  .delete('/:id/image', ...deleteAnnouncementImage)
-  .post('/', ...createAnnouncement)
-  .patch('/:id', ...updateAnnouncement)
-  .delete('/:id', ...deleteAnnouncement);
-
-const systemMessagesRouter = newsFactory
-  .createApp()
-  .get('/', ...listSystemMessages)
-  .get('/:id', ...getSystemMessage)
-  .post('/', ...createSystemMessage)
-  .patch('/:id', ...updateSystemMessage)
-  .delete('/:id', ...deleteSystemMessage);
-
-const blogsRouter = newsFactory
-  .createApp()
-  .get('/', ...listPublishedBlogs)
-  .get('/drafts', ...listDrafts)
-  .get('/id/:id', ...getBlogById)
-  .get('/:slug', ...getBlogBySlug)
-  .post('/', ...createBlog)
-  .patch('/:id', ...updateBlog)
-  .post('/:id/publish', ...publishBlog)
-  .post('/:id/unpublish', ...unpublishBlog)
-  .delete('/:id', ...deleteBlog);
-
-export const newsRouter = newsFactory
-  .createApp()
-  .route('/announcements', announcementsRouter)
-  .route('/system-messages', systemMessagesRouter)
-  .route('/blogs', blogsRouter);
+export const newsRouter = {
+  announcements: {
+    create: createAnnouncement,
+    delete: deleteAnnouncement,
+    deleteImage: deleteAnnouncementImage,
+    get: getAnnouncement,
+    list: listAnnouncements,
+    update: updateAnnouncement,
+    uploadImage: uploadAnnouncementImage,
+  },
+  blogs: {
+    create: createBlog,
+    delete: deleteBlog,
+    drafts: listDrafts,
+    get: getBlogBySlug,
+    getById: getBlogById,
+    list: listPublishedBlogs,
+    publish: publishBlog,
+    unpublish: unpublishBlog,
+    update: updateBlog,
+  },
+  systemMessages: {
+    create: createSystemMessage,
+    delete: deleteSystemMessage,
+    get: getSystemMessage,
+    list: listSystemMessages,
+    update: updateSystemMessage,
+  },
+};

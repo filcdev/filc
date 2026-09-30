@@ -1,28 +1,24 @@
-import { kioskFactory } from '#routes/kiosk/_factory';
-import { kioskDeparturesRoute } from '#routes/kiosk/departures';
-import { kioskHeartbeatRoute } from '#routes/kiosk/heartbeat';
+import { departures } from '#routes/kiosk/departures';
+import { heartbeat } from '#routes/kiosk/heartbeat';
 import {
-  createKioskRoute,
-  deleteKioskRoute,
-  listKiosksRoute,
-  updateKioskRoute,
+  createKiosk,
+  deleteKiosk,
+  listKiosks,
+  updateKiosk,
 } from '#routes/kiosk/index';
-import { kioskNewsRoute } from '#routes/kiosk/news';
-import { kioskNewsImageRoute } from '#routes/kiosk/news-image';
-import { kioskPetrikNewsRoute } from '#routes/kiosk/petrik-news';
-import { kioskWeatherRoute } from '#routes/kiosk/weather';
+import { listNews } from '#routes/kiosk/news';
+import { newsImage } from '#routes/kiosk/news-image';
+import { petrikNews } from '#routes/kiosk/petrik-news';
+import { weather } from '#routes/kiosk/weather';
 
-export const kioskRouter = kioskFactory
-  .createApp()
-  // Public kiosk data
-  .post('/heartbeat', ...kioskHeartbeatRoute)
-  .get('/news', ...kioskNewsRoute)
-  .get('/news/:id/image', ...kioskNewsImageRoute)
-  .get('/petrik-news', ...kioskPetrikNewsRoute)
-  .get('/weather', ...kioskWeatherRoute)
-  .post('/departures', ...kioskDeparturesRoute)
-  // Kiosk registry
-  .get('/', ...listKiosksRoute)
-  .post('/', ...createKioskRoute)
-  .put('/:id', ...updateKioskRoute)
-  .delete('/:id', ...deleteKioskRoute);
+export const kioskRouter = {
+  create: createKiosk,
+  delete: deleteKiosk,
+  departures,
+  heartbeat,
+  list: listKiosks,
+  news: { image: newsImage, list: listNews },
+  petrikNews,
+  update: updateKiosk,
+  weather,
+};

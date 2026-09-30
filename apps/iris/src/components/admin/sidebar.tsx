@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import {
   Sidebar,
   SidebarContent,
@@ -40,7 +41,6 @@ import {
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 
 type MenuIcon = typeof List;
 
@@ -58,7 +58,7 @@ type MenuCategory = {
 
 export function AdminSidebar() {
   const { t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
   const userPermissions = session?.user?.permissions;

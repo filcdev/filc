@@ -1,17 +1,12 @@
-import {
-  type ExportQueryInput,
-  exportQuerySchema,
-} from '@filcdev/api/domains/doorlock/export';
+import type { ExportQueryInput } from '@filcdev/api/domains/doorlock/export';
 import { permissions } from '@filcdev/api/permissions';
 import type { SQL } from 'drizzle-orm';
 import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
-import { describeRoute } from 'hono-openapi';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { auditLog, card, device } from '#database/schema/doorlock';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { filcExt } from '#utils/openapi';
-import { doorlockFactory } from './_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 
 const appendBaseFilters = (
   filters: SQL<unknown>[],
@@ -142,30 +137,9 @@ const toCsv = (
   return [header.join(','), ...lines].join('\n');
 };
 
-export const exportLogsRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Doorlock', 'Export audit log entries as CSV', true),
-    description:
-      'Export doorlock audit log entries (attendance data) as a CSV file over an optional date range.',
-    responses: {
-      200: {
-        content: {
-          'text/csv': {
-            schema: { format: 'binary', type: 'string' },
-          },
-        },
-        description: 'CSV file with the requested log entries',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  requireAuthentication,
-  requireAuthorization(permissions.doorlockLogsRead),
-  async (c) => {
-    const url = new URL(c.req.url);
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    const query = exportQuerySchema.parse(queryParams);
-
+export const exportLogs = base.doorlock.logs.export
+  .use(requireAuthorization(permissions.doorlockLogsRead))
+  .handler(async ({ input: query }) => {
     const rows = await db
       .select({
         buttonPressed: auditLog.buttonPressed,
@@ -197,9 +171,5 @@ export const exportLogsRoute = doorlockFactory.createHandlers(
 
     const filename = `doorlock-export-${new Date().toISOString().slice(0, 10)}.csv`;
 
-    c.header('Content-Type', 'text/csv; charset=utf-8');
-    c.header('Content-Disposition', `attachment; filename="${filename}"`);
-
-    return c.body(csv);
-  }
-);
+    return new File([csv], filename, { type: 'text/csv; charset=utf-8' });
+  });

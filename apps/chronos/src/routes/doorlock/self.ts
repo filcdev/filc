@@ -1,118 +1,34 @@
-import { idParamSchema } from '@filcdev/api/domains/doorlock/devices';
-import {
-  activateVirtualCardSchema,
-  updateFrozenSchema,
-} from '@filcdev/api/domains/doorlock/self';
-import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
+import { ORPCError } from '@orpc/server';
 import { and, eq } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { auditLog, card } from '#database/schema/doorlock';
-import { authRouter } from '#middleware/auth';
-import {
-  cardResponseSchema,
-  cardsResponseSchema,
-} from '#routes/doorlock/cards';
-import { sendMessage } from '#routes/doorlock/websocket-handler';
+import { requireAuthentication } from '#middleware/auth';
+import { base } from '#orpc';
+import { sendMessage } from '#routes/doorlock/device-socket';
 import { fetchCardById, fetchCards } from '#utils/doorlock/cards';
 import { syncDevicesByIds } from '#utils/doorlock/device-sync';
-import { notFound, ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-import { doorlockFactory } from './_factory';
+import { badRequest, conflict, forbidden, notFound } from '#utils/http';
 
 const logger = getLogger(['chronos', 'doorlock', 'self']);
 
-const auditLogSelectSchema = createSelectSchema(auditLog);
+export const listSelfCards = base.doorlock.self.cards.list
+  .use(requireAuthentication)
+  .handler(async ({ context }) => {
+    const cards = await fetchCards(eq(card.userId, context.session.userId));
 
-const { schema: updateFrozenRequestSchema } =
-  await resolver(updateFrozenSchema).toOpenAPISchema();
+    return { cards };
+  });
 
-const { schema: activateVirtualCardRequestSchema } = await resolver(
-  activateVirtualCardSchema
-).toOpenAPISchema();
-
-const activationResponseSchema = z.object({
-  data: z.object({
-    log: auditLogSelectSchema,
-  }),
-  success: z.literal(true),
-});
-
-export const listSelfCardsRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit CardListResponse @field(.cards, List<Card>)',
-      true
-    ),
-    description: 'List cards owned by the authenticated user',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(cardsResponseSchema),
-          },
-        },
-        description: 'Successful response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter(),
-  async (c) => {
-    const session = c.var.session;
-    if (!session) {
-      throw new HTTPException(StatusCodes.UNAUTHORIZED);
-    }
-
-    const cards = await fetchCards(eq(card.userId, session.userId));
-
-    return ok(c, { cards });
-  }
-);
-
-export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Doorlock', '@unit CardResponse @field(.card, Card)', true),
-    description: 'Update the frozen state of a user-owned card',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateFrozenRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(cardResponseSchema),
-          },
-        },
-        description: 'Card updated',
-      },
-      403: { description: 'Forbidden' },
-      404: { description: 'Card not found' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter(),
-  zValidator('json', updateFrozenSchema),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const session = c.var.session;
-    const { id: cardId } = c.req.valid('param');
-    const payload = c.req.valid('json');
+export const updateSelfCardFrozen = base.doorlock.self.cards.setFrozen
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const { id: cardId, frozen } = input;
 
     const [updated] = await db
       .update(card)
-      .set({ frozen: payload.frozen })
-      .where(and(eq(card.id, cardId), eq(card.userId, session.userId)))
+      .set({ frozen })
+      .where(and(eq(card.id, cardId), eq(card.userId, context.session.userId)))
       .returning({ id: card.id });
 
     if (!updated) {
@@ -121,96 +37,56 @@ export const updateSelfCardFrozenRoute = doorlockFactory.createHandlers(
 
     const updatedCard = await fetchCardById(cardId);
 
-    if (!updatedCard || updatedCard.userId !== session.userId) {
+    if (!updatedCard || updatedCard.userId !== context.session.userId) {
       logger.warn('Unexpected card fetch after self-update', {
         cardId,
-        userId: session.userId,
+        userId: context.session.userId,
       });
       throw notFound('Card not found');
     }
 
     await syncDevicesByIds(
-      updatedCard.authorizedDevices.map((device) => device.id)
+      updatedCard.authorizedDevices.map(
+        (authorizedDevice) => authorizedDevice.id
+      )
     );
 
-    return ok(c, { card: updatedCard });
-  }
-);
+    return { card: updatedCard };
+  });
 
-export const activateVirtualCardRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DoorlockActivationResponse @field(.log, AuditLog)',
-      true
-    ),
-    description:
-      'Activate an authorized device using a user-owned virtual card',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: activateVirtualCardRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(activationResponseSchema),
-          },
-        },
-        description: 'Door activation has been triggered',
-      },
-      400: { description: 'Missing required parameters' },
-      403: { description: 'Forbidden' },
-      404: { description: 'Card not found' },
-      409: { description: 'Card cannot be activated' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter(),
-  zValidator('json', activateVirtualCardSchema),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const session = c.var.session;
-    const { id: cardId } = c.req.valid('param');
-    const payload = c.req.valid('json');
+export const activateVirtualCard = base.doorlock.self.cards.activate
+  .use(requireAuthentication)
+  .handler(async ({ context, input }) => {
+    const { deviceId, id: cardId } = input;
 
     const cardRecord = await fetchCardById(cardId);
-    if (!cardRecord || cardRecord.userId !== session.userId) {
+    if (!cardRecord || cardRecord.userId !== context.session.userId) {
       throw notFound('Card not found');
     }
 
     if (!cardRecord.enabled || cardRecord.frozen) {
-      throw new HTTPException(StatusCodes.CONFLICT, {
-        message: 'Card is currently inactive',
-      });
+      throw conflict('Card is currently inactive');
     }
 
     if (!cardRecord.authorizedDevices.length) {
-      throw new HTTPException(StatusCodes.CONFLICT, {
-        message: 'Card is not authorized on any devices',
-      });
+      throw conflict('Card is not authorized on any devices');
     }
 
     const resolveTargetDevice = () => {
-      if (payload.deviceId) {
+      if (deviceId) {
         const matched = cardRecord.authorizedDevices.find(
-          (device) => device.id === payload.deviceId
+          (authorizedDevice) => authorizedDevice.id === deviceId
         );
         if (!matched) {
-          throw new HTTPException(StatusCodes.FORBIDDEN, {
-            message: 'Card cannot control the requested device',
-          });
+          throw forbidden('Card cannot control the requested device');
         }
         return matched;
       }
 
       if (cardRecord.authorizedDevices.length > 1) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'deviceId is required for cards linked to multiple devices',
-        });
+        throw badRequest(
+          'deviceId is required for cards linked to multiple devices'
+        );
       }
 
       return cardRecord.authorizedDevices[0];
@@ -241,10 +117,15 @@ export const activateVirtualCardRoute = doorlockFactory.createHandlers(
         cardId: cardRecord.id,
         deviceId: targetDevice.id,
         result: true,
-        userId: session.userId,
+        userId: context.session.userId,
       })
       .returning();
 
-    return ok(c, { log: logEntry });
-  }
-);
+    if (!logEntry) {
+      throw new ORPCError('INTERNAL', {
+        message: 'Failed to record the door activation',
+      });
+    }
+
+    return { log: logEntry };
+  });

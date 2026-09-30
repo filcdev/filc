@@ -3,14 +3,12 @@ import {
   DEFAULT_PETRIK_NEWS_MAX_ITEMS,
   navigatorKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
-import { zValidator } from '@hono/zod-validator';
+import { ORPCError } from '@orpc/server';
 import { eq } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { kiosk } from '#database/schema/kiosk';
-import { ApiHttpError, ok } from '#utils/http';
+import { base } from '#orpc';
+import { badGateway } from '#utils/http';
 import { assertAllowedFeedUrl } from '#utils/kiosk/feed-url';
 import {
   type PetrikNewsItem,
@@ -18,18 +16,11 @@ import {
   parsePetrikNewsFeed,
   stripTrailingSlash,
 } from '#utils/kiosk/petrik-news';
-import { kioskPetrikNewsResponseSchema } from '#utils/kiosk/schemas';
-import { filcExt } from '#utils/openapi';
-import { kioskFactory } from './_factory';
 
 const PETRIK_NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
 const PETRIK_NEWS_TIMEOUT_MS = 10_000;
 const MAX_FEED_BYTES = 1_048_576;
 const MAX_JSON_BYTES = 4 * 1024 * 1024;
-
-const petrikNewsQuerySchema = z.object({
-  machine: z.string().min(1).optional(),
-});
 
 /**
  * Per-URL cache: each resolved feed URL has its own ten-minute TTL. The feed
@@ -144,89 +135,66 @@ async function resolveFeed(machine: string | undefined): Promise<ResolvedFeed> {
   return { enabled, feedUrl, maxItems };
 }
 
-export const kioskPetrikNewsRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Kiosk', '@unit KioskPetrikNewsResponse'),
-    description:
-      'petrik.hu news for the navigator kiosk, cached for ten minutes',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskPetrikNewsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-      502: { description: 'petrik.hu feed unavailable' },
-    },
-    tags: ['Kiosk'],
-  }),
-  zValidator('query', petrikNewsQuerySchema),
-  async (c) => {
-    const { machine } = c.req.valid('query');
-    const feed = await resolveFeed(machine);
+export const petrikNews = base.kiosk.petrikNews.handler(async ({ input }) => {
+  const { machine } = input;
+  const feed = await resolveFeed(machine);
 
-    if (!feed.enabled) {
-      return ok(c, { items: [] });
-    }
+  if (!feed.enabled) {
+    return { items: [] };
+  }
 
-    // Serve the cache without a DNS round-trip; only a miss reaches the SSRF
-    // guard, so a warm cache never pays for `assertAllowedFeedUrl`.
-    const cached = feedCache.get(feed.feedUrl);
-    if (cached && cached.expiresAt > Date.now()) {
-      return ok(c, { items: cached.items.slice(0, feed.maxItems) });
-    }
+  // Serve the cache without a DNS round-trip; only a miss reaches the SSRF
+  // guard, so a warm cache never pays for `assertAllowedFeedUrl`.
+  const cached = feedCache.get(feed.feedUrl);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { items: cached.items.slice(0, feed.maxItems) };
+  }
 
-    await assertAllowedFeedUrl(feed.feedUrl);
+  await assertAllowedFeedUrl(feed.feedUrl);
 
-    let xml: string;
-    try {
-      const response = await fetch(feed.feedUrl, {
-        headers: { 'user-agent': 'filc-kiosk/1.0 (+https://filc.petrik.hu)' },
-        redirect: 'manual',
-        signal: AbortSignal.timeout(PETRIK_NEWS_TIMEOUT_MS),
-      });
-
-      if (!response.ok) {
-        throw new Error(`petrik.hu responded with ${response.status}`);
-      }
-
-      xml = await readCappedText(response, MAX_FEED_BYTES);
-    } catch (error) {
-      if (error instanceof ApiHttpError) {
-        throw error;
-      }
-      throw new ApiHttpError(StatusCodes.BAD_GATEWAY, {
-        cause: error,
-        message: 'Failed to fetch petrik.hu news',
-      });
-    }
-
-    const items = parsePetrikNewsFeed(xml);
-
-    // petrik.hu's feed never exposes the featured image, so resolve the
-    // WordPress REST featured map and apply it as the primary picture; a post
-    // with no featured image (featured_media: 0) keeps its first in-body
-    // `<img>` as the fallback. This is best-effort: a failed lookup leaves the
-    // parsed items (and their in-body images) untouched.
-    if (items.length > 0) {
-      try {
-        const featured = await fetchFeaturedImages(feed.feedUrl);
-        for (const item of items) {
-          item.imageUrl =
-            featured.get(stripTrailingSlash(item.url)) ?? item.imageUrl;
-        }
-      } catch {
-        // Best-effort fallback; keep the parsed items as-is on any failure.
-      }
-    }
-
-    feedCache.set(feed.feedUrl, {
-      expiresAt: Date.now() + PETRIK_NEWS_CACHE_TTL_MS,
-      items,
+  let xml: string;
+  try {
+    const response = await fetch(feed.feedUrl, {
+      headers: { 'user-agent': 'filc-kiosk/1.0 (+https://filc.petrik.hu)' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(PETRIK_NEWS_TIMEOUT_MS),
     });
 
-    return ok(c, { items: items.slice(0, feed.maxItems) });
+    if (!response.ok) {
+      throw new Error(`petrik.hu responded with ${response.status}`);
+    }
+
+    xml = await readCappedText(response, MAX_FEED_BYTES);
+  } catch (error) {
+    if (error instanceof ORPCError) {
+      throw error;
+    }
+    throw badGateway('Failed to fetch petrik.hu news', error);
   }
-);
+
+  const items = parsePetrikNewsFeed(xml);
+
+  // petrik.hu's feed never exposes the featured image, so resolve the
+  // WordPress REST featured map and apply it as the primary picture; a post
+  // with no featured image (featured_media: 0) keeps its first in-body
+  // `<img>` as the fallback. This is best-effort: a failed lookup leaves the
+  // parsed items (and their in-body images) untouched.
+  if (items.length > 0) {
+    try {
+      const featured = await fetchFeaturedImages(feed.feedUrl);
+      for (const item of items) {
+        item.imageUrl =
+          featured.get(stripTrailingSlash(item.url)) ?? item.imageUrl;
+      }
+    } catch {
+      // Best-effort fallback; keep the parsed items as-is on any failure.
+    }
+  }
+
+  feedCache.set(feed.feedUrl, {
+    expiresAt: Date.now() + PETRIK_NEWS_CACHE_TTL_MS,
+    items,
+  });
+
+  return { items: items.slice(0, feed.maxItems) };
+});

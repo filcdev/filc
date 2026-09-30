@@ -1,8 +1,12 @@
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { cn } from '@filcdev/ui/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { Lazy } from '@/components/lazy';
 import { useNavigatorGraph } from '@/hooks/navigator';
+
+// The 3D editor is three.js (~560 kB). It is the bulk of this page, so it
+// loads into its own chunk instead of with the route that hosts the preview.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 type NavigatorPreviewProps = {
   className?: string;
@@ -24,11 +28,12 @@ export function NavigatorPreview({ className }: NavigatorPreviewProps) {
         className
       )}
     >
-      <EditorView3D
+      <Lazy
         appearance={{ emphasis: { dimOthers: true } }}
         emptyLabel={t('ui.common.no_data')}
         graph={graph.data ?? null}
         initialDistance={120}
+        load={loadEditorView3D}
         showAxes
       />
     </div>

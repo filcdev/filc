@@ -1,6 +1,5 @@
 import { lookup } from 'node:dns/promises';
-import { StatusCodes } from 'http-status-codes';
-import { ApiHttpError } from '#utils/http';
+import { badRequest } from '#utils/http';
 
 const IPV4_OCTET_RE = /^\d{1,3}$/;
 const IPV6_HEXTET_RE = /^[0-9a-f]{1,4}$/;
@@ -226,10 +225,7 @@ export function isPrivateAddress(address: string): boolean {
   return false;
 }
 
-const feedNotAllowed = () =>
-  new ApiHttpError(StatusCodes.BAD_REQUEST, {
-    message: 'Feed URL is not allowed',
-  });
+const feedNotAllowed = () => badRequest('Feed URL is not allowed');
 
 /**
  * SSRF protection for the public petrik-news endpoint: only https URLs whose

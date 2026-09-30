@@ -13,17 +13,16 @@ import { Label } from '@filcdev/ui/components/label';
 import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
 import { Hand, Save } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type {
+  CohortItem,
+  PeriodItem,
+  TeacherItem,
+} from '@/components/timetable/types';
 import {
   type SubstitutionItem,
-  type Teacher,
   useCreateManualSubstitution,
   useCreateSubstitution,
   useSubstitutionTeachers,
@@ -31,22 +30,16 @@ import {
 } from '@/hooks/substitutions';
 import { sortCohorts } from '@/utils/cohort';
 import { getIntlLocale } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { type api, orpc } from '@/utils/orpc';
 import type { BaseDialogProps } from './admin.types';
 
-type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
+type TeacherLesson = Awaited<
+  ReturnType<typeof api.timetable.lessons.getSubstitutionCandidates>
+>['availableLessons'][number];
 
-type TeacherLessonsApiResponse = InferResponseType<
-  typeof api.timetable.lessons.getSubstitutionCandidates.$post
->;
-type TeacherLesson = NonNullable<
-  NonNullable<TeacherLessonsApiResponse['data']>['availableLessons'][number]
->;
-
-type SubstitutionFormValues = InferRequestType<
-  typeof api.timetable.substitutions.$post
->['json'] & {
+type SubstitutionFormValues = Parameters<
+  typeof api.timetable.substitutions.create
+>[0] & {
   manualCohort: string;
   manualPeriod: string;
   manualSubject: string;
@@ -76,10 +69,7 @@ type SubstitutionFormApi = ReturnType<
   >
 >;
 
-type SubjectApiResponse = InferResponseType<typeof api.timetable.subjects.$get>;
-type Subject = NonNullable<SubjectApiResponse['data']>[number];
-
-type Period = NonNullable<EnrichedLesson['period']>;
+type Subject = Awaited<ReturnType<typeof api.timetable.subjects>>[number];
 
 type SubstitutionDialogProps = BaseDialogProps & {
   item?: SubstitutionItem | null;
@@ -120,7 +110,7 @@ function formatLessonLabel(
 
 const initialState = (
   item?: SubstitutionItem | null
-): InferRequestType<typeof api.timetable.substitutions.$post>['json'] => ({
+): Parameters<typeof api.timetable.substitutions.create>[0] => ({
   comment: item?.substitution.comment ?? null,
   date: toUTCDate(
     item?.substitution.date ? new Date(item.substitution.date) : new Date()
@@ -152,11 +142,11 @@ function compareSubOptions(
 }
 
 type ManualSubstitutionFieldsProps = {
-  cohorts: NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>;
+  cohorts: CohortItem[];
   form: SubstitutionFormApi;
-  periods: Period[];
+  periods: PeriodItem[];
   subjects: Subject[];
-  teachers: Teacher[];
+  teachers: TeacherItem[];
 };
 
 function ManualSubstitutionFields({
@@ -294,7 +284,7 @@ type AutomaticSubstitutionFieldsProps = {
     value: string;
   }[];
   substituteCandidatesLoading: boolean;
-  teachers: Teacher[];
+  teachers: TeacherItem[];
   onSelectedMissingTeacherChange: (value: string) => void;
 };
 
@@ -556,8 +546,8 @@ export function SubstitutionDialog({
       } = { ...value, substituter: resolvedSubstituter };
       if (item) {
         await updateMutation.mutateAsync({
+          ...payload,
           id: item.substitution.id,
-          payload,
         });
       } else {
         await createMutation.mutateAsync(payload);
@@ -592,73 +582,32 @@ export function SubstitutionDialog({
   }, [defaultValues, form, item, open]);
 
   const subjectsQuery = useQuery({
+    ...orpc.timetable.subjects.queryOptions(),
     enabled: manual,
-    queryFn: async (): Promise<Subject[]> => {
-      const res = await parseResponse(api.timetable.subjects.$get());
-      if (!res.success) {
-        throw new Error('Failed to load subjects');
-      }
-      return res.data as Subject[];
-    },
-    queryKey: queryKeys.subjects(),
   });
 
   const cohortsQuery = useQuery({
+    ...orpc.cohort.cohort.queryOptions(),
     enabled: manual,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return sortCohorts(res.data);
-    },
-    queryKey: queryKeys.cohorts(),
+    select: (data) => sortCohorts(data),
   });
 
   const periodsQuery = useQuery({
+    ...orpc.timetable.periods.getAll.queryOptions({ input: {} }),
     enabled: manual,
-    queryFn: async (): Promise<Period[]> => {
-      const res = await parseResponse(
-        api.timetable.periods.getAll.$get({ query: {} })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load periods');
-      }
-      return res.data as Period[];
-    },
-    queryKey: queryKeys.timetable.periods(null),
   });
 
   const substituteCandidatesQuery = useQuery({
+    ...orpc.timetable.lessons.getSubstitutionCandidates.queryOptions({
+      input: {
+        date: formDate,
+        missingTeacherId: selectedMissingTeacher,
+        selectedLessonIds: formLessonIds,
+        teacherIds: teachers.map((teacher) => teacher.id),
+      },
+    }),
     enabled:
       !manual && !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.lessons.getSubstitutionCandidates.$post({
-          json: {
-            date: formDate,
-            missingTeacherId: selectedMissingTeacher,
-            selectedLessonIds: formLessonIds,
-            teacherIds: teachers.map((teacher) => teacher.id),
-          },
-        })
-      );
-
-      if (!res.success) {
-        throw new Error('Failed to load substitution candidates');
-      }
-
-      return res.data;
-    },
-    queryKey: queryKeys.timetable.substituteCandidates(
-      selectedMissingTeacher,
-      formDate?.toISOString(),
-      [...formLessonIds].sort().join(','),
-      teachers
-        .map((teacher) => teacher.id)
-        .sort()
-        .join(',')
-    ),
   });
 
   const availableLessons = useMemo(() => {

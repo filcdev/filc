@@ -1,3 +1,4 @@
+import { authClient, useSession } from '@filcdev/auth/client';
 import {
   Avatar,
   AvatarFallback,
@@ -32,16 +33,26 @@ import {
 import type { ElementType, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BugReportDialog } from '@/components/bug-report-dialog';
+import { Lazy } from '@/components/lazy';
 import { NotificationBell } from '@/components/notification-bell';
-import { SettingsDialog } from '@/components/settings-dialog';
 import { LanguageSelector } from '@/components/util/language-selector';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
-import type { FileRoutesByTo } from '@/route-tree.gen';
-import { authClient } from '@/utils/authentication';
+import type { FileRoutesByTo } from '@/routeTree.gen';
+
+// Both dialogs are a click away and cost real weight (TanStack Form, the date
+// picker, its calendar). They load on first use instead of with every page that
+// renders the navbar.
+const loadBugReportDialog = () =>
+  import('@/components/bug-report-dialog').then((m) => ({
+    default: m.BugReportDialog,
+  }));
+const loadSettingsDialog = () =>
+  import('@/components/settings-dialog').then((m) => ({
+    default: m.SettingsDialog,
+  }));
 
 type NavbarProps = {
   children?: ReactNode;
@@ -70,7 +81,7 @@ export function Navbar({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { data, isPending } = authClient.useSession();
+  const { data, isPending } = useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavId = useId();
@@ -127,7 +138,7 @@ export function Navbar({
 
           <div className="ml-auto flex min-w-0 items-center gap-3">
             {data && <NotificationBell />}
-            {data && <BugReportDialog />}
+            {data && <Lazy load={loadBugReportDialog} />}
 
             <LanguageSelector />
 
@@ -279,7 +290,9 @@ export function Navbar({
           </div>
         </div>
       )}
-      <SettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
+      {settingsOpen && (
+        <Lazy load={loadSettingsDialog} onOpenChange={setSettingsOpen} open />
+      )}
     </>
   );
 }

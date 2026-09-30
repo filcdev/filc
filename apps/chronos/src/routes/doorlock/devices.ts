@@ -1,43 +1,15 @@
-import {
-  type DevicePayloadInput,
-  devicePayloadSchema,
-  idParamSchema,
-} from '@filcdev/api/domains/doorlock/devices';
-import { zValidator } from '@hono/zod-validator';
+import type { DevicePayloadInput } from '@filcdev/api/domains/doorlock/devices';
+import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
+import { ORPCError } from '@orpc/server';
 import { desc, eq } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { device } from '#database/schema/doorlock';
-import { authRouter } from '#middleware/auth';
-import { created, notFound, ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { createSelectSchema } from '#utils/zod';
-import { doorlockFactory } from './_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { conflict, notFound } from '#utils/http';
 
 const logger = getLogger(['chronos', 'doorlock', 'devices']);
-
-const deviceSelectSchema = createSelectSchema(device);
-
-const { schema: devicePayloadRequestSchema } =
-  await resolver(devicePayloadSchema).toOpenAPISchema();
-
-const devicesResponseSchema = z.object({
-  data: z.object({
-    devices: z.array(deviceSelectSchema),
-  }),
-  success: z.literal(true),
-});
-
-const deviceResponseSchema = z.object({
-  data: z.object({
-    device: deviceSelectSchema,
-  }),
-  success: z.literal(true),
-});
 
 function mapDevicePayload(payload: DevicePayloadInput) {
   return {
@@ -55,130 +27,55 @@ function buildConstraintError(error: unknown) {
     'constraint' in error &&
     (error as { constraint?: string }).constraint === 'device_api_token_unique'
   ) {
-    return new HTTPException(StatusCodes.CONFLICT, {
-      message: 'A device with this API token already exists.',
-    });
+    return conflict('A device with this API token already exists.');
   }
   return null;
 }
 
-export const listDevicesRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DeviceListResponse @field(.devices, List<Device>)',
-      true
-    ),
-    description: 'List all doorlock devices',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(devicesResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:devices:read'),
-  async (c) => {
+export const listDevices = base.doorlock.devices.list
+  .use(requireAuthorization(permissions.doorlockDevicesRead))
+  .handler(async () => {
     const devices = await db
       .select()
       .from(device)
       .orderBy(desc(device.updatedAt));
 
-    return ok(c, { devices });
-  }
-);
+    return { devices };
+  });
 
-export const createDeviceRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DeviceResponse @field(.device, Device)',
-      true
-    ),
-    description: 'Create a new doorlock device',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: devicePayloadRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(deviceResponseSchema),
-          },
-        },
-        description: 'Device created',
-      },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:devices:write'),
-  zValidator('json', devicePayloadSchema),
-  async (c) => {
-    const payload = c.req.valid('json');
-
+export const createDevice = base.doorlock.devices.create
+  .use(requireAuthorization(permissions.doorlockDevicesWrite))
+  .handler(async ({ input }) => {
     try {
       const [inserted] = await db
         .insert(device)
-        .values(mapDevicePayload(payload))
+        .values(mapDevicePayload(input))
         .returning();
 
-      return created(c, { device: inserted });
+      if (!inserted) {
+        throw new ORPCError('INTERNAL', {
+          message: 'Failed to create device',
+        });
+      }
+
+      return { device: inserted };
     } catch (error) {
       logger.error('Failed to create device', { error });
       const knownError = buildConstraintError(error);
       if (knownError) {
         throw knownError;
       }
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
+        cause: error,
         message: 'Failed to create device',
       });
     }
-  }
-);
+  });
 
-export const updateDeviceRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Doorlock',
-      '@unit DeviceResponse @field(.device, Device)',
-      true
-    ),
-    description: 'Update an existing doorlock device',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: devicePayloadRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(deviceResponseSchema),
-          },
-        },
-        description: 'Device updated',
-      },
-      404: { description: 'Device not found' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:devices:write'),
-  zValidator('json', devicePayloadSchema),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const payload = c.req.valid('json');
+export const updateDevice = base.doorlock.devices.update
+  .use(requireAuthorization(permissions.doorlockDevicesWrite))
+  .handler(async ({ input }) => {
+    const { id, ...payload } = input;
 
     try {
       const [updated] = await db
@@ -188,51 +85,37 @@ export const updateDeviceRoute = doorlockFactory.createHandlers(
         .returning();
 
       if (!updated) {
-        throw new HTTPException(StatusCodes.NOT_FOUND, {
-          message: 'Device not found',
-        });
+        throw notFound('Device not found');
       }
 
-      return ok(c, { device: updated });
+      return { device: updated };
     } catch (error) {
       logger.error('Failed to update device', { error });
       const knownError = buildConstraintError(error);
       if (knownError) {
         throw knownError;
       }
-      if (error instanceof HTTPException) {
+      if (error instanceof ORPCError) {
         throw error;
       }
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
+        cause: error,
         message: 'Failed to update device',
       });
     }
-  }
-);
+  });
 
-export const deleteDeviceRoute = doorlockFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Doorlock', '@nodata', true),
-    description: 'Delete a doorlock device',
-    responses: {
-      200: { description: 'Device deleted' },
-    },
-    tags: ['Doorlock'],
-  }),
-  ...authRouter('doorlock:devices:write'),
-  zValidator('param', idParamSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-
+export const deleteDevice = base.doorlock.devices.delete
+  .use(requireAuthorization(permissions.doorlockDevicesWrite))
+  .handler(async ({ input }) => {
     const [deleted] = await db
       .delete(device)
-      .where(eq(device.id, id))
-      .returning();
+      .where(eq(device.id, input.id))
+      .returning({ id: device.id });
 
     if (!deleted) {
       throw notFound('Device not found');
     }
 
-    return ok(c, undefined);
-  }
-);
+    return deleted;
+  });

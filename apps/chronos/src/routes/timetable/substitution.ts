@@ -1,15 +1,6 @@
-import {
-  cohortIdParamsSchema,
-  manualCreateSchema,
-  substitutionIdParamsSchema,
-} from '@filcdev/api/domains/timetable/substitution';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   cohort,
@@ -24,62 +15,24 @@ import {
   termDefinition,
   weekDefinition,
 } from '#database/schema/timetable';
-import { authRouter } from '#middleware/auth';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
 import { env } from '#utils/environment';
-import { ok } from '#utils/http';
+import { badRequest, conflict, notFound } from '#utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
 import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
-import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
-  enrichedLessonSchema,
+  type EnrichedLesson,
   enrichLessons,
 } from '#utils/timetable/enrich-lessons';
 import {
   getWeekdayInBudapest,
   isMatchingWeekday,
 } from '#utils/timetable/weekday';
-import {
-  createInsertSchema,
-  createSelectSchema,
-  createUpdateSchema,
-} from '#utils/zod';
-import { timetableFactory } from './_factory';
-
-const substitutionSchema = createSelectSchema(substitution);
-
-const allSubstitutionsResponseSchema = z.object({
-  data: z.array(
-    z.object({
-      lessons: z.array(enrichedLessonSchema),
-      substitution: substitutionSchema,
-      teacher: createSelectSchema(teacher).nullable(),
-    })
-  ),
-  success: z.boolean(),
-});
-
-const relevantSubstitutionItemSchema = z.object({
-  lessons: z.array(z.string()),
-  substitution: substitutionSchema,
-  teacher: createSelectSchema(teacher).nullable(),
-});
-
-const relevantSubstitutionsResponseSchema = z.object({
-  data: z.array(relevantSubstitutionItemSchema),
-  success: z.boolean(),
-});
-
-const cohortSubstitutionsResponseSchema = z.object({
-  data: z.object({
-    cohortId: z.string(),
-    substitutions: z.array(relevantSubstitutionItemSchema),
-  }),
-  success: z.boolean(),
-});
 
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -163,10 +116,9 @@ function assertPeriodsCompatible(
           continue;
         }
         if (!areLessonsCompatible(a, b, lessonCohorts)) {
-          throw new HTTPException(StatusCodes.CONFLICT, {
-            message:
-              'Teacher already has a substitution in the same period on this date',
-          });
+          throw conflict(
+            'Teacher already has a substitution in the same period on this date'
+          );
         }
       }
     }
@@ -308,10 +260,9 @@ async function checkTeacherSubstitutionConflict(
       continue;
     }
 
-    throw new HTTPException(StatusCodes.CONFLICT, {
-      message:
-        'Teacher already has a substitution in the same period on this date',
-    });
+    throw conflict(
+      'Teacher already has a substitution in the same period on this date'
+    );
   }
 }
 
@@ -350,26 +301,8 @@ async function validateUpdateTeacherConflict(
   );
 }
 
-const substitutionWithRelationsType =
-  '@listof SubstitutionWithRelations @field(.substitution, Substitution) @field(.teacher, Teacher) @field(.lessons, List<String>)';
-
-export const getAllSubstitutions = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', substitutionWithRelationsType, true),
-    description: 'Get all substitutions from the database.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(allSubstitutionsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  async (c) => {
+export const getAllSubstitutions = base.timetable.substitutions.list.handler(
+  async () => {
     // First get all substitutions with their lesson IDs
     const substitutions = await db
       .select({
@@ -393,10 +326,13 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
         //   END
         // `.as('teacher'),
         teacher: {
+          email: teacher.email,
           firstName: teacher.firstName,
+          gender: teacher.gender,
           id: teacher.id,
           lastName: teacher.lastName,
           short: teacher.short,
+          userId: teacher.userId,
         },
       })
       .from(substitution)
@@ -408,6 +344,7 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       .groupBy(
         substitution.id,
         teacher.id,
+        teacher.email,
         teacher.firstName,
         teacher.lastName,
         teacher.short,
@@ -428,7 +365,9 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
 
     // Map lessons back to substitutions
     const result = substitutions.map((s) => ({
-      lessons: s.lessonIds.map((id) => lessonMap.get(id)).filter(Boolean),
+      lessons: s.lessonIds
+        .map((id) => lessonMap.get(id))
+        .filter((l): l is EnrichedLesson => l !== undefined),
       substitution: s.substitution,
       teacher: s.teacher,
     }));
@@ -452,27 +391,12 @@ export const getAllSubstitutions = timetableFactory.createHandlers(
       return minPeriod(a) - minPeriod(b);
     });
 
-    return ok(c, result);
+    return result;
   }
 );
 
-export const getRelevantSubstitutions = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', substitutionWithRelationsType, true),
-    description: 'Get relevant substitutions from the database.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(relevantSubstitutionsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  async (c) => {
+export const getRelevantSubstitutions =
+  base.timetable.substitutions.relevant.handler(async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -497,125 +421,56 @@ export const getRelevantSubstitutions = timetableFactory.createHandlers(
       .groupBy(substitution.id, teacher.id)
       .orderBy(asc(substitution.date), asc(sql`MIN(${period.period})`));
 
-    return ok(c, substitutions);
-  }
-);
+    return substitutions;
+  });
 
 export const getRelevantSubstitutionsForCohort =
-  timetableFactory.createHandlers(
-    describeRoute({
-      ...filcExt(
-        'Substitution',
-        '@unit SubstitutionsByCohort @field(.substitutions, List<SubstitutionWithRelations>)',
-        true
-      ),
-      description:
-        'Get relevant substitutions for a given cohort from the database.',
-      parameters: [
-        {
-          in: 'path',
-          name: 'cohortId',
-          required: true,
-          schema: {
-            description: 'The unique identifier for the cohort.',
-            type: 'string',
-          },
-        },
-      ],
-      responses: {
-        200: {
-          content: {
-            'application/json': {
-              schema: resolver(cohortSubstitutionsResponseSchema),
-            },
-          },
-          description: 'Successful Response',
-        },
-      },
-      tags: ['Substitution'],
-    }),
-    zValidator('param', cohortIdParamsSchema),
-    async (c) => {
-      const { cohortId } = c.req.valid('param');
+  base.timetable.substitutions.relevantForCohort.handler(async ({ input }) => {
+    const { cohortId } = input;
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const substitutions = await db
-        .select({
-          lessons: sql<string[]>`COALESCE(
+    const substitutions = await db
+      .select({
+        lessons: sql<string[]>`COALESCE(
           ARRAY_AGG(${substitutionLessonMTM.lessonId}) FILTER (WHERE ${substitutionLessonMTM.lessonId} IS NOT NULL),
           ARRAY[]::text[]
         )`.as('lessons'),
-          substitution,
-          teacher,
-        })
-        .from(substitution)
-        .leftJoin(teacher, eq(substitution.substituter, teacher.id))
-        .leftJoin(
-          substitutionLessonMTM,
-          eq(substitution.id, substitutionLessonMTM.substitutionId)
-        )
-        .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
-        .leftJoin(period, eq(lesson.periodId, period.id))
-        .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
-        .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-        .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
-        .groupBy(substitution.id, teacher.id)
-        .orderBy(asc(substitution.date), asc(sql`MIN(${period.period})`));
+        substitution,
+        teacher,
+      })
+      .from(substitution)
+      .leftJoin(teacher, eq(substitution.substituter, teacher.id))
+      .leftJoin(
+        substitutionLessonMTM,
+        eq(substitution.id, substitutionLessonMTM.substitutionId)
+      )
+      .leftJoin(lesson, eq(substitutionLessonMTM.lessonId, lesson.id))
+      .leftJoin(period, eq(lesson.periodId, period.id))
+      .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
+      .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
+      .where(and(gte(substitution.date, today), eq(cohort.id, cohortId)))
+      .groupBy(substitution.id, teacher.id)
+      .orderBy(asc(substitution.date), asc(sql`MIN(${period.period})`));
 
-      return ok(c, {
-        cohortId,
-        substitutions,
-      });
-    }
-  );
-
-const createSchema = createInsertSchema(substitution)
-  .omit({ id: true })
-  .extend({
-    date: z.coerce.date<Date>(),
-    lessonIds: z.string().array().min(1),
+    return {
+      cohortId,
+      substitutions,
+    };
   });
 
-const createResponseSchema = z.object({
-  data: substitutionSchema,
-  success: z.boolean(),
-});
-
-export const createSubstitution = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', '@unit Substitution', true),
-    description: 'Create a new substitution',
-    requestBody: {
-      content: {
-        'application/json': await resolver(createSchema).toOpenAPISchema(),
-      },
-      description: 'The data for the new substitution.',
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(createResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  ...authRouter('substitution:create'),
-  zValidator('json', createSchema),
-  async (c) => {
-    const { lessonIds, date, substituter, comment } = c.req.valid('json');
+export const createSubstitution = base.timetable.substitutions.create
+  .use(requireAuthorization(permissions.substitutionCreate))
+  .handler(async ({ input }) => {
+    const { lessonIds, date, substituter, comment } = input;
 
     const lessonCount = await db.$count(lesson, inArray(lesson.id, lessonIds));
 
     if (lessonCount !== lessonIds.length) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: `attempted to substitute non-existent lesson(s), wanted: ${lessonIds.length}, got: ${lessonCount}`,
-      });
+      throw badRequest(
+        `attempted to substitute non-existent lesson(s), wanted: ${lessonIds.length}, got: ${lessonCount}`
+      );
     }
 
     const result = await db.transaction(
@@ -638,7 +493,7 @@ export const createSubstitution = timetableFactory.createHandlers(
           .returning();
 
         if (!insertedSubstitution) {
-          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+          throw new ORPCError('INTERNAL', {
             cause:
               env.mode === 'development'
                 ? 'No substitution returned from insert query'
@@ -676,9 +531,8 @@ export const createSubstitution = timetableFactory.createHandlers(
       })
     );
 
-    return ok(c, result);
-  }
-);
+    return result;
+  });
 
 // Manual substitution creation.
 //
@@ -687,11 +541,6 @@ export const createSubstitution = timetableFactory.createHandlers(
 // replaced together with a manual lesson time (day + period), a subject and a
 // cohort. We then find-or-create a lesson that matches that combination inside
 // the active timetable and link the substitution to it.
-
-const manualCreateResponseSchema = z.object({
-  data: substitutionSchema,
-  success: z.boolean(),
-});
 
 // Find an existing lesson that matches the manual substitution parameters, or
 // create one if none exists yet. Returns the lesson id.
@@ -785,12 +634,11 @@ async function lockAndValidateTeachers(
       .for('update');
 
     if (!lockedTeacher) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message:
-          id === teacherId
-            ? 'Invalid teacher provided'
-            : 'Invalid substituter provided',
-      });
+      throw badRequest(
+        id === teacherId
+          ? 'Invalid teacher provided'
+          : 'Invalid substituter provided'
+      );
     }
   }
 }
@@ -813,33 +661,9 @@ async function getDayDefinitionIdForDate(date: Date): Promise<string | null> {
   return match?.id ?? null;
 }
 
-export const createManualSubstitution = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', '@unit Substitution', true),
-    description:
-      'Create a substitution manually by specifying the teacher, lesson time, subject and cohort directly.',
-    requestBody: {
-      content: {
-        'application/json':
-          await resolver(manualCreateSchema).toOpenAPISchema(),
-      },
-      description: 'The data for the manually created substitution.',
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(manualCreateResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  ...authRouter('substitution:create'),
-  zValidator('json', manualCreateSchema),
-  async (c) => {
+export const createManualSubstitution = base.timetable.substitutions.manual
+  .use(requireAuthorization(permissions.substitutionCreate))
+  .handler(async ({ input }) => {
     const {
       cohortId,
       comment,
@@ -848,7 +672,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       subjectId,
       substituter,
       teacherId,
-    } = c.req.valid('json');
+    } = input;
 
     // Validate that all referenced entities exist.
     const [[refTeacher], [refPeriod], [refCohort]] = await Promise.all([
@@ -870,19 +694,13 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     ]);
 
     if (!refTeacher) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid teacher provided',
-      });
+      throw badRequest('Invalid teacher provided');
     }
     if (!refPeriod) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid period provided',
-      });
+      throw badRequest('Invalid period provided');
     }
     if (!refCohort) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Invalid cohort provided',
-      });
+      throw badRequest('Invalid cohort provided');
     }
     if (subjectId !== null) {
       const [refSubject] = await db
@@ -891,9 +709,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
         .where(eq(subject.id, subjectId))
         .limit(1);
       if (!refSubject) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Invalid subject provided',
-        });
+        throw badRequest('Invalid subject provided');
       }
     }
 
@@ -904,24 +720,20 @@ export const createManualSubstitution = timetableFactory.createHandlers(
         .where(eq(teacher.id, substituter))
         .limit(1);
       if (!refSubstituter) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: 'Invalid substituter provided',
-        });
+        throw badRequest('Invalid substituter provided');
       }
     }
 
     const timetableId = await getActiveTimetableId();
     if (!timetableId) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
         message: 'No active timetable found',
       });
     }
 
     const dayDefinitionId = await getDayDefinitionIdForDate(date);
     if (!dayDefinitionId) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'No day definition found for the given date',
-      });
+      throw badRequest('No day definition found for the given date');
     }
 
     const [[weekDef], [termDef]] = await Promise.all([
@@ -930,7 +742,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
     ]);
 
     if (!weekDef) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
         message: 'No week definition found',
       });
     }
@@ -968,7 +780,7 @@ export const createManualSubstitution = timetableFactory.createHandlers(
           .returning();
 
         if (!insertedSubstitution) {
-          throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+          throw new ORPCError('INTERNAL', {
             cause:
               env.mode === 'development'
                 ? 'No substitution returned from insert query'
@@ -1003,59 +815,13 @@ export const createManualSubstitution = timetableFactory.createHandlers(
       })
     );
 
-    return c.json<SuccessResponse<typeof result>>({
-      data: result,
-      success: true,
-    });
-  }
-);
-
-const updateSchema = createUpdateSchema(substitution)
-  .omit({ id: true })
-  .extend({
-    date: z.coerce.date<Date>().optional(),
-    lessonIds: z.string().array().nullable(),
+    return result;
   });
 
-export const updateSubstitution = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', '@unit Substitution', true),
-    description: 'Update a substitution',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the substitution to update.',
-          type: 'string',
-        },
-      },
-    ],
-    requestBody: {
-      content: {
-        'application/json': await resolver(updateSchema).toOpenAPISchema(),
-      },
-      description: 'The data for updating the substitution.',
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(createResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  ...authRouter('substitution:update'),
-  zValidator('param', substitutionIdParamsSchema),
-  zValidator('json', updateSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const body = c.req.valid('json');
+export const updateSubstitution = base.timetable.substitutions.update
+  .use(requireAuthorization(permissions.substitutionUpdate))
+  .handler(async ({ input }) => {
+    const { id, ...body } = input;
 
     const [existing] = await db
       .select()
@@ -1064,9 +830,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Substitution not found',
-      });
+      throw notFound('Substitution not found');
     }
 
     if (body.lessonIds?.length) {
@@ -1075,9 +839,9 @@ export const updateSubstitution = timetableFactory.createHandlers(
         inArray(lesson.id, body.lessonIds)
       );
       if (lessonCount !== body.lessonIds.length) {
-        throw new HTTPException(StatusCodes.BAD_REQUEST, {
-          message: `Some lessons don't exist, wanted: ${body.lessonIds.length}, found: ${lessonCount}`,
-        });
+        throw badRequest(
+          `Some lessons don't exist, wanted: ${body.lessonIds.length}, found: ${lessonCount}`
+        );
       }
     }
 
@@ -1119,9 +883,7 @@ export const updateSubstitution = timetableFactory.createHandlers(
     );
 
     if (!updatedSubstitution) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Substitution not found',
-      });
+      throw notFound('Substitution not found');
     }
 
     cancelPendingNotification(id, 'substitution');
@@ -1156,41 +918,13 @@ export const updateSubstitution = timetableFactory.createHandlers(
       })
     );
 
-    return ok(c, updatedSubstitution);
-  }
-);
+    return updatedSubstitution;
+  });
 
-export const deleteSubstitution = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Substitution', '@nodata', true),
-    description: 'Delete a substitution',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the substitution to delete.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(createResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Substitution'],
-  }),
-  ...authRouter('substitution:delete'),
-  zValidator('param', substitutionIdParamsSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteSubstitution = base.timetable.substitutions.delete
+  .use(requireAuthorization(permissions.substitutionDelete))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [existingSubstitution] = await db
       .select()
@@ -1199,9 +933,7 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existingSubstitution) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Substitution not found',
-      });
+      throw notFound('Substitution not found');
     }
 
     // The many-to-many relationships will be automatically deleted due to the CASCADE constraint
@@ -1210,9 +942,12 @@ export const deleteSubstitution = timetableFactory.createHandlers(
       .where(eq(substitution.id, id))
       .returning();
 
+    if (!deletedSubstitution) {
+      throw notFound('Substitution not found');
+    }
+
     cancelPendingNotification(id, 'substitution');
     cancelPendingNotification(id, 'substitution_teacher');
 
-    return ok(c, deletedSubstitution);
-  }
-);
+    return { id: deletedSubstitution.id };
+  });

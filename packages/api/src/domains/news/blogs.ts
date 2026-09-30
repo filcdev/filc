@@ -1,5 +1,5 @@
 import z from 'zod';
-import { blockContentSchema } from './announcements';
+import { blockContentSchema, newsAuthorSchema } from './announcements';
 
 export const slugSchema = z
   .string()
@@ -24,3 +24,27 @@ export const blogUpdateSchema = z.object({
 });
 
 export type BlogUpdateInput = z.infer<typeof blogUpdateSchema>;
+
+/** A `blog_post` row exactly as stored. */
+export const blogPostRowSchema = z.object({
+  authorId: z.uuid(),
+  content: z.unknown(),
+  createdAt: z.date(),
+  id: z.uuid(),
+  publishedAt: z.date().nullable(),
+  slug: z.string(),
+  status: z.string(),
+  title: z.string(),
+  updatedAt: z.date(),
+});
+
+/** A blog post as the list and detail endpoints return it, with its author. */
+export const blogPostItemSchema = blogPostRowSchema.extend({
+  author: newsAuthorSchema.nullable().optional(),
+});
+
+/** Payload of `GET /news/blogs` and `GET /news/blogs/drafts`. */
+export const blogListResponseSchema = z.object({
+  data: z.array(blogPostItemSchema),
+  total: z.number(),
+});

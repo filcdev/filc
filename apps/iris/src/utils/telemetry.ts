@@ -78,7 +78,10 @@ export const initializeTelemetry = () => {
       replayIntegration({
         blockAllMedia: true, // Don't capture images/videos
         maskAllInputs: true, // Mask sensitive input fields
-        maskAllText: false, // We want to see text for debugging
+        // Students type names and free text into substitution and announcement
+        // forms; recording it would ship that to Sentry and contradict
+        // `sendDefaultPii: false` below.
+        maskAllText: true,
       }),
     ],
     release,

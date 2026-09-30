@@ -1,3 +1,4 @@
+import { authClient, useSession } from '@filcdev/auth/client';
 import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -21,7 +22,7 @@ import {
 } from '@filcdev/ui/components/select';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
-import type { UseQueryResult } from '@tanstack/react-query';
+import { type UseQueryResult, useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { useEffect, useId, useState } from 'react';
 import { useCookies } from 'react-cookie';
@@ -33,11 +34,8 @@ import {
   useNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/hooks/notifications';
-import { useApiQuery } from '@/utils/api';
-import { authClient } from '@/utils/authentication';
 import { sortCohorts } from '@/utils/cohort';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { orpc } from '@/utils/orpc';
 
 const NOTIFICATION_TYPES = [
   {
@@ -276,7 +274,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [, setCookie] = useCookies(['filc.language']);
   const channelsId = useId();
   const { setTheme: applyTheme } = useTheme();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [language, setLanguage] = useState('hu');
   const [theme, setTheme] = useState('system');
   const [timetableView, setTimetableView] = useState('class');
@@ -314,10 +312,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setPrefs(settingsData.notificationPreferences);
   }, [isSuccess, settingsData]);
 
-  const cohortQuery = useApiQuery<CohortItem[]>(() => api.cohort.index.$get(), {
+  const cohortQuery = useQuery({
+    ...orpc.cohort.cohort.queryOptions(),
     enabled: open,
-    queryKey: queryKeys.cohorts(),
-    select: (data) => sortCohorts(data ?? []),
+    select: (data) => sortCohorts(data),
   });
 
   useEffect(() => {

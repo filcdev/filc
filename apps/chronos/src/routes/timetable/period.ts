@@ -1,49 +1,11 @@
-import {
-  getPeriodsQuerySchema,
-  getPeriodsResponseSchema,
-} from '@filcdev/api/domains/timetable/period';
-import { zValidator } from '@hono/zod-validator';
 import { asc, eq, inArray } from 'drizzle-orm';
-import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { lesson, period } from '#database/schema/timetable';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
-import { timetableFactory } from './_factory';
+import { base } from '#orpc';
 
-export const getPeriodsForTimetable = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Period', '@listof Period'),
-    description:
-      'Get all period definitions used in a given timetable, sorted by period number.',
-    parameters: [
-      {
-        in: 'query',
-        name: 'timetableId',
-        required: false,
-        schema: {
-          description:
-            'Optional timetable id to scope periods to those used in that timetable.',
-          format: 'uuid',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getPeriodsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Period'],
-  }),
-  zValidator('query', getPeriodsQuerySchema),
-  async (c) => {
-    const { timetableId } = c.req.valid('query');
+export const getPeriodsForTimetable = base.timetable.periods.getAll.handler(
+  async ({ input }) => {
+    const { timetableId } = input;
 
     let periods: (typeof period.$inferSelect)[];
 
@@ -57,7 +19,7 @@ export const getPeriodsForTimetable = timetableFactory.createHandlers(
       const ids = usedPeriodIds.map((r) => r.periodId);
 
       if (ids.length === 0) {
-        return ok(c, []);
+        return [];
       }
 
       periods = await db
@@ -76,6 +38,6 @@ export const getPeriodsForTimetable = timetableFactory.createHandlers(
       startTime: String(p.startTime),
     }));
 
-    return ok(c, data);
+    return data;
   }
 );

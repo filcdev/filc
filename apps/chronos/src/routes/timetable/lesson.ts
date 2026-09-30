@@ -1,15 +1,5 @@
-import {
-  getLessonForIdParamsSchema,
-  getLessonsForCohortParamsSchema,
-  getLessonsForRoomParamsSchema,
-  getLessonsForTeacherParamsSchema,
-  getLessonsQuerySchema,
-  substitutionCandidateSchema,
-  substitutionCandidatesRequestSchema,
-  teacherLessonsBatchRequestSchema,
-} from '@filcdev/api/domains/timetable/lesson';
-import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
+import { ORPCError } from '@orpc/server';
 import {
   and,
   arrayContains,
@@ -18,11 +8,6 @@ import {
   inArray,
   or,
 } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
-import type { SuccessResponse } from '#_types/globals';
 import { db } from '#database';
 import {
   classroom,
@@ -37,8 +22,8 @@ import {
   teacher,
   weekDefinition,
 } from '#database/schema/timetable';
-import { ok } from '#utils/http';
-import { filcExt } from '#utils/openapi';
+import { base } from '#orpc';
+import { notFound } from '#utils/http';
 import {
   getActiveTimetableId,
   getTimetableIdForDate,
@@ -47,8 +32,6 @@ import {
   getWeekdayInBudapest,
   isMatchingWeekday,
 } from '#utils/timetable/weekday';
-import { createSelectSchema } from '#utils/zod';
-import { timetableFactory } from './_factory';
 
 const logger = getLogger(['chronos', 'lesson']);
 
@@ -251,102 +234,9 @@ async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
   });
 }
 
-const enrichedLessonSchema = z.object({
-  classrooms: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  cohorts: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  day: createSelectSchema(dayDefinition).optional(),
-  groups: z.array(
-    z.object({
-      divisionTag: z.string().nullable(),
-      entireClass: z.boolean(),
-      id: z.string(),
-      name: z.string(),
-    })
-  ),
-  groupsIds: z.array(z.string()),
-  id: z.string(),
-  period: z
-    .object({
-      endTime: z.string(),
-      id: z.string(),
-      period: z.number(),
-      startTime: z.string(),
-    })
-    .nullable(),
-  periodsPerWeek: z.number(),
-  subject: z
-    .object({ id: z.string(), name: z.string(), short: z.string() })
-    .nullable(),
-  teachers: z.array(
-    z.object({ id: z.string(), name: z.string(), short: z.string() })
-  ),
-  termDefinitionId: z.string().nullable(),
-  weekDefinition: z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      short: z.string(),
-      weeks: z.array(z.string()),
-    })
-    .nullable(),
-  weeksDefinitionId: z.string(),
-});
-
-const responseSchema = z.object({
-  data: enrichedLessonSchema.array(),
-  success: z.boolean(),
-});
-
-const enrichedLessonType =
-  '@listof EnrichedLesson @field(.classrooms, List<Classroom>) @field(.cohorts, List<Cohort>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)';
-
-export const getLessonsForCohort = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Lesson', enrichedLessonType),
-    description: 'Get lessons for a given cohort from the database.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'cohortId',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the cohort.',
-          type: 'string',
-        },
-      },
-      {
-        in: 'query',
-        name: 'timetableId',
-        required: false,
-        schema: {
-          description:
-            'Optional timetable ID to filter lessons to a single timetable.',
-          format: 'uuid',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(responseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Lesson'],
-  }),
-  zValidator('param', getLessonsForCohortParamsSchema),
-  zValidator('query', getLessonsQuerySchema),
-  async (c) => {
-    const { cohortId } = c.req.valid('param');
-    const { timetableId } = c.req.valid('query');
+export const getLessonsForCohort = base.timetable.lessons.getForCohort.handler(
+  async ({ input }) => {
+    const { cohortId, timetableId } = input;
 
     const [existingCohort] = await db
       .select()
@@ -355,16 +245,14 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existingCohort) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Cohort not found',
-      });
+      throw notFound('Cohort not found');
     }
 
     const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!effectiveTimetableId) {
-      return ok(c, []);
+      return [];
     }
 
     const whereClause = and(
@@ -381,47 +269,18 @@ export const getLessonsForCohort = timetableFactory.createHandlers(
     const lessons = lessonRows.map((r) => r.lesson);
 
     if (lessons.length === 0) {
-      return ok(c, []);
+      return [];
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return ok(c, enriched);
+    return enriched;
   }
 );
 
-export const getLessonsForTeacher = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Lesson', enrichedLessonType),
-    description: 'Get lessons for a given teacher from the database.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'teacherId',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the teacher.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(responseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Lesson'],
-  }),
-  zValidator('param', getLessonsForTeacherParamsSchema),
-  zValidator('query', getLessonsQuerySchema),
-  async (c) => {
-    const { teacherId } = c.req.valid('param');
-    const { timetableId } = c.req.valid('query');
+export const getLessonsForTeacher =
+  base.timetable.lessons.getForTeacher.handler(async ({ input }) => {
+    const { teacherId, timetableId } = input;
 
     const [existingTeacher] = await db
       .select()
@@ -430,16 +289,14 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existingTeacher) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Teacher not found',
-      });
+      throw notFound('Teacher not found');
     }
 
     const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!effectiveTimetableId) {
-      return ok(c, []);
+      return [];
     }
 
     const whereClause = and(
@@ -450,39 +307,13 @@ export const getLessonsForTeacher = timetableFactory.createHandlers(
     const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
-      return ok(c, []);
+      return [];
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return ok(c, enriched);
-  }
-);
-
-const teacherLessonsBatchResponseSchema = z.object({
-  data: z.array(
-    z.object({
-      lessons: enrichedLessonSchema.array(),
-      teacherId: z.uuid(),
-    })
-  ),
-  success: z.boolean(),
-});
-
-const teacherLessonBatchType =
-  '@listof TeacherLessonsBatchResult @field(.teacherId, String) @field(.lessons, List<EnrichedLesson>)';
-
-const substitutionCandidatesResponseSchema = z.object({
-  data: z.object({
-    availableLessons: enrichedLessonSchema.array(),
-    parallelLessons: enrichedLessonSchema.array(),
-    substituteCandidates: substitutionCandidateSchema.array(),
-  }),
-  success: z.literal(true),
-});
-
-const substitutionCandidatesType =
-  '@unit SubstitutionCandidatesResult @field(.availableLessons, List<EnrichedLesson>) @field(.parallelLessons, List<EnrichedLesson>) @field(.substituteCandidates, List<SubstitutionCandidate>)';
+    return enriched;
+  });
 
 type CandidateLessonEntry = {
   period: number;
@@ -685,33 +516,9 @@ async function getParallelLessons(
   );
 }
 
-export const getLessonsForTeachers = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Lesson', teacherLessonBatchType),
-    description: 'Get lessons for multiple teachers in a single request.',
-    requestBody: {
-      content: {
-        'application/json': await resolver(
-          teacherLessonsBatchRequestSchema
-        ).toOpenAPISchema(),
-      },
-      required: true,
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(teacherLessonsBatchResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Lesson'],
-  }),
-  zValidator('json', teacherLessonsBatchRequestSchema),
-  async (c) => {
-    const { teacherIds } = c.req.valid('json');
+export const getLessonsForTeachers =
+  base.timetable.lessons.getForTeachers.handler(async ({ input }) => {
+    const { teacherIds } = input;
     const normalizedTeacherIds = Array.from(new Set(teacherIds));
 
     const existingTeachers = await db
@@ -722,14 +529,14 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
     const existingTeacherIds = existingTeachers.map((t) => t.id);
 
     if (existingTeacherIds.length === 0) {
-      return ok(c, []);
+      return [];
     }
 
     const timetableId = await getActiveTimetableId();
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!timetableId) {
-      return ok(c, []);
+      return [];
     }
 
     const lessons = await db
@@ -767,203 +574,146 @@ export const getLessonsForTeachers = timetableFactory.createHandlers(
       teacherId,
     }));
 
-    return ok(c, data);
-  }
-);
+    return data;
+  });
 
-export const getSubstitutionCandidates = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Lesson', substitutionCandidatesType),
-    description:
-      'Get available lessons and substitute teacher candidates for substitution editing in one request.',
-    requestBody: {
-      content: {
-        'application/json': await resolver(
-          substitutionCandidatesRequestSchema
-        ).toOpenAPISchema(),
-      },
-      required: true,
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(substitutionCandidatesResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Lesson'],
-  }),
-  zValidator('json', substitutionCandidatesRequestSchema),
-  async (c) => {
-    const { date, missingTeacherId, selectedLessonIds, teacherIds } =
-      c.req.valid('json');
-    const normalizedTeacherIds = Array.from(new Set(teacherIds));
+export const getSubstitutionCandidates =
+  base.timetable.lessons.getSubstitutionCandidates.handler(
+    async ({ input }) => {
+      const { date, missingTeacherId, selectedLessonIds, teacherIds } = input;
+      const normalizedTeacherIds = Array.from(new Set(teacherIds));
 
-    const [missingTeacher] = await db
-      .select({ id: teacher.id })
-      .from(teacher)
-      .where(eq(teacher.id, missingTeacherId))
-      .limit(1);
+      const [missingTeacher] = await db
+        .select({ id: teacher.id })
+        .from(teacher)
+        .where(eq(teacher.id, missingTeacherId))
+        .limit(1);
 
-    if (!missingTeacher) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Teacher not found',
-      });
-    }
+      if (!missingTeacher) {
+        throw notFound('Teacher not found');
+      }
 
-    const weekday = getWeekdayInBudapest(date);
-    const timetableId = await getTimetableIdForDate(date);
+      const weekday = getWeekdayInBudapest(date);
+      const timetableId = await getTimetableIdForDate(date);
 
-    if (!timetableId) {
-      return ok(c, {
-        availableLessons: [],
-        parallelLessons: [],
-        substituteCandidates: [],
-      });
-    }
+      if (!timetableId) {
+        return {
+          availableLessons: [],
+          parallelLessons: [],
+          substituteCandidates: [],
+        };
+      }
 
-    const missingTeacherLessons = await db
-      .select()
-      .from(lesson)
-      .where(
-        and(
-          arrayContains(lesson.teacherIds, [missingTeacherId]),
-          eq(lesson.timetableId, timetableId)
+      const missingTeacherLessons = await db
+        .select()
+        .from(lesson)
+        .where(
+          and(
+            arrayContains(lesson.teacherIds, [missingTeacherId]),
+            eq(lesson.timetableId, timetableId)
+          )
+        );
+
+      const enrichedMissingTeacherLessons = await enrichLessons(
+        missingTeacherLessons
+      );
+
+      const availableLessons = enrichedMissingTeacherLessons.filter(
+        (currentLesson) =>
+          currentLesson.day
+            ? isMatchingWeekday(
+                weekday,
+                currentLesson.day.name,
+                currentLesson.day.short
+              )
+            : false
+      );
+
+      const selectedLessonIdsSet = new Set(selectedLessonIds);
+      const selectedLessons = availableLessons.filter((currentLesson) =>
+        selectedLessonIdsSet.has(currentLesson.id)
+      );
+
+      const selectedPeriods = selectedLessons
+        .map((currentLesson) => currentLesson.period?.period)
+        .filter(
+          (currentPeriod): currentPeriod is number =>
+            typeof currentPeriod === 'number'
+        );
+
+      if (selectedPeriods.length === 0) {
+        return {
+          availableLessons,
+          parallelLessons: [],
+          substituteCandidates: [],
+        };
+      }
+
+      const parallelLessons = await getParallelLessons(
+        selectedLessons,
+        missingTeacherId,
+        timetableId
+      );
+
+      const candidateTeacherIds = normalizedTeacherIds.filter(
+        (teacherId) => teacherId !== missingTeacherId
+      );
+
+      if (candidateTeacherIds.length === 0) {
+        return {
+          availableLessons,
+          parallelLessons,
+          substituteCandidates: [],
+        };
+      }
+
+      const candidateTeachers = await db
+        .select({
+          firstName: teacher.firstName,
+          id: teacher.id,
+          lastName: teacher.lastName,
+          short: teacher.short,
+        })
+        .from(teacher)
+        .where(inArray(teacher.id, candidateTeacherIds));
+
+      const candidateLessonsByTeacherId = await buildCandidateLessonsMap(
+        candidateTeacherIds,
+        weekday,
+        timetableId
+      );
+
+      const substituteCandidates = candidateTeachers
+        .map((currentTeacher) => {
+          const teacherLessons =
+            candidateLessonsByTeacherId.get(currentTeacher.id) ?? [];
+          const flags = computeCandidateFlags(teacherLessons, selectedPeriods);
+          if (flags.hasConflict) {
+            return null;
+          }
+          return {
+            hasH1: flags.hasH1,
+            hasH2: flags.hasH2,
+            teacher: currentTeacher,
+          };
+        })
+        .filter(
+          (candidate): candidate is NonNullable<typeof candidate> =>
+            candidate !== null
         )
-      );
+        .sort(compareSubstituteCandidates);
 
-    const enrichedMissingTeacherLessons = await enrichLessons(
-      missingTeacherLessons
-    );
-
-    const availableLessons = enrichedMissingTeacherLessons.filter(
-      (currentLesson) =>
-        currentLesson.day
-          ? isMatchingWeekday(
-              weekday,
-              currentLesson.day.name,
-              currentLesson.day.short
-            )
-          : false
-    );
-
-    const selectedLessonIdsSet = new Set(selectedLessonIds);
-    const selectedLessons = availableLessons.filter((currentLesson) =>
-      selectedLessonIdsSet.has(currentLesson.id)
-    );
-
-    const selectedPeriods = selectedLessons
-      .map((currentLesson) => currentLesson.period?.period)
-      .filter(
-        (currentPeriod): currentPeriod is number =>
-          typeof currentPeriod === 'number'
-      );
-
-    if (selectedPeriods.length === 0) {
-      return ok(c, {
-        availableLessons,
-        parallelLessons: [],
-        substituteCandidates: [],
-      });
-    }
-
-    const parallelLessons = await getParallelLessons(
-      selectedLessons,
-      missingTeacherId,
-      timetableId
-    );
-
-    const candidateTeacherIds = normalizedTeacherIds.filter(
-      (teacherId) => teacherId !== missingTeacherId
-    );
-
-    if (candidateTeacherIds.length === 0) {
-      return ok(c, {
+      return {
         availableLessons,
         parallelLessons,
-        substituteCandidates: [],
-      });
+        substituteCandidates,
+      };
     }
+  );
 
-    const candidateTeachers = await db
-      .select({
-        firstName: teacher.firstName,
-        id: teacher.id,
-        lastName: teacher.lastName,
-        short: teacher.short,
-      })
-      .from(teacher)
-      .where(inArray(teacher.id, candidateTeacherIds));
-
-    const candidateLessonsByTeacherId = await buildCandidateLessonsMap(
-      candidateTeacherIds,
-      weekday,
-      timetableId
-    );
-
-    const substituteCandidates = candidateTeachers
-      .map((currentTeacher) => {
-        const teacherLessons =
-          candidateLessonsByTeacherId.get(currentTeacher.id) ?? [];
-        const flags = computeCandidateFlags(teacherLessons, selectedPeriods);
-        if (flags.hasConflict) {
-          return null;
-        }
-        return {
-          hasH1: flags.hasH1,
-          hasH2: flags.hasH2,
-          teacher: currentTeacher,
-        };
-      })
-      .filter(
-        (candidate): candidate is NonNullable<typeof candidate> =>
-          candidate !== null
-      )
-      .sort(compareSubstituteCandidates);
-
-    return ok(c, {
-      availableLessons,
-      parallelLessons,
-      substituteCandidates,
-    });
-  }
-);
-
-export const getLessonsForRoom = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Lesson', enrichedLessonType),
-    description: 'Get lessons for a given classroom from the database.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'classroomId',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the classroom.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(responseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Lesson'],
-  }),
-  zValidator('param', getLessonsForRoomParamsSchema),
-  zValidator('query', getLessonsQuerySchema),
-  async (c) => {
-    const { classroomId } = c.req.valid('param');
-    const { timetableId } = c.req.valid('query');
+export const getLessonsForRoom = base.timetable.lessons.getForRoom.handler(
+  async ({ input }) => {
+    const { classroomId, timetableId } = input;
 
     const [existingClassroom] = await db
       .select()
@@ -972,16 +722,14 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existingClassroom) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Classroom not found',
-      });
+      throw notFound('Classroom not found');
     }
 
     const effectiveTimetableId = timetableId ?? (await getActiveTimetableId());
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!effectiveTimetableId) {
-      return ok(c, []);
+      return [];
     }
 
     const whereClause = and(
@@ -992,57 +740,18 @@ export const getLessonsForRoom = timetableFactory.createHandlers(
     const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
-      return ok(c, []);
+      return [];
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return ok(c, enriched);
+    return enriched;
   }
 );
 
-export const getLessonForId = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Lesson',
-      '@unit EnrichedLesson @field(.classrooms, List<Classroom>) @field(.day, DayDefinition) @field(.period, Period) @field(.subject, Subject) @field(.teachers, List<TeacherSummary>)'
-    ),
-    description: 'Get a lesson by its ID from the database.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'lessonId',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the lesson.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(
-              z.object({
-                data: enrichedLessonSchema
-                  .extend({
-                    substitutionCohortName: z.string().nullable(),
-                  })
-                  .nullable(),
-                success: z.boolean(),
-              })
-            ),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Lesson'],
-  }),
-  zValidator('param', getLessonForIdParamsSchema),
-  async (c) => {
-    const { lessonId } = c.req.valid('param');
+export const getLessonForId = base.timetable.lessons.getForId.handler(
+  async ({ input }) => {
+    const { lessonId } = input;
 
     const lessonRow = await db
       .select()
@@ -1051,7 +760,7 @@ export const getLessonForId = timetableFactory.createHandlers(
       .limit(1);
 
     if (!lessonRow) {
-      return ok(c, null);
+      return null;
     }
 
     const substitutionCohortRow = await db
@@ -1067,49 +776,26 @@ export const getLessonForId = timetableFactory.createHandlers(
 
     const [enriched] = await enrichLessons(lessonRow);
 
-    return ok(c, {
+    if (!enriched) {
+      return null;
+    }
+
+    return {
       ...enriched,
       substitutionCohortName:
         substitutionCohortRow.length > 0
           ? (substitutionCohortRow[0]?.name ?? null)
           : null,
-    });
+    };
   }
 );
 
-const getSubjectsResponseSchema = z.object({
-  data: createSelectSchema(subject).array(),
-  success: z.boolean(),
+export const getSubjects = base.timetable.subjects.handler(async () => {
+  try {
+    const subjects = await db.select().from(subject);
+    return subjects;
+  } catch (error) {
+    logger.error('Error while fetching subjects', { error });
+    throw new ORPCError('INTERNAL', { message: 'Failed to fetch subjects' });
+  }
 });
-
-export const getSubjects = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Subject', '@listof Subject', true),
-    description: 'Get all subjects from the database.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getSubjectsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Subject'],
-  }),
-  async (c) => {
-    try {
-      const subjects = await db.select().from(subject);
-      return c.json<SuccessResponse<typeof subjects>>({
-        data: subjects,
-        success: true,
-      });
-    } catch (error) {
-      logger.error('Error while fetching subjects', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
-        message: 'Failed to fetch subjects',
-      });
-    }
-  }
-);

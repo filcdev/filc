@@ -1,64 +1,40 @@
-import { type ErrorCode, errorCodeForStatus } from '@filcdev/api/errors';
-import type { Context } from 'hono';
-import { HTTPException } from 'hono/http-exception';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
-import { StatusCodes } from 'http-status-codes';
-import type { SuccessResponse } from '#_types/globals';
-
-type Envelope<T> = SuccessResponse<T> & Record<string, unknown>;
+import { apiErrors } from '@filcdev/api/errors';
+import { createORPCErrorConstructorMap, ORPCError } from '@orpc/server';
 
 /**
- * An HTTP exception carrying the machine-readable error code that
- * `api.onError` serializes into the error envelope. Codes default to the
- * status-derived mapping; pass `code` when the status alone is ambiguous.
+ * Error factories built from the shared contract error map, so every thrown
+ * error carries its code's HTTP status and default message and comes back to
+ * clients as a *defined* error (`isDefinedError(error) === true`), which is
+ * what lets callers branch on `error.code`.
  */
-export class ApiHttpError extends HTTPException {
-  readonly code: ErrorCode;
-
-  constructor(
-    status: ContentfulStatusCode,
-    options: { cause?: unknown; code?: ErrorCode; message: string }
-  ) {
-    super(status, { cause: options.cause, message: options.message });
-    this.name = 'ApiHttpError';
-    this.code = options.code ?? errorCodeForStatus(status);
-  }
-}
-
-/** Read the error code off any thrown error, falling back to the status. */
-export const errorCodeOf = (err: HTTPException): ErrorCode =>
-  err instanceof ApiHttpError ? err.code : errorCodeForStatus(err.status);
-
-/**
- * Respond with a success envelope. Keeps the `{ data, success: true }` shape
- * that the frontend `parseResponse` helper expects, without handlers having to
- * annotate `c.json<SuccessResponse<...>>` by hand. `extra` is spread into the
- * envelope (e.g. `{ total }` for paginated responses).
- */
-export const ok = <T, C extends Context>(
-  c: C,
-  data: T,
-  status: ContentfulStatusCode = StatusCodes.OK as ContentfulStatusCode,
-  extra: Record<string, unknown> = {}
-) => c.json<Envelope<T>>({ data, success: true, ...extra }, status);
-
-export const created = <T, C extends Context>(c: C, data: T) =>
-  ok(c, data, StatusCodes.CREATED as ContentfulStatusCode);
-
-export const noContent = <C extends Context>(c: C) =>
-  c.json({ success: true }, StatusCodes.NO_CONTENT as ContentfulStatusCode);
-
-export const badRequest = (message: string, cause?: unknown) =>
-  new ApiHttpError(StatusCodes.BAD_REQUEST, { cause, message });
+const errors = createORPCErrorConstructorMap(apiErrors);
 
 export const notFound = (message = 'Not found', cause?: unknown) =>
-  new ApiHttpError(StatusCodes.NOT_FOUND, { cause, message });
-
-export const forbidden = (message = 'Forbidden', cause?: unknown) =>
-  new ApiHttpError(StatusCodes.FORBIDDEN, { cause, message });
-
-export const unauthorized = (message = 'Unauthorized', cause?: unknown) =>
-  new ApiHttpError(StatusCodes.UNAUTHORIZED, { cause, message });
+  errors.NOT_FOUND({ cause, message });
 
 export const conflict = (message: string, cause?: unknown) =>
-  new ApiHttpError(StatusCodes.CONFLICT, { cause, message });
+  errors.CONFLICT({ cause, message });
+
+export const badRequest = (message: string, cause?: unknown) =>
+  errors.VALIDATION({ cause, message });
+
+export const forbidden = (message = 'Forbidden', cause?: unknown) =>
+  errors.FORBIDDEN({ cause, message });
+
+export const unauthorized = (message = 'Unauthorized', cause?: unknown) =>
+  errors.UNAUTHORIZED({ cause, message });
+
+/**
+ * 503: the dependency behind the endpoint (object storage, an upstream API) is
+ * missing. Deliberately outside the shared map — the status differs from
+ * `INTERNAL`'s, so it stays an undocumented, non-defined error.
+ */
+export const serviceUnavailable = (message: string, cause?: unknown) =>
+  new ORPCError('INTERNAL', { cause, message, status: 503 });
+
+/**
+ * 502: an upstream the endpoint proxies (weather, departures, an RSS feed)
+ * answered with an error. Same reasoning as `serviceUnavailable`.
+ */
+export const badGateway = (message: string, cause?: unknown) =>
+  new ORPCError('INTERNAL', { cause, message, status: 502 });

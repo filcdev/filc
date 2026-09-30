@@ -1,13 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { api, orpc } from '@/utils/orpc';
 
 /** Options accepted by every mutation hook: react to a successful save. */
 export type MutationCallbacks = {
@@ -15,20 +9,12 @@ export type MutationCallbacks = {
   onSaved?: () => void;
 };
 
-type DevicesData = NonNullable<
-  InferResponseType<typeof api.doorlock.devices.$get>['data']
->;
-type CardsData = NonNullable<
-  InferResponseType<typeof api.doorlock.cards.$get>['data']
->;
-type LogsData = NonNullable<
-  InferResponseType<typeof api.doorlock.logs.$get>['data']
->;
-type UsersData = NonNullable<
-  InferResponseType<typeof api.doorlock.cards.users.$get>['data']
->;
-type StatsOverviewData = NonNullable<
-  InferResponseType<typeof api.doorlock.stats.overview.$get>['data']
+type DevicesData = Awaited<ReturnType<typeof api.doorlock.devices.list>>;
+type CardsData = Awaited<ReturnType<typeof api.doorlock.cards.list>>;
+type LogsData = Awaited<ReturnType<typeof api.doorlock.logs.list>>;
+type UsersData = Awaited<ReturnType<typeof api.doorlock.cards.users>>;
+type StatsOverviewData = Awaited<
+  ReturnType<typeof api.doorlock.stats.overview>
 >;
 
 export type DoorlockDevice = DevicesData['devices'][number];
@@ -37,152 +23,81 @@ export type DoorlockLogEntry = LogsData['logs'][number];
 export type DoorlockUser = UsersData['users'][number];
 export type DoorlockStatsOverview = StatsOverviewData['stats'];
 
-type DeviceStatsResponse = InferResponseType<
-  (typeof api.doorlock.devices)[':id']['stats']['$get']
->;
-export type DeviceStat = NonNullable<DeviceStatsResponse['data']>[number];
+type DeviceStats = Awaited<ReturnType<typeof api.doorlock.devices.stats>>;
+export type DeviceStat = DeviceStats[number];
 
-export type CardPayload = InferRequestType<
-  typeof api.doorlock.cards.$post
->['json'];
-export type DevicePayload = InferRequestType<
-  typeof api.doorlock.devices.$post
->['json'];
+type SelfCardsData = Awaited<ReturnType<typeof api.doorlock.self.cards.list>>;
+/** A card owned by the signed-in user. */
+export type SelfCard = SelfCardsData['cards'][number];
+
+export type CardPayload = Parameters<typeof api.doorlock.cards.create>[0];
+export type DevicePayload = Parameters<typeof api.doorlock.devices.create>[0];
 
 /** All registered doorlock devices. */
 export function useDoorlockDevices({ enabled }: { enabled?: boolean } = {}) {
-  return useQuery({
-    enabled,
-    queryFn: async (): Promise<DevicesData> => {
-      const res = await parseResponse(api.doorlock.devices.$get());
-      if (!res.success) {
-        throw new Error('Failed to load devices');
-      }
-      return res.data as DevicesData;
-    },
-    queryKey: queryKeys.doorlock.devices(),
-  });
+  return useQuery({ ...orpc.doorlock.devices.list.queryOptions(), enabled });
 }
 
 /** All admin-visible access cards. */
 export function useDoorlockCards({ enabled }: { enabled?: boolean } = {}) {
-  return useQuery({
-    enabled,
-    queryFn: async (): Promise<CardsData> => {
-      const res = await parseResponse(api.doorlock.cards.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cards');
-      }
-      return res.data as CardsData;
-    },
-    queryKey: queryKeys.doorlock.cards(),
-  });
+  return useQuery({ ...orpc.doorlock.cards.list.queryOptions(), enabled });
 }
-
-type SelfCardsData = NonNullable<
-  InferResponseType<typeof api.doorlock.self.cards.$get>['data']
->;
-/** A card owned by the signed-in user. */
-export type SelfCard = SelfCardsData['cards'][number];
 
 /** Access cards belonging to the signed-in user. */
 export function useSelfCards() {
-  return useQuery({
-    queryFn: async (): Promise<SelfCardsData> => {
-      const res = await parseResponse(api.doorlock.self.cards.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cards');
-      }
-      return res.data as SelfCardsData;
-    },
-    queryKey: queryKeys.doorlock.selfCards(),
-  });
+  return useQuery(orpc.doorlock.self.cards.list.queryOptions());
 }
 
 /** Freeze or unfreeze one of the signed-in user's cards. */
 export function useFreezeSelfCard({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({ id, frozen }: { frozen: boolean; id: string }) => {
-      const res = await parseResponse(
-        api.doorlock.self.cards[':id'].frozen.$put({
-          json: { frozen },
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update card');
-      }
-      return res;
-    },
-    onError: (error) => {
-      toast.error(error.message || t('doorlock.selfCards.freezeError'));
-    },
-    onSuccess: (_res, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.doorlock.selfCards(),
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
-      toast.success(
-        variables.frozen
-          ? t('doorlock.selfCards.freezeSuccess')
-          : t('doorlock.selfCards.unfreezeSuccess')
-      );
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.doorlock.self.cards.setFrozen.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message || t('doorlock.selfCards.freezeError'));
+      },
+      onSuccess: (_res, variables) => {
+        queryClient.invalidateQueries({
+          queryKey: orpc.doorlock.self.cards.list.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: orpc.doorlock.cards.list.key(),
+        });
+        toast.success(
+          variables.frozen
+            ? t('doorlock.selfCards.freezeSuccess')
+            : t('doorlock.selfCards.unfreezeSuccess')
+        );
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /** Activate one of the signed-in user's cards on a reader. */
 export function useActivateSelfCard({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      cardId,
-      deviceId,
-    }: {
-      cardId: string;
-      deviceId: string;
-    }) => {
-      const res = await parseResponse(
-        api.doorlock.self.cards[':id'].activate.$post({
-          json: { deviceId },
-          param: { id: cardId },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to activate card');
-      }
-      return res;
-    },
-    onError: (error) => {
-      toast.error(error.message || t('doorlock.selfCards.activateError'));
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.doorlock.selfCards(),
-      });
-      toast.success(t('doorlock.selfCards.activateSuccess'));
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.doorlock.self.cards.activate.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message || t('doorlock.selfCards.activateError'));
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: orpc.doorlock.self.cards.list.key(),
+        });
+        toast.success(t('doorlock.selfCards.activateSuccess'));
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /** Card owner candidates; only fetched when enabled. */
 export function useCardUsers({ enabled }: { enabled?: boolean } = {}) {
-  return useQuery({
-    enabled,
-    queryFn: async (): Promise<UsersData> => {
-      const res = await parseResponse(api.doorlock.cards.users.$get());
-      if (!res.success) {
-        throw new Error('Failed to load card users');
-      }
-      return res.data as UsersData;
-    },
-    queryKey: queryKeys.doorlock.cardUsers(),
-  });
+  return useQuery({ ...orpc.doorlock.cards.users.queryOptions(), enabled });
 }
 
 type DoorlockLogFilters = {
@@ -194,6 +109,8 @@ type DoorlockLogFilters = {
   userFilter: string;
 };
 
+type DoorlockLogsInput = Parameters<typeof api.doorlock.logs.list>[0];
+
 const buildLogsQuery = ({
   accessFilter,
   cardFilter,
@@ -201,8 +118,8 @@ const buildLogsQuery = ({
   deviceFilter,
   search,
   userFilter,
-}: DoorlockLogFilters) => {
-  const query: Record<string, string> = { limit: '500' };
+}: DoorlockLogFilters): DoorlockLogsInput => {
+  const query: DoorlockLogsInput = { limit: 500 };
 
   if (deviceFilter !== 'all') {
     query.deviceId = deviceFilter;
@@ -233,72 +150,42 @@ const buildLogsQuery = ({
 
 /** Access logs for the given filters; results stay fresh for 30 seconds. */
 export function useDoorlockLogs(filters: DoorlockLogFilters) {
-  const query = buildLogsQuery(filters);
   return useQuery({
-    queryFn: async (): Promise<LogsData> => {
-      const res = await parseResponse(api.doorlock.logs.$get({ query }));
-      if (!res.success) {
-        throw new Error('Failed to load logs');
-      }
-      return res.data as LogsData;
-    },
-    queryKey: queryKeys.doorlock.logs({
-      accessFilter: filters.accessFilter,
-      cardFilter: filters.cardFilter,
-      dateFrom: filters.dateRange.from?.toISOString() ?? 'none',
-      dateTo: filters.dateRange.to?.toISOString() ?? 'none',
-      deviceFilter: filters.deviceFilter,
-      search: filters.search,
-      userFilter: filters.userFilter,
-    }),
+    ...orpc.doorlock.logs.list.queryOptions({ input: buildLogsQuery(filters) }),
     staleTime: 30_000,
   });
 }
 
 /** Dashboard overview stats. */
 export function useDoorlockStatsOverview() {
-  return useQuery({
-    queryFn: async (): Promise<StatsOverviewData> => {
-      const res = await parseResponse(api.doorlock.stats.overview.$get());
-      if (!res.success) {
-        throw new Error('Failed to load stats overview');
-      }
-      return res.data as StatsOverviewData;
-    },
-    queryKey: queryKeys.doorlock.stats(),
-  });
+  return useQuery(orpc.doorlock.stats.overview.queryOptions());
 }
 
 /** Per-device hardware stats; polled every 30s while the dialog is open. */
 export function useDoorlockDeviceStats(deviceId: string | null, open: boolean) {
   return useQuery({
+    ...orpc.doorlock.devices.stats.queryOptions({
+      input: { id: deviceId ?? '' },
+    }),
     enabled: !!deviceId && open,
-    queryFn: async (): Promise<DeviceStat[]> => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const id = deviceId!;
-      const res = await parseResponse(
-        api.doorlock.devices[':id'].stats.$get({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load device statistics');
-      }
-      return res.data as DeviceStat[];
-    },
-    queryKey: queryKeys.doorlock.deviceStats(deviceId ?? ''),
     refetchInterval: 30_000, // Refresh every 30s
   });
 }
 
-function useInvalidate(queryKeyToInvalidate: readonly unknown[]) {
+/** Every card write moves the card list and the overview counters. */
+function useInvalidateCardsAndStats() {
   const queryClient = useQueryClient();
-  return () =>
-    queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate });
+  return () => {
+    queryClient.invalidateQueries({ queryKey: orpc.doorlock.cards.list.key() });
+    queryClient.invalidateQueries({
+      queryKey: orpc.doorlock.stats.overview.key(),
+    });
+  };
 }
 
 /** Create or update a card from the cards admin page. */
 export function useUpsertDoorlockCard({ onSaved }: MutationCallbacks = {}) {
-  const invalidateCards = useInvalidate(queryKeys.doorlock.cards());
-  const invalidateStats = useInvalidate(queryKeys.doorlock.stats());
+  const invalidate = useInvalidateCardsAndStats();
   const { t } = useTranslation();
   return useMutation({
     mutationFn: async ({
@@ -307,17 +194,10 @@ export function useUpsertDoorlockCard({ onSaved }: MutationCallbacks = {}) {
     }: {
       id?: string;
       payload: CardPayload;
-    }) => {
-      const res = await parseResponse(
-        id
-          ? api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
-          : api.doorlock.cards.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save card');
-      }
-      return res;
-    },
+    }) =>
+      id
+        ? api.doorlock.cards.update({ ...payload, id })
+        : api.doorlock.cards.create(payload),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockCards.saveError'));
     },
@@ -327,8 +207,7 @@ export function useUpsertDoorlockCard({ onSaved }: MutationCallbacks = {}) {
           ? t('doorlockCards.updateSuccess')
           : t('doorlockCards.createSuccess')
       );
-      invalidateCards();
-      invalidateStats();
+      invalidate();
       onSaved?.();
     },
   });
@@ -336,34 +215,25 @@ export function useUpsertDoorlockCard({ onSaved }: MutationCallbacks = {}) {
 
 /** Delete a card by id. */
 export function useDeleteDoorlockCard() {
-  const invalidateCards = useInvalidate(queryKeys.doorlock.cards());
-  const invalidateStats = useInvalidate(queryKeys.doorlock.stats());
+  const invalidate = useInvalidateCardsAndStats();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.doorlock.cards[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete card');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockCards.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('doorlockCards.deleteSuccess'));
-      invalidateCards();
-      invalidateStats();
-    },
-  });
+  return useMutation(
+    orpc.doorlock.cards.delete.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('doorlockCards.deleteError'));
+      },
+      onSuccess: () => {
+        toast.success(t('doorlockCards.deleteSuccess'));
+        invalidate();
+      },
+    })
+  );
 }
 
 /** Create or update a card from the logs page ("add card" action). */
 export function useUpsertCardFromLog({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
-  const invalidateLogs = useInvalidate(['doorlock', 'logs']);
+  const invalidate = useInvalidateCardsAndStats();
   const { t } = useTranslation();
   return useMutation({
     mutationFn: async ({
@@ -372,25 +242,19 @@ export function useUpsertCardFromLog({ onSaved }: MutationCallbacks = {}) {
     }: {
       id?: string;
       payload: CardPayload;
-    }) => {
-      const res = await parseResponse(
-        id
-          ? api.doorlock.cards[':id'].$put({ json: payload, param: { id } })
-          : api.doorlock.cards.$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error('Failed to save card');
-      }
-      return res;
-    },
+    }) =>
+      id
+        ? api.doorlock.cards.update({ ...payload, id })
+        : api.doorlock.cards.create(payload),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockCards.saveError'));
     },
     onSuccess: () => {
       toast.success(t('doorlockCards.saveSuccess'));
-      invalidateLogs();
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.cards() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.doorlock.stats() });
+      queryClient.invalidateQueries({
+        queryKey: orpc.doorlock.logs.list.key(),
+      });
+      invalidate();
       onSaved?.();
     },
   });
@@ -398,8 +262,7 @@ export function useUpsertCardFromLog({ onSaved }: MutationCallbacks = {}) {
 
 /** Create or update a device. */
 export function useUpsertDoorlockDevice({ onSaved }: MutationCallbacks = {}) {
-  const invalidateDevices = useInvalidate(queryKeys.doorlock.devices());
-  const invalidateStats = useInvalidate(queryKeys.doorlock.stats());
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation({
     mutationFn: async ({
@@ -408,20 +271,10 @@ export function useUpsertDoorlockDevice({ onSaved }: MutationCallbacks = {}) {
     }: {
       id?: string;
       payload: DevicePayload;
-    }) => {
-      const res = id
-        ? await parseResponse(
-            api.doorlock.devices[':id'].$put({
-              json: payload,
-              param: { id },
-            })
-          )
-        : await parseResponse(api.doorlock.devices.$post({ json: payload }));
-      if (!res.success) {
-        throw new Error('Failed to save device');
-      }
-      return res;
-    },
+    }) =>
+      id
+        ? api.doorlock.devices.update({ ...payload, id })
+        : api.doorlock.devices.create(payload),
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockDevices.saveError'));
     },
@@ -431,8 +284,12 @@ export function useUpsertDoorlockDevice({ onSaved }: MutationCallbacks = {}) {
           ? t('doorlockDevices.updateSuccess')
           : t('doorlockDevices.createSuccess')
       );
-      invalidateDevices();
-      invalidateStats();
+      queryClient.invalidateQueries({
+        queryKey: orpc.doorlock.devices.list.key(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: orpc.doorlock.stats.overview.key(),
+      });
       onSaved?.();
     },
   });
@@ -440,28 +297,24 @@ export function useUpsertDoorlockDevice({ onSaved }: MutationCallbacks = {}) {
 
 /** Delete a device by id. */
 export function useDeleteDoorlockDevice() {
-  const invalidateDevices = useInvalidate(queryKeys.doorlock.devices());
-  const invalidateStats = useInvalidate(queryKeys.doorlock.stats());
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.doorlock.devices[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete device');
-      }
-      return res;
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || t('doorlockDevices.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('doorlockDevices.deleteSuccess'));
-      invalidateDevices();
-      invalidateStats();
-    },
-  });
+  return useMutation(
+    orpc.doorlock.devices.delete.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('doorlockDevices.deleteError'));
+      },
+      onSuccess: () => {
+        toast.success(t('doorlockDevices.deleteSuccess'));
+        queryClient.invalidateQueries({
+          queryKey: orpc.doorlock.devices.list.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: orpc.doorlock.stats.overview.key(),
+        });
+      },
+    })
+  );
 }
 
 /** Trigger an OTA firmware update on one device or all devices. */
@@ -475,18 +328,10 @@ export function useUpdateDeviceFirmware({ onSaved }: MutationCallbacks = {}) {
       deviceId?: string;
       url: string;
     }) => {
-      const res = await parseResponse(
-        deviceId
-          ? api.doorlock.devices[':id'].update.$post({
-              json: { url },
-              param: { id: deviceId },
-            })
-          : api.doorlock.devices.update.$post({ json: { url } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to start firmware update');
+      if (deviceId) {
+        return await api.doorlock.devices.triggerOta({ id: deviceId, url });
       }
-      return res;
+      return await api.doorlock.devices.updateAll({ url });
     },
     onError: (error: Error) => {
       toast.error(error.message || t('doorlockDevices.saveError'));

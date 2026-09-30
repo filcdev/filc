@@ -1,14 +1,6 @@
-import {
-  cohortIdParamsSchema,
-  movedLessonIdParamsSchema,
-  updateSchema,
-} from '@filcdev/api/domains/timetable/moved-lesson';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import {
   classroom,
@@ -19,21 +11,19 @@ import {
   movedLessonLessonMTM,
   period,
 } from '#database/schema/timetable';
-import { authRouter } from '#middleware/auth';
-import { created, ok } from '#utils/http';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { env } from '#utils/environment';
+import { badRequest, notFound } from '#utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
-import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import {
   type EnrichedLesson,
-  enrichedLessonSchema,
   enrichLessons,
 } from '#utils/timetable/enrich-lessons';
-import { createInsertSchema, createSelectSchema } from '#utils/zod';
-import { timetableFactory } from './_factory';
 
 const ensurePeriodExists = async (periodId: string) => {
   const [existingPeriod] = await db
@@ -42,9 +32,7 @@ const ensurePeriodExists = async (periodId: string) => {
     .where(eq(period.id, periodId));
 
   if (!existingPeriod) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: 'Invalid starting period provided',
-    });
+    throw badRequest('Invalid starting period provided');
   }
 };
 
@@ -55,9 +43,7 @@ const ensureDayDefinitionExists = async (dayId: string) => {
     .where(eq(dayDefinition.id, dayId));
 
   if (!existingDay) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: 'Invalid starting day provided',
-    });
+    throw badRequest('Invalid starting day provided');
   }
 };
 
@@ -68,9 +54,7 @@ const ensureClassroomExists = async (classroomId: string) => {
     .where(eq(classroom.id, classroomId));
 
   if (!existingRoom) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: 'Invalid classroom provided',
-    });
+    throw badRequest('Invalid classroom provided');
   }
 };
 
@@ -97,9 +81,9 @@ const ensureLessonsExist = async (
   );
 
   if (missingLessonIds.length > 0) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `Invalid lesson ids provided: ${missingLessonIds.join(', ')}`,
-    });
+    throw badRequest(
+      `Invalid lesson ids provided: ${missingLessonIds.join(', ')}`
+    );
   }
 
   return lessonRecords;
@@ -114,9 +98,7 @@ const normalizeOptionalString = (
   }
 
   if (typeof value !== 'string') {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `${label} must be a string`,
-    });
+    throw badRequest(`${label} must be a string`);
   }
 
   return value;
@@ -131,16 +113,12 @@ const normalizeOptionalStringArray = (
   }
 
   if (!Array.isArray(value)) {
-    throw new HTTPException(StatusCodes.BAD_REQUEST, {
-      message: `${label} must be an array`,
-    });
+    throw badRequest(`${label} must be an array`);
   }
 
   return value.map((entry) => {
     if (typeof entry !== 'string') {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: `${label} must contain only strings`,
-      });
+      throw badRequest(`${label} must contain only strings`);
     }
 
     return entry;
@@ -189,28 +167,13 @@ const validateMovedLessonReferences = async (options: {
         ({ periodId }) => periodId !== normalizedStartingPeriod
       )
     ) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Provided lessons do not match the starting period',
-      });
+      throw badRequest('Provided lessons do not match the starting period');
     }
   }
 };
 
 // Shared by every moved-lesson list endpoint: rows carry the target joins and
 // their linked lessons already enriched.
-const movedLessonsResponseSchema = z.object({
-  data: z.array(
-    z.object({
-      classroom: createSelectSchema(classroom).nullable(),
-      dayDefinition: createSelectSchema(dayDefinition).nullable(),
-      lessons: z.array(enrichedLessonSchema),
-      movedLesson: createSelectSchema(movedLesson),
-      period: createSelectSchema(period).nullable(),
-    })
-  ),
-  success: z.boolean(),
-});
-
 // Row shape returned by each moved-lesson query before lesson enrichment.
 type MovedLessonRow = {
   classroom: typeof classroom.$inferSelect | null;
@@ -240,26 +203,8 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   }));
 }
 
-const movedLessonWithRelationsType =
-  '@listof MovedLessonWithRelations @field(.movedLesson, MovedLesson) @field(.classroom, Classroom) @field(.dayDefinition, DayDefinition) @field(.period, Period) @field(.lessons, List<EnrichedLesson>)';
-
-export const getAllMovedLessons = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', movedLessonWithRelationsType),
-    description: 'Get all moved lessons.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(movedLessonsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  async (c) => {
+export const getAllMovedLessons = base.timetable.movedLessons.list.handler(
+  async () => {
     const movedLessons = await db
       .select({
         classroom,
@@ -281,27 +226,12 @@ export const getAllMovedLessons = timetableFactory.createHandlers(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
+    return await attachEnrichedLessons(movedLessons);
   }
 );
 
-export const getRelevantMovedLessons = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', movedLessonWithRelationsType),
-    description: 'Get relevant moved lessons for the active timetable.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(movedLessonsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  async (c) => {
+export const getRelevantMovedLessons =
+  base.timetable.movedLessons.relevant.handler(async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -327,41 +257,12 @@ export const getRelevantMovedLessons = timetableFactory.createHandlers(
       .where(gte(movedLesson.date, today))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
-  }
-);
+    return await attachEnrichedLessons(movedLessons);
+  });
 
-export const getMovedLessonsForCohort = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', movedLessonWithRelationsType),
-    description: 'Get all moved lessons for a cohort.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'cohortId',
-        required: true,
-        schema: {
-          description:
-            'The unique identifier for the cohort to get the moved lessons for.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(movedLessonsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  zValidator('param', cohortIdParamsSchema),
-  async (c) => {
-    const { cohortId } = c.req.valid('param');
+export const getMovedLessonsForCohort =
+  base.timetable.movedLessons.forCohort.handler(async ({ input }) => {
+    const { cohortId } = input;
 
     const movedLessons = await db
       .select({
@@ -387,41 +288,12 @@ export const getMovedLessonsForCohort = timetableFactory.createHandlers(
       .where(eq(lessonCohortMTM.cohortId, cohortId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
-  }
-);
+    return await attachEnrichedLessons(movedLessons);
+  });
 
-export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', movedLessonWithRelationsType),
-    description: 'Get all relevant moved lessons for a given cohort.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'cohortId',
-        required: true,
-        schema: {
-          description:
-            'The unique identifier for the cohort to get the relevant moved lessons for.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(movedLessonsResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  zValidator('param', cohortIdParamsSchema),
-  async (c) => {
-    const { cohortId } = c.req.valid('param');
+export const getRelevantMovedLessonsForCohort =
+  base.timetable.movedLessons.relevantForCohort.handler(async ({ input }) => {
+    const { cohortId } = input;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -455,55 +327,18 @@ export const getRelevantMovedLessonsForCohort = timetableFactory.createHandlers(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return ok(c, await attachEnrichedLessons(movedLessons));
-  }
-);
-
-const createSchema = createInsertSchema(movedLesson)
-  .omit({ id: true })
-  .extend({
-    date: z.coerce.date(),
-    lessonIds: z.uuid().array().min(1),
+    return await attachEnrichedLessons(movedLessons);
   });
 
-const createResponseSchema = z.object({
-  data: createSelectSchema(movedLesson),
-  success: z.boolean(),
-});
-
-export const createMovedLesson = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', '@unit MovedLesson', true),
-    description: 'Create a moved lesson.',
-    requestBody: {
-      content: {
-        'application/json': await resolver(createSchema).toOpenAPISchema(),
-      },
-      description: 'The data for the moved lesson.',
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(createResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  ...authRouter('movedLesson:create'),
-  zValidator('json', createSchema),
-  async (c) => {
-    const body = c.req.valid('json');
+export const createMovedLesson = base.timetable.movedLessons.create
+  .use(requireAuthorization(permissions.movedLessonCreate))
+  .handler(async ({ input }) => {
+    const body = input;
     const { startingPeriod, startingDay, room, date, lessonIds, comment } =
       body;
 
     if (!date) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Date is required',
-      });
+      throw badRequest('Date is required');
     }
 
     await validateMovedLessonReferences({
@@ -549,50 +384,25 @@ export const createMovedLesson = timetableFactory.createHandlers(
       });
     }
 
-    return created(c, newMovedLesson);
-  }
-);
+    if (!newMovedLesson) {
+      throw new ORPCError('INTERNAL', {
+        cause:
+          env.mode === 'development'
+            ? 'No moved lesson returned from insert query'
+            : undefined,
+        message: 'Failed to create moved lesson.',
+      });
+    }
 
-export const updateMovedLesson = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', '@unit MovedLesson', true),
-    description: 'Update a moved lesson.',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the moved lesson to update.',
-          type: 'string',
-        },
-      },
-    ],
-    requestBody: {
-      content: {
-        'application/json': await resolver(updateSchema).toOpenAPISchema(),
-      },
-      description: 'The data for updating the moved lesson.',
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(createResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  ...authRouter('movedLesson:update'),
-  zValidator('param', movedLessonIdParamsSchema),
-  zValidator('json', updateSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
+    return newMovedLesson;
+  });
+
+export const updateMovedLesson = base.timetable.movedLessons.update
+  .use(requireAuthorization(permissions.movedLessonUpdate))
+  .handler(async ({ input }) => {
+    const { id } = input;
     const { startingPeriod, startingDay, room, date, lessonIds, comment } =
-      c.req.valid('json');
+      input;
 
     await validateMovedLessonReferences({
       lessonIds,
@@ -617,9 +427,7 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       .returning();
 
     if (!updatedMovedLesson) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Moved lesson not found',
-      });
+      throw notFound('Moved lesson not found');
     }
 
     if (lessonIds !== undefined && Array.isArray(lessonIds)) {
@@ -645,41 +453,13 @@ export const updateMovedLesson = timetableFactory.createHandlers(
       startingPeriod,
     });
 
-    return ok(c, updatedMovedLesson);
-  }
-);
+    return updatedMovedLesson;
+  });
 
-export const deleteMovedLesson = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('MovedLesson', '@nodata', true),
-    description: 'Delete a moved lesson',
-    parameters: [
-      {
-        in: 'path',
-        name: 'id',
-        required: true,
-        schema: {
-          description: 'The unique identifier for the moved lesson to delete.',
-          type: 'string',
-        },
-      },
-    ],
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(createResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Moved Lesson'],
-  }),
-  ...authRouter('movedLesson:delete'),
-  zValidator('param', movedLessonIdParamsSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteMovedLesson = base.timetable.movedLessons.delete
+  .use(requireAuthorization(permissions.movedLessonDelete))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [deletedMovedLesson] = await db
       .delete(movedLesson)
@@ -687,13 +467,10 @@ export const deleteMovedLesson = timetableFactory.createHandlers(
       .returning();
 
     if (!deletedMovedLesson) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Moved lesson not found',
-      });
+      throw notFound('Moved lesson not found');
     }
 
     cancelPendingNotification(id, 'moved_lesson');
 
-    return ok(c, deletedMovedLesson);
-  }
-);
+    return { id: deletedMovedLesson.id };
+  });

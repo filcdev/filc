@@ -1,16 +1,6 @@
-import {
-  cleanupOrphanedCohortsResponseSchema,
-  deleteTimetableResponseSchema,
-  previewDeleteResponseSchema,
-  timetableIdParamsSchema,
-  updateTimetableSchema,
-} from '@filcdev/api/domains/timetable/timetables';
-import { zValidator } from '@hono/zod-validator';
+import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { and, count, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
@@ -23,74 +13,28 @@ import {
   substitutionLessonMTM,
   timetable,
 } from '#database/schema/timetable';
-import { authRouter } from '#middleware/auth';
-import { ok } from '#utils/http';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { badRequest, notFound } from '#utils/http';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
-import { filcExt } from '#utils/openapi';
 import { getActiveTimetableId } from '#utils/timetable/active';
 import { cleanupOrphanedCohorts } from '#utils/timetable/cleanup';
 import { dateToYYYYMMDD } from '#utils/timetable/date';
 import { remapSubstitutionLessonsToTimetable } from '#utils/timetable/remap-substitutions';
-import { createSelectSchema } from '#utils/zod';
-import { timetableFactory } from './_factory';
 
-const timetableSelectSchema = createSelectSchema(timetable);
-
-const getAllResponseSchema = z.object({
-  data: z.array(timetableSelectSchema),
-  success: z.literal(true),
-});
-
-const getLatestValidReponseSchema = z.object({
-  data: timetableSelectSchema,
-  success: z.literal(true),
-});
-
-export const getAllTimetables = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@listof Timetable', true),
-    description: 'Get all timetables from the database.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getAllResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  async (c) => {
+export const getAllTimetables = base.timetable.timetables.list.handler(
+  async () => {
     const timetables = await db.select().from(timetable);
 
-    return ok(c, timetables);
+    return timetables;
   }
 );
 
-export const getLatestValidTimetable = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@unit Timetable', true),
-    description: 'Get the latest valid timetable.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getLatestValidReponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  async (c) => {
+export const getLatestValidTimetable =
+  base.timetable.timetables.latestValid.handler(async () => {
     const activeId = await getActiveTimetableId();
     if (!activeId) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'No valid timetable found.',
-      });
+      throw notFound('No valid timetable found.');
     }
 
     const [latestValidTimetable] = await db
@@ -100,32 +44,14 @@ export const getLatestValidTimetable = timetableFactory.createHandlers(
       .limit(1);
 
     if (!latestValidTimetable) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'No valid timetable found.',
-      });
+      throw notFound('No valid timetable found.');
     }
 
-    return ok(c, latestValidTimetable);
-  }
-);
+    return latestValidTimetable;
+  });
 
-export const getAllValidTimetables = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@listof Timetable', true),
-    description: 'Get all the latest valid timetables.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(getAllResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  async (c) => {
+export const getAllValidTimetables = base.timetable.timetables.valid.handler(
+  async () => {
     const today = dateToYYYYMMDD(new Date());
 
     const timetables = await db
@@ -138,37 +64,14 @@ export const getAllValidTimetables = timetableFactory.createHandlers(
         )
       );
 
-    return ok(c, timetables);
+    return timetables;
   }
 );
 
-const updateTimetableResponseSchema = z.object({
-  data: timetableSelectSchema,
-  success: z.literal(true),
-});
-
-export const updateTimetable = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@unit Timetable', true),
-    description: 'Update a timetable validity dates.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(updateTimetableResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  zValidator('param', timetableIdParamsSchema),
-  zValidator('json', updateTimetableSchema),
-  ...authRouter('import:timetable'),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const body = c.req.valid('json');
+export const updateTimetable = base.timetable.timetables.update
+  .use(requireAuthorization(permissions.importTimetable))
+  .handler(async ({ input }) => {
+    const { id, ...body } = input;
 
     const [existing] = await db
       .select()
@@ -177,9 +80,7 @@ export const updateTimetable = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Timetable not found',
-      });
+      throw notFound('Timetable not found');
     }
 
     const [updated] = await db
@@ -193,49 +94,18 @@ export const updateTimetable = timetableFactory.createHandlers(
       .returning();
 
     if (!updated) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
         message: 'Failed to update timetable',
       });
     }
 
-    return ok(c, updated);
-  }
-);
+    return updated;
+  });
 
-export const deleteTimetable = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@unit Timetable', true),
-    description:
-      'Delete a timetable and all its related data, including orphaned cohorts.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(deleteTimetableResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-      400: {
-        content: {
-          'application/json': {
-            schema: resolver(
-              z.object({
-                error: z.string(),
-                success: z.literal(false),
-              })
-            ),
-          },
-        },
-        description: 'Cannot delete active timetable',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  zValidator('param', timetableIdParamsSchema),
-  ...authRouter('import:timetable'),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteTimetable = base.timetable.timetables.delete
+  .use(requireAuthorization(permissions.importTimetable))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [existing] = await db
       .select()
@@ -244,17 +114,13 @@ export const deleteTimetable = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Timetable not found',
-      });
+      throw notFound('Timetable not found');
     }
 
     const activeId = await getActiveTimetableId();
 
     if (activeId === id) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'Cannot delete the currently active timetable.',
-      });
+      throw badRequest('Cannot delete the currently active timetable.');
     }
 
     const notifiedUserIds: string[] = [];
@@ -270,11 +136,10 @@ export const deleteTimetable = timetableFactory.createHandlers(
         );
 
         if (remapResult.unmatchedSourceLessonIds.length > 0) {
-          throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message:
-              `Cannot delete timetable: ${remapResult.unmatchedSourceLessonIds.length} substituted lesson(s) ` +
-              'could not be uniquely matched to the active timetable.',
-          });
+          throw badRequest(
+            `Cannot delete timetable: ${remapResult.unmatchedSourceLessonIds.length} substituted lesson(s) ` +
+              'could not be uniquely matched to the active timetable.'
+          );
         }
       } else {
         const [linkedSubstitution] = await tx
@@ -287,10 +152,9 @@ export const deleteTimetable = timetableFactory.createHandlers(
           .limit(1);
 
         if (linkedSubstitution) {
-          throw new HTTPException(StatusCodes.BAD_REQUEST, {
-            message:
-              'Cannot delete timetable with substitutions because there is no active timetable to migrate them to.',
-          });
+          throw badRequest(
+            'Cannot delete timetable with substitutions because there is no active timetable to migrate them to.'
+          );
         }
       }
 
@@ -336,31 +200,13 @@ export const deleteTimetable = timetableFactory.createHandlers(
       dispatchImmediateNotification('cohort_reselection_required', { userId });
     }
 
-    return ok(c, undefined);
-  }
-);
+    return { id };
+  });
 
-export const previewDeleteTimetable = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@unit Timetable', true),
-    description:
-      'Preview the impact of deleting a timetable. Orphaned cohorts will be deleted along with the timetable.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(previewDeleteResponseSchema),
-          },
-        },
-        description: 'Preview data',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  zValidator('param', timetableIdParamsSchema),
-  ...authRouter('import:timetable'),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const previewDeleteTimetable = base.timetable.timetables.previewDelete
+  .use(requireAuthorization(permissions.importTimetable))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [existing] = await db
       .select()
@@ -369,9 +215,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       .limit(1);
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'Timetable not found',
-      });
+      throw notFound('Timetable not found');
     }
 
     const activeId = await getActiveTimetableId();
@@ -464,7 +308,7 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
       .where(eq(lesson.timetableId, id));
     const substitutionIds = [...new Set(substitutionRows.map((r) => r.id))];
 
-    return ok(c, {
+    return {
       cohorts: cohortResults,
       isCurrentTimetable,
       targetTimetable,
@@ -476,31 +320,14 @@ export const previewDeleteTimetable = timetableFactory.createHandlers(
         substitutionsDeleted: substitutionIds.length,
         survivingCohorts: cohortResults.length - orphanedCount,
       },
+    };
+  });
+
+export const cleanupOrphanedCohortsHandler =
+  base.timetable.timetables.cleanupOrphanedCohorts
+    .use(requireAuthorization(permissions.importTimetable))
+    .handler(async () => {
+      const result = await cleanupOrphanedCohorts();
+
+      return result;
     });
-  }
-);
-
-export const cleanupOrphanedCohortsHandler = timetableFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Timetable', '@unit Timetable', true),
-    description:
-      'Delete all cohorts that are no longer linked to any timetable (orphaned) and all teachers that are not assigned to any lesson. Users referencing those cohorts will have their cohortId nullified. Teachers still referenced by cohorts, cohort groups, or substitutions are kept.',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(cleanupOrphanedCohortsResponseSchema),
-          },
-        },
-        description: 'Cleanup summary',
-      },
-    },
-    tags: ['Timetable'],
-  }),
-  ...authRouter('import:timetable'),
-  async (c) => {
-    const result = await cleanupOrphanedCohorts();
-
-    return ok(c, result);
-  }
-);

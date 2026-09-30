@@ -1,46 +1,12 @@
-import { kioskHeartbeatRequestSchema } from '@filcdev/api/domains/kiosk/heartbeat';
-import { zValidator } from '@hono/zod-validator';
+import { kioskKindSchema } from '@filcdev/api/domains/kiosk/config';
 import { eq } from 'drizzle-orm';
-import { getConnInfo } from 'hono/bun';
-import { describeRoute, resolver } from 'hono-openapi';
 import { db } from '#database';
 import { kiosk } from '#database/schema/kiosk';
-import { ok } from '#utils/http';
-import { kioskHeartbeatResponseSchema } from '#utils/kiosk/schemas';
-import { filcExt } from '#utils/openapi';
-import { kioskFactory } from './_factory';
+import { base } from '#orpc';
 
-const { schema: heartbeatRequestSchema } = await resolver(
-  kioskHeartbeatRequestSchema
-).toOpenAPISchema();
-
-export const kioskHeartbeatRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Kiosk', '@unit KioskHeartbeatResponse @field(.kiosk, Kiosk)'),
-    description:
-      'Record a kiosk heartbeat and report whether the box is registered and enabled',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: heartbeatRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskHeartbeatResponseSchema),
-          },
-        },
-        description: 'Heartbeat recorded',
-      },
-    },
-    tags: ['Kiosk'],
-  }),
-  zValidator('json', kioskHeartbeatRequestSchema),
-  async (c) => {
-    const { appVersion, machineId } = c.req.valid('json');
+export const heartbeat = base.kiosk.heartbeat.handler(
+  async ({ context, input }) => {
+    const { appVersion, machineId } = input;
 
     const [existing] = await db
       .select()
@@ -48,12 +14,11 @@ export const kioskHeartbeatRoute = kioskFactory.createHandlers(
       .where(eq(kiosk.machineId, machineId));
 
     if (!existing) {
-      return ok(c, { registered: false });
+      return { registered: false };
     }
 
-    const forwardedFor = c.req.header('x-forwarded-for');
-    const lastSeenIp =
-      forwardedFor?.split(',')[0]?.trim() || getConnInfo(c).remote.address;
+    const forwardedFor = context.reqHeaders.get('x-forwarded-for');
+    const lastSeenIp = forwardedFor?.split(',')[0]?.trim() || context.clientIp;
 
     await db
       .update(kiosk)
@@ -64,23 +29,27 @@ export const kioskHeartbeatRoute = kioskFactory.createHandlers(
       })
       .where(eq(kiosk.id, existing.id));
 
+    // Every write validates `kind` against this enum, but the column is plain
+    // text, so the contract's enum type comes from re-validating it here.
+    const kind = kioskKindSchema.parse(existing.kind);
+
     if (!existing.enabled) {
-      return ok(c, {
-        enabled: false,
-        kiosk: { id: existing.id, kind: existing.kind, name: existing.name },
-        registered: true,
-      });
+      return {
+        enabled: false as const,
+        kiosk: { id: existing.id, kind, name: existing.name },
+        registered: true as const,
+      };
     }
 
-    return ok(c, {
-      enabled: true,
+    return {
+      enabled: true as const,
       kiosk: {
         config: existing.config,
         id: existing.id,
-        kind: existing.kind,
+        kind,
         name: existing.name,
       },
-      registered: true,
-    });
+      registered: true as const,
+    };
   }
 );

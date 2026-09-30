@@ -74,7 +74,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                     </Button>
                     <Button
                       disabled={deleteRole.isPending}
-                      onClick={() => deleteRole.mutate(role.name)}
+                      onClick={() => deleteRole.mutate({ name: role.name })}
                       size="sm"
                       variant="destructive"
                     >

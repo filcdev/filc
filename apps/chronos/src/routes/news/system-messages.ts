@@ -1,65 +1,24 @@
-import { announcementQuerySchema } from '@filcdev/api/domains/news/announcements';
-import {
-  dateRangeBodySchema,
-  dateRangeUpdateBodySchema,
-} from '@filcdev/api/domains/news/system-messages';
-import { zValidator } from '@hono/zod-validator';
+import type { DateRangeUpdateBodyInput } from '@filcdev/api/domains/news/system-messages';
+import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
-import z from 'zod';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { systemMessage, systemMessageCohortMtm } from '#database/schema/news';
-import { authRouter } from '#middleware/auth';
-import { newsFactory } from '#routes/news/_factory';
-import { ok } from '#utils/http';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { badRequest, notFound } from '#utils/http';
 import { validateCohortIds } from '#utils/news/cohort';
-import {
-  authorSelect,
-  successResponseSchema,
-  systemMessageBaseDetailResponseSchema,
-  systemMessageDetailResponseSchema,
-  systemMessageListResponseSchema,
-} from '#utils/news/shared';
+import { authorSelect } from '#utils/news/shared';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
-import { filcExt } from '#utils/openapi';
 
-const { schema: createRequestSchema } =
-  await resolver(dateRangeBodySchema).toOpenAPISchema();
-const { schema: updateRequestSchema } = await resolver(
-  dateRangeUpdateBodySchema
-).toOpenAPISchema();
-
-export const listSystemMessages = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'SystemMessage',
-      '@listof SystemMessage @field(.author, Author)',
-      true
-    ),
-    description:
-      'List active system messages within date range, filtered by user cohort',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(systemMessageListResponseSchema),
-          },
-        },
-        description: 'Paginated list of system messages',
-      },
-    },
-    tags: ['News / System Messages'],
-  }),
-  zValidator('query', announcementQuerySchema),
-  async (c) => {
-    const { limit, offset, includeExpired } = c.req.valid('query');
-    const userCohortId = c.var.user?.cohortId;
+export const listSystemMessages = base.news.systemMessages.list.handler(
+  async ({ context, input }) => {
+    const { limit, offset, includeExpired } = input;
+    const userCohortId = context.user?.cohortId;
 
     const now = new Date();
     const conditions: SQL[] = [];
@@ -118,34 +77,13 @@ export const listSystemMessages = newsFactory.createHandlers(
         .map((m) => m.cohortId),
     }));
 
-    return ok(c, data, StatusCodes.OK, { total: totalResult[0]?.count ?? 0 });
+    return { data, total: totalResult[0]?.count ?? 0 };
   }
 );
 
-export const getSystemMessage = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'SystemMessage',
-      '@unit SystemMessage @field(.author, Author)',
-      true
-    ),
-    description: 'Get a single system message by ID',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(systemMessageDetailResponseSchema),
-          },
-        },
-        description: 'System message details',
-      },
-      404: { description: 'System message not found' },
-    },
-    tags: ['News / System Messages'],
-  }),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const getSystemMessage = base.news.systemMessages.get.handler(
+  async ({ input }) => {
+    const { id } = input;
 
     const [item] = await db
       .select({
@@ -164,9 +102,7 @@ export const getSystemMessage = newsFactory.createHandlers(
       .where(eq(systemMessage.id, id));
 
     if (!item) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'System message not found',
-      });
+      throw notFound('System message not found');
     }
 
     const cohortIds = (
@@ -176,39 +112,15 @@ export const getSystemMessage = newsFactory.createHandlers(
         .where(eq(systemMessageCohortMtm.systemMessageId, id))
     ).map((m) => m.cohortId);
 
-    return ok(c, { ...item, cohortIds });
+    return { ...item, cohortIds };
   }
 );
 
-export const createSystemMessage = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('SystemMessage', '@unit SystemMessage', true),
-    description: 'Create a new system message',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: createRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(systemMessageBaseDetailResponseSchema),
-          },
-        },
-        description: 'System message created',
-      },
-      400: { description: 'Invalid input or cohort IDs' },
-    },
-    tags: ['News / System Messages'],
-  }),
-  ...authRouter('system-messages:manage'),
-  zValidator('json', dateRangeBodySchema),
-  async (c) => {
-    const body = c.req.valid('json');
-    const currentUser = c.var.user;
+export const createSystemMessage = base.news.systemMessages.create
+  .use(requireAuthorization(permissions.systemMessagesManage))
+  .handler(async ({ context, input }) => {
+    const body = input;
+    const authorId = context.session.userId;
 
     if (body.cohortIds && body.cohortIds.length > 0) {
       await validateCohortIds(body.cohortIds);
@@ -217,7 +129,7 @@ export const createSystemMessage = newsFactory.createHandlers(
     const [created] = await db
       .insert(systemMessage)
       .values({
-        authorId: currentUser.id,
+        authorId,
         content: body.content,
         title: body.title,
         validFrom: body.validFrom,
@@ -225,7 +137,7 @@ export const createSystemMessage = newsFactory.createHandlers(
       })
       .returning();
     if (!created) {
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw new ORPCError('INTERNAL', {
         message: 'Failed to create system message',
       });
     }
@@ -244,45 +156,14 @@ export const createSystemMessage = newsFactory.createHandlers(
       title: body.title,
     });
 
-    return ok(
-      c,
-      { ...created, cohortIds: body.cohortIds ?? [] },
-      StatusCodes.CREATED
-    );
-  }
-);
+    return { ...created, cohortIds: body.cohortIds ?? [] };
+  });
 
-export const updateSystemMessage = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('SystemMessage', '@unit SystemMessage', true),
-    description: 'Update an existing system message',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(systemMessageBaseDetailResponseSchema),
-          },
-        },
-        description: 'System message updated',
-      },
-      400: { description: 'Invalid input or date range' },
-      404: { description: 'System message not found' },
-    },
-    tags: ['News / System Messages'],
-  }),
-  ...authRouter('system-messages:manage'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  zValidator('json', dateRangeUpdateBodySchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const body = c.req.valid('json');
+export const updateSystemMessage = base.news.systemMessages.update
+  .use(requireAuthorization(permissions.systemMessagesManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
+    const body: DateRangeUpdateBodyInput = input;
 
     const [existing] = await db
       .select()
@@ -290,17 +171,13 @@ export const updateSystemMessage = newsFactory.createHandlers(
       .where(eq(systemMessage.id, id));
 
     if (!existing) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'System message not found',
-      });
+      throw notFound('System message not found');
     }
 
     const validFrom = body.validFrom ?? existing.validFrom;
     const validUntil = body.validUntil ?? existing.validUntil;
     if (validUntil <= validFrom) {
-      throw new HTTPException(StatusCodes.BAD_REQUEST, {
-        message: 'validUntil must be after validFrom',
-      });
+      throw badRequest('validUntil must be after validFrom');
     }
 
     if (body.cohortIds && body.cohortIds.length > 0) {
@@ -329,9 +206,7 @@ export const updateSystemMessage = newsFactory.createHandlers(
       .where(eq(systemMessage.id, id))
       .returning();
     if (!updated) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'System message not found',
-      });
+      throw notFound('System message not found');
     }
 
     if (body.cohortIds !== undefined) {
@@ -363,31 +238,13 @@ export const updateSystemMessage = newsFactory.createHandlers(
       title: updated.title,
     });
 
-    return ok(c, { ...updated, cohortIds });
-  }
-);
+    return { ...updated, cohortIds };
+  });
 
-export const deleteSystemMessage = newsFactory.createHandlers(
-  describeRoute({
-    ...filcExt('SystemMessage', '@nodata', true),
-    description: 'Delete a system message',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(successResponseSchema),
-          },
-        },
-        description: 'System message deleted',
-      },
-      404: { description: 'System message not found' },
-    },
-    tags: ['News / System Messages'],
-  }),
-  ...authRouter('system-messages:manage'),
-  zValidator('param', z.object({ id: z.string().uuid() })),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteSystemMessage = base.news.systemMessages.delete
+  .use(requireAuthorization(permissions.systemMessagesManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [deleted] = await db
       .delete(systemMessage)
@@ -395,13 +252,10 @@ export const deleteSystemMessage = newsFactory.createHandlers(
       .returning();
 
     if (!deleted) {
-      throw new HTTPException(StatusCodes.NOT_FOUND, {
-        message: 'System message not found',
-      });
+      throw notFound('System message not found');
     }
 
     cancelPendingNotification(id, 'system_message');
 
-    return ok(c, undefined);
-  }
-);
+    return { id };
+  });

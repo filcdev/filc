@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import {
   Alert,
   AlertDescription,
@@ -54,8 +55,8 @@ import {
 } from '@/hooks/moved-lessons';
 import type { SubstitutionItem } from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -64,6 +65,22 @@ export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
         <MovedLessonsPage />
       </PermissionGuard>
     ),
+    loader: ({ context }) =>
+      Promise.all([
+        prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.substitutions.list.queryOptions()
+        ),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.movedLessons.list.queryOptions()
+        ),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.classrooms.getAll.queryOptions()
+        ),
+      ]),
   }
 );
 
@@ -193,7 +210,7 @@ function detectMoveMode(item: MovedLessonItem): MoveMode {
 function MovedLessonsPage() {
   const { i18n, t } = useTranslation();
   const showPastId = useId();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [moveMode, setMoveMode] = useState<MoveMode>('room');
@@ -265,7 +282,7 @@ function MovedLessonsPage() {
         const roomName = ml.classroom?.name?.toLowerCase() ?? '';
         const dayName = ml.dayDefinition?.name?.toLowerCase() ?? '';
         return (
-          ml.movedLesson.date.includes(term) ||
+          ml.movedLesson.date.toISOString().includes(term) ||
           roomName.includes(term) ||
           dayName.includes(term)
         );
@@ -310,7 +327,7 @@ function MovedLessonsPage() {
     if (!itemToDelete) {
       return;
     }
-    await deleteMutation.mutateAsync(itemToDelete.movedLesson.id);
+    await deleteMutation.mutateAsync({ id: itemToDelete.movedLesson.id });
     setDeleteDialogOpen(false);
     setItemToDelete(null);
   };
@@ -609,7 +626,7 @@ function getMovedLessonSortValue(
 ): string | number {
   switch (sortColumn) {
     case 'date':
-      return ml.movedLesson.date;
+      return ml.movedLesson.date.toISOString();
     case 'day':
       return ml.dayDefinition?.name ?? '';
     case 'period':

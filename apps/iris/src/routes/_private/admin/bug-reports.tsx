@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import {
   Alert,
   AlertDescription,
@@ -48,10 +49,17 @@ import {
   useUpdateBugReportStatus,
 } from '@/hooks/bug-reports';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/bug-reports')({
   component: AdminBugReportsPage,
+  // The table's own filters are local state, so only the unfiltered first page
+  // can be prefetched; a narrowed list is fetched by the browser.
+  loader: ({ context }) =>
+    prefetch(
+      context.queryClient,
+      orpc.bugReport.list.queryOptions({ input: { limit: 20, page: 1 } })
+    ),
 });
 
 const PAGE_SIZE = 20;
@@ -105,7 +113,7 @@ function getSortValue(
 
 function AdminBugReportsPage() {
   const { t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const hasWritePermission = useHasPermission(
     permissions.bugReportsWrite,
     session?.user?.permissions
@@ -480,7 +488,7 @@ function AdminBugReportsPage() {
               disabled={deleteReport.isPending}
               onClick={() => {
                 if (selected) {
-                  deleteReport.mutate(selected.id);
+                  deleteReport.mutate({ id: selected.id });
                 }
               }}
               variant="destructive"

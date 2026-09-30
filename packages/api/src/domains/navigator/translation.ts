@@ -29,3 +29,18 @@ export const translationParamsSchema = z.object({
 export type Translation = z.infer<typeof translationSchema>;
 export type CreateTranslationInput = z.infer<typeof createTranslationSchema>;
 export type UpdateTranslationInput = z.infer<typeof updateTranslationSchema>;
+
+/** Payload of `GET /navigator/translations` and `POST /navigator/translations`. */
+export const translationsResponseSchema = z.object({
+  translations: z.array(translationSchema),
+});
+
+/** Payload of `PUT` and `DELETE /navigator/translations/{lang}/{key}`. */
+export const translationResponseSchema = z.object({
+  translation: translationSchema,
+});
+
+/** Payload of `GET /navigator/translations/available`. */
+export const languagesResponseSchema = z.object({
+  languages: z.array(z.string()),
+});

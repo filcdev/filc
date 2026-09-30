@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/logtape';
-import { honoIntegration, init, setUser } from '@sentry/bun';
+import { init, setUser } from '@sentry/bun';
 import type { Session, User } from 'better-auth';
 import { env } from '#utils/environment';
 
@@ -49,8 +49,6 @@ export const initSentry = () => {
       },
     },
 
-    // Integrations
-    integrations: [honoIntegration()],
     release,
     sampleRate: env.sentrySampleRate,
 

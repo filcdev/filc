@@ -13,12 +13,11 @@ import { Label } from '@filcdev/ui/components/label';
 import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { useQuery } from '@tanstack/react-query';
-import { type InferRequestType, parseResponse } from 'hono/client';
 import { ArrowRightLeft, Save } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ClassroomItem, PeriodItem } from '@/components/timetable/types';
 import {
-  type Classroom,
   type Cohort,
   type DayDefinition,
   type EnrichedLesson,
@@ -26,18 +25,16 @@ import {
   useCreateMovedLesson,
   useUpdateMovedLesson,
 } from '@/hooks/moved-lessons';
-import { useApiQuery } from '@/utils/api';
 import { getIntlLocale, isMatchingWeekday } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
+import { type api, orpc } from '@/utils/orpc';
 import { formatPeriodLabel } from '@/utils/period';
-import { queryKeys } from '@/utils/query-keys';
 import type { BaseDialogProps } from './admin.types';
 
 export type MoveMode = 'room' | 'day';
 
 type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
-  classrooms: Classroom[];
+  classrooms: ClassroomItem[];
   cohorts: Cohort[];
   days: DayDefinition[];
   item?: MovedLessonItem | null;
@@ -48,8 +45,6 @@ type MovedLessonDialogProps = BaseDialogProps & {
 // Cohort entries can arrive as plain names (from substitutions/moved lessons)
 // or as objects (from the per-cohort lessons endpoint); normalise for display.
 type CohortLike = string | { id: string; name: string; short?: string };
-
-type Period = NonNullable<EnrichedLesson['period']>;
 
 type LessonForLabel = {
   id: string;
@@ -254,7 +249,7 @@ function isOriginalSlot(params: {
     return false;
   }
   return (
-    params.dateParam === item.movedLesson.date &&
+    params.dateParam === item.movedLesson.date.toISOString().slice(0, 10) &&
     params.formStartingDay === item.movedLesson.startingDay &&
     params.startingPeriod === item.movedLesson.startingPeriod
   );
@@ -313,9 +308,9 @@ function resolveRoomModeSlot(
 type RoomOption = { disabled: boolean; label: string; value: string };
 
 function buildRoomOptions(params: {
-  availableClassrooms?: Classroom[];
+  availableClassrooms?: ClassroomItem[];
   availabilityKnown: boolean;
-  classrooms: Classroom[];
+  classrooms: ClassroomItem[];
   isStoredSlot: boolean;
   item?: MovedLessonItem | null;
   labels: { free: string; occupied: string };
@@ -346,28 +341,9 @@ function buildRoomOptions(params: {
   });
 }
 
-// Availability request for the selected target slot; no slot, no request.
-function requestAvailableClassrooms(
-  startingDay: string | null | undefined,
-  startingPeriod: string | null | undefined,
-  date: string
-) {
-  if (!(startingDay && startingPeriod)) {
-    return [] as never;
-  }
-
-  return api.timetable.classrooms.getAvailable.$get({
-    query: {
-      date,
-      startingDay,
-      startingPeriod,
-    },
-  });
-}
-
-type MovedLessonFormValues = InferRequestType<
-  typeof api.timetable.movedLessons.$post
->['json'];
+type MovedLessonFormValues = Parameters<
+  typeof api.timetable.movedLessons.create
+>[0];
 
 const initialState = (
   item?: MovedLessonItem | null
@@ -519,7 +495,7 @@ function LessonList({
 }
 
 type FromRoomFieldProps = {
-  classrooms: Classroom[];
+  classrooms: ClassroomItem[];
   onChange: (value: string) => void;
   value: string;
 };
@@ -648,15 +624,13 @@ export function MovedLessonDialog({
           throw new Error('All fields are required for updates');
         }
         await updateMutation.mutateAsync({
+          comment: value.comment ?? null,
+          date: value.date,
           id: item.movedLesson.id,
-          payload: {
-            comment: value.comment ?? null,
-            date: value.date,
-            lessonIds: value.lessonIds ?? [],
-            room: value.room as string,
-            startingDay: value.startingDay as string,
-            startingPeriod: value.startingPeriod as string,
-          },
+          lessonIds: value.lessonIds ?? [],
+          room: value.room as string,
+          startingDay: value.startingDay as string,
+          startingPeriod: value.startingPeriod as string,
         });
       } else {
         await createMutation.mutateAsync(value);
@@ -677,17 +651,9 @@ export function MovedLessonDialog({
   const formRoom = useStore(form.store, (state) => state.values.room);
 
   const periodsQuery = useQuery({
+    ...orpc.timetable.periods.getAll.queryOptions({ input: {} }),
     enabled: mode === 'day',
-    queryFn: async (): Promise<Period[]> => {
-      const res = await parseResponse(
-        api.timetable.periods.getAll.$get({ query: {} })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load periods');
-      }
-      return res.data as Period[];
-    },
-    queryKey: queryKeys.timetable.periods(null),
+    select: (data): PeriodItem[] => data,
   });
 
   // The selected lesson's current period (the slot it sits in).
@@ -772,22 +738,16 @@ export function MovedLessonDialog({
     [dateParam, formStartingDay, formStartingPeriod, item]
   );
 
-  const availableClassroomsQuery = useApiQuery<Classroom[]>(
-    () =>
-      requestAvailableClassrooms(
-        formStartingDay,
-        formStartingPeriod,
-        dateParam
-      ),
-    {
-      enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
-      queryKey: queryKeys.timetable.availableClassrooms(
-        formDate,
-        formStartingDay,
-        formStartingPeriod
-      ),
-    }
-  );
+  const availableClassroomsQuery = useQuery({
+    ...orpc.timetable.classrooms.getAvailable.queryOptions({
+      input: {
+        date: dateParam,
+        startingDay: formStartingDay ?? '',
+        startingPeriod: formStartingPeriod ?? '',
+      },
+    }),
+    enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
+  });
 
   // Lessons in the selected source slot (de-duplicated by lesson id). A day
   // move lists every lesson on the day; a room move narrows to the from-room.

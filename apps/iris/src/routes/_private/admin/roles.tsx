@@ -9,9 +9,15 @@ import { RolesTable } from '@/components/admin/roles-table';
 import { StatCard } from '@/components/admin/stat-card';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { useRoles } from '@/hooks/admin-users';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/roles')({
   component: AdminRolesPage,
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(context.queryClient, orpc.roles.list.queryOptions()),
+      prefetch(context.queryClient, orpc.roles.permissions.queryOptions()),
+    ]),
 });
 
 function AdminRolesPage() {

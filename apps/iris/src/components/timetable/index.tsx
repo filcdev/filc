@@ -1,6 +1,7 @@
+import { useSession } from '@filcdev/auth/client';
 import { Empty } from '@filcdev/ui/components/empty';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { CalendarX } from 'lucide-react';
@@ -43,10 +44,7 @@ import {
   useTimetableUserSettings,
 } from '@/hooks/timetable-public';
 import { Route, type searchSchema } from '@/routes/_public/index';
-import { useApiMutation } from '@/utils/api';
-import { authClient } from '@/utils/authentication';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { orpc } from '@/utils/orpc';
 
 // Helpers
 const getActiveSelectionId = (
@@ -246,7 +244,7 @@ const renderTimetableBody = (
 export function TimetableView() {
   const search = Route.useSearch();
   const { i18n, t } = useTranslation();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useSession();
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
 
@@ -259,35 +257,23 @@ export function TimetableView() {
     : {};
 
   // Mutation to save class color
-  const colorMutation = useApiMutation({
-    mutationFn: async ({
-      subject,
-      colorIndex,
-    }: {
-      subject: string;
-      colorIndex: number;
-    }) => {
-      const newColors = { ...userColors, [subject]: colorIndex };
-      const res = await api.notifications.settings.$patch({
-        json: { timetableClassColors: newColors },
-      });
-      if (!res) {
-        throw new Error('Failed to save color');
-      }
-      return res;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.notifications.settings(),
-      });
-    },
-  });
+  const colorMutation = useMutation(
+    orpc.notifications.updateSettings.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: orpc.notifications.settings.key(),
+        });
+      },
+    })
+  );
 
   const handleColorChange = useCallback(
     (subject: string, colorIndex: number) => {
-      colorMutation.mutate({ colorIndex, subject });
+      colorMutation.mutate({
+        timetableClassColors: { ...userColors, [subject]: colorIndex },
+      });
     },
-    [colorMutation]
+    [colorMutation, userColors]
   );
 
   // Timetable query (all timetables)

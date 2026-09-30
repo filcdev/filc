@@ -34,7 +34,7 @@ export function NotificationViewerDialog({
 
   useEffect(() => {
     if (open && notification && !notification.read) {
-      markReadMutation.mutate(notification.id);
+      markReadMutation.mutate({ id: notification.id });
     }
   }, [open, notification, markReadMutation.mutate]);
 
@@ -61,7 +61,7 @@ export function NotificationViewerDialog({
 
         <DialogFooter>
           <Button
-            onClick={() => markReadMutation.mutate(notification.id)}
+            onClick={() => markReadMutation.mutate({ id: notification.id })}
             size="sm"
             variant="ghost"
           >

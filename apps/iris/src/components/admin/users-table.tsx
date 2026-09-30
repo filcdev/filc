@@ -8,17 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
-import type { InferResponseType } from 'hono';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SortIcon } from '@/components/util/sort-icon';
-import type { api } from '@/utils/hc';
+import type { User } from '@/hooks/admin-users';
 import type { PaginationProps } from './admin.types';
 import { UserDialog } from './user-dialog';
-
-type User = NonNullable<
-  InferResponseType<typeof api.users.index.$get>['data']
->['users'][number];
 
 type SortColumn = 'name' | 'email' | 'cohort' | 'roles';
 

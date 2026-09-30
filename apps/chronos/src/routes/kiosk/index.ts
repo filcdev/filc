@@ -3,38 +3,19 @@ import {
   navigatorKioskConfigSchema,
   tvKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
-import {
-  createKioskSchema,
-  kioskIdParamsSchema,
-  updateKioskSchema,
-} from '@filcdev/api/domains/kiosk/crud';
 import { permissions } from '@filcdev/api/permissions';
-import { zValidator } from '@hono/zod-validator';
 import { getLogger } from '@logtape/logtape';
 import { asc, eq } from 'drizzle-orm';
-import { HTTPException } from 'hono/http-exception';
-import { describeRoute, resolver } from 'hono-openapi';
-import { StatusCodes } from 'http-status-codes';
 import { db } from '#database';
 import { kiosk } from '#database/schema/kiosk';
-import { authRouter } from '#middleware/auth';
-import { badRequest, conflict, created, notFound, ok } from '#utils/http';
-import {
-  kioskListResponseSchema,
-  kioskResponseSchema,
-} from '#utils/kiosk/schemas';
-import { filcExt } from '#utils/openapi';
-import { kioskFactory } from './_factory';
+import { requireAuthorization } from '#middleware/auth';
+import { base } from '#orpc';
+import { badRequest, conflict, notFound } from '#utils/http';
 
 const logger = getLogger(['chronos', 'kiosk']);
 
 const MACHINE_ID_CONSTRAINT = 'kiosk_machine_id_unique';
 const UNIQUE_VIOLATION = '23505';
-
-const { schema: createRequestSchema } =
-  await resolver(createKioskSchema).toOpenAPISchema();
-const { schema: updateRequestSchema } =
-  await resolver(updateKioskSchema).toOpenAPISchema();
 
 /**
  * The discriminator and the config blob arrive as separate fields, so the blob
@@ -78,117 +59,52 @@ function isMachineIdConflict(error: unknown): boolean {
   return false;
 }
 
-export const listKiosksRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt(
-      'Kiosk',
-      '@unit KioskListResponse @field(.kiosks, List<Kiosk>)',
-      true
-    ),
-    description: 'List all kiosks',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskListResponseSchema),
-          },
-        },
-        description: 'Successful Response',
-      },
-    },
-    tags: ['Kiosk'],
-  }),
-  ...authRouter(permissions.kiosksManage),
-  async (c) => {
+export const listKiosks = base.kiosk.list
+  .use(requireAuthorization(permissions.kiosksManage))
+  .handler(async () => {
     const kiosks = await db.select().from(kiosk).orderBy(asc(kiosk.name));
 
-    return ok(c, { kiosks });
-  }
-);
+    return { kiosks };
+  });
 
-export const createKioskRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Kiosk', '@unit KioskResponse @field(.kiosk, Kiosk)', true),
-    description: 'Register a kiosk',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: createRequestSchema,
-        },
-      },
-    },
-    responses: {
-      201: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskResponseSchema),
-          },
-        },
-        description: 'Kiosk created',
-      },
-    },
-    tags: ['Kiosk'],
-  }),
-  ...authRouter(permissions.kiosksManage),
-  zValidator('json', createKioskSchema),
-  async (c) => {
-    const payload = c.req.valid('json');
-    const config = parseKioskConfig(payload.kind, payload.config);
+export const createKiosk = base.kiosk.create
+  .use(requireAuthorization(permissions.kiosksManage))
+  .handler(async ({ errors, input }) => {
+    const config = parseKioskConfig(input.kind, input.config);
 
+    let inserted: typeof kiosk.$inferSelect | undefined;
     try {
-      const [inserted] = await db
+      [inserted] = await db
         .insert(kiosk)
         .values({
           config,
-          kind: payload.kind,
-          machineId: payload.machineId,
-          name: payload.name,
+          kind: input.kind,
+          machineId: input.machineId,
+          name: input.name,
         })
         .returning();
-
-      return created(c, { kiosk: inserted });
     } catch (error) {
       if (isMachineIdConflict(error)) {
         throw conflict('A kiosk with this machine id already exists.');
       }
       logger.error('Failed to create kiosk', { error });
-      throw new HTTPException(StatusCodes.INTERNAL_SERVER_ERROR, {
+      throw errors.INTERNAL({
+        cause: error,
         message: 'Failed to create kiosk',
       });
     }
-  }
-);
 
-export const updateKioskRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Kiosk', '@unit KioskResponse @field(.kiosk, Kiosk)', true),
-    description: 'Update a kiosk',
-    requestBody: {
-      content: {
-        'application/json': {
-          schema: updateRequestSchema,
-        },
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskResponseSchema),
-          },
-        },
-        description: 'Kiosk updated',
-      },
-      404: { description: 'Kiosk not found' },
-    },
-    tags: ['Kiosk'],
-  }),
-  ...authRouter(permissions.kiosksManage),
-  zValidator('param', kioskIdParamsSchema),
-  zValidator('json', updateKioskSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
-    const payload = c.req.valid('json');
+    if (!inserted) {
+      throw errors.INTERNAL({ message: 'Failed to create kiosk' });
+    }
+
+    return { kiosk: inserted };
+  });
+
+export const updateKiosk = base.kiosk.update
+  .use(requireAuthorization(permissions.kiosksManage))
+  .handler(async ({ input }) => {
+    const { id, ...payload } = input;
 
     const [existing] = await db.select().from(kiosk).where(eq(kiosk.id, id));
 
@@ -207,7 +123,7 @@ export const updateKioskRoute = kioskFactory.createHandlers(
     };
 
     if (Object.keys(changes).length === 0) {
-      return ok(c, { kiosk: existing });
+      return { kiosk: existing };
     }
 
     const [updated] = await db
@@ -220,31 +136,13 @@ export const updateKioskRoute = kioskFactory.createHandlers(
       throw notFound('Kiosk not found');
     }
 
-    return ok(c, { kiosk: updated });
-  }
-);
+    return { kiosk: updated };
+  });
 
-export const deleteKioskRoute = kioskFactory.createHandlers(
-  describeRoute({
-    ...filcExt('Kiosk', '@unit KioskResponse @field(.kiosk, Kiosk)', true),
-    description: 'Delete a kiosk',
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: resolver(kioskResponseSchema),
-          },
-        },
-        description: 'Kiosk deleted',
-      },
-      404: { description: 'Kiosk not found' },
-    },
-    tags: ['Kiosk'],
-  }),
-  ...authRouter(permissions.kiosksManage),
-  zValidator('param', kioskIdParamsSchema),
-  async (c) => {
-    const { id } = c.req.valid('param');
+export const deleteKiosk = base.kiosk.delete
+  .use(requireAuthorization(permissions.kiosksManage))
+  .handler(async ({ input }) => {
+    const { id } = input;
 
     const [deleted] = await db
       .delete(kiosk)
@@ -255,6 +153,5 @@ export const deleteKioskRoute = kioskFactory.createHandlers(
       throw notFound('Kiosk not found');
     }
 
-    return ok(c, { kiosk: deleted });
-  }
-);
+    return { kiosk: deleted };
+  });

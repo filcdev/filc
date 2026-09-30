@@ -1,54 +1,55 @@
-import { doorlockFactory } from '#routes/doorlock/_factory';
 import {
-  createCardRoute,
-  deleteCardRoute,
-  listCardsRoute,
-  listDoorlockUsersRoute,
-  updateCardRoute,
+  createCard,
+  deleteCard,
+  listCards,
+  listDoorlockUsers,
+  updateCard,
 } from '#routes/doorlock/cards';
 import {
-  createDeviceRoute,
-  deleteDeviceRoute,
-  listDevicesRoute,
-  updateDeviceRoute,
+  createDevice,
+  deleteDevice,
+  listDevices,
+  updateDevice,
 } from '#routes/doorlock/devices';
-import { exportLogsRoute } from '#routes/doorlock/export';
-import { listLogsRoute } from '#routes/doorlock/logs';
+import { exportLogs } from '#routes/doorlock/export';
+import { listLogs } from '#routes/doorlock/logs';
+import { triggerBulkOta, triggerDeviceOta } from '#routes/doorlock/ota';
 import {
-  triggerBulkOtaRoute,
-  triggerDeviceOtaRoute,
-} from '#routes/doorlock/ota';
-import {
-  activateVirtualCardRoute,
-  listSelfCardsRoute,
-  updateSelfCardFrozenRoute,
+  activateVirtualCard,
+  listSelfCards,
+  updateSelfCardFrozen,
 } from '#routes/doorlock/self';
-import { deviceStatsRoute, doorlockStatsRoute } from '#routes/doorlock/stats';
-import { websocketHandler } from '#routes/doorlock/websocket-handler';
+import { deviceStats, doorlockStats } from '#routes/doorlock/stats';
 
-export const doorlockRouter = doorlockFactory
-  .createApp()
-  .get('/ws', ...websocketHandler)
-  // Device routes
-  .get('/devices', ...listDevicesRoute)
-  .post('/devices', ...createDeviceRoute)
-  .put('/devices/:id', ...updateDeviceRoute)
-  .delete('/devices/:id', ...deleteDeviceRoute)
-  .get('/devices/:id/stats', ...deviceStatsRoute)
-  // OTA routes
-  .post('/devices/:id/update', ...triggerDeviceOtaRoute)
-  .post('/devices/update', ...triggerBulkOtaRoute)
-  // Card routes
-  .get('/cards', ...listCardsRoute)
-  .post('/cards', ...createCardRoute)
-  .put('/cards/:id', ...updateCardRoute)
-  .delete('/cards/:id', ...deleteCardRoute)
-  .get('/cards/users', ...listDoorlockUsersRoute)
-  // Logs & stats
-  .get('/logs', ...listLogsRoute)
-  .get('/logs/export', ...exportLogsRoute)
-  .get('/stats/overview', ...doorlockStatsRoute)
-  // Self-service routes
-  .get('/self/cards', ...listSelfCardsRoute)
-  .put('/self/cards/:id/frozen', ...updateSelfCardFrozenRoute)
-  .post('/self/cards/:id/activate', ...activateVirtualCardRoute);
+export const doorlockRouter = {
+  cards: {
+    create: createCard,
+    delete: deleteCard,
+    list: listCards,
+    update: updateCard,
+    users: listDoorlockUsers,
+  },
+  devices: {
+    create: createDevice,
+    delete: deleteDevice,
+    list: listDevices,
+    stats: deviceStats,
+    triggerOta: triggerDeviceOta,
+    update: updateDevice,
+    updateAll: triggerBulkOta,
+  },
+  logs: {
+    export: exportLogs,
+    list: listLogs,
+  },
+  self: {
+    cards: {
+      activate: activateVirtualCard,
+      list: listSelfCards,
+      setFrozen: updateSelfCardFrozen,
+    },
+  },
+  stats: {
+    overview: doorlockStats,
+  },
+};

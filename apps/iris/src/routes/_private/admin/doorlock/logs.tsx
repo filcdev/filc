@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Calendar } from '@filcdev/ui/components/calendar';
@@ -58,7 +59,7 @@ import {
   useDoorlockLogs,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
+import { orpc, prefetch } from '@/utils/orpc';
 
 type EventFilter = 'all' | 'virtual' | 'physical';
 type LogSortColumn =
@@ -107,6 +108,14 @@ export const Route = createFileRoute('/_private/admin/doorlock/logs')({
       <LogsPage />
     </PermissionGuard>
   ),
+  // The log list itself is filtered by local state (including a "last 7 days"
+  // range computed at render time), so only the two pickers it opens with are
+  // worth prefetching.
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(context.queryClient, orpc.doorlock.devices.list.queryOptions()),
+      prefetch(context.queryClient, orpc.doorlock.cards.list.queryOptions()),
+    ]),
 });
 
 type DateRange = {
@@ -173,7 +182,7 @@ function useLogStats(
 }
 
 function LogsPage() {
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -238,13 +247,13 @@ function LogsPage() {
     return {
       authorizedDevices: [] as Array<{ id: string; name: string }>,
       cardData: pendingCardData,
-      createdAt: '',
+      createdAt: new Date(),
       enabled: true,
       frozen: false,
       id: '',
       name: '',
       owner: null,
-      updatedAt: '',
+      updatedAt: new Date(),
       userId: null,
     } satisfies DoorlockCard;
   }, [pendingCardData]);
@@ -669,11 +678,13 @@ type LogTableRowProps = {
   onAddCard?: (cardData: string | null) => void;
 };
 
+// The list renders up to 500 rows in one pass; `content-visibility` on the row
+// keeps the offscreen ones out of layout and paint without a virtualizer.
 function LogTableRow({ log, onAddCard }: LogTableRowProps) {
   const buttonMeta = buildButtonMeta(log);
 
   return (
-    <TableRow>
+    <TableRow className="[contain-intrinsic-size:auto_44px] [content-visibility:auto]">
       <TableCell>
         {dayjs(log.timestamp).format('YYYY/MM/DD HH:mm:ss')}
       </TableCell>
