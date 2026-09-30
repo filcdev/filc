@@ -5,10 +5,6 @@ import { user as userTable } from '#database/schema/authentication';
 import { notification, userPreferences } from '#modules/notifications/schema';
 import { lessonCohortMTM } from '#modules/timetable/schema';
 import { enqueue } from '#utils/notifications/queue';
-import {
-  resolveSubstituteTeacherAudience,
-  type SubstitutionTeacherPayload,
-} from '#utils/notifications/substitution-teacher';
 import type {
   AudienceUser,
   NotificationContent,
@@ -45,7 +41,7 @@ export function cancelPendingNotification(
   }
 }
 
-async function resolveAudienceForLessonChange(
+export async function resolveAudienceForLessonChange(
   payload: unknown
 ): Promise<AudienceUser[]> {
   const p = payload as { lessonIds?: string[] };
@@ -82,7 +78,7 @@ async function resolveAudienceByCohortIds(
   return enrichUsersWithLanguage(users);
 }
 
-async function resolveAudienceByCohortOrAll(
+export async function resolveAudienceByCohortOrAll(
   cohortIds?: string[]
 ): Promise<AudienceUser[]> {
   let users: { id: string; email: string; cohortId: string | null }[];
@@ -108,7 +104,7 @@ async function resolveAudienceByCohortOrAll(
   return enrichUsersWithLanguage(users);
 }
 
-async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
+export async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
   const users = await db
     .select({
       cohortId: userTable.cohortId,
@@ -120,7 +116,7 @@ async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
   return enrichUsersWithLanguage(users);
 }
 
-async function resolveAudienceForDoorlock(
+export async function resolveAudienceForDoorlock(
   payload: unknown
 ): Promise<AudienceUser[]> {
   const p = payload as { userId: string };
@@ -155,7 +151,7 @@ async function resolveAudienceForDoorlock(
   ];
 }
 
-async function resolveAudienceForCohortReselection(
+export async function resolveAudienceForCohortReselection(
   payload: unknown
 ): Promise<AudienceUser[]> {
   const p = payload as { userId: string };
@@ -219,43 +215,6 @@ async function enrichUsersWithLanguage(
   });
 }
 
-const audienceResolvers: Record<
-  string,
-  (payload: unknown) => Promise<AudienceUser[]>
-> = {
-  announcement: (p) =>
-    resolveAudienceByCohortOrAll((p as { cohortIds?: string[] }).cohortIds),
-  blog_post: () => resolveAudienceForBlogPost(),
-  cohort_reselection_required: resolveAudienceForCohortReselection,
-  doorlock_card_used: resolveAudienceForDoorlock,
-  moved_lesson: resolveAudienceForLessonChange,
-  substitution: resolveAudienceForLessonChange,
-  substitution_teacher: (payload) =>
-    resolveSubstituteTeacherAudience(payload as SubstitutionTeacherPayload),
-  system_message: (p) =>
-    resolveAudienceByCohortOrAll((p as { cohortIds?: string[] }).cohortIds),
-};
-
-const preferenceKeys: Record<
-  string,
-  keyof {
-    substitution: boolean;
-    movedLesson: boolean;
-    announcement: boolean;
-    systemMessage: boolean;
-    blogPost: boolean;
-    doorlockCardUsed: boolean;
-  }
-> = {
-  announcement: 'announcement',
-  blog_post: 'blogPost',
-  doorlock_card_used: 'doorlockCardUsed',
-  moved_lesson: 'movedLesson',
-  substitution: 'substitution',
-  substitution_teacher: 'substitution',
-  system_message: 'systemMessage',
-};
-
 async function fireNotification(
   type: NotificationType,
   payload: unknown
@@ -269,10 +228,7 @@ async function fireNotification(
   }
 
   try {
-    const resolver = audienceResolvers[type];
-    const audience = resolver
-      ? await resolver(payload)
-      : await handler.getAudience(payload);
+    const audience = await handler.getAudience(payload);
 
     if (audience.length === 0) {
       logger.debug('Empty audience for notification type: {type}', { type });
@@ -286,7 +242,7 @@ async function fireNotification(
         .where(eq(userPreferences.userId, user.id))
         .limit(1);
 
-      const prefKey = preferenceKeys[type];
+      const prefKey = handler.preferenceKey;
       if (prefs && prefKey && !prefs.notificationPreferences[prefKey]) {
         logger.debug('User {userId} opted out of notification type {type}', {
           type,

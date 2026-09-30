@@ -5,13 +5,7 @@ import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { apiKeySchema } from '#database/schema/api-keys';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
-import { bugReportSchema } from '#modules/bug-report/schema';
-import { doorlockSchema } from '#modules/doorlock/schema';
-import { kioskSchema } from '#modules/kiosk/schema';
-import { navigatorSchema } from '#modules/navigator/schema';
-import { newsSchema } from '#modules/news/schema';
-import { notificationsSchema } from '#modules/notifications/schema';
-import { timetableSchema } from '#modules/timetable/schema';
+import { moduleSchemas } from '#modules/schemas';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'drizzle']);
@@ -39,17 +33,16 @@ if (env.mode === 'production') {
   client = globalConn.connection;
 }
 
+/**
+ * The shared identity and RBAC tables, plus every module's own tables. The two
+ * are merged rather than concatenated so a module's tables are named once, in
+ * `src/modules/schemas.ts`, and never here.
+ */
 const schema = {
   ...apiKeySchema,
   ...authenticationSchema,
   ...authorizationSchema,
-  ...bugReportSchema,
-  ...doorlockSchema,
-  ...kioskSchema,
-  ...navigatorSchema,
-  ...newsSchema,
-  ...notificationsSchema,
-  ...timetableSchema,
+  ...moduleSchemas,
 };
 
 export const db = drizzle({

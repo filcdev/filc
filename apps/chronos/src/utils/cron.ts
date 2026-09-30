@@ -1,8 +1,6 @@
 import { getLogger } from '@logtape/logtape';
 import Baker from 'cronbake';
-import { cleanUpOldDeviceAuditLogs } from '#modules/doorlock/utils/cards';
-import { cleanupOrphanedCohorts } from '#modules/timetable/utils/cleanup';
-import { cleanUpOldNotifications } from '#utils/notifications/cleanup';
+import { modules } from '#modules';
 
 const logger = getLogger(['chronos', 'cron']);
 
@@ -14,26 +12,17 @@ export const baker = Baker.create({
   },
 });
 
+/**
+ * Register every module's scheduled work. A job lives in the module that owns
+ * the thing it maintains, so this is the only file that has to know a module
+ * exists.
+ */
 export const setupCronJobs = () => {
-  baker.add({
-    callback: cleanUpOldDeviceAuditLogs,
-    cron: '@monthly',
-    name: 'clean-up-old-card-audit-logs',
-  });
-
-  baker.add({
-    callback: cleanUpOldNotifications,
-    cron: '@daily',
-    name: 'clean-up-old-notifications',
-  });
-
-  baker.add({
-    callback: async () => {
-      await cleanupOrphanedCohorts();
-    },
-    cron: '@daily',
-    name: 'clean-up-orphaned-cohorts',
-  });
+  for (const module of modules) {
+    for (const job of module.jobs ?? []) {
+      baker.add(job);
+    }
+  }
 
   const jobs = baker.getJobNames();
 

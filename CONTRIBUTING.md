@@ -86,7 +86,7 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 
   CI runs the same checks (without auto-fix) on every push and PR.
 
-- **Schema changes**: edit sources under `apps/chronos/src/database/schema`, then generate and commit the migration:
+- **Schema changes**: edit the owning module's `apps/chronos/src/modules/<feature>/schema.ts` (the shared identity/RBAC tables stay in `apps/chronos/src/database/schema`), add the feature's tables to `apps/chronos/src/modules/schemas.ts`, then generate and commit the migration:
 
   ```bash
   cd apps/chronos
