@@ -1,18 +1,18 @@
 import { rateLimit } from '#middleware/rate-limit';
+import { bugReportRouter } from '#modules/bug-report/_router';
+import { cohortRouter } from '#modules/cohort/_router';
+import { dashboardRouter } from '#modules/dashboard/_router';
+import { doorlockRouter } from '#modules/doorlock/_router';
+import { healthRouter } from '#modules/health/_router';
+import { kioskRouter } from '#modules/kiosk/_router';
+import { navigatorRouter } from '#modules/navigator/_router';
+import { newsRouter } from '#modules/news/_router';
+import { notificationsRouter } from '#modules/notifications/_router';
+import { pingRouter } from '#modules/ping/_router';
+import { rolesRouter } from '#modules/roles/_router';
+import { timetableRouter } from '#modules/timetable/_router';
+import { usersRouter } from '#modules/users/_router';
 import { base } from '#orpc';
-import { bugReportRouter } from '#routes/bug-report/_router';
-import { cohortRouter } from '#routes/cohort/_router';
-import { dashboardRouter } from '#routes/dashboard/_router';
-import { doorlockRouter } from '#routes/doorlock/_router';
-import { healthRouter } from '#routes/health/_router';
-import { kioskRouter } from '#routes/kiosk/_router';
-import { navigatorRouter } from '#routes/navigator/_router';
-import { newsRouter } from '#routes/news/_router';
-import { notificationsRouter } from '#routes/notifications/_router';
-import { pingRouter } from '#routes/ping/_router';
-import { rolesRouter } from '#routes/roles/_router';
-import { timetableRouter } from '#routes/timetable/_router';
-import { usersRouter } from '#routes/users/_router';
 
 /**
  * The implemented contract. `base.router` type-checks this object against

@@ -42,12 +42,12 @@ import {
   navigatorLift,
   navigatorStair,
   navigatorTranslation,
-} from '#database/schema/navigator';
+} from '#modules/navigator/schema';
 import {
   building as buildingTable,
   classroom as classroomTable,
   classroomType as classroomTypeTable,
-} from '#database/schema/timetable';
+} from '#modules/timetable/schema';
 import { configureLogger } from '#utils/logger';
 
 await configureLogger('chronos');

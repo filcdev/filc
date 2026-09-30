@@ -12,19 +12,20 @@ import dayjs from 'dayjs';
 import { eq, inArray } from 'drizzle-orm';
 import { db, prepareDb } from '#database/index';
 import { user } from '#database/schema/authentication';
+import { timetableImportStore } from '#database/timetable-import-store';
 import {
   auditLog,
   card,
   cardDevice,
   device,
   deviceHealth,
-} from '#database/schema/doorlock';
+} from '#modules/doorlock/schema';
 import {
   announcement,
   announcementCohortMtm,
   blogPost,
   systemMessage,
-} from '#database/schema/news';
+} from '#modules/news/schema';
 import {
   classroom,
   cohort,
@@ -37,8 +38,7 @@ import {
   substitution,
   substitutionLessonMTM,
   teacher,
-} from '#database/schema/timetable';
-import { timetableImportStore } from '#database/timetable-import-store';
+} from '#modules/timetable/schema';
 import { configureLogger } from '#utils/logger';
 
 const CANCELLATION_PROBABILITY = 0.3;

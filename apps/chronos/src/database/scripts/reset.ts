@@ -6,8 +6,8 @@ import { db } from '#database/index';
 import { apiKeySchema } from '#database/schema/api-keys';
 import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
-import { doorlockSchema } from '#database/schema/doorlock';
-import { timetableSchema } from '#database/schema/timetable';
+import { doorlockSchema } from '#modules/doorlock/schema';
+import { timetableSchema } from '#modules/timetable/schema';
 import { configureLogger } from '#utils/logger';
 
 await configureLogger('chronos');

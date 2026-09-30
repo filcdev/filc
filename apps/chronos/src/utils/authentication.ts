@@ -9,7 +9,7 @@ import {
   authenticationSchema,
   user as userTable,
 } from '#database/schema/authentication';
-import { teacher } from '#database/schema/timetable';
+import { teacher } from '#modules/timetable/schema';
 import { getUserPermissions } from '#utils/authorization';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';

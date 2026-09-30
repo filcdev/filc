@@ -14,14 +14,14 @@ import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4';
 import type { ChronosContext } from '#_types/globals';
 import { prepareDb } from '#database';
 import { resolveCaller } from '#middleware/auth';
-import { appRouter } from '#router';
 import {
   type DeviceSocketData,
   DOORLOCK_SOCKET_PATH,
   handlers as deviceSocketHandlers,
   upgrade as upgradeDeviceSocket,
-} from '#routes/doorlock/device-socket';
-import { handleUnsubscribe } from '#routes/notifications/unsubscribe-html';
+} from '#modules/doorlock/device-socket';
+import { handleUnsubscribe } from '#modules/notifications/unsubscribe-html';
+import { appRouter } from '#router';
 import { auth } from '#utils/authentication';
 import { initializeRBAC } from '#utils/authorization';
 import { setupCronJobs } from '#utils/cron';
