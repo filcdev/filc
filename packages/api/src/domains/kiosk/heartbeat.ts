@@ -19,8 +19,12 @@ export type KioskHeartbeatRequest = z.infer<typeof kioskHeartbeatRequestSchema>;
  * kind so it can show why it is idle, and an enabled box additionally gets its
  * stored config. `config` is deliberately absent for unknown and disabled
  * boxes.
+ *
+ * A plain union, not a discriminated one: `registered` cannot pick a branch on
+ * its own, because two of the three shapes are `registered: true` and differ
+ * only in `enabled`. The declared order does the discriminating.
  */
-export const kioskHeartbeatResponseSchema = z.discriminatedUnion('registered', [
+export const kioskHeartbeatResponseSchema = z.union([
   z.object({ registered: z.literal(false) }),
   z.object({
     enabled: z.literal(false),
