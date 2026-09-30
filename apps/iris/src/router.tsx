@@ -1,8 +1,8 @@
 import { ORPCError } from '@orpc/client';
 import { captureException } from '@sentry/react';
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
-import { createRouter } from '@tanstack/react-router';
-import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
+import { type AnyRouter, createRouter } from '@tanstack/react-router';
+import { setupSsrQuery } from '@/utils/ssr-query';
 
 import { routeTree } from './routeTree.gen';
 
@@ -49,7 +49,7 @@ export function getRouter() {
     scrollRestoration: true,
   });
 
-  setupRouterSsrQueryIntegration({ queryClient, router });
+  setupSsrQuery({ queryClient, router: router as AnyRouter });
 
   return router;
 }

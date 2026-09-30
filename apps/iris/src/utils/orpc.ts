@@ -25,7 +25,7 @@ const client = createIsomorphicFn()
       // same deployment the browser would (iris and Chronos share one public
       // origin). `requestOrigin` honours `x-forwarded-*`, which `getRequest`
       // does not — behind the platform proxy the two disagree.
-      url: () => `${requestOrigin() ?? apiBaseUrl}/rpc`,
+      url: () => `${requestOrigin() ?? ''}${apiBaseUrl}/rpc`,
     })
   )();
 

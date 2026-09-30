@@ -23,7 +23,6 @@
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "1.170.40",
     "@tanstack/react-router-devtools": "^1.167.1",
-    "@tanstack/react-router-ssr-query": "1.167.3",
     "@tanstack/react-start": "1.168.59",
     "better-auth": "catalog:",
     "dayjs": "^1.11.23",
