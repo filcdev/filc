@@ -11,6 +11,19 @@ import { requestOrigin } from '@/utils/request';
 /** The API base as a URL prefix: image URLs are built from it by hand. */
 export const apiBaseUrl = '/api';
 
+/**
+ * Absolute origin for a server render whose own origin could not be read.
+ *
+ * oRPC builds a `URL` from this value, so a relative one is fatal: the call
+ * throws `Failed to construct 'URL': Invalid URL` before anything is sent.
+ * That is why the fallback has to be absolute and not `apiBaseUrl`. In
+ * development it points straight at Chronos, which is also where the Vite
+ * proxy sends `/api`; in production the request origin is always available and
+ * this is only a safety net.
+ */
+const fallbackApiOrigin =
+  import.meta.env.VITE_API_ORIGIN ?? 'http://localhost:3001';
+
 const client = createIsomorphicFn()
   .client(() =>
     createApiClient({
@@ -25,7 +38,7 @@ const client = createIsomorphicFn()
       // same deployment the browser would (iris and Chronos share one public
       // origin). `requestOrigin` honours `x-forwarded-*`, which `getRequest`
       // does not — behind the platform proxy the two disagree.
-      url: () => `${requestOrigin() ?? ''}${apiBaseUrl}/rpc`,
+      url: () => `${requestOrigin() ?? fallbackApiOrigin}${apiBaseUrl}/rpc`,
     })
   )();
 
