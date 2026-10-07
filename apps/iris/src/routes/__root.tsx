@@ -17,6 +17,7 @@ import { useNotificationSettings } from '@/hooks/notifications';
 import { useThemeSync } from '@/hooks/use-theme-sync';
 import { createI18n } from '@/utils/i18n';
 import { fetchLanguage, fetchSession } from '@/utils/request';
+import '@/global.css';
 import { setSentryUser } from '@/utils/telemetry';
 
 export const Route = createRootRouteWithContext<{

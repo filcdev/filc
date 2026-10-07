@@ -5,8 +5,6 @@ import { hydrateRoot } from 'react-dom/client';
 import { initializeTelemetry } from '@/utils/telemetry';
 import { reportWebVitals } from '@/utils/web-vitals';
 
-import './global.css';
-
 initializeTelemetry();
 
 hydrateRoot(
