@@ -1,8 +1,7 @@
 {
   "extends": "@tsconfig/strictest/tsconfig.json",
   "include": ["**/*.ts", "**/*.tsx"],
-  /* server.ts imports the build output, which only exists after a build. */
-  "exclude": ["node_modules", "server.ts"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",

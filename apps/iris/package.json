@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun --bun vite",
     "build": "bun --bun vite build",
-    "start": "bun run server.ts",
+    "start": "srvx serve --prod -s ../client dist/server/server.js",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -38,6 +38,7 @@
     "react-i18next": "^17.0.16",
     "recharts": "catalog:",
     "sonner": "catalog:",
+    "srvx": "^1.0.5",
     "tailwindcss": "catalog:",
     "web-vitals": "^6.2.3",
     "write-excel-file": "^4.1.1",
