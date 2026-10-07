@@ -5,7 +5,6 @@ import {
   pgTable,
   text,
   timestamp,
-  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -18,7 +17,7 @@ export const user = pgTable('user', {
   image: text('image'),
   name: text('name').notNull(),
   nickname: text('nickname'),
-  roles: text('roles').array().notNull(),
+  roles: text('roles').array().default(['user']).notNull(),
   updatedAt: timestamp('updated_at')
     .$onUpdate(() => new Date())
     .notNull(),
@@ -52,7 +51,6 @@ export const account = pgTable(
     createdAt: timestamp('created_at').notNull(),
     id: uuid('id').default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
     idToken: text('id_token'),
-    issuer: text('issuer').notNull(),
     password: text('password'),
     providerId: text('provider_id').notNull(),
     refreshToken: text('refresh_token'),
@@ -65,13 +63,7 @@ export const account = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
   },
-  (table) => [
-    uniqueIndex('account_issuer_accountId_uidx').on(
-      table.issuer,
-      table.accountId
-    ),
-    index('account_userId_idx').on(table.userId),
-  ]
+  (table) => [index('account_userId_idx').on(table.userId)]
 );
 
 export const verification = pgTable(
