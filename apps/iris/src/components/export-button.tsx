@@ -5,12 +5,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@filcdev/ui/components/dropdown-menu';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export type ExportColumn = {
+  /** Header text, already localized by the consumer. */
   header: string;
   key: string;
 };
@@ -28,47 +29,102 @@ type ExportButtonProps = {
   filenamePrefix: string;
   /** Title shown at the top of the generated PDF. */
   pdfTitle: string;
-  /** Columns to render in the PDF table. */
+  /** Localized description of the exported range (PDF subtitle, heading row). */
+  rangeLabel: string;
+  /** Columns to render in the PDF and spreadsheet tables. */
   columns: ExportColumn[];
   /** Fetches the raw CSV text from the backend. */
   fetchCsv: () => Promise<string>;
 };
 
-const CSV_SPECIAL_CHARS = /[",\n\r]/;
-const CSV_QUOTE = /"/g;
-
-function escapeCsv(value: unknown): string {
-  const str = value === null || value === undefined ? '' : String(value);
-  if (CSV_SPECIAL_CHARS.test(str)) {
-    return `"${str.replace(CSV_QUOTE, '""')}"`;
+/**
+ * Read one CSV field starting at `start`, returning its decoded value and the
+ * offset just past it. A quoted field may contain commas, newlines and `""`
+ * escapes; an unquoted one stops at the next delimiter.
+ */
+function readCsvField(
+  text: string,
+  start: number
+): { next: number; value: string } {
+  if (text[start] !== '"') {
+    let end = start;
+    while (
+      end < text.length &&
+      text[end] !== ',' &&
+      text[end] !== '\n' &&
+      text[end] !== '\r'
+    ) {
+      end += 1;
+    }
+    return { next: end, value: text.slice(start, end) };
   }
-  return str;
+
+  let value = '';
+  let index = start + 1;
+  while (index < text.length) {
+    if (text[index] !== '"') {
+      value += text[index];
+      index += 1;
+      continue;
+    }
+    if (text[index + 1] === '"') {
+      value += '"';
+      index += 2;
+      continue;
+    }
+    // Closing quote. An unterminated field simply ends with the text.
+    return { next: index + 1, value };
+  }
+  return { next: index, value };
 }
 
+/**
+ * Parse RFC 4180 CSV, including quoted fields with embedded commas, quotes and
+ * newlines. The substitution export puts `'; '`-joined subject and cohort lists
+ * and free-text comments in single fields, so a naive `split(',')` would both
+ * split those values and misalign every following column.
+ */
 export function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.trim().split('\n');
-  if (lines.length <= 1) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let offset = 0;
+
+  while (offset < text.length) {
+    const { next, value } = readCsvField(text, offset);
+    row.push(value);
+    offset = next;
+
+    if (text[offset] === ',') {
+      offset += 1;
+      continue;
+    }
+
+    // A CRLF pair is one record separator, not two.
+    while (text[offset] === '\n' || text[offset] === '\r') {
+      offset += 1;
+    }
+    rows.push(row);
+    row = [];
+  }
+
+  if (row.length > 0) {
+    rows.push(row);
+  }
+
+  const [header, ...body] = rows.filter((values) =>
+    values.some((value) => value !== '')
+  );
+  if (!header) {
     return [];
   }
-  const header = (lines[0] ?? '').split(',');
-  return lines.slice(1).map((line) => {
-    const cols = line.split(',');
-    const obj: Record<string, string> = {};
-    header.forEach((h, i) => {
-      obj[h] = cols[i] ?? '';
-    });
-    return obj;
-  });
-}
 
-export function rowsToCsv(
-  header: string[],
-  rows: Record<string, unknown>[]
-): string {
-  const lines = rows.map((row) =>
-    header.map((col) => escapeCsv(row[col])).join(',')
-  );
-  return [header.join(','), ...lines].join('\n');
+  return body.map((values) => {
+    const record: Record<string, string> = {};
+    for (const [index, key] of header.entries()) {
+      record[key] = values[index] ?? '';
+    }
+    return record;
+  });
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -82,6 +138,10 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function exportFilename(prefix: string, extension: string): string {
+  return `${prefix}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+}
+
 export function ExportButton({
   columns,
   errorKey,
@@ -90,6 +150,7 @@ export function ExportButton({
   hideLabelOnMobile = false,
   labelKey = 'export',
   pdfTitle,
+  rangeLabel,
   successKey,
 }: ExportButtonProps) {
   const { t } = useTranslation();
@@ -101,8 +162,41 @@ export function ExportButton({
       const text = await fetchCsv();
       downloadBlob(
         new Blob([text], { type: 'text/csv;charset=utf-8' }),
-        `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`
+        exportFilename(filenamePrefix, 'csv')
       );
+      toast.success(t(successKey));
+    } catch {
+      toast.error(t(errorKey));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleXlsx = async () => {
+    setExporting(true);
+    try {
+      // Deliberately dynamic: keeps the spreadsheet writer out of the entry
+      // chunk until the user actually requests an export.
+      const { default: writeXlsxFile } = await import(
+        'write-excel-file/browser'
+      );
+      const text = await fetchCsv();
+      const rows = parseCsv(text);
+
+      const worksheet = [
+        columns.map((col) => ({
+          fontWeight: 'bold' as const,
+          value: col.header,
+        })),
+        ...rows.map((row) => columns.map((col) => row[col.key] ?? '')),
+      ];
+
+      const { toBlob } = writeXlsxFile(worksheet, {
+        columns: columns.map(() => ({ width: 24 })),
+        // The title doubles as the sheet name, which Excel caps at 31 chars.
+        sheet: pdfTitle.slice(0, 31),
+      });
+      downloadBlob(await toBlob(), exportFilename(filenamePrefix, 'xlsx'));
       toast.success(t(successKey));
     } catch {
       toast.error(t(errorKey));
@@ -127,13 +221,10 @@ export function ExportButton({
           columns={columns}
           pdfTitle={pdfTitle}
           rows={rows}
-          subtitle={t('export.rangeLabel')}
+          subtitle={rangeLabel}
         />
       ).toBlob();
-      downloadBlob(
-        blob,
-        `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.pdf`
-      );
+      downloadBlob(blob, exportFilename(filenamePrefix, 'pdf'));
       toast.success(t(successKey));
     } catch {
       toast.error(t(errorKey));
@@ -164,11 +255,15 @@ export function ExportButton({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={handleCsv}>
           <FileText className="h-4 w-4" />
-          CSV
+          {t('export.csv')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleXlsx}>
+          <FileSpreadsheet className="h-4 w-4" />
+          {t('export.excel')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handlePdf}>
           <FileText className="h-4 w-4" />
-          PDF
+          {t('export.pdf')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

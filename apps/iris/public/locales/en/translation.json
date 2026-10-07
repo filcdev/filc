@@ -755,7 +755,14 @@
     "exportError": "Failed to export logs"
   },
   "export": {
-    "rangeLabel": "All time"
+    "csv": "CSV",
+    "excel": "Excel",
+    "pdf": "PDF",
+    "rangeAll": "All time",
+    "rangeBetween": "{{from}} – {{to}}",
+    "rangeFrom": "From {{date}}",
+    "rangeUntil": "Until {{date}}",
+    "subjects": "Subjects"
   },
   "bugReports": {
     "title": "Bug reports",

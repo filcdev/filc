@@ -755,7 +755,14 @@
     "exportError": "Nem sikerült exportálni a naplókat"
   },
   "export": {
-    "rangeLabel": "Teljes időszak"
+    "csv": "CSV",
+    "excel": "Excel",
+    "pdf": "PDF",
+    "rangeAll": "Teljes időszak",
+    "rangeBetween": "{{from}} – {{to}}",
+    "rangeFrom": "{{date}} után",
+    "rangeUntil": "{{date}} előtt",
+    "subjects": "Tantárgyak"
   },
   "bugReports": {
     "title": "Hibajelentések",
