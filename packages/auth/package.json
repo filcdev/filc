@@ -14,12 +14,12 @@
     "better-auth": "catalog:"
   },
   "peerDependencies": {
-    "react": "^19"
+    "react": "catalog:"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "^2.0.8",
+    "@tsconfig/strictest": "catalog:",
     "@types/bun": "catalog:",
-    "@types/react": "^19.2.18",
+    "@types/react": "catalog:",
     "typescript": "catalog:"
   }
 }
