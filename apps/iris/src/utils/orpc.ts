@@ -28,7 +28,12 @@ const client = createIsomorphicFn()
   .client(() =>
     createApiClient({
       credentials: 'include',
-      url: '/api/rpc',
+      // Absolute, not the relative `/api/rpc`: oRPC's link codec builds a
+      // `URL` from this value, and the browser constructor rejects a relative
+      // one outright, so every browser-side call threw before it was sent.
+      // The page's own origin is the right host — iris and Chronos share one
+      // origin through the dev proxy and the platform proxy alike.
+      url: () => `${window.location.origin}${apiBaseUrl}/rpc`,
     })
   )
   .server(() =>
