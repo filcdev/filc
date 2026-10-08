@@ -103,3 +103,71 @@ export const timetableEditSchema = z.object({
   validFrom: z.date().optional(),
   validTo: z.date().optional(),
 });
+
+/**
+ * WiFi admin forms. These mirror the wire schemas in
+ * `@filcdev/api/domains/wifi/admin` without their transforms and defaults:
+ * TanStack Form's `validators` take a schema whose *input* type equals the
+ * form values, and a `z.default()`/`z.transform()` makes the input optional.
+ * The wire schema is still what the mutation sends — only validation runs here.
+ */
+// Mirrors the wire schema: the stored form is canonical (12 hex digits, no
+// separators) and an operator may type either form.
+const wifiMacSchema = z
+  .string()
+  .regex(
+    /^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$/,
+    'Invalid MAC address'
+  );
+
+export const WIFI_PASSWORD_MIN_LENGTH = 8;
+
+/**
+ * The user dialog's validator. A single factory (rather than a create/update
+ * pair) because TanStack Form's `validators` option takes one schema per hook:
+ * a ternary between two schema types is not assignable.
+ */
+export const wifiUserFormValidator = (isEditing: boolean) =>
+  z
+    .object({
+      allowedMacAddresses: z.array(wifiMacSchema).optional(),
+      banned: z.boolean(),
+      comment: z.string(),
+      password: z.string().max(256),
+      speedProfileId: z.string().nullable(),
+      username: z.string().min(1),
+    })
+    .refine(
+      (value) =>
+        value.password === '' ? isEditing : value.password.length >= 8,
+      {
+        message: `Password must be at least ${WIFI_PASSWORD_MIN_LENGTH} characters`,
+        path: ['password'],
+      }
+    );
+
+export const wifiDeviceFormSchema = z.object({
+  adminNotes: z.string(),
+  banned: z.boolean(),
+  macAddress: wifiMacSchema,
+  nickname: z.string(),
+  wifiUserId: z.string().nullable(),
+});
+
+export const wifiNasFormSchema = z.object({
+  comment: z.string(),
+  ipAddress: z.string().min(1),
+  macAddress: wifiMacSchema,
+});
+
+export const wifiSpeedProfileFormSchema = z.object({
+  downloadSpeedMbps: z.number().int().min(-1),
+  name: z.string().min(1),
+  uploadSpeedMbps: z.number().int().min(-1),
+});
+
+export const wifiRoleProfileFormSchema = z.object({
+  priority: z.number().int(),
+  roleName: z.string().min(1),
+  speedProfileId: z.string().min(1),
+});

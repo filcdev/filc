@@ -13,6 +13,7 @@ import { pingRouter } from '#modules/ping/_router';
 import { rolesRouter } from '#modules/roles/_router';
 import { timetableRouter } from '#modules/timetable/_router';
 import { usersRouter } from '#modules/users/_router';
+import { wifiRouter } from '#modules/wifi/_router';
 import { base } from '#orpc';
 
 /**
@@ -38,4 +39,5 @@ export const appRouter = base.use(rateLimit).router({
   roles: rolesRouter,
   timetable: timetableRouter,
   users: usersRouter,
+  wifi: wifiRouter,
 });

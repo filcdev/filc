@@ -12,6 +12,7 @@ import {
   user as userTable,
 } from '#database/schema/authentication';
 import { teacher } from '#modules/timetable/schema';
+import { wifiUser } from '#modules/wifi/schema';
 import { getUserPermissions } from '#utils/authorization';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
@@ -103,6 +104,28 @@ const authOptions = {
                     )
                   )
                 );
+
+              // Claim an unlinked legacy WiFi account only on an exact,
+              // case-insensitive full-email match. Matching the email's local
+              // part instead would let any user whose local part collides with
+              // an unclaimed wifi username take over that account, password
+              // included.
+              const [wifiAccount] = await db
+                .update(wifiUser)
+                .set({ createdBy: session.userId, userId: session.userId })
+                .where(
+                  and(
+                    eq(sql`lower(${wifiUser.username})`, userEmail),
+                    isNull(wifiUser.userId)
+                  )
+                )
+                .returning({ id: wifiUser.id });
+              if (wifiAccount) {
+                logger.info('Linked user {userId} to wifi account {wifiId}', {
+                  userId: session.userId,
+                  wifiId: wifiAccount.id,
+                });
+              }
             }
 
             const fullName = linkedUser.name?.trim().toLowerCase();
@@ -143,7 +166,7 @@ const authOptions = {
               }
             }
           } catch (err) {
-            logger.error('Failed to link user to teacher', {
+            logger.error('Failed to link user to teacher or wifi user', {
               err,
               userId: session.userId,
             });

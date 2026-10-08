@@ -1,6 +1,6 @@
 import { useSession } from '@filcdev/auth/client';
 import { Spinner } from '@filcdev/ui/components/spinner';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_private')({
   component: AppLayoutComponent,
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_private')({
 });
 
 function AppLayoutComponent() {
-  const { isPending } = useSession();
+  const { data, isPending } = useSession();
 
   if (isPending) {
     return (
@@ -19,6 +19,14 @@ function AppLayoutComponent() {
         <Spinner />
       </div>
     );
+  }
+
+  // Not every route under this layout has a permission to gate on — `/wifi`
+  // is a self-service page with no permission of its own — so the tree's
+  // authentication is enforced here. Without it those routes would sit on
+  // their loading skeleton forever for an anonymous visitor.
+  if (!(data?.session && data?.user)) {
+    return <Navigate to="/auth/login" />;
   }
 
   return <Outlet />;

@@ -14,6 +14,7 @@ import { pingContract } from './ping';
 import { rolesContract } from './roles';
 import { timetableContract } from './timetable';
 import { usersContract } from './users';
+import { wifiContract } from './wifi';
 
 /**
  * The whole Chronos API: one procedure per endpoint, implemented by
@@ -39,6 +40,7 @@ export const appContract = oc.errors(apiErrors).router({
   roles: rolesContract,
   timetable: timetableContract,
   users: usersContract,
+  wifi: wifiContract,
 });
 
 export type AppContract = typeof appContract;

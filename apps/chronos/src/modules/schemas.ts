@@ -5,6 +5,7 @@ import { navigatorSchema } from '#modules/navigator/schema';
 import { newsSchema } from '#modules/news/schema';
 import { notificationsSchema } from '#modules/notifications/schema';
 import { timetableSchema } from '#modules/timetable/schema';
+import { wifiSchema } from '#modules/wifi/schema';
 
 /**
  * Every module's tables, merged into the one schema map Drizzle is built from.
@@ -27,4 +28,5 @@ export const moduleSchemas = {
   ...newsSchema,
   ...notificationsSchema,
   ...timetableSchema,
+  ...wifiSchema,
 };

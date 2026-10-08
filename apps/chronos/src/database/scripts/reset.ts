@@ -8,6 +8,7 @@ import { authenticationSchema } from '#database/schema/authentication';
 import { authorizationSchema } from '#database/schema/authorization';
 import { doorlockSchema } from '#modules/doorlock/schema';
 import { timetableSchema } from '#modules/timetable/schema';
+import { wifiSchema } from '#modules/wifi/schema';
 import { configureLogger } from '#utils/logger';
 
 await configureLogger('chronos');
@@ -39,6 +40,7 @@ const reset = async () => {
     ...(nukeAuth ? apiKeySchema : {}),
     ...doorlockSchema,
     ...timetableSchema,
+    ...wifiSchema,
   };
 
   // disable foreign key checks

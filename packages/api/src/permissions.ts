@@ -32,6 +32,8 @@ export const permissions = {
   teacherManage: 'teacher:manage',
   usersManage: 'users:manage',
   usersRead: 'users:read',
+  wifiRead: 'wifi:read',
+  wifiWrite: 'wifi:write',
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];
