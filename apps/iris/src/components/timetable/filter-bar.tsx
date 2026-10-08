@@ -1,5 +1,4 @@
 import { Button } from '@filcdev/ui/components/button';
-import { ButtonGroup } from '@filcdev/ui/components/button-group';
 import {
   Command,
   CommandEmpty,
@@ -14,15 +13,17 @@ import {
   PopoverTrigger,
 } from '@filcdev/ui/components/popover';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from '@filcdev/ui/components/toggle-group';
 import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
   CheckIcon,
   ChevronsUpDownIcon,
   GraduationCap,
-  LayoutGrid,
   Printer,
-  Table2,
   UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -51,19 +52,26 @@ const getFilterOptions = (
   }
 ): { label: string; value: string }[] => {
   const { cohorts, teachers, classrooms, t } = options;
-  if (activeFilter === 'class') {
-    return (cohorts ?? []).map((c) => ({ label: c.name, value: c.id }));
-  }
-  if (activeFilter === 'teacher') {
-    // Ascending alphabetical order on the displayed label so the picker reads A → Z.
-    return (teachers ?? [])
-      .map((teacher) => ({
-        label: teacherLabel(teacher, t('timetable.teacherFallback')),
+
+  switch (activeFilter) {
+    case 'class':
+      return (cohorts ?? []).map((cohort) => ({
+        label: cohort.name,
+        value: cohort.id,
+      }));
+    case 'teacher':
+      return (teachers ?? []).map((teacher) => ({
+        label: teacherLabel(teacher, t('unknown')),
         value: teacher.id,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      }));
+    case 'classroom':
+      return (classrooms ?? []).map((classroom) => ({
+        label: classroom.name,
+        value: classroom.id,
+      }));
+    default:
+      return [];
   }
-  return (classrooms ?? []).map((c) => ({ label: c.name, value: c.id }));
 };
 
 const getSelectedValue = (
@@ -71,14 +79,17 @@ const getSelectedValue = (
   selectedByClass: string | null,
   selectedByTeacher: string | null,
   selectedByRoom: string | null
-): string => {
-  if (activeFilter === 'class') {
-    return selectedByClass ?? '';
+): string | null => {
+  switch (activeFilter) {
+    case 'class':
+      return selectedByClass;
+    case 'teacher':
+      return selectedByTeacher;
+    case 'classroom':
+      return selectedByRoom;
+    default:
+      return null;
   }
-  if (activeFilter === 'teacher') {
-    return selectedByTeacher ?? '';
-  }
-  return selectedByRoom ?? '';
 };
 
 const getPlaceholder = (
@@ -117,6 +128,33 @@ const getEmptyMessage = (
   return t(messages[activeFilter]);
 };
 
+const FILTERS: {
+  filter: FilterType;
+  icon: typeof GraduationCap;
+  labelKey: string;
+}[] = [
+  { filter: 'class', icon: GraduationCap, labelKey: 'timetable.filterByClass' },
+  {
+    filter: 'teacher',
+    icon: UserRound,
+    labelKey: 'timetable.filterByTeacher',
+  },
+  {
+    filter: 'classroom',
+    icon: Building2,
+    labelKey: 'timetable.filterByClassroom',
+  },
+];
+
+/**
+ * The timetable toolbar: who to show, which timetable, which week, and the
+ * print action, in one bar.
+ *
+ * Every control shares one box — the segmented track — so the bar reads as a
+ * single object rather than a row of unrelated buttons. It wraps instead of
+ * overflowing: on a narrow screen each group takes a full row, and nothing
+ * scrolls sideways.
+ */
 export function FilterBar({
   activeFilter,
   onFilterChange,
@@ -135,8 +173,6 @@ export function FilterBar({
   selectorLoading,
   onPrint,
   disabled,
-  view,
-  onViewChange,
   weekFilter,
   onWeekFilterChange,
 }: {
@@ -157,18 +193,12 @@ export function FilterBar({
   selectorLoading: boolean;
   onPrint: () => void;
   disabled?: boolean;
-  /** Active timetable view mode ('grid' | 'card'). */
-  view: 'grid' | 'card';
-  /** Change the active timetable view mode. */
-  onViewChange: (view: 'grid' | 'card') => void;
   weekFilter: WeekFilter;
   onWeekFilterChange: (value: WeekFilter) => void;
 }) {
   const { t } = useTranslation();
   const filterSelectId = `filter-${activeFilter}`;
   const comboboxContentId = `${filterSelectId}-content`;
-  const selectWidthClassName =
-    activeFilter === 'class' ? 'w-36 sm:w-44' : 'w-40 sm:w-52';
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {
@@ -183,10 +213,9 @@ export function FilterBar({
     selectedByTeacher,
     selectedByRoom
   );
-  const placeholderLabel = getPlaceholder(activeFilter, t);
   const selectedLabel =
     filterOptions.find((option) => option.value === selectedValue)?.label ??
-    placeholderLabel;
+    getPlaceholder(activeFilter, t);
 
   const handleSelection = (value: string) => {
     setComboboxOpen(false);
@@ -200,7 +229,7 @@ export function FilterBar({
 
   const renderSelect = () => {
     if (selectorLoading) {
-      return <Skeleton className={`h-9 ${selectWidthClassName}`} />;
+      return <Skeleton className="h-9 w-full min-w-40 sm:w-56" />;
     }
 
     return (
@@ -210,10 +239,9 @@ export function FilterBar({
             <Button
               aria-controls={comboboxContentId}
               aria-expanded={comboboxOpen}
-              className={`h-9 ${selectWidthClassName} justify-between`}
+              className="h-9 w-full min-w-0 justify-between font-medium text-sm"
               id={filterSelectId}
               role="combobox"
-              size="sm"
               variant="outline"
             >
               <span className="truncate">{selectedLabel}</span>
@@ -256,121 +284,70 @@ export function FilterBar({
   };
 
   return (
-    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-      <div className="flex min-w-0 flex-col gap-2">
-        {/* Week selector — own row on mobile */}
-        <div className="w-full sm:hidden">
-          <WeekSelector
-            disabled={disabled}
-            onChange={onWeekFilterChange}
-            value={weekFilter}
-          />
-        </div>
-
-        {/* Filter buttons */}
-        <div className="flex w-full items-center gap-2">
-          <ButtonGroup className="w-full sm:w-auto">
-            <Button
-              className="flex-1 sm:flex-none"
-              disabled={activeFilter === 'class'}
-              onClick={() => onFilterChange('class')}
-              variant="outline"
+    // Two rows on a phone — what to show, then which week of which timetable —
+    // and one wrapping row from `sm` up. Every group is sized to its content,
+    // so nothing is stretched to fill a row it does not need.
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      {/* Row 1: the entry type (icons only on a phone) and its picker. */}
+      <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+        <ToggleGroup
+          aria-label={t('timetable.filterLabel')}
+          className="shrink-0"
+          onValueChange={(value) => {
+            const next = value[0];
+            if (next) {
+              onFilterChange(next as FilterType);
+            }
+          }}
+          value={[activeFilter]}
+        >
+          {FILTERS.map(({ filter, icon: Icon, labelKey }) => (
+            <ToggleGroupItem
+              aria-label={t(labelKey)}
+              className="px-2 sm:px-3"
+              disabled={disabled}
+              key={filter}
+              title={t(labelKey)}
+              value={filter}
             >
-              <GraduationCap />
-              {t('timetable.filterByClass')}
-            </Button>
+              <Icon />
+              <span className="hidden sm:inline">{t(labelKey)}</span>
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
 
-            <Button
-              className="flex-1 sm:flex-none"
-              disabled={activeFilter === 'teacher'}
-              onClick={() => onFilterChange('teacher')}
-              variant="outline"
-            >
-              <UserRound />
-              {t('timetable.filterByTeacher')}
-            </Button>
-
-            <Button
-              className="flex-1 sm:flex-none"
-              disabled={activeFilter === 'classroom'}
-              onClick={() => onFilterChange('classroom')}
-              variant="outline"
-            >
-              <Building2 />
-              {t('timetable.filterByClassroom')}
-            </Button>
-          </ButtonGroup>
-
-          <Button
-            className="ml-auto shrink-0 sm:hidden"
-            disabled={disabled}
-            onClick={onPrint}
-            size="sm"
-            variant="outline"
-          >
-            <Printer />
-          </Button>
-        </div>
-
-        {/* Class/teacher/room + timetable */}
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <div className="min-w-0 flex-1 sm:flex-none">{renderSelect()}</div>
-
-          <div className="min-w-0 flex-1 sm:flex-none">
-            <TimetableSelector
-              loading={!timetables}
-              onSelect={onSelectTimetable}
-              selectedId={selectedTimetableId}
-              timetables={timetables}
-            />
-          </div>
+        <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
+          {renderSelect()}
         </div>
       </div>
 
-      {/* Desktop week selector + view selector */}
-      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-        <div className="hidden sm:block">
-          <WeekSelector
-            disabled={disabled}
-            onChange={onWeekFilterChange}
-            value={weekFilter}
+      {/* Row 2: the week, the timetable, and print. */}
+      <div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto">
+        <WeekSelector
+          disabled={disabled}
+          onChange={onWeekFilterChange}
+          value={weekFilter}
+        />
+
+        <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">
+          <TimetableSelector
+            loading={!timetables}
+            onSelect={onSelectTimetable}
+            selectedId={selectedTimetableId}
+            timetables={timetables}
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <ButtonGroup>
-            <Button
-              disabled={disabled}
-              onClick={() => onViewChange('grid')}
-              size="sm"
-              variant={view === 'grid' ? 'secondary' : 'outline'}
-            >
-              <LayoutGrid />
-              {t('timetable.viewGrid')}
-            </Button>
-
-            <Button
-              disabled={disabled}
-              onClick={() => onViewChange('card')}
-              size="sm"
-              variant={view === 'card' ? 'secondary' : 'outline'}
-            >
-              <Table2 />
-              {t('timetable.viewCard')}
-            </Button>
-          </ButtonGroup>
-
-          <Button
-            className="hidden sm:flex"
-            disabled={disabled}
-            onClick={onPrint}
-            size="sm"
-            variant="outline"
-          >
-            <Printer />
-            {t('timetable.printPdf')}
-          </Button>
-        </div>
+        <Button
+          aria-label={t('timetable.printPdf')}
+          className="shrink-0"
+          disabled={disabled}
+          onClick={onPrint}
+          size="icon"
+          variant="outline"
+        >
+          <Printer />
+        </Button>
       </div>
     </div>
   );

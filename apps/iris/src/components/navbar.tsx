@@ -37,7 +37,6 @@ import { useTranslation } from 'react-i18next';
 import { Lazy } from '@/components/lazy';
 import { NotificationBell } from '@/components/notification-bell';
 import { openSettings } from '@/components/settings-dialog-store';
-import { LanguageSelector } from '@/components/util/language-selector';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
@@ -155,8 +154,6 @@ export function Navbar({
           <div className="ml-auto flex min-w-0 items-center gap-3">
             {data && <NotificationBell />}
             {data && <Lazy load={loadBugReportDialog} />}
-
-            <LanguageSelector />
 
             {(() => {
               if (isPending) {

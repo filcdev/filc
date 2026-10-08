@@ -274,7 +274,10 @@
     "cleanupOrphanedCohortsError": "Failed to clean up orphaned timetable data",
     "weekA": "Week A",
     "weekB": "Week B",
-    "weekAll": "All weeks"
+    "weekAll": "All weeks",
+    "filterLabel": "Filter by",
+    "viewBy": "View as",
+    "weekFilterLabel": "Week"
   },
   "navigation": {
     "title": "Navigation",
@@ -688,7 +691,7 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSystem": "System",
-    "timetableView": "Default timetable view",
+    "timetableView": "Timetable view",
     "cohort": "Cohort",
     "cohortDescription": "Choose the class or group associated with your account",
     "myGroups": "My groups",
@@ -705,7 +708,10 @@
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
     "loadError": "Failed to load preferences",
-    "languageChangeError": "Could not change the language"
+    "languageChangeError": "Could not change the language",
+    "appearance": "Appearance",
+    "appearanceDescription": "How the app and the timetable look.",
+    "timetableViewDescription": "Grid is the timetable you see first; card is the printable paper layout."
   },
   "unsubscribe": {
     "title": "Notification Preferences",

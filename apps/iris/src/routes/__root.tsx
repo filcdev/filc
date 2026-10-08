@@ -88,7 +88,11 @@ function RootComponent() {
   const [i18n] = useState(() => createI18n(language));
 
   return (
-    <html lang={language} translate="no">
+    // `suppressHydrationWarning` is required by next-themes: its inline script
+    // sets `class` and `color-scheme` on <html> before React hydrates, so the
+    // server HTML and the first client render legitimately differ. React would
+    // otherwise warn on every load and refuse to patch the attributes.
+    <html lang={language} suppressHydrationWarning translate="no">
       <head>
         <HeadContent />
       </head>

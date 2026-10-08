@@ -15,7 +15,6 @@ import {
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { type UseQueryResult, useQuery } from '@tanstack/react-query';
-import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
@@ -69,9 +68,7 @@ function GeneralSettingsCard({
   onGroupDisplayChange,
   onLanguageChange,
   onSelectedCohortIdChange,
-  onThemeChange,
   selectedCohortId,
-  theme,
   timetableGroupDisplay,
 }: {
   cohortQuery: UseQueryResult<CohortItem[], Error>;
@@ -79,9 +76,7 @@ function GeneralSettingsCard({
   onGroupDisplayChange: (value: 'highlight' | 'hide') => void;
   onLanguageChange: (value: string | null) => void;
   onSelectedCohortIdChange: (value: string | null) => void;
-  onThemeChange: (value: string) => void;
   selectedCohortId: string | null;
-  theme: string;
   timetableGroupDisplay: 'highlight' | 'hide';
 }) {
   const { t } = useTranslation();
@@ -108,23 +103,6 @@ function GeneralSettingsCard({
             ]}
             onValueChange={onLanguageChange}
             value={language}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-          </Select>
-        </div>
-
-        <div className="flex items-center justify-between gap-4">
-          <span>{t('preferences.theme')}</span>
-          <Select
-            items={[
-              { label: t('preferences.themeLight'), value: 'light' },
-              { label: t('preferences.themeDark'), value: 'dark' },
-              { label: t('preferences.themeSystem'), value: 'system' },
-            ]}
-            onValueChange={(value) => value && onThemeChange(value)}
-            value={theme}
           >
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -193,11 +171,8 @@ export function GeneralPane({
 }) {
   const { i18n, t } = useTranslation();
   const [, setCookie] = useCookies(['filc.language']);
-  const { setTheme: applyTheme } = useTheme();
   const { data: session } = useSession();
   const [language, setLanguage] = useState('hu');
-  const [theme, setTheme] = useState('system');
-  const [timetableView, setTimetableView] = useState('class');
   const [timetableGroupDisplay, setTimetableGroupDisplay] = useState<
     'highlight' | 'hide'
   >('highlight');
@@ -217,8 +192,6 @@ export function GeneralPane({
       return;
     }
     setLanguage(settings.language);
-    setTheme(settings.theme);
-    setTimetableView(settings.timetableView);
     setTimetableGroupDisplay(
       settings.timetableGroupDisplay === 'hide' ? 'hide' : 'highlight'
     );
@@ -232,10 +205,7 @@ export function GeneralPane({
   }, [active, session?.user?.cohortId]);
 
   const saveSettings = useUpdateNotificationSettings({
-    onSaved: () => {
-      applyTheme(theme);
-      onClose();
-    },
+    onSaved: onClose,
     updateCohort: async () => {
       const currentCohortId = session?.user?.cohortId ?? null;
       const newCohortId =
@@ -291,23 +261,14 @@ export function GeneralPane({
         onGroupDisplayChange={setTimetableGroupDisplay}
         onLanguageChange={handleLanguageChange}
         onSelectedCohortIdChange={setSelectedCohortId}
-        onThemeChange={setTheme}
         selectedCohortId={selectedCohortId}
-        theme={theme}
         timetableGroupDisplay={timetableGroupDisplay}
       />
 
       <Button
         className="w-full"
         disabled={saveSettings.isPending}
-        onClick={() =>
-          saveSettings.mutate({
-            language,
-            theme,
-            timetableGroupDisplay,
-            timetableView,
-          })
-        }
+        onClick={() => saveSettings.mutate({ language, timetableGroupDisplay })}
       >
         {saveSettings.isPending && <Spinner className="mr-2 h-4 w-4" />}
         {t('common.save')}

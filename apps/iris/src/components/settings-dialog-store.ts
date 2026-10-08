@@ -7,6 +7,7 @@ import { useSyncExternalStore } from 'react';
  */
 export const settingsSections = [
   'general',
+  'appearance',
   'groups',
   'notifications',
   'apiKeys',

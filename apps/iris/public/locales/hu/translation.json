@@ -256,7 +256,10 @@
     "cleanupOrphanedCohortsError": "Nem sikerült az árva órarendi adatok tisztítása",
     "weekA": "A hét",
     "weekB": "B hét",
-    "weekAll": "Mindkettő"
+    "weekAll": "Mindkettő",
+    "filterLabel": "Szűrés",
+    "viewBy": "Nézet",
+    "weekFilterLabel": "Hét"
   },
   "common": {
     "cancel": "Mégsem",
@@ -688,7 +691,7 @@
     "themeLight": "Világos",
     "themeDark": "Sötét",
     "themeSystem": "Rendszer szerint",
-    "timetableView": "Alapértelmezett órarend nézet",
+    "timetableView": "Órarend nézet",
     "cohort": "Osztály",
     "cohortDescription": "Válaszd ki a fiókodhoz tartozó osztályt vagy csoportot",
     "myGroups": "Csoportjaim",
@@ -705,7 +708,10 @@
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",
-    "languageChangeError": "Nem sikerült megváltoztatni a nyelvet"
+    "languageChangeError": "Nem sikerült megváltoztatni a nyelvet",
+    "appearance": "Megjelenés",
+    "appearanceDescription": "Az alkalmazás és az órarend megjelenése.",
+    "timetableViewDescription": "A rács a megszokott órarend; a kártya a nyomtatható papír nézet."
   },
   "unsubscribe": {
     "title": "Értesítési beállítások",

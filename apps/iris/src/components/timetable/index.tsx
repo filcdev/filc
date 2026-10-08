@@ -44,6 +44,7 @@ import {
   useTimetables,
   useTimetableUserSettings,
 } from '@/hooks/timetable-public';
+import { useTimetableView } from '@/hooks/use-timetable-view';
 import { Route, type searchSchema } from '@/routes/_public/index';
 import { orpc } from '@/utils/orpc';
 
@@ -485,7 +486,6 @@ export function TimetableView() {
         room: undefined,
         teacher: undefined,
         timetable: selectedTimetableId ?? undefined,
-        view: search.view,
       };
 
       const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
@@ -495,13 +495,7 @@ export function TimetableView() {
         search: () => searchParams,
       });
     }
-  }, [
-    activeFilter,
-    activeSelectionId,
-    selectedTimetableId,
-    navigate,
-    search.view,
-  ]);
+  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
 
   const weekFilteredLessons = useMemo(
     () =>
@@ -561,21 +555,10 @@ export function TimetableView() {
   };
 
   // Secondary (paper-like) view: the class code shown in the corner cell.
-  const view = search.view ?? 'grid';
+  // The view itself is a preference (see the Appearance settings pane), kept in
+  // a cookie so it applies before the first paint.
+  const { view } = useTimetableView(settingsQuery.data?.timetableView);
   const cardHeader = buildCardHeader(getSelectionLabel());
-
-  const handleViewChange = (nextView: 'grid' | 'card') => {
-    navigate({
-      replace: true,
-      search: () => ({
-        cohort: search.cohort,
-        room: search.room,
-        teacher: search.teacher,
-        timetable: search.timetable,
-        view: nextView,
-      }),
-    });
-  };
 
   const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
     const timetableName =
@@ -682,7 +665,6 @@ export function TimetableView() {
             setSelections((s) => ({ ...s, teacher: id }))
           }
           onSelectTimetable={setSelectedTimetableId}
-          onViewChange={handleViewChange}
           onWeekFilterChange={setWeekFilter}
           selectedByClass={selections.class}
           selectedByRoom={selections.classroom}
@@ -691,7 +673,6 @@ export function TimetableView() {
           selectorLoading={selectorLoading}
           teachers={teachersQuery.data}
           timetables={timetablesQuery.data ? visibleTimetables : undefined}
-          view={view}
           weekFilter={weekFilter}
         />
 
@@ -714,9 +695,24 @@ export function TimetableView() {
             title={t('timetable.noValidTimetableTitle')}
           />
         ) : isLoading ? (
-          <div className="w-full">
-            <Skeleton className="mb-2 h-8 w-64" />
-            <Skeleton className="h-[130px] w-full" />
+          // A placeholder shaped like the timetable it stands in for. The old
+          // `h-8 w-64` strip read as a second, empty filter bar sitting under
+          // the real one. Colours match the real grid (`border-border bg-card`)
+          // — a bare `border` resolves to `currentColor`, which drew a white
+          // outline around the whole card.
+          <div className="w-full rounded-xl border border-border bg-card">
+            <div className="border-border border-b bg-muted/40 px-4 py-3">
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="grid grid-cols-5 gap-px p-px">
+              {[0, 1, 2, 3, 4].map((day) => (
+                <div className="space-y-2 p-2" key={day}>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           (() => {

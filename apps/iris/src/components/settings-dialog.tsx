@@ -13,12 +13,14 @@ import {
   ChevronLeft,
   KeyRound,
   type LucideIcon,
+  Palette,
   SlidersHorizontal,
   Users,
 } from 'lucide-react';
-import { type ComponentType, useEffect, useState } from 'react';
+import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiKeysPane } from '@/components/settings/api-keys-pane';
+import { AppearancePane } from '@/components/settings/appearance-pane';
 import { GeneralPane } from '@/components/settings/general-pane';
 import { GroupsPane } from '@/components/settings/groups-pane';
 import { NotificationsPane } from '@/components/settings/notifications-pane';
@@ -39,6 +41,11 @@ const NAV: {
     labelKey: 'preferences.general',
     section: 'general',
   },
+  {
+    icon: Palette,
+    labelKey: 'preferences.appearance',
+    section: 'appearance',
+  },
   { icon: Users, labelKey: 'preferences.myGroups', section: 'groups' },
   {
     icon: Bell,
@@ -56,6 +63,7 @@ type PaneProps = {
 
 const PANES: Record<SettingsSection, ComponentType<PaneProps>> = {
   apiKeys: ApiKeysPane,
+  appearance: AppearancePane,
   general: GeneralPane,
   groups: GroupsPane,
   notifications: NotificationsPane,
@@ -77,6 +85,11 @@ export function SettingsDialog() {
     }
   }, [open]);
 
+  // Focus lands on the dialog itself, not the first nav button: Base UI focuses
+  // the first focusable child by default, which drew a focus ring around
+  // "General" every time the dialog opened.
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const activeNav = NAV.find((item) => item.section === section) ?? {
     icon: SlidersHorizontal,
     labelKey: 'preferences.general',
@@ -95,7 +108,12 @@ export function SettingsDialog() {
 
   return (
     <Dialog onOpenChange={(next) => !next && closeSettings()} open={open}>
-      <DialogContent className="h-[85vh] max-h-[600px] gap-0 overflow-hidden p-0 md:max-w-[820px] md:p-0">
+      <DialogContent
+        className="h-[85vh] max-h-[600px] gap-0 overflow-hidden p-0 outline-none md:max-w-[820px] md:p-0"
+        initialFocus={contentRef}
+        ref={contentRef}
+        tabIndex={-1}
+      >
         <DialogTitle className="sr-only">{t('preferences.title')}</DialogTitle>
         <DialogDescription className="sr-only">
           {t('preferences.description')}
