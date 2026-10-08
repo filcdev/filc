@@ -486,7 +486,7 @@ function SubsFilterBar({
           }
         />
         <PopoverContent
-          className="w-[var(--radix-popper-anchor-width)] p-0"
+          className="w-(--radix-popper-anchor-width) p-0"
           id={comboboxContentId}
         >
           <Command>

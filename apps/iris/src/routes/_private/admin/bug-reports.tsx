@@ -439,7 +439,7 @@ function AdminBugReportsPage() {
                   <dt className="font-medium text-muted-foreground">
                     {t('bugReports.description')}
                   </dt>
-                  <dd className="whitespace-pre-wrap break-words">
+                  <dd className="wrap-break-word whitespace-pre-wrap">
                     {selected.description}
                   </dd>
                 </div>

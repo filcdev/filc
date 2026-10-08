@@ -40,15 +40,15 @@ const toggleGroupItemVariants = cva(
     variants: {
       tone: {
         default:
-          'text-muted-foreground hover:bg-muted hover:text-foreground data-[pressed]:bg-background data-[pressed]:text-foreground data-[pressed]:shadow-sm',
+          'text-muted-foreground hover:bg-muted hover:text-foreground data-pressed:bg-background data-pressed:text-foreground data-pressed:shadow-sm',
         // A/B keep a colour cue so the two week types stay recognisable, but as
         // a tinted segment rather than a saturated fill — the control sits in a
         // toolbar, not in the timetable it labels. The tints match the week
         // badges the grid uses.
         weekA:
-          'text-muted-foreground hover:bg-muted hover:text-foreground data-[pressed]:bg-blue-500/15 data-[pressed]:text-blue-700 data-[pressed]:shadow-sm dark:data-[pressed]:text-blue-300',
+          'text-muted-foreground hover:bg-muted hover:text-foreground data-pressed:bg-blue-500/15 data-pressed:text-blue-700 data-pressed:shadow-sm dark:data-pressed:text-blue-300',
         weekB:
-          'text-muted-foreground hover:bg-muted hover:text-foreground data-[pressed]:bg-violet-500/15 data-[pressed]:text-violet-700 data-[pressed]:shadow-sm dark:data-[pressed]:text-violet-300',
+          'text-muted-foreground hover:bg-muted hover:text-foreground data-pressed:bg-violet-500/15 data-pressed:text-violet-700 data-pressed:shadow-sm dark:data-pressed:text-violet-300',
       },
     },
   }
