@@ -211,6 +211,8 @@
     "noLessonsOnThisDay": "Nincs óra",
     "emptyWeekTitle": "Nincs óra ezen a héten",
     "emptyWeekDescription": "Ehhez a válogatáshoz nincs óra.",
+    "noValidTimetableTitle": "Nincs elérhető órarend",
+    "noValidTimetableDescription": "Jelenleg nincs érvényes órarend, ezért az órák most nem jeleníthetők meg. Kérjük, nézz vissza később.",
     "selectGroupPlaceholder": "Válaszd ki a csoportod",
     "selectGroupSuccess": "Csoport frissítve",
     "selectGroupError": "Nem sikerült frissíteni a csoportot",

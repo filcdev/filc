@@ -1,10 +1,11 @@
 import { useSession } from '@filcdev/auth/client';
 import { Empty } from '@filcdev/ui/components/empty';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { isDefinedError } from '@orpc/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { CalendarX } from 'lucide-react';
+import { CalendarOff, CalendarX } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -624,6 +625,19 @@ export function TimetableView() {
 
   const selectorLoading = getSelectorLoading();
 
+  /**
+   * No current timetable: the backend answers `latestValid` with NOT_FOUND when
+   * nothing is valid today. Without this branch the page would sit on the
+   * skeletons below forever, because `isLoading` stays true while no selection
+   * can ever be resolved. An explicit selection (a `?timetable=` param naming a
+   * still-loadable timetable) is left alone.
+   */
+  const hasNoValidTimetable =
+    selectedTimetableId === null &&
+    (latestValidTimetableQuery.data === null ||
+      (isDefinedError(latestValidTimetableQuery.error) &&
+        latestValidTimetableQuery.error.code === 'NOT_FOUND'));
+
   const isLoading =
     selectorLoading || lessonsQuery.isLoading || !activeSelectionId;
   const hasError =
@@ -693,7 +707,13 @@ export function TimetableView() {
           </div>
         )}
 
-        {isLoading ? (
+        {hasNoValidTimetable ? (
+          <Empty
+            description={t('timetable.noValidTimetableDescription')}
+            icon={<CalendarOff className="size-6" />}
+            title={t('timetable.noValidTimetableTitle')}
+          />
+        ) : isLoading ? (
           <div className="w-full">
             <Skeleton className="mb-2 h-8 w-64" />
             <Skeleton className="h-[130px] w-full" />

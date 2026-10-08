@@ -219,6 +219,8 @@
     "noLessonsOnThisDay": "No lessons",
     "emptyWeekTitle": "No lessons this week",
     "emptyWeekDescription": "There are no lessons for this selection.",
+    "noValidTimetableTitle": "No timetable available",
+    "noValidTimetableDescription": "There is no current timetable, so classes cannot be shown right now. Please check back later.",
     "selectGroupPlaceholder": "Pick your group",
     "selectGroupSuccess": "Group updated",
     "selectGroupError": "Failed to update group",
