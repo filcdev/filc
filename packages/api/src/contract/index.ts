@@ -1,5 +1,6 @@
 import { oc } from '@orpc/contract';
 import { apiErrors } from '../errors';
+import { adminApiKeysContract } from './admin-api-keys';
 import { bugReportContract } from './bug-report';
 import { cohortContract } from './cohort';
 import { dashboardContract } from './dashboard';
@@ -24,6 +25,7 @@ import { usersContract } from './users';
  * error response.
  */
 export const appContract = oc.errors(apiErrors).router({
+  adminApiKeys: adminApiKeysContract,
   bugReport: bugReportContract,
   cohort: cohortContract,
   dashboard: dashboardContract,

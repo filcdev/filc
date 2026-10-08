@@ -25,6 +25,945 @@
   ],
   "openapi": "3.1.1",
   "paths": {
+    "/admin/api-keys/{keyId}": {
+      "delete": {
+        "operationId": "deleteAdminApiKeysByKeyId",
+        "description": "Revoke any user's API key",
+        "tags": [
+          "API keys"
+        ],
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-filc_group_name": "API keys",
+        "x-filc_type_name": "@nodata",
+        "x-filc_auth": "true",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patchAdminApiKeysByKeyId",
+        "description": "Enable or disable any user's API key",
+        "tags": [
+          "API keys"
+        ],
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "x-native-type": "date"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "expiresAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "x-native-type": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "lastRequest": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "x-native-type": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ownerEmail": {
+                      "type": "string"
+                    },
+                    "ownerName": {
+                      "type": "string"
+                    },
+                    "prefix": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "referenceId": {
+                      "type": "string"
+                    },
+                    "requestCount": {
+                      "type": "number"
+                    },
+                    "start": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "x-native-type": "date"
+                    }
+                  },
+                  "required": [
+                    "createdAt",
+                    "enabled",
+                    "expiresAt",
+                    "id",
+                    "lastRequest",
+                    "name",
+                    "ownerEmail",
+                    "ownerName",
+                    "prefix",
+                    "referenceId",
+                    "requestCount",
+                    "start",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-filc_group_name": "API keys",
+        "x-filc_type_name": "@unit AdminApiKey",
+        "x-filc_auth": "true",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/api-keys": {
+      "get": {
+        "operationId": "getAdminApiKeys",
+        "description": "List every user's API keys",
+        "tags": [
+          "API keys"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "allowEmptyValue": true,
+            "allowReserved": true
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "default": 0
+            },
+            "allowEmptyValue": true,
+            "allowReserved": true
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "allowEmptyValue": true,
+            "allowReserved": true
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "allowEmptyValue": true,
+            "allowReserved": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiKeys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "expiresAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "x-native-type": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "lastRequest": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "x-native-type": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ownerEmail": {
+                            "type": "string"
+                          },
+                          "ownerName": {
+                            "type": "string"
+                          },
+                          "prefix": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "referenceId": {
+                            "type": "string"
+                          },
+                          "requestCount": {
+                            "type": "number"
+                          },
+                          "start": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
+                          }
+                        },
+                        "required": [
+                          "createdAt",
+                          "enabled",
+                          "expiresAt",
+                          "id",
+                          "lastRequest",
+                          "name",
+                          "ownerEmail",
+                          "ownerName",
+                          "prefix",
+                          "referenceId",
+                          "requestCount",
+                          "start",
+                          "updatedAt"
+                        ]
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "apiKeys",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-filc_group_name": "API keys",
+        "x-filc_type_name": "@unit AdminApiKeyListResponse @field(.apiKeys, List<AdminApiKey>) @field(.total, Int)",
+        "x-filc_auth": "true",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ]
+      }
+    },
     "/bug-report": {
       "post": {
         "operationId": "postBugReport",
@@ -43425,825 +44364,6 @@
         },
         "x-filc_group_name": "Users",
         "x-filc_type_name": "@unit UserListResponse @field(.users, List<User>) @field(.total, Int)",
-        "x-filc_auth": "true",
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
-      }
-    },
-    "/users/me/api-keys": {
-      "post": {
-        "operationId": "postUsersMeApiKeys",
-        "description": "Create a new API key for the authenticated user. The raw key is only returned in this response.",
-        "tags": [
-          "Users"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "expiresAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "x-native-type": "date"
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "apiKey": {
-                      "type": "object",
-                      "properties": {
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "x-native-type": "date"
-                        },
-                        "expiresAt": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "format": "date-time",
-                              "x-native-type": "date"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "lastUsedAt": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "format": "date-time",
-                              "x-native-type": "date"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "prefix": {
-                          "type": "string"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "x-native-type": "date"
-                        },
-                        "userId": {
-                          "type": "string",
-                          "format": "uuid"
-                        }
-                      },
-                      "required": [
-                        "createdAt",
-                        "expiresAt",
-                        "id",
-                        "lastUsedAt",
-                        "name",
-                        "prefix",
-                        "updatedAt",
-                        "userId"
-                      ]
-                    },
-                    "rawKey": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "apiKey",
-                    "rawKey"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "x-filc_group_name": "Users",
-        "x-filc_type_name": "@unit ApiKeyResponse @field(.apiKey, ApiKey) @field(.rawKey, String)",
-        "x-filc_auth": "true",
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "getUsersMeApiKeys",
-        "description": "List the API keys belonging to the authenticated user",
-        "tags": [
-          "Users"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "apiKeys": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "x-native-type": "date"
-                          },
-                          "expiresAt": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "format": "date-time",
-                                "x-native-type": "date"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "lastUsedAt": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "format": "date-time",
-                                "x-native-type": "date"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "prefix": {
-                            "type": "string"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "x-native-type": "date"
-                          },
-                          "userId": {
-                            "type": "string",
-                            "format": "uuid"
-                          }
-                        },
-                        "required": [
-                          "createdAt",
-                          "expiresAt",
-                          "id",
-                          "lastUsedAt",
-                          "name",
-                          "prefix",
-                          "updatedAt",
-                          "userId"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "apiKeys"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "x-filc_group_name": "Users",
-        "x-filc_type_name": "@unit ApiKeyListResponse @field(.apiKeys, List<ApiKey>)",
-        "x-filc_auth": "true",
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
-      }
-    },
-    "/users/me/api-keys/{id}": {
-      "delete": {
-        "operationId": "deleteUsersMeApiKeysById",
-        "description": "Revoke (delete) an API key owned by the authenticated user",
-        "tags": [
-          "Users"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    }
-                  },
-                  "required": [
-                    "id"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "x-filc_group_name": "Users",
-        "x-filc_type_name": "@nodata",
         "x-filc_auth": "true",
         "security": [
           {
