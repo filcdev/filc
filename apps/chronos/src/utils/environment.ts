@@ -15,6 +15,8 @@ const boolean = z.preprocess((v) => {
 
 const envShape = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),
+  CHRONOS_API_KEY_RATE_LIMIT_MAX: z.coerce.number().default(120),
+  CHRONOS_API_KEY_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
   CHRONOS_BASE_URL: z.url(),
   CHRONOS_BKK_API_KEY: z.string().optional(),

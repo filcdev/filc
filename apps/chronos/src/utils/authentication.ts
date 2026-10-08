@@ -1,3 +1,4 @@
+import { apiKey } from '@better-auth/api-key';
 import { userAdditionalFields } from '@filcdev/auth';
 import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
@@ -5,6 +6,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession, oAuthProxy } from 'better-auth/plugins';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import { db } from '#database';
+import { apiKeySchema } from '#database/schema/api-keys';
 import {
   authenticationSchema,
   user as userTable,
@@ -15,6 +17,13 @@ import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
+
+/**
+ * The `Authorization: Bearer <token>` form the aegis door-lock firmware sends.
+ * The api-key plugin only reads `x-api-key` by default, so `customAPIKeyGetter`
+ * below also accepts this shape.
+ */
+const BEARER_TOKEN_REGEX = /^Bearer\s+(.+)$/i;
 
 /**
  * Preview deployments sign in through the production origin: Entra rejects
@@ -56,7 +65,10 @@ const authOptions = {
   baseURL: env.baseUrl,
   database: drizzleAdapter(db, {
     provider: 'pg',
-    schema: authenticationSchema,
+    // The plugin's `apikey` table must be in the adapter's schema or
+    // better-auth's own schema check rejects every api-key call. The rest of
+    // the auth tables stay in `authenticationSchema`.
+    schema: { ...authenticationSchema, ...apiKeySchema },
   }),
   databaseHooks: {
     session: {
@@ -193,6 +205,42 @@ export const auth = betterAuth({
   ...authOptions,
   plugins: [
     ...(authOptions.plugins ?? []),
+    // API keys come from better-auth's official plugin, which owns the
+    // `apikey` table, hashing (SHA-256), expiry, enable/disable and per-key
+    // rate limiting. `enableSessionForAPIKeys` lets a valid key stand in for a
+    // session, which is what lets the oRPC middleware treat a key holder like
+    // any other caller.
+    //
+    // `x-api-key` is the plugin's default header; the `Authorization: Bearer`
+    // form is added here because the aegis door-lock firmware sends a bearer
+    // token, and the plugin has no built-in support for it.
+    apiKey({
+      customAPIKeyGetter: (ctx) => {
+        const headers = ctx.headers;
+        if (!headers) {
+          return null;
+        }
+        const bearer = headers.get('authorization');
+        if (bearer) {
+          const match = BEARER_TOKEN_REGEX.exec(bearer.trim());
+          if (match?.[1]) {
+            return match[1].trim();
+          }
+        }
+        return headers.get('x-api-key');
+      },
+      enableSessionForAPIKeys: true,
+      // The public timetable and door-lock surfaces are the point of these
+      // keys, so a key must not be able to reach the whole API by default.
+      // `getUserPermissions` is resolved per owner when a key is created, and
+      // the middleware still enforces the route's own permission.
+      rateLimit: {
+        enabled: true,
+        maxRequests: env.apiKeyRateLimitMax,
+        timeWindow: env.apiKeyRateLimitWindowMs,
+      },
+      requireName: true,
+    }),
     customSession(async ({ user, session }) => {
       const permissions = await getUserPermissions(user.id);
       const displayName = user.nickname

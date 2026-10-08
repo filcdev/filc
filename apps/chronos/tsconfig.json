@@ -12,8 +12,6 @@
     "allowSyntheticDefaultImports": true,
     "types": ["bun"],
     "outDir": "dist",
-    "declaration": true,
-    "emitDeclarationOnly": true,
     "target": "es2022",
     "module": "preserve",
     "moduleResolution": "bundler",

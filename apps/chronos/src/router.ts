@@ -1,4 +1,5 @@
 import { rateLimit } from '#middleware/rate-limit';
+import { apiKeysRouter } from '#modules/api-keys/_router';
 import { bugReportRouter } from '#modules/bug-report/_router';
 import { cohortRouter } from '#modules/cohort/_router';
 import { dashboardRouter } from '#modules/dashboard/_router';
@@ -23,6 +24,7 @@ import { base } from '#orpc';
  * `rateLimiter` middleware had.
  */
 export const appRouter = base.use(rateLimit).router({
+  adminApiKeys: apiKeysRouter,
   bugReport: bugReportRouter,
   cohort: cohortRouter,
   dashboard: dashboardRouter,

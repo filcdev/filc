@@ -1,13 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { ChronosContext } from '#_types/globals';
 import { base } from '#orpc';
-import { extractApiKey, validateApiKey } from '#utils/api-keys';
 import { auth } from '#utils/authentication';
 import { rbac, userHasPermission } from '#utils/authorization';
 import { env } from '#utils/environment';
 import { setSentryUser } from '#utils/telemetry';
-
-type Session = typeof auth.$Infer.Session;
 
 const SIGNATURE_LENGTH = 64; // SHA-256 hex digest
 
@@ -57,33 +54,30 @@ function readCookie(headers: Headers, name: string): string | null {
 
 /**
  * Resolve who is calling, once per request, before any procedure runs: a
- * better-auth session, an API key (Bearer / `X-API-Key`), or an anonymous id
- * from the signed rate-limit cookie. Also seeds Sentry's user context.
+ * better-auth session, or an anonymous id from the signed rate-limit cookie.
+ * Also seeds Sentry's user context.
+ *
+ * API keys are not handled here. The `@better-auth/api-key` plugin is
+ * registered with `enableSessionForAPIKeys`, so a valid key in the request
+ * headers makes `getSession` above answer with a session for the key's owner —
+ * one validation per request, and the key's own rate limit is applied by the
+ * plugin. That also means the session is a real session row's shape, so the
+ * guards below need no special case.
  */
 export async function resolveCaller(
   headers: Headers
 ): Promise<Pick<ChronosContext, 'anonymousId' | 'session' | 'user'>> {
-  const session = await auth.api.getSession({ headers });
+  // The api-key plugin *throws* (`Invalid API key.`, `API Key is disabled`)
+  // rather than answering null when a key is present but unusable, and this
+  // runs before every procedure — an uncaught throw here would turn any
+  // request carrying a stale key into a 500. A key that fails to resolve is
+  // simply not a caller, so the request continues as anonymous and the route's
+  // own guard decides.
+  const session = await auth.api.getSession({ headers }).catch(() => null);
 
   if (session) {
     setSentryUser(session.session, session.user);
     return { anonymousId: null, session: session.session, user: session.user };
-  }
-
-  // Fall back to API key authentication (Bearer token or X-API-Key header).
-  const rawKey = extractApiKey(headers);
-  if (rawKey) {
-    const apiUser = await validateApiKey(rawKey);
-    if (apiUser) {
-      setSentryUser({ userId: apiUser.id } as never, apiUser as never);
-      // API keys are not tied to a browser session, but downstream guards only
-      // need `session.userId`, so synthesize a minimal session object.
-      return {
-        anonymousId: null,
-        session: { userId: apiUser.id } as Session['session'],
-        user: apiUser as Session['user'],
-      };
-    }
   }
 
   setSentryUser(null);

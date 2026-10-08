@@ -15,7 +15,7 @@ import {
   type OutgoingMessage,
   outgoingMessageSchema,
 } from '#modules/doorlock/utils/schemas';
-import { extractApiKey, validateApiKey } from '#utils/api-keys';
+import { auth } from '#utils/authentication';
 import { userHasPermission } from '#utils/authorization';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 
@@ -222,16 +222,18 @@ export async function upgrade(
     return connect(request, srv, d);
   }
 
-  // Alternative auth: a user-generated API key (Bearer / X-API-Key).
-  // The connecting client must also identify which device it represents.
-  const rawKey = extractApiKey(request.headers);
-  if (rawKey) {
-    const apiUser = await validateApiKey(rawKey);
-    if (!apiUser) {
-      logger.debug('WebSocket connection attempt with invalid API key');
-      return new Response(null, { status: 401 });
-    }
-
+  // Alternative auth: a user-generated API key, resolved through the
+  // better-auth plugin (`enableSessionForAPIKeys`) so the key's own enable
+  // flag, expiry and rate limit all apply. The connecting client must also
+  // identify which device it represents.
+  // `getSession` throws on a key that is present but unusable (invalid or
+  // disabled), so a failed key is treated as "not this credential" and the
+  // request falls through to the 401 below rather than failing the handler.
+  const apiSession = await auth.api
+    .getSession({ headers: request.headers })
+    .catch(() => null);
+  if (apiSession) {
+    const apiUser = apiSession.user;
     const canControl = await userHasPermission(
       apiUser.id,
       'doorlock:devices:read'

@@ -162,6 +162,13 @@
       "when": 1791394991092,
       "tag": "0022_absurd_next_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791433967383,
+      "tag": "0023_last_gorgon",
+      "breakpoints": true
     }
   ]
 }
