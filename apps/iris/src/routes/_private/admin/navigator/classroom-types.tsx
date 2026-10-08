@@ -48,7 +48,9 @@ export const Route = createFileRoute(
     ]),
 });
 
-const COLOR_HEX_REGEX = /^#[0-9a-fA-F]{6}$/;
+// `#RRGGBBAA` mirrors the API schema: imported rows carry an alpha pair, and
+// the 3D palette reads the leading six digits.
+const COLOR_HEX_REGEX = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
 
 type ClassroomTypeDialogProps = BaseDialogProps & {
   classroomType: ClassroomType | null;

@@ -13718,7 +13718,7 @@
                 "properties": {
                   "colorhex": {
                     "type": "string",
-                    "pattern": "^#[0-9a-fA-F]{6}$"
+                    "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
                   },
                   "name": {
                     "type": "string",
@@ -14498,7 +14498,7 @@
                 "properties": {
                   "colorhex": {
                     "type": "string",
-                    "pattern": "^#[0-9a-fA-F]{6}$"
+                    "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
                   },
                   "name": {
                     "type": "string",
@@ -16261,7 +16261,7 @@
                         "properties": {
                           "colorhex": {
                             "type": "string",
-                            "pattern": "^#[0-9a-fA-F]{6}$"
+                            "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
                           },
                           "id": {
                             "type": "string"

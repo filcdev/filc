@@ -1,10 +1,20 @@
 import z from 'zod';
 
-/** A classroom category; `colorhex` is the fill colour used in the 3D views. */
+/**
+ * A classroom category; `colorhex` is the fill colour used in the 3D views.
+ *
+ * `#RRGGBBAA` is accepted alongside `#RRGGBB`: the upstream campus capture (and
+ * so the imported rows) carries an alpha pair, and the 3D palette reads the
+ * leading six digits (`packages/navigator-3d/src/kiosk/palette.ts`), so both
+ * forms describe the same colour.
+ */
 export const classroomTypeSchema = z.object({
   colorhex: z
     .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, 'Colour must be a hex value like #1a2b3c'),
+    .regex(
+      /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/,
+      'Colour must be a hex value like #1a2b3c or #1a2b3cff'
+    ),
   id: z.string(),
   name: z.string().min(1),
 });
