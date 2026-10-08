@@ -284,9 +284,10 @@ export function FilterBar({
   };
 
   return (
-    // Two rows on a phone — what to show, then which week of which timetable —
-    // and one wrapping row from `sm` up. Every group is sized to its content,
-    // so nothing is stretched to fill a row it does not need.
+    // Two rows on a phone, one wrapping row from `sm` up. The control *labels*
+    // wait for `lg` (see the segments below and the week selector): a tablet
+    // cannot fit three labelled segments plus two pickers on one line, and an
+    // icon-only segment is still legible where a wrapped row is not.
     <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       {/* Row 1: the entry type (icons only on a phone) and its picker. */}
       <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
@@ -304,19 +305,19 @@ export function FilterBar({
           {FILTERS.map(({ filter, icon: Icon, labelKey }) => (
             <ToggleGroupItem
               aria-label={t(labelKey)}
-              className="px-2 sm:px-3"
+              className="px-2 sm:px-2.5 lg:px-3"
               disabled={disabled}
               key={filter}
               title={t(labelKey)}
               value={filter}
             >
               <Icon />
-              <span className="hidden sm:inline">{t(labelKey)}</span>
+              <span className="hidden lg:inline">{t(labelKey)}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
 
-        <div className="min-w-0 flex-1 sm:w-56 sm:flex-none">
+        <div className="min-w-0 flex-1 sm:w-52 sm:flex-none lg:w-56">
           {renderSelect()}
         </div>
       </div>
@@ -329,7 +330,7 @@ export function FilterBar({
           value={weekFilter}
         />
 
-        <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">
+        <div className="min-w-0 flex-1 sm:w-40 sm:flex-none lg:w-44">
           <TimetableSelector
             loading={!timetables}
             onSelect={onSelectTimetable}

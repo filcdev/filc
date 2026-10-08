@@ -20,7 +20,7 @@ type WeekSelectorProps = {
  * On a phone it collapses to the A/B letters and an icon, which is what lets it
  * share a row with the timetable selector and the print button.
  *
- * The narrow/wide switch is CSS (`sm:`), not a media query in JS: the server
+ * The narrow/wide switch is CSS (`lg:`), not a media query in JS: the server
  * and the browser then render the same markup.
  */
 export function WeekSelector({
@@ -55,7 +55,7 @@ export function WeekSelector({
       {items.map((item) => (
         <ToggleGroupItem
           aria-label={item.label}
-          className="px-2 sm:px-3"
+          className="px-2 lg:px-3"
           disabled={disabled}
           key={item.value}
           title={item.label}
@@ -66,13 +66,13 @@ export function WeekSelector({
               would otherwise be identical. */}
           {item.value === 'all' ? (
             <>
-              <Layers className="sm:hidden" />
-              <span className="hidden sm:inline">{item.label}</span>
+              <Layers className="lg:hidden" />
+              <span className="hidden lg:inline">{item.label}</span>
             </>
           ) : (
             <>
-              <span className="font-semibold sm:hidden">{item.value}</span>
-              <span className="hidden sm:inline">{item.label}</span>
+              <span className="font-semibold lg:hidden">{item.value}</span>
+              <span className="hidden lg:inline">{item.label}</span>
             </>
           )}
         </ToggleGroupItem>

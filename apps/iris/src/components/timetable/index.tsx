@@ -242,23 +242,273 @@ const renderTimetableBody = (
     />
   );
 
-// Component
-export function TimetableView() {
-  const search = Route.useSearch();
-  const { i18n, t } = useTranslation();
-  const { data: session, isPending } = useSession();
-  const navigate = useNavigate({ from: Route.fullPath });
+/**
+ * A placeholder shaped like the timetable it stands in for. The old
+ * `h-8 w-64` strip read as a second, empty toolbar sitting under the real one.
+ * Colours match the real grid (`border-border bg-card`) — a bare `border`
+ * resolves to `currentColor`, which drew a white outline around the card.
+ */
+function TimetableLoadingPlaceholder() {
+  return (
+    <div className="w-full rounded-xl border border-border bg-card">
+      <div className="border-border border-b bg-muted/40 px-4 py-3">
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="grid grid-cols-5 gap-px p-px">
+        {[0, 1, 2, 3, 4].map((day) => (
+          <div className="space-y-2 p-2" key={day}>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The selection lifecycle: seed the filter and entry from the URL or sensible
+ * defaults once every list has loaded, keep the selection valid when the filter
+ * changes, clear the class when the timetable changes (cohorts are scoped to a
+ * timetable), and mirror the result back into the URL.
+ *
+ * A hook rather than four effects in the page component: the ordering between
+ * them is the whole point, and it is easier to follow in one place.
+ */
+const useTimetableSelection = ({
+  activeFilter,
+  activeSelectionId,
+  classrooms,
+  cohorts,
+  initialized,
+  isAuthenticated,
+  isPending,
+  myTeacher,
+  myTeacherPending,
+  navigate,
+  search,
+  selectedTimetableId,
+  selections,
+  sessionCohortId,
+  setActiveFilter,
+  setInitialized,
+  setSelections,
+  teachers,
+}: {
+  activeFilter: FilterType;
+  activeSelectionId: string | null;
+  classrooms?: ClassroomItem[];
+  cohorts?: CohortItem[];
+  initialized: boolean;
+  isAuthenticated: boolean;
+  isPending: boolean;
+  myTeacher: TeacherItem | null;
+  myTeacherPending: boolean;
+  navigate: (options: {
+    replace: boolean;
+    search: () => z.Infer<typeof searchSchema>;
+  }) => void;
+  search: TimetableSearchParams;
+  selectedTimetableId: string | null;
+  selections: SelectionsType;
+  sessionCohortId: string | null;
+  setActiveFilter: (filter: FilterType) => void;
+  setInitialized: (initialized: boolean) => void;
+  setSelections: Dispatch<SetStateAction<SelectionsType>>;
+  teachers?: TeacherItem[];
+}) => {
+  // Seed from the URL, or the user's own class/teacher profile.
+  useEffect(() => {
+    const ready = isSelectionSeedReady({
+      classrooms,
+      cohorts,
+      initialized,
+      isAuthenticated,
+      isPending,
+      myTeacherPending,
+      teachers,
+    });
+
+    if (!ready) {
+      return;
+    }
+
+    applyInitialSelection({
+      fallbackCohortId: sessionCohortId,
+      lists: {
+        class: cohorts ?? [],
+        classroom: classrooms ?? [],
+        teacher: teachers ?? [],
+      },
+      myTeacher,
+      search,
+      setActiveFilter,
+      setSelections,
+    });
+
+    setInitialized(true);
+  }, [
+    classrooms,
+    cohorts,
+    teachers,
+    sessionCohortId,
+    isPending,
+    isAuthenticated,
+    myTeacher,
+    myTeacherPending,
+    initialized,
+    search,
+    setActiveFilter,
+    setInitialized,
+    setSelections,
+  ]);
+
+  // Keep a valid entry selected when the filter changes.
+  useEffect(() => {
+    if (!initialized) {
+      return;
+    }
+
+    const defaultSelection = resolveDefaultSelection({
+      filter: activeFilter,
+      lists: {
+        class: cohorts ?? [],
+        classroom: classrooms ?? [],
+        teacher: teachers ?? [],
+      },
+      selections,
+    });
+
+    if (defaultSelection) {
+      applySelection(
+        setSelections,
+        defaultSelection.filter,
+        defaultSelection.id
+      );
+    }
+  }, [
+    initialized,
+    activeFilter,
+    classrooms,
+    cohorts,
+    teachers,
+    selections,
+    setSelections,
+  ]);
+
+  // Reset the class selection when the timetable changes.
+  const [prevTimetableId, setPrevTimetableId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedTimetableId || selectedTimetableId === prevTimetableId) {
+      return;
+    }
+    if (prevTimetableId !== null) {
+      setSelections((current) => ({ ...current, class: null }));
+      setInitialized(false);
+    }
+    setPrevTimetableId(selectedTimetableId);
+  }, [selectedTimetableId, prevTimetableId, setInitialized, setSelections]);
+
+  // Mirror the selection into the URL so a link is shareable.
+  useEffect(() => {
+    const params = buildSelectionSearch({
+      activeFilter,
+      activeSelectionId,
+      selectedTimetableId,
+    });
+    if (params) {
+      navigate({ replace: true, search: () => params });
+    }
+  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
+};
+
+/**
+ * Whether every list is in place to seed the selection: all three loaded, auth
+ * resolved, and the teacher profile settled (it loads after auth, and a teacher
+ * must not be defaulted to their class while it is still pending).
+ */
+const isSelectionSeedReady = ({
+  classrooms,
+  cohorts,
+  initialized,
+  isAuthenticated,
+  isPending,
+  myTeacherPending,
+  teachers,
+}: {
+  classrooms?: ClassroomItem[];
+  cohorts?: CohortItem[];
+  initialized: boolean;
+  isAuthenticated: boolean;
+  isPending: boolean;
+  myTeacherPending: boolean;
+  teachers?: TeacherItem[];
+}): boolean =>
+  Boolean(cohorts && teachers && classrooms) &&
+  !initialized &&
+  !isPending &&
+  !(isAuthenticated && myTeacherPending);
+
+/** Whether the picker for the active filter is still loading. */
+const isSelectorLoading = (
+  activeFilter: FilterType,
+  loading: { classrooms: boolean; cohorts: boolean; teachers: boolean }
+): boolean => {
+  switch (activeFilter) {
+    case 'class':
+      return loading.cohorts;
+    case 'teacher':
+      return loading.teachers;
+    case 'classroom':
+      return loading.classrooms;
+    default:
+      return false;
+  }
+};
+
+/**
+ * The search params for the current selection, or `null` when there is nothing
+ * selected to put in the URL.
+ */
+const buildSelectionSearch = ({
+  activeFilter,
+  activeSelectionId,
+  selectedTimetableId,
+}: {
+  activeFilter: FilterType;
+  activeSelectionId: string | null;
+  selectedTimetableId: string | null;
+}): z.Infer<typeof searchSchema> | null => {
+  if (!activeSelectionId) {
+    return null;
+  }
+
+  const params: z.Infer<typeof searchSchema> = {
+    cohort: undefined,
+    room: undefined,
+    teacher: undefined,
+    timetable: selectedTimetableId ?? undefined,
+  };
+  const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
+  params[paramKey] = activeSelectionId;
+  return params;
+};
+
+/**
+ * The signed-in user's per-subject colours, and the writer for them.
+ *
+ * Anonymous visitors get an empty map (there is nothing to load and nothing to
+ * save); the mutation invalidates the shared settings query so the picker and
+ * the grid stay in step.
+ */
+const useTimetableClassColors = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
-
-  const isAuthenticated = !isPending && !!session;
-
-  // Fetch user settings for class colors (authenticated users only)
   const settingsQuery = useTimetableUserSettings(isAuthenticated);
   const userColors = isAuthenticated
     ? (settingsQuery.data?.timetableClassColors ?? {})
     : {};
 
-  // Mutation to save class color
   const colorMutation = useMutation(
     orpc.notifications.updateSettings.mutationOptions({
       onSuccess: () => {
@@ -277,6 +527,92 @@ export function TimetableView() {
     },
     [colorMutation, userColors]
   );
+
+  return { handleColorChange, userColors };
+};
+
+/** The filter a URL implies, when it names one of the three entry types. */
+const initialFilterFromSearch = (search: TimetableSearchParams): FilterType => {
+  if (search.cohort) {
+    return 'class';
+  }
+  if (search.teacher) {
+    return 'teacher';
+  }
+  if (search.room) {
+    return 'classroom';
+  }
+  return 'class';
+};
+
+/**
+ * Whether group highlighting applies: a signed-in student looking at their own
+ * class. Any other combination shows the plain timetable.
+ */
+const isShowingOwnClass = ({
+  activeFilter,
+  isAuthenticated,
+  selectedClassId,
+  sessionCohortId,
+}: {
+  activeFilter: FilterType;
+  isAuthenticated: boolean;
+  selectedClassId: string | null;
+  sessionCohortId: string | null;
+}): boolean =>
+  isAuthenticated &&
+  activeFilter === 'class' &&
+  selectedClassId !== null &&
+  selectedClassId === sessionCohortId;
+
+/** The name of the entry the current filter points at, for the card header. */
+const resolveSelectionLabel = (
+  activeFilter: FilterType,
+  {
+    classrooms,
+    cohorts,
+    selections,
+    teachers,
+  }: {
+    classrooms?: ClassroomItem[];
+    cohorts?: CohortItem[];
+    selections: SelectionsType;
+    teachers?: TeacherItem[];
+  }
+): string => {
+  switch (activeFilter) {
+    case 'class':
+      return (
+        cohorts?.find((entry) => entry.id === selections.class)?.name ?? ''
+      );
+    case 'teacher': {
+      const teacher = teachers?.find(
+        (entry) => entry.id === selections.teacher
+      );
+      return teacher ? `${teacher.firstName} ${teacher.lastName}`.trim() : '';
+    }
+    case 'classroom':
+      return (
+        classrooms?.find((entry) => entry.id === selections.classroom)?.name ??
+        ''
+      );
+    default:
+      return '';
+  }
+};
+
+// Component
+export function TimetableView() {
+  const search = Route.useSearch();
+  const { i18n, t } = useTranslation();
+  const { data: session, isPending } = useSession();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const isAuthenticated = !isPending && !!session;
+
+  const settingsQuery = useTimetableUserSettings(isAuthenticated);
+  const { handleColorChange, userColors } =
+    useTimetableClassColors(isAuthenticated);
 
   // Timetable query (all timetables)
   const timetablesQuery = useTimetables();
@@ -334,18 +670,9 @@ export function TimetableView() {
   const myTeacher = myTeacherQuery.data ?? null;
 
   // State
-  const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
-    if (search.cohort) {
-      return 'class';
-    }
-    if (search.teacher) {
-      return 'teacher';
-    }
-    if (search.room) {
-      return 'classroom';
-    }
-    return 'class';
-  });
+  const [activeFilter, setActiveFilter] = useState<FilterType>(() =>
+    initialFilterFromSearch(search)
+  );
   const [selections, setSelections] = useState<SelectionsType>({
     class: null,
     classroom: null,
@@ -366,11 +693,12 @@ export function TimetableView() {
   );
 
   // Group highlighting applies to a signed-in student viewing their own class.
-  const showGroupHandling =
-    isAuthenticated &&
-    activeFilter === 'class' &&
-    selections.class !== null &&
-    selections.class === session?.user?.cohortId;
+  const showGroupHandling = isShowingOwnClass({
+    activeFilter,
+    isAuthenticated,
+    selectedClassId: selections.class,
+    sessionCohortId: session?.user?.cohortId ?? null,
+  });
   const { groupDisplay, selectedDivisionTags, selectedGroupIds } =
     useTimetableGroupDisplay(
       showGroupHandling ? selections.class : null,
@@ -378,124 +706,32 @@ export function TimetableView() {
       settingsQuery.data?.timetableGroupDisplay
     );
 
-  // Initialize from URL or defaults
-  useEffect(() => {
-    // The teacher profile loads after auth resolves; wait for it before
-    // deciding the default so a teacher isn't defaulted to their class.
-    const myTeacherLoaded = !(isAuthenticated && myTeacherQuery.isPending);
-    const allDataLoaded =
-      cohortsQuery.data &&
-      teachersQuery.data &&
-      classroomsQuery.data &&
-      myTeacherLoaded;
-
-    if (!allDataLoaded || initialized || isPending) {
-      return;
-    }
-
-    const lists = {
-      class: cohortsQuery.data,
-      classroom: classroomsQuery.data,
-      teacher: teachersQuery.data,
-    };
-
-    applyInitialSelection({
-      fallbackCohortId: session?.user?.cohortId ?? null,
-      lists,
-      myTeacher,
-      search: {
-        cohort: search.cohort,
-        room: search.room,
-        teacher: search.teacher,
-      },
-      setActiveFilter,
-      setSelections,
-    });
-
-    setInitialized(true);
-  }, [
-    cohortsQuery.data,
-    teachersQuery.data,
-    classroomsQuery.data,
-    session,
-    isPending,
-    isAuthenticated,
-    myTeacher,
-    myTeacherQuery.isPending,
-    initialized,
-    search.cohort,
-    search.teacher,
-    search.room,
-  ]);
-
-  // Set default selection when filter changes
-  useEffect(() => {
-    if (!initialized) {
-      return;
-    }
-
-    const defaultSelection = resolveDefaultSelection({
-      filter: activeFilter,
-      lists: {
-        class: cohortsQuery.data ?? [],
-        classroom: classroomsQuery.data ?? [],
-        teacher: teachersQuery.data ?? [],
-      },
-      selections: {
-        class: selections.class,
-        classroom: selections.classroom,
-        teacher: selections.teacher,
-      },
-    });
-
-    if (defaultSelection) {
-      applySelection(
-        setSelections,
-        defaultSelection.filter,
-        defaultSelection.id
-      );
-    }
-  }, [
-    initialized,
+  // Selection plumbing: seed from the URL, follow filter changes, reset when
+  // the timetable changes, and mirror the selection back into the URL.
+  useTimetableSelection({
     activeFilter,
-    cohortsQuery.data,
-    teachersQuery.data,
-    classroomsQuery.data,
-    selections.class,
-    selections.classroom,
-    selections.teacher,
-  ]);
-
-  // Reset class selection when timetable changes (cohorts are timetable-scoped)
-  const [prevTimetableId, setPrevTimetableId] = useState<string | null>(null);
-  useEffect(() => {
-    if (selectedTimetableId && selectedTimetableId !== prevTimetableId) {
-      if (prevTimetableId !== null) {
-        setSelections((s) => ({ ...s, class: null }));
-        setInitialized(false);
-      }
-      setPrevTimetableId(selectedTimetableId);
-    }
-  }, [selectedTimetableId, prevTimetableId]);
-
-  // Sync selection to URL
-  useEffect(() => {
-    if (activeSelectionId) {
-      const searchParams: z.Infer<typeof searchSchema> = {
-        cohort: undefined,
-        room: undefined,
-        teacher: undefined,
-        timetable: selectedTimetableId ?? undefined,
-      };
-
-      const paramKey = `${activeFilter}` as 'cohort' | 'teacher' | 'room';
-      searchParams[paramKey] = activeSelectionId;
-      navigate({
-        replace: true,
-        search: () => searchParams,
-      });
-    }
-  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
+    activeSelectionId,
+    classrooms: classroomsQuery.data,
+    cohorts: cohortsQuery.data,
+    initialized,
+    isAuthenticated,
+    isPending,
+    myTeacher,
+    myTeacherPending: myTeacherQuery.isPending,
+    navigate,
+    search: {
+      cohort: search.cohort,
+      room: search.room,
+      teacher: search.teacher,
+    },
+    selectedTimetableId,
+    selections,
+    sessionCohortId: session?.user?.cohortId ?? null,
+    setActiveFilter,
+    setInitialized,
+    setSelections,
+    teachers: teachersQuery.data,
+  });
 
   const weekFilteredLessons = useMemo(
     () =>
@@ -529,42 +765,29 @@ export function TimetableView() {
 
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
-  const getSelectionLabel = (): string => {
-    switch (activeFilter) {
-      case 'class':
-        return (
-          cohortsQuery.data?.find((c) => c.id === selections.class)?.name ?? ''
-        );
-      case 'teacher': {
-        const teacher = teachersQuery.data?.find(
-          (entry) => entry.id === selections.teacher
-        );
-        if (!teacher) {
-          return '';
-        }
-        return `${teacher.firstName} ${teacher.lastName}`.trim();
-      }
-      case 'classroom':
-        return (
-          classroomsQuery.data?.find((c) => c.id === selections.classroom)
-            ?.name ?? ''
-        );
-      default:
-        return '';
-    }
-  };
-
   // Secondary (paper-like) view: the class code shown in the corner cell.
   // The view itself is a preference (see the Appearance settings pane), kept in
   // a cookie so it applies before the first paint.
   const { view } = useTimetableView(settingsQuery.data?.timetableView);
-  const cardHeader = buildCardHeader(getSelectionLabel());
+  const cardHeader = buildCardHeader(
+    resolveSelectionLabel(activeFilter, {
+      classrooms: classroomsQuery.data,
+      cohorts: cohortsQuery.data,
+      selections,
+      teachers: teachersQuery.data,
+    })
+  );
 
   const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
     const timetableName =
       timetablesQuery.data?.find((entry) => entry.id === selectedTimetableId)
         ?.name ?? '';
-    const label = getSelectionLabel();
+    const label = resolveSelectionLabel(activeFilter, {
+      classrooms: classroomsQuery.data,
+      cohorts: cohortsQuery.data,
+      selections,
+      teachers: teachersQuery.data,
+    });
     const generatedAt = new Date().toLocaleDateString(i18n.language, {
       day: '2-digit',
       month: '2-digit',
@@ -593,20 +816,11 @@ export function TimetableView() {
     window.open(url, '_blank');
   };
 
-  const getSelectorLoading = () => {
-    switch (activeFilter) {
-      case 'class':
-        return cohortsQuery.isLoading;
-      case 'teacher':
-        return teachersQuery.isLoading;
-      case 'classroom':
-        return classroomsQuery.isLoading;
-      default:
-        return false;
-    }
-  };
-
-  const selectorLoading = getSelectorLoading();
+  const selectorLoading = isSelectorLoading(activeFilter, {
+    classrooms: classroomsQuery.isLoading,
+    cohorts: cohortsQuery.isLoading,
+    teachers: teachersQuery.isLoading,
+  });
 
   /**
    * No current timetable: the backend answers `latestValid` with NOT_FOUND when
@@ -623,11 +837,12 @@ export function TimetableView() {
 
   const isLoading =
     selectorLoading || lessonsQuery.isLoading || !activeSelectionId;
-  const hasError =
-    cohortsQuery.error ||
-    teachersQuery.error ||
-    classroomsQuery.error ||
-    lessonsQuery.error;
+  const hasError = Boolean(
+    cohortsQuery.error ??
+      teachersQuery.error ??
+      classroomsQuery.error ??
+      lessonsQuery.error
+  );
 
   const timetableContent = renderTimetableBody(
     view,
@@ -648,6 +863,38 @@ export function TimetableView() {
       userColors,
     }
   );
+
+  /**
+   * Which body to show. An early return per state keeps this out of the JSX as
+   * a chain of ternaries, and keeps the component's own branching to a minimum.
+   */
+  const renderBody = () => {
+    if (hasNoValidTimetable) {
+      return (
+        <Empty
+          description={t('timetable.noValidTimetableDescription')}
+          icon={<CalendarOff className="size-6" />}
+          title={t('timetable.noValidTimetableTitle')}
+        />
+      );
+    }
+
+    if (isLoading) {
+      return <TimetableLoadingPlaceholder />;
+    }
+
+    if (!hasError && weekFilteredLessons.length === 0) {
+      return (
+        <Empty
+          description={t('timetable.emptyWeekDescription')}
+          icon={<CalendarX className="size-6" />}
+          title={t('timetable.emptyWeekTitle')}
+        />
+      );
+    }
+
+    return timetableContent;
+  };
 
   return (
     <div className="flex grow flex-col items-center p-4">
@@ -684,50 +931,11 @@ export function TimetableView() {
 
         {hasError && (
           <div className="text-red-500 dark:text-red-400">
-            Failed to load timetable.
+            {t('timetable.loadError')}
           </div>
         )}
 
-        {hasNoValidTimetable ? (
-          <Empty
-            description={t('timetable.noValidTimetableDescription')}
-            icon={<CalendarOff className="size-6" />}
-            title={t('timetable.noValidTimetableTitle')}
-          />
-        ) : isLoading ? (
-          // A placeholder shaped like the timetable it stands in for. The old
-          // `h-8 w-64` strip read as a second, empty filter bar sitting under
-          // the real one. Colours match the real grid (`border-border bg-card`)
-          // — a bare `border` resolves to `currentColor`, which drew a white
-          // outline around the whole card.
-          <div className="w-full rounded-xl border border-border bg-card">
-            <div className="border-border border-b bg-muted/40 px-4 py-3">
-              <Skeleton className="h-4 w-32" />
-            </div>
-            <div className="grid grid-cols-5 gap-px p-px">
-              {[0, 1, 2, 3, 4].map((day) => (
-                <div className="space-y-2 p-2" key={day}>
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          (() => {
-            if (!hasError && weekFilteredLessons.length === 0) {
-              return (
-                <Empty
-                  description={t('timetable.emptyWeekDescription')}
-                  icon={<CalendarX className="size-6" />}
-                  title={t('timetable.emptyWeekTitle')}
-                />
-              );
-            }
-            return timetableContent;
-          })()
-        )}
+        {renderBody()}
       </div>
     </div>
   );
