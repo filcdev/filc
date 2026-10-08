@@ -19,6 +19,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTheme } from 'next-themes';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ApiKeysCard } from '@/components/api-keys/api-keys-card';
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
@@ -222,6 +223,8 @@ function SettingsPage() {
         {saveMutation.isPending && <Spinner className="mr-2 h-4 w-4" />}
         {t('common.accept')}
       </Button>
+
+      <ApiKeysCard />
     </div>
   );
 }

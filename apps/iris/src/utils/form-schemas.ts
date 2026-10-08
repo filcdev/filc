@@ -78,6 +78,26 @@ export const otaUpdateSchema = z.object({
   url: z.string().trim().min(1, 'Firmware URL is required'),
 });
 
+/** better-auth's api-key plugin rejects names outside 1-32 characters. */
+export const API_KEY_NAME_MAX_LENGTH = 32;
+
+export const apiKeyNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(API_KEY_NAME_MAX_LENGTH, 'Name is too long');
+
+/** Creating a key needs a name and one of the expiry choices. */
+export const createApiKeySchema = z.object({
+  expiresIn: z.string(),
+  name: apiKeyNameSchema,
+});
+
+/** Renaming only touches the name. */
+export const renameApiKeySchema = z.object({
+  name: apiKeyNameSchema,
+});
+
 export const timetableEditSchema = z.object({
   name: z.string(),
   validFrom: z.date().optional(),

@@ -20,6 +20,7 @@ import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscr
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
+import { Route as PrivateAdminApiKeysRouteImport } from './routes/_private/admin/api-keys'
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
 import { Route as PrivateAdminKiosksRouteImport } from './routes/_private/admin/kiosks'
 import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
@@ -99,6 +100,11 @@ const AuthWelcomeRoute = AuthWelcomeRouteImport.update({
   id: '/auth/welcome',
   path: '/auth/welcome',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PrivateAdminApiKeysRoute = PrivateAdminApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
 const PrivateAdminBugReportsRoute = PrivateAdminBugReportsRouteImport.update({
   id: '/bug-reports',
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
+  '/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
+  '/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/_public/': typeof PublicIndexRoute
+  '/_private/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/_private/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
+    | '/admin/api-keys'
     | '/admin/bug-reports'
     | '/admin/kiosks'
     | '/admin/roles'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
+    | '/admin/api-keys'
     | '/admin/bug-reports'
     | '/admin/kiosks'
     | '/admin/roles'
@@ -454,6 +465,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/_public/'
+    | '/_private/admin/api-keys'
     | '/_private/admin/bug-reports'
     | '/_private/admin/kiosks'
     | '/_private/admin/roles'
@@ -568,6 +580,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/welcome'
       preLoaderRoute: typeof AuthWelcomeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_private/admin/api-keys': {
+      id: '/_private/admin/api-keys'
+      path: '/api-keys'
+      fullPath: '/admin/api-keys'
+      preLoaderRoute: typeof PrivateAdminApiKeysRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/bug-reports': {
       id: '/_private/admin/bug-reports'
@@ -755,6 +774,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface PrivateAdminRouteRouteChildren {
+  PrivateAdminApiKeysRoute: typeof PrivateAdminApiKeysRoute
   PrivateAdminBugReportsRoute: typeof PrivateAdminBugReportsRoute
   PrivateAdminKiosksRoute: typeof PrivateAdminKiosksRoute
   PrivateAdminRolesRoute: typeof PrivateAdminRolesRoute
@@ -783,6 +803,7 @@ interface PrivateAdminRouteRouteChildren {
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
+  PrivateAdminApiKeysRoute: PrivateAdminApiKeysRoute,
   PrivateAdminBugReportsRoute: PrivateAdminBugReportsRoute,
   PrivateAdminKiosksRoute: PrivateAdminKiosksRoute,
   PrivateAdminRolesRoute: PrivateAdminRolesRoute,

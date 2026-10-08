@@ -25,6 +25,7 @@ import {
   FlaskConical,
   GraduationCap,
   IdCard,
+  KeyRound,
   Languages,
   Layers,
   LayoutDashboard,
@@ -170,6 +171,12 @@ export function AdminSidebar() {
             permission: permissions.rolesRead,
             title: t('admin.roles'),
             url: '/admin/roles',
+          },
+          {
+            icon: KeyRound,
+            permission: permissions.usersManage,
+            title: t('admin.apiKeys'),
+            url: '/admin/api-keys',
           },
           {
             icon: Bug,
