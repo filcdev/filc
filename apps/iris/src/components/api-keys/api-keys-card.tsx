@@ -10,16 +10,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@filcdev/ui/components/card';
-import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@filcdev/ui/components/table';
-import { Plus } from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@filcdev/ui/components/dropdown-menu';
+import { Empty } from '@filcdev/ui/components/empty';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
+import { KeyRound, MoreHorizontal, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog';
@@ -50,6 +49,97 @@ function formatTimestamp(
 }
 
 /**
+ * One key as a list row.
+ *
+ * A table cannot work here: seven columns need ~900px and the settings dialog
+ * gives the pane about half of that, so every row would scroll sideways. The
+ * timestamps that matter are the two an operator reads — created and last used
+ * — and the rest sit in the actions menu.
+ */
+function ApiKeyRow({
+  apiKey,
+  onRename,
+  onToggle,
+  onDelete,
+  isToggling,
+  isDeleting,
+}: {
+  apiKey: UserApiKey;
+  onRename: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+  isToggling: boolean;
+  isDeleting: boolean;
+}) {
+  const { t, i18n } = useTranslation();
+
+  return (
+    <li className="flex items-start justify-between gap-3 rounded-xl border p-3">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="truncate font-medium">
+            {apiKey.name ?? t('apiKeys.unnamed')}
+          </span>
+          <Badge variant={apiKey.enabled ? 'default' : 'secondary'}>
+            {t(apiKey.enabled ? 'apiKeys.enabled' : 'apiKeys.disabled')}
+          </Badge>
+        </div>
+        <span className="truncate font-mono text-muted-foreground text-xs">
+          {apiKey.start ?? apiKey.prefix ?? t('apiKeys.unknownKey')}
+        </span>
+        <span className="text-muted-foreground text-xs">
+          {t('apiKeys.created')}:{' '}
+          {formatTimestamp(
+            apiKey.createdAt,
+            i18n.language,
+            t('apiKeys.unknownDate')
+          )}
+          {' · '}
+          {t('apiKeys.lastUsed')}:{' '}
+          {formatTimestamp(
+            apiKey.lastRequest,
+            i18n.language,
+            t('apiKeys.neverUsed')
+          )}
+          {' · '}
+          {t('apiKeys.expires')}:{' '}
+          {formatTimestamp(apiKey.expiresAt, i18n.language, t('apiKeys.never'))}
+        </span>
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              aria-label={t('apiKeys.actions')}
+              className="shrink-0"
+              size="icon-sm"
+              variant="ghost"
+            >
+              <MoreHorizontal />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onRename}>
+            {t('apiKeys.rename')}
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={isToggling} onClick={onToggle}>
+            {t(apiKey.enabled ? 'apiKeys.disable' : 'apiKeys.enable')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isDeleting}
+            onClick={onDelete}
+            variant="destructive"
+          >
+            {t('apiKeys.delete')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </li>
+  );
+}
+
+/**
  * The signed-in user's own API keys: list, create, rename, toggle and revoke.
  *
  * better-auth scopes these endpoints to the session, so the card lists exactly
@@ -57,7 +147,7 @@ function formatTimestamp(
  * beyond being signed in, which the `_private` tree already guarantees.
  */
 export function ApiKeysCard() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [renaming, setRenaming] = useState<UserApiKey | null>(null);
@@ -102,108 +192,33 @@ export function ApiKeysCard() {
             <AlertTitle>{t('apiKeys.loadError')}</AlertTitle>
           </Alert>
         )}
-        {!(apiKeysQuery.isLoading || apiKeysQuery.isError) && (
-          <div className="w-full overflow-x-auto rounded-md border">
-            <Table className="w-full min-w-4xl">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('apiKeys.name')}</TableHead>
-                  <TableHead>{t('apiKeys.key')}</TableHead>
-                  <TableHead>{t('apiKeys.created')}</TableHead>
-                  <TableHead>{t('apiKeys.expires')}</TableHead>
-                  <TableHead>{t('apiKeys.lastUsed')}</TableHead>
-                  <TableHead>{t('apiKeys.status')}</TableHead>
-                  <TableHead>{t('apiKeys.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {apiKeys.length === 0 && (
-                  <TableRow>
-                    <TableCell className="text-muted-foreground" colSpan={7}>
-                      {t('apiKeys.noKeys')}
-                    </TableCell>
-                  </TableRow>
-                )}
-                {apiKeys.map((apiKey) => (
-                  <TableRow key={apiKey.id}>
-                    <TableCell className="font-medium">
-                      {apiKey.name ?? t('apiKeys.unnamed')}
-                    </TableCell>
-                    <TableCell className="font-mono text-muted-foreground text-xs">
-                      {apiKey.start ?? apiKey.prefix ?? t('apiKeys.unknownKey')}
-                    </TableCell>
-                    <TableCell>
-                      {formatTimestamp(
-                        apiKey.createdAt,
-                        i18n.language,
-                        t('apiKeys.unknownDate')
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {formatTimestamp(
-                        apiKey.expiresAt,
-                        i18n.language,
-                        t('apiKeys.never')
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {formatTimestamp(
-                        apiKey.lastRequest,
-                        i18n.language,
-                        t('apiKeys.neverUsed')
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={apiKey.enabled ? 'default' : 'secondary'}>
-                        {t(
-                          apiKey.enabled
-                            ? 'apiKeys.enabled'
-                            : 'apiKeys.disabled'
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          onClick={() => setRenaming(apiKey)}
-                          size="sm"
-                          variant="outline"
-                        >
-                          {t('apiKeys.rename')}
-                        </Button>
-                        <Button
-                          disabled={updateApiKey.isPending}
-                          onClick={() =>
-                            updateApiKey.mutate({
-                              enabled: !apiKey.enabled,
-                              keyId: apiKey.id,
-                            })
-                          }
-                          size="sm"
-                          variant="outline"
-                        >
-                          {t(
-                            apiKey.enabled
-                              ? 'apiKeys.disable'
-                              : 'apiKeys.enable'
-                          )}
-                        </Button>
-                        <Button
-                          disabled={deleteApiKey.isPending}
-                          onClick={() => handleDelete(apiKey)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          {t('apiKeys.delete')}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        {!(apiKeysQuery.isLoading || apiKeysQuery.isError) &&
+          (apiKeys.length === 0 ? (
+            <Empty
+              description={t('apiKeys.noKeys')}
+              icon={<KeyRound />}
+              title={t('apiKeys.title')}
+            />
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {apiKeys.map((apiKey) => (
+                <ApiKeyRow
+                  apiKey={apiKey}
+                  isDeleting={deleteApiKey.isPending}
+                  isToggling={updateApiKey.isPending}
+                  key={apiKey.id}
+                  onDelete={() => handleDelete(apiKey)}
+                  onRename={() => setRenaming(apiKey)}
+                  onToggle={() =>
+                    updateApiKey.mutate({
+                      enabled: !apiKey.enabled,
+                      keyId: apiKey.id,
+                    })
+                  }
+                />
+              ))}
+            </ul>
+          ))}
       </CardContent>
       {isCreateOpen && (
         <CreateApiKeyDialog

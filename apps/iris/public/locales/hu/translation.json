@@ -704,7 +704,8 @@
     "channelsEnabled": "Értesítések engedélyezése",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
-    "loadError": "Nem sikerült betölteni a beállításokat"
+    "loadError": "Nem sikerült betölteni a beállításokat",
+    "languageChangeError": "Nem sikerült megváltoztatni a nyelvet"
   },
   "unsubscribe": {
     "title": "Értesítési beállítások",

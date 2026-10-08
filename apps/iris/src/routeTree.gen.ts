@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrivateRouteRouteImport } from './routes/_private/route'
 import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as PrivateAdminRouteRouteImport } from './routes/_private/admin/route'
-import { Route as PrivateSettingsRouteImport } from './routes/_private/settings'
 import { Route as PrivateWifiRouteImport } from './routes/_private/wifi'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicPolicyRouteImport } from './routes/_public/policy'
@@ -64,11 +63,6 @@ const PublicRouteRoute = PublicRouteRouteImport.update({
 const PrivateAdminRouteRoute = PrivateAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => PrivateRouteRoute,
-} as any)
-const PrivateSettingsRoute = PrivateSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
 const PrivateWifiRoute = PrivateWifiRouteImport.update({
@@ -292,7 +286,6 @@ const PrivateAdminWifiUsersRoute = PrivateAdminWifiUsersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
-  '/settings': typeof PrivateSettingsRoute
   '/wifi': typeof PrivateWifiRoute
   '/policy': typeof PublicPolicyRoute
   '/subs': typeof PublicSubsRoute
@@ -335,7 +328,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/admin': typeof PrivateAdminRouteRouteWithChildren
-  '/settings': typeof PrivateSettingsRoute
   '/wifi': typeof PrivateWifiRoute
   '/policy': typeof PublicPolicyRoute
   '/subs': typeof PublicSubsRoute
@@ -380,7 +372,6 @@ export interface FileRoutesById {
   '/_private': typeof PrivateRouteRouteWithChildren
   '/_public': typeof PublicRouteRouteWithChildren
   '/_private/admin': typeof PrivateAdminRouteRouteWithChildren
-  '/_private/settings': typeof PrivateSettingsRoute
   '/_private/wifi': typeof PrivateWifiRoute
   '/_public/policy': typeof PublicPolicyRoute
   '/_public/subs': typeof PublicSubsRoute
@@ -426,7 +417,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/settings'
     | '/wifi'
     | '/policy'
     | '/subs'
@@ -469,7 +459,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
-    | '/settings'
     | '/wifi'
     | '/policy'
     | '/subs'
@@ -513,7 +502,6 @@ export interface FileRouteTypes {
     | '/_private'
     | '/_public'
     | '/_private/admin'
-    | '/_private/settings'
     | '/_private/wifi'
     | '/_public/policy'
     | '/_public/subs'
@@ -584,13 +572,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof PrivateAdminRouteRouteImport
-      parentRoute: typeof PrivateRouteRoute
-    }
-    '/_private/settings': {
-      id: '/_private/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof PrivateSettingsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
     '/_private/wifi': {
@@ -944,14 +925,12 @@ const PrivateAdminRouteRouteWithChildren =
 
 interface PrivateRouteRouteChildren {
   PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
-  PrivateSettingsRoute: typeof PrivateSettingsRoute
   PrivateWifiRoute: typeof PrivateWifiRoute
   PrivateCardsIndexRoute: typeof PrivateCardsIndexRoute
 }
 
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
   PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
-  PrivateSettingsRoute: PrivateSettingsRoute,
   PrivateWifiRoute: PrivateWifiRoute,
   PrivateCardsIndexRoute: PrivateCardsIndexRoute,
 }

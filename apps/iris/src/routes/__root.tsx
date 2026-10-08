@@ -11,6 +11,7 @@ import { ThemeProvider } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
+import { SettingsDialog } from '@/components/settings-dialog';
 import { SystemMessageBanner } from '@/components/system-message-banner';
 import { CookiePopup } from '@/components/util/cookie-popup';
 import { useNotificationSettings } from '@/hooks/notifications';
@@ -127,6 +128,9 @@ function AppShell() {
     <>
       <SystemMessageBanner />
       <Outlet />
+      {/* Mounted once for the whole app: the profile menu, the notification
+          viewer and any future entry point all open this same dialog. */}
+      <SettingsDialog />
       <Toaster />
       <CookiePopup />
     </>

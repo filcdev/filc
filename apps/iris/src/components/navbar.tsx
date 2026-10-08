@@ -36,6 +36,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lazy } from '@/components/lazy';
 import { NotificationBell } from '@/components/notification-bell';
+import { openSettings } from '@/components/settings-dialog-store';
 import { LanguageSelector } from '@/components/util/language-selector';
 import {
   ADMIN_UI_PERMISSIONS,
@@ -44,16 +45,13 @@ import {
 import { useWifiStatus } from '@/hooks/wifi';
 import type { FileRoutesByTo } from '@/routeTree.gen';
 
-// Both dialogs are a click away and cost real weight (TanStack Form, the date
-// picker, its calendar). They load on first use instead of with every page that
-// renders the navbar.
+// The bug report dialog is a click away and costs real weight (TanStack Form,
+// the date picker, its calendar). It loads on first use instead of with every
+// page that renders the navbar. The settings dialog is mounted once at the app
+// root instead — several components open it, and only one instance may exist.
 const loadBugReportDialog = () =>
   import('@/components/bug-report-dialog').then((m) => ({
     default: m.BugReportDialog,
-  }));
-const loadSettingsDialog = () =>
-  import('@/components/settings-dialog').then((m) => ({
-    default: m.SettingsDialog,
   }));
 
 type NavbarProps = {
@@ -96,7 +94,6 @@ export function Navbar({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data, isPending } = useSession();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavId = useId();
 
@@ -239,7 +236,7 @@ export function Navbar({
                         <DoorOpen />
                         <span>{t('doorlock.manage-cards')}</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                      <DropdownMenuItem onClick={() => openSettings()}>
                         <Cog />
                         <span>{t('preferences.title')}</span>
                       </DropdownMenuItem>
@@ -308,9 +305,6 @@ export function Navbar({
             )}
           </div>
         </div>
-      )}
-      {settingsOpen && (
-        <Lazy load={loadSettingsDialog} onOpenChange={setSettingsOpen} open />
       )}
     </>
   );

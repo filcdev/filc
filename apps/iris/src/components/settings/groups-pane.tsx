@@ -1,3 +1,4 @@
+import { useSession } from '@filcdev/auth/client';
 import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
 import {
   Card,
@@ -8,19 +9,20 @@ import {
 } from '@filcdev/ui/components/card';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { useTranslation } from 'react-i18next';
+import { DivisionGroupPicker } from '@/components/timetable/group-picker';
 import { useGroupsForCohort } from '@/hooks/timetable-groups';
-import { DivisionGroupPicker } from './group-picker';
-
-type MyGroupsSettingsCardProps = {
-  cohortId: string | null;
-};
 
 /**
- * The "My groups" settings card: lets a student pick which group they belong
- * to in each division of their class (one group per division).
+ * The "My groups" pane: lets a student pick which group they belong to in each
+ * division of their class (one group per division).
+ *
+ * The picker is scoped to the user's *persisted* cohort, so a membership is
+ * never saved for a class the user has only drafted in the General pane.
  */
-export function MyGroupsSettingsCard({ cohortId }: MyGroupsSettingsCardProps) {
+export function GroupsPane() {
   const { t } = useTranslation();
+  const { data: session } = useSession();
+  const cohortId = session?.user?.cohortId ?? null;
   const groupsQuery = useGroupsForCohort(cohortId);
 
   const renderContent = () => {

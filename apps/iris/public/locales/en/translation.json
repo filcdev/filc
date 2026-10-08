@@ -704,7 +704,8 @@
     "channelsEnabled": "Enable notifications",
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
-    "loadError": "Failed to load preferences"
+    "loadError": "Failed to load preferences",
+    "languageChangeError": "Could not change the language"
   },
   "unsubscribe": {
     "title": "Notification Preferences",
