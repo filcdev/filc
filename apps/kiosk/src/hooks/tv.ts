@@ -1,37 +1,16 @@
 import type { DepartureGroup } from '@filcdev/api/domains/kiosk/config';
-import type { InferResponseType } from 'hono/client';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { TV_STRINGS } from '@/components/tv/strings';
-import { api, useApiQuery } from '@/utils/api';
 import { REFETCH_INTERVALS } from '@/utils/constants';
 import { dayjs } from '@/utils/dayjs';
+import { type api, orpc } from '@/utils/orpc';
 import { isPeriodOver } from '@/utils/periods';
 
-type LatestValidTimetable = InferResponseType<
-  typeof api.timetable.timetables.latestValid.$get,
-  200
->['data'];
-type Periods = InferResponseType<
-  typeof api.timetable.periods.getAll.$get,
-  200
->['data'];
-type Substitutions = InferResponseType<
-  typeof api.timetable.substitutions.$get,
-  200
->['data'];
-type MovedLessons = InferResponseType<
-  typeof api.timetable.movedLessons.$get,
-  200
->['data'];
-type KioskNews = InferResponseType<typeof api.kiosk.news.$get, 200>['data'];
-type KioskWeather = InferResponseType<
-  typeof api.kiosk.weather.$get,
-  200
->['data'];
-type KioskDepartures = InferResponseType<
-  typeof api.kiosk.departures.$post,
-  200
->['data'];
+type Substitutions = Awaited<
+  ReturnType<typeof api.timetable.substitutions.list>
+>;
+type KioskNews = Awaited<ReturnType<typeof api.kiosk.news.list>>;
 
 /** One announcement of the kiosk feed, as the full-screen takeover shows it. */
 export type KioskNewsItem = KioskNews['announcements'][number];
@@ -66,28 +45,21 @@ function isToday(date: string | Date): boolean {
  * schedule instead of a hardcoded one.
  */
 export function useActiveTimetable() {
-  const timetable = useApiQuery<LatestValidTimetable>(
-    () => api.timetable.timetables.latestValid.$get(),
-    {
-      queryKey: ['timetable', 'latestValid'],
-      refetchInterval: REFETCH_INTERVALS.timetable,
-      retry: false,
-    }
-  );
+  const timetable = useQuery({
+    ...orpc.timetable.timetables.latestValid.queryOptions({}),
+    refetchInterval: REFETCH_INTERVALS.timetable,
+    retry: false,
+  });
 
   const timetableId = timetable.data?.id;
 
-  const periods = useApiQuery<Periods>(
-    () =>
-      api.timetable.periods.getAll.$get({
-        query: timetableId ? { timetableId } : {},
-      }),
-    {
-      enabled: !!timetableId,
-      queryKey: ['timetable', 'periods', timetableId],
-      refetchInterval: REFETCH_INTERVALS.timetable,
-    }
-  );
+  const periods = useQuery({
+    ...orpc.timetable.periods.getAll.queryOptions({
+      input: timetableId ? { timetableId } : {},
+    }),
+    enabled: !!timetableId,
+    refetchInterval: REFETCH_INTERVALS.timetable,
+  });
 
   return {
     isLoading: timetable.isPending,
@@ -137,13 +109,10 @@ function substitutionRows(item: Substitutions[number]): TvSubstitutionRow[] {
  * what is still ahead of the students.
  */
 export function useTvSubstitutions() {
-  const query = useApiQuery<Substitutions>(
-    () => api.timetable.substitutions.$get(),
-    {
-      queryKey: ['timetable', 'substitutions'],
-      refetchInterval: REFETCH_INTERVALS.substitutions,
-    }
-  );
+  const query = useQuery({
+    ...orpc.timetable.substitutions.list.queryOptions({}),
+    refetchInterval: REFETCH_INTERVALS.substitutions,
+  });
 
   const rows = useMemo<TvSubstitutionRow[]>(
     () =>
@@ -158,13 +127,10 @@ export function useTvSubstitutions() {
 
 /** Today's room changes whose starting period has not ended yet. */
 export function useRoomChanges() {
-  const query = useApiQuery<MovedLessons>(
-    () => api.timetable.movedLessons.$get(),
-    {
-      queryKey: ['timetable', 'movedLessons'],
-      refetchInterval: REFETCH_INTERVALS.roomSubtitutions,
-    }
-  );
+  const query = useQuery({
+    ...orpc.timetable.movedLessons.list.queryOptions({}),
+    refetchInterval: REFETCH_INTERVALS.roomSubtitutions,
+  });
 
   const rows = useMemo<TvRoomChangeRow[]>(() => {
     const result: TvRoomChangeRow[] = [];
@@ -204,8 +170,8 @@ export function useRoomChanges() {
  * query key, so the ticker and the takeover fetch it once.
  */
 function useKioskNews() {
-  const query = useApiQuery<KioskNews>(() => api.kiosk.news.$get(), {
-    queryKey: ['kiosk', 'news'],
+  const query = useQuery({
+    ...orpc.kiosk.news.list.queryOptions({}),
     refetchInterval: REFETCH_INTERVALS.news,
   });
 
@@ -342,8 +308,8 @@ export function useNewsSlideshow(
 }
 
 export function useKioskWeather() {
-  return useApiQuery<KioskWeather>(() => api.kiosk.weather.$get(), {
-    queryKey: ['kiosk', 'weather'],
+  return useQuery({
+    ...orpc.kiosk.weather.queryOptions({}),
     refetchInterval: REFETCH_INTERVALS.weather,
   });
 }
@@ -354,16 +320,12 @@ export function useKioskWeather() {
  * group's stops.
  */
 export function useKioskDepartures(groups: DepartureGroup[]) {
-  // The kiosk config is re-parsed on every heartbeat; keying on the serialized
-  // groups keeps an unchanged schedule from refetching for a new object.
-  const key = JSON.stringify(groups);
-
-  return useApiQuery<KioskDepartures>(
-    () => api.kiosk.departures.$post({ json: { groups } }),
-    {
-      queryKey: ['kiosk', 'departures', key],
-      refetchInterval: REFETCH_INTERVALS.busDepartures,
-      retry: false,
-    }
-  );
+  // The kiosk config is re-parsed on every heartbeat; the query key is the
+  // input itself, hashed structurally, so an unchanged schedule does not
+  // refetch for a new array.
+  return useQuery({
+    ...orpc.kiosk.departures.queryOptions({ input: { groups } }),
+    refetchInterval: REFETCH_INTERVALS.busDepartures,
+    retry: false,
+  });
 }

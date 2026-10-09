@@ -1,6 +1,5 @@
 import type dayjs from 'dayjs';
-import type { InferResponseType } from 'hono/client';
-import type { api } from '@/utils/hc';
+import type { api } from '@/utils/orpc';
 
 export type FilterType = 'class' | 'teacher' | 'classroom';
 
@@ -10,35 +9,27 @@ export type SelectionsType = {
   classroom: string | null;
 };
 
-export type CohortResponse = InferResponseType<
-  (typeof api.cohort.index)['$get']
->;
-export type CohortItem = NonNullable<CohortResponse['data']>[number];
+export type CohortItem = Awaited<ReturnType<typeof api.cohort.cohort>>[number];
 
-export type TimetableResponse = InferResponseType<
-  (typeof api.timetable.timetables)['$get']
->;
-export type TimetableItem = NonNullable<TimetableResponse['data']>[number];
+export type TimetableItem = Awaited<
+  ReturnType<typeof api.timetable.timetables.list>
+>[number];
 
-export type TeacherResponse = InferResponseType<
-  (typeof api.timetable.teachers.getAll)['$get']
->;
-export type TeacherItem = NonNullable<TeacherResponse['data']>[number];
+export type TeacherItem = Awaited<
+  ReturnType<typeof api.timetable.teachers.getAll>
+>[number];
 
-export type ClassroomResponse = InferResponseType<
-  (typeof api.timetable.classrooms.getAll)['$get']
->;
-export type ClassroomItem = NonNullable<ClassroomResponse['data']>[number];
+export type ClassroomItem = Awaited<
+  ReturnType<typeof api.timetable.classrooms.getAll>
+>[number];
 
-export type LessonsResponse = InferResponseType<
-  (typeof api.timetable.lessons.getForCohort)[':cohortId']['$get']
->;
-export type LessonItem = NonNullable<LessonsResponse['data']>[number];
+export type LessonItem = Awaited<
+  ReturnType<typeof api.timetable.lessons.getForCohort>
+>[number];
 
-export type PeriodsResponse = InferResponseType<
-  (typeof api.timetable.periods.getAll)['$get']
->;
-export type PeriodItem = NonNullable<PeriodsResponse['data']>[number];
+export type PeriodItem = Awaited<
+  ReturnType<typeof api.timetable.periods.getAll>
+>[number];
 
 export type DayColumn = {
   key: string;

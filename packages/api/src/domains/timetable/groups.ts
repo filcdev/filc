@@ -27,14 +27,11 @@ export const selectGroupRequestSchema = z.object({
 
 export type SelectGroupRequestInput = z.infer<typeof selectGroupRequestSchema>;
 
-export const selectGroupResponseSchema = z.object({
-  data: z.object({
-    divisionTag: z.string().nullable(),
-    selectedGroupId: z.uuid().nullable(),
-  }),
-  success: z.boolean(),
+/**
+ * Payload after selecting a group: the group that is now selected for the
+ * division the caller picked in.
+ */
+export const selectGroupPayloadSchema = z.object({
+  divisionTag: z.string().nullable(),
+  selectedGroupId: z.uuid().nullable(),
 });
-
-export type SelectGroupResponseInput = z.infer<
-  typeof selectGroupResponseSchema
->;

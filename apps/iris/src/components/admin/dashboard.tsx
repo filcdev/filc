@@ -17,7 +17,7 @@ import {
 } from '@filcdev/ui/components/select';
 import { Separator } from '@filcdev/ui/components/separator';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
-import type { InferResponseType } from 'hono/client';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeftRight,
   ArrowRightLeft,
@@ -29,12 +29,10 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { StatCard } from '@/components/admin/stat-card';
-import { useApiQuery } from '@/utils/api';
-import { api } from '@/utils/hc';
+import { type api, orpc } from '@/utils/orpc';
 
-type StatsResponse = InferResponseType<typeof api.dashboard.stats.$get>;
-type DashboardStats = NonNullable<StatsResponse['data']>['stats'];
-type ChartPoint = NonNullable<DashboardStats['chartData']>[number];
+type DashboardStats = Awaited<ReturnType<typeof api.dashboard.stats>>['stats'];
+type ChartPoint = DashboardStats['chartData'][number];
 
 type ChartTotals = {
   movedLessons: number;
@@ -237,11 +235,8 @@ export function AdminDashboard() {
     { label: t('dashboard.lastYear'), value: '365' },
   ];
 
-  const statsQuery = useApiQuery<NonNullable<StatsResponse['data']>>(
-    () => api.dashboard.stats.$get({ query: { days: String(days) } }),
-    {
-      queryKey: ['dashboard', 'stats', days] as const,
-    }
+  const statsQuery = useQuery(
+    orpc.dashboard.stats.queryOptions({ input: { days } })
   );
 
   const stats: DashboardStats | undefined = statsQuery.data?.stats;

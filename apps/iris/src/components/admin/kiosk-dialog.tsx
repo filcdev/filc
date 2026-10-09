@@ -9,7 +9,6 @@ import {
   navigatorKioskConfigSchema,
   tvKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
@@ -32,8 +31,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { BaseDialogProps } from '@/components/admin/admin.types';
+import { Lazy } from '@/components/lazy';
 import { type KioskRow, useCreateKiosk, useUpdateKiosk } from '@/hooks/kiosks';
 import { useBuildings, useNavigatorGraph } from '@/hooks/navigator';
+
+// The canvas pulls in three.js, which the kiosk list must not pay for until
+// the dialog is actually opened.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 type DepartureStopForm = {
   key: string;
@@ -170,13 +174,11 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
   const submit = (value: KioskFormValues, config: unknown) => {
     if (kiosk) {
       updateKiosk.mutate({
+        config,
+        enabled: value.enabled,
         id: kiosk.id,
-        payload: {
-          config,
-          enabled: value.enabled,
-          kind: value.kind,
-          name: value.name,
-        },
+        kind: value.kind,
+        name: value.name,
       });
       return;
     }
@@ -750,10 +752,11 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
                 </form.Field>
               </div>
               <div className="h-[40vh] overflow-hidden rounded-xl border">
-                <EditorView3D
+                <Lazy
                   emptyLabel={t('ui.common.no_data')}
                   graph={graph.data ?? null}
                   initialDistance={120}
+                  load={loadEditorView3D}
                   myLocation={myLocation}
                   onTransform={(patch) => {
                     if (patch.x !== undefined) {

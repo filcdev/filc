@@ -1,5 +1,5 @@
 import z from 'zod';
-import { blockContentSchema } from './announcements';
+import { blockContentSchema, newsAuthorSchema } from './announcements';
 
 export const dateRangeBodySchema = z
   .object({
@@ -40,3 +40,31 @@ export const dateRangeUpdateBodySchema = z
 export type DateRangeUpdateBodyInput = z.infer<
   typeof dateRangeUpdateBodySchema
 >;
+
+/** A `system_message` row exactly as stored. */
+export const systemMessageRowSchema = z.object({
+  authorId: z.uuid(),
+  content: z.unknown(),
+  createdAt: z.date(),
+  id: z.uuid(),
+  title: z.string(),
+  updatedAt: z.date(),
+  validFrom: z.date(),
+  validUntil: z.date(),
+});
+
+/** A system message plus the cohorts it is targeted at. */
+export const systemMessageTargetedRowSchema = systemMessageRowSchema.extend({
+  cohortIds: z.array(z.string()),
+});
+
+/** A system message as the list and detail endpoints return it, with its author. */
+export const systemMessageItemSchema = systemMessageTargetedRowSchema.extend({
+  author: newsAuthorSchema.nullable().optional(),
+});
+
+/** Payload of `GET /news/system-messages`. */
+export const systemMessageListResponseSchema = z.object({
+  data: z.array(systemMessageItemSchema),
+  total: z.number(),
+});

@@ -1,5 +1,4 @@
 import { permissions } from '@filcdev/api/permissions';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Field, FieldLabel } from '@filcdev/ui/components/field';
@@ -18,6 +17,7 @@ import {
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -30,6 +30,11 @@ import {
   useNavigatorGraph,
   useUpdateClassroom,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
+
+// The 3D editor is three.js (~560 kB). It is the bulk of this page, so it
+// loads into its own chunk instead of with the route that hosts the preview.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 export const Route = createFileRoute('/_private/admin/navigator/classrooms')({
   component: () => (
@@ -37,6 +42,18 @@ export const Route = createFileRoute('/_private/admin/navigator/classrooms')({
       <ClassroomsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.navigator.classrooms.list.queryOptions()
+      ),
+      prefetch(
+        context.queryClient,
+        orpc.navigator.buildings.list.queryOptions()
+      ),
+      prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
+    ]),
 });
 
 type ClassroomFormValues = {
@@ -84,7 +101,7 @@ function ClassroomsPage() {
     onSubmit: ({ value }) => {
       const { id, ...payload } = value;
       if (id) {
-        updateClassroom.mutate({ id, payload });
+        updateClassroom.mutate({ ...payload, id });
       } else {
         createClassroom.mutate(payload);
       }
@@ -478,7 +495,9 @@ function ClassroomsPage() {
                   columns={columns}
                   getRowId={(classroom) => classroom.id}
                   getRowLabel={(classroom) => classroom.name}
-                  onDelete={(classroom) => deleteClassroom.mutate(classroom.id)}
+                  onDelete={(classroom) =>
+                    deleteClassroom.mutate({ id: classroom.id })
+                  }
                   onEdit={startEdit}
                   onHover={(classroom) =>
                     editor.setHoveredId(classroom?.id ?? null)
@@ -491,12 +510,13 @@ function ClassroomsPage() {
         </div>
 
         <div className="h-[70vh] overflow-hidden rounded-xl border">
-          <EditorView3D
+          <Lazy
             appearance={editor.appearance}
             edit={editor.edit}
             emptyLabel={t('ui.common.no_data')}
             graph={graph.data ?? null}
             initialDistance={120}
+            load={loadEditorView3D}
             onTransform={editor.foldPatch}
             showAxes
           />

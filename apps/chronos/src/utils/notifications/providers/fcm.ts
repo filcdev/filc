@@ -5,7 +5,7 @@ import type {
   MulticastMessage,
 } from 'firebase-admin/messaging';
 import { db } from '#database';
-import { fcmToken } from '#database/schema/notifications';
+import { fcmToken } from '#modules/notifications/schema';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'notifications', 'fcm']);

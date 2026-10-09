@@ -1,18 +1,12 @@
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
-import type { InferResponseType } from 'hono/client';
+import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useApiQuery } from '@/utils/api';
-import { authClient } from '@/utils/authentication';
+import type { SystemMessageItem } from '@/hooks/news';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
-
-type SystemMessageApiResponse = InferResponseType<
-  (typeof api.news)['system-messages']['$get']
->;
-type SystemMessageItem = NonNullable<SystemMessageApiResponse['data']>[number];
+import { orpc } from '@/utils/orpc';
 
 type BlockContent = {
   content: string;
@@ -35,17 +29,15 @@ const renderBlockContent = (content: unknown): string => {
 };
 
 export function SystemMessageBanner() {
-  const { isPending } = authClient.useSession();
+  const { isPending } = useSession();
   const { i18n, t } = useTranslation();
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
-  const systemMessagesQuery = useApiQuery<SystemMessageItem[]>(
-    () => api.news['system-messages'].$get({ query: {} }),
-    {
-      enabled: !isPending,
-      queryKey: queryKeys.news.systemMessagesBanner(),
-    }
-  );
+  const systemMessagesQuery = useQuery({
+    ...orpc.news.systemMessages.list.queryOptions({ input: {} }),
+    enabled: !isPending,
+    select: (payload): SystemMessageItem[] => payload.data,
+  });
 
   const visibleMessages = useMemo(() => {
     const dismissed = new Set(dismissedIds);
@@ -92,7 +84,7 @@ export function SystemMessageBanner() {
   const until = formatLocalizedDate(message.validUntil, i18n.language);
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[70]">
+    <div className="fixed inset-x-0 top-0 z-70">
       <div className="flex items-center bg-destructive text-destructive-foreground shadow-md">
         <div className="min-w-0 flex-1 px-3 py-2 sm:px-4">
           <p className="font-semibold text-sm leading-5" translate="yes">

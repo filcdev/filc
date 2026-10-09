@@ -28,6 +28,7 @@ import {
   useSaveNavigatorTranslation,
   useUpdateNavigatorTranslation,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/navigator/translations')({
   component: () => (
@@ -35,6 +36,17 @@ export const Route = createFileRoute('/_private/admin/navigator/translations')({
       <TranslationsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.navigator.translations.list.queryOptions()
+      ),
+      prefetch(
+        context.queryClient,
+        orpc.navigator.translations.available.queryOptions()
+      ),
+    ]),
 });
 
 type TranslationGroup = {
@@ -84,7 +96,7 @@ function TranslationDialog({
           updateTranslation.mutateAsync({
             key: group.key,
             lang,
-            payload: { text: value.translations[lang] ?? '' },
+            text: value.translations[lang] ?? '',
           })
         )
       ).then(() => onOpenChange(false));

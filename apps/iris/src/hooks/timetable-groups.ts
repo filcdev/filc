@@ -1,36 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type InferResponseType, parseResponse } from 'hono/client';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { type api, orpc } from '@/utils/orpc';
 
-type GroupsForCohortResponse = InferResponseType<
-  (typeof api.timetable.groups.getForCohort)[':cohortId']['$get']
+type GroupsForCohortResponse = Awaited<
+  ReturnType<typeof api.timetable.groups.getForCohort>
 >;
 
 /** A group of a cohort, with the current user's selection flag. */
-export type GroupItem = NonNullable<GroupsForCohortResponse['data']>[number];
+export type GroupItem = GroupsForCohortResponse[number];
 
 /** Groups of one cohort, used by the public "pick your group" picker. */
 export function useGroupsForCohort(cohortId: string | null | undefined) {
   return useQuery({
+    ...orpc.timetable.groups.getForCohort.queryOptions({
+      // Only ever fetched when the id is known; the empty string keeps the
+      // input well-formed while the query is disabled.
+      input: { cohortId: cohortId ?? '' },
+    }),
     enabled: !!cohortId,
-    queryFn: async (): Promise<GroupItem[]> => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
-      const id = cohortId!;
-      const res = await parseResponse(
-        api.timetable.groups.getForCohort[':cohortId'].$get({
-          param: { cohortId: id },
-        })
-      );
-      if (!(res.success && res.data)) {
-        throw new Error('Failed to load groups');
-      }
-      return res.data as GroupItem[];
-    },
-    queryKey: queryKeys.timetable.groups(cohortId),
   });
 }
 
@@ -78,26 +67,19 @@ export function useTimetableGroupDisplay(
 export function useSelectGroup({ onSaved }: { onSaved?: () => void } = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({ groupId }: { groupId: string }) => {
-      const res = await parseResponse(
-        api.timetable.groups.select.$post({ json: { groupId } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to select group');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.selectGroupError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.selectGroupSuccess'));
-      // Selecting a group re-scopes the lessons (per-division filter) and the
-      // groups query (selection flags), so invalidate both families.
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.timetable.groups.select.mutationOptions({
+      onError: () => {
+        toast.error(t('timetable.selectGroupError'));
+      },
+      onSuccess: () => {
+        toast.success(t('timetable.selectGroupSuccess'));
+        // Selecting a group re-scopes both the groups query (selection flags)
+        // and the lessons (per-division filter); every timetable-derived view
+        // lives under one family key.
+        queryClient.invalidateQueries({ queryKey: orpc.timetable.key() });
+        onSaved?.();
+      },
+    })
+  );
 }

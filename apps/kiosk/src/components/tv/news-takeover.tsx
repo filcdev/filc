@@ -3,7 +3,7 @@ import {
   useFeaturedNews,
   useNewsSlideshow,
 } from '@/hooks/tv';
-import { apiBaseUrl } from '@/utils/api';
+import { apiBaseUrl } from '@/utils/orpc';
 
 type NewsTakeoverProps = {
   /** Milliseconds each item stays on screen. */

@@ -1,21 +1,30 @@
+import { apiKey } from '@better-auth/api-key';
+import { userAdditionalFields } from '@filcdev/auth';
 import { getLogger } from '@logtape/logtape';
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession, oAuthProxy } from 'better-auth/plugins';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
-import { Hono } from 'hono';
-import type { Context } from '#_types/globals';
 import { db } from '#database';
+import { apiKeySchema } from '#database/schema/api-keys';
 import {
   authenticationSchema,
   user as userTable,
 } from '#database/schema/authentication';
-import { teacher } from '#database/schema/timetable';
+import { teacher } from '#modules/timetable/schema';
+import { wifiUser } from '#modules/wifi/schema';
 import { getUserPermissions } from '#utils/authorization';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
+
+/**
+ * The `Authorization: Bearer <token>` form the aegis door-lock firmware sends.
+ * The api-key plugin only reads `x-api-key` by default, so `customAPIKeyGetter`
+ * below also accepts this shape.
+ */
+const BEARER_TOKEN_REGEX = /^Bearer\s+(.+)$/i;
 
 /**
  * Preview deployments sign in through the production origin: Entra rejects
@@ -57,7 +66,10 @@ const authOptions = {
   baseURL: env.baseUrl,
   database: drizzleAdapter(db, {
     provider: 'pg',
-    schema: authenticationSchema,
+    // The plugin's `apikey` table must be in the adapter's schema or
+    // better-auth's own schema check rejects every api-key call. The rest of
+    // the auth tables stay in `authenticationSchema`.
+    schema: { ...authenticationSchema, ...apiKeySchema },
   }),
   databaseHooks: {
     session: {
@@ -92,6 +104,28 @@ const authOptions = {
                     )
                   )
                 );
+
+              // Claim an unlinked legacy WiFi account only on an exact,
+              // case-insensitive full-email match. Matching the email's local
+              // part instead would let any user whose local part collides with
+              // an unclaimed wifi username take over that account, password
+              // included.
+              const [wifiAccount] = await db
+                .update(wifiUser)
+                .set({ createdBy: session.userId, userId: session.userId })
+                .where(
+                  and(
+                    eq(sql`lower(${wifiUser.username})`, userEmail),
+                    isNull(wifiUser.userId)
+                  )
+                )
+                .returning({ id: wifiUser.id });
+              if (wifiAccount) {
+                logger.info('Linked user {userId} to wifi account {wifiId}', {
+                  userId: session.userId,
+                  wifiId: wifiAccount.id,
+                });
+              }
             }
 
             const fullName = linkedUser.name?.trim().toLowerCase();
@@ -132,7 +166,7 @@ const authOptions = {
               }
             }
           } catch (err) {
-            logger.error('Failed to link user to teacher', {
+            logger.error('Failed to link user to teacher or wifi user', {
               err,
               userId: session.userId,
             });
@@ -186,24 +220,7 @@ const authOptions = {
   },
   trustedOrigins: env.trustedOrigins ?? [env.baseUrl],
   user: {
-    additionalFields: {
-      cohortId: {
-        input: true,
-        required: false,
-        type: 'string',
-      },
-      nickname: {
-        input: true,
-        required: false,
-        type: 'string',
-      },
-      roles: {
-        defaultValue: ['user'],
-        input: false,
-        required: true,
-        type: 'string[]',
-      },
-    },
+    additionalFields: userAdditionalFields,
   },
 } satisfies BetterAuthOptions;
 
@@ -211,6 +228,42 @@ export const auth = betterAuth({
   ...authOptions,
   plugins: [
     ...(authOptions.plugins ?? []),
+    // API keys come from better-auth's official plugin, which owns the
+    // `apikey` table, hashing (SHA-256), expiry, enable/disable and per-key
+    // rate limiting. `enableSessionForAPIKeys` lets a valid key stand in for a
+    // session, which is what lets the oRPC middleware treat a key holder like
+    // any other caller.
+    //
+    // `x-api-key` is the plugin's default header; the `Authorization: Bearer`
+    // form is added here because the aegis door-lock firmware sends a bearer
+    // token, and the plugin has no built-in support for it.
+    apiKey({
+      customAPIKeyGetter: (ctx) => {
+        const headers = ctx.headers;
+        if (!headers) {
+          return null;
+        }
+        const bearer = headers.get('authorization');
+        if (bearer) {
+          const match = BEARER_TOKEN_REGEX.exec(bearer.trim());
+          if (match?.[1]) {
+            return match[1].trim();
+          }
+        }
+        return headers.get('x-api-key');
+      },
+      enableSessionForAPIKeys: true,
+      // The public timetable and door-lock surfaces are the point of these
+      // keys, so a key must not be able to reach the whole API by default.
+      // `getUserPermissions` is resolved per owner when a key is created, and
+      // the middleware still enforces the route's own permission.
+      rateLimit: {
+        enabled: true,
+        maxRequests: env.apiKeyRateLimitMax,
+        timeWindow: env.apiKeyRateLimitWindowMs,
+      },
+      requireName: true,
+    }),
     customSession(async ({ user, session }) => {
       const permissions = await getUserPermissions(user.id);
       const displayName = user.nickname
@@ -227,10 +280,6 @@ export const auth = betterAuth({
     }, authOptions),
   ],
 });
-
-export const authRouter = new Hono<Context>().on(['POST', 'GET'], '*', (c) =>
-  auth.handler(c.req.raw)
-);
 
 export type Session = typeof auth.$Infer.Session;
 export type User = (typeof auth.$Infer.Session)['user'];

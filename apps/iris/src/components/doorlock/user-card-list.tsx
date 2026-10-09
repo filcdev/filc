@@ -8,20 +8,15 @@ import {
 } from '@filcdev/ui/components/card';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import type { InferResponseType } from 'hono/client';
 import { Ban, DoorOpen, IdCard, MapPin, Snowflake } from 'lucide-react';
-import type { api } from '@/utils/hc';
+import type { DoorlockCard } from '@/hooks/doorlock-admin';
 
 dayjs.extend(relativeTime);
 
-type CardsResponse = InferResponseType<typeof api.doorlock.self.cards.$get>;
-
-type DoorlockSelfCard = NonNullable<CardsResponse['data']>['cards'][number];
-
 type UserCardListProps = {
-  cards: DoorlockSelfCard[];
+  cards: DoorlockCard[];
   isUpdatingId?: string | null;
-  onToggleFreeze: (card: DoorlockSelfCard) => void;
+  onToggleFreeze: (card: DoorlockCard) => void;
 };
 
 export function UserCardList({

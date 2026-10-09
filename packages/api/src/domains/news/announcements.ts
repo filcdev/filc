@@ -84,3 +84,48 @@ export type AnnouncementUpdateInput = z.infer<typeof announcementUpdateSchema>;
  * zod's file schema validates neither.
  */
 export const announcementImageUploadSchema = z.object({ file: z.file() });
+
+/**
+ * The author projection every news entity carries: the joined `user` row.
+ * Shared by announcements, blog posts and system messages.
+ */
+export const newsAuthorSchema = z.object({
+  id: z.string(),
+  image: z.string().nullable(),
+  name: z.string(),
+});
+
+/** An `announcement` row exactly as stored. */
+export const announcementRowSchema = z.object({
+  authorId: z.uuid(),
+  content: z.unknown(),
+  createdAt: z.date(),
+  highlighted: z.boolean(),
+  id: z.uuid(),
+  imageByteSize: z.number().nullable(),
+  imageContentType: z.string().nullable(),
+  imageKey: z.string().nullable(),
+  imageUpdatedAt: z.date().nullable(),
+  kioskOnly: z.boolean(),
+  title: z.string().nullable(),
+  updatedAt: z.date(),
+  validFrom: z.date(),
+  validUntil: z.date(),
+});
+
+/** An announcement plus the cohorts and kiosks it is targeted at. */
+export const announcementTargetedRowSchema = announcementRowSchema.extend({
+  cohortIds: z.array(z.string()),
+  kioskIds: z.array(z.string()),
+});
+
+/** An announcement as the list and detail endpoints return it, with its author. */
+export const announcementItemSchema = announcementTargetedRowSchema.extend({
+  author: newsAuthorSchema.nullable().optional(),
+});
+
+/** Payload of `GET /news/announcements`. */
+export const announcementListResponseSchema = z.object({
+  data: z.array(announcementItemSchema),
+  total: z.number(),
+});

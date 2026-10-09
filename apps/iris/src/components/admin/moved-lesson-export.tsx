@@ -1,15 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { api } from '@/utils/hc';
+import { api } from '@/utils/orpc';
 import { ExportButton, type ExportColumn } from '../export-button';
-
-const columns: ExportColumn[] = [
-  { header: 'Date', key: 'date' },
-  { header: 'Target day', key: 'target_day' },
-  { header: 'Target period', key: 'target_period' },
-  { header: 'Target room', key: 'target_room' },
-  { header: 'Lessons', key: 'lessons' },
-  { header: 'Lesson count', key: 'lesson_count' },
-];
+import { useExportRange } from './use-export-range';
 
 type MovedLessonExportButtonProps = {
   dateRange?: { from?: Date; to?: Date };
@@ -19,20 +11,25 @@ export function MovedLessonExportButton({
   dateRange,
 }: MovedLessonExportButtonProps) {
   const { t } = useTranslation();
+  const range = useExportRange(dateRange);
+
+  // Keys match the CSV header the backend writes (`#modules/timetable/export`);
+  // the labels are localized here so every export carries readable headers.
+  const columns: ExportColumn[] = [
+    { header: t('movedLesson.date'), key: 'date' },
+    { header: t('movedLesson.targetDay'), key: 'target_day' },
+    { header: t('movedLesson.targetPeriod'), key: 'target_period' },
+    { header: t('movedLesson.targetRoom'), key: 'target_room' },
+    { header: t('export.subjects'), key: 'lessons' },
+    { header: t('movedLesson.lessonsCount'), key: 'lesson_count' },
+  ];
 
   const fetchCsv = async (): Promise<string> => {
-    const query: Record<string, string> = {};
-    if (dateRange?.from) {
-      query.from = dateRange.from.toISOString().slice(0, 10);
-    }
-    if (dateRange?.to) {
-      query.to = dateRange.to.toISOString().slice(0, 10);
-    }
-    const res = await api.timetable.movedLessons.export.$get({ query });
-    if (!res.ok) {
-      throw new Error('Export failed');
-    }
-    return res.text();
+    const file = await api.timetable.movedLessons.export({
+      from: range.from,
+      to: range.to,
+    });
+    return await file.text();
   };
 
   return (
@@ -44,6 +41,7 @@ export function MovedLessonExportButton({
       hideLabelOnMobile
       labelKey="movedLesson.export"
       pdfTitle={t('movedLesson.exportTitle')}
+      rangeLabel={range.label}
       successKey="movedLesson.exportSuccess"
     />
   );

@@ -1,3 +1,4 @@
+import { useSession } from '@filcdev/auth/client';
 import {
   Alert,
   AlertDescription,
@@ -13,7 +14,6 @@ import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
-import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
 
 type BlockContent = {
@@ -25,8 +25,8 @@ type NewsItem = {
   id: string;
   title: string;
   content: unknown;
-  validFrom: string;
-  validUntil: string;
+  validFrom: Date;
+  validUntil: Date;
   type: 'announcement';
 };
 
@@ -77,7 +77,7 @@ function filterNewsItemsInDateRange(
 }
 
 export function NewsPanel({ classId }: { classId?: string | null }) {
-  const { isPending } = authClient.useSession();
+  const { isPending } = useSession();
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
 

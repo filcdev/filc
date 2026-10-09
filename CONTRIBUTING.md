@@ -63,7 +63,7 @@ This guide gets you from a fresh clone to a running dev environment, then covers
    bun dev
    ```
 
-   All three apps start via Turborepo. Iris runs through Vite, which regenerates `apps/iris/src/route-tree.gen.ts` automatically — never edit that file by hand.
+   All three apps start via Turborepo. Iris runs through Vite (TanStack Start), which regenerates `apps/iris/src/routeTree.gen.ts` automatically — never edit that file by hand.
 
    The kiosk app is a static bundle on a box, so it never relies on a proxied
    `/api`: dev calls `http://localhost:3001/api` directly and a production build
@@ -86,7 +86,7 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 
   CI runs the same checks (without auto-fix) on every push and PR.
 
-- **Schema changes**: edit sources under `apps/chronos/src/database/schema`, then generate and commit the migration:
+- **Schema changes**: edit the owning module's `apps/chronos/src/modules/<feature>/schema.ts` (the shared identity/RBAC tables stay in `apps/chronos/src/database/schema`), add the feature's tables to `apps/chronos/src/modules/schemas.ts`, then generate and commit the migration:
 
   ```bash
   cd apps/chronos

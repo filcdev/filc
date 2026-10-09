@@ -1,10 +1,9 @@
 import { notificationTypeValues } from '@filcdev/api/domains/notifications';
 
 import { useMutation } from '@tanstack/react-query';
-import { type InferRequestType, parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
+import { api, orpc } from '@/utils/orpc';
 
 export const NOTIFICATION_TYPES = notificationTypeValues;
 
@@ -125,13 +124,7 @@ export const NOTIFICATION_MOCKS: Record<
   },
 };
 
-type SendTestPayload = InferRequestType<
-  (typeof api.notifications)['send-test']['$post']
->['json'];
-
-type PreviewTestPayload = InferRequestType<
-  (typeof api.notifications)['preview-test']['$post']
->['json'];
+type PreviewTestPayload = Parameters<typeof api.notifications.previewTest>[0];
 
 type MutationCallbacks = { silent?: boolean };
 
@@ -140,55 +133,41 @@ export function useSendTestNotification({
   silent = false,
 }: MutationCallbacks = {}) {
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (payload: SendTestPayload) => {
-      const res = await parseResponse(
-        api.notifications['send-test'].$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error(t('devNotifications.sendError'));
-      }
-      return res.data;
-    },
-    onError: () => {
-      if (!silent) {
-        toast.error(t('devNotifications.sendError'));
-      }
-    },
-    onSuccess: (data) => {
-      if (silent) {
-        return;
-      }
-      const active: string[] = [];
-      if (data.email) {
-        active.push(t('devNotifications.channelEmail'));
-      }
-      if (data.inApp) {
-        active.push(t('devNotifications.channelInApp'));
-      }
-      if (data.push) {
-        active.push(t('devNotifications.channelPush'));
-      }
-      toast.success(
-        t('devNotifications.sendSuccess', { channels: active.join(', ') })
-      );
-    },
-  });
+  return useMutation(
+    orpc.notifications.sendTest.mutationOptions({
+      onError: () => {
+        if (!silent) {
+          toast.error(t('devNotifications.sendError'));
+        }
+      },
+      onSuccess: (data) => {
+        if (silent) {
+          return;
+        }
+        const active: string[] = [];
+        if (data.email) {
+          active.push(t('devNotifications.channelEmail'));
+        }
+        if (data.inApp) {
+          active.push(t('devNotifications.channelInApp'));
+        }
+        if (data.push) {
+          active.push(t('devNotifications.channelPush'));
+        }
+        toast.success(
+          t('devNotifications.sendSuccess', { channels: active.join(', ') })
+        );
+      },
+    })
+  );
 }
 
 /** Render a notification template to HTML without sending it. */
 export function usePreviewTestNotification() {
   const { t } = useTranslation();
   return useMutation({
-    mutationFn: async (payload: PreviewTestPayload): Promise<string> => {
-      const res = await parseResponse(
-        api.notifications['preview-test'].$post({ json: payload })
-      );
-      if (!res.success) {
-        throw new Error(t('devNotifications.previewError'));
-      }
-      return res.data?.html ?? '';
-    },
+    mutationFn: async (payload: PreviewTestPayload) =>
+      (await api.notifications.previewTest(payload)).html,
     onError: () => {
       toast.error(t('devNotifications.previewError'));
     },

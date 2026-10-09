@@ -1,5 +1,8 @@
-import { Button } from '@filcdev/ui/components/button';
-import { cn } from '@filcdev/ui/lib/utils';
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from '@filcdev/ui/components/toggle-group';
+import { Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { WeekFilter } from './helpers';
 
@@ -9,6 +12,17 @@ type WeekSelectorProps = {
   disabled?: boolean;
 };
 
+/**
+ * Which week of the cycle to show.
+ *
+ * The same segmented track as the rest of the toolbar, with the A/B colours
+ * kept as the active tone so the control matches the week badges in the grid.
+ * On a phone it collapses to the A/B letters and an icon, which is what lets it
+ * share a row with the timetable selector and the print button.
+ *
+ * The narrow/wide switch is CSS (`lg:`), not a media query in JS: the server
+ * and the browser then render the same markup.
+ */
 export function WeekSelector({
   value,
   onChange,
@@ -16,55 +30,53 @@ export function WeekSelector({
 }: WeekSelectorProps) {
   const { t } = useTranslation();
 
-  const items: Array<{
-    value: WeekFilter;
+  const items: {
     label: string;
-  }> = [
-    {
-      label: t('timetable.weekA'),
-      value: 'A',
-    },
-    {
-      label: t('timetable.weekB'),
-      value: 'B',
-    },
-    {
-      label: t('timetable.weekAll'),
-      value: 'all',
-    },
+    tone: 'weekA' | 'weekB' | 'default';
+    value: WeekFilter;
+  }[] = [
+    { label: t('timetable.weekA'), tone: 'weekA', value: 'A' },
+    { label: t('timetable.weekB'), tone: 'weekB', value: 'B' },
+    { label: t('timetable.weekAll'), tone: 'default', value: 'all' },
   ];
 
   return (
-    <div className="grid h-9 w-full grid-cols-3 items-center rounded-lg border border-border bg-muted/40 p-0.5 shadow-sm sm:inline-flex sm:w-auto">
-      {items.map((item) => {
-        const active = value === item.value;
-
-        return (
-          <Button
-            className={cn(
-              'h-7 w-full rounded-md px-2 font-semibold text-xs transition-all sm:w-auto sm:px-3',
-              !active && 'text-muted-foreground',
-              active &&
-                item.value === 'A' &&
-                'bg-blue-500 text-white shadow-sm hover:bg-blue-500/90 hover:text-white',
-              active &&
-                item.value === 'B' &&
-                'bg-violet-500 text-white shadow-sm hover:bg-violet-500/90 hover:text-white',
-              active &&
-                item.value === 'all' &&
-                'bg-background text-foreground shadow-sm hover:bg-background'
-            )}
-            disabled={disabled}
-            key={item.value}
-            onClick={() => onChange(item.value)}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            {item.label}
-          </Button>
-        );
-      })}
-    </div>
+    <ToggleGroup
+      aria-label={t('timetable.weekFilterLabel')}
+      className="shrink-0"
+      onValueChange={(next) => {
+        const selected = next[0];
+        if (selected) {
+          onChange(selected as WeekFilter);
+        }
+      }}
+      value={[value]}
+    >
+      {items.map((item) => (
+        <ToggleGroupItem
+          aria-label={item.label}
+          className="px-2 lg:px-3"
+          disabled={disabled}
+          key={item.value}
+          title={item.label}
+          tone={item.tone}
+          value={item.value}
+        >
+          {/* The letter is the mark for A/B in both layouts — the two icons
+              would otherwise be identical. */}
+          {item.value === 'all' ? (
+            <>
+              <Layers className="lg:hidden" />
+              <span className="hidden lg:inline">{item.label}</span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold lg:hidden">{item.value}</span>
+              <span className="hidden lg:inline">{item.label}</span>
+            </>
+          )}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }

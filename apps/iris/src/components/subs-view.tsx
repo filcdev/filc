@@ -1,3 +1,4 @@
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import { ButtonGroup } from '@filcdev/ui/components/button-group';
 import {
@@ -24,7 +25,7 @@ import {
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   ClassroomItem,
@@ -46,7 +47,6 @@ import {
   useTimetableCohorts,
   useTimetables,
 } from '@/hooks/timetable-public';
-import { authClient } from '@/utils/authentication';
 import { compareClassNames } from '@/utils/cohort';
 import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
 import { DayNews } from './news-panel';
@@ -486,7 +486,7 @@ function SubsFilterBar({
           }
         />
         <PopoverContent
-          className="w-[var(--radix-popper-anchor-width)] p-0"
+          className="w-(--radix-popper-anchor-width) p-0"
           id={comboboxContentId}
         >
           <Command>
@@ -565,7 +565,7 @@ function SubsFilterBar({
 // SubstitutionView
 
 export function SubstitutionView() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useSession();
   const { i18n, t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
@@ -636,20 +636,6 @@ export function SubstitutionView() {
     cohortsQuery.data
   );
 
-  const filteredSubs = filterSubs(
-    substitutionsQuery.data ?? [],
-    activeFilter,
-    activeSelectionId,
-    cohortsQuery.data
-  );
-
-  const filteredMovedLessons = filterMovedLessons(
-    movedLessonsQuery.data ?? [],
-    activeFilter,
-    activeSelectionId,
-    cohortsQuery.data
-  );
-
   const isLoading =
     substitutionsQuery.isLoading ||
     substitutionsQuery.isFetching ||
@@ -657,37 +643,66 @@ export function SubstitutionView() {
     movedLessonsQuery.isFetching;
   const hasError = substitutionsQuery.error || movedLessonsQuery.error;
 
-  const groupedData = groupByDate(filteredSubs);
-  const groupedMovedLessons = groupMovedLessonsByDate(filteredMovedLessons);
+  // Re-key on the local day so a tab left open overnight still rolls over to
+  // today's substitutions instead of freezing on the day it was mounted.
+  const dayKey = toDateKey(new Date());
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Every one of these is a full pass over the substitution and moved-lesson
+  // lists, so they are derived together and cached: the only inputs are the
+  // query payloads, the active filter/selection, and the current day.
+  const { allDates, groupedData, groupedMovedLessons, hasContent } =
+    useMemo(() => {
+      const subs = filterSubs(
+        substitutionsQuery.data ?? [],
+        activeFilter,
+        activeSelectionId,
+        cohortsQuery.data
+      );
+      const movedLessons = filterMovedLessons(
+        movedLessonsQuery.data ?? [],
+        activeFilter,
+        activeSelectionId,
+        cohortsQuery.data
+      );
+      const byDate = groupByDate(subs);
+      const movedByDate = groupMovedLessonsByDate(movedLessons);
 
-  const now = new Date();
+      const startOfToday = parseDateOnly(dayKey);
 
-  const announcementDates = getAnnouncementDates(
-    announcementsQuery.data ?? [],
-    newsClassId,
-    today,
-    now
-  );
+      const dates = getAnnouncementDates(
+        announcementsQuery.data ?? [],
+        newsClassId,
+        startOfToday,
+        new Date()
+      );
 
-  const allDates = Array.from(
-    new Set([
-      ...Object.keys(groupedData),
-      ...Object.keys(groupedMovedLessons),
-      ...announcementDates,
-    ])
-  )
-    .filter((date) => parseDateOnly(date) >= today)
-    .sort((a, b) => a.localeCompare(b));
+      const upcoming = Array.from(
+        new Set([...Object.keys(byDate), ...Object.keys(movedByDate), ...dates])
+      )
+        .filter((date) => parseDateOnly(date) >= startOfToday)
+        .sort((a, b) => a.localeCompare(b));
 
-  const hasContent = hasVisibleContent(
-    filteredSubs,
-    filteredMovedLessons,
-    today,
-    announcementDates.length
-  );
+      return {
+        allDates: upcoming,
+        groupedData: byDate,
+        groupedMovedLessons: movedByDate,
+        hasContent: hasVisibleContent(
+          subs,
+          movedLessons,
+          startOfToday,
+          dates.length
+        ),
+      };
+    }, [
+      activeFilter,
+      activeSelectionId,
+      announcementsQuery.data,
+      cohortsQuery.data,
+      dayKey,
+      movedLessonsQuery.data,
+      newsClassId,
+      substitutionsQuery.data,
+    ]);
 
   const selectorLoading = getSelectorLoading(
     activeFilter,

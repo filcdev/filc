@@ -49,7 +49,7 @@ import {
   termDefinition,
   timetable as timetableTable,
   weekDefinition as weekTable,
-} from '#database/schema/timetable';
+} from '#modules/timetable/schema';
 
 type Database = typeof db;
 export type TxClient = Parameters<Parameters<Database['transaction']>[0]>[0];

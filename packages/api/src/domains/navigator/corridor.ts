@@ -22,3 +22,32 @@ export const updateCorridorSchema = createCorridorSchema.partial();
 export type Corridor = z.infer<typeof corridorSchema>;
 export type CreateCorridorInput = z.infer<typeof createCorridorSchema>;
 export type UpdateCorridorInput = z.infer<typeof updateCorridorSchema>;
+
+/** A corridor row as the API returns it (see `buildingRowSchema`). */
+export const corridorRowSchema = z.object({
+  barrier_free: z.boolean(),
+  building_id: z.string(),
+  createdAt: z.date(),
+  id: z.string(),
+  is_outdoor: z.boolean(),
+  name: z.string(),
+  storey: z.number().int(),
+  updatedAt: z.date(),
+  width: z.number(),
+  x1: z.number(),
+  x2: z.number(),
+  y1: z.number(),
+  y2: z.number(),
+});
+
+export type CorridorRow = z.infer<typeof corridorRowSchema>;
+
+/** Payload of `GET /navigator/corridors`. */
+export const corridorsResponseSchema = z.object({
+  corridors: z.array(corridorRowSchema),
+});
+
+/** Payload of `POST /navigator/corridors`, `PUT` and `DELETE /navigator/corridors/{id}`. */
+export const corridorResponseSchema = z.object({
+  corridor: corridorRowSchema,
+});

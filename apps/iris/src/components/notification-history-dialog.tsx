@@ -72,7 +72,7 @@ export function NotificationHistoryDialog({
     };
   };
 
-  const items = data?.data ?? [];
+  const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
   const ready = !(isLoading || isError);
@@ -178,7 +178,7 @@ export function NotificationHistoryDialog({
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
-                          markReadMutation.mutate(notif.id);
+                          markReadMutation.mutate({ id: notif.id });
                         }}
                         size="sm"
                         variant="ghost"

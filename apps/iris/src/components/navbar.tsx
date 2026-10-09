@@ -1,3 +1,4 @@
+import { authClient, useSession } from '@filcdev/auth/client';
 import {
   Avatar,
   AvatarFallback,
@@ -27,21 +28,30 @@ import {
   LogOut,
   Menu,
   UserCog,
+  Wifi,
   X,
 } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BugReportDialog } from '@/components/bug-report-dialog';
+import { Lazy } from '@/components/lazy';
 import { NotificationBell } from '@/components/notification-bell';
-import { SettingsDialog } from '@/components/settings-dialog';
-import { LanguageSelector } from '@/components/util/language-selector';
+import { openSettings } from '@/components/settings-dialog-store';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
-import type { FileRoutesByTo } from '@/route-tree.gen';
-import { authClient } from '@/utils/authentication';
+import { useWifiStatus } from '@/hooks/wifi';
+import type { FileRoutesByTo } from '@/routeTree.gen';
+
+// The bug report dialog is a click away and costs real weight (TanStack Form,
+// the date picker, its calendar). It loads on first use instead of with every
+// page that renders the navbar. The settings dialog is mounted once at the app
+// root instead — several components open it, and only one instance may exist.
+const loadBugReportDialog = () =>
+  import('@/components/bug-report-dialog').then((m) => ({
+    default: m.BugReportDialog,
+  }));
 
 type NavbarProps = {
   children?: ReactNode;
@@ -62,6 +72,18 @@ const NAV_ITEMS: NavItem[] = [
   { adminOnly: true, icon: UserCog, labelKey: 'adminDashboard', to: '/admin' },
 ];
 
+/**
+ * The WiFi entry is only meaningful while the module is enabled, which only
+ * the server knows — so the list is derived per render rather than kept as a
+ * module-level constant.
+ */
+const getNavItems = (showWifi: boolean): NavItem[] => [
+  ...NAV_ITEMS,
+  ...(showWifi
+    ? [{ icon: Wifi, labelKey: 'wifi.title', to: '/wifi' } satisfies NavItem]
+    : []),
+];
+
 export function Navbar({
   children,
   showLinks = true,
@@ -70,14 +92,17 @@ export function Navbar({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { data, isPending } = authClient.useSession();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { data, isPending } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavId = useId();
 
   const canSeeAdminUi = useHasPermission(
     ADMIN_UI_PERMISSIONS,
     data?.user?.permissions
+  );
+  const wifiStatus = useWifiStatus();
+  const navItems = getNavItems(
+    Boolean(data?.user) && wifiStatus.data?.enabled === true
   );
 
   return (
@@ -121,15 +146,14 @@ export function Navbar({
 
           {data && showLinks && (
             <NavLinks
+              items={navItems}
               userPermissions={data.user ? data.user.permissions : []}
             />
           )}
 
           <div className="ml-auto flex min-w-0 items-center gap-3">
             {data && <NotificationBell />}
-            {data && <BugReportDialog />}
-
-            <LanguageSelector />
+            {data && <Lazy load={loadBugReportDialog} />}
 
             {(() => {
               if (isPending) {
@@ -209,7 +233,7 @@ export function Navbar({
                         <DoorOpen />
                         <span>{t('doorlock.manage-cards')}</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                      <DropdownMenuItem onClick={() => openSettings()}>
                         <Cog />
                         <span>{t('preferences.title')}</span>
                       </DropdownMenuItem>
@@ -258,33 +282,38 @@ export function Navbar({
           <div className="overflow-hidden">
             {mobileMenuOpen && (
               <div className="flex flex-col gap-1 px-4 py-3">
-                {NAV_ITEMS.filter(
-                  (item) => !item.adminOnly || canSeeAdminUi
-                ).map((item) => (
-                  <Button
-                    className="justify-start gap-3"
-                    key={item.to}
-                    onClick={() => {
-                      navigate({ to: item.to });
-                      setMobileMenuOpen(false);
-                    }}
-                    variant="ghost"
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {t(item.labelKey)}
-                  </Button>
-                ))}
+                {navItems
+                  .filter((item) => !item.adminOnly || canSeeAdminUi)
+                  .map((item) => (
+                    <Button
+                      className="justify-start gap-3"
+                      key={item.to}
+                      onClick={() => {
+                        navigate({ to: item.to });
+                        setMobileMenuOpen(false);
+                      }}
+                      variant="ghost"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {t(item.labelKey)}
+                    </Button>
+                  ))}
               </div>
             )}
           </div>
         </div>
       )}
-      <SettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
     </>
   );
 }
 
-function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
+function NavLinks({
+  items,
+  userPermissions,
+}: {
+  items: NavItem[];
+  userPermissions?: string[];
+}) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -292,8 +321,9 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
 
   return (
     <div className="ml-8 hidden items-center gap-6 md:flex">
-      {NAV_ITEMS.filter((item) => !item.adminOnly || canSeeAdminUi).map(
-        (item) => (
+      {items
+        .filter((item) => !item.adminOnly || canSeeAdminUi)
+        .map((item) => (
           <Button
             className="text-muted-foreground hover:text-foreground"
             key={item.to}
@@ -304,8 +334,7 @@ function NavLinks({ userPermissions }: { userPermissions?: string[] }) {
             <item.icon />
             {t(item.labelKey)}
           </Button>
-        )
-      )}
+        ))}
     </div>
   );
 }

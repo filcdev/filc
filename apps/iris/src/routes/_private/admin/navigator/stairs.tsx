@@ -1,6 +1,5 @@
 import type { Stair } from '@filcdev/api/domains/navigator/stair';
 import { permissions } from '@filcdev/api/permissions';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Button } from '@filcdev/ui/components/button';
 import { Field, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
@@ -18,6 +17,7 @@ import {
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -28,6 +28,11 @@ import {
   useStairs,
   useUpdateStair,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
+
+// The 3D editor is three.js (~560 kB). It is the bulk of this page, so it
+// loads into its own chunk instead of with the route that hosts the preview.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 export const Route = createFileRoute('/_private/admin/navigator/stairs')({
   component: () => (
@@ -35,6 +40,15 @@ export const Route = createFileRoute('/_private/admin/navigator/stairs')({
       <StairsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(context.queryClient, orpc.navigator.stairs.list.queryOptions()),
+      prefetch(
+        context.queryClient,
+        orpc.navigator.buildings.list.queryOptions()
+      ),
+      prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
+    ]),
 });
 
 type StairFormValues = {
@@ -69,7 +83,7 @@ function StairsPage() {
     onSubmit: ({ value }) => {
       const { id, ...payload } = value;
       if (id) {
-        updateStair.mutate({ id, payload });
+        updateStair.mutate({ ...payload, id });
       } else {
         createStair.mutate(payload);
       }
@@ -319,7 +333,7 @@ function StairsPage() {
                   columns={columns}
                   getRowId={(stair) => stair.id}
                   getRowLabel={(stair) => stair.name}
-                  onDelete={(stair) => deleteStair.mutate(stair.id)}
+                  onDelete={(stair) => deleteStair.mutate({ id: stair.id })}
                   onEdit={startEdit}
                   onHover={(stair) => editor.setHoveredId(stair?.id ?? null)}
                   rows={rows}
@@ -330,12 +344,13 @@ function StairsPage() {
         </div>
 
         <div className="h-[70vh] overflow-hidden rounded-xl border">
-          <EditorView3D
+          <Lazy
             appearance={editor.appearance}
             edit={editor.edit}
             emptyLabel={t('ui.common.no_data')}
             graph={graph.data ?? null}
             initialDistance={120}
+            load={loadEditorView3D}
             onTransform={editor.foldPatch}
             showAxes
           />

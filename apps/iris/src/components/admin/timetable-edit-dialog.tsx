@@ -48,13 +48,11 @@ export function TimetableEditDialog({
       }
       await updateMutation.mutateAsync({
         id: item.id,
-        payload: {
-          name: value.name.trim() || undefined,
-          validFrom: value.validFrom?.toISOString().slice(0, 10),
-          validTo: value.validTo
-            ? value.validTo.toISOString().slice(0, 10)
-            : null,
-        },
+        name: value.name.trim() || undefined,
+        validFrom: value.validFrom?.toISOString().slice(0, 10),
+        validTo: value.validTo
+          ? value.validTo.toISOString().slice(0, 10)
+          : null,
       });
     },
     validators: {

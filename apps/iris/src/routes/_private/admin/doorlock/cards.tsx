@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Input } from '@filcdev/ui/components/input';
@@ -39,8 +40,8 @@ import {
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/doorlock/cards')({
   component: () => (
@@ -48,13 +49,18 @@ export const Route = createFileRoute('/_private/admin/doorlock/cards')({
       <CardsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(context.queryClient, orpc.doorlock.cards.list.queryOptions()),
+      prefetch(context.queryClient, orpc.doorlock.cards.users.queryOptions()),
+    ]),
 });
 
 type CardSortColumn = 'name' | 'owner' | 'status' | 'devices' | 'updated';
 
 function CardsPage() {
   const { t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<CardSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -141,7 +147,7 @@ function CardsPage() {
     if (!confirmed) {
       return;
     }
-    await deleteMutation.mutateAsync(card.id);
+    await deleteMutation.mutateAsync({ id: card.id });
   };
 
   const handleSort = (column: CardSortColumn) => {

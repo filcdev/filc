@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/logtape';
-import { honoIntegration, init, setUser } from '@sentry/bun';
+import { init, setUser } from '@sentry/bun';
 import type { Session, User } from 'better-auth';
 import { env } from '#utils/environment';
 
@@ -37,6 +37,19 @@ export const initSentry = () => {
 
       return event;
     },
+
+    // Privacy: Sentry v11 collects all the categories below by default, so
+    // each one is pinned explicitly; the values match the v10 behaviour this
+    // backend relied on when it passed `sendDefaultPii: false`. Anything
+    // omitted here (e.g. `stackFrameVariables`) keeps its permissive default.
+    dataCollection: {
+      cookies: false,
+      databaseQueryData: false,
+      genAI: { inputs: false, outputs: false },
+      graphQL: { document: false, variables: false },
+      httpBodies: [],
+      userInfo: false,
+    },
     dsn: env.sentryDsn,
     environment,
 
@@ -49,13 +62,8 @@ export const initSentry = () => {
       },
     },
 
-    // Integrations
-    integrations: [honoIntegration()],
     release,
     sampleRate: env.sentrySampleRate,
-
-    // Privacy: only send essential PII
-    sendDefaultPii: false,
 
     // Performance Monitoring
     tracesSampleRate: env.sentryTracesSampleRate,

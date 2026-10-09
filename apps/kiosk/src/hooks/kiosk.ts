@@ -10,13 +10,14 @@ import {
   type TvKioskConfig,
   tvKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { api, useApiQuery } from '@/utils/api';
 import {
   DEFAULT_NEWS_SLIDE_SECONDS,
   DEFAULT_NEWS_TICKER_SECONDS,
   HEARTBEAT_INTERVAL,
 } from '@/utils/constants';
+import { orpc } from '@/utils/orpc';
 import { APP_VERSION } from '@/utils/version';
 
 /** What Chronos knows about this box. */
@@ -109,17 +110,13 @@ function normalizeHeartbeat(raw: HeartbeatResponse): KioskStatus {
  * failed request — both mean "this box is not known to be usable yet".
  */
 export function useKioskHeartbeat(machineId: string): KioskStatus | undefined {
-  const query = useApiQuery<HeartbeatResponse>(
-    () =>
-      api.kiosk.heartbeat.$post({
-        json: { appVersion: APP_VERSION, machineId },
-      }),
-    {
-      queryKey: ['kiosk', 'heartbeat', machineId],
-      refetchInterval: HEARTBEAT_INTERVAL,
-      retry: 2,
-    }
-  );
+  const query = useQuery({
+    ...orpc.kiosk.heartbeat.queryOptions({
+      input: { appVersion: APP_VERSION, machineId },
+    }),
+    refetchInterval: HEARTBEAT_INTERVAL,
+    retry: 2,
+  });
 
   // Memoize on the stable React Query data reference (structural sharing keeps
   // it referentially equal across re-renders and equal refetches) so the

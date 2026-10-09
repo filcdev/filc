@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +25,7 @@ import {
   FlaskConical,
   GraduationCap,
   IdCard,
+  KeyRound,
   Languages,
   Layers,
   LayoutDashboard,
@@ -36,11 +38,12 @@ import {
   Shield,
   UserRound,
   Users,
+  Wifi,
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
+import { useWifiStatus } from '@/hooks/wifi';
 
 type MenuIcon = typeof List;
 
@@ -58,10 +61,12 @@ type MenuCategory = {
 
 export function AdminSidebar() {
   const { t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
   const userPermissions = session?.user?.permissions;
+  const wifiStatus = useWifiStatus();
+  const wifiEnabled = wifiStatus.data?.enabled === true;
 
   const handleNavigate = (url: string) => {
     navigate({ to: url });
@@ -172,6 +177,12 @@ export function AdminSidebar() {
             url: '/admin/roles',
           },
           {
+            icon: KeyRound,
+            permission: permissions.usersManage,
+            title: t('admin.apiKeys'),
+            url: '/admin/api-keys',
+          },
+          {
             icon: Bug,
             permission: permissions.bugReportsRead,
             title: t('admin.bugReports'),
@@ -250,6 +261,39 @@ export function AdminSidebar() {
         ],
         label: t('admin.kiosks'),
       },
+      ...(wifiEnabled
+        ? [
+            {
+              items: [
+                {
+                  icon: Wifi,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminDashboard.title'),
+                  url: '/admin/wifi',
+                },
+                {
+                  icon: Users,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminUsers.title'),
+                  url: '/admin/wifi/users',
+                },
+                {
+                  icon: MonitorSmartphone,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminNas.title'),
+                  url: '/admin/wifi/nas',
+                },
+                {
+                  icon: ArrowUpDown,
+                  permission: permissions.wifiRead,
+                  title: t('wifiAdminProfiles.title'),
+                  url: '/admin/wifi/speed-profiles',
+                },
+              ],
+              label: t('admin.wifi'),
+            },
+          ]
+        : []),
       ...(import.meta.env.MODE === 'development'
         ? [
             {
@@ -266,7 +310,7 @@ export function AdminSidebar() {
           ]
         : []),
     ],
-    [t]
+    [t, wifiEnabled]
   );
 
   const visibleCategories = useMemo(

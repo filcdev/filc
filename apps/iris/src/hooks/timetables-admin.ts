@@ -1,24 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type InferResponseType, parseResponse } from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { sortCohorts } from '@/utils/cohort';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { api, orpc } from '@/utils/orpc';
 
-type TimetablesResponse = InferResponseType<
-  typeof api.timetable.timetables.$get
+type TimetablesResponse = Awaited<
+  ReturnType<typeof api.timetable.timetables.list>
 >;
 
-export type TimetableRow = NonNullable<
-  Extract<TimetablesResponse, { success: true }>['data']
->[number];
+export type TimetableRow = TimetablesResponse[number];
 
-type UpdateTimetablePayload = {
-  name?: string;
-  validFrom?: string;
-  validTo?: string | null;
-};
+type CohortsData = Awaited<
+  ReturnType<typeof api.timetable.cohorts.getAllForTimetable>
+>;
 
 /** Options accepted by every mutation hook: react to a successful save. */
 export type MutationCallbacks = {
@@ -28,39 +22,14 @@ export type MutationCallbacks = {
 
 /** All timetables. */
 export function useTimetables() {
-  return useQuery({
-    queryFn: async (): Promise<TimetableRow[]> => {
-      const res = await parseResponse(api.timetable.timetables.$get());
-      if (!res.success) {
-        throw new Error('Failed to load timetables');
-      }
-      return (res.data ?? []) as TimetableRow[];
-    },
-    queryKey: queryKeys.timetables.all(),
-  });
+  return useQuery(orpc.timetable.timetables.list.queryOptions());
 }
-
-type LatestValidTimetableData = NonNullable<
-  InferResponseType<typeof api.timetable.timetables.latestValid.$get>['data']
->;
-type CohortsData = NonNullable<
-  InferResponseType<typeof api.cohort.index.$get>['data']
->;
 
 /** Active timetable (when the user has no cohort) plus the cohort options. */
 export function useCohortSelector(userCohortId: string | null) {
   const activeTimetableQuery = useQuery({
+    ...orpc.timetable.timetables.latestValid.queryOptions(),
     enabled: !userCohortId,
-    queryFn: async (): Promise<LatestValidTimetableData> => {
-      const res = await parseResponse(
-        api.timetable.timetables.latestValid.$get()
-      );
-      if (!res.success) {
-        throw new Error('Failed to load timetable');
-      }
-      return res.data as LatestValidTimetableData;
-    },
-    queryKey: queryKeys.timetables.latestValid(),
   });
 
   const timetableId = userCohortId ?? activeTimetableQuery.data?.id ?? null;
@@ -71,19 +40,15 @@ export function useCohortSelector(userCohortId: string | null) {
       if (!timetableId) {
         throw new Error('Failed to load cohorts');
       }
-      const res = await parseResponse(
+      return sortCohorts(
         userCohortId
-          ? api.cohort.index.$get()
-          : api.timetable.cohorts.getAllForTimetable[':timetableId'].$get({
-              param: { timetableId },
-            })
+          ? await api.cohort.cohort()
+          : await api.timetable.cohorts.getAllForTimetable({ timetableId })
       );
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return sortCohorts(res.data) as CohortsData;
     },
-    queryKey: queryKeys.timetable.cohorts(timetableId),
+    // One key for either branch: the payload is a cohort list, scoped to the
+    // timetable the selector is showing.
+    queryKey: [...orpc.cohort.cohort.key(), timetableId],
   });
 
   return { activeTimetableQuery, cohortQuery };
@@ -92,33 +57,23 @@ export function useCohortSelector(userCohortId: string | null) {
 /** Preview of what deleting a timetable would remove. */
 export function useDeletePreview(timetableId: string | null | undefined) {
   return useQuery({
+    ...orpc.timetable.timetables.previewDelete.queryOptions({
+      input: { id: timetableId ?? '' },
+    }),
     enabled: !!timetableId,
-    queryFn: async () => {
-      if (!timetableId) {
-        return null;
-      }
-      const res = await parseResponse(
-        api.timetable.timetables[':id']['preview-delete'].$get({
-          param: { id: timetableId },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load preview');
-      }
-      return res.data;
-    },
-    queryKey: ['timetables', 'preview-delete', timetableId] as const,
   });
 }
 
+/**
+ * Everything a timetable write can move: the timetables themselves, the public
+ * teacher list and the admin one, and every lesson view (all but the cohorts
+ * live under the `timetable` family, so one sweep covers them).
+ */
 function useInvalidateTimetableGraph() {
   const queryClient = useQueryClient();
   return () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.cohorts() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.lessons() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.teachers() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.adminTeachers() });
+    queryClient.invalidateQueries({ queryKey: orpc.timetable.key() });
+    queryClient.invalidateQueries({ queryKey: orpc.cohort.cohort.key() });
   };
 }
 
@@ -126,83 +81,55 @@ function useInvalidateTimetableGraph() {
 export function useUpdateTimetable({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateTimetablePayload;
-    }) => {
-      const res = await parseResponse(
-        api.timetable.timetables[':id'].$patch({
-          json: payload,
-          param: { id },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to update timetable');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetables.all() });
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.timetable.timetables.update.mutationOptions({
+      onError: () => {
+        toast.error(t('timetable.updateError'));
+      },
+      onSuccess: () => {
+        toast.success(t('timetable.updateSuccess'));
+        queryClient.invalidateQueries({
+          queryKey: orpc.timetable.timetables.list.key(),
+        });
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /** Delete a timetable and everything hanging off it. */
 export function useDeleteTimetable({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateTimetableGraph();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await parseResponse(
-        api.timetable.timetables[':id'].$delete({ param: { id } })
-      );
-      if (!res.success) {
-        throw new Error('Failed to delete timetable');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.deleteError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.deleteSuccess'));
-      invalidate();
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.timetable.timetables.delete.mutationOptions({
+      onError: () => {
+        toast.error(t('timetable.deleteError'));
+      },
+      onSuccess: () => {
+        toast.success(t('timetable.deleteSuccess'));
+        invalidate();
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /** Remove cohorts left orphaned by earlier timetable deletions. */
 export function useCleanupOrphanedCohorts() {
   const invalidate = useInvalidateTimetableGraph();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async () => {
-      const res = await parseResponse(
-        api.timetable.timetables['cleanup-orphaned-cohorts'].$post()
-      );
-      if (!res.success) {
-        throw new Error('Failed to clean up orphaned cohorts');
-      }
-      return res;
-    },
-    onError: () => {
-      toast.error(t('timetable.cleanupOrphanedCohortsError'));
-    },
-    onSuccess: () => {
-      toast.success(t('timetable.cleanupOrphanedCohortsSuccess'));
-      invalidate();
-    },
-  });
+  return useMutation(
+    orpc.timetable.timetables.cleanupOrphanedCohorts.mutationOptions({
+      onError: () => {
+        toast.error(t('timetable.cleanupOrphanedCohortsError'));
+      },
+      onSuccess: () => {
+        toast.success(t('timetable.cleanupOrphanedCohortsSuccess'));
+        invalidate();
+      },
+    })
+  );
 }
 
 type ImportTimetablePayload = {
@@ -226,34 +153,20 @@ export function useImportTimetable({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateTimetableGraph();
   const { t } = useTranslation();
   return useMutation({
-    mutationFn: async ({
-      file,
-      name,
-      validFrom,
-      validTo,
-    }: ImportTimetablePayload) => {
-      const res = await parseResponse(
-        api.timetable.import.$post({
-          form: {
-            file,
-            name,
-            validFrom: toDateInput(validFrom),
-            ...(validTo && { validTo: toDateInput(validTo) }),
-          },
-        })
-      );
-      if (!res.success) {
-        throw new Error('Failed to import timetable');
-      }
-      return res;
-    },
+    mutationFn: ({ file, name, validFrom, validTo }: ImportTimetablePayload) =>
+      api.timetable.import({
+        file,
+        name,
+        validFrom: toDateInput(validFrom),
+        ...(validTo && { validTo: toDateInput(validTo) }),
+      }),
     onError: () => {
       toast.error(t('timetable.importError'));
     },
     onSuccess: () => {
       toast.success(t('timetable.importSuccess'));
       // An import replaces every timetable-derived query, so sweep broadly.
-      queryClient.invalidateQueries({ queryKey: queryKeys.timetable.root() });
+      queryClient.invalidateQueries({ queryKey: orpc.timetable.key() });
       invalidate();
       onSaved?.();
     },

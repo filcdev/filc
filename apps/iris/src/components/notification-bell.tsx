@@ -1,3 +1,4 @@
+import { useSession } from '@filcdev/auth/client';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -20,14 +21,13 @@ import {
   useRecentNotifications,
   useUnreadNotificationCount,
 } from '@/hooks/notifications';
-import { authClient } from '@/utils/authentication';
 
 export function NotificationBell() {
   const { t } = useTranslation();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] =
     useState<NotificationItem | null>(null);
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const userId = session?.session.userId;
 
   const { data: unreadData } = useUnreadNotificationCount(userId);

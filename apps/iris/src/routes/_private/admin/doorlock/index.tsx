@@ -22,6 +22,7 @@ import {
   type DoorlockStatsOverview,
   useDoorlockStatsOverview,
 } from '@/hooks/doorlock-admin';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/doorlock/')({
   component: () => (
@@ -29,6 +30,8 @@ export const Route = createFileRoute('/_private/admin/doorlock/')({
       <DoorlockDashboard />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.doorlock.stats.overview.queryOptions()),
 });
 
 function DoorlockDashboard() {

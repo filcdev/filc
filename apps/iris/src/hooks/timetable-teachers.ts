@@ -1,31 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { api, orpc } from '@/utils/orpc';
 
-type TeachersAdminResponse = InferResponseType<
-  (typeof api.timetable.teachers)['$get']
+type TeachersAdminResponse = Awaited<
+  ReturnType<typeof api.timetable.teachers.list>
 >;
 
 /** A teacher as returned by the admin list (email + linked user included). */
-export type AdminTeacher = NonNullable<TeachersAdminResponse['data']>[number];
+export type AdminTeacher = TeachersAdminResponse[number];
 
-type UserOptionsResponse = InferResponseType<(typeof api.users.index)['$get']>;
+type UserOptionsResponse = Awaited<ReturnType<typeof api.users.list>>;
 
 /** A user available for the teacher assignment picker. */
-export type TeacherUserOption = NonNullable<
-  UserOptionsResponse['data']
->['users'][number];
-
-type UpdateTeacherPayload = InferRequestType<
-  (typeof api.timetable.teachers)[':id']['$patch']
->['json'];
+export type TeacherUserOption = UserOptionsResponse['users'][number];
 
 /** Options accepted by every mutation hook: react to a successful save. */
 export type MutationCallbacks = {
@@ -35,57 +23,43 @@ export type MutationCallbacks = {
 
 /** Admin teacher list (email + linked user); gated by `teacher:manage`. */
 export function useTeachersAdmin() {
-  return useQuery({
-    queryFn: async (): Promise<AdminTeacher[]> => {
-      const res = await parseResponse(api.timetable.teachers.$get());
-      if (!res.success) {
-        throw new Error('Failed to load teachers');
-      }
-      return (res.data ?? []) as AdminTeacher[];
-    },
-    queryKey: queryKeys.adminTeachers(),
-  });
+  return useQuery(orpc.timetable.teachers.list.queryOptions());
 }
 
 /**
  * Users for the teacher assignment picker. The list endpoint caps `limit` at
- * 100, so page through it to offer every assignable account; a failed page
- * falls back to an empty list so the combobox stays usable.
+ * 100 and returns `total`, so the first page sizes every remaining offset and
+ * the rest are fetched in one fan-out instead of a chain of round trips; a
+ * failed fetch falls back to an empty list so the combobox stays usable.
  */
 export function useTeacherUserOptions() {
   return useQuery({
     queryFn: async (): Promise<TeacherUserOption[]> => {
       try {
         const pageSize = 100;
-        const users: TeacherUserOption[] = [];
-        let offset = 0;
-        let total = Number.POSITIVE_INFINITY;
-        while (users.length < total) {
-          const res = await parseResponse(
-            api.users.index.$get({
-              query: {
-                limit: String(pageSize),
-                offset: String(offset),
-              },
-            })
-          );
-          if (!res.success) {
-            return [];
-          }
-          const page = res.data?.users ?? [];
-          users.push(...page);
-          total = res.data?.total ?? users.length;
-          if (page.length < pageSize) {
-            break;
-          }
-          offset += pageSize;
+        const first = await api.users.list({ limit: pageSize, offset: 0 });
+        if (first.users.length < pageSize || first.total <= pageSize) {
+          return first.users;
         }
-        return users;
+
+        const offsets: number[] = [];
+        for (let offset = pageSize; offset < first.total; offset += pageSize) {
+          offsets.push(offset);
+        }
+
+        const pages = await Promise.all(
+          offsets.map((offset) => api.users.list({ limit: pageSize, offset }))
+        );
+
+        return [first, ...pages].flatMap((page) => page.users);
       } catch {
         return [];
       }
     },
-    queryKey: queryKeys.userOptions(),
+    // The picker pages the whole user list itself, so it needs its own key
+    // rather than the paged admin list's; it still sits under the teachers
+    // router so a broad timetable invalidation reaches it.
+    queryKey: [...orpc.timetable.teachers.key(), 'user-options'],
   });
 }
 
@@ -93,28 +67,21 @@ export function useTeacherUserOptions() {
 export function useUpdateTeacher({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      ...payload
-    }: UpdateTeacherPayload & { id: string }) => {
-      const res = await api.timetable.teachers[':id'].$patch({
-        json: payload,
-        param: { id },
-      });
-      if (!res.ok) {
-        throw new Error(t('teachers.updateError'));
-      }
-      return res.json();
-    },
-    onError: () => {
-      toast.error(t('teachers.updateError'));
-    },
-    onSuccess: () => {
-      toast.success(t('teachers.updateSuccess'));
-      queryClient.invalidateQueries({ queryKey: queryKeys.adminTeachers() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myTeacher() });
-      onSaved?.();
-    },
-  });
+  return useMutation(
+    orpc.timetable.teachers.update.mutationOptions({
+      onError: () => {
+        toast.error(t('teachers.updateError'));
+      },
+      onSuccess: () => {
+        toast.success(t('teachers.updateSuccess'));
+        queryClient.invalidateQueries({
+          queryKey: orpc.timetable.teachers.list.key(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: orpc.timetable.teachers.me.key(),
+        });
+        onSaved?.();
+      },
+    })
+  );
 }

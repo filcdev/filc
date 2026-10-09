@@ -32,11 +32,19 @@ export type NotificationContent = {
   metadata?: Record<string, unknown>;
 };
 
+/**
+ * How one module declares the notification it owns: what it says, who gets it,
+ * how long the engine waits, and the opt-out flag that gates it. The engine
+ * holds no per-type bookkeeping of its own, so a new notification type is a
+ * module-local change plus one union member.
+ */
 export type NotificationHandler<T = unknown> = {
-  type: NotificationType;
-  getDelay: () => number;
-  getAudience: (payload: T) => Promise<AudienceUser[]>;
   buildContent: (payload: T, locale: string) => NotificationContent;
+  getAudience: (payload: T) => Promise<AudienceUser[]>;
+  getDelay: () => number;
+  /** Absent means the type is not gated on a user preference. */
+  preferenceKey?: keyof NotificationPreferences;
+  type: NotificationType;
 };
 
 export type DeliveryJob = {

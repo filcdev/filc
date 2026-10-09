@@ -7,10 +7,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
-import { useNavigate } from '@tanstack/react-router';
 import { MailCheck, MailX } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { openSettings } from '@/components/settings-dialog-store';
 import {
   type NotificationItem,
   useMarkNotificationRead,
@@ -29,12 +29,11 @@ export function NotificationViewerDialog({
   notification,
 }: NotificationViewerDialogProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const markReadMutation = useMarkNotificationRead();
 
   useEffect(() => {
     if (open && notification && !notification.read) {
-      markReadMutation.mutate(notification.id);
+      markReadMutation.mutate({ id: notification.id });
     }
   }, [open, notification, markReadMutation.mutate]);
 
@@ -61,7 +60,7 @@ export function NotificationViewerDialog({
 
         <DialogFooter>
           <Button
-            onClick={() => markReadMutation.mutate(notification.id)}
+            onClick={() => markReadMutation.mutate({ id: notification.id })}
             size="sm"
             variant="ghost"
           >
@@ -75,7 +74,7 @@ export function NotificationViewerDialog({
             <Button
               onClick={() => {
                 onOpenChange(false);
-                navigate({ to: '/settings' });
+                openSettings('general');
               }}
               size="sm"
               variant="outline"

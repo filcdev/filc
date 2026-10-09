@@ -21,6 +21,7 @@ import {
   type AdminTeacher,
   useTeachersAdmin,
 } from '@/hooks/timetable-teachers';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/timetable/teachers')({
   component: () => (
@@ -28,6 +29,8 @@ export const Route = createFileRoute('/_private/admin/timetable/teachers')({
       <TeachersPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.timetable.teachers.list.queryOptions()),
 });
 
 type SortColumn = 'name' | 'short' | 'email' | 'user';

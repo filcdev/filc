@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import { Input } from '@filcdev/ui/components/input';
 import {
@@ -37,8 +38,8 @@ import {
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { confirmDestructiveAction } from '@/utils/confirm';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/doorlock/devices')({
   component: () => (
@@ -46,6 +47,8 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
       <DevicesPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.doorlock.devices.list.queryOptions()),
 });
 
 type DeviceSortColumn = 'name' | 'location' | 'apiToken' | 'updated';
@@ -63,7 +66,7 @@ function getAriaSortState(
 
 function DevicesPage() {
   const { t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<DeviceSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
@@ -138,7 +141,7 @@ function DevicesPage() {
     if (!confirmed) {
       return;
     }
-    await deleteMutation.mutateAsync(device.id);
+    await deleteMutation.mutateAsync({ id: device.id });
   };
 
   const handleSort = (column: DeviceSortColumn) => {

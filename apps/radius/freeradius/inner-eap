@@ -1,0 +1,20 @@
+# Configuration for EAP types occurring inside the tunneled method (PEAP/TTLS)
+eap inner-eap {
+	default_eap_type = mschapv2
+	timer_expire     = 60
+	max_sessions = 2048
+
+	md5 {}
+	gtc {
+		auth_type = PAP
+	}
+	mschapv2 {}
+
+	tls {
+		private_key_password = replace_with_password.mk_PASSWORD_INNER
+		private_key_file = ${certdir}/inner-server.key
+		certificate_file = ${certdir}/inner-server.pem
+		ca_file = ${cadir}/ca.pem
+		dh_file = ${certdir}/dh
+	}
+}

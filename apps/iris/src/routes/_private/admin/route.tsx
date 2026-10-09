@@ -9,14 +9,30 @@ import {
 } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AdminDashboard } from '@/components/admin/dashboard';
 import { AdminSidebar } from '@/components/admin/sidebar';
+import { Lazy } from '@/components/lazy';
 import { Navbar } from '@/components/navbar';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { ADMIN_UI_PERMISSIONS } from '@/hooks/use-has-permission';
+import { orpc, prefetch } from '@/utils/orpc';
+
+// Only the dashboard renders the chart, but this layout wraps every admin page,
+// so a static import would pull recharts into all of them. Load it on demand.
+const loadAdminDashboard = () =>
+  import('@/components/admin/dashboard').then((m) => ({
+    default: m.AdminDashboard,
+  }));
 
 export const Route = createFileRoute('/_private/admin')({
   component: AppLayoutComponent,
+  // The admin index is the dashboard; its own routes prefetch their own data.
+  loader: ({ context, location }) =>
+    location.pathname === '/admin'
+      ? prefetch(
+          context.queryClient,
+          orpc.dashboard.stats.queryOptions({ input: { days: 30 } })
+        )
+      : undefined,
 });
 
 function AppLayoutComponent() {
@@ -41,7 +57,7 @@ function AppLayoutComponent() {
           </Navbar>
 
           <div className="grow overflow-auto p-4">
-            {isExactAdminPath ? <AdminDashboard /> : <Outlet />}
+            {isExactAdminPath ? <Lazy load={loadAdminDashboard} /> : <Outlet />}
           </div>
         </main>
       </SidebarProvider>

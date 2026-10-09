@@ -28,6 +28,7 @@ import {
   useDeleteClassroomType,
   useUpdateClassroomType,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute(
   '/_private/admin/navigator/classroom-types'
@@ -37,9 +38,19 @@ export const Route = createFileRoute(
       <ClassroomTypesPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.navigator.classroomTypes.list.queryOptions()
+      ),
+      prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
+    ]),
 });
 
-const COLOR_HEX_REGEX = /^#[0-9a-fA-F]{6}$/;
+// `#RRGGBBAA` mirrors the API schema: imported rows carry an alpha pair, and
+// the 3D palette reads the leading six digits.
+const COLOR_HEX_REGEX = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
 
 type ClassroomTypeDialogProps = BaseDialogProps & {
   classroomType: ClassroomType | null;
@@ -65,7 +76,7 @@ function ClassroomTypeDialog({
     },
     onSubmit: ({ value }) => {
       if (classroomType) {
-        updateType.mutate({ id: classroomType.id, payload: value });
+        updateType.mutate({ ...value, id: classroomType.id });
       } else {
         createType.mutate(value);
       }
@@ -229,7 +240,7 @@ function ClassroomTypesPage() {
             getRowId={(classroomType) => classroomType.id}
             getRowLabel={(classroomType) => classroomType.name}
             onDelete={(classroomType) =>
-              deleteClassroomType.mutate(classroomType.id)
+              deleteClassroomType.mutate({ id: classroomType.id })
             }
             onEdit={startEdit}
             rows={rows}

@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { DatePicker } from '@filcdev/ui/components/date-picker';
@@ -26,9 +27,8 @@ import {
   useUploadAnnouncementImage,
 } from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { getIntlLocale } from '@/utils/date-locale';
-import { apiBaseUrl } from '@/utils/hc';
+import { apiBaseUrl } from '@/utils/orpc';
 import type { BaseDialogProps } from './admin.types';
 
 type AnnouncementsDialogProps = BaseDialogProps & {
@@ -236,7 +236,7 @@ export function AnnouncementsDialog({
   const uploadImage = useUploadAnnouncementImage();
   const removeImage = useDeleteAnnouncementImage();
   const { data: cohorts = [] } = useCohorts(open);
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const canManageKiosks = useHasPermission(
     permissions.kiosksManage,
     session?.user?.permissions
@@ -258,7 +258,7 @@ export function AnnouncementsDialog({
 
   // An upload/removal answers with the row it produced, so the preview can
   // reflect it right away instead of waiting for the dialog to be reopened.
-  const imageRow = uploadImage.data?.data ?? removeImage.data?.data ?? item;
+  const imageRow = uploadImage.data ?? removeImage.data ?? item;
   const imageKey = imageRow?.imageKey ?? null;
   const imageUrl = imageKey
     ? `${apiBaseUrl}/kiosk/news/${imageRow?.id}/image?v=${imageRow?.imageUpdatedAt}`
@@ -282,10 +282,10 @@ export function AnnouncementsDialog({
         let announcementId = item?.id ?? null;
 
         if (item) {
-          await updateMutation.mutateAsync({ id: item.id, payload });
+          await updateMutation.mutateAsync({ ...payload, id: item.id });
         } else {
           const created = await createMutation.mutateAsync(payload);
-          announcementId = created.data.id;
+          announcementId = created.id;
         }
 
         // An image picked before the announcement existed rides along with
@@ -602,7 +602,7 @@ export function AnnouncementsDialog({
               imageUrl={imageUrl}
               isRemoving={removeImage.isPending}
               onFileChange={setImageFile}
-              onRemove={(id) => removeImage.mutate(id)}
+              onRemove={(id) => removeImage.mutate({ id })}
               upload={(file, id) => uploadImage.mutateAsync({ file, id })}
             />
           </form>

@@ -1,95 +1,125 @@
-import { createMiddleware } from 'hono/factory';
-import { HTTPException } from 'hono/http-exception';
-import { StatusCodes } from 'http-status-codes';
-import type { AuthenticatedContext, Context } from '#_types/globals';
-import { extractApiKey, validateApiKey } from '#utils/api-keys';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { ChronosContext } from '#_types/globals';
+import { base } from '#orpc';
 import { auth } from '#utils/authentication';
 import { rbac, userHasPermission } from '#utils/authorization';
+import { env } from '#utils/environment';
 import { setSentryUser } from '#utils/telemetry';
 
-type Session = typeof auth.$Infer.Session;
-
-export const authenticationMiddleware = createMiddleware<Context>(
-  async (c, next) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-
-    if (session) {
-      c.set('user', session.user);
-      c.set('session', session.session);
-      setSentryUser(session.session, session.user);
-      return next();
-    }
-
-    // Fall back to API key authentication (Bearer token or X-API-Key header).
-    const rawKey = extractApiKey(c.req.raw.headers);
-    if (rawKey) {
-      const apiUser = await validateApiKey(rawKey);
-      if (apiUser) {
-        c.set('user', apiUser as Session['user']);
-        // API keys are not tied to a browser session, but downstream
-        // middleware only needs `session.userId`, so synthesize a minimal
-        // session object carrying the user id.
-        c.set('session', { userId: apiUser.id } as Session['session']);
-        setSentryUser({ userId: apiUser.id } as never, apiUser as never);
-        return next();
-      }
-    }
-
-    c.set('user', null);
-    c.set('session', null);
-    setSentryUser(null);
-    return next();
-  }
-);
-
-export const requireAuthentication = createMiddleware<AuthenticatedContext>(
-  async (c, next) => {
-    if (!c.var.session) {
-      throw new HTTPException(StatusCodes.UNAUTHORIZED, {
-        message: 'Unauthorized',
-      });
-    }
-
-    await next();
-  }
-);
-
-export const requireAuthorization = (permission: string) => {
-  rbac.registerPermission(permission);
-  return createMiddleware<AuthenticatedContext>(async (c, next) => {
-    if (!c.var.session) {
-      throw new HTTPException(StatusCodes.UNAUTHORIZED, {
-        message: 'Unauthorized',
-      });
-    }
-
-    if (!(await userHasPermission(c.var.session.userId, permission))) {
-      throw new HTTPException(StatusCodes.FORBIDDEN, {
-        message: 'Forbidden',
-      });
-    }
-
-    await next();
-  });
-};
+const SIGNATURE_LENGTH = 64; // SHA-256 hex digest
 
 /**
- * Compose the auth middlewares for a route. Pass a permission to also require
- * authorization; omit it for authentication-only. Spread into `createHandlers`
- * so handlers stop listing the guards individually:
- *
- *   export const listX = factory.createHandlers(
- *     ...authRouter('x:read'),
- *     zValidator('query', schema),
- *     async (c) => ok(c, await listX()),
- *   );
+ * Verify the signed anonymous-id cookie without minting a new one: a client
+ * that never got one falls back to IP-only rate limiting.
  */
-export function authRouter(): [typeof requireAuthentication];
-export function authRouter(
-  permission: string
-): [typeof requireAuthentication, ReturnType<typeof requireAuthorization>];
-export function authRouter(permission?: string) {
-  return permission
-    ? [requireAuthentication, requireAuthorization(permission)]
-    : [requireAuthentication];
+function verifyAnonymousId(cookieValue: string): string | null {
+  const dotIndex = cookieValue.lastIndexOf('.');
+  if (dotIndex === -1) {
+    return null;
+  }
+
+  const id = cookieValue.slice(0, dotIndex);
+  const sig = cookieValue.slice(dotIndex + 1);
+  if (sig.length !== SIGNATURE_LENGTH) {
+    return null;
+  }
+
+  const expected = createHmac('sha256', env.authSecret)
+    .update(id)
+    .digest('hex');
+  const sigBuf = Buffer.from(sig, 'hex');
+  const expectedBuf = Buffer.from(expected, 'hex');
+  if (sigBuf.length !== expectedBuf.length) {
+    return null;
+  }
+  if (!timingSafeEqual(sigBuf, expectedBuf)) {
+    return null;
+  }
+
+  return id;
 }
+
+function readCookie(headers: Headers, name: string): string | null {
+  return (
+    headers
+      .get('Cookie')
+      ?.split(';')
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith(`${name}=`))
+      ?.split('=')
+      .slice(1)
+      .join('=') ?? null // handle values containing '='
+  );
+}
+
+/**
+ * Resolve who is calling, once per request, before any procedure runs: a
+ * better-auth session, or an anonymous id from the signed rate-limit cookie.
+ * Also seeds Sentry's user context.
+ *
+ * API keys are not handled here. The `@better-auth/api-key` plugin is
+ * registered with `enableSessionForAPIKeys`, so a valid key in the request
+ * headers makes `getSession` above answer with a session for the key's owner —
+ * one validation per request, and the key's own rate limit is applied by the
+ * plugin. That also means the session is a real session row's shape, so the
+ * guards below need no special case.
+ */
+export async function resolveCaller(
+  headers: Headers
+): Promise<Pick<ChronosContext, 'anonymousId' | 'session' | 'user'>> {
+  // The api-key plugin *throws* (`Invalid API key.`, `API Key is disabled`)
+  // rather than answering null when a key is present but unusable, and this
+  // runs before every procedure — an uncaught throw here would turn any
+  // request carrying a stale key into a 500. A key that fails to resolve is
+  // simply not a caller, so the request continues as anonymous and the route's
+  // own guard decides.
+  const session = await auth.api.getSession({ headers }).catch(() => null);
+
+  if (session) {
+    setSentryUser(session.session, session.user);
+    return { anonymousId: null, session: session.session, user: session.user };
+  }
+
+  setSentryUser(null);
+
+  const cookie = readCookie(headers, env.rateLimitCookieName);
+  return {
+    anonymousId: cookie ? verifyAnonymousId(cookie) : null,
+    session: null,
+    user: null,
+  };
+}
+
+/**
+ * Guard for endpoints that only need a caller. Narrows the context so handler
+ * bodies can read `context.session`/`context.user` without re-checking.
+ */
+export const requireAuthentication = base.middleware(
+  ({ context, errors, next }) => {
+    if (!context.session) {
+      throw errors.UNAUTHORIZED({ message: 'Unauthorized' });
+    }
+
+    return next({
+      context: { session: context.session, user: context.user },
+    });
+  }
+);
+
+/** Guard for endpoints gated on a permission string from `@filcdev/api/permissions`. */
+export const requireAuthorization = (permission: string) => {
+  rbac.registerPermission(permission);
+  return base.middleware(async ({ context, errors, next }) => {
+    if (!context.session) {
+      throw errors.UNAUTHORIZED({ message: 'Unauthorized' });
+    }
+
+    if (!(await userHasPermission(context.session.userId, permission))) {
+      throw errors.FORBIDDEN({ message: 'Forbidden' });
+    }
+
+    return next({
+      context: { session: context.session, user: context.user },
+    });
+  });
+};

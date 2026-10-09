@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
@@ -35,8 +36,8 @@ import {
   useDeleteAnnouncement,
 } from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/news/announcements')({
   component: () => (
@@ -44,12 +45,26 @@ export const Route = createFileRoute('/_private/admin/news/announcements')({
       <AnnouncementsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.news.announcements.list.queryOptions({
+          input: {
+            includeAll: 'true',
+            includeExpired: 'true',
+            includeKioskOnly: 'true',
+          },
+        })
+      ),
+      prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+    ]),
 });
 
 function AnnouncementsPage() {
   const { i18n, t } = useTranslation();
   const showPastId = useId();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -144,7 +159,7 @@ function AnnouncementsPage() {
 
   const confirmDelete = () => {
     if (itemToDelete) {
-      deleteMutation.mutateAsync(itemToDelete.id);
+      deleteMutation.mutateAsync({ id: itemToDelete.id });
     }
   };
 

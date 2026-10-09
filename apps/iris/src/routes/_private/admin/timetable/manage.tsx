@@ -43,6 +43,7 @@ import {
   useDeleteTimetable,
   useTimetables,
 } from '@/hooks/timetables-admin';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/timetable/manage')({
   component: () => (
@@ -50,6 +51,17 @@ export const Route = createFileRoute('/_private/admin/timetable/manage')({
       <TimetableManagePage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.timetable.timetables.list.queryOptions()
+      ),
+      prefetch(
+        context.queryClient,
+        orpc.timetable.timetables.latestValid.queryOptions()
+      ),
+    ]),
 });
 
 type TimetableStatus = 'current' | 'past' | 'upcoming';
@@ -344,7 +356,7 @@ function TimetableManagePage() {
               }
               onClick={() => {
                 if (itemToDelete) {
-                  deleteMutation.mutate(itemToDelete.id);
+                  deleteMutation.mutate({ id: itemToDelete.id });
                 }
               }}
               variant="destructive"
@@ -375,7 +387,7 @@ function TimetableManagePage() {
             <Button
               disabled={cleanupMutation.isPending}
               onClick={() => {
-                cleanupMutation.mutate();
+                cleanupMutation.mutate(undefined);
                 setCleanupDialogOpen(false);
               }}
               variant="destructive"

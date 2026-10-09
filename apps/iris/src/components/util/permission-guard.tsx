@@ -1,7 +1,7 @@
+import { useSession } from '@filcdev/auth/client';
 import { Navigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
 
 type PermissionGuardProps = {
   children: ReactNode;
@@ -12,7 +12,7 @@ export function PermissionGuard({
   children,
   permission,
 }: PermissionGuardProps) {
-  const { data } = authClient.useSession();
+  const { data } = useSession();
   const user = data?.user;
   const hasPermission = useHasPermission(permission, user?.permissions);
 

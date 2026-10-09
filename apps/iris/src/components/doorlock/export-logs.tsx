@@ -10,7 +10,7 @@ import { Download, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { api } from '@/utils/hc';
+import { api } from '@/utils/orpc';
 
 type ExportFilters = {
   accessFilter: 'all' | 'granted' | 'denied';
@@ -22,8 +22,16 @@ type ExportFilters = {
   userFilter: 'all' | string;
 };
 
-function buildQuery(filters: ExportFilters): Record<string, string> {
-  const query: Record<string, string> = { limit: '1000' };
+function buildQuery(filters: ExportFilters) {
+  const query: {
+    cardId?: string;
+    deviceId?: string;
+    from?: string;
+    granted?: 'true' | 'false';
+    search?: string;
+    to?: string;
+    userId?: string;
+  } = {};
   if (filters.deviceFilter !== 'all') {
     query.deviceId = filters.deviceFilter;
   }
@@ -140,11 +148,8 @@ export function ExportLogsButton(filters: ExportFilters) {
 
   const fetchLogs = async (): Promise<LogRow[]> => {
     const query = buildQuery(filters);
-    const res = await api.doorlock.logs.export.$get({ query });
-    if (!res.ok) {
-      throw new Error('Export failed');
-    }
-    const text = await res.text();
+    const file = await api.doorlock.logs.export(query);
+    const text = await file.text();
     const lines = text.trim().split('\n');
     if (lines.length <= 1) {
       return [];

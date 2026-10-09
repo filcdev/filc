@@ -1,6 +1,5 @@
 import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
 import { permissions } from '@filcdev/api/permissions';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Field, FieldLabel } from '@filcdev/ui/components/field';
@@ -19,6 +18,7 @@ import {
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -29,6 +29,11 @@ import {
   useNavigatorGraph,
   useUpdateCorridor,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
+
+// The 3D editor is three.js (~560 kB). It is the bulk of this page, so it
+// loads into its own chunk instead of with the route that hosts the preview.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 export const Route = createFileRoute('/_private/admin/navigator/corridors')({
   component: () => (
@@ -36,6 +41,18 @@ export const Route = createFileRoute('/_private/admin/navigator/corridors')({
       <CorridorsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.navigator.corridors.list.queryOptions()
+      ),
+      prefetch(
+        context.queryClient,
+        orpc.navigator.buildings.list.queryOptions()
+      ),
+      prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
+    ]),
 });
 
 type CorridorFormValues = {
@@ -76,7 +93,7 @@ function CorridorsPage() {
     onSubmit: ({ value }) => {
       const { id, ...payload } = value;
       if (id) {
-        updateCorridor.mutate({ id, payload });
+        updateCorridor.mutate({ ...payload, id });
       } else {
         createCorridor.mutate(payload);
       }
@@ -390,7 +407,9 @@ function CorridorsPage() {
                   columns={columns}
                   getRowId={(corridor) => corridor.id}
                   getRowLabel={(corridor) => corridor.name}
-                  onDelete={(corridor) => deleteCorridor.mutate(corridor.id)}
+                  onDelete={(corridor) =>
+                    deleteCorridor.mutate({ id: corridor.id })
+                  }
                   onEdit={startEdit}
                   onHover={(corridor) =>
                     editor.setHoveredId(corridor?.id ?? null)
@@ -403,12 +422,13 @@ function CorridorsPage() {
         </div>
 
         <div className="h-[70vh] overflow-hidden rounded-xl border">
-          <EditorView3D
+          <Lazy
             appearance={editor.appearance}
             edit={editor.edit}
             emptyLabel={t('ui.common.no_data')}
             graph={graph.data ?? null}
             initialDistance={120}
+            load={loadEditorView3D}
             onTransform={editor.foldPatch}
             showAxes
           />

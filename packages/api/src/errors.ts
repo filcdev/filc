@@ -1,9 +1,13 @@
+import type { ErrorMap } from '@orpc/contract';
+import z from 'zod';
+
 /**
- * Machine-readable error codes for the Filc API. Backend handlers adopt
- * these incrementally; every error without an explicit code is surfaced as
- * `'UNKNOWN'` by `unwrapResponse`.
+ * Machine-readable error codes for the Filc API. Every procedure answers with
+ * one of these: the code travels over the wire in the oRPC error payload and is
+ * what clients branch on (`isDefinedError(error) && error.code === 'CONFLICT'`).
  */
 export const ERROR_CODES = [
+  'BAD_REQUEST',
   'CONFLICT',
   'FORBIDDEN',
   'INTERNAL',
@@ -14,57 +18,27 @@ export const ERROR_CODES = [
   'VALIDATION',
 ] as const;
 
-/**
- * Default error code for an HTTP status. Every API error response carries a
- * code — handlers that need finer granularity throw with an explicit one,
- * everything else derives it from the status.
- */
-export function errorCodeForStatus(status: number): ErrorCode {
-  switch (status) {
-    case 400:
-      return 'VALIDATION';
-    case 401:
-      return 'UNAUTHORIZED';
-    case 403:
-      return 'FORBIDDEN';
-    case 404:
-      return 'NOT_FOUND';
-    case 409:
-      return 'CONFLICT';
-    case 429:
-      return 'RATE_LIMITED';
-    default:
-      return status >= 500 ? 'INTERNAL' : 'UNKNOWN';
-  }
-}
-
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
 /**
- * Error thrown by `unwrapResponse` when the API returns a failure envelope
- * or the request itself fails. Carries the structured pieces callers need
- * to branch on (`code`, HTTP `status`) instead of parsing message strings.
+ * The contract-wide error map. Statuses and default messages reproduce the
+ * statuses the previous status-derived mapping produced, so clients keep
+ * seeing the same HTTP status for the same failure; `BAD_REQUEST` is what oRPC raises
+ * for input-schema failures, `VALIDATION` is for handlers rejecting a payload
+ * explicitly.
  */
-export class ApiError extends Error {
-  readonly code: ErrorCode;
-  readonly details?: unknown;
-  readonly status?: number;
-
-  constructor(
-    code: ErrorCode,
-    options: {
-      cause?: unknown;
-      details?: unknown;
-      message: string;
-      status?: number;
-    }
-  ) {
-    super(options.message, { cause: options.cause });
-    this.name = 'ApiError';
-    this.code = code;
-    this.details = options.details;
-    if (options.status !== undefined) {
-      this.status = options.status;
-    }
-  }
-}
+export const apiErrors = {
+  BAD_REQUEST: { message: 'Validation failed', status: 400 },
+  CONFLICT: { message: 'Conflict', status: 409 },
+  FORBIDDEN: { message: 'Forbidden', status: 403 },
+  INTERNAL: { message: 'Internal Server Error', status: 500 },
+  NOT_FOUND: { message: 'Not found', status: 404 },
+  RATE_LIMITED: {
+    data: z.object({ retryAfter: z.coerce.number().optional() }),
+    message: 'Too many requests',
+    status: 429,
+  },
+  UNAUTHORIZED: { message: 'Unauthorized', status: 401 },
+  UNKNOWN: { message: 'Unknown error', status: 500 },
+  VALIDATION: { message: 'Validation failed', status: 400 },
+} as const satisfies ErrorMap;

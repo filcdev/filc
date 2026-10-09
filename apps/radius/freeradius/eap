@@ -1,0 +1,66 @@
+# Main configuration for outer EAP types
+eap {
+	default_eap_type = peap
+	timer_expire = 60
+	ignore_unknown_eap_types = no
+	cisco_accounting_username_bug = no
+	max_sessions = ${max_requests}
+	
+	md5 {}
+	pwd {
+		group = 19
+		server_id = wifi@petrik.hu
+		virtual_server = "inner-tunnel"
+	}
+	gtc {
+		auth_type = PAP
+	}
+	
+	# Common TLS configuration
+	tls-config tls-common {
+		private_key_password = replace_with_password.mk_PASSWORD_SERVER
+		private_key_file = ${certdir}/server.key
+		certificate_file = ${certdir}/server.pem
+		ca_file = ${cadir}/ca.pem
+		ca_path = ${cadir}
+		dh_file = ${certdir}/dh
+		cipher_list = "DEFAULT"
+		cipher_server_preference = no
+		tls_min_version = "1.2"
+		tls_max_version = "1.2"
+		ecdh_curve = ""
+		cache {
+			enable = no
+		}
+		verify {}
+		ocsp {
+			enable = no
+		}
+	}
+	
+	tls {
+		tls = tls-common
+	}
+	ttls {
+		tls = tls-common
+		default_eap_type = mschapv2
+		copy_request_to_tunnel = yes
+		use_tunneled_reply = no
+		virtual_server = "inner-tunnel"
+	}
+	peap {
+		tls = tls-common
+		default_eap_type = mschapv2
+		copy_request_to_tunnel = yes
+		use_tunneled_reply = no
+		virtual_server = "inner-tunnel"
+	}
+	mschapv2 {}
+	fast {
+		tls = tls-common
+		cipher_list = "ALL:ADH:!EXPORT:!eNULL:!SSLv2"
+		authority_identity = "petrikwifi.hu"
+		pac_opaque_key = "FILL_ME_IN"
+		virtual_server = inner-tunnel
+	}
+}

@@ -1,6 +1,7 @@
 /**
  * Shared type definitions for admin components.
- * API-derived types (InferResponseType etc.) remain co-located with their components.
+ * API-derived types (`Awaited<ReturnType<typeof api.x.y>>`) remain co-located
+ * with their components.
  */
 
 /** Common props shared by all admin dialog components. */

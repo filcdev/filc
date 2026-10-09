@@ -6,6 +6,8 @@
   "exports": {
     "./*": "./src/*.ts",
     "./client": "./src/client/index.ts",
+    "./contract": "./src/contract/index.ts",
+    "./contract/*": "./src/contract/*.ts",
     "./domains/*": "./src/domains/*.ts",
     "./domains/*/*": "./src/domains/*/*.ts"
   },
@@ -13,12 +15,14 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@orpc/client": "catalog:",
+    "@orpc/contract": "catalog:",
+    "@orpc/tanstack-query": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "^2.0.8",
+    "@tsconfig/strictest": "catalog:",
     "@types/bun": "catalog:",
-    "hono": "catalog:",
     "typescript": "catalog:"
   }
 }

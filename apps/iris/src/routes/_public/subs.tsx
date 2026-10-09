@@ -1,3 +1,4 @@
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
@@ -12,15 +13,51 @@ import { LogIn, ShieldCheck } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SubstitutionView } from '@/components/subs-view';
-import { authClient } from '@/utils/authentication';
+import type { PublicTimetable } from '@/hooks/timetable-public';
+import { orpc, prefetch } from '@/utils/orpc';
 
 // Map this page to /subs
 export const Route = createFileRoute('/_public/subs')({
   component: App,
+  // Everything the substitutions view paints first, fetched through the same
+  // client the component uses, so the hydrated cache answers the components'
+  // own `useQuery` calls instead of leaving them to refetch.
+  loader: async ({ context }) => {
+    const { queryClient } = context;
+    // Only the cohorts query needs the resolved timetable, so everything else
+    // rides along with `latestValid` instead of waiting a round trip for it.
+    const [latest] = await Promise.all([
+      prefetch(
+        queryClient,
+        orpc.timetable.timetables.latestValid.queryOptions()
+      ),
+      prefetch(queryClient, orpc.timetable.timetables.list.queryOptions()),
+      prefetch(queryClient, orpc.timetable.teachers.getAll.queryOptions()),
+      prefetch(queryClient, orpc.timetable.classrooms.getAll.queryOptions()),
+      prefetch(queryClient, orpc.timetable.substitutions.list.queryOptions()),
+      prefetch(queryClient, orpc.timetable.movedLessons.list.queryOptions()),
+      prefetch(
+        queryClient,
+        orpc.news.announcements.list.queryOptions({
+          input: { includeAll: 'true' },
+        })
+      ),
+    ]);
+    const timetable = latest as PublicTimetable | null;
+    if (timetable) {
+      await prefetch(
+        queryClient,
+
+        orpc.timetable.cohorts.getAllForTimetable.queryOptions({
+          input: { timetableId: timetable.id },
+        })
+      );
+    }
+  },
 });
 
 function App() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useSession();
   const navigate = useNavigate();
   const { t } = useTranslation();
 

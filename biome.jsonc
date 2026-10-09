@@ -6,7 +6,8 @@
     "includes": [
       "**/*",
       "!apps/chronos/src/database/migrations/**/*",
-      "!apps/iris/src/route-tree.gen.ts",
+      "!apps/chronos/openapi/**/*",
+      "!apps/iris/src/routeTree.gen.ts",
       "!apps/kiosk/src/route-tree.gen.ts",
       "!bun.lock"
     ]

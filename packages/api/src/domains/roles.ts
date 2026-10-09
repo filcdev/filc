@@ -23,3 +23,24 @@ export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;
 export const roleNameParamsSchema = z.object({ name: z.string() });
 
 export type RoleNameParams = z.infer<typeof roleNameParamsSchema>;
+
+/** Path + body for `PATCH /roles/{name}`. */
+export const updateRoleInputSchema = roleNameParamsSchema.extend({
+  permissions: updateRoleSchema.shape.permissions,
+});
+
+/** A role with its capability list, as the admin UI sees it. */
+export const roleWithCapabilitiesSchema = z.object({
+  can: z.array(z.string()),
+  name: z.string(),
+});
+
+/** Response payload for listing roles. */
+export const rolesListResponseSchema = z.object({
+  roles: z.array(roleWithCapabilitiesSchema),
+});
+
+/** Response payload for listing every registered permission. */
+export const permissionsListResponseSchema = z.object({
+  permissions: z.array(z.string()),
+});
