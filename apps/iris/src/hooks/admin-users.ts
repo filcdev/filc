@@ -37,7 +37,7 @@ export type MutationCallbacks = {
 export const USERS_PAGE_SIZE = 20;
 
 /** Paged user list for the admin users page. */
-export function useUsers(page: number, search: string) {
+export function useUsers(page: number, search: string, role: string) {
   return useQuery({
     queryFn: async (): Promise<UsersResponse> => {
       const res = await parseResponse(
@@ -45,6 +45,7 @@ export function useUsers(page: number, search: string) {
           query: {
             limit: USERS_PAGE_SIZE.toString(),
             offset: ((page - 1) * USERS_PAGE_SIZE).toString(),
+            role: role || undefined,
             search,
           },
         })
@@ -54,7 +55,7 @@ export function useUsers(page: number, search: string) {
       }
       return res.data as UsersResponse;
     },
-    queryKey: queryKeys.users(page, search),
+    queryKey: queryKeys.users(page, search, role),
   });
 }
 

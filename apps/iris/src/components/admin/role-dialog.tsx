@@ -90,6 +90,22 @@ export function RoleDialog({
     }
   };
 
+  const allKnownPermissionsSelected =
+    knownPermissions.length > 0 &&
+    knownPermissions.every((permission) => permissions.includes(permission));
+
+  const toggleAllKnownPermissions = () => {
+    if (allKnownPermissionsSelected) {
+      setPermissions((current) =>
+        current.filter((permission) => !knownPermissions.includes(permission))
+      );
+      return;
+    }
+    setPermissions((current) => [
+      ...new Set([...current, ...knownPermissions]),
+    ]);
+  };
+
   const isPending = createRole.isPending || updateRole.isPending;
 
   const nameValue = useStore(form.store, (state) => state.values.name);
@@ -128,7 +144,22 @@ export function RoleDialog({
             )}
           </form.Field>
           <div className="space-y-2">
-            <FieldLabel>{t('roles.permissions')}</FieldLabel>
+            <div className="flex items-center justify-between gap-2">
+              <FieldLabel>{t('roles.permissions')}</FieldLabel>
+              <Button
+                disabled={knownPermissions.length === 0}
+                onClick={toggleAllKnownPermissions}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                {t(
+                  allKnownPermissionsSelected
+                    ? 'roles.deselectAllPermissions'
+                    : 'roles.selectAllPermissions'
+                )}
+              </Button>
+            </div>
             {permissions.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {permissions.map((perm) => (
