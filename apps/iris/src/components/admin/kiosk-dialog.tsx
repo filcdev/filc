@@ -28,7 +28,7 @@ import {
 } from '@filcdev/ui/components/select';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Plus, Trash } from 'lucide-react';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { BaseDialogProps } from '@/components/admin/admin.types';
@@ -165,6 +165,7 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
   const updateKiosk = useUpdateKiosk({ onSaved: () => onOpenChange(false) });
   const graph = useNavigatorGraph();
   const buildings = useBuildings();
+  const [defaultValues] = useState(() => toFormValues(kiosk));
 
   const submit = (value: KioskFormValues, config: unknown) => {
     if (kiosk) {
@@ -188,7 +189,7 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
   };
 
   const form = useForm({
-    defaultValues: toFormValues(kiosk),
+    defaultValues,
     onSubmit: ({ value }) => {
       if (value.kind === 'tv') {
         const config = tvKioskConfigSchema.safeParse({
@@ -235,12 +236,6 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
       submit(value, config.data);
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      form.reset(toFormValues(kiosk));
-    }
-  }, [open, kiosk, form.reset]);
 
   const values = useStore(form.store, (state) => state.values);
 

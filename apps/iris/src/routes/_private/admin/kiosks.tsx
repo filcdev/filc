@@ -119,11 +119,13 @@ function KiosksPage() {
         )}
       </QueryBoundary>
 
-      <KioskDialog
-        kiosk={editingKiosk}
-        onOpenChange={setDialogOpen}
-        open={dialogOpen}
-      />
+      {dialogOpen && (
+        <KioskDialog
+          kiosk={editingKiosk}
+          onOpenChange={setDialogOpen}
+          open={dialogOpen}
+        />
+      )}
     </div>
   );
 }
