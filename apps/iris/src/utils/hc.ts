@@ -12,6 +12,7 @@ import type {
   RolesRouter,
   TimetableRouter,
   UsersRouter,
+  WifiRouter,
 } from '@filcdev/chronos/types/hc';
 
 const clientOptions = {
@@ -39,4 +40,5 @@ export const api = {
   roles: createApiClient<RolesRouter>('/api/roles', clientOptions),
   timetable: createApiClient<TimetableRouter>('/api/timetable', clientOptions),
   users: createApiClient<UsersRouter>('/api/users', clientOptions),
+  wifi: createApiClient<WifiRouter>('/api/wifi', clientOptions),
 };

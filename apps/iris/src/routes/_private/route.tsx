@@ -1,5 +1,5 @@
 import { Spinner } from '@filcdev/ui/components/spinner';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
 import { authClient } from '@/utils/authentication';
 
 export const Route = createFileRoute('/_private')({
@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_private')({
 });
 
 function AppLayoutComponent() {
-  const { isPending } = authClient.useSession();
+  const { isPending, data } = authClient.useSession();
 
   if (isPending) {
     return (
@@ -15,6 +15,10 @@ function AppLayoutComponent() {
         <Spinner />
       </div>
     );
+  }
+
+  if (!(data?.session && data?.user)) {
+    return <Navigate to="/auth/login" />;
   }
 
   return <Outlet />;

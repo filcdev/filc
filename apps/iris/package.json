@@ -21,6 +21,7 @@
     "@tanstack/react-router": "^1.170.32",
     "@tanstack/react-router-devtools": "^1.167.1",
     "@tanstack/router-plugin": "^1.168.35",
+    "@tanstack/zod-form-adapter": "^0.42.1",
     "better-auth": "catalog:",
     "date-fns": "^4.4.0",
     "dayjs": "^1.11.23",

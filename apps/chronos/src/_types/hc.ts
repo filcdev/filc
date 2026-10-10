@@ -10,6 +10,7 @@ import type { pingRouter } from '#routes/ping/_router';
 import type { rolesRouter } from '#routes/roles/_router';
 import type { timetableRouter } from '#routes/timetable/_router';
 import type { usersRouter } from '#routes/users/_router';
+import type { wifiRouter } from '#routes/wifi/_router';
 
 export type BugReportRouter = typeof bugReportRouter;
 export type CohortRouter = typeof cohortRouter;
@@ -23,3 +24,4 @@ export type PingRouter = typeof pingRouter;
 export type RolesRouter = typeof rolesRouter;
 export type TimetableRouter = typeof timetableRouter;
 export type UsersRouter = typeof usersRouter;
+export type WifiRouter = typeof wifiRouter;
