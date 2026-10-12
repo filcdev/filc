@@ -20,7 +20,7 @@
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-validator": "^0.9.1",
     "@logtape/logtape": "^2.3.2",
-    "@sentry/bun": "^10.73.0",
+    "@sentry/bun": "^11.6.0",
     "better-auth": "catalog:",
     "cronbake": "^0.4.0",
     "dayjs": "^1.11.23",
