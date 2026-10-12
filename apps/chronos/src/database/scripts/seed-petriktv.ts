@@ -1,6 +1,6 @@
+import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
 import { asc, eq, inArray } from 'drizzle-orm';
-import { getLogger } from '@logtape/logtape';
 import { db, prepareDb } from '#database';
 import {
   classroom,
@@ -13,8 +13,8 @@ import {
   teacher,
 } from '#database/schema/timetable';
 import { env } from '#utils/environment';
-import { getActiveTimetableId } from '#utils/timetable/active';
 import { configureLogger } from '#utils/logger';
+import { getActiveTimetableId } from '#utils/timetable/active';
 
 const ROW_COUNT = 16;
 const TEST_PREFIX = 'petriktv-test';
@@ -46,16 +46,15 @@ const seedPetrikTv = async () => {
   const nowMinutes = now.hour() * 60 + now.minute();
   const today = new Date(`${now.format('YYYY-MM-DD')}T12:00:00.000Z`);
 
-  const [periods, teachers, classrooms, lessons] = await Promise.all([
-    db.select().from(period),
+  const [teachers, classrooms, lessons] = await Promise.all([
     db.select({ id: teacher.id }).from(teacher),
     db.select({ id: classroom.id }).from(classroom),
     db
       .select({
         dayDefinitionId: lesson.dayDefinitionId,
         id: lesson.id,
-        periodId: lesson.periodId,
         periodEndTime: period.endTime,
+        periodId: lesson.periodId,
       })
       .from(lesson)
       .innerJoin(period, eq(lesson.periodId, period.id))
@@ -79,16 +78,13 @@ const seedPetrikTv = async () => {
     throw new Error('No classrooms found. Moved lessons need target rooms.');
   }
 
-  const selectedLessons = Array.from(
-    { length: ROW_COUNT },
-    (_, index) => {
-      const selectedLesson = upcomingLessons[index % upcomingLessons.length];
-      if (!selectedLesson) {
-        throw new Error('Failed to select an upcoming lesson.');
-      }
-      return selectedLesson;
+  const selectedLessons = Array.from({ length: ROW_COUNT }, (_, index) => {
+    const selectedLesson = upcomingLessons[index % upcomingLessons.length];
+    if (!selectedLesson) {
+      throw new Error('Failed to select an upcoming lesson.');
     }
-  );
+    return selectedLesson;
+  });
 
   const substitutionIds = Array.from(
     { length: ROW_COUNT },
@@ -103,13 +99,13 @@ const seedPetrikTv = async () => {
     await tx
       .delete(substitutionLessonMTM)
       .where(inArray(substitutionLessonMTM.substitutionId, substitutionIds));
-    await tx.delete(substitution).where(inArray(substitution.id, substitutionIds));
+    await tx
+      .delete(substitution)
+      .where(inArray(substitution.id, substitutionIds));
     await tx
       .delete(movedLessonLessonMTM)
       .where(inArray(movedLessonLessonMTM.movedLessonId, movedLessonIds));
-    await tx
-      .delete(movedLesson)
-      .where(inArray(movedLesson.id, movedLessonIds));
+    await tx.delete(movedLesson).where(inArray(movedLesson.id, movedLessonIds));
 
     await tx.insert(substitution).values(
       selectedLessons.map((_, index) => ({
