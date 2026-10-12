@@ -37,7 +37,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "catalog:",
+    "@filcdev/tsconfig": "workspace:*",
     "@types/react": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"

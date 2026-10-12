@@ -8,6 +8,8 @@ import type { appContract } from '../contract';
 
 export type ApiClient = ContractRouterClient<typeof appContract>;
 
+type RequestCredentials = 'include' | 'omit' | 'same-origin';
+
 export type ApiClientOptions = {
   /**
    * Base RPC URL. A function is re-evaluated per call, so a server render can

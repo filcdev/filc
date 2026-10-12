@@ -45,9 +45,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@filcdev/tsconfig": "workspace:*",
     "@filcdev/api": "workspace:*",
     "@tanstack/devtools-vite": "^0.8.5",
-    "@tsconfig/strictest": "catalog:",
     "@types/bun": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

@@ -20,7 +20,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "catalog:",
+    "@filcdev/tsconfig": "workspace:*",
     "@types/react": "catalog:",
     "@types/three": "^0.186.0",
     "typescript": "catalog:"

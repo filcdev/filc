@@ -40,10 +40,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@filcdev/tsconfig": "workspace:*",
     "@inquirer/prompts": "^8.7.3",
     "@logtape/pretty": "^2.4.0",
     "@openapi-spec/downgrader": "^0.3.0",
-    "@tsconfig/strictest": "catalog:",
     "@types/bun": "catalog:",
     "@types/cli-progress": "^3.11.6",
     "@types/nodemailer": "^8.0.2",

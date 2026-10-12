@@ -21,7 +21,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tsconfig/strictest": "catalog:",
+    "@filcdev/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
