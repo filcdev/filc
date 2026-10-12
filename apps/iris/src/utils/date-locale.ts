@@ -14,6 +14,20 @@ function toDate(value: DateInput): Date {
   return value instanceof Date ? value : new Date(value);
 }
 
+/**
+ * Parse a date-only value (a `date` column, or the date part of an ISO
+ * string) as a local calendar day. `new Date('2026-09-21')` is UTC midnight,
+ * which is the previous local day in negative UTC offsets, so calendar-day
+ * comparisons and labels must go through this instead of `new Date`.
+ */
+export function parseDateOnly(value: string): Date {
+  const [year = 0, month = 1, day = 1] = value
+    .slice(0, 10)
+    .split('-')
+    .map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function formatLocalizedDate(
   value: DateInput,
   language: string | undefined,

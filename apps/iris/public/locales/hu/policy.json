@@ -1,0 +1,157 @@
+{
+  "pageTitle": "Adatkezelési tájékoztató – Filc Mergen",
+  "title": "Adatkezelési tájékoztató",
+  "subtitle": "Filc Mergen",
+  "effectiveDate": "Hatályos: 2026. szeptember 23.",
+  "lastUpdated": "Utolsó módosítás: 2026. szeptember 23.",
+  "sections": [
+    {
+      "title": "Bevezetés",
+      "paragraphs": [
+        "Jelen adatkezelési tájékoztató a Filc Mergen mobilalkalmazásra (a továbbiakban: „Mergen” vagy „Alkalmazás”) vonatkozik.",
+        "A Mergen célja, hogy a Budapesti Műszaki SZC Petrik Lajos Két Tanítási Nyelvű Technikum közössége számára egyszerűen és gyorsan elérhetővé tegye az iskolai élethez kapcsolódó információkat, többek között az iskolai híreket, közleményeket, aktuális helyettesítéseket, személyre szabott tartalmakat és értesítéseket."
+      ]
+    },
+    {
+      "title": "1. Az adatkezelő",
+      "paragraphs": [
+        "Petrik Alapítvány",
+        "Székhely: 1146 Budapest, Thököly út 48–54.",
+        "E-mail: info@petrik.hu",
+        "Adatvédelmi megkeresések: gdpr@petrik.hu",
+        "A jelen tájékoztatóval vagy a személyes adatok kezelésével kapcsolatos kérdésekkel a fenti elérhetőségeken lehet kapcsolatba lépni."
+      ]
+    },
+    {
+      "title": "2. Milyen adatokat kezelhet az Alkalmazás?",
+      "paragraphs": [
+        "A Mergen kizárólag az alkalmazás működéséhez és az igénybe vett funkciók biztosításához szükséges adatokat kezeli.",
+        "A kezelt adatok a használt funkcióktól függően az alábbi kategóriákba tartozhatnak:"
+      ],
+      "bullets": [
+        "Bejelentkezési és azonosítási adatok: a felhasználó azonosításához szükséges felhasználói azonosító, valamint a hitelesítés során létrejövő munkamenet- vagy hozzáférési tokenek.",
+        "Felhasználói és iskolai kapcsolódási adatok: például a felhasználóhoz kapcsolódó osztály, csoport vagy más olyan adat, amely a személyre szabott iskolai információk megjelenítéséhez szükséges.",
+        "Beállítások és preferenciák: például kiválasztott értesítési beállítások, követett információk vagy az alkalmazás működésével kapcsolatos helyi beállítások.",
+        "Értesítésekhez szükséges technikai adatok: az adott alkalmazáspéldányhoz vagy készülékhez tartozó push értesítési azonosító/token.",
+        "Technikai és biztonsági adatok: például IP-cím, a kérés időpontja, alkalmazás- és operációsrendszer-verzió, valamint a működéshez vagy hibakereséshez szükséges technikai naplóadatok.",
+        "A nyilvánosan elérhető iskolai hírek és közlemények megtekintéséhez önmagában nem szükséges személyes adat megadása."
+      ]
+    },
+    {
+      "title": "3. A bejelentkezési adatok kezelése",
+      "paragraphs": [
+        "Bizonyos funkciók kizárólag bejelentkezett felhasználók számára érhetők el.",
+        "A bejelentkezés során megadott adatok kizárólag a felhasználó azonosítása, jogosultságának ellenőrzése és a számára elérhető tartalmak biztosítása céljából kerülnek felhasználásra.",
+        "Az Alkalmazás célja nem a felhasználók jelszavainak külön nyilvántartása. A sikeres azonosítást követően a munkamenet fenntartásához technikai hitelesítési adatok vagy tokenek használhatók."
+      ]
+    },
+    {
+      "title": "4. Személyre szabott tartalmak",
+      "paragraphs": [
+        "Bejelentkezést követően az Alkalmazás a felhasználóhoz kapcsolódó információk alapján személyre szabott tartalmakat jeleníthet meg.",
+        "Ilyen lehet például a felhasználót érintő helyettesítés, közlemény, hír vagy értesítés.",
+        "Az ilyen adatokat kizárólag az adott szolgáltatás biztosítása érdekében használjuk."
+      ]
+    },
+    {
+      "title": "5. Push értesítések",
+      "paragraphs": [
+        "A Mergen értesítéseket küldhet például új hírekről, közleményekről, helyettesítésekről vagy más fontos iskolai változásokról.",
+        "Az értesítések kézbesítéséhez az alkalmazás technikai push értesítési azonosítót használhat.",
+        "Az értesítések az eszköz vagy az Alkalmazás beállításaiban kikapcsolhatók.",
+        "A push értesítések kézbesítése során az adott platformtól függően a Google Firebase Cloud Messaging vagy az Apple Push Notification Service infrastruktúrája is közreműködhet."
+      ]
+    },
+    {
+      "title": "6. Az adatkezelés célja",
+      "paragraphs": [
+        "A személyes adatok kezelése kizárólag az Alkalmazás működésének biztosítása; a felhasználó azonosítása és jogosultságának ellenőrzése; személyre szabott iskolai információk biztosítása; értesítések kézbesítése; felhasználói beállítások megőrzése; hibák feltárása és elhárítása; valamint az Alkalmazás és a kapcsolódó informatikai rendszerek biztonságának fenntartása céljából történhet.",
+        "A Mergen a személyes adatokat nem használja célzott hirdetésekhez, és személyes adatokat nem értékesít harmadik fél részére."
+      ]
+    },
+    {
+      "title": "7. Az adatkezelés jogalapja",
+      "paragraphs": [
+        "Az adatkezelés jogalapja az adott funkciótól függően különösen a GDPR 6. cikk (1) bekezdés b) pontja szerinti, a felhasználó által igénybe vett szolgáltatás biztosításához szükséges adatkezelés, illetve a GDPR 6. cikk (1) bekezdés f) pontja szerinti jogos érdek, különösen az informatikai rendszerek biztonságos működtetése és a visszaélések megelőzése érdekében.",
+        "Amennyiben valamely opcionális funkció használatához hozzájárulás szükséges, az adatkezelés a GDPR 6. cikk (1) bekezdés a) pontja alapján történik. A hozzájárulás bármikor visszavonható.",
+        "Jogszabályi kötelezettség teljesítése esetén az adatkezelés jogalapja a GDPR 6. cikk (1) bekezdés c) pontja lehet."
+      ]
+    },
+    {
+      "title": "8. Adatok továbbítása és adatfeldolgozók",
+      "paragraphs": [
+        "A személyes adatokat nem adjuk el és nem adjuk át harmadik félnek saját marketing- vagy reklámcéljaira.",
+        "Az Alkalmazás működtetése során ugyanakkor igénybe vehetünk olyan informatikai szolgáltatókat, amelyek technikailag közreműködnek például a szerverek üzemeltetésében, tárhelyszolgáltatásban, biztonsági mentések készítésében vagy push értesítések továbbításában.",
+        "Ezek a szolgáltatók kizárólag a szolgáltatás nyújtásához szükséges mértékben férhetnek hozzá az adatokhoz.",
+        "A Google vagy az Apple által biztosított szolgáltatások használata esetén egyes technikai adatok az Európai Gazdasági Térségen kívül is feldolgozásra kerülhetnek. Ilyen esetben az adattovábbításra az alkalmazandó adatvédelmi szabályok és az érintett szolgáltató által biztosított megfelelő garanciák mellett kerülhet sor."
+      ]
+    },
+    {
+      "title": "9. Az adatok tárolása",
+      "paragraphs": [
+        "A személyes adatokat csak addig tároljuk, ameddig azok az adott funkció működéséhez vagy az adatkezelés céljának teljesítéséhez szükségesek.",
+        "A bejelentkezési munkamenethez tartozó adatok a munkamenet lejártáig, visszavonásáig vagy kijelentkezésig kezelhetők.",
+        "A push értesítési tokenek addig kezelhetők, ameddig az adott alkalmazáspéldányhoz kapcsolódó értesítési szolgáltatás aktív.",
+        "Az eszközön tárolt alkalmazásbeállítások az Alkalmazás adatainak törlésével vagy az Alkalmazás eltávolításával megszüntethetők.",
+        "A biztonsági és technikai naplóadatokat csak a hibakereséshez, biztonsági ellenőrzésekhez és a szolgáltatás működtetéséhez szükséges ideig őrizzük meg."
+      ]
+    },
+    {
+      "title": "10. Adatok törlése",
+      "paragraphs": [
+        "A felhasználó jogosult kérni a Mergenhez kapcsolódó személyes adatainak törlését, amennyiben azok további kezelésére nincs jogszabályi vagy más megfelelő jogalap.",
+        "Törlési kérelem a gdpr@petrik.hu e-mail-címen nyújtható be.",
+        "Ha a Mergen egy másik intézményi rendszerben létrehozott felhasználói fiókot használ a bejelentkezéshez, az eredeti intézményi felhasználói fiók törlése nem feltétlenül a Mergen rendszerében történik. Ettől függetlenül kérhető a Mergen által kezelt, az adott felhasználóhoz kapcsolódó adatok törlése."
+      ]
+    },
+    {
+      "title": "11. Adatbiztonság",
+      "paragraphs": [
+        "Megfelelő technikai és szervezési intézkedéseket alkalmazunk annak érdekében, hogy a kezelt személyes adatokat megvédjük a jogosulatlan hozzáféréstől, megváltoztatástól, nyilvánosságra hozataltól, elvesztéstől vagy megsemmisüléstől.",
+        "Az Alkalmazás és a kapcsolódó szerverek közötti kommunikáció során az adatátvitel védelmére korszerű, titkosított HTTPS/TLS kapcsolat alkalmazható.",
+        "A hozzáférés az arra jogosult felhasználókra és rendszerekre korlátozott."
+      ]
+    },
+    {
+      "title": "12. Gyermekek és fiatalkorú felhasználók",
+      "paragraphs": [
+        "A Mergen oktatási környezetben működő alkalmazás, ezért fiatalkorú felhasználók is használhatják.",
+        "Kiemelt figyelmet fordítunk az adattakarékosság elvére: kizárólag olyan adat kezelésére törekszünk, amely az alkalmazás adott funkciójának biztosításához szükséges.",
+        "Az Alkalmazás nem jelenít meg személyre szabott reklámokat, és a felhasználók személyes adatait nem értékesíti reklám- vagy marketingcélokra."
+      ]
+    },
+    {
+      "title": "13. Az érintettek jogai",
+      "paragraphs": [
+        "A felhasználó az alkalmazandó adatvédelmi jogszabályok alapján jogosult tájékoztatást kérni személyes adatainak kezeléséről, hozzáférést kérni a róla kezelt személyes adatokhoz, kérni a pontatlan adatok helyesbítését, kérni személyes adatainak törlését vagy kezelésük korlátozását, tiltakozni bizonyos adatkezelések ellen, továbbá az alkalmazandó feltételek fennállása esetén élni az adathordozhatósághoz való jogával.",
+        "Hozzájáruláson alapuló adatkezelés esetén a hozzájárulás bármikor visszavonható.",
+        "Az adatvédelmi jogok gyakorlásával kapcsolatos kérelmek a gdpr@petrik.hu címre küldhetők."
+      ]
+    },
+    {
+      "title": "14. Panasztétel",
+      "paragraphs": [
+        "Amennyiben a felhasználó úgy ítéli meg, hogy személyes adatainak kezelése nem felel meg a vonatkozó adatvédelmi előírásoknak, panaszt tehet a Nemzeti Adatvédelmi és Információszabadság Hatóságnál.",
+        "Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH)",
+        "Cím: 1055 Budapest, Falk Miksa utca 9–11.",
+        "Levelezési cím: 1363 Budapest, Pf. 9.",
+        "E-mail: ugyfelszolgalat@naih.hu",
+        "Web: https://www.naih.hu/"
+      ]
+    },
+    {
+      "title": "15. Harmadik fél által biztosított tartalmak és szolgáltatások",
+      "paragraphs": [
+        "A Mergen az iskolai információk megjelenítéséhez kapcsolódó szerveroldali szolgáltatásokat és más informatikai rendszereket vehet igénybe.",
+        "Amennyiben az alkalmazás külső weboldalra vagy szolgáltatásra mutató hivatkozást jelenít meg, az adott külső szolgáltatás adatkezelésére annak saját adatvédelmi szabályai vonatkoznak."
+      ]
+    },
+    {
+      "title": "16. A tájékoztató módosítása",
+      "paragraphs": [
+        "A jelen adatkezelési tájékoztató időről időre módosítható, különösen az Alkalmazás funkcióinak, az alkalmazott technológiáknak vagy a jogszabályi környezetnek a megváltozása esetén.",
+        "A mindenkor hatályos változat ezen az oldalon érhető el."
+      ]
+    }
+  ]
+}

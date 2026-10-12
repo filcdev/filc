@@ -101,7 +101,7 @@ function RouteComponent() {
             {t('and')}{' '}
             <a
               className="underline transition-colors hover:text-foreground"
-              href="/legal/privacy"
+              href="/policy"
             >
               {t('privacyPolicy')}
             </a>
