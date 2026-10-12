@@ -32,7 +32,7 @@ export const apiBaseUrl = baseUrl;
 const clientOptions = {
   // The kiosk surface is public: no session cookie is involved, and sending
   // credentials would force credentialed CORS on every request.
-  init: { credentials: 'omit' } satisfies RequestInit,
+  init: { cache: 'no-store', credentials: 'omit' } satisfies RequestInit,
 };
 
 export const api = {

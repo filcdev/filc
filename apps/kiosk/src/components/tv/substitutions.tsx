@@ -80,10 +80,12 @@ export function Substitutions() {
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
                   {row.cancelled
                     ? TV_STRINGS.substitutions.cancelled
-                    : row.teacher}
+                    : row.missing}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
-                  {row.missing}
+                  {row.cancelled
+                    ? TV_STRINGS.substitutions.cancelled
+                    : row.teacher}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
                   {row.className}
