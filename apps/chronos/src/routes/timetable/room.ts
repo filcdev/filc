@@ -12,6 +12,7 @@ import {
 } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
+import { getTimetableIdForDate } from '#utils/timetable/active';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -112,6 +113,8 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
   async (c) => {
     const { date, startingDay, startingPeriod, timetableId } =
       c.req.valid('query');
+    const effectiveTimetableId =
+      timetableId ?? (await getTimetableIdForDate(date));
 
     // Get available classrooms in one query
     const availableClassrooms = await db
@@ -144,7 +147,9 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
                 and(
                   eq(lesson.dayDefinitionId, startingDay),
                   eq(lesson.periodId, startingPeriod),
-                  timetableId ? eq(lesson.timetableId, timetableId) : undefined,
+                  effectiveTimetableId
+                    ? eq(lesson.timetableId, effectiveTimetableId)
+                    : sql`false`,
                   notInArray(
                     lesson.id,
                     db
