@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.23",
-    "fast-xml-parser": "^5.11.1",
+    "fast-xml-parser": "^5.11.2",
     "iconv-lite": "^0.7.3",
     "zod": "catalog:"
   },
