@@ -1,5 +1,10 @@
 import { Button } from '@filcdev/ui/components/button';
 import { Input } from '@filcdev/ui/components/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+} from '@filcdev/ui/components/select';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -8,10 +13,16 @@ import { z } from 'zod';
 import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
 import { QueryBoundary } from '@/components/util/query-boundary';
-import { USERS_PAGE_SIZE, useCohorts, useUsers } from '@/hooks/admin-users';
+import {
+  USERS_PAGE_SIZE,
+  useCohorts,
+  useRoles,
+  useUsers,
+} from '@/hooks/admin-users';
 
 const searchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
+  role: z.string().default(''),
   search: z.string().default(''),
 });
 
@@ -22,7 +33,7 @@ export const Route = createFileRoute('/_private/admin/users')({
 
 function AdminUsersPage() {
   const { t } = useTranslation();
-  const { page, search } = Route.useSearch();
+  const { page, role, search } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const [inputValue, setInputValue] = useState(search);
   const limit = USERS_PAGE_SIZE;
@@ -44,13 +55,14 @@ function AdminUsersPage() {
   }, [inputValue, search, navigate]);
 
   const cohortsQuery = useCohorts();
+  const rolesQuery = useRoles();
 
   const cohortMap = useMemo(
     () => new Map((cohortsQuery.data ?? []).map((c) => [c.id, c.name])),
     [cohortsQuery.data]
   );
 
-  const usersQuery = useUsers(page, search);
+  const usersQuery = useUsers(page, search, role);
 
   const total = usersQuery.data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);
@@ -77,6 +89,25 @@ function AdminUsersPage() {
           type="text"
           value={inputValue}
         />
+        <Select
+          items={[
+            { label: t('users.allRoles'), value: '' },
+            ...(rolesQuery.data?.roles ?? []).map((availableRole) => ({
+              label: availableRole.name,
+              value: availableRole.name,
+            })),
+          ]}
+          onValueChange={(value) =>
+            navigate({
+              search: (prev) => ({ ...prev, page: 1, role: value ?? '' }),
+            })
+          }
+          value={role}
+        >
+          <SelectTrigger className="min-w-44">
+            <SelectValue placeholder={t('users.filterByRole')} />
+          </SelectTrigger>
+        </Select>
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={() => usersQuery.refetch()} variant="outline">
             <RefreshCw className="h-4 w-4" />

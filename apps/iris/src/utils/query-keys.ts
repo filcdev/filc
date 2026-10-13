@@ -116,6 +116,7 @@ export const queryKeys = {
     latestValid: () => ['timetables', 'latestValid'] as const,
   },
   userOptions: () => ['user-options'] as const,
-  users: (page: number, search: string) => ['users', page, search] as const,
+  users: (page: number, search: string, role: string) =>
+    ['users', page, search, role] as const,
   usersAll: () => ['users'] as const,
 };

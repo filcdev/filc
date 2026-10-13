@@ -2,8 +2,9 @@ import {
   listUsersQuerySchema,
   userUpdatePayload,
 } from '@filcdev/api/domains/users';
+import { permissions } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
-import { count, desc, eq, ilike, or } from 'drizzle-orm';
+import { arrayContains, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute, resolver } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
@@ -59,18 +60,21 @@ export const listUsers = usersFactory.createHandlers(
     },
     tags: ['Users'],
   }),
-  ...authRouter('users:manage'),
+  ...authRouter(permissions.usersRead),
   zValidator('query', listUsersQuerySchema),
   async (c) => {
-    const { limit, offset, search } = c.req.valid('query');
+    const { limit, offset, role, search } = c.req.valid('query');
 
-    const whereClause = search
-      ? or(
-          ilike(user.name, `%${search}%`),
-          ilike(user.email, `%${search}%`),
-          ilike(user.nickname, `%${search}%`)
-        )
-      : undefined;
+    const whereClause = or(
+      search
+        ? or(
+            ilike(user.name, `%${search}%`),
+            ilike(user.email, `%${search}%`),
+            ilike(user.nickname, `%${search}%`)
+          )
+        : undefined,
+      role ? arrayContains(user.roles, [role]) : undefined
+    );
 
     const usersQuery = await db
       .select()
@@ -120,7 +124,7 @@ export const updateUser = usersFactory.createHandlers(
     },
     tags: ['Users'],
   }),
-  ...authRouter('users:manage'),
+  ...authRouter(permissions.usersManage),
   zValidator('json', userUpdatePayload),
   async (c) => {
     const userId = c.req.param('id');

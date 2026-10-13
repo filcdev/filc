@@ -3,11 +3,15 @@ import {
   roleNameParamsSchema,
   updateRoleSchema,
 } from '@filcdev/api/domains/roles';
+import { permissions as permissionNames } from '@filcdev/api/permissions';
 import { zValidator } from '@hono/zod-validator';
 import { SQL } from 'bun';
+import { arrayContains } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import { describeRoute } from 'hono-openapi';
 import { StatusCodes } from 'http-status-codes';
+import { db } from '#database';
+import { user } from '#database/schema/authentication';
 import { authRouter } from '#middleware/auth';
 import { rolesFactory } from '#routes/roles/_factory';
 import { rbac } from '#utils/authorization';
@@ -23,7 +27,7 @@ export const listPermissions = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  ...authRouter('roles:read'),
+  ...authRouter(permissionNames.rolesRead),
   (c) => ok(c, { permissions: rbac.getAllPermissions() })
 );
 
@@ -37,7 +41,7 @@ export const listRoles = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  ...authRouter('roles:read'),
+  ...authRouter(permissionNames.rolesRead),
   (c) => {
     const allRoles = rbac.getAllRoles();
 
@@ -60,7 +64,7 @@ export const createRole = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  ...authRouter('roles:manage'),
+  ...authRouter(permissionNames.rolesManage),
   zValidator('json', createRoleSchema),
   async (c) => {
     const { name, permissions } = c.req.valid('json');
@@ -99,7 +103,7 @@ export const updateRole = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  ...authRouter('roles:manage'),
+  ...authRouter(permissionNames.rolesManage),
   zValidator('json', updateRoleSchema),
   zValidator('param', roleNameParamsSchema),
   async (c) => {
@@ -134,7 +138,7 @@ export const deleteRole = rolesFactory.createHandlers(
     },
     tags: ['Roles'],
   }),
-  ...authRouter('roles:manage'),
+  ...authRouter(permissionNames.rolesManage),
   zValidator('param', roleNameParamsSchema),
   async (c) => {
     const { name: roleName } = c.req.valid('param');
@@ -144,6 +148,15 @@ export const deleteRole = rolesFactory.createHandlers(
       throw new HTTPException(StatusCodes.NOT_FOUND, {
         message: `Role "${roleName}" not found`,
       });
+    }
+
+    const [assignedUser] = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(arrayContains(user.roles, [roleName]))
+      .limit(1);
+    if (assignedUser) {
+      throw conflict(`Role "${roleName}" is still assigned to a user`);
     }
 
     await rbac.deleteRole(roleName);

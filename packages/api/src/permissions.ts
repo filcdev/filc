@@ -20,10 +20,12 @@ export const permissions = {
   kiosksManage: 'kiosks:manage',
   movedLessonCreate: 'movedLesson:create',
   navigatorManage: 'navigator:manage',
+  rolesManage: 'roles:manage',
   rolesRead: 'roles:read',
   substitutionCreate: 'substitution:create',
   systemMessagesManage: 'system-messages:manage',
   teacherManage: 'teacher:manage',
+  usersManage: 'users:manage',
   usersRead: 'users:read',
 } as const;
 
