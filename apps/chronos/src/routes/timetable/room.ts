@@ -12,6 +12,7 @@ import {
 } from '#database/schema/timetable';
 import { ok } from '#utils/http';
 import { filcExt } from '#utils/openapi';
+import { getTimetableIdForDate } from '#utils/timetable/active';
 import { createSelectSchema } from '#utils/zod';
 import { timetableFactory } from './_factory';
 
@@ -28,6 +29,38 @@ const getAvailableClassroomsResponseSchema = z.object({
   }).array(),
   success: z.boolean(),
 });
+
+const normalizeRoomKey = (value: string): string =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '');
+const legacyRoomNamePattern = /^([a-z])(\d{3})$/i;
+
+function removeLegacyRoomDuplicates(
+  classrooms: (typeof classroom.$inferSelect)[]
+) {
+  const canonicalKeys = new Set(
+    classrooms
+      .map((room) => room.short.trim())
+      .filter(Boolean)
+      .map(normalizeRoomKey)
+  );
+
+  return classrooms
+    .filter(
+      (room) =>
+        room.short.trim() !== '' ||
+        !canonicalKeys.has(normalizeRoomKey(room.name))
+    )
+    .map((room) => {
+      if (room.short.trim() !== '') {
+        return room;
+      }
+
+      const match = legacyRoomNamePattern.exec(room.name.trim());
+      return match
+        ? { ...room, name: `${match[1]?.toUpperCase()}.${match[2]}` }
+        : room;
+    });
+}
 
 export const getClassrooms = timetableFactory.createHandlers(
   describeRoute({
@@ -47,7 +80,7 @@ export const getClassrooms = timetableFactory.createHandlers(
   }),
   async (c) => {
     const classrooms = await db.select().from(classroom);
-    return ok(c, classrooms);
+    return ok(c, removeLegacyRoomDuplicates(classrooms));
   }
 );
 
@@ -112,6 +145,8 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
   async (c) => {
     const { date, startingDay, startingPeriod, timetableId } =
       c.req.valid('query');
+    const effectiveTimetableId =
+      timetableId ?? (await getTimetableIdForDate(date));
 
     // Get available classrooms in one query
     const availableClassrooms = await db
@@ -144,7 +179,9 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
                 and(
                   eq(lesson.dayDefinitionId, startingDay),
                   eq(lesson.periodId, startingPeriod),
-                  timetableId ? eq(lesson.timetableId, timetableId) : undefined,
+                  effectiveTimetableId
+                    ? eq(lesson.timetableId, effectiveTimetableId)
+                    : sql`false`,
                   notInArray(
                     lesson.id,
                     db
@@ -168,6 +205,6 @@ export const getAvailableClassrooms = timetableFactory.createHandlers(
         )
       );
 
-    return ok(c, availableClassrooms);
+    return ok(c, removeLegacyRoomDuplicates(availableClassrooms));
   }
 );
