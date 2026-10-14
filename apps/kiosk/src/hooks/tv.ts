@@ -1,4 +1,5 @@
 import type { DepartureGroup } from '@filcdev/api/domains/kiosk/config';
+import type { Dayjs } from 'dayjs';
 import type { InferResponseType } from 'hono/client';
 import { useEffect, useMemo, useState } from 'react';
 import { TV_STRINGS } from '@/components/tv/strings';
@@ -42,6 +43,8 @@ export type TvSubstitutionRow = {
   cancelled: boolean;
   className: string;
   classroom: string;
+  /** Stable identity: one row per affected lesson. */
+  id: string;
   lesson: number;
   missing: string;
   teacher: string;
@@ -51,13 +54,28 @@ export type TvSubstitutionRow = {
 export type TvRoomChangeRow = {
   class: string;
   from: string;
+  /** Stable identity: one row per moved lesson. */
+  id: string;
   lesson: number;
   to: string;
 };
 
 /** Today, in the box's own timezone — the ticker is a wall clock. */
-function isToday(date: string | Date): boolean {
-  return dayjs(date).format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
+function isToday(date: string | Date, now: Dayjs): boolean {
+  return dayjs(date).format('YYYY-MM-DD') === now.format('YYYY-MM-DD');
+}
+
+/** A clock that advances every `intervalMs` so time-based filtering re-runs
+ *  even when React Query returns a structurally identical payload. */
+function useNowTick(intervalMs: number): Dayjs {
+  const [now, setNow] = useState<Dayjs>(() => dayjs());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(dayjs()), intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+
+  return now;
 }
 
 /**
@@ -101,8 +119,11 @@ export function useActiveTimetable() {
  * whose period has already ended are dropped, and a row with no substituter is
  * flagged as cancelled.
  */
-function substitutionRows(item: Substitutions[number]): TvSubstitutionRow[] {
-  if (!isToday(item.substitution.date)) {
+function substitutionRows(
+  item: Substitutions[number],
+  now: Dayjs
+): TvSubstitutionRow[] {
+  if (!isToday(item.substitution.date, now)) {
     return [];
   }
 
@@ -114,7 +135,7 @@ function substitutionRows(item: Substitutions[number]): TvSubstitutionRow[] {
     }
 
     const period = lesson.period;
-    if (!period || isPeriodOver(period)) {
+    if (!period || isPeriodOver(period, now)) {
       continue;
     }
 
@@ -122,6 +143,7 @@ function substitutionRows(item: Substitutions[number]): TvSubstitutionRow[] {
       cancelled: item.teacher === null,
       className: lesson.cohorts[0] ?? '',
       classroom: lesson.classrooms[0]?.short ?? '',
+      id: `${item.substitution.id}:${lesson.id}`,
       lesson: period.period,
       missing: lesson.teachers[0]?.short ?? '',
       teacher: item.teacher?.short ?? '',
@@ -145,12 +167,14 @@ export function useTvSubstitutions() {
     }
   );
 
+  const now = useNowTick(REFETCH_INTERVALS.substitutions);
+
   const rows = useMemo<TvSubstitutionRow[]>(
     () =>
       (query.data ?? [])
-        .flatMap(substitutionRows)
+        .flatMap((item) => substitutionRows(item, now))
         .sort((a, b) => a.lesson - b.lesson),
-    [query.data]
+    [query.data, now]
   );
 
   return { ...query, rows };
@@ -166,15 +190,17 @@ export function useRoomChanges() {
     }
   );
 
+  const now = useNowTick(REFETCH_INTERVALS.roomSubtitutions);
+
   const rows = useMemo<TvRoomChangeRow[]>(() => {
     const result: TvRoomChangeRow[] = [];
 
     for (const item of query.data ?? []) {
-      if (!(item.classroom && isToday(item.movedLesson.date))) {
+      if (!(item.classroom && isToday(item.movedLesson.date, now))) {
         continue;
       }
 
-      if (!item.period || isPeriodOver(item.period)) {
+      if (!item.period || isPeriodOver(item.period, now)) {
         continue;
       }
 
@@ -188,13 +214,14 @@ export function useRoomChanges() {
       result.push({
         class: [...new Set(cohorts)].join('/'),
         from: [...new Set(fromRooms)].join('/'),
+        id: item.movedLesson.id,
         lesson: item.period.period,
         to: item.classroom.name,
       });
     }
 
     return result.sort((a, b) => a.lesson - b.lesson);
-  }, [query.data]);
+  }, [query.data, now]);
 
   return { ...query, rows };
 }

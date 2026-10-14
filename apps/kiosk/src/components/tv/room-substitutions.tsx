@@ -13,7 +13,7 @@ import { TABLE } from '@/utils/constants';
 
 /** Today's room changes, cycled a page at a time. */
 export function RoomSubstitution() {
-  const { isError, isLoading, rows } = useRoomChanges();
+  const { data, isError, isLoading, rows } = useRoomChanges();
 
   const pageSize = TABLE.roomSubstitutions.pageSize;
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -22,11 +22,16 @@ export function RoomSubstitution() {
     totalPages,
   });
 
-  if (isLoading) {
+  // Guard on `data`, not `isError`: React Query keeps the last successful
+  // `data` after a background refetch fails (it only flips `isError`), so a
+  // transient network blip would otherwise swap the whole board for the error
+  // state and blank the header until the next success. Fall through to the
+  // table so the retained rows keep rendering.
+  if (data === undefined && isLoading) {
     return <Loading />;
   }
 
-  if (isError) {
+  if (data === undefined && isError) {
     return <QueryError />;
   }
 
@@ -38,7 +43,7 @@ export function RoomSubstitution() {
 
   return (
     <div className="flex h-full max-h-full max-w-full flex-col rounded-lg">
-      <div className="grow">
+      <div className="min-h-0 grow overflow-hidden">
         <table className="h-full w-full">
           <thead>
             <tr className="border-border border-b">
@@ -71,7 +76,7 @@ export function RoomSubstitution() {
             {pageRows.map((row, index) => (
               <tr
                 className={`h-8 border-border border-b last:border-border/80 ${index % 2 === 0 ? 'bg-background/20' : 'bg-transparent'}`}
-                key={`${row.lesson}-${row.class}-${row.from}-${row.to}`}
+                key={row.id}
               >
                 <td className="border-border py-1 text-center [&:not(:first-child)]:border-l">
                   {row.lesson}
