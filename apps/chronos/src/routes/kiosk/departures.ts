@@ -19,11 +19,13 @@ type BkkStopTime = {
   tripId: string;
 };
 
+type BkkRouteReference = { shortName?: string; longName?: string };
+
 type BkkResponse = {
   data?: {
     entry?: { stopTimes?: BkkStopTime[] };
     references?: {
-      routes?: Record<string, { shortName: string }>;
+      routes?: Record<string, BkkRouteReference>;
       trips?: Record<string, { id?: string; routeId?: string }>;
     };
   };
@@ -31,6 +33,7 @@ type BkkResponse = {
 
 type Departure = {
   predictedDepartureTime: number;
+  /** Route label shown on the card; may be the long name when BKK has no short name. */
   routeShortDesc: string;
 };
 
@@ -44,6 +47,11 @@ const { schema: departuresRequestSchema } = await resolver(
 ).toOpenAPISchema();
 
 type BkkReferences = NonNullable<BkkResponse['data']>['references'];
+
+/** BKK labels some routes with only a long name; fall back so a departure is
+ *  never dropped (and never shows "???") just because `shortName` is absent. */
+const routeLabel = (route: BkkRouteReference | undefined): string | undefined =>
+  route?.shortName || route?.longName || undefined;
 
 const toDeparture = (
   stopTime: BkkStopTime,
@@ -70,7 +78,7 @@ function filteredDeparture(
   const stopTime = stopTimes.find((candidate) =>
     matchingTripIds.has(candidate.tripId)
   );
-  const routeShortDesc = references?.routes?.[routeFilter]?.shortName;
+  const routeShortDesc = routeLabel(references?.routes?.[routeFilter]);
 
   return stopTime && routeShortDesc
     ? toDeparture(stopTime, routeShortDesc)
@@ -87,7 +95,7 @@ function nextDeparture(
     ? references?.trips?.[stopTime.tripId]?.routeId
     : undefined;
   const routeShortDesc = routeId
-    ? references?.routes?.[routeId]?.shortName
+    ? routeLabel(references?.routes?.[routeId])
     : undefined;
 
   return stopTime && routeShortDesc

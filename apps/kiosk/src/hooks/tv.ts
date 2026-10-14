@@ -208,7 +208,7 @@ export function useRoomChanges() {
       // moved lesson itself carries the target room.
       const cohorts = item.lessons.flatMap((lesson) => lesson.cohorts);
       const fromRooms = item.lessons.flatMap((lesson) =>
-        lesson.classrooms.map((room) => room.name)
+        lesson.classrooms.map((room) => room.short || room.name)
       );
 
       result.push({
@@ -216,7 +216,7 @@ export function useRoomChanges() {
         from: [...new Set(fromRooms)].join('/'),
         id: item.movedLesson.id,
         lesson: item.period.period,
-        to: item.classroom.name,
+        to: item.classroom.short || item.classroom.name,
       });
     }
 
