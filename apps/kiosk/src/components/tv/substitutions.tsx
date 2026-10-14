@@ -83,7 +83,8 @@ export function Substitutions() {
                   {row.lesson}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
-                  {row.teacher}
+                  {/* A cancelled row has no substituter, so show the lesson's original teacher instead. */}
+                  {row.cancelled ? row.missing : row.teacher}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
                   {row.cancelled
