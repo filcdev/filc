@@ -1,3 +1,4 @@
+import { ERROR_CODE } from '@filcdev/api/errors';
 import { useSession } from '@filcdev/auth/client';
 import { Empty } from '@filcdev/ui/components/empty';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
@@ -6,7 +7,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import { CalendarOff, CalendarX } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
@@ -34,6 +34,7 @@ import type {
 } from '@/components/timetable/types';
 import { useTimetableGroupDisplay } from '@/hooks/timetable-groups';
 import {
+  type publicTimetableSearchSchema,
   useClassrooms,
   useLatestValidTimetable,
   useMyTeacher,
@@ -45,26 +46,10 @@ import {
   useTimetableUserSettings,
 } from '@/hooks/timetable-public';
 import { useTimetableView } from '@/hooks/use-timetable-view';
-import { Route, type searchSchema } from '@/routes/_public/index';
+import { Route } from '@/routes/_public/index';
 import { orpc } from '@/utils/orpc';
 
 // Helpers
-const getActiveSelectionId = (
-  filter: FilterType,
-  selections: SelectionsType
-) => {
-  switch (filter) {
-    case 'class':
-      return selections.class;
-    case 'teacher':
-      return selections.teacher;
-    case 'classroom':
-      return selections.classroom;
-    default:
-      return null;
-  }
-};
-
 /** The URL search params that seed the initial filter and selection. */
 type TimetableSearchParams = {
   cohort?: string;
@@ -73,7 +58,7 @@ type TimetableSearchParams = {
 };
 
 /** The filter and entry a selection resolution settled on. */
-type ResolvedSelection = { filter: FilterType; id: string };
+type ResolvedSelection = { filter: FilterType; id: string | null };
 
 /** The entries each filter can select from, in the order the API returned them. */
 type FilterLists = {
@@ -109,86 +94,36 @@ const resolveSearchSelection = (
   return null;
 };
 
-/** Set one filter's selection, leaving the other selections untouched. */
-const applySelection = (
-  setSelections: Dispatch<SetStateAction<SelectionsType>>,
-  filter: FilterType,
-  id: string | null
-) => {
-  setSelections((selections) => {
-    switch (filter) {
-      case 'class':
-        return { ...selections, class: id };
-      case 'teacher':
-        return { ...selections, teacher: id };
-      case 'classroom':
-        return { ...selections, classroom: id };
-      default:
-        return selections;
-    }
-  });
-};
-
 /**
- * Apply the initial filter and selection once the URL, the session and the
- * reference data have resolved. Precedence: a validated search param, then
- * the signed-in teacher's own profile, then a class fallback: the user's own
- * cohort, else the first loaded one.
+ * The initial filter and selection the URL, the session and the reference data
+ * imply. Precedence: a validated search param, then the signed-in teacher's own
+ * profile, then a class fallback: the user's own cohort, else the first loaded
+ * one.
  */
-const applyInitialSelection = (params: {
+const resolveInitialSelection = (params: {
   fallbackCohortId: string | null;
   lists: FilterLists;
   myTeacher: TeacherItem | null;
   search: TimetableSearchParams;
-  setActiveFilter: (filter: FilterType) => void;
-  setSelections: Dispatch<SetStateAction<SelectionsType>>;
-}) => {
-  const {
-    fallbackCohortId,
-    lists,
-    myTeacher,
-    search,
-    setActiveFilter,
-    setSelections,
-  } = params;
+}): ResolvedSelection => {
+  const { fallbackCohortId, lists, myTeacher, search } = params;
 
   const searchSelection = resolveSearchSelection(search, lists);
   if (searchSelection) {
-    setActiveFilter(searchSelection.filter);
-    applySelection(setSelections, searchSelection.filter, searchSelection.id);
-    return;
+    return searchSelection;
   }
 
   if (myTeacher) {
-    setActiveFilter('teacher');
-    applySelection(setSelections, 'teacher', myTeacher.id);
-    return;
+    return { filter: 'teacher', id: myTeacher.id };
   }
 
-  setActiveFilter('class');
-  const fallbackId =
-    lists.class.find((cohort) => cohort.id === fallbackCohortId)?.id ??
-    lists.class[0]?.id ??
-    null;
-  applySelection(setSelections, 'class', fallbackId);
-};
-
-/**
- * The selection to fall back to for the active filter: the first entry of the
- * matching list, unless that filter already has a selection.
- */
-const resolveDefaultSelection = (params: {
-  filter: FilterType;
-  lists: FilterLists;
-  selections: SelectionsType;
-}): ResolvedSelection | null => {
-  const { filter, lists, selections } = params;
-  const first = lists[filter][0];
-  if (!first || selections[filter]) {
-    return null;
-  }
-
-  return { filter, id: first.id };
+  return {
+    filter: 'class',
+    id:
+      lists.class.find((cohort) => cohort.id === fallbackCohortId)?.id ??
+      lists.class[0]?.id ??
+      null,
+  };
 };
 
 /**
@@ -268,159 +203,112 @@ function TimetableLoadingPlaceholder() {
 }
 
 /**
- * The selection lifecycle: seed the filter and entry from the URL or sensible
- * defaults once every list has loaded, keep the selection valid when the filter
- * changes, clear the class when the timetable changes (cohorts are scoped to a
- * timetable), and mirror the result back into the URL.
+ * The selection lifecycle: the filter and entry the URL, the session and the
+ * loaded lists imply are derived during render, and only the user's own picks
+ * are state — so no arriving data has to be written into state. The class is
+ * cleared when the timetable changes, because cohorts are scoped to one.
  *
- * A hook rather than four effects in the page component: the ordering between
- * them is the whole point, and it is easier to follow in one place.
+ * The selection state lives here, with the derivations that own it, instead of
+ * being passed in and written back by the caller.
  */
 const useTimetableSelection = ({
-  activeFilter,
-  activeSelectionId,
   classrooms,
   cohorts,
-  initialized,
   isAuthenticated,
   isPending,
   myTeacher,
   myTeacherPending,
-  navigate,
   search,
   selectedTimetableId,
-  selections,
   sessionCohortId,
-  setActiveFilter,
-  setInitialized,
-  setSelections,
   teachers,
 }: {
-  activeFilter: FilterType;
-  activeSelectionId: string | null;
   classrooms?: ClassroomItem[];
   cohorts?: CohortItem[];
-  initialized: boolean;
   isAuthenticated: boolean;
   isPending: boolean;
   myTeacher: TeacherItem | null;
   myTeacherPending: boolean;
-  navigate: (options: {
-    replace: boolean;
-    search: () => z.Infer<typeof searchSchema>;
-  }) => void;
   search: TimetableSearchParams;
   selectedTimetableId: string | null;
-  selections: SelectionsType;
   sessionCohortId: string | null;
-  setActiveFilter: (filter: FilterType) => void;
-  setInitialized: (initialized: boolean) => void;
-  setSelections: Dispatch<SetStateAction<SelectionsType>>;
   teachers?: TeacherItem[];
 }) => {
-  // Seed from the URL, or the user's own class/teacher profile.
-  useEffect(() => {
-    const ready = isSelectionSeedReady({
-      classrooms,
-      cohorts,
-      initialized,
-      isAuthenticated,
-      isPending,
-      myTeacherPending,
-      teachers,
-    });
+  // The user's own picks. An entry the user never picked is derived below, so
+  // nothing here is seeded from data arriving.
+  const [selections, setSelections] = useState<SelectionsType>({
+    class: null,
+    classroom: null,
+    teacher: null,
+  });
+  // The filter the user picked, `null` while the view still follows the URL.
+  const [filterOverride, setFilterOverride] = useState<FilterType | null>(null);
 
-    if (!ready) {
-      return;
-    }
+  const lists: FilterLists = {
+    class: cohorts ?? [],
+    classroom: classrooms ?? [],
+    teacher: teachers ?? [],
+  };
 
-    applyInitialSelection({
-      fallbackCohortId: sessionCohortId,
-      lists: {
-        class: cohorts ?? [],
-        classroom: classrooms ?? [],
-        teacher: teachers ?? [],
-      },
-      myTeacher,
-      search,
-      setActiveFilter,
-      setSelections,
-    });
-
-    setInitialized(true);
-  }, [
+  const ready = isSelectionSeedReady({
     classrooms,
     cohorts,
-    teachers,
-    sessionCohortId,
-    isPending,
     isAuthenticated,
-    myTeacher,
+    isPending,
     myTeacherPending,
-    initialized,
-    search,
-    setActiveFilter,
-    setInitialized,
-    setSelections,
-  ]);
-
-  // Keep a valid entry selected when the filter changes.
-  useEffect(() => {
-    if (!initialized) {
-      return;
-    }
-
-    const defaultSelection = resolveDefaultSelection({
-      filter: activeFilter,
-      lists: {
-        class: cohorts ?? [],
-        classroom: classrooms ?? [],
-        teacher: teachers ?? [],
-      },
-      selections,
-    });
-
-    if (defaultSelection) {
-      applySelection(
-        setSelections,
-        defaultSelection.filter,
-        defaultSelection.id
-      );
-    }
-  }, [
-    initialized,
-    activeFilter,
-    classrooms,
-    cohorts,
     teachers,
-    selections,
-    setSelections,
-  ]);
+  });
 
-  // Reset the class selection when the timetable changes.
+  // The filter and entry the URL, the session and the loaded lists imply — or
+  // the URL's filter with no entry yet, while its data is still coming in.
+  const seed: ResolvedSelection = ready
+    ? resolveInitialSelection({
+        fallbackCohortId: sessionCohortId,
+        lists,
+        myTeacher,
+        search,
+      })
+    : { filter: initialFilterFromSearch(search), id: null };
+
+  const activeFilter = filterOverride ?? seed.filter;
+  // What the active filter shows: the user's pick, else the seeded entry for
+  // the seeded filter, else the first entry of the matching list.
+  const activeSelectionId =
+    selections[activeFilter] ??
+    (seed.filter === activeFilter
+      ? seed.id
+      : (lists[activeFilter][0]?.id ?? null));
+
+  // Keep the entry the outgoing filter was showing: a default only the URL
+  // still names is gone once the URL mirror points at the other filter.
+  const setActiveFilter = (filter: FilterType) => {
+    setSelections((current) => ({
+      ...current,
+      [activeFilter]: activeSelectionId,
+    }));
+    setFilterOverride(filter);
+  };
+
+  // Reset the class selection when the timetable changes (cohorts are scoped
+  // to a timetable) and follow the seed's filter again. Adjusting state during
+  // render — React's pattern for "storing information from previous renders" —
+  // instead of mirroring the previous id into state through an effect.
   const [prevTimetableId, setPrevTimetableId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!selectedTimetableId || selectedTimetableId === prevTimetableId) {
-      return;
-    }
+  if (selectedTimetableId && selectedTimetableId !== prevTimetableId) {
     if (prevTimetableId !== null) {
       setSelections((current) => ({ ...current, class: null }));
-      setInitialized(false);
+      setFilterOverride(null);
     }
     setPrevTimetableId(selectedTimetableId);
-  }, [selectedTimetableId, prevTimetableId, setInitialized, setSelections]);
+  }
 
-  // Mirror the selection into the URL so a link is shareable.
-  useEffect(() => {
-    const params = buildSelectionSearch({
-      activeFilter,
-      activeSelectionId,
-      selectedTimetableId,
-    });
-    if (params) {
-      navigate({ replace: true, search: () => params });
-    }
-  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
+  return {
+    activeFilter,
+    activeSelectionId,
+    selections: { ...selections, [activeFilter]: activeSelectionId },
+    setActiveFilter,
+    setSelections,
+  };
 };
 
 /**
@@ -431,7 +319,6 @@ const useTimetableSelection = ({
 const isSelectionSeedReady = ({
   classrooms,
   cohorts,
-  initialized,
   isAuthenticated,
   isPending,
   myTeacherPending,
@@ -439,14 +326,12 @@ const isSelectionSeedReady = ({
 }: {
   classrooms?: ClassroomItem[];
   cohorts?: CohortItem[];
-  initialized: boolean;
   isAuthenticated: boolean;
   isPending: boolean;
   myTeacherPending: boolean;
   teachers?: TeacherItem[];
 }): boolean =>
   Boolean(cohorts && teachers && classrooms) &&
-  !initialized &&
   !isPending &&
   !(isAuthenticated && myTeacherPending);
 
@@ -479,12 +364,12 @@ const buildSelectionSearch = ({
   activeFilter: FilterType;
   activeSelectionId: string | null;
   selectedTimetableId: string | null;
-}): z.Infer<typeof searchSchema> | null => {
+}): z.Infer<typeof publicTimetableSearchSchema> | null => {
   if (!activeSelectionId) {
     return null;
   }
 
-  const params: z.Infer<typeof searchSchema> = {
+  const params: z.Infer<typeof publicTimetableSearchSchema> = {
     cohort: undefined,
     room: undefined,
     teacher: undefined,
@@ -505,9 +390,13 @@ const buildSelectionSearch = ({
 const useTimetableClassColors = (isAuthenticated: boolean) => {
   const queryClient = useQueryClient();
   const settingsQuery = useTimetableUserSettings(isAuthenticated);
-  const userColors = isAuthenticated
-    ? (settingsQuery.data?.timetableClassColors ?? {})
-    : {};
+  // `?? {}` would mint a new object every render, which recreates the colour
+  // callback below on every render (react-doctor/exhaustive-deps).
+  const userColors = useMemo(
+    () =>
+      isAuthenticated ? (settingsQuery.data?.timetableClassColors ?? {}) : {},
+    [isAuthenticated, settingsQuery.data]
+  );
 
   const colorMutation = useMutation(
     orpc.notifications.updateSettings.mutationOptions({
@@ -601,20 +490,12 @@ const resolveSelectionLabel = (
   }
 };
 
-// Component
-export function TimetableView() {
-  const search = Route.useSearch();
-  const { i18n, t } = useTranslation();
-  const { data: session, isPending } = useSession();
-  const navigate = useNavigate({ from: Route.fullPath });
-
-  const isAuthenticated = !isPending && !!session;
-
-  const settingsQuery = useTimetableUserSettings(isAuthenticated);
-  const { handleColorChange, userColors } =
-    useTimetableClassColors(isAuthenticated);
-
-  // Timetable query (all timetables)
+/**
+ * The timetable list, the backend's currently-valid timetable, and the entry
+ * the user is looking at: seeded from the URL, else defaulted to the latest
+ * valid timetable that is still visible in the selector.
+ */
+const useSelectedTimetable = (searchTimetable: string | null) => {
   const timetablesQuery = useTimetables();
 
   // Expired timetables stay in the database, but are hidden from the public
@@ -629,12 +510,11 @@ export function TimetableView() {
 
   // The backend is the source of truth for the currently active timetable.
   const latestValidTimetableQuery = useLatestValidTimetable();
-
   const latestValidTimetableId = latestValidTimetableQuery.data?.id ?? null;
 
   // Selected timetable — initialised from URL param, else latestValid
   const [selectedTimetableId, setSelectedTimetableId] = useState<string | null>(
-    search.timetable ?? null
+    searchTimetable
   );
 
   // Once we know the latest valid, set it as default if nothing is selected
@@ -657,6 +537,52 @@ export function TimetableView() {
     latestValidTimetableId,
   ]);
 
+  /**
+   * No current timetable: the backend answers `latestValid` with NOT_FOUND when
+   * nothing is valid today. Without this branch the page would sit on the
+   * skeletons below forever, because `isLoading` stays true while no selection
+   * can ever be resolved. An explicit selection (a `?timetable=` param naming a
+   * still-loadable timetable) is left alone.
+   */
+  const hasNoValidTimetable =
+    selectedTimetableId === null &&
+    (latestValidTimetableQuery.data === null ||
+      (isDefinedError(latestValidTimetableQuery.error) &&
+        latestValidTimetableQuery.error.code === ERROR_CODE.NOT_FOUND));
+
+  return {
+    allTimetables: timetablesQuery.data,
+    hasNoValidTimetable,
+    selectedTimetableId,
+    setSelectedTimetableId,
+    timetables: timetablesQuery.data ? visibleTimetables : undefined,
+  };
+};
+
+/**
+ * `TimetableView`'s data plumbing: the queries, the selection state and the
+ * derived view models. The component below only renders what this returns.
+ */
+function useTimetablePageData() {
+  const search = Route.useSearch();
+  const { i18n, t } = useTranslation();
+  const { data: session, isPending } = useSession();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const isAuthenticated = !isPending && !!session;
+
+  const settingsQuery = useTimetableUserSettings(isAuthenticated);
+  const { handleColorChange, userColors } =
+    useTimetableClassColors(isAuthenticated);
+
+  const {
+    allTimetables,
+    hasNoValidTimetable,
+    selectedTimetableId,
+    setSelectedTimetableId,
+    timetables,
+  } = useSelectedTimetable(search.timetable ?? null);
+
   // Queries
   const cohortsQuery = useTimetableCohorts(selectedTimetableId);
 
@@ -669,21 +595,32 @@ export function TimetableView() {
   const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
   const myTeacher = myTeacherQuery.data ?? null;
 
-  // State
-  const [activeFilter, setActiveFilter] = useState<FilterType>(() =>
-    initialFilterFromSearch(search)
-  );
-  const [selections, setSelections] = useState<SelectionsType>({
-    class: null,
-    classroom: null,
-    teacher: null,
+  // Selection plumbing: the hook owns the filter, the selected entries and the
+  // seed flag, seeding from the URL and following filter/timetable changes.
+  const {
+    activeFilter,
+    activeSelectionId,
+    selections,
+    setActiveFilter,
+    setSelections,
+  } = useTimetableSelection({
+    classrooms: classroomsQuery.data,
+    cohorts: cohortsQuery.data,
+    isAuthenticated,
+    isPending,
+    myTeacher,
+    myTeacherPending: myTeacherQuery.isPending,
+    search: {
+      cohort: search.cohort,
+      room: search.room,
+      teacher: search.teacher,
+    },
+    selectedTimetableId,
+    sessionCohortId: session?.user?.cohortId ?? null,
+    teachers: teachersQuery.data,
   });
 
   const [weekFilter, setWeekFilter] = useState<WeekFilter>('all');
-
-  const [initialized, setInitialized] = useState(false);
-
-  const activeSelectionId = getActiveSelectionId(activeFilter, selections);
 
   // Fetch lessons
   const lessonsQuery = useTimetableLessons(
@@ -706,32 +643,17 @@ export function TimetableView() {
       settingsQuery.data?.timetableGroupDisplay
     );
 
-  // Selection plumbing: seed from the URL, follow filter changes, reset when
-  // the timetable changes, and mirror the selection back into the URL.
-  useTimetableSelection({
-    activeFilter,
-    activeSelectionId,
-    classrooms: classroomsQuery.data,
-    cohorts: cohortsQuery.data,
-    initialized,
-    isAuthenticated,
-    isPending,
-    myTeacher,
-    myTeacherPending: myTeacherQuery.isPending,
-    navigate,
-    search: {
-      cohort: search.cohort,
-      room: search.room,
-      teacher: search.teacher,
-    },
-    selectedTimetableId,
-    selections,
-    sessionCohortId: session?.user?.cohortId ?? null,
-    setActiveFilter,
-    setInitialized,
-    setSelections,
-    teachers: teachersQuery.data,
-  });
+  // Mirror the selection into the URL so a link is shareable.
+  useEffect(() => {
+    const params = buildSelectionSearch({
+      activeFilter,
+      activeSelectionId,
+      selectedTimetableId,
+    });
+    if (params) {
+      navigate({ replace: true, search: () => params });
+    }
+  }, [activeFilter, activeSelectionId, selectedTimetableId, navigate]);
 
   const weekFilteredLessons = useMemo(
     () =>
@@ -763,8 +685,6 @@ export function TimetableView() {
     [weekFilteredLessons, groupDisplay, selectedGroupIds, selectedDivisionTags]
   );
 
-  const [printDialogOpen, setPrintDialogOpen] = useState(false);
-
   // Secondary (paper-like) view: the class code shown in the corner cell.
   // The view itself is a preference (see the Appearance settings pane), kept in
   // a cookie so it applies before the first paint.
@@ -780,8 +700,8 @@ export function TimetableView() {
 
   const handleGeneratePdf = async (blackAndWhite: boolean): Promise<void> => {
     const timetableName =
-      timetablesQuery.data?.find((entry) => entry.id === selectedTimetableId)
-        ?.name ?? '';
+      allTimetables?.find((entry) => entry.id === selectedTimetableId)?.name ??
+      '';
     const label = resolveSelectionLabel(activeFilter, {
       classrooms: classroomsQuery.data,
       cohorts: cohortsQuery.data,
@@ -822,19 +742,6 @@ export function TimetableView() {
     teachers: teachersQuery.isLoading,
   });
 
-  /**
-   * No current timetable: the backend answers `latestValid` with NOT_FOUND when
-   * nothing is valid today. Without this branch the page would sit on the
-   * skeletons below forever, because `isLoading` stays true while no selection
-   * can ever be resolved. An explicit selection (a `?timetable=` param naming a
-   * still-loadable timetable) is left alone.
-   */
-  const hasNoValidTimetable =
-    selectedTimetableId === null &&
-    (latestValidTimetableQuery.data === null ||
-      (isDefinedError(latestValidTimetableQuery.error) &&
-        latestValidTimetableQuery.error.code === 'NOT_FOUND'));
-
   const isLoading =
     selectorLoading || lessonsQuery.isLoading || !activeSelectionId;
   const hasError = Boolean(
@@ -844,13 +751,86 @@ export function TimetableView() {
       lessonsQuery.error
   );
 
+  return {
+    activeFilter,
+    cardHeader,
+    cardLessons,
+    classrooms: classroomsQuery.data,
+    cohorts: cohortsQuery.data,
+    groupDisplay,
+    handleColorChange,
+    handleGeneratePdf,
+    hasError,
+    hasNoValidTimetable,
+    isAuthenticated,
+    isLoading,
+    language: i18n.language,
+    lessonCount: weekFilteredLessons.length,
+    model,
+    periods: (periodsQuery.data ?? []) as PeriodItem[],
+    selectedDivisionTags,
+    selectedGroupIds,
+    selectedTimetableId,
+    selections,
+    selectorLoading,
+    setActiveFilter,
+    setSelectedTimetableId,
+    setSelections,
+    setWeekFilter,
+    t,
+    teachers: teachersQuery.data,
+    timetables,
+    userColors,
+    view,
+    weekFilter,
+  };
+}
+
+// Component
+export function TimetableView() {
+  const {
+    activeFilter,
+    cardHeader,
+    cardLessons,
+    classrooms,
+    cohorts,
+    groupDisplay,
+    handleColorChange,
+    handleGeneratePdf,
+    hasError,
+    hasNoValidTimetable,
+    isAuthenticated,
+    isLoading,
+    language,
+    lessonCount,
+    model,
+    periods,
+    selectedDivisionTags,
+    selectedGroupIds,
+    selectedTimetableId,
+    selections,
+    selectorLoading,
+    setActiveFilter,
+    setSelectedTimetableId,
+    setSelections,
+    setWeekFilter,
+    t,
+    teachers,
+    timetables,
+    userColors,
+    view,
+    weekFilter,
+  } = useTimetablePageData();
+
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+
   const timetableContent = renderTimetableBody(
     view,
     {
       header: cardHeader,
-      language: i18n.language,
+      language,
       lessons: cardLessons,
-      periods: (periodsQuery.data ?? []) as PeriodItem[],
+      periods,
     },
     {
       activeFilter,
@@ -883,7 +863,7 @@ export function TimetableView() {
       return <TimetableLoadingPlaceholder />;
     }
 
-    if (!hasError && weekFilteredLessons.length === 0) {
+    if (!hasError && lessonCount === 0) {
       return (
         <Empty
           description={t('timetable.emptyWeekDescription')}
@@ -901,8 +881,8 @@ export function TimetableView() {
       <div className="flex w-full min-w-0 max-w-7xl flex-col gap-4">
         <FilterBar
           activeFilter={activeFilter}
-          classrooms={classroomsQuery.data}
-          cohorts={cohortsQuery.data}
+          classrooms={classrooms}
+          cohorts={cohorts}
           disabled={isLoading}
           onFilterChange={setActiveFilter}
           onPrint={() => setPrintDialogOpen(true)}
@@ -918,8 +898,8 @@ export function TimetableView() {
           selectedByTeacher={selections.teacher}
           selectedTimetableId={selectedTimetableId}
           selectorLoading={selectorLoading}
-          teachers={teachersQuery.data}
-          timetables={timetablesQuery.data ? visibleTimetables : undefined}
+          teachers={teachers}
+          timetables={timetables}
           weekFilter={weekFilter}
         />
 

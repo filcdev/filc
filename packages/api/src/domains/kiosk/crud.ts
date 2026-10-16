@@ -1,5 +1,5 @@
 import z from 'zod';
-import { kioskKindSchema } from './config';
+import { kioskConfigBlobSchema, kioskKindSchema } from './config';
 
 /**
  * Payload for enrolling a box. `config` is validated against `kind` in the
@@ -7,7 +7,7 @@ import { kioskKindSchema } from './config';
  * single zod object could not discriminate them.
  */
 export const createKioskSchema = z.object({
-  config: z.unknown().optional(),
+  config: kioskConfigBlobSchema.optional(),
   enabled: z.boolean().optional(),
   kind: kioskKindSchema,
   machineId: z.string().min(1).max(64),
@@ -15,7 +15,7 @@ export const createKioskSchema = z.object({
 });
 
 export const updateKioskSchema = z.object({
-  config: z.unknown().optional(),
+  config: kioskConfigBlobSchema.optional(),
   enabled: z.boolean().optional(),
   kind: kioskKindSchema.optional(),
   name: z.string().min(1).optional(),

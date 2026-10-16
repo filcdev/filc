@@ -16,7 +16,7 @@ import { Input } from '@filcdev/ui/components/input';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
-import { type ChangeEvent, useRef } from 'react';
+import { type ChangeEvent, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useImportTimetable } from '@/hooks/timetables-admin';
@@ -34,6 +34,7 @@ export function TimetableImportDialog({
 }: TimetableImportDialogProps) {
   const { i18n, t } = useTranslation();
 
+  const fileInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importMutation = useImportTimetable({
     onSaved: () => {
@@ -183,12 +184,10 @@ export function TimetableImportDialog({
             )}
           </form.Field>
 
-          {/** biome-ignore lint/a11y/useKeyWithClickEvents: file input disguised as div */}
-          {/** biome-ignore lint/a11y/noStaticElementInteractions: file input disguised as div */}
-          {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: file input disguised as div */}
-          <div
+          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: the drop zone has to be a <label> — clicking it opens the native file picker through `htmlFor`, and a <button> must not contain the file input or the remove button. */}
+          <label
             className="relative flex min-h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-muted-foreground/25 border-dashed bg-transparent p-6 text-center transition-colors hover:border-muted-foreground/50"
-            onClick={() => fileInputRef.current?.click()}
+            htmlFor={fileInputId}
             onDragLeave={(e) => {
               e.preventDefault();
               e.currentTarget.classList.remove('border-primary');
@@ -209,6 +208,7 @@ export function TimetableImportDialog({
             <input
               accept=".xml,text/xml,application/xml"
               className="hidden"
+              id={fileInputId}
               onChange={handleFileSelect}
               ref={fileInputRef}
               type="file"
@@ -253,7 +253,7 @@ export function TimetableImportDialog({
                 </p>
               </>
             )}
-          </div>
+          </label>
 
           {importMutation.isSuccess && (
             <Alert className="border-green-500 bg-green-50 dark:bg-green-950">

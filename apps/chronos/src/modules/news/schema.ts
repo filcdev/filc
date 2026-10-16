@@ -11,6 +11,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { JSONType } from 'zod';
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 import { kiosk } from '#modules/kiosk/schema';
@@ -22,7 +23,7 @@ export const announcement = pgTable(
     authorId: uuid('author_id')
       .notNull()
       .references(() => user.id, { onDelete: 'set null' }),
-    content: jsonb('content').notNull(),
+    content: jsonb('content').$type<JSONType>().notNull(),
     /** Shown as a full-screen takeover on the TV kiosks. */
     highlighted: boolean('highlighted').notNull().default(false),
     id: uuid('id').primaryKey().defaultRandom(),
@@ -56,7 +57,7 @@ export const systemMessage = pgTable('system_message', {
   authorId: uuid('author_id')
     .notNull()
     .references(() => user.id, { onDelete: 'set null' }),
-  content: jsonb('content').notNull(),
+  content: jsonb('content').$type<JSONType>().notNull(),
   id: uuid('id').primaryKey().defaultRandom(),
   title: text('title').notNull(),
   validFrom: timestamp('valid_from').notNull(),
@@ -68,7 +69,7 @@ export const blogPost = pgTable('blog_post', {
   authorId: uuid('author_id')
     .notNull()
     .references(() => user.id, { onDelete: 'set null' }),
-  content: jsonb('content').notNull(),
+  content: jsonb('content').$type<JSONType>().notNull(),
   id: uuid('id').primaryKey().defaultRandom(),
   publishedAt: timestamp('published_at'),
   slug: text('slug').notNull().unique(),

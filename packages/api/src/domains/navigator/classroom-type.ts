@@ -50,13 +50,3 @@ export type CreateClassroomTypeInput = z.infer<
 export type UpdateClassroomTypeInput = z.infer<
   typeof updateClassroomTypeSchema
 >;
-
-/** Payload of `GET /navigator/classroom-types`. */
-export const classroomTypesResponseSchema = z.object({
-  classroom_types: z.array(classroomTypeRowSchema),
-});
-
-/** Payload of the `POST`/`PUT`/`DELETE` classroom-type procedures. */
-export const classroomTypeResponseSchema = z.object({
-  classroom_type: classroomTypeRowSchema,
-});

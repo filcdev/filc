@@ -40,7 +40,7 @@ export const listDevices = base.doorlock.devices.list
       .from(device)
       .orderBy(desc(device.updatedAt));
 
-    return { devices };
+    return { items: devices, total: devices.length };
   });
 
 export const createDevice = base.doorlock.devices.create
@@ -58,7 +58,7 @@ export const createDevice = base.doorlock.devices.create
         });
       }
 
-      return { device: inserted };
+      return inserted;
     } catch (error) {
       logger.error('Failed to create device', { error });
       const knownError = buildConstraintError(error);
@@ -88,7 +88,7 @@ export const updateDevice = base.doorlock.devices.update
         throw notFound('Device not found');
       }
 
-      return { device: updated };
+      return updated;
     } catch (error) {
       logger.error('Failed to update device', { error });
       const knownError = buildConstraintError(error);

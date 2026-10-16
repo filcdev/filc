@@ -43,7 +43,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     value: c.id,
   }));
 
-  const availableRoles = rolesQuery.data?.roles ?? [];
+  const availableRoles = rolesQuery.data?.items ?? [];
 
   const updateUser = useUpdateUser({ onSaved: () => onOpenChange(false) });
 
@@ -59,6 +59,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
   });
 
   const selectedRoles = useStore(form.store, (state) => state.values.roles);
+  const selectedRoleSet = new Set(selectedRoles);
 
   const toggleRole = (roleName: string, checked: boolean) => {
     const current = form.getFieldValue('roles');
@@ -159,7 +160,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                     key={role.name}
                   >
                     <Checkbox
-                      checked={selectedRoles.includes(role.name)}
+                      checked={selectedRoleSet.has(role.name)}
                       id={`role-${role.name}`}
                       onCheckedChange={(checked) =>
                         toggleRole(role.name, Boolean(checked))

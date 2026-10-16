@@ -1,6 +1,6 @@
 import type { DateRangeQueryInput } from '@filcdev/api/domains/timetable/export';
 import { permissions } from '@filcdev/api/permissions';
-import { and, desc, eq, gte, inArray, lte, type SQL } from 'drizzle-orm';
+import { desc, eq, gte, inArray, lte, type SQL } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import {
@@ -18,6 +18,7 @@ import {
   teacher,
 } from '#modules/timetable/schema';
 import { base } from '#orpc';
+import { andAll } from '#utils/drizzle';
 
 const buildDateFilters = (
   filters: SQL<unknown>[],
@@ -69,10 +70,7 @@ export const exportSubstitutionsRoute = base.timetable.substitutions.export
       substitution.date as unknown as SQL<unknown>
     );
 
-    let combined: SQL<unknown> | undefined;
-    for (const clause of filters) {
-      combined = combined ? and(combined, clause) : clause;
-    }
+    const combined = andAll(filters);
 
     const substitutions = await db
       .select({
@@ -184,10 +182,7 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
       movedLesson.date as unknown as SQL<unknown>
     );
 
-    let combined: SQL<unknown> | undefined;
-    for (const clause of filters) {
-      combined = combined ? and(combined, clause) : clause;
-    }
+    const combined = andAll(filters);
 
     const movedLessons = await db
       .select({

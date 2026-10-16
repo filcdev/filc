@@ -19,7 +19,7 @@ export const listClassroomsRoute = base.navigator.classrooms.list.handler(
       .from(classroomTable)
       .orderBy(asc(classroomTable.name));
 
-    return { classrooms };
+    return { items: classrooms, total: classrooms.length };
   }
 );
 
@@ -37,7 +37,7 @@ export const createClassroomRoute = base.navigator.classrooms.create
       });
     }
 
-    return { classroom };
+    return classroom;
   });
 
 export const updateClassroomRoute = base.navigator.classrooms.update
@@ -64,7 +64,7 @@ export const updateClassroomRoute = base.navigator.classrooms.update
       throw notFound('Classroom not found');
     }
 
-    return { classroom };
+    return classroom;
   });
 
 export const deleteClassroomRoute = base.navigator.classrooms.delete
@@ -112,5 +112,5 @@ export const deleteClassroomRoute = base.navigator.classrooms.delete
       throw notFound('Classroom not found');
     }
 
-    return { classroom };
+    return { id };
   });

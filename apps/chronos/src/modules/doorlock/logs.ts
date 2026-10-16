@@ -1,12 +1,13 @@
 import type { LogsQueryInput } from '@filcdev/api/domains/doorlock/logs';
 import { permissions } from '@filcdev/api/permissions';
 import type { SQL } from 'drizzle-orm';
-import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
+import { count, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
 import { auditLog, card, device } from '#modules/doorlock/schema';
 import { base } from '#orpc';
+import { andAll } from '#utils/drizzle';
 
 type DeviceSummary = Pick<typeof device.$inferSelect, 'id' | 'name'>;
 type CardSummary = Pick<typeof card.$inferSelect, 'id' | 'name'>;
@@ -68,15 +69,7 @@ const buildWhereClause = (query: LogsQueryInput): SQL<unknown> | undefined => {
     filters.push(filter);
   }
 
-  if (!filters.length) {
-    return;
-  }
-
-  let combined: SQL<unknown> | undefined;
-  for (const clause of filters) {
-    combined = combined ? and(combined, clause) : clause;
-  }
-  return combined;
+  return andAll(filters);
 };
 
 const mapRowsToLogs = (
@@ -127,34 +120,40 @@ const mapRowsToLogs = (
 export const listLogs = base.doorlock.logs.list
   .use(requireAuthorization(permissions.doorlockLogsRead))
   .handler(async ({ input: query }) => {
-    const rows = await db
-      .select({
-        buttonPressed: auditLog.buttonPressed,
-        cardData: auditLog.cardData,
-        cardId: auditLog.cardId,
-        deviceId: auditLog.deviceId,
-        id: auditLog.id,
-        logCardId: card.id,
-        logCardName: card.name,
-        logDeviceId: device.id,
-        logDeviceName: device.name,
-        ownerEmail: user.email,
-        ownerId: user.id,
-        ownerName: user.name,
-        ownerNickname: user.nickname,
-        result: auditLog.result,
-        timestamp: auditLog.timestamp,
-        userId: auditLog.userId,
-      })
-      .from(auditLog)
-      .leftJoin(device, eq(auditLog.deviceId, device.id))
-      .leftJoin(card, eq(auditLog.cardId, card.id))
-      .leftJoin(user, eq(auditLog.userId, user.id))
-      .where(buildWhereClause(query))
-      .orderBy(desc(auditLog.timestamp))
-      .limit(query.limit);
+    const where = buildWhereClause(query);
+    // `total` is the unpaged count: the endpoint caps at `limit`, so the page
+    // length would hide how much more there is.
+    const [rows, totalResult] = await Promise.all([
+      db
+        .select({
+          buttonPressed: auditLog.buttonPressed,
+          cardData: auditLog.cardData,
+          cardId: auditLog.cardId,
+          deviceId: auditLog.deviceId,
+          id: auditLog.id,
+          logCardId: card.id,
+          logCardName: card.name,
+          logDeviceId: device.id,
+          logDeviceName: device.name,
+          ownerEmail: user.email,
+          ownerId: user.id,
+          ownerName: user.name,
+          ownerNickname: user.nickname,
+          result: auditLog.result,
+          timestamp: auditLog.timestamp,
+          userId: auditLog.userId,
+        })
+        .from(auditLog)
+        .leftJoin(device, eq(auditLog.deviceId, device.id))
+        .leftJoin(card, eq(auditLog.cardId, card.id))
+        .leftJoin(user, eq(auditLog.userId, user.id))
+        .where(where)
+        .orderBy(desc(auditLog.timestamp))
+        .limit(query.limit),
+      db.select({ count: count() }).from(auditLog).where(where),
+    ]);
 
     const logs = mapRowsToLogs(rows);
 
-    return { logs };
+    return { items: logs, total: totalResult[0]?.count ?? 0 };
   });

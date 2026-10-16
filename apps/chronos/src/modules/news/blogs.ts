@@ -61,7 +61,7 @@ export const listPublishedBlogs = base.news.blogs.list.handler(
       db.select({ count: count() }).from(blogPost).where(where),
     ]);
 
-    return { data: items, total: totalResult[0]?.count ?? 0 };
+    return { items, total: totalResult[0]?.count ?? 0 };
   }
 );
 
@@ -119,7 +119,7 @@ export const listDrafts = base.news.blogs.drafts
       db.select({ count: count() }).from(blogPost),
     ]);
 
-    return { data: items, total: totalResult[0]?.count ?? 0 };
+    return { items, total: totalResult[0]?.count ?? 0 };
   });
 
 export const getBlogById = base.news.blogs.getById

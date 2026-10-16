@@ -13,7 +13,7 @@ export const listLiftsRoute = base.navigator.lifts.list.handler(async () => {
     .from(navigatorLift)
     .orderBy(asc(navigatorLift.name));
 
-  return { lifts };
+  return { items: lifts, total: lifts.length };
 });
 
 export const createLiftRoute = base.navigator.lifts.create
@@ -28,7 +28,7 @@ export const createLiftRoute = base.navigator.lifts.create
       throw new ORPCError('INTERNAL', { message: 'Failed to create lift' });
     }
 
-    return { lift };
+    return lift;
   });
 
 export const updateLiftRoute = base.navigator.lifts.update
@@ -51,7 +51,7 @@ export const updateLiftRoute = base.navigator.lifts.update
       throw notFound('Lift not found');
     }
 
-    return { lift };
+    return lift;
   });
 
 export const deleteLiftRoute = base.navigator.lifts.delete
@@ -68,5 +68,5 @@ export const deleteLiftRoute = base.navigator.lifts.delete
       throw notFound('Lift not found');
     }
 
-    return { lift };
+    return { id };
   });

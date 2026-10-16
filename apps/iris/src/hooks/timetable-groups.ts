@@ -6,7 +6,7 @@ import { type api, orpc } from '@/utils/orpc';
 
 type GroupsForCohortResponse = Awaited<
   ReturnType<typeof api.timetable.groups.getForCohort>
->;
+>['items'];
 
 /** A group of a cohort, with the current user's selection flag. */
 export type GroupItem = GroupsForCohortResponse[number];
@@ -20,6 +20,7 @@ export function useGroupsForCohort(cohortId: string | null | undefined) {
       input: { cohortId: cohortId ?? '' },
     }),
     enabled: !!cohortId,
+    select: (data) => data.items,
   });
 }
 

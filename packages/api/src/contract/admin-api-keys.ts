@@ -24,13 +24,10 @@ export const adminApiKeysContract = {
       filcRoute({
         auth: true,
         description: "Revoke any user's API key",
-        group: 'API keys',
         method: 'DELETE',
         operationId: 'deleteAdminApiKeysByKeyId',
         path: '/admin/api-keys/{keyId}',
-        successStatus: 200,
         tags: ['API keys'],
-        type: '@nodata',
       })
     )
     .input(adminApiKeyIdParamsSchema)
@@ -40,13 +37,10 @@ export const adminApiKeysContract = {
       filcRoute({
         auth: true,
         description: "List every user's API keys",
-        group: 'API keys',
         method: 'GET',
         operationId: 'getAdminApiKeys',
         path: '/admin/api-keys',
-        successStatus: 200,
         tags: ['API keys'],
-        type: '@unit AdminApiKeyListResponse @field(.apiKeys, List<AdminApiKey>) @field(.total, Int)',
       })
     )
     .input(listAdminApiKeysQuerySchema)
@@ -56,13 +50,10 @@ export const adminApiKeysContract = {
       filcRoute({
         auth: true,
         description: "Enable or disable any user's API key",
-        group: 'API keys',
         method: 'PATCH',
         operationId: 'patchAdminApiKeysByKeyId',
         path: '/admin/api-keys/{keyId}',
-        successStatus: 200,
         tags: ['API keys'],
-        type: '@unit AdminApiKey',
       })
     )
     .input(updateAdminApiKeySchema)

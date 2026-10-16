@@ -75,22 +75,24 @@ const handleIncomingMessage = async (
         };
 
         logger.trace('Persisting device health ping', { device });
-        await db.insert(deviceHealth).values({
-          deviceId: device.id,
-          deviceMeta: {
-            ...deserialized.data,
-            debug: {
-              ...deserialized.data.debug,
-              deviceState: getDeviceState(),
+        await db.transaction(async (tx) => {
+          await tx.insert(deviceHealth).values({
+            deviceId: device.id,
+            deviceMeta: {
+              ...deserialized.data,
+              debug: {
+                ...deserialized.data.debug,
+                deviceState: getDeviceState(),
+              },
             },
-          },
-        });
+          });
 
-        logger.trace('Updating device heartbeat timestamp', { device });
-        await db
-          .update(lockDevice)
-          .set({ updatedAt: new Date() })
-          .where(eq(lockDevice.id, device.id));
+          logger.trace('Updating device heartbeat timestamp', { device });
+          await tx
+            .update(lockDevice)
+            .set({ updatedAt: new Date() })
+            .where(eq(lockDevice.id, device.id));
+        });
         break;
       }
       case 'card-read': {
@@ -102,25 +104,29 @@ const handleIncomingMessage = async (
           .where(eq(card.cardData, deserialized.uid))
           .limit(1);
 
-        await db.insert(auditLog).values({
-          buttonPressed: deserialized.buttonPressed,
-          cardData: deserialized.uid,
-          cardId: cardUser?.id ?? null,
-          deviceId: device.id,
-          result: deserialized.authorized,
-          userId: cardUser?.userId ?? null,
+        // The audit row and the heartbeat belong to one card tap: commit them
+        // together so a failure cannot leave one without the other.
+        await db.transaction(async (tx) => {
+          await tx.insert(auditLog).values({
+            buttonPressed: deserialized.buttonPressed,
+            cardData: deserialized.uid,
+            cardId: cardUser?.id ?? null,
+            deviceId: device.id,
+            result: deserialized.authorized,
+            userId: cardUser?.userId ?? null,
+          });
+
+          logger.trace('Updating device heartbeat timestamp', { device });
+          await tx
+            .update(lockDevice)
+            .set({ updatedAt: new Date() })
+            .where(eq(lockDevice.id, device.id));
         });
 
         dispatchImmediateNotification('doorlock_card_used', {
           deviceName: device.name,
           userId: cardUser?.userId,
         });
-
-        logger.trace('Updating device heartbeat timestamp', { device });
-        await db
-          .update(lockDevice)
-          .set({ updatedAt: new Date() })
-          .where(eq(lockDevice.id, device.id));
         break;
       }
       default:

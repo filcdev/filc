@@ -9,11 +9,11 @@ import { isPeriodOver } from '@/utils/periods';
 
 type Substitutions = Awaited<
   ReturnType<typeof api.timetable.substitutions.list>
->;
+>['items'][number];
 type KioskNews = Awaited<ReturnType<typeof api.kiosk.news.list>>;
 
 /** One announcement of the kiosk feed, as the full-screen takeover shows it. */
-export type KioskNewsItem = KioskNews['announcements'][number];
+export type KioskNewsItem = KioskNews['items'][number];
 
 /** One row of the substitution ticker. */
 export type TvSubstitutionRow = {
@@ -63,7 +63,7 @@ export function useActiveTimetable() {
 
   return {
     isLoading: timetable.isPending,
-    periods: periods.data ?? [],
+    periods: periods.data?.items ?? [],
     timetable: timetable.data ?? null,
   };
 }
@@ -73,7 +73,7 @@ export function useActiveTimetable() {
  * whose period has already ended are dropped, and a row with no substituter is
  * flagged as cancelled.
  */
-function substitutionRows(item: Substitutions[number]): TvSubstitutionRow[] {
+function substitutionRows(item: Substitutions): TvSubstitutionRow[] {
   if (!isToday(item.substitution.date)) {
     return [];
   }
@@ -92,7 +92,7 @@ function substitutionRows(item: Substitutions[number]): TvSubstitutionRow[] {
 
     rows.push({
       cancelled: item.teacher === null,
-      className: lesson.cohorts[0] ?? '',
+      className: lesson.cohorts[0]?.name ?? '',
       classroom: lesson.classrooms[0]?.short ?? '',
       lesson: period.period,
       missing: lesson.teachers[0]?.short ?? '',
@@ -116,7 +116,7 @@ export function useTvSubstitutions() {
 
   const rows = useMemo<TvSubstitutionRow[]>(
     () =>
-      (query.data ?? [])
+      (query.data?.items ?? [])
         .flatMap(substitutionRows)
         .sort((a, b) => a.lesson - b.lesson),
     [query.data]
@@ -135,7 +135,7 @@ export function useRoomChanges() {
   const rows = useMemo<TvRoomChangeRow[]>(() => {
     const result: TvRoomChangeRow[] = [];
 
-    for (const item of query.data ?? []) {
+    for (const item of query.data?.items ?? []) {
       if (!(item.classroom && isToday(item.movedLesson.date))) {
         continue;
       }
@@ -146,7 +146,9 @@ export function useRoomChanges() {
 
       // The affected lessons carry the cohorts and their original rooms; the
       // moved lesson itself carries the target room.
-      const cohorts = item.lessons.flatMap((lesson) => lesson.cohorts);
+      const cohorts = item.lessons.flatMap((lesson) =>
+        lesson.cohorts.map((cohort) => cohort.name)
+      );
       const fromRooms = item.lessons.flatMap((lesson) =>
         lesson.classrooms.map((room) => room.name)
       );
@@ -175,7 +177,7 @@ function useKioskNews() {
     refetchInterval: REFETCH_INTERVALS.news,
   });
 
-  const announcements = query.data?.announcements ?? [];
+  const announcements = query.data?.items ?? [];
 
   const titles: string[] = [];
   for (const announcement of announcements) {

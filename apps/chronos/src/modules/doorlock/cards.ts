@@ -28,7 +28,7 @@ export const listCards = base.doorlock.cards.list
   .handler(async () => {
     const cards = await fetchCards();
 
-    return { cards };
+    return { items: cards, total: cards.length };
   });
 
 export const listDoorlockUsers = base.doorlock.cards.users
@@ -44,7 +44,7 @@ export const listDoorlockUsers = base.doorlock.cards.users
       .from(user)
       .orderBy(sql`coalesce(${user.nickname}, ${user.name})`);
 
-    return { users: usersList };
+    return { items: usersList, total: usersList.length };
   });
 
 export const createCard = base.doorlock.cards.create
@@ -88,7 +88,7 @@ export const createCard = base.doorlock.cards.create
       )
     );
 
-    return { card: createdCard };
+    return createdCard;
   });
 
 export const updateCard = base.doorlock.cards.update
@@ -123,7 +123,7 @@ export const updateCard = base.doorlock.cards.update
       )
     );
 
-    return { card: updatedCard };
+    return updatedCard;
   });
 
 export const deleteCard = base.doorlock.cards.delete

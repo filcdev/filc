@@ -19,12 +19,14 @@ import {
 /**
  * The notification inbox and per-user preferences.
  *
- * These endpoints carried no OpenAPI metadata before the migration
- * (`apps/chronos/openapi/baseline.json` has no `/notifications` paths at all),
- * so the procedures deliberately have no `filcRoute` metadata: they exist for
- * the typed RPC client, and the generated document filters this subtree out so
- * it stays identical to the baseline. `GET|POST /api/notifications/unsubscribe`
- * is not part of the contract either — it renders HTML from a plain handler in
+ * These procedures deliberately have no `filcRoute` metadata, so the generated
+ * document filters this subtree out and the endpoints exist only for the typed
+ * RPC client. The original reason was keeping the document identical to the
+ * pre-migration one; that document and the `x-filc_*` extensions are gone, so
+ * this is now a standing choice rather than a constraint — worth revisiting if
+ * an external client should ever reach the inbox. `GET|POST
+ * /api/notifications/unsubscribe` is not part of the contract either — it
+ * renders HTML from a plain handler in
  * `apps/chronos/src/routes/notifications/unsubscribe-html.ts`.
  */
 export const notificationsContract = {

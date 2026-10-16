@@ -11,12 +11,12 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '@/components/confirm-provider';
 import {
   type AdminApiKey,
   useAdminDeleteApiKey,
   useAdminUpdateApiKey,
 } from '@/hooks/admin-api-keys';
-import { confirmDestructiveAction } from '@/utils/confirm';
 import { formatLocalizedDate } from '@/utils/date-locale';
 
 dayjs.extend(relativeTime);
@@ -68,6 +68,7 @@ export function AdminApiKeysTable({
   ownerId,
 }: AdminApiKeysTableProps) {
   const { i18n, t } = useTranslation();
+  const confirm = useConfirm();
   const updateApiKey = useAdminUpdateApiKey();
   const deleteApiKey = useAdminDeleteApiKey();
 
@@ -164,14 +165,13 @@ export function AdminApiKeysTable({
                     </Button>
                     <Button
                       disabled={deleteApiKey.isPending}
-                      onClick={() => {
-                        if (
-                          !confirmDestructiveAction(
-                            t('adminApiKeys.deleteConfirm', {
-                              name: apiKey.name ?? prefix,
-                            })
-                          )
-                        ) {
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t('adminApiKeys.deleteConfirm', {
+                            name: apiKey.name ?? prefix,
+                          }),
+                        });
+                        if (!confirmed) {
                           return;
                         }
                         deleteApiKey.mutate({ keyId: apiKey.id });

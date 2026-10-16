@@ -15,7 +15,7 @@ export const listClassroomTypesRoute =
       .from(classroomTypeTable)
       .orderBy(asc(classroomTypeTable.name));
 
-    return { classroom_types: classroomTypes };
+    return { items: classroomTypes, total: classroomTypes.length };
   });
 
 export const createClassroomTypeRoute = base.navigator.classroomTypes.create
@@ -32,7 +32,7 @@ export const createClassroomTypeRoute = base.navigator.classroomTypes.create
       });
     }
 
-    return { classroom_type: classroomType };
+    return classroomType;
   });
 
 export const updateClassroomTypeRoute = base.navigator.classroomTypes.update
@@ -58,7 +58,7 @@ export const updateClassroomTypeRoute = base.navigator.classroomTypes.update
       throw notFound('Classroom type not found');
     }
 
-    return { classroom_type: classroomType };
+    return classroomType;
   });
 
 export const deleteClassroomTypeRoute = base.navigator.classroomTypes.delete
@@ -76,7 +76,7 @@ export const deleteClassroomTypeRoute = base.navigator.classroomTypes.delete
         throw notFound('Classroom type not found');
       }
 
-      return { classroom_type: classroomType };
+      return { id };
     } catch (error) {
       // `classroom.type_id` restricts the delete, so the FK error is what says
       // a classroom still uses this type.

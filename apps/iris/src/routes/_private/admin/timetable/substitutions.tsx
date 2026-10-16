@@ -8,14 +8,6 @@ import {
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@filcdev/ui/components/dialog';
 import { Input } from '@filcdev/ui/components/input';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
@@ -28,9 +20,11 @@ import {
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { Plus, RefreshCw } from 'lucide-react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
+import { RowActions } from '@/components/admin/row-actions';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
 import { SubstitutionExportButton } from '@/components/admin/substitution-export';
 import {
@@ -45,6 +39,7 @@ import {
   useSubstitutions,
 } from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { type SortDirection, useSortable } from '@/hooks/use-sortable';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { orpc, prefetch } from '@/utils/orpc';
 
@@ -80,15 +75,7 @@ function SubstitutionsPage() {
   const [selectedItem, setSelectedItem] = useState<SubstitutionItem | null>(
     null
   );
-  const [itemToDelete, setItemToDelete] = useState<SubstitutionItem | null>(
-    null
-  );
-  const [sortColumn, setSortColumn] = useState<
-    'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher' | null
-  >(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
+  const itemToDelete = useRef<SubstitutionItem | null>(null);
   const [showPast, setShowPast] = useState(false);
   const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
@@ -101,11 +88,12 @@ function SubstitutionsPage() {
   const deleteMutation = useDeleteSubstitution({
     onSaved: () => {
       setDeleteDialogOpen(false);
-      setItemToDelete(null);
+      itemToDelete.current = null;
     },
   });
 
-  const filteredSubstitutions = useMemo(() => {
+  // The date/search filters stay here; only the ordering is delegated.
+  const filtered = useMemo(() => {
     let list = substitutionsQuery.data ?? [];
     const term = search.trim().toLowerCase();
     const today = dayjs().startOf('day');
@@ -138,7 +126,7 @@ function SubstitutionsPage() {
           .join(' ')
           .toLowerCase();
         const cohorts = lessons
-          .flatMap((l) => l.cohorts)
+          .flatMap((l) => l.cohorts.map((c) => c.name))
           .join(' ')
           .toLowerCase();
         return (
@@ -151,52 +139,27 @@ function SubstitutionsPage() {
       });
     }
 
-    // Rendezés
-    if (sortColumn && sortDirection) {
-      list = [...list].sort((a, b) => {
-        const aVal = getSortValue(a, sortColumn);
-        const bVal = getSortValue(b, sortColumn);
-
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-          const comparison = aVal.localeCompare(bVal);
-          return sortDirection === 'asc' ? comparison : -comparison;
-        }
-        return 0;
-      });
-    }
-
     return list;
-  }, [substitutionsQuery.data, search, sortColumn, sortDirection, showPast]);
+  }, [substitutionsQuery.data, search, showPast]);
 
-  const handleSort = (
-    column: 'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher'
-  ) => {
-    if (sortColumn === column) {
-      // Ugyanaz az oszlop: asc -> desc -> null
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      // Új oszlop: kezdjük asc-vel
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const {
+    column: sortColumn,
+    direction: sortDirection,
+    rows: filteredSubstitutions,
+    toggle: handleSort,
+  } = useSortable(filtered, { getValue: getSortValue });
 
   const handleDelete = (sub: SubstitutionItem) => {
     if (!hasWritePermission) {
       return;
     }
-    setItemToDelete(sub);
+    itemToDelete.current = sub;
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteMutation.mutateAsync({ id: itemToDelete.substitution.id });
+    if (itemToDelete.current) {
+      deleteMutation.mutateAsync({ id: itemToDelete.current.substitution.id });
     }
   };
 
@@ -277,193 +240,29 @@ function SubstitutionsPage() {
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('date')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('substitution.date')}
-                    <SortIcon
-                      column="date"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('replacedTeacher')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('substitution.missingTeacher')}
-                    <SortIcon
-                      column="replacedTeacher"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('teacher')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('substitution.substituteTeacher')}
-                    <SortIcon
-                      column="teacher"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('lessons')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('substitution.affectedLessons')}
-                    <SortIcon
-                      column="lessons"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('cohorts')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('substitution.cohorts')}
-                    <SortIcon
-                      column="cohorts"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                {hasWritePermission && (
-                  <TableHead>{t('substitution.actions')}</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSubstitutions.map((sub) => (
-                <TableRow key={sub.substitution.id}>
-                  <TableCell className="font-medium">
-                    {formatLocalizedDate(sub.substitution.date, i18n.language)}
-                  </TableCell>
-                  <TableCell className="truncate">
-                    {(() => {
-                      const replacedTeachers = Array.from(
-                        new Set(
-                          sub.lessons
-                            .filter((l) => l !== null && l !== undefined)
-                            .flatMap((l) =>
-                              l.teachers.map((teacher) => teacher.name)
-                            )
-                        )
-                      );
-                      return replacedTeachers.length > 0
-                        ? replacedTeachers.join(', ')
-                        : '—';
-                    })()}
-                  </TableCell>
-                  <TableCell className="truncate">
-                    {sub.teacher ? (
-                      `${sub.teacher.firstName} ${sub.teacher.lastName}`
-                    ) : (
-                      <Badge variant="destructive">
-                        {t('substitution.cancelled')}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
-                      {sub.lessons.length > 0
-                        ? sub.lessons
-                            .filter((l) => l !== null && l !== undefined)
-                            .map((l) => (
-                              <Badge key={l.id} variant="secondary">
-                                {l.subject?.short ?? '?'}
-                                {', '}
-                                {l.period?.period ?? '?'}
-                                {'. '}
-                                {t('substitution.period')}
-                              </Badge>
-                            ))
-                        : t('substitution.noLessons')}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
-                      {(() => {
-                        const cohorts = Array.from(
-                          new Set(
-                            sub.lessons
-                              .filter((l) => l !== null && l !== undefined)
-                              .flatMap((l) => l.cohorts)
-                          )
-                        );
-
-                        return cohorts.length > 0
-                          ? cohorts.map((cohort) => (
-                              <Badge key={cohort} variant="secondary">
-                                {cohort}
-                              </Badge>
-                            ))
-                          : t('substitution.noCohorts');
-                      })()}
-                    </div>
-                  </TableCell>
-                  {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedItem(sub);
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(sub)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {!(filteredSubstitutions.length || hasError) && (
-                <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 6 : 5}
-                  >
-                    {t('substitution.noSubstitutions')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <SubstitutionsTable
+          hasError={hasError}
+          hasWritePermission={hasWritePermission}
+          isDeleting={deleteMutation.isPending}
+          language={i18n.language}
+          onDelete={handleDelete}
+          onEdit={(sub) => {
+            setSelectedItem(sub);
+            setDialogOpen(true);
+          }}
+          onSort={handleSort}
+          rows={filteredSubstitutions}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+        />
       )}
 
       {hasWritePermission && dialogOpen && (
         <SubstitutionDialog
           item={selectedItem}
+          // Remounting re-seeds the form's defaultValues, replacing the
+          // reset-on-open effect that used to live in the dialog.
+          key={`${dialogOpen ? 'open' : 'closed'}:${selectedItem?.substitution.id ?? 'new'}`}
           manual={manualMode}
           onManualChange={setManualMode}
           onOpenChange={(open) => {
@@ -478,49 +277,236 @@ function SubstitutionsPage() {
       )}
 
       {hasWritePermission && (
-        <Dialog
+        <DeleteConfirmDialog
+          description={t('substitution.deleteDescription')}
+          onCancel={() => setDeleteDialogOpen(false)}
+          onConfirm={confirmDelete}
           onOpenChange={(open) => {
             setDeleteDialogOpen(open);
             if (!open) {
-              setItemToDelete(null);
+              itemToDelete.current = null;
             }
           }}
           open={deleteDialogOpen}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('substitution.deleteConfirm')}</DialogTitle>
-              <DialogDescription>
-                {t('substitution.deleteDescription')}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                onClick={() => setDeleteDialogOpen(false)}
-                variant="outline"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                disabled={deleteMutation.isPending}
-                onClick={confirmDelete}
-                variant="destructive"
-              >
-                {deleteMutation.isPending
-                  ? t('common.deleting')
-                  : t('common.delete')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          pending={deleteMutation.isPending}
+          title={t('substitution.deleteConfirm')}
+        />
       )}
+    </div>
+  );
+}
+
+type SubstitutionSortColumn =
+  | 'date'
+  | 'teacher'
+  | 'lessons'
+  | 'cohorts'
+  | 'replacedTeacher';
+
+type SubstitutionsTableProps = {
+  hasError: boolean;
+  hasWritePermission: boolean;
+  isDeleting: boolean;
+  language: string;
+  onDelete: (sub: SubstitutionItem) => void;
+  onEdit: (sub: SubstitutionItem) => void;
+  onSort: (column: SubstitutionSortColumn) => void;
+  rows: SubstitutionItem[];
+  sortColumn: SubstitutionSortColumn | null;
+  sortDirection: SortDirection | null;
+};
+
+/** The substitutions table: sortable headers, affected lessons and cohorts. */
+function SubstitutionsTable({
+  hasError,
+  hasWritePermission,
+  isDeleting,
+  language,
+  onDelete,
+  onEdit,
+  onSort,
+  rows,
+  sortColumn,
+  sortDirection,
+}: SubstitutionsTableProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="w-full overflow-x-auto rounded-md border">
+      <Table className="w-full min-w-3xl">
+        <TableHeader>
+          <TableRow>
+            <TableHead
+              className="cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('date')}
+            >
+              <div className="flex items-center gap-2">
+                {t('substitution.date')}
+                <SortIcon
+                  column="date"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('replacedTeacher')}
+            >
+              <div className="flex items-center gap-2">
+                {t('substitution.missingTeacher')}
+                <SortIcon
+                  column="replacedTeacher"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('teacher')}
+            >
+              <div className="flex items-center gap-2">
+                {t('substitution.substituteTeacher')}
+                <SortIcon
+                  column="teacher"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('lessons')}
+            >
+              <div className="flex items-center gap-2">
+                {t('substitution.affectedLessons')}
+                <SortIcon
+                  column="lessons"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('cohorts')}
+            >
+              <div className="flex items-center gap-2">
+                {t('substitution.cohorts')}
+                <SortIcon
+                  column="cohorts"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            {hasWritePermission && (
+              <TableHead>{t('substitution.actions')}</TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((sub) => (
+            <TableRow key={sub.substitution.id}>
+              <TableCell className="font-medium">
+                {formatLocalizedDate(sub.substitution.date, language)}
+              </TableCell>
+              <TableCell className="truncate">
+                {(() => {
+                  const replacedTeachers = Array.from(
+                    new Set(
+                      sub.lessons
+                        .filter((l) => l !== null && l !== undefined)
+                        .flatMap((l) =>
+                          l.teachers.map((teacher) => teacher.name)
+                        )
+                    )
+                  );
+                  return replacedTeachers.length > 0
+                    ? replacedTeachers.join(', ')
+                    : '—';
+                })()}
+              </TableCell>
+              <TableCell className="truncate">
+                {sub.teacher ? (
+                  `${sub.teacher.firstName} ${sub.teacher.lastName}`
+                ) : (
+                  <Badge variant="destructive">
+                    {t('substitution.cancelled')}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
+                  {sub.lessons.length > 0
+                    ? sub.lessons
+                        .filter((l) => l !== null && l !== undefined)
+                        .map((l) => (
+                          <Badge key={l.id} variant="secondary">
+                            {l.subject?.short ?? '?'}
+                            {', '}
+                            {l.period?.period ?? '?'}
+                            {'. '}
+                            {t('substitution.period')}
+                          </Badge>
+                        ))
+                    : t('substitution.noLessons')}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="grid grid-cols-1 items-center justify-center gap-2 xl:grid-cols-2 2xl:grid-cols-3">
+                  {(() => {
+                    const cohorts = Array.from(
+                      new Set(
+                        sub.lessons
+                          .filter((l) => l !== null && l !== undefined)
+                          .flatMap((l) => l.cohorts.map((c) => c.name))
+                      )
+                    );
+
+                    return cohorts.length > 0
+                      ? cohorts.map((cohort) => (
+                          <Badge key={cohort} variant="secondary">
+                            {cohort}
+                          </Badge>
+                        ))
+                      : t('substitution.noCohorts');
+                  })()}
+                </div>
+              </TableCell>
+              {hasWritePermission && (
+                <TableCell>
+                  <RowActions
+                    deleteLabel={t('substitution.deleteConfirm')}
+                    editLabel={t('substitution.edit')}
+                    isDeleting={isDeleting}
+                    onDelete={() => onDelete(sub)}
+                    onEdit={() => onEdit(sub)}
+                  />
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {!(rows.length || hasError) && (
+            <TableRow>
+              <TableCell
+                className="text-muted-foreground"
+                colSpan={hasWritePermission ? 6 : 5}
+              >
+                {t('substitution.noSubstitutions')}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }
 
 function getSortValue(
   a: SubstitutionItem,
-  sortColumn: 'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher'
+  sortColumn: SubstitutionSortColumn
 ): string {
   switch (sortColumn) {
     case 'date':
@@ -537,7 +523,7 @@ function getSortValue(
         new Set(
           a.lessons
             .filter((l) => l !== null && l !== undefined)
-            .flatMap((l) => l.cohorts)
+            .flatMap((l) => l.cohorts.map((cohort) => cohort.name))
         )
       ).join(' ');
     case 'replacedTeacher':

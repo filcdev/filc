@@ -59,23 +59,18 @@ type MenuCategory = {
   items: MenuItem[];
 };
 
-export function AdminSidebar() {
+/**
+ * The sidebar menu tree: the static sections plus the two that depend on the
+ * environment — wifi, hidden while the subsystem is off, and the dev tools.
+ * It lives in a hook because the tree is data, not markup, and it keeps the
+ * sidebar's own body down to how a category renders.
+ */
+function useAdminMenuCategories(): MenuCategory[] {
   const { t } = useTranslation();
-  const { data: session } = useSession();
-  const navigate = useNavigate();
-  const { isMobile, setOpenMobile } = useSidebar();
-  const userPermissions = session?.user?.permissions;
   const wifiStatus = useWifiStatus();
   const wifiEnabled = wifiStatus.data?.enabled === true;
 
-  const handleNavigate = (url: string) => {
-    navigate({ to: url });
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-  };
-
-  const categories: MenuCategory[] = useMemo(
+  return useMemo(
     () => [
       {
         items: [
@@ -312,6 +307,21 @@ export function AdminSidebar() {
     ],
     [t, wifiEnabled]
   );
+}
+
+export function AdminSidebar() {
+  const { data: session } = useSession();
+  const navigate = useNavigate();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const userPermissions = session?.user?.permissions;
+  const categories = useAdminMenuCategories();
+
+  const handleNavigate = (url: string) => {
+    navigate({ to: url });
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const visibleCategories = useMemo(
     () =>

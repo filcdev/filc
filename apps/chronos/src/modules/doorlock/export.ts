@@ -1,12 +1,13 @@
 import type { ExportQueryInput } from '@filcdev/api/domains/doorlock/export';
 import { permissions } from '@filcdev/api/permissions';
 import type { SQL } from 'drizzle-orm';
-import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
+import { desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
 import { auditLog, card, device } from '#modules/doorlock/schema';
 import { base } from '#orpc';
+import { andAll } from '#utils/drizzle';
 
 const appendBaseFilters = (
   filters: SQL<unknown>[],
@@ -60,15 +61,7 @@ const buildWhereClause = (
     filters.push(filter);
   }
 
-  if (!filters.length) {
-    return;
-  }
-
-  let combined: SQL<unknown> | undefined;
-  for (const clause of filters) {
-    combined = combined ? and(combined, clause) : clause;
-  }
-  return combined;
+  return andAll(filters);
 };
 
 const CSV_SPECIAL_CHARS = /[",\n\r]/;

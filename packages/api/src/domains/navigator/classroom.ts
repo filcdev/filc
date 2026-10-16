@@ -50,13 +50,3 @@ export const updateClassroomSchema = createClassroomSchema.partial();
 export type Classroom = z.infer<typeof classroomSchema>;
 export type CreateClassroomInput = z.infer<typeof createClassroomSchema>;
 export type UpdateClassroomInput = z.infer<typeof updateClassroomSchema>;
-
-/** Payload of `GET /navigator/classrooms`. */
-export const classroomsResponseSchema = z.object({
-  classrooms: z.array(classroomRowSchema),
-});
-
-/** Payload of `POST /navigator/classrooms`, `PUT` and `DELETE /navigator/classrooms/{id}`. */
-export const classroomResponseSchema = z.object({
-  classroom: classroomRowSchema,
-});

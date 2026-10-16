@@ -23,13 +23,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog';
 import { RenameApiKeyDialog } from '@/components/api-keys/rename-api-key-dialog';
+import { useConfirm } from '@/components/confirm-provider';
 import {
   type UserApiKey,
   useApiKeys,
   useDeleteApiKey,
   useUpdateApiKey,
 } from '@/hooks/api-keys';
-import { confirmDestructiveAction } from '@/utils/confirm';
 import { formatLocalizedDate } from '@/utils/date-locale';
 
 /** Nullable timestamps collapse to a translated placeholder. */
@@ -148,6 +148,7 @@ function ApiKeyRow({
  */
 export function ApiKeysCard() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [renaming, setRenaming] = useState<UserApiKey | null>(null);
@@ -163,14 +164,15 @@ export function ApiKeysCard() {
 
   const apiKeys = apiKeysQuery.data?.apiKeys ?? [];
 
-  const handleDelete = (apiKey: UserApiKey) => {
+  const handleDelete = async (apiKey: UserApiKey) => {
     const label = apiKey.name ?? t('apiKeys.unnamed');
-    const confirmed = confirmDestructiveAction(
-      t('apiKeys.deleteConfirm', { name: label })
-    );
-    if (confirmed) {
-      deleteApiKey.mutate({ keyId: apiKey.id });
+    const confirmed = await confirm({
+      title: t('apiKeys.deleteConfirm', { name: label }),
+    });
+    if (!confirmed) {
+      return;
     }
+    deleteApiKey.mutate({ keyId: apiKey.id });
   };
 
   return (

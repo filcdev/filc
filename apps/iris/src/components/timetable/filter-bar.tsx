@@ -1,33 +1,13 @@
 import { Button } from '@filcdev/ui/components/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@filcdev/ui/components/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@filcdev/ui/components/popover';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@filcdev/ui/components/toggle-group';
-import { cn } from '@filcdev/ui/lib/utils';
-import {
-  Building2,
-  CheckIcon,
-  ChevronsUpDownIcon,
-  GraduationCap,
-  Printer,
-  UserRound,
-} from 'lucide-react';
+import { Building2, GraduationCap, Printer, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FilterCombobox } from './filter-combobox';
 import type { WeekFilter } from './helpers';
 import { TimetableSelector } from './timetable-selector';
 import type {
@@ -197,8 +177,6 @@ export function FilterBar({
   onWeekFilterChange: (value: WeekFilter) => void;
 }) {
   const { t } = useTranslation();
-  const filterSelectId = `filter-${activeFilter}`;
-  const comboboxContentId = `${filterSelectId}-content`;
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {
@@ -213,9 +191,6 @@ export function FilterBar({
     selectedByTeacher,
     selectedByRoom
   );
-  const selectedLabel =
-    filterOptions.find((option) => option.value === selectedValue)?.label ??
-    getPlaceholder(activeFilter, t);
 
   const handleSelection = (value: string) => {
     setComboboxOpen(false);
@@ -233,53 +208,18 @@ export function FilterBar({
     }
 
     return (
-      <Popover onOpenChange={setComboboxOpen} open={comboboxOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              aria-controls={comboboxContentId}
-              aria-expanded={comboboxOpen}
-              className="h-9 w-full min-w-0 justify-between font-medium text-sm"
-              id={filterSelectId}
-              role="combobox"
-              variant="outline"
-            >
-              <span className="truncate">{selectedLabel}</span>
-              <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent
-          className="w-(--radix-popper-anchor-width) p-0"
-          id={comboboxContentId}
-        >
-          <Command>
-            <CommandInput placeholder={getSearchPlaceholder(activeFilter, t)} />
-            <CommandList>
-              <CommandEmpty>{getEmptyMessage(activeFilter, t)}</CommandEmpty>
-              <CommandGroup>
-                {filterOptions.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    onSelect={() => handleSelection(option.value)}
-                    value={option.label}
-                  >
-                    <CheckIcon
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        selectedValue === option.value
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <FilterCombobox
+        className="w-full min-w-0 font-medium text-sm"
+        emptyMessage={getEmptyMessage(activeFilter, t)}
+        id={`filter-${activeFilter}`}
+        onOpenChange={setComboboxOpen}
+        onSelect={handleSelection}
+        open={comboboxOpen}
+        options={filterOptions}
+        placeholder={getPlaceholder(activeFilter, t)}
+        searchPlaceholder={getSearchPlaceholder(activeFilter, t)}
+        selectedValue={selectedValue ?? ''}
+      />
     );
   };
 

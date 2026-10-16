@@ -2,18 +2,13 @@ import { type ApiKey, type ApiKeyRow, authClient } from '@filcdev/auth/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import type { MutationCallbacks } from './types';
 
 /** One API key as the list endpoint returns it — never the raw secret. */
 export type UserApiKey = ApiKeyRow;
 
-/** Options accepted by every mutation hook: react to a successful save. */
-export type ApiKeyMutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
-
 /** `create` also hands back the raw secret, so it takes one more callback. */
-export type CreateApiKeyCallbacks = ApiKeyMutationCallbacks & {
+export type CreateApiKeyCallbacks = MutationCallbacks & {
   /** Receives the created key, whose `key` field is the raw secret. */
   onCreated?: (apiKey: ApiKey) => void;
 };
@@ -82,7 +77,7 @@ export function useCreateApiKey({
 }
 
 /** Rename a key or flip its `enabled` flag. */
-export function useUpdateApiKey({ onSaved }: ApiKeyMutationCallbacks = {}) {
+export function useUpdateApiKey({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation({
@@ -106,7 +101,7 @@ export function useUpdateApiKey({ onSaved }: ApiKeyMutationCallbacks = {}) {
 }
 
 /** Revoke a key: the secret becomes unusable immediately and cannot be restored. */
-export function useDeleteApiKey({ onSaved }: ApiKeyMutationCallbacks = {}) {
+export function useDeleteApiKey({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation({

@@ -12,7 +12,7 @@ const logger = getLogger(['chronos', 'notifications', 'initialize']);
  * live with the module that raises it; this only wires the handlers the
  * modules declared into the engine.
  */
-export function initializeNotificationEngine(): void {
+export async function initializeNotificationEngine(): Promise<void> {
   logger.info('Initializing notification engine');
 
   let count = 0;
@@ -23,7 +23,7 @@ export function initializeNotificationEngine(): void {
     }
   }
 
-  initializeFcm();
+  await initializeFcm();
 
   logger.info(`Notification engine initialized with ${count} handlers`);
 }

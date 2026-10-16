@@ -37,13 +37,3 @@ export const updateBuildingSchema = createBuildingSchema.partial();
 export type Building = z.infer<typeof buildingSchema>;
 export type CreateBuildingInput = z.infer<typeof createBuildingSchema>;
 export type UpdateBuildingInput = z.infer<typeof updateBuildingSchema>;
-
-/** Payload of `GET /navigator/buildings`. */
-export const buildingsResponseSchema = z.object({
-  buildings: z.array(buildingRowSchema),
-});
-
-/** Payload of `POST /navigator/buildings`, `PUT` and `DELETE /navigator/buildings/{id}`. */
-export const buildingResponseSchema = z.object({
-  building: buildingRowSchema,
-});

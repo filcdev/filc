@@ -5,18 +5,18 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
-import { Pencil, Plus, RefreshCw, Search, Trash } from 'lucide-react';
+import { Plus, RefreshCw, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TableHeaderRow } from '@/components/admin/table-header-row';
+import { useConfirm } from '@/components/confirm-provider';
 import { PermissionGuard } from '@/components/util/permission-guard';
+import { WifiRowActions } from '@/components/wifi/row-actions';
 import { WifiNasDialog } from '@/components/wifi/wifi-dialogs';
 import { useDeleteWifiNas, useWifiNas, type WifiNas } from '@/hooks/wifi-admin';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 export const Route = createFileRoute('/_private/admin/wifi/nas')({
   component: () => (
@@ -28,6 +28,7 @@ export const Route = createFileRoute('/_private/admin/wifi/nas')({
 
 function WifiNasPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNas, setEditingNas] = useState<WifiNas | undefined>();
@@ -35,7 +36,7 @@ function WifiNasPage() {
   const query = useWifiNas();
   const deleteNas = useDeleteWifiNas();
 
-  const nasList = query.data?.nas ?? [];
+  const nasList = query.data?.items ?? [];
   const needle = search.toLowerCase();
   const filteredNas = nasList.filter(
     (nas) =>
@@ -58,6 +59,7 @@ function WifiNasPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            aria-label={t('wifiAdminNas.refresh')}
             disabled={query.isFetching}
             onClick={() => query.refetch()}
             size="icon"
@@ -94,16 +96,18 @@ function WifiNasPage() {
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('wifiAdminNas.ipAddress')}</TableHead>
-              <TableHead>{t('wifiAdminNas.macAddress')}</TableHead>
-              <TableHead>{t('wifiAdminNas.comment')}</TableHead>
-              <TableHead className="w-[100px] text-right">
-                {t('wifiAdminNas.actions')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableHeaderRow
+            columns={[
+              { key: 'ipAddress', label: t('wifiAdminNas.ipAddress') },
+              { key: 'macAddress', label: t('wifiAdminNas.macAddress') },
+              { key: 'comment', label: t('wifiAdminNas.comment') },
+              {
+                className: 'w-[100px] text-right',
+                key: 'actions',
+                label: t('wifiAdminNas.actions'),
+              },
+            ]}
+          />
           <TableBody>
             {query.isLoading && (
               <TableRow>
@@ -133,34 +137,20 @@ function WifiNasPage() {
                   </TableCell>
                   <TableCell>{nas.comment ?? '-'}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        onClick={() => {
-                          setEditingNas(nas);
-                          setDialogOpen(true);
-                        }}
-                        size="icon"
-                        variant="ghost"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        className="text-destructive"
-                        onClick={() => {
-                          if (
-                            confirmDestructiveAction(
-                              t('wifiAdminNas.deleteConfirmTitle')
-                            )
-                          ) {
-                            deleteNas.mutate({ id: nas.id });
-                          }
-                        }}
-                        size="icon"
-                        variant="ghost"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <WifiRowActions
+                      onDelete={async () => {
+                        const confirmed = await confirm({
+                          title: t('wifiAdminNas.deleteConfirmTitle'),
+                        });
+                        if (confirmed) {
+                          deleteNas.mutate({ id: nas.id });
+                        }
+                      }}
+                      onEdit={() => {
+                        setEditingNas(nas);
+                        setDialogOpen(true);
+                      }}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

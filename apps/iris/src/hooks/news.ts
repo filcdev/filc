@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { sortCohorts } from '@/utils/cohort';
 import { type api, orpc } from '@/utils/orpc';
+import type { MutationCallbacks } from './types';
 
 type AnnouncementsResponse = Awaited<
   ReturnType<typeof api.news.announcements.list>
 >;
 
-export type AnnouncementItem = AnnouncementsResponse['data'][number];
+export type AnnouncementItem = AnnouncementsResponse['items'][number];
 
 export type AnnouncementPayload = Parameters<
   typeof api.news.announcements.create
@@ -18,21 +19,15 @@ type SystemMessagesResponse = Awaited<
   ReturnType<typeof api.news.systemMessages.list>
 >;
 
-export type SystemMessageItem = SystemMessagesResponse['data'][number];
+export type SystemMessageItem = SystemMessagesResponse['items'][number];
 
 export type SystemMessagePayload = Parameters<
   typeof api.news.systemMessages.create
 >[0];
 
-type CohortsResponse = Awaited<ReturnType<typeof api.cohort.cohort>>;
+type CohortsResponse = Awaited<ReturnType<typeof api.cohort.cohort>>['items'];
 
 export type Cohort = CohortsResponse[number];
-
-/** Options accepted by every mutation hook: react to a successful save. */
-type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
 
 /** Full announcement list including expired entries. */
 export function useAnnouncements() {
@@ -45,7 +40,7 @@ export function useAnnouncements() {
         includeKioskOnly: 'true',
       },
     }),
-    select: (payload) => payload.data,
+    select: (payload) => payload.items,
   });
 }
 
@@ -56,7 +51,7 @@ export function useAnnouncementsPanel(enabled: boolean) {
       input: { includeAll: 'true' },
     }),
     enabled,
-    select: (payload) => payload.data,
+    select: (payload) => payload.items,
   });
 }
 
@@ -65,7 +60,7 @@ export function useAdminSystemMessages(enabled: boolean) {
   return useQuery({
     ...orpc.news.systemMessages.list.queryOptions({ input: {} }),
     enabled,
-    select: (payload) => payload.data,
+    select: (payload) => payload.items,
   });
 }
 
@@ -74,7 +69,7 @@ export function useCohorts(enabled: boolean) {
   return useQuery({
     ...orpc.cohort.cohort.queryOptions(),
     enabled,
-    select: sortCohorts,
+    select: (data) => sortCohorts(data.items),
   });
 }
 

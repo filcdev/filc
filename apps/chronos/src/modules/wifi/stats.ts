@@ -39,13 +39,15 @@ export const wifiStats = base.wifi.stats.overview
       .orderBy(day);
 
     return {
-      activeDevices: Number(activeDevices[0]?.count ?? 0),
-      authSeries: rows.map((row) => ({
-        accepted: Number(row.accepted),
-        date: row.date,
-        rejected: Number(row.rejected),
-      })),
-      totalDevices: Number(devices[0]?.count ?? 0),
-      totalUsers: Number(users[0]?.count ?? 0),
+      stats: {
+        activeDevices: Number(activeDevices[0]?.count ?? 0),
+        authSeries: rows.map((row) => ({
+          accepted: Number(row.accepted),
+          date: row.date,
+          rejected: Number(row.rejected),
+        })),
+        totalDevices: Number(devices[0]?.count ?? 0),
+        totalUsers: Number(users[0]?.count ?? 0),
+      },
     };
   });

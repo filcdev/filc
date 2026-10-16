@@ -1,3 +1,4 @@
+import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -14,8 +15,8 @@ import {
 } from '#modules/timetable/schema';
 import { getActiveTimetableId } from '#modules/timetable/utils/active';
 import {
-  type EnrichedLesson,
   enrichLessons,
+  loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
 import { base } from '#orpc';
 import { badRequest, notFound } from '#utils/http';
@@ -188,7 +189,7 @@ type MovedLessonRow = {
 // is retired, so this must not be scoped to the active timetable.
 async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   const allLessonIds = Array.from(new Set(rows.flatMap((r) => r.lessons)));
-  const enriched = await enrichLessons(allLessonIds);
+  const enriched = await enrichLessons(await loadLessonsByIds(allLessonIds));
   const lessonMap = new Map(enriched.map((l) => [l.id, l]));
 
   return rows.map((r) => ({
@@ -196,7 +197,7 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
     dayDefinition: r.dayDefinition,
     lessons: r.lessons
       .map((id) => lessonMap.get(id))
-      .filter((l): l is EnrichedLesson => l !== undefined),
+      .filter((l): l is Lesson => l !== undefined),
     movedLesson: r.movedLesson,
     period: r.period,
   }));
@@ -225,7 +226,8 @@ export const getAllMovedLessons = base.timetable.movedLessons.list.handler(
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return await attachEnrichedLessons(movedLessons);
+    const items = await attachEnrichedLessons(movedLessons);
+    return { items, total: items.length };
   }
 );
 
@@ -256,7 +258,8 @@ export const getRelevantMovedLessons =
       .where(gte(movedLesson.date, today))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return await attachEnrichedLessons(movedLessons);
+    const items = await attachEnrichedLessons(movedLessons);
+    return { items, total: items.length };
   });
 
 export const getMovedLessonsForCohort =
@@ -287,7 +290,8 @@ export const getMovedLessonsForCohort =
       .where(eq(lessonCohortMTM.cohortId, cohortId))
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return await attachEnrichedLessons(movedLessons);
+    const items = await attachEnrichedLessons(movedLessons);
+    return { items, total: items.length };
   });
 
 export const getRelevantMovedLessonsForCohort =
@@ -326,7 +330,8 @@ export const getRelevantMovedLessonsForCohort =
       )
       .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
 
-    return await attachEnrichedLessons(movedLessons);
+    const items = await attachEnrichedLessons(movedLessons);
+    return { items, total: items.length };
   });
 
 export const createMovedLesson = base.timetable.movedLessons.create

@@ -1,4 +1,4 @@
-import { resolveAudienceForDoorlock } from '#utils/notifications/engine';
+import { resolveAudienceForUser } from '#utils/notifications/engine';
 import { isHungarianLocale } from '#utils/notifications/locale';
 import type { NotificationHandler } from '#utils/notifications/types';
 
@@ -29,7 +29,7 @@ export const doorlockNotifications: readonly NotificationHandler[] = [
           : 'Card Used',
       };
     },
-    getAudience: (payload) => resolveAudienceForDoorlock(payload),
+    getAudience: (payload) => resolveAudienceForUser(payload),
     getDelay: () => 0,
     preferenceKey: 'doorlockCardUsed',
     type: 'doorlock_card_used',

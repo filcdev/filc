@@ -15,12 +15,12 @@ export type BugReportStatus = (typeof bugReportStatuses)[number];
 type BugReportsListResponse = Awaited<ReturnType<typeof api.bugReport.list>>;
 
 export type BugReportItem = Omit<
-  BugReportsListResponse['reports'][number],
+  BugReportsListResponse['items'][number],
   'status'
 > & { status: BugReportStatus };
 
-type BugReportsList = Omit<BugReportsListResponse, 'reports'> & {
-  reports: BugReportItem[];
+type BugReportsList = Omit<BugReportsListResponse, 'items'> & {
+  items: BugReportItem[];
 };
 
 export type BugReportFilters = {
@@ -53,7 +53,7 @@ export function useBugReports(filters: BugReportFilters) {
     // shows the four statuses this hook's consumers already knew.
     select: (payload): BugReportsList => ({
       ...payload,
-      reports: payload.reports as BugReportItem[],
+      items: payload.items as BugReportItem[],
     }),
   });
 }

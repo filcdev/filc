@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { timestamps } from '#database/helpers';
@@ -59,14 +60,18 @@ export const notification = pgTable(
   ]
 );
 
-export const fcmToken = pgTable('fcm_token', {
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  deviceInfo: text('device_info'),
-  id: uuid('id').primaryKey().defaultRandom(),
-  token: text('token').notNull(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-});
+export const fcmToken = pgTable(
+  'fcm_token',
+  {
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    deviceInfo: text('device_info'),
+    id: uuid('id').primaryKey().defaultRandom(),
+    token: text('token').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+  },
+  (t) => [uniqueIndex('fcm_token_user_id_token_unique').on(t.userId, t.token)]
+);
 
 export const notificationsSchema = { fcmToken, notification, userPreferences };

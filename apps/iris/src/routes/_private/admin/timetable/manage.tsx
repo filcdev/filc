@@ -14,8 +14,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
@@ -30,9 +28,10 @@ import {
   RefreshCw,
   Trash,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
+import { TableHeaderRow } from '@/components/admin/table-header-row';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
 import { TimetableImportDialog } from '@/components/admin/timetable-import-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -189,16 +188,13 @@ function TimetableManagePage() {
 
   const data = timetablesQuery.data ?? [];
 
-  const stats = useMemo(
-    () => ({
-      current: data.filter((item) => getTimetableStatus(item) === 'current')
-        .length,
-      total: data.length,
-      upcoming: data.filter((item) => getTimetableStatus(item) === 'upcoming')
-        .length,
-    }),
-    [data]
-  );
+  const stats = {
+    current: data.filter((item) => getTimetableStatus(item) === 'current')
+      .length,
+    total: data.length,
+    upcoming: data.filter((item) => getTimetableStatus(item) === 'upcoming')
+      .length,
+  };
 
   return (
     <div className="space-y-6">
@@ -261,15 +257,18 @@ function TimetableManagePage() {
       ) : (
         <div className="w-full overflow-x-auto rounded-md border">
           <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('timetable.nameLabel')}</TableHead>
-                <TableHead>{t('timetable.validFromLabel')}</TableHead>
-                <TableHead>{t('timetable.validToLabel')}</TableHead>
-                <TableHead>{t('timetable.statusLabel')}</TableHead>
-                <TableHead>{t('substitution.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
+            <TableHeaderRow
+              columns={[
+                { key: 'name', label: t('timetable.nameLabel') },
+                {
+                  key: 'validFrom',
+                  label: t('timetable.validFromLabel'),
+                },
+                { key: 'validTo', label: t('timetable.validToLabel') },
+                { key: 'status', label: t('timetable.statusLabel') },
+                { key: 'actions', label: t('substitution.actions') },
+              ]}
+            />
             <TableBody>
               {data.map((item) => {
                 const status = getTimetableStatus(item);
@@ -324,6 +323,7 @@ function TimetableManagePage() {
 
       <TimetableEditDialog
         item={selectedItem}
+        key={`${editDialogOpen ? 'open' : 'closed'}:${selectedItem?.id ?? 'new'}`}
         onOpenChange={setEditDialogOpen}
         open={editDialogOpen}
       />

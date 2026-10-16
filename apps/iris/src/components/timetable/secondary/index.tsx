@@ -199,7 +199,7 @@ function SlotCell({
   return (
     <div className={cn(base, 'flex flex-col')} style={style}>
       {lessons.map((lesson, idx) => (
-        <Fragment key={lesson.id ?? idx}>
+        <Fragment key={lesson.id}>
           {idx > 0 && (
             <div className="shrink-0 border-border border-t border-dashed" />
           )}

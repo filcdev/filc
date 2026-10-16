@@ -25,7 +25,7 @@ export type TeacherListItem = z.infer<typeof teacherListItemSchema>;
  */
 export const publicTeacherSchema = z.object({
   firstName: z.string(),
-  id: z.string(),
+  id: z.uuid(),
   lastName: z.string(),
   short: z.string(),
 });

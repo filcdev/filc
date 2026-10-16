@@ -16,13 +16,11 @@ export const bugReportContract = {
       filcRoute({
         auth: true,
         description: 'Create a new bug report',
-        group: 'BugReport',
         method: 'POST',
         operationId: 'postBugReport',
         path: '/bug-report',
         successStatus: 201,
         tags: ['Bug Reports'],
-        type: '@unit BugReport',
       })
     )
     .input(createBugReportSchema)
@@ -32,13 +30,10 @@ export const bugReportContract = {
       filcRoute({
         auth: true,
         description: 'Delete a bug report',
-        group: 'BugReport',
         method: 'DELETE',
         operationId: 'deleteBugReportById',
         path: '/bug-report/{id}',
-        successStatus: 200,
         tags: ['Bug Reports'],
-        type: '@nodata',
       })
     )
     .input(bugReportIdParamsSchema)
@@ -48,13 +43,10 @@ export const bugReportContract = {
       filcRoute({
         auth: true,
         description: 'List bug reports with optional filters and paging',
-        group: 'BugReport',
         method: 'GET',
         operationId: 'getBugReport',
         path: '/bug-report',
-        successStatus: 200,
         tags: ['Bug Reports'],
-        type: '@unit BugReportListResponse @field(.reports, List<BugReport>)',
       })
     )
     .input(bugReportListQuerySchema)
@@ -64,13 +56,10 @@ export const bugReportContract = {
       filcRoute({
         auth: true,
         description: 'Update a bug report status',
-        group: 'BugReport',
         method: 'PATCH',
         operationId: 'patchBugReportByIdStatus',
         path: '/bug-report/{id}/status',
-        successStatus: 200,
         tags: ['Bug Reports'],
-        type: '@unit BugReport',
       })
     )
     .input(updateBugReportStatusInputSchema)

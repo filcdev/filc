@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { ExportLogsButton } from '@/components/doorlock/export-logs';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -59,6 +60,7 @@ import {
   useDoorlockLogs,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
 import { orpc, prefetch } from '@/utils/orpc';
 
 type EventFilter = 'all' | 'virtual' | 'physical';
@@ -75,29 +77,31 @@ const isVirtualLog = (log: DoorlockLogEntry) =>
   Boolean(log.buttonPressed && log.cardId);
 
 type ButtonMeta = {
-  caption?: string;
-  label: string;
+  // A key, not a label: the same value sorts the column and renders the badge.
+  labelKey:
+    | 'doorlockLogs.cardSwipe'
+    | 'doorlockLogs.physicalButton'
+    | 'doorlockLogs.virtualCard';
   variant: 'default' | 'outline' | 'secondary';
 };
 
 const buildButtonMeta = (log: DoorlockLogEntry): ButtonMeta => {
   if (isVirtualLog(log)) {
     return {
-      caption: 'Triggered via Chronos app',
-      label: 'Virtual card',
+      labelKey: 'doorlockLogs.virtualCard',
       variant: 'secondary',
     };
   }
 
   if (log.buttonPressed) {
     return {
-      label: 'Physical button',
+      labelKey: 'doorlockLogs.physicalButton',
       variant: 'outline',
     };
   }
 
   return {
-    label: 'Card swipe',
+    labelKey: 'doorlockLogs.cardSwipe',
     variant: 'default',
   };
 };
@@ -130,9 +134,7 @@ type FilterOption = {
 
 function useLogStats(
   logs: DoorlockLogEntry[] | undefined,
-  eventFilter: EventFilter,
-  sortColumn: LogSortColumn | null,
-  sortDirection: 'asc' | 'desc' | null
+  eventFilter: EventFilter
 ) {
   const stats = useMemo(() => {
     const data = logs ?? [];
@@ -152,44 +154,29 @@ function useLogStats(
     };
   }, [logs]);
 
-  const filteredLogs = useMemo(() => {
+  // Only the filter lives here; the ordering is the hook's job.
+  const filtered = useMemo(() => {
     const data = logs ?? [];
-    let filtered =
-      eventFilter === 'all'
-        ? data
-        : data.filter((log) =>
-            eventFilter === 'virtual' ? isVirtualLog(log) : !isVirtualLog(log)
-          );
+    return eventFilter === 'all'
+      ? data
+      : data.filter((log) =>
+          eventFilter === 'virtual' ? isVirtualLog(log) : !isVirtualLog(log)
+        );
+  }, [eventFilter, logs]);
 
-    if (sortColumn && sortDirection) {
-      filtered = [...filtered].sort((a, b) => {
-        const aValue = getLogSortValue(a, sortColumn);
-        const bValue = getLogSortValue(b, sortColumn);
+  const { column, direction, rows, toggle } = useSortable(filtered, {
+    getValue: getLogSortValue,
+  });
 
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-
-        const comparison = String(aValue).localeCompare(String(bValue));
-        return sortDirection === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    return filtered;
-  }, [eventFilter, logs, sortColumn, sortDirection]);
-
-  return { filteredLogs, stats };
+  return { column, direction, rows, stats, toggle };
 }
 
 function LogsPage() {
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const isMobile = useIsMobile();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [sortColumn, setSortColumn] = useState<LogSortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
   const [deviceFilter, setDeviceFilter] = useState<'all' | string>('all');
   const [cardFilter, setCardFilter] = useState<'all' | string>('all');
   const [userFilter, setUserFilter] = useState<'all' | string>('all');
@@ -222,10 +209,10 @@ function LogsPage() {
   );
 
   const devicesQuery = useDoorlockDevices({ enabled: canReadDevices });
-  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
+  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.items;
 
   const cardsQuery = useDoorlockCards({ enabled: canReadCards });
-  const cards: DoorlockCard[] | undefined = cardsQuery.data?.cards;
+  const cards: DoorlockCard[] | undefined = cardsQuery.data?.items;
 
   const logsQuery = useDoorlockLogs({
     accessFilter,
@@ -235,10 +222,10 @@ function LogsPage() {
     search: deferredSearch,
     userFilter,
   });
-  const logs: DoorlockLogEntry[] | undefined = logsQuery.data?.logs;
+  const logs: DoorlockLogEntry[] | undefined = logsQuery.data?.items;
 
   const usersQuery = useCardUsers({ enabled: hasCardWritePermission });
-  const users = usersQuery.data?.users;
+  const users = usersQuery.data?.items;
 
   const cardDialogCard = useMemo(() => {
     if (!pendingCardData) {
@@ -262,16 +249,25 @@ function LogsPage() {
     devices,
     logs?.flatMap((log) =>
       log.device
-        ? [{ id: log.device.id, label: log.device.name ?? 'Device' }]
+        ? [
+            {
+              id: log.device.id,
+              label: log.device.name ?? t('doorlockLogs.device'),
+            },
+          ]
         : []
-    ) ?? []
+    ) ?? [],
+    t('doorlockLogs.unknown')
   );
 
   const cardOptions = useOptions(
     cards,
     logs?.flatMap((log) =>
-      log.card ? [{ id: log.card.id, label: log.card.name ?? 'Card' }] : []
-    ) ?? []
+      log.card
+        ? [{ id: log.card.id, label: log.card.name ?? t('doorlockLogs.card') }]
+        : []
+    ) ?? [],
+    t('doorlockLogs.unknown')
   );
 
   const userOptions = useMemo<FilterOption[]>(() => {
@@ -280,34 +276,17 @@ function LogsPage() {
       if (log.owner?.id) {
         seen.set(
           log.owner.id,
-          log.owner.nickname || log.owner.name || log.owner.email || 'User'
+          log.owner.nickname ||
+            log.owner.name ||
+            log.owner.email ||
+            t('doorlockLogs.user')
         );
       }
     }
     return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
-  }, [logs]);
+  }, [logs, t]);
 
-  const { filteredLogs, stats } = useLogStats(
-    logs,
-    eventFilter,
-    sortColumn,
-    sortDirection
-  );
-
-  const handleSort = (column: LogSortColumn) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-      return;
-    }
-
-    setSortColumn(column);
-    setSortDirection('asc');
-  };
+  const { rows: filteredLogs, stats, ...sort } = useLogStats(logs, eventFilter);
 
   const hasError = logsQuery.isError;
 
@@ -315,19 +294,22 @@ function LogsPage() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
-          helper={`${stats.virtualCount} virtual • ${stats.physicalCount} physical`}
+          helper={t('doorlockLogs.virtualPhysical', {
+            physical: stats.physicalCount,
+            virtual: stats.virtualCount,
+          })}
           icon={<DoorOpen className="text-primary" />}
-          label="Total attempts"
+          label={t('doorlockLogs.totalAttempts')}
           value={stats.total}
         />
         <StatCard
           icon={<Check className="text-primary" />}
-          label="Success rate"
+          label={t('doorlockLogs.successRate')}
           value={`${stats.successRate}%`}
         />
         <StatCard
           icon={<User className="text-primary" />}
-          label="Unique users"
+          label={t('doorlockLogs.uniqueUsers')}
           value={stats.uniqueUsers}
         />
       </div>
@@ -350,7 +332,7 @@ function LogsPage() {
             variant="outline"
           >
             <Filter className="h-4 w-4" />
-            Filters
+            {t('doorlockLogs.filters')}
             <ChevronDown
               className={cn(
                 'h-4 w-4 transition-transform',
@@ -364,47 +346,47 @@ function LogsPage() {
       {(!isMobile || filtersOpen) && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end xl:gap-4">
           <div className="space-y-2">
-            <Label>Search</Label>
+            <Label>{t('doorlockLogs.search')}</Label>
             <Input
               className="w-full"
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search logs..."
+              placeholder={t('doorlockLogs.searchPlaceholder')}
               value={search}
             />
           </div>
           <SelectFilter
-            label="Device"
+            label={t('doorlockLogs.device')}
             onValueChange={setDeviceFilter}
             options={deviceOptions}
             value={deviceFilter}
           />
           <SelectFilter
-            label="Card"
+            label={t('doorlockLogs.card')}
             onValueChange={setCardFilter}
             options={cardOptions}
             value={cardFilter}
           />
           <SelectFilter
-            label="User"
+            label={t('doorlockLogs.user')}
             onValueChange={setUserFilter}
             options={userOptions}
             value={userFilter}
           />
           <SelectFilter
-            label="Access"
+            label={t('doorlockLogs.access')}
             onValueChange={setAccessFilter}
             options={[
-              { id: 'granted', label: 'Access granted' },
-              { id: 'denied', label: 'Access denied' },
+              { id: 'granted', label: t('doorlockLogs.accessGranted') },
+              { id: 'denied', label: t('doorlockLogs.accessDenied') },
             ]}
             value={accessFilter}
           />
           <SelectFilter
-            label="Event"
+            label={t('doorlockLogs.event')}
             onValueChange={setEventFilter}
             options={[
-              { id: 'virtual', label: 'Virtual card' },
-              { id: 'physical', label: 'Physical button' },
+              { id: 'virtual', label: t('doorlockLogs.virtualCard') },
+              { id: 'physical', label: t('doorlockLogs.physicalButton') },
             ]}
             value={eventFilter}
           />
@@ -414,129 +396,16 @@ function LogsPage() {
 
       <QueryBoundary data={logsQuery.data} query={logsQuery}>
         {() => (
-          <div className="w-full overflow-x-auto rounded-md border">
-            <Table className="w-full min-w-3xl">
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('timestamp')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Timestamp
-                      <SortIcon
-                        column="timestamp"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('device')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Device
-                      <SortIcon
-                        column="device"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('user')}
-                  >
-                    <div className="flex items-center gap-2">
-                      User
-                      <SortIcon
-                        column="user"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('card')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Card
-                      <SortIcon
-                        column="card"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('cardData')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Card UID
-                      <SortIcon
-                        column="cardData"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('triggeredBy')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Triggered by
-                      <SortIcon
-                        column="triggeredBy"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('result')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Result
-                      <SortIcon
-                        column="result"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead>{/* Actions */}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.map((log) => (
-                  <LogTableRow
-                    key={log.id}
-                    log={log}
-                    onAddCard={
-                      hasCardWritePermission
-                        ? (cardData) => {
-                            setPendingCardData(cardData);
-                            setCardDialogOpen(true);
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-                {!(filteredLogs.length || hasError) && (
-                  <TableRow>
-                    <TableCell className="text-muted-foreground" colSpan={8}>
-                      No logs found with the selected filters.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <LogsTable
+            hasCardWritePermission={hasCardWritePermission}
+            hasError={hasError}
+            logs={filteredLogs}
+            onAddCard={(cardData) => {
+              setPendingCardData(cardData);
+              setCardDialogOpen(true);
+            }}
+            sort={sort}
+          />
         )}
       </QueryBoundary>
 
@@ -545,6 +414,7 @@ function LogsPage() {
           card={cardDialogCard}
           context="logs"
           devices={devices ?? []}
+          key={`${cardDialogOpen ? 'open' : 'closed'}:${cardDialogCard?.cardData ?? 'new'}`}
           onOpenChange={setCardDialogOpen}
           open={cardDialogOpen}
           users={
@@ -568,9 +438,10 @@ function DateRangePicker({
   onChange: (range: DateRange) => void;
   value: DateRange;
 }) {
+  const { t } = useTranslation();
   const getRangeLabel = () => {
     if (!value.from) {
-      return 'Select dates';
+      return t('doorlockLogs.selectDates');
     }
     if (!value.to) {
       return dayjs(value.from).format('MMM DD, YYYY');
@@ -582,7 +453,7 @@ function DateRangePicker({
   return (
     <div className="space-y-2">
       <span className="font-medium text-muted-foreground text-sm">
-        Date range
+        {t('doorlockLogs.dateRange')}
       </span>
       <Popover>
         <PopoverTrigger
@@ -631,10 +502,14 @@ function SelectFilter<T extends string>({
   options,
   value,
 }: SelectFilterProps<T>) {
+  const { t } = useTranslation();
   const handleChange = (next: string | null) =>
     onValueChange((next ?? 'all') as T);
   const items = [
-    { label: `All ${label.toLowerCase()}`, value: 'all' },
+    {
+      label: t('doorlockLogs.allOption', { label: label.toLowerCase() }),
+      value: 'all',
+    },
     ...options.map((option) => ({ label: option.label, value: option.id })),
   ];
   return (
@@ -642,7 +517,11 @@ function SelectFilter<T extends string>({
       <Label>{label}</Label>
       <Select items={items} onValueChange={handleChange} value={value}>
         <SelectTrigger className="w-full min-w-24">
-          <SelectValue data-placeholder={`Filter by ${label.toLowerCase()}`} />
+          <SelectValue
+            data-placeholder={t('doorlockLogs.filterBy', {
+              label: label.toLowerCase(),
+            })}
+          />
         </SelectTrigger>
       </Select>
     </div>
@@ -681,6 +560,7 @@ type LogTableRowProps = {
 // The list renders up to 500 rows in one pass; `content-visibility` on the row
 // keeps the offscreen ones out of layout and paint without a virtualizer.
 function LogTableRow({ log, onAddCard }: LogTableRowProps) {
+  const { t } = useTranslation();
   const buttonMeta = buildButtonMeta(log);
 
   return (
@@ -700,20 +580,24 @@ function LogTableRow({ log, onAddCard }: LogTableRowProps) {
       <TableCell className="font-mono text-xs">{log.cardData ?? '—'}</TableCell>
       <TableCell>
         <div className="space-y-1">
-          <Badge variant={buttonMeta.variant}>{buttonMeta.label}</Badge>
+          <Badge variant={buttonMeta.variant}>{t(buttonMeta.labelKey)}</Badge>
         </div>
       </TableCell>
       <TableCell>
         {log.result ? (
-          <span className="text-green-600 dark:text-green-400">Granted</span>
+          <span className="text-green-600 dark:text-green-400">
+            {t('doorlockLogs.granted')}
+          </span>
         ) : (
-          <span className="text-red-600 dark:text-red-400">Denied</span>
+          <span className="text-red-600 dark:text-red-400">
+            {t('doorlockLogs.denied')}
+          </span>
         )}
       </TableCell>
       <TableCell>
         {onAddCard && (
           <Button
-            aria-label="Add card"
+            aria-label={t('doorlockLogs.addCard')}
             disabled={!log.cardData}
             onClick={() => onAddCard(log.cardData ?? null)}
             size="icon"
@@ -727,19 +611,95 @@ function LogTableRow({ log, onAddCard }: LogTableRowProps) {
   );
 }
 
+type LogsTableProps = {
+  hasCardWritePermission: boolean;
+  hasError: boolean;
+  logs: DoorlockLogEntry[];
+  onAddCard: (cardData: string | null) => void;
+  sort: Pick<
+    UseSortableResult<DoorlockLogEntry, LogSortColumn>,
+    'column' | 'direction' | 'toggle'
+  >;
+};
+
+function LogsTable({
+  hasCardWritePermission,
+  hasError,
+  logs,
+  onAddCard,
+  sort,
+}: LogsTableProps) {
+  const { t } = useTranslation();
+  const { direction, toggle } = sort;
+
+  const header = (column: LogSortColumn, label: string) => (
+    <TableHead
+      className="cursor-pointer select-none hover:bg-muted/50"
+      onClick={() => toggle(column)}
+    >
+      <div className="flex items-center gap-2">
+        {label}
+        <SortIcon
+          column={column}
+          currentColumn={column}
+          direction={direction}
+        />
+      </div>
+    </TableHead>
+  );
+
+  return (
+    <div className="w-full overflow-x-auto rounded-md border">
+      <Table className="w-full min-w-3xl">
+        <TableHeader>
+          <TableRow>
+            {header('timestamp', t('doorlockLogs.timestamp'))}
+            {header('device', t('doorlockLogs.device'))}
+            {header('user', t('doorlockLogs.user'))}
+            {header('card', t('doorlockLogs.card'))}
+            {header('cardData', t('doorlockLogs.cardUid'))}
+            {header('triggeredBy', t('doorlockLogs.triggeredBy'))}
+            {header('result', t('doorlockLogs.result'))}
+            <TableHead>{/* Actions */}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {logs.map((log) => (
+            <LogTableRow
+              key={log.id}
+              log={log}
+              onAddCard={hasCardWritePermission ? onAddCard : undefined}
+            />
+          ))}
+          {!(logs.length || hasError) && (
+            <TableRow>
+              <TableCell className="text-muted-foreground" colSpan={8}>
+                {t('doorlockLogs.noLogsFound')}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function useOptions(
-  preferred?: Array<{
-    id: string;
-    label?: string;
-    name?: string;
-    nickname?: string;
-  }>,
-  fallback: FilterOption[] = []
+  preferred:
+    | Array<{
+        id: string;
+        label?: string;
+        name?: string;
+        nickname?: string;
+      }>
+    | undefined,
+  fallback: FilterOption[],
+  unknownLabel: string
 ): FilterOption[] {
   if (preferred?.length) {
     return preferred.map((item) => ({
       id: item.id,
-      label: item.nickname ?? item.name ?? item.label ?? 'Unknown',
+      label: item.nickname ?? item.name ?? item.label ?? unknownLabel,
     }));
   }
   const seen = new Map<string, string>();
@@ -764,7 +724,7 @@ function getLogSortValue(log: DoorlockLogEntry, column: LogSortColumn) {
     case 'cardData':
       return log.cardData ?? '';
     case 'triggeredBy':
-      return buildButtonMeta(log).label;
+      return buildButtonMeta(log).labelKey;
     case 'result':
       return log.result ? 1 : 0;
     default:

@@ -5,13 +5,7 @@ import { role } from '#database/schema/authorization';
 import { cohort, movedLesson, substitution } from '#modules/timetable/schema';
 import { getActiveTimetableId } from '#modules/timetable/utils/active';
 import { base } from '#orpc';
-
-function fmtDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+import { toDateOnlyString } from '#utils/date';
 
 export const getDashboardStats = base.dashboard.stats.handler(
   async ({ input }) => {
@@ -77,14 +71,14 @@ export const getDashboardStats = base.dashboard.stats.handler(
     >();
 
     for (const sub of relevantSubs) {
-      const d = fmtDate(sub.date);
+      const d = toDateOnlyString(sub.date);
       const entry = dateMap.get(d) ?? { movedLessons: 0, substitutions: 0 };
       entry.substitutions += 1;
       dateMap.set(d, entry);
     }
 
     for (const m of movedLessonDates) {
-      const d = fmtDate(m.date);
+      const d = toDateOnlyString(m.date);
       const entry = dateMap.get(d) ?? { movedLessons: 0, substitutions: 0 };
       entry.movedLessons += 1;
       dateMap.set(d, entry);

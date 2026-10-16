@@ -1,26 +1,25 @@
+import { ERROR_CODE } from '@filcdev/api/errors';
 import { isDefinedError } from '@orpc/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { type api, orpc } from '@/utils/orpc';
+import type { MutationCallbacks } from './types';
 
 type SubstitutionsResponse = Awaited<
   ReturnType<typeof api.timetable.substitutions.list>
->;
+>['items'];
 
 export type SubstitutionItem = SubstitutionsResponse[number];
 
 export type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
-
 /** Full substitution list. */
 export function useSubstitutions() {
-  return useQuery(orpc.timetable.substitutions.list.queryOptions());
+  return useQuery({
+    ...orpc.timetable.substitutions.list.queryOptions(),
+    select: (data) => data.items,
+  });
 }
 
 /** Teacher list for substitution pickers; only fetched when enabled. */
@@ -28,6 +27,7 @@ export function useSubstitutionTeachers(enabled: boolean) {
   return useQuery({
     ...orpc.timetable.teachers.getAll.queryOptions(),
     enabled,
+    select: (data) => data.items,
   });
 }
 
@@ -52,7 +52,7 @@ export function useCreateSubstitution({ onSaved }: MutationCallbacks = {}) {
     orpc.timetable.substitutions.create.mutationOptions({
       onError: (error) => {
         toast.error(
-          isDefinedError(error) && error.code === 'CONFLICT'
+          isDefinedError(error) && error.code === ERROR_CODE.CONFLICT
             ? t('substitution.conflictError')
             : error.message || t('substitution.createError')
         );
@@ -74,7 +74,7 @@ export function useUpdateSubstitution({ onSaved }: MutationCallbacks = {}) {
     orpc.timetable.substitutions.update.mutationOptions({
       onError: (error) => {
         toast.error(
-          isDefinedError(error) && error.code === 'CONFLICT'
+          isDefinedError(error) && error.code === ERROR_CODE.CONFLICT
             ? t('substitution.conflictError')
             : error.message || t('substitution.updateError')
         );
@@ -96,7 +96,7 @@ export function useDeleteSubstitution({ onSaved }: MutationCallbacks = {}) {
     orpc.timetable.substitutions.delete.mutationOptions({
       onError: (error) => {
         toast.error(
-          isDefinedError(error) && error.code === 'CONFLICT'
+          isDefinedError(error) && error.code === ERROR_CODE.CONFLICT
             ? t('substitution.conflictError')
             : error.message || t('substitution.deleteError')
         );
@@ -120,7 +120,7 @@ export function useCreateManualSubstitution({
     orpc.timetable.substitutions.manual.mutationOptions({
       onError: (error) => {
         toast.error(
-          isDefinedError(error) && error.code === 'CONFLICT'
+          isDefinedError(error) && error.code === ERROR_CODE.CONFLICT
             ? t('substitution.conflictError')
             : error.message || t('substitution.createError')
         );

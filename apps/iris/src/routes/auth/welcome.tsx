@@ -44,6 +44,11 @@ import {
   useHasPermission,
 } from '@/hooks/use-has-permission';
 import { useWifiStatus } from '@/hooks/wifi';
+import {
+  NICKNAME_MAX_LENGTH,
+  NICKNAME_MIN_LENGTH,
+  nicknamePattern,
+} from '@/utils/form-schemas';
 
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
@@ -102,9 +107,6 @@ const InfoLine = (props: {
   </div>
 );
 
-const NICKNAME_MIN_LENGTH = 3;
-const NICKNAME_MAX_LENGTH = 32;
-const nicknamePattern = /^[\p{L}\p{N} _'-]+$/u;
 const normalizeNickname = (value?: string | null) =>
   (value ?? '').trim().replace(/\s+/g, ' ');
 
@@ -374,17 +376,21 @@ const CohortSelectorStep = (props: {
   const updateCohort = async (cohortId: string) => {
     setIsUpdating(true);
     setOpen(false);
-    const success = await props.onCohortSelect(cohortId);
-    setIsUpdating(false);
-    return success;
+    try {
+      return await props.onCohortSelect(cohortId);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const clearCohort = async () => {
     setIsUpdating(true);
     setOpen(false);
-    const success = await props.onSkip();
-    setIsUpdating(false);
-    return success;
+    try {
+      return await props.onSkip();
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (

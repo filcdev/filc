@@ -41,7 +41,7 @@ Font.register({
 });
 
 /** Font stack every export document renders with (`Helvetica` is appended by react-pdf). */
-export const EXPORT_FONT_FAMILIES = [LATIN, LATIN_EXT];
+const EXPORT_FONT_FAMILIES = [LATIN, LATIN_EXT];
 
 const pdfStyles = StyleSheet.create({
   cell: { flex: 1, fontFamily: EXPORT_FONT_FAMILIES, paddingRight: 6 },

@@ -85,7 +85,7 @@ export const listBugReports = base.bugReport.list
       db.select({ count: count() }).from(bugReport).where(where),
     ]);
 
-    return { reports, total: totalResult[0]?.count ?? 0 };
+    return { items: reports, total: totalResult[0]?.count ?? 0 };
   });
 
 export const updateBugReportStatus = base.bugReport.updateStatus

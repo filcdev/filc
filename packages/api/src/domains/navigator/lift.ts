@@ -34,13 +34,3 @@ export const updateLiftSchema = createLiftSchema.partial();
 export type Lift = z.infer<typeof liftSchema>;
 export type CreateLiftInput = z.infer<typeof createLiftSchema>;
 export type UpdateLiftInput = z.infer<typeof updateLiftSchema>;
-
-/** Payload of `GET /navigator/lifts`. */
-export const liftsResponseSchema = z.object({
-  lifts: z.array(liftRowSchema),
-});
-
-/** Payload of `POST /navigator/lifts`, `PUT` and `DELETE /navigator/lifts/{id}`. */
-export const liftResponseSchema = z.object({
-  lift: liftRowSchema,
-});

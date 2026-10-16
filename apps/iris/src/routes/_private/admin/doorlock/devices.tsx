@@ -26,6 +26,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
+import { useConfirm } from '@/components/confirm-provider';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
 import { DeviceStatsDialog } from '@/components/doorlock/device-stats-dialog';
 import { OtaUpdateDialog } from '@/components/doorlock/ota-update-dialog';
@@ -38,7 +39,7 @@ import {
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { confirmDestructiveAction } from '@/utils/confirm';
+import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
 import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/doorlock/devices')({
@@ -53,25 +54,11 @@ export const Route = createFileRoute('/_private/admin/doorlock/devices')({
 
 type DeviceSortColumn = 'name' | 'location' | 'apiToken' | 'updated';
 
-function getAriaSortState(
-  column: string,
-  sortColumn: string | null,
-  sortDirection: 'asc' | 'desc' | null
-): 'ascending' | 'descending' | 'none' {
-  if (sortColumn !== column) {
-    return 'none';
-  }
-  return sortDirection === 'asc' ? 'ascending' : 'descending';
-}
-
 function DevicesPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const [search, setSearch] = useState('');
-  const [sortColumn, setSortColumn] = useState<DeviceSortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<DoorlockDevice | null>(
     null
@@ -87,39 +74,28 @@ function DevicesPage() {
   );
 
   const devicesQuery = useDoorlockDevices();
-  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.devices;
+  const devices: DoorlockDevice[] | undefined = devicesQuery.data?.items;
 
   const deleteMutation = useDeleteDoorlockDevice();
-  const filteredDevices = useMemo(() => {
+
+  const matchingDevices = useMemo(() => {
     const items = devices ?? [];
     const term = search.trim().toLowerCase();
-    let filtered = items;
 
-    if (term) {
-      filtered = filtered.filter(
-        (device) =>
-          device.name.toLowerCase().includes(term) ||
-          device.apiToken.toLowerCase().includes(term) ||
-          (device.location ?? '').toLowerCase().includes(term)
-      );
+    if (!term) {
+      return items;
     }
 
-    if (sortColumn && sortDirection) {
-      filtered = [...filtered].sort((a, b) => {
-        const aValue = getDeviceSortValue(a, sortColumn);
-        const bValue = getDeviceSortValue(b, sortColumn);
+    return items.filter(
+      (device) =>
+        device.name.toLowerCase().includes(term) ||
+        device.apiToken.toLowerCase().includes(term) ||
+        (device.location ?? '').toLowerCase().includes(term)
+    );
+  }, [devices, search]);
 
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-
-        const comparison = String(aValue).localeCompare(String(bValue));
-        return sortDirection === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    return filtered;
-  }, [devices, search, sortColumn, sortDirection]);
+  const sort = useSortable(matchingDevices, { getValue: getDeviceSortValue });
+  const filteredDevices = sort.rows;
 
   const totalDevices = devices?.length ?? 0;
   const activeDevices = useMemo(() => {
@@ -135,28 +111,13 @@ function DevicesPage() {
     if (!hasWritePermission) {
       return;
     }
-    const confirmed = confirmDestructiveAction(
-      `Delete device "${device.name}"? This action cannot be undone.`
-    );
+    const confirmed = await confirm({
+      title: t('doorlockDevices.deleteConfirm', { name: device.name }),
+    });
     if (!confirmed) {
       return;
     }
     await deleteMutation.mutateAsync({ id: device.id });
-  };
-
-  const handleSort = (column: DeviceSortColumn) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-      return;
-    }
-
-    setSortColumn(column);
-    setSortDirection('asc');
   };
 
   const hasError = devicesQuery.isError;
@@ -230,174 +191,32 @@ function DevicesPage() {
 
       <QueryBoundary data={devicesQuery.data} query={devicesQuery}>
         {() => (
-          <div className="w-full overflow-x-auto rounded-md border">
-            <Table className="w-full min-w-3xl">
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    aria-sort={getAriaSortState(
-                      'name',
-                      sortColumn,
-                      sortDirection
-                    )}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('name')}
-                      type="button"
-                    >
-                      {t('doorlockDevices.name')}
-                      <SortIcon
-                        column="name"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead
-                    aria-sort={getAriaSortState(
-                      'location',
-                      sortColumn,
-                      sortDirection
-                    )}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('location')}
-                      type="button"
-                    >
-                      {t('doorlockDevices.location')}
-                      <SortIcon
-                        column="location"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead
-                    aria-sort={getAriaSortState(
-                      'apiToken',
-                      sortColumn,
-                      sortDirection
-                    )}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('apiToken')}
-                      type="button"
-                    >
-                      {t('doorlockDevices.apiToken')}
-                      <SortIcon
-                        column="apiToken"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead
-                    aria-sort={getAriaSortState(
-                      'updated',
-                      sortColumn,
-                      sortDirection
-                    )}
-                    className="select-none"
-                  >
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
-                      onClick={() => handleSort('updated')}
-                      type="button"
-                    >
-                      {t('doorlockDevices.lastUpdated')}
-                      <SortIcon
-                        column="updated"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </button>
-                  </TableHead>
-                  {hasWritePermission && (
-                    <TableHead>{t('doorlockDevices.actions')}</TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDevices.map((device) => (
-                  <TableRow key={device.id}>
-                    <TableCell className="font-medium">{device.name}</TableCell>
-                    <TableCell>{device.location ?? '—'}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {device.apiToken}
-                    </TableCell>
-                    <TableCell>
-                      {dayjs(device.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
-                    </TableCell>
-                    {hasWritePermission && (
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => {
-                              setStatsDevice(device);
-                              setStatsDialogOpen(true);
-                            }}
-                            size="icon"
-                            variant="outline"
-                          >
-                            <ChartArea className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              setOtaDevice(device);
-                              setOtaDialogOpen(true);
-                            }}
-                            size="icon"
-                            variant="outline"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              setSelectedDevice(device);
-                              setDialogOpen(true);
-                            }}
-                            size="icon"
-                            variant="outline"
-                          >
-                            <Pen className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            disabled={deleteMutation.isPending}
-                            onClick={() => handleDelete(device)}
-                            size="icon"
-                            variant="destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-                {!(filteredDevices.length || hasError) && (
-                  <TableRow>
-                    <TableCell
-                      className="text-muted-foreground"
-                      colSpan={hasWritePermission ? 5 : 4}
-                    >
-                      {t('doorlockDevices.noDevicesFound')}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DevicesTable
+            deletePending={deleteMutation.isPending}
+            devices={filteredDevices}
+            hasError={hasError}
+            hasWritePermission={hasWritePermission}
+            onDelete={handleDelete}
+            onEdit={(device) => {
+              setSelectedDevice(device);
+              setDialogOpen(true);
+            }}
+            onOta={(device) => {
+              setOtaDevice(device);
+              setOtaDialogOpen(true);
+            }}
+            onStats={(device) => {
+              setStatsDevice(device);
+              setStatsDialogOpen(true);
+            }}
+            sort={sort}
+          />
         )}
       </QueryBoundary>
 
       <DeviceDialog<DoorlockDevice>
         device={selectedDevice}
+        key={`${dialogOpen ? 'open' : 'closed'}:${selectedDevice?.id ?? 'new'}`}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {
@@ -433,6 +252,133 @@ function DevicesPage() {
     </div>
   );
 }
+
+const DevicesTable = ({
+  deletePending,
+  devices,
+  hasError,
+  hasWritePermission,
+  onDelete,
+  onEdit,
+  onOta,
+  onStats,
+  sort,
+}: {
+  deletePending: boolean;
+  devices: DoorlockDevice[];
+  hasError: boolean;
+  hasWritePermission: boolean;
+  onDelete: (device: DoorlockDevice) => void;
+  onEdit: (device: DoorlockDevice) => void;
+  onOta: (device: DoorlockDevice) => void;
+  onStats: (device: DoorlockDevice) => void;
+  sort: UseSortableResult<DoorlockDevice, DeviceSortColumn>;
+}) => {
+  const { t } = useTranslation();
+  const { ariaSort, direction, toggle } = sort;
+
+  const header = (column: DeviceSortColumn, label: string) => (
+    <TableHead aria-sort={ariaSort(column)} className="select-none">
+      <button
+        className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+        onClick={() => toggle(column)}
+        type="button"
+      >
+        {label}
+        <SortIcon
+          column={column}
+          currentColumn={column}
+          direction={direction}
+        />
+      </button>
+    </TableHead>
+  );
+
+  return (
+    <div className="w-full overflow-x-auto rounded-md border">
+      <Table className="w-full min-w-3xl">
+        <TableHeader>
+          <TableRow>
+            {header('name', t('doorlockDevices.name'))}
+            {header('location', t('doorlockDevices.location'))}
+            {header('apiToken', t('doorlockDevices.apiToken'))}
+            {header('updated', t('doorlockDevices.lastUpdated'))}
+            {hasWritePermission && (
+              <TableHead>{t('doorlockDevices.actions')}</TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {devices.map((device) => (
+            <TableRow key={device.id}>
+              <TableCell className="font-medium">{device.name}</TableCell>
+              <TableCell>{device.location ?? '—'}</TableCell>
+              <TableCell className="font-mono text-xs">
+                {device.apiToken}
+              </TableCell>
+              <TableCell>
+                {dayjs(device.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+              </TableCell>
+              {hasWritePermission && (
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      aria-label={t('doorlockDevices.statsTitle', {
+                        name: device.name,
+                      })}
+                      onClick={() => onStats(device)}
+                      size="icon"
+                      variant="outline"
+                    >
+                      <ChartArea className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      aria-label={t('doorlock.ota.titleDevice', {
+                        name: device.name,
+                      })}
+                      onClick={() => onOta(device)}
+                      size="icon"
+                      variant="outline"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      aria-label={t('common.edit')}
+                      onClick={() => onEdit(device)}
+                      size="icon"
+                      variant="outline"
+                    >
+                      <Pen className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      aria-label={t('common.delete')}
+                      disabled={deletePending}
+                      onClick={() => onDelete(device)}
+                      size="icon"
+                      variant="destructive"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {!(devices.length || hasError) && (
+            <TableRow>
+              <TableCell
+                className="text-muted-foreground"
+                colSpan={hasWritePermission ? 5 : 4}
+              >
+                {t('doorlockDevices.noDevicesFound')}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
 
 function getDeviceSortValue(device: DoorlockDevice, column: DeviceSortColumn) {
   switch (column) {

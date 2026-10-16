@@ -13,7 +13,6 @@ import { Input } from '@filcdev/ui/components/input';
 import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type AnnouncementItem,
@@ -109,11 +108,8 @@ export function NewsItemDialog({
     validators: { onSubmit: newsItemSchema },
   });
 
-  useEffect(() => {
-    form.reset(initialState(item));
-  }, [item, form.reset]);
-
   const cohortIds = useStore(form.store, (state) => state.values.cohortIds);
+  const cohortIdSet = new Set(cohortIds);
 
   const toggleCohort = (cohortId: string, checked: boolean) => {
     const current = form.getFieldValue('cohortIds');
@@ -231,7 +227,7 @@ export function NewsItemDialog({
                 {cohorts.map((cohort) => (
                   <div className="flex items-center gap-2" key={cohort.id}>
                     <Checkbox
-                      checked={cohortIds.includes(cohort.id)}
+                      checked={cohortIdSet.has(cohort.id)}
                       id={`cohort-${cohort.id}`}
                       onCheckedChange={(checked) =>
                         toggleCohort(cohort.id, Boolean(checked))

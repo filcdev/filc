@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from '../list';
 import { doorlockUserSummarySchema } from './cards';
 
 /** Query parameters for listing doorlock audit log entries. */
@@ -38,6 +39,6 @@ export const doorlockLogEntrySchema = doorlockAuditLogSchema.extend({
 });
 
 /** Payload of `GET /doorlock/logs`. */
-export const doorlockLogListResponseSchema = z.object({
-  logs: z.array(doorlockLogEntrySchema),
-});
+export const doorlockLogListResponseSchema = listResponse(
+  doorlockLogEntrySchema
+);

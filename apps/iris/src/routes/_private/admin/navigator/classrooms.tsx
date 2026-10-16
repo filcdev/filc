@@ -4,19 +4,20 @@ import { Button } from '@filcdev/ui/components/button';
 import { Field, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-} from '@filcdev/ui/components/select';
-import { useForm } from '@tanstack/react-form';
+  type FormAsyncValidateOrFn,
+  type FormValidateOrFn,
+  type ReactFormExtendedApi,
+  useForm,
+} from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plus, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   EntityTable,
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
+import { LabeledSelectField } from '@/components/admin/navigator/labeled-select-field';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { PageHeader } from '@/components/admin/page-header';
 import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
@@ -203,291 +204,25 @@ function ClassroomsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('navigator.classrooms.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('navigator.classrooms.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => classrooms.refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4" />
-            {t('navigator.refresh')}
-          </Button>
-          {!editor.isEditing && (
-            <Button onClick={startCreate}>
-              <Plus className="h-4 w-4" />
-              {t('navigator.classrooms.add')}
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        addLabel={t('navigator.classrooms.add')}
+        canAdd={!editor.isEditing}
+        description={t('navigator.classrooms.description')}
+        onAdd={startCreate}
+        onRefresh={() => classrooms.refetch()}
+        title={t('navigator.classrooms.title')}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <div>
           {editor.isEditing ? (
-            <form
-              className="space-y-6"
-              onSubmit={(event) => {
-                event.preventDefault();
-                form.handleSubmit();
-              }}
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <form.Field name="name">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.name')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="short">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.short')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="description">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.description')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="building_id">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>{t('navigator.fields.building')}</FieldLabel>
-                      <Select
-                        items={buildingItems}
-                        onValueChange={(value) =>
-                          field.handleChange(value ?? '')
-                        }
-                        value={field.state.value}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue
-                            placeholder={t('navigator.fields.building')}
-                          />
-                        </SelectTrigger>
-                      </Select>
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="type_id">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>{t('navigator.fields.type')}</FieldLabel>
-                      <Select
-                        items={typeItems}
-                        onValueChange={(value) =>
-                          field.handleChange(value ?? '')
-                        }
-                        value={field.state.value}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue
-                            placeholder={t('navigator.fields.type')}
-                          />
-                        </SelectTrigger>
-                      </Select>
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <form.Field name="storey">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.storey')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="capacity">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.capacity')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="rotation">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.rotation')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="x">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.x')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="y">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.y')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <form.Field name="size_x">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.sizeX')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="size_y">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.sizeY')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="size_z">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('navigator.fields.sizeZ')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button disabled={isSaving} type="submit">
-                  {isSaving ? t('common.loading') : t('common.save')}
-                </Button>
-                <Button
-                  onClick={editor.closeEdit}
-                  type="button"
-                  variant="outline"
-                >
-                  {t('common.cancel')}
-                </Button>
-              </div>
-            </form>
+            <ClassroomEditorForm
+              buildingItems={buildingItems}
+              form={form}
+              isSaving={isSaving}
+              onCancel={editor.closeEdit}
+              typeItems={typeItems}
+            />
           ) : (
             <QueryBoundary data={classrooms.data} query={classrooms}>
               {(rows) => (
@@ -523,5 +258,278 @@ function ClassroomsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+type SyncValidator = FormValidateOrFn<ClassroomFormValues> | undefined;
+type AsyncValidator = FormAsyncValidateOrFn<ClassroomFormValues> | undefined;
+
+/**
+ * The page's form API. TanStack's validator generics are invariant, so the
+ * exact instantiation has to be named for the field group below to accept it.
+ */
+type ClassroomFormApi = ReactFormExtendedApi<
+  ClassroomFormValues,
+  SyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  AsyncValidator,
+  unknown
+>;
+
+type ClassroomEditorFormProps = {
+  buildingItems: { label: string; value: string }[];
+  form: ClassroomFormApi;
+  isSaving: boolean;
+  onCancel: () => void;
+  typeItems: { label: string; value: string }[];
+};
+
+/** Every field the 3D editor can drive, in the same values the gizmo patches. */
+function ClassroomEditorForm({
+  buildingItems,
+  form,
+  isSaving,
+  onCancel,
+  typeItems,
+}: ClassroomEditorFormProps) {
+  const { t } = useTranslation();
+
+  return (
+    <form
+      className="space-y-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <form.Field name="name">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.name')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) => field.handleChange(event.target.value)}
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="short">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.short')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) => field.handleChange(event.target.value)}
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="description">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.description')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) => field.handleChange(event.target.value)}
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="building_id">
+          {(field) => (
+            <LabeledSelectField
+              items={buildingItems}
+              label={t('navigator.fields.building')}
+              onChange={field.handleChange}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+        <form.Field name="type_id">
+          {(field) => (
+            <LabeledSelectField
+              items={typeItems}
+              label={t('navigator.fields.type')}
+              onChange={field.handleChange}
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <form.Field name="storey">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.storey')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="capacity">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.capacity')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="rotation">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.rotation')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="x">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.x')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="y">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.y')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <form.Field name="size_x">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.sizeX')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="size_y">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.sizeY')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="size_z">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('navigator.fields.sizeZ')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button disabled={isSaving} type="submit">
+          {isSaving ? t('common.loading') : t('common.save')}
+        </Button>
+        <Button onClick={onCancel} type="button" variant="outline">
+          {t('common.cancel')}
+        </Button>
+      </div>
+    </form>
   );
 }

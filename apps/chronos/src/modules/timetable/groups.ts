@@ -67,7 +67,7 @@ export const getGroupsForCohort = base.timetable.groups.getForCohort.handler(
         : null,
       selected: selected.has(row.id),
     }));
-    return data;
+    return { items: data, total: data.length };
   }
 );
 

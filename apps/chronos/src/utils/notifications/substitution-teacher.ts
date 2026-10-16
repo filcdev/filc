@@ -11,6 +11,7 @@ import {
   subject,
   teacher,
 } from '#modules/timetable/schema';
+import { isHungarianLocale } from './locale';
 import type { AudienceUser, NotificationContent } from './types';
 
 const TRAILING_NEWLINES = /\n+$/;
@@ -206,7 +207,7 @@ export function buildSubstitutionTeacherContent(
   payload: SubstitutionTeacherPayload,
   locale: string
 ): NotificationContent {
-  const hu = locale.toLowerCase().startsWith('hu');
+  const hu = isHungarianLocale(locale);
   const { date, lessons } = payload;
 
   const label = {

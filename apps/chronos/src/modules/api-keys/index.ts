@@ -71,7 +71,7 @@ export const listAdminApiKeys = base.adminApiKeys.list
       .innerJoin(user, sql`${apikey.referenceId} = ${user.id}::text`)
       .where(whereClause);
 
-    return { apiKeys, total: totalRow?.count ?? 0 };
+    return { items: apiKeys, total: totalRow?.count ?? 0 };
   });
 
 export const updateAdminApiKey = base.adminApiKeys.update

@@ -14,7 +14,7 @@ export const listCorridorsRoute = base.navigator.corridors.list.handler(
       .from(navigatorCorridor)
       .orderBy(asc(navigatorCorridor.name));
 
-    return { corridors };
+    return { items: corridors, total: corridors.length };
   }
 );
 
@@ -32,7 +32,7 @@ export const createCorridorRoute = base.navigator.corridors.create
       });
     }
 
-    return { corridor };
+    return corridor;
   });
 
 export const updateCorridorRoute = base.navigator.corridors.update
@@ -58,7 +58,7 @@ export const updateCorridorRoute = base.navigator.corridors.update
       throw notFound('Corridor not found');
     }
 
-    return { corridor };
+    return corridor;
   });
 
 export const deleteCorridorRoute = base.navigator.corridors.delete
@@ -75,5 +75,5 @@ export const deleteCorridorRoute = base.navigator.corridors.delete
       throw notFound('Corridor not found');
     }
 
-    return { corridor };
+    return { id };
   });

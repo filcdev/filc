@@ -80,7 +80,8 @@ function getSubstitutionRows(
         .filter((lesson): lesson is Lesson => lesson !== null)
         .filter(
           (lesson) =>
-            !cohortFilter || (lesson.cohorts?.includes(cohortFilter) ?? false)
+            !cohortFilter ||
+            (lesson.cohorts?.some((c) => c.name === cohortFilter) ?? false)
         )
         .map((lesson) => ({ lesson, sub }))
     );
@@ -136,7 +137,7 @@ function Subject({
   );
 }
 
-function CohortsCell({ cohorts }: { cohorts: string[] }) {
+function CohortsCell({ cohorts }: { cohorts: Lesson['cohorts'] }) {
   const { t } = useTranslation();
   if (cohorts.length === 0) {
     return (
@@ -148,8 +149,8 @@ function CohortsCell({ cohorts }: { cohorts: string[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {cohorts.map((cohort) => (
-        <Badge className="text-xs" key={cohort} variant="outline">
-          {cohort}
+        <Badge className="text-xs" key={cohort.id} variant="outline">
+          {cohort.name}
         </Badge>
       ))}
     </div>
@@ -591,7 +592,7 @@ export function SubsV({
   cohortFilter,
   date: dateProp,
 }: TimetableProps) {
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -614,7 +615,6 @@ export function SubsV({
 
   const subsCount = substitutionRows.length;
   const movedCount = movedRows.length;
-  const hasSections = subsCount > 0 || movedCount > 0;
 
   const dateLabel = formatLocalizedDate(
     parseDateOnly(cardDate),
@@ -629,104 +629,154 @@ export function SubsV({
 
   return (
     <Card className="w-full overflow-hidden border-accent/50 shadow-sm">
-      <CardHeader className="border-accent/20 border-b pb-4">
-        <CardTitle className="font-semibold text-foreground text-lg">
-          {cohortFilter ?? dateLabel}
-        </CardTitle>
-        {cohortFilter && (
-          <p className="text-muted-foreground text-sm">{dateLabel}</p>
-        )}
-        {hasSections && (
-          <div className="mt-1 flex flex-wrap gap-2">
-            {subsCount > 0 && (
-              <Badge className={ACCENT.substitution.badge}>
-                {subsCount} {t('substitution.title')}
-              </Badge>
-            )}
-            {movedCount > 0 && (
-              <Badge className={ACCENT.moved.badge}>
-                {movedCount} {t('movedLesson.title')}
-              </Badge>
-            )}
-          </div>
-        )}
-      </CardHeader>
+      <SubsCardHeader
+        cohortFilter={cohortFilter}
+        dateLabel={dateLabel}
+        movedCount={movedCount}
+        subsCount={subsCount}
+      />
       <CardContent className="p-0">
-        {subsCount > 0 && (
-          <section>
-            <SectionHeader
-              accent={ACCENT.substitution}
-              count={subsCount}
-              icon={UserRoundCheck}
-              title={t('substitution.title')}
-            />
-            <div className="hidden sm:block">
-              <Table>
-                <TableHeader>
-                  <SectionTableHeader accent={ACCENT.substitution} />
-                </TableHeader>
-                <TableBody>
-                  {substitutionRows.map((row) => (
-                    <SubstitutionTableRow
-                      key={`${row.sub.substitution.id}-${row.lesson.id}`}
-                      row={row}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="space-y-2 p-3 sm:hidden">
-              {substitutionRows.map((row) => (
-                <SubstitutionMobileRow
-                  key={`${row.sub.substitution.id}-${row.lesson.id}`}
-                  row={row}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-        {subsCount > 0 && movedCount > 0 && (
-          <div className="border-accent/20 border-t" />
-        )}
-        {movedCount > 0 && (
-          <section>
-            <SectionHeader
-              accent={ACCENT.moved}
-              count={movedCount}
-              icon={ArrowRightLeft}
-              title={t('movedLesson.title')}
-            />
-            <div className="hidden sm:block">
-              <Table>
-                <TableHeader>
-                  <SectionTableHeader accent={ACCENT.moved} />
-                </TableHeader>
-                <TableBody>
-                  {movedRows.map((row) => (
-                    <MovedTableRow
-                      key={`${row.ml.movedLesson.id}-${row.lesson.id}`}
-                      row={row}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="space-y-2 p-3 sm:hidden">
-              {movedRows.map((row) => (
-                <MovedMobileRow
-                  key={`${row.ml.movedLesson.id}-${row.lesson.id}`}
-                  row={row}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-        {!hasSections && (
-          <p className="p-6 text-center text-muted-foreground text-sm">
-            {t('substitution.noLessons')}
-          </p>
-        )}
+        <SubsCardBody
+          movedRows={movedRows}
+          substitutionRows={substitutionRows}
+        />
       </CardContent>
     </Card>
+  );
+}
+
+/** The card header: the cohort name or date, and a badge per non-empty section. */
+function SubsCardHeader({
+  cohortFilter,
+  dateLabel,
+  movedCount,
+  subsCount,
+}: {
+  cohortFilter?: string;
+  dateLabel: string;
+  movedCount: number;
+  subsCount: number;
+}) {
+  const { t } = useTranslation();
+  const hasSections = subsCount > 0 || movedCount > 0;
+
+  return (
+    <CardHeader className="border-accent/20 border-b pb-4">
+      <CardTitle className="font-semibold text-foreground text-lg">
+        {cohortFilter ?? dateLabel}
+      </CardTitle>
+      {cohortFilter && (
+        <p className="text-muted-foreground text-sm">{dateLabel}</p>
+      )}
+      {hasSections && (
+        <div className="mt-1 flex flex-wrap gap-2">
+          {subsCount > 0 && (
+            <Badge className={ACCENT.substitution.badge}>
+              {subsCount} {t('substitution.title')}
+            </Badge>
+          )}
+          {movedCount > 0 && (
+            <Badge className={ACCENT.moved.badge}>
+              {movedCount} {t('movedLesson.title')}
+            </Badge>
+          )}
+        </div>
+      )}
+    </CardHeader>
+  );
+}
+
+/** The card body: one section per non-empty row list, else the empty notice. */
+function SubsCardBody({
+  movedRows,
+  substitutionRows,
+}: {
+  movedRows: MovedLessonRow[];
+  substitutionRows: SubstitutionRow[];
+}) {
+  const { t } = useTranslation();
+  const subsCount = substitutionRows.length;
+  const movedCount = movedRows.length;
+
+  if (subsCount === 0 && movedCount === 0) {
+    return (
+      <p className="p-6 text-center text-muted-foreground text-sm">
+        {t('substitution.noLessons')}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {subsCount > 0 && (
+        <section>
+          <SectionHeader
+            accent={ACCENT.substitution}
+            count={subsCount}
+            icon={UserRoundCheck}
+            title={t('substitution.title')}
+          />
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <SectionTableHeader accent={ACCENT.substitution} />
+              </TableHeader>
+              <TableBody>
+                {substitutionRows.map((row) => (
+                  <SubstitutionTableRow
+                    key={`${row.sub.substitution.id}-${row.lesson.id}`}
+                    row={row}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="space-y-2 p-3 sm:hidden">
+            {substitutionRows.map((row) => (
+              <SubstitutionMobileRow
+                key={`${row.sub.substitution.id}-${row.lesson.id}`}
+                row={row}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {subsCount > 0 && movedCount > 0 && (
+        <div className="border-accent/20 border-t" />
+      )}
+      {movedCount > 0 && (
+        <section>
+          <SectionHeader
+            accent={ACCENT.moved}
+            count={movedCount}
+            icon={ArrowRightLeft}
+            title={t('movedLesson.title')}
+          />
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <SectionTableHeader accent={ACCENT.moved} />
+              </TableHeader>
+              <TableBody>
+                {movedRows.map((row) => (
+                  <MovedTableRow
+                    key={`${row.ml.movedLesson.id}-${row.lesson.id}`}
+                    row={row}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="space-y-2 p-3 sm:hidden">
+            {movedRows.map((row) => (
+              <MovedMobileRow
+                key={`${row.ml.movedLesson.id}-${row.lesson.id}`}
+                row={row}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   );
 }

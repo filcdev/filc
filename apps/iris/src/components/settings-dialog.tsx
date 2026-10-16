@@ -25,9 +25,7 @@ import { GeneralPane } from '@/components/settings/general-pane';
 import { GroupsPane } from '@/components/settings/groups-pane';
 import { NotificationsPane } from '@/components/settings/notifications-pane';
 import {
-  closeSettings,
   type SettingsSection,
-  selectSettingsSection,
   useSettingsDialog,
 } from '@/components/settings-dialog-store';
 
@@ -71,7 +69,8 @@ const PANES: Record<SettingsSection, ComponentType<PaneProps>> = {
 
 export function SettingsDialog() {
   const { t } = useTranslation();
-  const { open, section } = useSettingsDialog();
+  const { closeSettings, open, section, selectSettingsSection } =
+    useSettingsDialog();
   const isMobile = useIsMobile();
   // On a phone the nav is a list and the pane replaces it; on a wider screen
   // both are visible side by side.

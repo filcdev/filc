@@ -166,6 +166,7 @@ export function useUpdateNotificationSettings({
  * directly and emits no toast: the public page renders its own result panel.
  */
 export function useUnsubscribe() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       token,
@@ -182,6 +183,13 @@ export function useUnsubscribe() {
       if (!response.ok) {
         throw new Error('Failed to update preferences');
       }
+    },
+    // Unsubscribing disables every channel server-side, so the settings query
+    // (the same preferences row) is stale.
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: orpc.notifications.settings.key(),
+      });
     },
   });
 }

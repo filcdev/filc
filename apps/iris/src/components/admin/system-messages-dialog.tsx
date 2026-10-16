@@ -12,7 +12,7 @@ import { Input } from '@filcdev/ui/components/input';
 import { Label } from '@filcdev/ui/components/label';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
-import { useEffect, useId } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type SystemMessageItem,
@@ -107,11 +107,8 @@ export function SystemMessagesDialog({
     },
   });
 
-  useEffect(() => {
-    form.reset(initialState(item));
-  }, [item, form.reset]);
-
   const cohortIds = useStore(form.store, (state) => state.values.cohortIds);
+  const cohortIdSet = new Set(cohortIds);
 
   const toggleCohort = (cohortId: string, checked: boolean) => {
     const current = form.getFieldValue('cohortIds');
@@ -220,7 +217,7 @@ export function SystemMessagesDialog({
                 {cohorts.map((cohort) => (
                   <div className="flex items-center gap-2" key={cohort.id}>
                     <Checkbox
-                      checked={cohortIds.includes(cohort.id)}
+                      checked={cohortIdSet.has(cohort.id)}
                       id={`cohort-${cohort.id}`}
                       onCheckedChange={(checked) =>
                         toggleCohort(cohort.id, Boolean(checked))

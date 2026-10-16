@@ -40,13 +40,3 @@ export const updateStairSchema = createStairSchema.partial();
 export type Stair = z.infer<typeof stairSchema>;
 export type CreateStairInput = z.infer<typeof createStairSchema>;
 export type UpdateStairInput = z.infer<typeof updateStairSchema>;
-
-/** Payload of `GET /navigator/stairs`. */
-export const stairsResponseSchema = z.object({
-  stairs: z.array(stairRowSchema),
-});
-
-/** Payload of `POST /navigator/stairs`, `PUT` and `DELETE /navigator/stairs/{id}`. */
-export const stairResponseSchema = z.object({
-  stair: stairRowSchema,
-});

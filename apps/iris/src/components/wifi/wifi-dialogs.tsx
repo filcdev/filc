@@ -78,7 +78,7 @@ export function WifiUserDialog({
   const profilesQuery = useWifiSpeedProfiles();
   const profileItems = [
     { label: t('wifiAdminProfiles.none'), value: 'none' },
-    ...(profilesQuery.data?.speedProfiles ?? []).map((profile) => ({
+    ...(profilesQuery.data?.items ?? []).map((profile) => ({
       label: profile.name,
       value: profile.id,
     })),
@@ -629,15 +629,16 @@ export function WifiRoleProfileDialog({
   const isEditing = !!mapping;
 
   const rolesQuery = useRoles();
-  const roleItems = (rolesQuery.data?.roles ?? []).map((role) => ({
+  const roleItems = (rolesQuery.data?.items ?? []).map((role) => ({
     label: role.name,
     value: role.name,
   }));
 
   const profilesQuery = useWifiSpeedProfiles();
-  const profileItems = (profilesQuery.data?.speedProfiles ?? []).map(
-    (profile) => ({ label: profile.name, value: profile.id })
-  );
+  const profileItems = (profilesQuery.data?.items ?? []).map((profile) => ({
+    label: profile.name,
+    value: profile.id,
+  }));
 
   const form = useForm({
     defaultValues: {

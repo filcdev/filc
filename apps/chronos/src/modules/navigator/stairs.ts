@@ -13,7 +13,7 @@ export const listStairsRoute = base.navigator.stairs.list.handler(async () => {
     .from(navigatorStair)
     .orderBy(asc(navigatorStair.name));
 
-  return { stairs };
+  return { items: stairs, total: stairs.length };
 });
 
 export const createStairRoute = base.navigator.stairs.create
@@ -28,7 +28,7 @@ export const createStairRoute = base.navigator.stairs.create
       throw new ORPCError('INTERNAL', { message: 'Failed to create stair' });
     }
 
-    return { stair };
+    return stair;
   });
 
 export const updateStairRoute = base.navigator.stairs.update
@@ -54,7 +54,7 @@ export const updateStairRoute = base.navigator.stairs.update
       throw notFound('Staircase not found');
     }
 
-    return { stair };
+    return stair;
   });
 
 export const deleteStairRoute = base.navigator.stairs.delete
@@ -71,5 +71,5 @@ export const deleteStairRoute = base.navigator.stairs.delete
       throw notFound('Staircase not found');
     }
 
-    return { stair };
+    return { id };
   });

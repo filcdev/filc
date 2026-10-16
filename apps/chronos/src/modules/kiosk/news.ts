@@ -59,18 +59,18 @@ export const listNews = base.kiosk.news.list.handler(async () => {
       item.title !== null
   );
 
-  return {
-    announcements: titled.map((item) => ({
-      body: flattenAnnouncementContent(item.body),
-      highlighted: item.highlighted,
-      id: item.id,
-      imageVersion: item.imageUpdatedAt?.toISOString() ?? null,
-      kioskIds: kioskMappings
-        .filter((m) => m.announcementId === item.id)
-        .map((m) => m.kioskId),
-      title: item.title,
-      validFrom: item.validFrom,
-      validUntil: item.validUntil,
-    })),
-  };
+  const items = titled.map((item) => ({
+    body: flattenAnnouncementContent(item.body),
+    highlighted: item.highlighted,
+    id: item.id,
+    imageVersion: item.imageUpdatedAt?.toISOString() ?? null,
+    kioskIds: kioskMappings
+      .filter((m) => m.announcementId === item.id)
+      .map((m) => m.kioskId),
+    title: item.title,
+    validFrom: item.validFrom,
+    validUntil: item.validUntil,
+  }));
+
+  return { items, total: items.length };
 });

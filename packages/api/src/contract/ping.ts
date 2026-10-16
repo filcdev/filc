@@ -7,13 +7,10 @@ export const pingContract = {
     .route(
       filcRoute({
         description: 'Health check endpoint that returns a pong response.',
-        group: 'Ping',
         method: 'GET',
         operationId: 'getPing',
         path: '/ping',
-        successStatus: 200,
         tags: ['Ping'],
-        type: '@unit PingResponse',
       })
     )
     .output(pingResponseSchema),
@@ -21,13 +18,10 @@ export const pingContract = {
     .route(
       filcRoute({
         description: 'Get the uptime.',
-        group: 'Ping',
         method: 'GET',
         operationId: 'getPingUptime',
         path: '/ping/uptime',
-        successStatus: 200,
         tags: ['Ping'],
-        type: '@unit UptimeResponse',
       })
     )
     .output(uptimeResponseSchema),

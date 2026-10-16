@@ -29,7 +29,8 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_private/admin/api-keys')({
   component: AdminApiKeysPage,
   // Params come off the location rather than `loaderDeps`, matching the admin
-  // users page: a `loaderDeps` above `validateSearch` would fix the search type.
+  // users page; see the routes override in biome.jsonc for why the order matters.
+  validateSearch: searchSchema,
   loader: ({ context, location }) => {
     const params = new URLSearchParams(location.searchStr);
     const page = Number(params.get('page')) || 1;
@@ -44,7 +45,6 @@ export const Route = createFileRoute('/_private/admin/api-keys')({
       })
     );
   },
-  validateSearch: searchSchema,
 });
 
 function AdminApiKeysPage() {
@@ -90,7 +90,7 @@ function AdminApiKeysContent() {
   // The cards describe the loaded page; `total` is the only whole-set count the
   // endpoint returns.
   const stats = useMemo(() => {
-    const rows = apiKeysQuery.data?.apiKeys ?? [];
+    const rows = apiKeysQuery.data?.items ?? [];
     const soonThreshold = Date.now() + EXPIRING_SOON_DAYS * 24 * 60 * 60 * 1000;
     return {
       enabled: rows.filter((apiKey) => apiKey.enabled).length,
@@ -154,7 +154,7 @@ function AdminApiKeysContent() {
       <QueryBoundary data={apiKeysQuery.data} query={apiKeysQuery}>
         {(data) => (
           <div className="space-y-4">
-            <AdminApiKeysTable apiKeys={data.apiKeys} ownerId={ownerId} />
+            <AdminApiKeysTable apiKeys={data.items} ownerId={ownerId} />
             <div className="flex items-center justify-between">
               <div className="text-muted-foreground text-sm">
                 {t('adminApiKeys.currentPage')} {page} / {totalPages}

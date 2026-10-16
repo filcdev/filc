@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { type api, orpc } from '@/utils/orpc';
+import type { MutationCallbacks } from './types';
 
 /**
  * Admin view over *every* user's API keys.
@@ -13,16 +14,10 @@ import { type api, orpc } from '@/utils/orpc';
  * revoke another user's key.
  */
 
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
-
 type AdminApiKeyList = Awaited<ReturnType<typeof api.adminApiKeys.list>>;
 
 /** One API key as the admin table renders it, joined with its owner. */
-export type AdminApiKey = AdminApiKeyList['apiKeys'][number];
+export type AdminApiKey = AdminApiKeyList['items'][number];
 
 /** Page size shared by the admin API-keys page and its query. */
 export const ADMIN_API_KEYS_PAGE_SIZE = 20;

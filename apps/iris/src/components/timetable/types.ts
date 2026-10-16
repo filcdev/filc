@@ -9,27 +9,29 @@ export type SelectionsType = {
   classroom: string | null;
 };
 
-export type CohortItem = Awaited<ReturnType<typeof api.cohort.cohort>>[number];
+export type CohortItem = Awaited<
+  ReturnType<typeof api.cohort.cohort>
+>['items'][number];
 
 export type TimetableItem = Awaited<
   ReturnType<typeof api.timetable.timetables.list>
->[number];
+>['items'][number];
 
 export type TeacherItem = Awaited<
   ReturnType<typeof api.timetable.teachers.getAll>
->[number];
+>['items'][number];
 
 export type ClassroomItem = Awaited<
   ReturnType<typeof api.timetable.classrooms.getAll>
->[number];
+>['items'][number];
 
 export type LessonItem = Awaited<
   ReturnType<typeof api.timetable.lessons.getForCohort>
->[number];
+>['items'][number];
 
 export type PeriodItem = Awaited<
   ReturnType<typeof api.timetable.periods.getAll>
->[number];
+>['items'][number];
 
 export type DayColumn = {
   key: string;

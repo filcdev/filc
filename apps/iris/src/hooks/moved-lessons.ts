@@ -7,7 +7,7 @@ import { api, orpc } from '@/utils/orpc';
 
 type MovedLessonsResponse = Awaited<
   ReturnType<typeof api.timetable.movedLessons.list>
->;
+>['items'];
 
 export type MovedLessonItem = MovedLessonsResponse[number];
 
@@ -28,7 +28,7 @@ export type DayDefinition = Omit<
 
 export type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
 
-type CohortApiResponse = Awaited<ReturnType<typeof api.cohort.cohort>>;
+type CohortApiResponse = Awaited<ReturnType<typeof api.cohort.cohort>>['items'];
 export type Cohort = CohortApiResponse[number];
 
 /** Options accepted by every mutation hook: react to a successful save. */
@@ -39,7 +39,10 @@ export type MutationCallbacks = {
 
 /** Full moved-lesson list. */
 export function useMovedLessons() {
-  return useQuery(orpc.timetable.movedLessons.list.queryOptions());
+  return useQuery({
+    ...orpc.timetable.movedLessons.list.queryOptions(),
+    select: (data) => data.items,
+  });
 }
 
 /** Classroom list for moved-lesson pickers; only fetched when enabled. */
@@ -47,6 +50,7 @@ export function useMovedLessonClassrooms(enabled: boolean) {
   return useQuery({
     ...orpc.timetable.classrooms.getAll.queryOptions(),
     enabled,
+    select: (data) => data.items,
   });
 }
 
@@ -55,7 +59,7 @@ export function useMovedLessonCohorts(enabled: boolean) {
   return useQuery({
     ...orpc.cohort.cohort.queryOptions(),
     enabled,
-    select: sortCohorts,
+    select: (data) => sortCohorts(data.items),
   });
 }
 
@@ -64,6 +68,7 @@ export function useMovedLessonSubstitutions(enabled: boolean) {
   return useQuery({
     ...orpc.timetable.substitutions.list.queryOptions(),
     enabled,
+    select: (data) => data.items,
   });
 }
 
@@ -77,9 +82,9 @@ export function useCohortLessonsForCohorts(
     queryFn: async () =>
       Promise.all(
         cohorts.map(async (cohort) => ({
-          lessons: (await api.timetable.lessons.getForCohort({
-            cohortId: cohort.id,
-          })) as unknown as EnrichedLesson[],
+          lessons: (
+            await api.timetable.lessons.getForCohort({ cohortId: cohort.id })
+          ).items,
         }))
       ),
     queryKey: orpc.timetable.lessons.key({

@@ -6,13 +6,13 @@ import { Field, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plus, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   EntityTable,
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { PageHeader } from '@/components/admin/page-header';
 import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
@@ -136,28 +136,14 @@ function BuildingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('navigator.buildings.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('navigator.buildings.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => buildings.refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4" />
-            {t('navigator.refresh')}
-          </Button>
-          {!editor.isEditing && (
-            <Button onClick={startCreate}>
-              <Plus className="h-4 w-4" />
-              {t('navigator.buildings.add')}
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        addLabel={t('navigator.buildings.add')}
+        canAdd={!editor.isEditing}
+        description={t('navigator.buildings.description')}
+        onAdd={startCreate}
+        onRefresh={() => buildings.refetch()}
+        title={t('navigator.buildings.title')}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <div>

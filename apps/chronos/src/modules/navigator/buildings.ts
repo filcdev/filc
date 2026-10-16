@@ -15,7 +15,7 @@ export const listBuildingsRoute = base.navigator.buildings.list.handler(
       .from(buildingTable)
       .orderBy(asc(buildingTable.name));
 
-    return { buildings };
+    return { items: buildings, total: buildings.length };
   }
 );
 
@@ -33,7 +33,7 @@ export const createBuildingRoute = base.navigator.buildings.create
       });
     }
 
-    return { building };
+    return building;
   });
 
 export const updateBuildingRoute = base.navigator.buildings.update
@@ -57,7 +57,7 @@ export const updateBuildingRoute = base.navigator.buildings.update
       throw notFound('Building not found');
     }
 
-    return { building };
+    return building;
   });
 
 export const deleteBuildingRoute = base.navigator.buildings.delete
@@ -75,7 +75,7 @@ export const deleteBuildingRoute = base.navigator.buildings.delete
         throw notFound('Building not found');
       }
 
-      return { building };
+      return { id };
     } catch (error) {
       // The foreign key is what decides whether the building still has rooms:
       // translating its error avoids a pre-check query that would race a

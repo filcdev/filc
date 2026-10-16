@@ -36,7 +36,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lazy } from '@/components/lazy';
 import { NotificationBell } from '@/components/notification-bell';
-import { openSettings } from '@/components/settings-dialog-store';
+import { useSettingsDialog } from '@/components/settings-dialog-store';
 import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
@@ -89,10 +89,7 @@ export function Navbar({
   showLinks = true,
   showLogo = false,
 }: NavbarProps) {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const { data, isPending } = useSession();
+  const { data } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileNavId = useId();
 
@@ -112,25 +109,11 @@ export function Navbar({
           <div className="flex min-w-0 items-center gap-3">
             {children}
             {data && showLinks && (
-              <Button
-                aria-controls={mobileNavId}
-                aria-expanded={mobileMenuOpen}
-                aria-label={
-                  mobileMenuOpen
-                    ? t('navigation.mobileMenuClose')
-                    : t('navigation.mobileMenuOpen')
-                }
-                className="flex md:hidden"
-                onClick={() => setMobileMenuOpen((prev) => !prev)}
-                size="icon"
-                variant="ghost"
-              >
-                {mobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </Button>
+              <MobileMenuToggle
+                controls={mobileNavId}
+                onToggle={() => setMobileMenuOpen((prev) => !prev)}
+                open={mobileMenuOpen}
+              />
             )}
             {showLogo && (
               <>
@@ -155,153 +138,18 @@ export function Navbar({
             {data && <NotificationBell />}
             {data && <Lazy load={loadBugReportDialog} />}
 
-            {(() => {
-              if (isPending) {
-                return (
-                  <Button
-                    className="h-9 w-24"
-                    disabled
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Spinner />
-                  </Button>
-                );
-              }
-
-              if (data?.user) {
-                const displayName = data.user.name;
-                const displayNickname = data.user.nickname || displayName;
-                const initialsSource =
-                  data.user.nickname ||
-                  data.user.displayName ||
-                  data.user.name ||
-                  data.user.email ||
-                  'U';
-                const initials = initialsSource
-                  // biome-ignore lint/performance/useTopLevelRegex: not needed
-                  .split(/\s+/)
-                  .filter(Boolean)
-                  .map((segment) => segment[0])
-                  .join('')
-                  .slice(0, 2)
-                  .toUpperCase();
-                return (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          className="relative h-9 w-9 rounded-full"
-                          variant="ghost"
-                        >
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage
-                              alt="Profile"
-                              src={data.user.image ?? undefined}
-                            />
-                            <AvatarFallback className="bg-primary text-primary-foreground">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent className="w-56">
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1">
-                            <div className="flex flex-row gap-1">
-                              <p className="font-medium text-sm leading-none">
-                                {displayNickname}
-                              </p>
-                              <p className="font-medium text-muted-foreground text-sm leading-none">
-                                {displayName === displayNickname
-                                  ? null
-                                  : `(${displayName})`}
-                              </p>
-                            </div>
-                            <p className="text-muted-foreground text-xs leading-none">
-                              {data.user.email}
-                            </p>
-                          </div>
-                        </DropdownMenuLabel>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => navigate({ to: '/cards' })}
-                      >
-                        <DoorOpen />
-                        <span>{t('doorlock.manage-cards')}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openSettings()}>
-                        <Cog />
-                        <span>{t('preferences.title')}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={async () => {
-                          await authClient.signOut();
-                          // Clear cached user-specific data (e.g. group
-                          // selections) so the next account can't read it.
-                          queryClient.clear();
-                        }}
-                      >
-                        <LogOut />
-                        <span>{t('logout')}</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                );
-              }
-
-              return (
-                <Button
-                  className="gap-2"
-                  onClick={() => navigate({ to: '/auth/login' })}
-                  size="sm"
-                  variant="default"
-                >
-                  <LogIn className="h-4 w-4" /> {t('sign_in') || 'Sign in'}
-                </Button>
-              );
-            })()}
+            <NavbarAccount />
           </div>
         </div>
       </nav>
       {data && showLinks && (
-        <div
-          className={cn(
-            'grid border-border border-b bg-background/95 backdrop-blur transition-all duration-200 ease-in-out md:hidden',
-            mobileMenuOpen
-              ? 'grid-rows-[1fr] border-b'
-              : 'grid-rows-[0fr] border-b-0'
-          )}
+        <MobileNav
+          canSeeAdminUi={canSeeAdminUi}
           id={mobileNavId}
-        >
-          <div className="overflow-hidden">
-            {mobileMenuOpen && (
-              <div className="flex flex-col gap-1 px-4 py-3">
-                {navItems
-                  .filter((item) => !item.adminOnly || canSeeAdminUi)
-                  .map((item) => (
-                    <Button
-                      className="justify-start gap-3"
-                      key={item.to}
-                      onClick={() => {
-                        navigate({ to: item.to });
-                        setMobileMenuOpen(false);
-                      }}
-                      variant="ghost"
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {t(item.labelKey)}
-                    </Button>
-                  ))}
-              </div>
-            )}
-          </div>
-        </div>
+          items={navItems}
+          onClose={() => setMobileMenuOpen(false)}
+          open={mobileMenuOpen}
+        />
       )}
     </>
   );
@@ -335,6 +183,200 @@ function NavLinks({
             {t(item.labelKey)}
           </Button>
         ))}
+    </div>
+  );
+}
+
+/**
+ * The mobile menu toggle. Rendered only for signed-in users with links.
+ */
+function MobileMenuToggle({
+  controls,
+  onToggle,
+  open,
+}: {
+  controls: string;
+  onToggle: () => void;
+  open: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Button
+      aria-controls={controls}
+      aria-expanded={open}
+      aria-label={
+        open ? t('navigation.mobileMenuClose') : t('navigation.mobileMenuOpen')
+      }
+      className="flex md:hidden"
+      onClick={onToggle}
+      size="icon"
+      variant="ghost"
+    >
+      {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+    </Button>
+  );
+}
+
+/**
+ * The account area of the navbar: a placeholder while the session loads, the
+ * sign-in button when signed out, else the avatar menu. Kept out of `Navbar`
+ * so the three mutually exclusive states read on their own.
+ */
+function NavbarAccount() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { openSettings } = useSettingsDialog();
+  const { data, isPending } = useSession();
+
+  if (isPending) {
+    return (
+      <Button className="h-9 w-24" disabled size="sm" variant="outline">
+        <Spinner />
+      </Button>
+    );
+  }
+
+  if (!data?.user) {
+    return (
+      <Button
+        className="gap-2"
+        onClick={() => navigate({ to: '/auth/login' })}
+        size="sm"
+        variant="default"
+      >
+        <LogIn className="h-4 w-4" /> {t('sign_in') || 'Sign in'}
+      </Button>
+    );
+  }
+
+  const displayName = data.user.name;
+  const displayNickname = data.user.nickname || displayName;
+  const initialsSource =
+    data.user.nickname ||
+    data.user.displayName ||
+    data.user.name ||
+    data.user.email ||
+    'U';
+  const initials = initialsSource
+    // biome-ignore lint/performance/useTopLevelRegex: not needed
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((segment) => segment[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button className="relative h-9 w-9 rounded-full" variant="ghost">
+            <Avatar className="h-9 w-9">
+              <AvatarImage alt="Profile" src={data.user.image ?? undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        }
+      />
+      <DropdownMenuContent className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <div className="flex flex-row gap-1">
+                <p className="font-medium text-sm leading-none">
+                  {displayNickname}
+                </p>
+                <p className="font-medium text-muted-foreground text-sm leading-none">
+                  {displayName === displayNickname ? null : `(${displayName})`}
+                </p>
+              </div>
+              <p className="text-muted-foreground text-xs leading-none">
+                {data.user.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate({ to: '/cards' })}>
+          <DoorOpen />
+          <span>{t('doorlock.manage-cards')}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => openSettings()}>
+          <Cog />
+          <span>{t('preferences.title')}</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={async () => {
+            await authClient.signOut();
+            // Clear cached user-specific data (e.g. group selections) so the
+            // next account can't read it.
+            queryClient.clear();
+          }}
+        >
+          <LogOut />
+          <span>{t('logout')}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
+ * The collapsible mobile navigation for signed-in users; the grid-rows trick
+ * animates it open and closed.
+ */
+function MobileNav({
+  canSeeAdminUi,
+  id,
+  items,
+  onClose,
+  open,
+}: {
+  canSeeAdminUi: boolean;
+  id: string;
+  items: NavItem[];
+  onClose: () => void;
+  open: boolean;
+}) {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className={cn(
+        'grid border-border border-b bg-background/95 backdrop-blur transition-all duration-200 ease-in-out md:hidden',
+        open ? 'grid-rows-[1fr] border-b' : 'grid-rows-[0fr] border-b-0'
+      )}
+      id={id}
+    >
+      <div className="overflow-hidden">
+        {open && (
+          <div className="flex flex-col gap-1 px-4 py-3">
+            {items
+              .filter((item) => !item.adminOnly || canSeeAdminUi)
+              .map((item) => (
+                <Button
+                  className="justify-start gap-3"
+                  key={item.to}
+                  onClick={() => {
+                    navigate({ to: item.to });
+                    onClose();
+                  }}
+                  variant="ghost"
+                >
+                  <item.icon className="h-5 w-5" />
+                  {t(item.labelKey)}
+                </Button>
+              ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

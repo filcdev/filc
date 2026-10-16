@@ -22,7 +22,7 @@ export type UpdateTimetableInput = z.infer<typeof updateTimetableSchema>;
  */
 export const timetableSelectSchema = z.object({
   createdAt: z.date(),
-  id: z.string(),
+  id: z.uuid(),
   name: z.string(),
   updatedAt: z.date(),
   validFrom: z.string().nullable(),
@@ -31,7 +31,7 @@ export const timetableSelectSchema = z.object({
 
 /** Payload of a timetable deletion; the id is all the caller needs to know. */
 export const deleteTimetablePayloadSchema = z.object({
-  id: z.string(),
+  id: z.uuid(),
 });
 
 /** Response previewing the effects of deleting a timetable. */
@@ -39,14 +39,14 @@ export const previewDeletePayloadSchema = z.object({
   cohorts: z.array(
     z.object({
       becomesOrphaned: z.boolean(),
-      id: z.string(),
+      id: z.uuid(),
       name: z.string(),
     })
   ),
   isCurrentTimetable: z.boolean(),
   targetTimetable: z
     .object({
-      id: z.string(),
+      id: z.uuid(),
       name: z.string(),
     })
     .nullable(),
@@ -63,6 +63,6 @@ export const previewDeletePayloadSchema = z.object({
 /** Response of cleaning up orphaned cohorts and unassigned teachers. */
 export const cleanupOrphanedCohortsPayloadSchema = z.object({
   affectedUserCount: z.number(),
-  deletedCohortIds: z.array(z.string()),
-  deletedTeacherIds: z.array(z.string()),
+  deletedCohortIds: z.array(z.uuid()),
+  deletedTeacherIds: z.array(z.uuid()),
 });

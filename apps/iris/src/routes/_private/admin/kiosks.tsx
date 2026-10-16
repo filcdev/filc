@@ -1,11 +1,9 @@
 import type { KioskKind } from '@filcdev/api/domains/kiosk/config';
 import { permissions } from '@filcdev/api/permissions';
 import { Badge } from '@filcdev/ui/components/badge';
-import { Button } from '@filcdev/ui/components/button';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Plus, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KioskDialog } from '@/components/admin/kiosk-dialog';
@@ -13,6 +11,7 @@ import {
   EntityTable,
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
+import { PageHeader } from '@/components/admin/page-header';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { type KioskRow, useDeleteKiosk, useKiosks } from '@/hooks/kiosks';
@@ -86,24 +85,13 @@ function KiosksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('kiosk.title')}
-          </h1>
-          <p className="text-muted-foreground">{t('kiosk.description')}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => kiosks.refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4" />
-            {t('navigator.refresh')}
-          </Button>
-          <Button onClick={startCreate}>
-            <Plus className="h-4 w-4" />
-            {t('kiosk.create')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        addLabel={t('kiosk.create')}
+        description={t('kiosk.description')}
+        onAdd={startCreate}
+        onRefresh={() => kiosks.refetch()}
+        title={t('kiosk.title')}
+      />
 
       <QueryBoundary data={kiosks.data} query={kiosks}>
         {(rows) => (
@@ -123,6 +111,7 @@ function KiosksPage() {
       </QueryBoundary>
 
       <KioskDialog
+        key={`${dialogOpen ? 'open' : 'closed'}:${editingKiosk?.id ?? 'new'}`}
         kiosk={editingKiosk}
         onOpenChange={setDialogOpen}
         open={dialogOpen}

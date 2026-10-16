@@ -28,8 +28,13 @@ export const deviceHealthStatSchema = z.object({
 
 export type DeviceHealthStat = z.infer<typeof deviceHealthStatSchema>;
 
-/** Payload of `GET /doorlock/devices/{id}/stats`: the latest 100 reports, newest first. */
-export const deviceStatsPayloadSchema = z.array(deviceHealthStatSchema);
+/**
+ * Payload of `GET /doorlock/devices/{id}/stats`: the latest 100 reports, newest
+ * first, wrapped in `stats` like `doorlockStatsResponseSchema` below.
+ */
+export const deviceStatsResponseSchema = z.object({
+  stats: z.array(deviceHealthStatSchema),
+});
 
 /** Aggregated doorlock statistics. */
 export const doorlockStatsSchema = z.object({
@@ -42,7 +47,7 @@ export const doorlockStatsSchema = z.object({
   topUsers: z.array(
     z.object({
       count: z.number().int(),
-      id: z.string(),
+      id: z.uuid(),
       name: z.string().nullable(),
       nickname: z.string().nullable(),
     })

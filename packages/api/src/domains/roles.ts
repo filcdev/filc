@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from './list';
 
 export const createRoleSchema = z.object({
   name: z
@@ -36,11 +37,7 @@ export const roleWithCapabilitiesSchema = z.object({
 });
 
 /** Response payload for listing roles. */
-export const rolesListResponseSchema = z.object({
-  roles: z.array(roleWithCapabilitiesSchema),
-});
+export const rolesListResponseSchema = listResponse(roleWithCapabilitiesSchema);
 
 /** Response payload for listing every registered permission. */
-export const permissionsListResponseSchema = z.object({
-  permissions: z.array(z.string()),
-});
+export const permissionsListResponseSchema = listResponse(z.string());

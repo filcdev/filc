@@ -1,4 +1,5 @@
 import z from 'zod';
+import { kioskConfigBlobSchema } from './config';
 import { kioskSummarySchema } from './responses';
 
 /**
@@ -33,7 +34,7 @@ export const kioskHeartbeatResponseSchema = z.union([
   }),
   z.object({
     enabled: z.literal(true),
-    kiosk: kioskSummarySchema.extend({ config: z.unknown() }),
+    kiosk: kioskSummarySchema.extend({ config: kioskConfigBlobSchema }),
     registered: z.literal(true),
   }),
 ]);

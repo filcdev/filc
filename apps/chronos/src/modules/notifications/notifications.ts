@@ -234,20 +234,19 @@ export const registerFcmToken = base.notifications.fcmTokens.register
 
     const { token: fcmTokenValue } = input;
 
-    const [existing] = await db
-      .select()
-      .from(fcmToken)
-      .where(
-        and(eq(fcmToken.userId, userId), eq(fcmToken.token, fcmTokenValue))
-      );
-
-    if (!existing) {
-      await db.insert(fcmToken).values({
+    // Upsert on the (user_id, token) unique index so two concurrent
+    // registrations of the same token cannot both insert.
+    await db
+      .insert(fcmToken)
+      .values({
         deviceInfo: input.deviceInfo ?? null,
         token: fcmTokenValue,
         userId,
+      })
+      .onConflictDoUpdate({
+        set: { deviceInfo: input.deviceInfo ?? null },
+        target: [fcmToken.userId, fcmToken.token],
       });
-    }
 
     return { ok: true as const };
   });

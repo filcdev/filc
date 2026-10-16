@@ -24,15 +24,16 @@ export const hasPermission = (
   if (!userPermissions) {
     return false;
   }
-  if (userPermissions.includes('*')) {
+  const granted = new Set(userPermissions);
+  if (granted.has('*')) {
     return true;
   }
 
   if (typeof permission !== 'string') {
-    return permission.some((item) => userPermissions.includes(item));
+    return permission.some((item) => granted.has(item));
   }
 
-  return userPermissions.includes(permission);
+  return granted.has(permission);
 };
 
 /** Component-body alias kept for existing call sites. */

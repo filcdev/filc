@@ -1,41 +1,36 @@
 import { oc } from '@orpc/contract';
 import z from 'zod';
+import { listResponse } from '../domains/list';
 import {
-  buildingResponseSchema,
-  buildingsResponseSchema,
+  buildingRowSchema,
   createBuildingSchema,
   updateBuildingSchema,
 } from '../domains/navigator/building';
 import {
-  classroomResponseSchema,
-  classroomsResponseSchema,
+  classroomRowSchema,
   createClassroomSchema,
   updateClassroomSchema,
 } from '../domains/navigator/classroom';
 import {
-  classroomTypeResponseSchema,
-  classroomTypesResponseSchema,
+  classroomTypeRowSchema,
   createClassroomTypeSchema,
   updateClassroomTypeSchema,
 } from '../domains/navigator/classroom-type';
 import {
-  corridorResponseSchema,
-  corridorsResponseSchema,
+  corridorRowSchema,
   createCorridorSchema,
   updateCorridorSchema,
 } from '../domains/navigator/corridor';
 import { fullGraphSchema } from '../domains/navigator/graph';
 import {
   createLiftSchema,
-  liftResponseSchema,
-  liftsResponseSchema,
+  liftRowSchema,
   updateLiftSchema,
 } from '../domains/navigator/lift';
 import { navigatorIdParamsSchema } from '../domains/navigator/params';
 import {
   createStairSchema,
-  stairResponseSchema,
-  stairsResponseSchema,
+  stairRowSchema,
   updateStairSchema,
 } from '../domains/navigator/stair';
 import {
@@ -45,14 +40,15 @@ import {
 import {
   createTranslationSchema,
   langQuerySchema,
-  languagesResponseSchema,
+  languageSchema,
   translationMapSchema,
   translationParamsSchema,
-  translationResponseSchema,
-  translationsResponseSchema,
+  translationSchema,
   updateTranslationSchema,
 } from '../domains/navigator/translation';
 import { filcRoute } from './route';
+
+const deleteResponseSchema = z.object({ id: z.string() });
 
 /**
  * The campus navigator: the buildings, rooms, structures and translations the
@@ -66,64 +62,53 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'Create a campus building',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorBuildings',
           path: '/navigator/buildings',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@unit Building',
         })
       )
       .input(createBuildingSchema)
-      .output(buildingResponseSchema),
+      .output(buildingRowSchema),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description:
             'Delete a campus building; its corridors, lifts and stairs cascade with it, but rooms still assigned to it refuse the delete',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorBuildingsById',
           path: '/navigator/buildings/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Building',
         })
       )
       .input(navigatorIdParamsSchema)
-      .output(buildingResponseSchema),
+      .output(deleteResponseSchema),
     list: oc
       .route(
         filcRoute({
           description: 'List the campus buildings',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorBuildings',
           path: '/navigator/buildings',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Building',
         })
       )
-      .output(buildingsResponseSchema),
+      .output(listResponse(buildingRowSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Update a campus building',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorBuildingsById',
           path: '/navigator/buildings/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Building',
         })
       )
       .input(navigatorIdParamsSchema.extend(updateBuildingSchema.shape))
-      .output(buildingResponseSchema),
+      .output(buildingRowSchema),
   },
   classrooms: {
     create: oc
@@ -131,65 +116,54 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'Create a classroom',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorClassrooms',
           path: '/navigator/classrooms',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@unit Classroom',
         })
       )
       .input(createClassroomSchema)
-      .output(classroomResponseSchema),
+      .output(classroomRowSchema),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description:
             'Delete a classroom; rooms the timetable still uses are refused',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorClassroomsById',
           path: '/navigator/classrooms/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Classroom',
         })
       )
       .input(navigatorIdParamsSchema)
-      .output(classroomResponseSchema),
+      .output(deleteResponseSchema),
     list: oc
       .route(
         filcRoute({
           description:
             'List the classrooms, including the ones the campus has not placed yet',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorClassrooms',
           path: '/navigator/classrooms',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Classroom',
         })
       )
-      .output(classroomsResponseSchema),
+      .output(listResponse(classroomRowSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Update a classroom',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorClassroomsById',
           path: '/navigator/classrooms/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Classroom',
         })
       )
       .input(navigatorIdParamsSchema.extend(updateClassroomSchema.shape))
-      .output(classroomResponseSchema),
+      .output(classroomRowSchema),
   },
   classroomTypes: {
     create: oc
@@ -197,64 +171,53 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'Create a classroom type',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorClassroomTypes',
           path: '/navigator/classroom-types',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@unit ClassroomType',
         })
       )
       .input(createClassroomTypeSchema)
-      .output(classroomTypeResponseSchema),
+      .output(classroomTypeRowSchema),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description:
             'Delete a classroom type; types still assigned to a classroom are refused',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorClassroomTypesById',
           path: '/navigator/classroom-types/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit ClassroomType',
         })
       )
       .input(navigatorIdParamsSchema)
-      .output(classroomTypeResponseSchema),
+      .output(deleteResponseSchema),
     list: oc
       .route(
         filcRoute({
           description: 'List the classroom types',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorClassroomTypes',
           path: '/navigator/classroom-types',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof ClassroomType',
         })
       )
-      .output(classroomTypesResponseSchema),
+      .output(listResponse(classroomTypeRowSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Update a classroom type',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorClassroomTypesById',
           path: '/navigator/classroom-types/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit ClassroomType',
         })
       )
       .input(navigatorIdParamsSchema.extend(updateClassroomTypeSchema.shape))
-      .output(classroomTypeResponseSchema),
+      .output(classroomTypeRowSchema),
   },
   corridors: {
     create: oc
@@ -262,63 +225,52 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'Create a corridor',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorCorridors',
           path: '/navigator/corridors',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@unit Corridor',
         })
       )
       .input(createCorridorSchema)
-      .output(corridorResponseSchema),
+      .output(corridorRowSchema),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Delete a corridor',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorCorridorsById',
           path: '/navigator/corridors/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Corridor',
         })
       )
       .input(navigatorIdParamsSchema)
-      .output(corridorResponseSchema),
+      .output(deleteResponseSchema),
     list: oc
       .route(
         filcRoute({
           description: 'List the corridors',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorCorridors',
           path: '/navigator/corridors',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Corridor',
         })
       )
-      .output(corridorsResponseSchema),
+      .output(listResponse(corridorRowSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Update a corridor',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorCorridorsById',
           path: '/navigator/corridors/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Corridor',
         })
       )
       .input(navigatorIdParamsSchema.extend(updateCorridorSchema.shape))
-      .output(corridorResponseSchema),
+      .output(corridorRowSchema),
   },
   export: oc
     .route(
@@ -326,13 +278,10 @@ export const navigatorContract = {
         auth: true,
         description:
           'Export every navigator row (buildings, classroom types, classrooms, corridors, lifts, stairs and translations) as a versioned JSON payload.',
-        group: 'Navigator',
         method: 'GET',
         operationId: 'getNavigatorExport',
         path: '/navigator/export',
-        successStatus: 200,
         tags: ['Navigator'],
-        type: '@unit NavigatorTransfer',
       })
     )
     .output(z.file()),
@@ -341,13 +290,10 @@ export const navigatorContract = {
       filcRoute({
         description:
           'The whole campus graph in the upstream wire format, without a session. Only rows the campus has placed on the map appear.',
-        group: 'Navigator',
         method: 'GET',
         operationId: 'getNavigatorGraph',
         path: '/navigator/graph',
-        successStatus: 200,
         tags: ['Navigator'],
-        type: '@unit FullGraph',
       })
     )
     .output(fullGraphSchema),
@@ -357,13 +303,10 @@ export const navigatorContract = {
         auth: true,
         description:
           'Insert or update every collection in a navigator export payload by its key, inside one transaction. Rows absent from the payload are never deleted.',
-        group: 'Navigator',
         method: 'POST',
         operationId: 'postNavigatorImport',
         path: '/navigator/import',
-        successStatus: 200,
         tags: ['Navigator'],
-        type: '@unit NavigatorImport',
       })
     )
     .input(navigatorImportUploadSchema)
@@ -374,63 +317,52 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'Create a lift',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorLifts',
           path: '/navigator/lifts',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@unit Lift',
         })
       )
       .input(createLiftSchema)
-      .output(liftResponseSchema),
+      .output(liftRowSchema),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Delete a lift',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorLiftsById',
           path: '/navigator/lifts/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Lift',
         })
       )
       .input(navigatorIdParamsSchema)
-      .output(liftResponseSchema),
+      .output(deleteResponseSchema),
     list: oc
       .route(
         filcRoute({
           description: 'List the lifts',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorLifts',
           path: '/navigator/lifts',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Lift',
         })
       )
-      .output(liftsResponseSchema),
+      .output(listResponse(liftRowSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Update a lift',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorLiftsById',
           path: '/navigator/lifts/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Lift',
         })
       )
       .input(navigatorIdParamsSchema.extend(updateLiftSchema.shape))
-      .output(liftResponseSchema),
+      .output(liftRowSchema),
   },
   stairs: {
     create: oc
@@ -438,124 +370,102 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'Create a staircase',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorStairs',
           path: '/navigator/stairs',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@unit Stair',
         })
       )
       .input(createStairSchema)
-      .output(stairResponseSchema),
+      .output(stairRowSchema),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Delete a staircase',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorStairsById',
           path: '/navigator/stairs/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Stair',
         })
       )
       .input(navigatorIdParamsSchema)
-      .output(stairResponseSchema),
+      .output(deleteResponseSchema),
     list: oc
       .route(
         filcRoute({
           description: 'List the staircases',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorStairs',
           path: '/navigator/stairs',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Stair',
         })
       )
-      .output(stairsResponseSchema),
+      .output(listResponse(stairRowSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Update a staircase',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorStairsById',
           path: '/navigator/stairs/{id}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Stair',
         })
       )
       .input(navigatorIdParamsSchema.extend(updateStairSchema.shape))
-      .output(stairResponseSchema),
+      .output(stairRowSchema),
   },
   translations: {
     available: oc
       .route(
         filcRoute({
           description: 'List the languages the campus translations exist in',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorTranslationsAvailable',
           path: '/navigator/translations/available',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Language',
         })
       )
-      .output(languagesResponseSchema),
+      .output(listResponse(languageSchema)),
     create: oc
       .route(
         filcRoute({
           auth: true,
           description:
             'Create or replace one codename across every given language',
-          group: 'Navigator',
           method: 'POST',
           operationId: 'postNavigatorTranslations',
           path: '/navigator/translations',
           successStatus: 201,
           tags: ['Navigator'],
-          type: '@listof Translation',
         })
       )
       .input(createTranslationSchema)
-      .output(translationsResponseSchema),
+      .output(listResponse(translationSchema)),
     delete: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Delete one codename in one language',
-          group: 'Navigator',
           method: 'DELETE',
           operationId: 'deleteNavigatorTranslationsByLangByKey',
           path: '/navigator/translations/{lang}/{key}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Translation',
         })
       )
       .input(translationParamsSchema)
-      .output(translationResponseSchema),
+      .output(deleteResponseSchema),
     lang: oc
       .route(
         filcRoute({
           description:
             'One language as a flat `text_key -> text` bundle, without a session',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorTranslationsLang',
           path: '/navigator/translations/lang',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: 'TranslationBundle',
         })
       )
       .input(langQuerySchema)
@@ -565,31 +475,25 @@ export const navigatorContract = {
         filcRoute({
           auth: true,
           description: 'List every translation row',
-          group: 'Navigator',
           method: 'GET',
           operationId: 'getNavigatorTranslations',
           path: '/navigator/translations',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@listof Translation',
         })
       )
-      .output(translationsResponseSchema),
+      .output(listResponse(translationSchema)),
     update: oc
       .route(
         filcRoute({
           auth: true,
           description: 'Write the text of one codename in one language',
-          group: 'Navigator',
           method: 'PUT',
           operationId: 'putNavigatorTranslationsByLangByKey',
           path: '/navigator/translations/{lang}/{key}',
-          successStatus: 200,
           tags: ['Navigator'],
-          type: '@unit Translation',
         })
       )
       .input(translationParamsSchema.extend(updateTranslationSchema.shape))
-      .output(translationResponseSchema),
+      .output(translationSchema),
   },
 };

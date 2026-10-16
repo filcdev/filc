@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from '../list';
 
 const baseCardPayloadSchema = z.object({
   authorizedDeviceIds: z.array(z.uuid()).default([]),
@@ -52,16 +53,9 @@ export const doorlockCardSchema = z.object({
 export type DoorlockCard = z.infer<typeof doorlockCardSchema>;
 
 /** Payload of `GET /doorlock/cards` and `GET /doorlock/self/cards`. */
-export const cardListResponseSchema = z.object({
-  cards: z.array(doorlockCardSchema),
-});
-
-/** Payload of `POST /doorlock/cards`, `PUT /doorlock/cards/{id}` and `PUT /doorlock/self/cards/{id}/frozen`. */
-export const cardResponseSchema = z.object({
-  card: doorlockCardSchema,
-});
+export const cardListResponseSchema = listResponse(doorlockCardSchema);
 
 /** Payload of `GET /doorlock/cards/users`. */
-export const doorlockUserListResponseSchema = z.object({
-  users: z.array(doorlockUserSummarySchema),
-});
+export const doorlockUserListResponseSchema = listResponse(
+  doorlockUserSummarySchema
+);

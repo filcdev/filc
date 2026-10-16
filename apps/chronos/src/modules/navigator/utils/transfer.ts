@@ -85,21 +85,3 @@ export const navigatorImportSchema = navigatorTransferSchema.extend({
   lifts: z.array(liftImportRowSchema),
   stairs: z.array(stairImportRowSchema),
 });
-
-export const navigatorTransferResponseSchema = z.object({
-  data: navigatorTransferSchema,
-  success: z.literal(true),
-});
-
-export const navigatorImportResponseSchema = z.object({
-  data: z.object({
-    buildings: z.number(),
-    classrooms: z.number(),
-    classroomTypes: z.number(),
-    corridors: z.number(),
-    lifts: z.number(),
-    stairs: z.number(),
-    translations: z.number(),
-  }),
-  success: z.literal(true),
-});

@@ -33,7 +33,7 @@ import {
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import { RefreshCw } from 'lucide-react';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DateRangePicker,
@@ -49,6 +49,8 @@ import {
   useUpdateBugReportStatus,
 } from '@/hooks/bug-reports';
 import { useHasPermission } from '@/hooks/use-has-permission';
+import { useSortable } from '@/hooks/use-sortable';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/bug-reports')({
@@ -83,12 +85,16 @@ const STATUS_BADGE_VARIANTS: Record<
   resolved: 'outline',
 };
 
-function formatDate(value: string | Date): string {
+function formatDate(value: string | Date, language: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return String(value);
   }
-  return date.toLocaleString();
+  return formatLocalizedDate(date, language, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'Europe/Budapest',
+  });
 }
 
 function getSortValue(
@@ -126,11 +132,6 @@ function AdminBugReportsPage() {
   const [dateRange, setDateRange] = useState<DateRangeValue>({});
   const [page, setPage] = useState(1);
 
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
-
   const [selected, setSelected] = useState<BugReportItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -154,38 +155,16 @@ function AdminBugReportsPage() {
     },
   });
 
-  const reports = reportsQuery.data?.reports ?? [];
+  const reports = reportsQuery.data?.items ?? [];
   const total = reportsQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const sortedReports = useMemo(() => {
-    if (!(sortColumn && sortDirection)) {
-      return reports;
-    }
-    return [...reports].sort((a, b) => {
-      const aVal = getSortValue(a, sortColumn);
-      const bVal = getSortValue(b, sortColumn);
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-      }
-      const comparison = String(aVal).localeCompare(String(bVal));
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  }, [reports, sortColumn, sortDirection]);
-
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const {
+    column: sortColumn,
+    direction: sortDirection,
+    rows: sortedReports,
+    toggle: handleSort,
+  } = useSortable(reports, { getValue: getSortValue });
 
   const statusItems = [
     { label: t('bugReports.all'), value: 'all' },
@@ -267,240 +246,313 @@ function AdminBugReportsPage() {
         </Alert>
       )}
       {!isLoading && reports.length > 0 && (
-        <>
-          <div className="w-full overflow-x-auto rounded-md border">
-            <Table className="w-full min-w-3xl">
-              <TableHeader>
-                <TableRow>
-                  <SortableHeader
-                    column="subject"
-                    label={t('bugReports.subject')}
-                    onSort={handleSort}
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                  />
-                  <SortableHeader
-                    column="reporter"
-                    label={t('bugReports.reporter')}
-                    onSort={handleSort}
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                  />
-                  <SortableHeader
-                    column="page"
-                    label={t('bugReports.page')}
-                    onSort={handleSort}
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                  />
-                  <SortableHeader
-                    column="date"
-                    label={t('bugReports.date')}
-                    onSort={handleSort}
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                  />
-                  <SortableHeader
-                    column="status"
-                    label={t('bugReports.status')}
-                    onSort={handleSort}
-                    sortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                  />
-                  <TableHead>{t('bugReports.details')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedReports.map((report) => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-medium">
-                      {report.subject}
-                    </TableCell>
-                    <TableCell>
-                      {report.reporterEmail ?? t('bugReports.anonymous')}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {report.page ?? '-'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(report.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      {hasWritePermission ? (
-                        <StatusSelect
-                          current={report.status}
-                          onSelect={(next) =>
-                            updateStatus.mutate({
-                              id: report.id,
-                              status: next,
-                            })
-                          }
-                        />
-                      ) : (
-                        <StatusBadge status={report.status} />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        onClick={() => openDetails(report)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        {t('bugReports.details')}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="text-muted-foreground text-sm">
-              {t('bugReports.currentPage')} {page} / {totalPages}
-            </div>
-            <div className="space-x-2">
-              <Button
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-                size="sm"
-                variant="outline"
-              >
-                {t('common.previous')}
-              </Button>
-              <Button
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-                size="sm"
-                variant="outline"
-              >
-                {t('common.next')}
-              </Button>
-            </div>
-          </div>
-        </>
+        <BugReportsTable
+          hasWritePermission={hasWritePermission}
+          onOpenDetails={openDetails}
+          onPageChange={setPage}
+          onSort={handleSort}
+          onStatusChange={(report, status) =>
+            updateStatus.mutate({ id: report.id, status })
+          }
+          page={page}
+          reports={sortedReports}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          totalPages={totalPages}
+        />
       )}
 
       {selected && (
-        <Dialog
+        <BugReportDetailsDialog
+          hasWritePermission={hasWritePermission}
+          onDeleteRequest={() => setDeleteConfirmOpen(true)}
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
               setSelected(null);
             }
           }}
+          onStatusChange={(report, status) =>
+            updateStatus.mutate({ id: report.id, status })
+          }
           open={isDialogOpen}
-        >
-          <DialogContent className="flex max-h-[85vh] max-w-lg flex-col p-2">
-            <div className="flex-1 overflow-y-auto p-6">
-              <DialogHeader>
-                <DialogTitle>{selected.subject}</DialogTitle>
-              </DialogHeader>
-
-              <dl className="mt-4 space-y-3 text-sm">
-                <div>
-                  <dt className="font-medium text-muted-foreground">
-                    {t('bugReports.reporter')}
-                  </dt>
-                  <dd>{selected.reporterEmail ?? t('bugReports.anonymous')}</dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-muted-foreground">
-                    {t('bugReports.page')}
-                  </dt>
-                  <dd>{selected.page ?? '-'}</dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-muted-foreground">
-                    {t('bugReports.date')}
-                  </dt>
-                  <dd>{formatDate(selected.createdAt)}</dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-muted-foreground">
-                    {t('bugReports.status')}
-                  </dt>
-                  <dd>
-                    {hasWritePermission ? (
-                      <StatusSelect
-                        current={selected.status}
-                        onSelect={(next) =>
-                          updateStatus.mutate({
-                            id: selected.id,
-                            status: next,
-                          })
-                        }
-                      />
-                    ) : (
-                      <StatusBadge status={selected.status} />
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-muted-foreground">
-                    {t('bugReports.description')}
-                  </dt>
-                  <dd className="wrap-break-word whitespace-pre-wrap">
-                    {selected.description}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <DialogFooter className="border-t p-4">
-              {hasWritePermission && (
-                <Button
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  variant="destructive"
-                >
-                  {t('common.delete')}
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  setIsDialogOpen(false);
-                  setSelected(null);
-                }}
-                variant="outline"
-              >
-                {t('bugReports.close')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          report={selected}
+        />
       )}
 
-      <Dialog onOpenChange={setDeleteConfirmOpen} open={deleteConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('bugReports.deleteConfirm')}</DialogTitle>
-            <DialogDescription>
-              {t('bugReports.deleteDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              onClick={() => setDeleteConfirmOpen(false)}
-              variant="outline"
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              disabled={deleteReport.isPending}
-              onClick={() => {
-                if (selected) {
-                  deleteReport.mutate({ id: selected.id });
-                }
-              }}
-              variant="destructive"
-            >
-              {deleteReport.isPending
-                ? t('common.deleting')
-                : t('common.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BugReportDeleteDialog
+        isPending={deleteReport.isPending}
+        onConfirm={() => {
+          if (selected) {
+            deleteReport.mutate({ id: selected.id });
+          }
+        }}
+        onOpenChange={setDeleteConfirmOpen}
+        open={deleteConfirmOpen}
+      />
     </div>
+  );
+}
+
+/** The report detail dialog, opened from a row's Details button. */
+function BugReportDetailsDialog({
+  hasWritePermission,
+  onDeleteRequest,
+  onOpenChange,
+  onStatusChange,
+  open,
+  report,
+}: {
+  hasWritePermission: boolean;
+  onDeleteRequest: () => void;
+  onOpenChange: (open: boolean) => void;
+  onStatusChange: (report: BugReportItem, status: BugReportStatus) => void;
+  open: boolean;
+  report: BugReportItem;
+}) {
+  const { i18n, t } = useTranslation();
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col p-2">
+        <div className="flex-1 overflow-y-auto p-6">
+          <DialogHeader>
+            <DialogTitle>{report.subject}</DialogTitle>
+          </DialogHeader>
+
+          <dl className="mt-4 space-y-3 text-sm">
+            <div>
+              <dt className="font-medium text-muted-foreground">
+                {t('bugReports.reporter')}
+              </dt>
+              <dd>{report.reporterEmail ?? t('bugReports.anonymous')}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">
+                {t('bugReports.page')}
+              </dt>
+              <dd>{report.page ?? '-'}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">
+                {t('bugReports.date')}
+              </dt>
+              <dd>{formatDate(report.createdAt, i18n.language)}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">
+                {t('bugReports.status')}
+              </dt>
+              <dd>
+                {hasWritePermission ? (
+                  <StatusSelect
+                    current={report.status}
+                    onSelect={(next) => onStatusChange(report, next)}
+                  />
+                ) : (
+                  <StatusBadge status={report.status} />
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-muted-foreground">
+                {t('bugReports.description')}
+              </dt>
+              <dd className="wrap-break-word whitespace-pre-wrap">
+                {report.description}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <DialogFooter className="border-t p-4">
+          {hasWritePermission && (
+            <Button onClick={onDeleteRequest} variant="destructive">
+              {t('common.delete')}
+            </Button>
+          )}
+          <Button onClick={() => onOpenChange(false)} variant="outline">
+            {t('bugReports.close')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Confirmation dialog for deleting the selected report. */
+function BugReportDeleteDialog({
+  isPending,
+  onConfirm,
+  onOpenChange,
+  open,
+}: {
+  isPending: boolean;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('bugReports.deleteConfirm')}</DialogTitle>
+          <DialogDescription>
+            {t('bugReports.deleteDescription')}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} variant="outline">
+            {t('common.cancel')}
+          </Button>
+          <Button
+            disabled={isPending}
+            onClick={onConfirm}
+            variant="destructive"
+          >
+            {isPending ? t('common.deleting') : t('common.delete')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type BugReportsTableProps = {
+  hasWritePermission: boolean;
+  onOpenDetails: (report: BugReportItem) => void;
+  onPageChange: (page: number) => void;
+  onSort: (column: SortColumn) => void;
+  onStatusChange: (report: BugReportItem, status: BugReportStatus) => void;
+  page: number;
+  reports: BugReportItem[];
+  sortColumn: SortColumn | null;
+  sortDirection: 'asc' | 'desc' | null;
+  totalPages: number;
+};
+
+/** The reports table and its pager; the page renders it only when there are rows. */
+function BugReportsTable({
+  hasWritePermission,
+  onOpenDetails,
+  onPageChange,
+  onSort,
+  onStatusChange,
+  page,
+  reports,
+  sortColumn,
+  sortDirection,
+  totalPages,
+}: BugReportsTableProps) {
+  const { i18n, t } = useTranslation();
+
+  return (
+    <>
+      <div className="w-full overflow-x-auto rounded-md border">
+        <Table className="w-full min-w-3xl">
+          <TableHeader>
+            <TableRow>
+              <SortableHeader
+                column="subject"
+                label={t('bugReports.subject')}
+                onSort={onSort}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+              />
+              <SortableHeader
+                column="reporter"
+                label={t('bugReports.reporter')}
+                onSort={onSort}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+              />
+              <SortableHeader
+                column="page"
+                label={t('bugReports.page')}
+                onSort={onSort}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+              />
+              <SortableHeader
+                column="date"
+                label={t('bugReports.date')}
+                onSort={onSort}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+              />
+              <SortableHeader
+                column="status"
+                label={t('bugReports.status')}
+                onSort={onSort}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+              />
+              <TableHead>{t('bugReports.details')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reports.map((report) => (
+              <TableRow key={report.id}>
+                <TableCell className="font-medium">{report.subject}</TableCell>
+                <TableCell>
+                  {report.reporterEmail ?? t('bugReports.anonymous')}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {report.page ?? '-'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(report.createdAt, i18n.language)}
+                </TableCell>
+                <TableCell>
+                  {hasWritePermission ? (
+                    <StatusSelect
+                      current={report.status}
+                      onSelect={(next) => onStatusChange(report, next)}
+                    />
+                  ) : (
+                    <StatusBadge status={report.status} />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    onClick={() => onOpenDetails(report)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {t('bugReports.details')}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="text-muted-foreground text-sm">
+          {t('bugReports.currentPage')} {page} / {totalPages}
+        </div>
+        <div className="space-x-2">
+          <Button
+            disabled={page <= 1}
+            onClick={() => onPageChange(page - 1)}
+            size="sm"
+            variant="outline"
+          >
+            {t('common.previous')}
+          </Button>
+          <Button
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(page + 1)}
+            size="sm"
+            variant="outline"
+          >
+            {t('common.next')}
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }
 

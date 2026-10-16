@@ -177,12 +177,10 @@ export const createSelfWifi = base.wifi.self.create
       .where(eq(wifiDevice.wifiUserId, account.id));
 
     return {
-      wifi: {
-        banned: account.banned,
-        devices,
-        speedLimit,
-        username: account.username,
-      },
+      banned: account.banned,
+      devices,
+      speedLimit,
+      username: account.username,
     };
   });
 
@@ -205,18 +203,16 @@ export const getSelfWifi = base.wifi.self.get
     const speed = await resolveEffectiveSpeedProfileDetails(account);
 
     return {
-      wifi: {
-        banned: account.banned,
-        devices,
-        speedLimit: {
-          downloadSpeedMbps: speed.downloadSpeedMbps,
-          roleName: speed.roleName,
-          source: speed.source,
-          speedProfileId: speed.speedProfileId,
-          uploadSpeedMbps: speed.uploadSpeedMbps,
-        },
-        username: account.username,
+      banned: account.banned,
+      devices,
+      speedLimit: {
+        downloadSpeedMbps: speed.downloadSpeedMbps,
+        roleName: speed.roleName,
+        source: speed.source,
+        speedProfileId: speed.speedProfileId,
+        uploadSpeedMbps: speed.uploadSpeedMbps,
       },
+      username: account.username,
     };
   });
 
@@ -243,7 +239,7 @@ export const updateSelfWifiDevice = base.wifi.self.updateDevice
       throw notFound('WiFi device not found');
     }
 
-    return { device };
+    return device;
   });
 
 export const updateSelfWifiPassword = base.wifi.self.changePassword

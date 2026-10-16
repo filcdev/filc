@@ -39,29 +39,23 @@ const inputGroupAddonVariants = cva(
   }
 );
 
+/**
+ * A layout container for an input's prefix or suffix — deliberately not
+ * interactive, so a click handler here would be an interaction on a
+ * non-interactive element. When an addon should focus the field (a search
+ * icon, say), wrap that content in a `<label htmlFor={inputId}>` at the call
+ * site: the label forwards activation without any script.
+ */
 function InputGroupAddon({
   className,
   align = 'inline-start',
   ...props
 }: ComponentProps<'fieldset'> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: no
     <fieldset
       className={cn(inputGroupAddonVariants({ align }), className)}
       data-align={align}
       data-slot="input-group-addon"
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest('button')) {
-          return;
-        }
-        e.currentTarget.parentElement?.querySelector('input')?.focus();
-      }}
-      onKeyDown={(e) => {
-        if ((e.target as HTMLElement).closest('button')) {
-          return;
-        }
-        e.currentTarget.parentElement?.querySelector('input')?.focus();
-      }}
       {...props}
     />
   );

@@ -12,7 +12,10 @@ import {
   announcementKioskMtm,
 } from '#modules/news/schema';
 import { activeAnnouncementConditions } from '#modules/news/utils/announcements';
-import { validateCohortIds } from '#modules/news/utils/cohort';
+import {
+  cohortVisibilityCondition,
+  validateCohortIds,
+} from '#modules/news/utils/cohort';
 import { validateKioskIds } from '#modules/news/utils/kiosks';
 import {
   announcementSelect,
@@ -127,29 +130,34 @@ async function setAnnouncementTargeting(
     kioskIds,
   }: { cohortIds?: string[] | undefined; kioskIds?: string[] | undefined }
 ): Promise<void> {
-  if (cohortIds !== undefined) {
-    await db
-      .delete(announcementCohortMtm)
-      .where(eq(announcementCohortMtm.announcementId, announcementId));
+  // Clear-then-reinsert must not be observable half-done: a failure between the
+  // two leaves the announcement with no targeting at all (i.e. visible to
+  // everyone), which is the opposite of what the caller asked for.
+  await db.transaction(async (tx) => {
+    if (cohortIds !== undefined) {
+      await tx
+        .delete(announcementCohortMtm)
+        .where(eq(announcementCohortMtm.announcementId, announcementId));
 
-    if (cohortIds.length > 0) {
-      await db
-        .insert(announcementCohortMtm)
-        .values(cohortIds.map((cohortId) => ({ announcementId, cohortId })));
+      if (cohortIds.length > 0) {
+        await tx
+          .insert(announcementCohortMtm)
+          .values(cohortIds.map((cohortId) => ({ announcementId, cohortId })));
+      }
     }
-  }
 
-  if (kioskIds !== undefined) {
-    await db
-      .delete(announcementKioskMtm)
-      .where(eq(announcementKioskMtm.announcementId, announcementId));
+    if (kioskIds !== undefined) {
+      await tx
+        .delete(announcementKioskMtm)
+        .where(eq(announcementKioskMtm.announcementId, announcementId));
 
-    if (kioskIds.length > 0) {
-      await db
-        .insert(announcementKioskMtm)
-        .values(kioskIds.map((kioskId) => ({ announcementId, kioskId })));
+      if (kioskIds.length > 0) {
+        await tx
+          .insert(announcementKioskMtm)
+          .values(kioskIds.map((kioskId) => ({ announcementId, kioskId })));
+      }
     }
-  }
+  });
 }
 
 export const listAnnouncements = base.news.announcements.list
@@ -176,22 +184,18 @@ export const listAnnouncements = base.news.announcements.list
       conditions.push(eq(announcement.kioskOnly, false));
     }
 
-    // Cohort filtering: show items that are global (no rows in M2M)
-    // or targeted to the user's cohort. Users without a cohort only see
-    // global announcements. includeAll=true bypasses this filter.
+    // Cohort filtering: show items that are global or targeted to the viewer's
+    // cohort. includeAll=true bypasses this filter.
     if (!bypassCohortFilter) {
-      if (userCohortId) {
-        conditions.push(
-          sql`(
-            NOT EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id})
-            OR EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id} AND cohort_id = ${userCohortId})
-          )`
-        );
-      } else {
-        conditions.push(
-          sql`NOT EXISTS (SELECT 1 FROM announcement_cohort_mtm WHERE announcement_id = ${announcement.id})`
-        );
-      }
+      conditions.push(
+        cohortVisibilityCondition(
+          announcementCohortMtm,
+          announcementCohortMtm.announcementId,
+          announcement.id,
+          announcementCohortMtm.cohortId,
+          userCohortId
+        )
+      );
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -235,7 +239,7 @@ export const listAnnouncements = base.news.announcements.list
         .map((m) => m.kioskId),
     }));
 
-    return { data, total: totalResult[0]?.count ?? 0 };
+    return { items: data, total: totalResult[0]?.count ?? 0 };
   });
 
 export const getAnnouncement = base.news.announcements.get

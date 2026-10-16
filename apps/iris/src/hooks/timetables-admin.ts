@@ -3,26 +3,24 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { sortCohorts } from '@/utils/cohort';
 import { api, orpc } from '@/utils/orpc';
+import type { MutationCallbacks } from './types';
 
 type TimetablesResponse = Awaited<
   ReturnType<typeof api.timetable.timetables.list>
->;
+>['items'];
 
 export type TimetableRow = TimetablesResponse[number];
 
 type CohortsData = Awaited<
   ReturnType<typeof api.timetable.cohorts.getAllForTimetable>
->;
-
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
+>['items'];
 
 /** All timetables. */
 export function useTimetables() {
-  return useQuery(orpc.timetable.timetables.list.queryOptions());
+  return useQuery({
+    ...orpc.timetable.timetables.list.queryOptions(),
+    select: (data) => data.items,
+  });
 }
 
 /** Active timetable (when the user has no cohort) plus the cohort options. */
@@ -41,9 +39,10 @@ export function useCohortSelector(userCohortId: string | null) {
         throw new Error('Failed to load cohorts');
       }
       return sortCohorts(
-        userCohortId
+        (userCohortId
           ? await api.cohort.cohort()
           : await api.timetable.cohorts.getAllForTimetable({ timetableId })
+        ).items
       );
     },
     // One key for either branch: the payload is a cohort list, scoped to the

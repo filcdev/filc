@@ -16,7 +16,7 @@ export const groupResponseSchema = z.object({
   name: z.string(),
   selected: z.boolean(),
   studentCount: z.number().nullable(),
-  teacherId: z.string().nullable(),
+  teacherId: z.uuid().nullable(),
 });
 
 export type GroupResponseInput = z.infer<typeof groupResponseSchema>;

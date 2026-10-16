@@ -10,11 +10,12 @@ import {
 import { MailCheck, MailX } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { openSettings } from '@/components/settings-dialog-store';
+import { useSettingsDialog } from '@/components/settings-dialog-store';
 import {
   type NotificationItem,
   useMarkNotificationRead,
 } from '@/hooks/notifications';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { typeLabel } from '@/utils/notification-labels';
 
 type NotificationViewerDialogProps = {
@@ -28,7 +29,8 @@ export function NotificationViewerDialog({
   onOpenChange,
   notification,
 }: NotificationViewerDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const { openSettings } = useSettingsDialog();
   const markReadMutation = useMarkNotificationRead();
 
   useEffect(() => {
@@ -55,7 +57,11 @@ export function NotificationViewerDialog({
 
         <p className="whitespace-pre-wrap text-sm">{notification.content}</p>
         <p className="text-muted-foreground text-xs">
-          {new Date(notification.createdAt).toLocaleString()}
+          {formatLocalizedDate(notification.createdAt, i18n.language, {
+            dateStyle: 'short',
+            timeStyle: 'short',
+            timeZone: 'Europe/Budapest',
+          })}
         </p>
 
         <DialogFooter>

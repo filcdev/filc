@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from './list';
 
 /**
  * Wire schemas for the admin view over every user's API keys.
@@ -44,10 +45,7 @@ export type ListAdminApiKeysQueryInput = z.infer<
 >;
 
 /** Response payload for the admin API-key list. */
-export const adminApiKeyListResponseSchema = z.object({
-  apiKeys: z.array(adminApiKeySchema),
-  total: z.number(),
-});
+export const adminApiKeyListResponseSchema = listResponse(adminApiKeySchema);
 
 export type AdminApiKeyListResponse = z.infer<
   typeof adminApiKeyListResponseSchema

@@ -120,5 +120,5 @@ export const deviceStats = base.doorlock.devices.stats
       },
     }));
 
-    return formattedStats;
+    return { stats: formattedStats };
   });

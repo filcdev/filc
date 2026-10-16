@@ -56,7 +56,7 @@ function CardsPage() {
     onSaved: () => setActivateCard(null),
   });
 
-  const cards = cardsQuery.data?.cards;
+  const cards = cardsQuery.data?.items;
 
   if (cardsQuery.isLoading) {
     return (

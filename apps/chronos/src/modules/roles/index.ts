@@ -1,13 +1,17 @@
 import { permissions } from '@filcdev/api/permissions';
-import { SQL } from 'bun';
 import { requireAuthorization } from '#middleware/auth';
 import { base } from '#orpc';
 import { rbac } from '#utils/authorization';
 import { badRequest, conflict, notFound } from '#utils/http';
+import { isUniqueViolation } from '#utils/postgres';
 
 export const listPermissions = base.roles.permissions
   .use(requireAuthorization(permissions.rolesRead))
-  .handler(() => ({ permissions: rbac.getAllPermissions() }));
+  .handler(() => {
+    const allPermissions = rbac.getAllPermissions();
+
+    return { items: allPermissions, total: allPermissions.length };
+  });
 
 export const listRoles = base.roles.list
   .use(requireAuthorization(permissions.rolesRead))
@@ -19,7 +23,7 @@ export const listRoles = base.roles.list
       name,
     }));
 
-    return { roles };
+    return { items: roles, total: roles.length };
   });
 
 export const createRole = base.roles.create
@@ -35,8 +39,10 @@ export const createRole = base.roles.create
     try {
       await rbac.createRole(name, rolePermissions);
     } catch (error) {
-      // Postgres unique-violation from a concurrent create.
-      if (error instanceof SQL.PostgresError && error.code === '23505') {
+      // Postgres unique-violation from a concurrent create. Bun puts the
+      // SQLSTATE on `errno` — its `code` is its own string, so comparing that
+      // to a SQLSTATE never matched and the race answered 500.
+      if (isUniqueViolation(error)) {
         throw conflict(`Role "${name}" already exists`);
       }
       throw error;

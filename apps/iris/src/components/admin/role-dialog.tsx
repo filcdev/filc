@@ -20,7 +20,7 @@ import { Input } from '@filcdev/ui/components/input';
 import { cn } from '@filcdev/ui/lib/utils';
 import { useForm, useStore } from '@tanstack/react-form';
 import { CheckIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type Role,
@@ -44,7 +44,9 @@ export function RoleDialog({
   const { t } = useTranslation();
   const isEditing = editingRole !== null;
   const [permissionInput, setPermissionInput] = useState('');
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>(
+    editingRole?.can ?? []
+  );
   const permissionsQuery = usePermissions();
 
   const knownPermissions = permissionsQuery.data ?? [];
@@ -59,14 +61,6 @@ export function RoleDialog({
       }
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      form.reset({ name: editingRole?.name ?? '' });
-      setPermissions(editingRole?.can ?? []);
-      setPermissionInput('');
-    }
-  }, [open, editingRole, form.reset]);
 
   const createRole = useCreateRole({ onSaved: () => onOpenChange(false) });
   const updateRole = useUpdateRole({ onSaved: () => onOpenChange(false) });
@@ -84,7 +78,7 @@ export function RoleDialog({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleAddPermission();
     }
@@ -94,6 +88,7 @@ export function RoleDialog({
 
   const nameValue = useStore(form.store, (state) => state.values.name);
   const isNameValid = ROLE_NAME_REGEX.test(nameValue) && nameValue.length > 0;
+  const permissionSet = new Set(permissions);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -173,7 +168,7 @@ export function RoleDialog({
                 </CommandEmpty>
                 <CommandGroup>
                   {knownPermissions.map((perm) => {
-                    const selected = permissions.includes(perm);
+                    const selected = permissionSet.has(perm);
                     return (
                       <CommandItem
                         key={perm}

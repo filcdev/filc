@@ -1,5 +1,6 @@
 import z from 'zod';
-import { kioskKindSchema } from './config';
+import { listResponse } from '../list';
+import { kioskConfigBlobSchema, kioskKindSchema } from './config';
 
 /** The identifying fields a box needs to learn about itself on a heartbeat. */
 export const kioskSummarySchema = z.object({
@@ -16,7 +17,7 @@ export const kioskSummarySchema = z.object({
  */
 export const kioskRowSchema = z.object({
   appVersion: z.string().nullable(),
-  config: z.unknown(),
+  config: kioskConfigBlobSchema,
   createdAt: z.date(),
   enabled: z.boolean(),
   id: z.uuid(),
@@ -29,36 +30,27 @@ export const kioskRowSchema = z.object({
 });
 
 /** Payload of `GET /kiosk`: every registered box, in name order. */
-export const kioskListResponseSchema = z.object({
-  kiosks: z.array(kioskRowSchema),
-});
-
-/** Payload of the kiosk registry write endpoints: the affected row. */
-export const kioskResponseSchema = z.object({
-  kiosk: kioskRowSchema,
-});
+export const kioskListResponseSchema = listResponse(kioskRowSchema);
 
 /**
- * Payload of `GET /kiosk/news`: the TV marquee items, in `validUntil` order.
- * `body` is the flattened plain text of the announcement, `imageVersion` is a
- * token the kiosk appends to the image URL (`?v=`) so a replaced image is
- * visible despite the long max-age, and `kioskIds` limits a takeover to
- * specific boxes (empty means every kiosk).
+ * One TV marquee item. `body` is the flattened plain text of the announcement,
+ * `imageVersion` is a token the kiosk appends to the image URL (`?v=`) so a
+ * replaced image is visible despite the long max-age, and `kioskIds` limits a
+ * takeover to specific boxes (empty means every kiosk).
  */
-export const kioskNewsResponseSchema = z.object({
-  announcements: z.array(
-    z.object({
-      body: z.string(),
-      highlighted: z.boolean(),
-      id: z.uuid(),
-      imageVersion: z.string().nullable(),
-      kioskIds: z.array(z.string()),
-      title: z.string(),
-      validFrom: z.date(),
-      validUntil: z.date(),
-    })
-  ),
+export const kioskNewsItemSchema = z.object({
+  body: z.string(),
+  highlighted: z.boolean(),
+  id: z.uuid(),
+  imageVersion: z.string().nullable(),
+  kioskIds: z.array(z.uuid()),
+  title: z.string(),
+  validFrom: z.date(),
+  validUntil: z.date(),
 });
+
+/** Payload of `GET /kiosk/news`: the TV marquee items, in `validUntil` order. */
+export const kioskNewsResponseSchema = listResponse(kioskNewsItemSchema);
 
 /** Payload of `GET /kiosk/weather`: the current conditions shown on the TV. */
 export const kioskWeatherResponseSchema = z.object({
@@ -68,28 +60,28 @@ export const kioskWeatherResponseSchema = z.object({
   windKph: z.number(),
 });
 
-/** Payload of `GET /kiosk/petrik-news`: the navigator slideshow items. */
-export const kioskPetrikNewsResponseSchema = z.object({
-  items: z.array(
-    z.object({
-      body: z.string(),
-      imageUrl: z.string().nullable(),
-      publishedAt: z.string(),
-      title: z.string(),
-      url: z.string(),
-    })
-  ),
+/** One navigator slideshow item. */
+export const kioskPetrikNewsItemSchema = z.object({
+  body: z.string(),
+  imageUrl: z.string().nullable(),
+  publishedAt: z.string(),
+  title: z.string(),
+  url: z.string(),
 });
 
-/** Payload of `POST /kiosk/departures`: one entry per configured card, `null` when no stop answered. */
-export const kioskDeparturesResponseSchema = z.object({
-  departures: z.array(
-    z
-      .object({
-        label: z.string(),
-        predictedDepartureTime: z.number(),
-        routeShortDesc: z.string(),
-      })
-      .nullable()
-  ),
-});
+/** Payload of `GET /kiosk/petrik-news`: the navigator slideshow items. */
+export const kioskPetrikNewsResponseSchema = listResponse(
+  kioskPetrikNewsItemSchema
+);
+
+/** One departure card: `null` when no stop of the group answered. */
+export const kioskDepartureSchema = z
+  .object({
+    label: z.string(),
+    predictedDepartureTime: z.number(),
+    routeShortDesc: z.string(),
+  })
+  .nullable();
+
+/** Payload of `POST /kiosk/departures`: one entry per configured card. */
+export const kioskDeparturesResponseSchema = listResponse(kioskDepartureSchema);

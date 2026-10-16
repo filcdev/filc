@@ -10,13 +10,10 @@ export const dashboardContract = {
     .route(
       filcRoute({
         description: 'Get aggregated dashboard statistics',
-        group: 'Dashboard',
         method: 'GET',
         operationId: 'getDashboardStats',
         path: '/dashboard/stats',
-        successStatus: 200,
         tags: ['Dashboard'],
-        type: '@unit DashboardStatsResponse',
       })
     )
     .input(statsQuerySchema)

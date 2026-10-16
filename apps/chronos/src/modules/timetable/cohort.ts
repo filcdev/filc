@@ -15,5 +15,5 @@ export const getCohortsForTimetable =
 
     const cohorts = cohortRows.map((r) => r.cohort);
 
-    return cohorts;
+    return { items: cohorts, total: cohorts.length };
   });

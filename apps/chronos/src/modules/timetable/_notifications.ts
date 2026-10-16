@@ -1,7 +1,7 @@
 import { env } from '#utils/environment';
 import {
-  resolveAudienceForCohortReselection,
   resolveAudienceForLessonChange,
+  resolveAudienceForUser,
 } from '#utils/notifications/engine';
 import { isHungarianLocale } from '#utils/notifications/locale';
 import {
@@ -230,7 +230,7 @@ export const timetableNotifications: readonly NotificationHandler[] = [
           : 'Cohort Reselection Required',
       };
     },
-    getAudience: (payload) => resolveAudienceForCohortReselection(payload),
+    getAudience: (payload) => resolveAudienceForUser(payload),
     getDelay: () => 0,
     type: 'cohort_reselection_required',
   },

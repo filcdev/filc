@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import { sortCohorts } from '@/utils/cohort';
 import { api, orpc } from '@/utils/orpc';
 
@@ -15,40 +16,42 @@ const QUERY_OPTIONS = {
 
 type TimetablesResponse = Awaited<
   ReturnType<typeof api.timetable.timetables.list>
->;
+>['items'];
 
 /** A single entry of the public timetables list. */
 export type PublicTimetable = TimetablesResponse[number];
 
 type CohortsForTimetableResponse = Awaited<
   ReturnType<typeof api.timetable.cohorts.getAllForTimetable>
->;
+>['items'];
 
 /** A cohort scoped to one timetable. */
 export type PublicCohort = CohortsForTimetableResponse[number];
 
 type TeachersResponse = Awaited<
   ReturnType<typeof api.timetable.teachers.getAll>
->;
+>['items'];
 
 /** A teacher from the public teacher list. */
 export type PublicTeacher = TeachersResponse[number];
 
 type ClassroomsResponse = Awaited<
   ReturnType<typeof api.timetable.classrooms.getAll>
->;
+>['items'];
 
 /** A classroom from the public classroom list. */
 export type PublicClassroom = ClassroomsResponse[number];
 
-type PeriodsResponse = Awaited<ReturnType<typeof api.timetable.periods.getAll>>;
+type PeriodsResponse = Awaited<
+  ReturnType<typeof api.timetable.periods.getAll>
+>['items'];
 
 /** A period of the daily schedule for one timetable. */
 export type PublicPeriod = PeriodsResponse[number];
 
 type LessonsResponse = Awaited<
   ReturnType<typeof api.timetable.lessons.getForCohort>
->;
+>['items'];
 
 /** A lesson of a cohort/teacher/room timetable view. */
 export type PublicLesson = LessonsResponse[number];
@@ -63,6 +66,7 @@ export function useTimetables() {
   return useQuery({
     ...orpc.timetable.timetables.list.queryOptions(),
     ...QUERY_OPTIONS,
+    select: (data) => data.items,
   });
 }
 
@@ -87,7 +91,7 @@ export function useTimetableCohorts(timetableId: string | null | undefined) {
     }),
     ...QUERY_OPTIONS,
     enabled: !!timetableId,
-    select: sortCohorts,
+    select: (data) => sortCohorts(data.items),
   });
 }
 
@@ -96,6 +100,7 @@ export function useTeachers() {
   return useQuery({
     ...orpc.timetable.teachers.getAll.queryOptions(),
     ...QUERY_OPTIONS,
+    select: (data) => data.items,
   });
 }
 
@@ -129,6 +134,7 @@ export function useClassrooms() {
   return useQuery({
     ...orpc.timetable.classrooms.getAll.queryOptions(),
     ...QUERY_OPTIONS,
+    select: (data) => data.items,
   });
 }
 
@@ -142,6 +148,7 @@ export function useTimetablePeriods(timetableId: string | null | undefined) {
     }),
     ...QUERY_OPTIONS,
     enabled: !!timetableId,
+    select: (data) => data.items,
   });
 }
 
@@ -159,21 +166,27 @@ export function useTimetableLessons(
       const selection = selectionId!;
       const timetable = timetableId ? { timetableId } : {};
       if (filter === 'class') {
-        return await api.timetable.lessons.getForCohort({
-          cohortId: selection,
-          ...timetable,
-        });
+        return (
+          await api.timetable.lessons.getForCohort({
+            cohortId: selection,
+            ...timetable,
+          })
+        ).items;
       }
       if (filter === 'classroom') {
-        return await api.timetable.lessons.getForRoom({
-          classroomId: selection,
-          ...timetable,
-        });
+        return (
+          await api.timetable.lessons.getForRoom({
+            classroomId: selection,
+            ...timetable,
+          })
+        ).items;
       }
-      return await api.timetable.lessons.getForTeacher({
-        teacherId: selection,
-        ...timetable,
-      });
+      return (
+        await api.timetable.lessons.getForTeacher({
+          teacherId: selection,
+          ...timetable,
+        })
+      ).items;
     },
     // One key per view: which of the three lesson endpoints answered is part
     // of the selection, and every one of them is invalidated by the family key.
@@ -188,6 +201,7 @@ export function usePublicSubstitutions(enabled: boolean) {
   return useQuery({
     ...orpc.timetable.substitutions.list.queryOptions(),
     enabled,
+    select: (data) => data.items,
   });
 }
 
@@ -196,6 +210,7 @@ export function usePublicMovedLessons(enabled: boolean) {
   return useQuery({
     ...orpc.timetable.movedLessons.list.queryOptions(),
     enabled,
+    select: (data) => data.items,
   });
 }
 
@@ -209,3 +224,16 @@ export function useTimetableUserSettings(enabled: boolean) {
     enabled,
   });
 }
+
+/**
+ * The public timetable page's search params. Lives with the rest of the public
+ * timetable data rather than in the route module: the timetable component needs
+ * its type as well, and a route file that exports anything besides its route
+ * breaks Fast Refresh (`react-doctor/only-export-components`).
+ */
+export const publicTimetableSearchSchema = z.object({
+  cohort: z.string().optional(),
+  room: z.string().optional(),
+  teacher: z.string().optional(),
+  timetable: z.string().optional(),
+});

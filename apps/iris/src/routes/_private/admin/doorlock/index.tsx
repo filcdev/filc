@@ -15,7 +15,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { StatCard } from '@/components/admin/stat-card';
-import { DoorOpenChart } from '@/components/doorlock/door-open-chart';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -23,6 +23,13 @@ import {
   useDoorlockStatsOverview,
 } from '@/hooks/doorlock-admin';
 import { orpc, prefetch } from '@/utils/orpc';
+
+// recharts is the heaviest import on this page; load the chart only when the
+// stats have arrived and it actually renders.
+const loadDoorOpenChart = () =>
+  import('@/components/doorlock/door-open-chart').then((m) => ({
+    default: m.DoorOpenChart,
+  }));
 
 export const Route = createFileRoute('/_private/admin/doorlock/')({
   component: () => (
@@ -110,7 +117,11 @@ function DashboardContent({
           </CardHeader>
           <CardContent>
             {stats ? (
-              <DoorOpenChart data={stats.doorOpenSeries} />
+              <Lazy
+                data={stats.doorOpenSeries}
+                fallback={<Skeleton className="h-80 w-full" />}
+                load={loadDoorOpenChart}
+              />
             ) : (
               <Skeleton className="h-80 w-full" />
             )}

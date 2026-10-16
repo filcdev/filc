@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from '../list';
 
 /** Path parameter for routes addressing a single doorlock device or card by id. */
 export const idParamSchema = z.object({ id: z.uuid() });
@@ -35,14 +36,7 @@ export const doorlockDeviceSchema = z.object({
 export type DoorlockDevice = z.infer<typeof doorlockDeviceSchema>;
 
 /** Payload of `GET /doorlock/devices`. */
-export const deviceListResponseSchema = z.object({
-  devices: z.array(doorlockDeviceSchema),
-});
-
-/** Payload of `POST /doorlock/devices` and `PUT /doorlock/devices/{id}`. */
-export const deviceResponseSchema = z.object({
-  device: doorlockDeviceSchema,
-});
+export const deviceListResponseSchema = listResponse(doorlockDeviceSchema);
 
 /** Payload of the delete endpoints: the id that was removed. */
 export const idResponseSchema = z.object({ id: z.uuid() });

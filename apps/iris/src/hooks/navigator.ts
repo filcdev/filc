@@ -2,21 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { api, orpc } from '@/utils/orpc';
-
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
+import type { MutationCallbacks } from './types';
 
 /**
  * A room row as the campus list returns it. The list also carries the rooms the
  * timetable imported, and those have no campus capacity or type until someone
  * places them on the map: only the graph normalizes those two away.
  */
-export type ClassroomRow = Awaited<
-  ReturnType<typeof api.navigator.classrooms.list>
->['classrooms'][number];
+export type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 
 /** The whole campus in one payload; the canvas builds its scene from this. */
 export function useNavigatorGraph() {
@@ -27,7 +20,7 @@ export function useNavigatorGraph() {
 export function useBuildings() {
   return useQuery({
     ...orpc.navigator.buildings.list.queryOptions(),
-    select: (payload) => payload.buildings,
+    select: (payload) => payload.items,
   });
 }
 
@@ -35,7 +28,7 @@ export function useBuildings() {
 export function useClassroomTypes() {
   return useQuery({
     ...orpc.navigator.classroomTypes.list.queryOptions(),
-    select: (payload) => payload.classroom_types,
+    select: (payload) => payload.items,
   });
 }
 
@@ -43,7 +36,7 @@ export function useClassroomTypes() {
 export function useClassrooms() {
   return useQuery({
     ...orpc.navigator.classrooms.list.queryOptions(),
-    select: (payload) => payload.classrooms,
+    select: (payload) => payload.items,
   });
 }
 
@@ -51,7 +44,7 @@ export function useClassrooms() {
 export function useCorridors() {
   return useQuery({
     ...orpc.navigator.corridors.list.queryOptions(),
-    select: (payload) => payload.corridors,
+    select: (payload) => payload.items,
   });
 }
 
@@ -59,7 +52,7 @@ export function useCorridors() {
 export function useLifts() {
   return useQuery({
     ...orpc.navigator.lifts.list.queryOptions(),
-    select: (payload) => payload.lifts,
+    select: (payload) => payload.items,
   });
 }
 
@@ -67,7 +60,7 @@ export function useLifts() {
 export function useStairs() {
   return useQuery({
     ...orpc.navigator.stairs.list.queryOptions(),
-    select: (payload) => payload.stairs,
+    select: (payload) => payload.items,
   });
 }
 
@@ -75,7 +68,7 @@ export function useStairs() {
 export function useNavigatorTranslations() {
   return useQuery({
     ...orpc.navigator.translations.list.queryOptions(),
-    select: (payload) => payload.translations,
+    select: (payload) => payload.items,
   });
 }
 
@@ -83,7 +76,7 @@ export function useNavigatorTranslations() {
 export function useAvailableLanguages() {
   return useQuery({
     ...orpc.navigator.translations.available.queryOptions(),
-    select: (payload) => payload.languages,
+    select: (payload) => payload.items,
   });
 }
 

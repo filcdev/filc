@@ -12,7 +12,11 @@ import {
 } from '@filcdev/ui/components/dialog';
 import { Input } from '@filcdev/ui/components/input';
 import { Label } from '@filcdev/ui/components/label';
-import { useForm, useStore } from '@tanstack/react-form';
+import {
+  type ReactFormExtendedApi,
+  useForm,
+  useStore,
+} from '@tanstack/react-form';
 import { Save, Trash, Upload } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -222,6 +226,231 @@ function AnnouncementImageField({
   );
 }
 
+type AudiencePickerProps = {
+  /** Shown when nothing is picked, i.e. the selection means "everyone". */
+  allHint: string;
+  allLabel: string;
+  /** Shown when at least one entry is picked. */
+  hint: string;
+  idPrefix: string;
+  items: { id: string; name: string }[];
+  label: string;
+  /** Clears the selection, which means "everyone". */
+  onClear: () => void;
+  onToggle: (id: string, checked: boolean) => void;
+  selectedIds: string[];
+};
+
+/**
+ * The cohort / kiosk picker: an "all" row that clears the selection, then one
+ * checkbox per entry. Both pickers in this dialog are the same control.
+ */
+function AudiencePicker({
+  allHint,
+  allLabel,
+  hint,
+  idPrefix,
+  items,
+  label,
+  onClear,
+  onToggle,
+  selectedIds,
+}: AudiencePickerProps) {
+  const allId = useId();
+  const selectedIdSet = new Set(selectedIds);
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={selectedIds.length === 0}
+            id={allId}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                onClear();
+              }
+            }}
+          />
+          <label
+            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            htmlFor={allId}
+          >
+            {allLabel}
+          </label>
+        </div>
+        {items.map((item) => (
+          <div className="flex items-center gap-2" key={item.id}>
+            <Checkbox
+              checked={selectedIdSet.has(item.id)}
+              id={`${idPrefix}-${item.id}`}
+              onCheckedChange={(checked) => onToggle(item.id, Boolean(checked))}
+            />
+            <label
+              className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor={`${idPrefix}-${item.id}`}
+            >
+              {item.name}
+            </label>
+          </div>
+        ))}
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {selectedIds.length === 0 ? allHint : hint}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The dialog form's API, as handed to its field-group components. TanStack's
+ * validator generics are invariant, so they are spelled out to match the
+ * `useForm` call below.
+ */
+type AnnouncementFormApi = ReactFormExtendedApi<
+  AnnouncementFormValues,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  unknown
+>;
+
+type AnnouncementFieldsProps = {
+  contentId: string;
+  dateRangeId: string;
+  form: AnnouncementFormApi;
+  locale: string;
+  setShowDateRange: (show: boolean) => void;
+  showDateRange: boolean;
+};
+
+/**
+ * The announcement's text and validity: title, content, the start date, and —
+ * when a range is enabled — the end date and its toggle.
+ */
+function AnnouncementFields({
+  contentId,
+  dateRangeId,
+  form,
+  locale,
+  setShowDateRange,
+  showDateRange,
+}: AnnouncementFieldsProps) {
+  const { t } = useTranslation();
+  // The earliest selectable day, computed once per render rather than inside
+  // the DatePicker prop so the value is stable across the field's renders.
+  const today = startOfDay(new Date());
+
+  return (
+    <>
+      <form.Field name="title">
+        {(field) => (
+          <div className="space-y-2">
+            <Label htmlFor={field.name}>{t('announcements.titleLabel')}</Label>
+            <Input
+              id={field.name}
+              onChange={(e) => field.handleChange(e.target.value)}
+              placeholder={t('announcements.titlePlaceholder')}
+              value={field.state.value}
+            />
+          </div>
+        )}
+      </form.Field>
+
+      <form.Field name="content">
+        {(field) => (
+          <div className="space-y-2">
+            <Label htmlFor={contentId}>{t('announcements.content')}</Label>
+            <textarea
+              className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              id={contentId}
+              onChange={(e) =>
+                field.handleChange([{ content: e.target.value, type: 'text' }])
+              }
+              placeholder={t('announcements.contentPlaceholder')}
+              value={field.state.value[0]?.content || ''}
+            />
+          </div>
+        )}
+      </form.Field>
+
+      <form.Field name="validFrom">
+        {(field) => (
+          <div className="space-y-2">
+            <Label htmlFor="validFrom">
+              {showDateRange
+                ? t('announcements.validFrom')
+                : t('announcements.date')}
+            </Label>
+            <DatePicker
+              date={field.state.value}
+              disabledDays={{ before: today }}
+              locale={locale}
+              onDateChange={(date) => {
+                const newFrom = startOfDay(date ?? new Date());
+                field.handleChange(newFrom);
+                if (form.getFieldValue('validUntil') < newFrom) {
+                  form.setFieldValue('validUntil', endOfDay(newFrom));
+                }
+              }}
+            />
+          </div>
+        )}
+      </form.Field>
+
+      {showDateRange && (
+        <form.Field name="validUntil">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor="validUntil">
+                {t('announcements.validUntil')}
+              </Label>
+              <DatePicker
+                date={field.state.value}
+                disabledDays={{ before: form.getFieldValue('validFrom') }}
+                locale={locale}
+                onDateChange={(date) =>
+                  field.handleChange(endOfDay(date ?? new Date()))
+                }
+              />
+            </div>
+          )}
+        </form.Field>
+      )}
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          checked={showDateRange}
+          id={dateRangeId}
+          onCheckedChange={(checked) => {
+            setShowDateRange(Boolean(checked));
+            if (!checked) {
+              form.setFieldValue(
+                'validUntil',
+                endOfDay(form.getFieldValue('validFrom'))
+              );
+            }
+          }}
+        />
+        <label
+          className="cursor-pointer font-medium text-sm leading-none"
+          htmlFor={dateRangeId}
+        >
+          {t('announcements.setDateRange')}
+        </label>
+      </div>
+    </>
+  );
+}
+
 export function AnnouncementsDialog({
   item,
   onOpenChange,
@@ -248,10 +477,8 @@ export function AnnouncementsDialog({
   const formId = useId();
   const contentId = useId();
   const dateRangeId = useId();
-  const cohortEveryoneId = useId();
   const highlightedId = useId();
   const kioskOnlyId = useId();
-  const kioskEveryId = useId();
 
   const [showDateRange, setShowDateRange] = useState(() => hasDateRange(item));
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -264,7 +491,20 @@ export function AnnouncementsDialog({
     ? `${apiBaseUrl}/kiosk/news/${imageRow?.id}/image?v=${imageRow?.imageUpdatedAt}`
     : null;
 
-  const form = useForm({
+  const form = useForm<
+    AnnouncementFormValues,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    unknown
+  >({
     defaultValues: initialState(item),
     onSubmit: async ({ value }) => {
       const payload = {
@@ -304,14 +544,6 @@ export function AnnouncementsDialog({
       }
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      form.reset(initialState(item));
-      setShowDateRange(hasDateRange(item));
-      setImageFile(null);
-    }
-  }, [open, item, form.reset]);
 
   const cohortIds = useStore(form.store, (state) => state.values.cohortIds);
   const kioskIds = useStore(form.store, (state) => state.values.kioskIds);
@@ -358,155 +590,26 @@ export function AnnouncementsDialog({
               form.handleSubmit();
             }}
           >
-            <form.Field name="title">
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>
-                    {t('announcements.titleLabel')}
-                  </Label>
-                  <Input
-                    id={field.name}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder={t('announcements.titlePlaceholder')}
-                    value={field.state.value}
-                  />
-                </div>
-              )}
-            </form.Field>
+            <AnnouncementFields
+              contentId={contentId}
+              dateRangeId={dateRangeId}
+              form={form}
+              locale={getIntlLocale(i18n.language)}
+              setShowDateRange={setShowDateRange}
+              showDateRange={showDateRange}
+            />
 
-            <form.Field name="content">
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={contentId}>
-                    {t('announcements.content')}
-                  </Label>
-                  <textarea
-                    className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                    id={contentId}
-                    onChange={(e) =>
-                      field.handleChange([
-                        { content: e.target.value, type: 'text' },
-                      ])
-                    }
-                    placeholder={t('announcements.contentPlaceholder')}
-                    value={field.state.value[0]?.content || ''}
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            <form.Field name="validFrom">
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor="validFrom">
-                    {showDateRange
-                      ? t('announcements.validFrom')
-                      : t('announcements.date')}
-                  </Label>
-                  <DatePicker
-                    date={field.state.value}
-                    disabledDays={{ before: startOfDay(new Date()) }}
-                    locale={getIntlLocale(i18n.language)}
-                    onDateChange={(date) => {
-                      const newFrom = startOfDay(date ?? new Date());
-                      field.handleChange(newFrom);
-                      if (form.getFieldValue('validUntil') < newFrom) {
-                        form.setFieldValue('validUntil', endOfDay(newFrom));
-                      }
-                    }}
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            {showDateRange && (
-              <form.Field name="validUntil">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor="validUntil">
-                      {t('announcements.validUntil')}
-                    </Label>
-                    <DatePicker
-                      date={field.state.value}
-                      disabledDays={{
-                        before: form.getFieldValue('validFrom'),
-                      }}
-                      locale={getIntlLocale(i18n.language)}
-                      onDateChange={(date) =>
-                        field.handleChange(endOfDay(date ?? new Date()))
-                      }
-                    />
-                  </div>
-                )}
-              </form.Field>
-            )}
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={showDateRange}
-                id={dateRangeId}
-                onCheckedChange={(checked) => {
-                  setShowDateRange(Boolean(checked));
-                  if (!checked) {
-                    form.setFieldValue(
-                      'validUntil',
-                      endOfDay(form.getFieldValue('validFrom'))
-                    );
-                  }
-                }}
-              />
-              <label
-                className="cursor-pointer font-medium text-sm leading-none"
-                htmlFor={dateRangeId}
-              >
-                {t('announcements.setDateRange')}
-              </label>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('announcements.cohorts')}</Label>
-              <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={cohortIds.length === 0}
-                    id={cohortEveryoneId}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        form.setFieldValue('cohortIds', []);
-                      }
-                    }}
-                  />
-                  <label
-                    className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    htmlFor={cohortEveryoneId}
-                  >
-                    {t('announcements.everyone')}
-                  </label>
-                </div>
-                {cohorts.map((cohort) => (
-                  <div className="flex items-center gap-2" key={cohort.id}>
-                    <Checkbox
-                      checked={cohortIds.includes(cohort.id)}
-                      id={`cohort-${cohort.id}`}
-                      onCheckedChange={(checked) =>
-                        toggleCohort(cohort.id, Boolean(checked))
-                      }
-                    />
-                    <label
-                      className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      htmlFor={`cohort-${cohort.id}`}
-                    >
-                      {cohort.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {cohortIds.length === 0
-                  ? t('announcements.everyoneHint')
-                  : t('announcements.cohortsHint')}
-              </p>
-            </div>
+            <AudiencePicker
+              allHint={t('announcements.everyoneHint')}
+              allLabel={t('announcements.everyone')}
+              hint={t('announcements.cohortsHint')}
+              idPrefix="cohort"
+              items={cohorts}
+              label={t('announcements.cohorts')}
+              onClear={() => form.setFieldValue('cohortIds', [])}
+              onToggle={toggleCohort}
+              selectedIds={cohortIds}
+            />
 
             <form.Field name="highlighted">
               {(field) => (
@@ -549,50 +652,17 @@ export function AnnouncementsDialog({
             </form.Field>
 
             {canManageKiosks && (
-              <div className="space-y-2">
-                <Label>{t('announcements.kiosks')}</Label>
-                <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={kioskIds.length === 0}
-                      id={kioskEveryId}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          form.setFieldValue('kioskIds', []);
-                        }
-                      }}
-                    />
-                    <label
-                      className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      htmlFor={kioskEveryId}
-                    >
-                      {t('announcements.allKiosks')}
-                    </label>
-                  </div>
-                  {tvKiosks.map((kiosk) => (
-                    <div className="flex items-center gap-2" key={kiosk.id}>
-                      <Checkbox
-                        checked={kioskIds.includes(kiosk.id)}
-                        id={`kiosk-${kiosk.id}`}
-                        onCheckedChange={(checked) =>
-                          toggleKiosk(kiosk.id, Boolean(checked))
-                        }
-                      />
-                      <label
-                        className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        htmlFor={`kiosk-${kiosk.id}`}
-                      >
-                        {kiosk.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  {kioskIds.length === 0
-                    ? t('announcements.allKiosksHint')
-                    : t('announcements.kiosksHint')}
-                </p>
-              </div>
+              <AudiencePicker
+                allHint={t('announcements.allKiosksHint')}
+                allLabel={t('announcements.allKiosks')}
+                hint={t('announcements.kiosksHint')}
+                idPrefix="kiosk"
+                items={tvKiosks}
+                label={t('announcements.kiosks')}
+                onClear={() => form.setFieldValue('kioskIds', [])}
+                onToggle={toggleKiosk}
+                selectedIds={kioskIds}
+              />
             )}
 
             <AnnouncementImageField

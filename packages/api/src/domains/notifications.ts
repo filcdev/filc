@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from './list';
 
 /**
  * The per-type email/push toggles stored in
@@ -67,13 +68,13 @@ export const tokenDeleteSchema = z.object({
 
 export type UnregisterFcmTokenInput = z.infer<typeof tokenDeleteSchema>;
 
-export const notificationIdParamsSchema = z.object({ id: z.string().uuid() });
+export const notificationIdParamsSchema = z.object({ id: z.uuid() });
 
 export type NotificationIdParams = z.infer<typeof notificationIdParamsSchema>;
 
 export const unsubscribeSchema = z.object({
   token: z.string().regex(/^[a-f0-9]{64}$/i, 'Invalid unsubscribe token'),
-  userId: z.string().uuid(),
+  userId: z.uuid(),
 });
 
 export type UnsubscribeInput = z.infer<typeof unsubscribeSchema>;
@@ -146,10 +147,9 @@ export type NotificationRow = z.infer<typeof notificationRowSchema>;
  * Paged notification history. The row count used to travel in the response
  * envelope's `total`; it is part of the payload now.
  */
-export const notificationListResponseSchema = z.object({
-  items: z.array(notificationRowSchema),
-  total: z.number(),
-});
+export const notificationListResponseSchema = listResponse(
+  notificationRowSchema
+);
 
 export type NotificationListResponse = z.infer<
   typeof notificationListResponseSchema

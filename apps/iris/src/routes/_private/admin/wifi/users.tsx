@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '@/components/confirm-provider';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { RelativeTime } from '@/components/util/relative-time';
 import {
@@ -38,8 +39,8 @@ import {
 import {
   defaultWifiFilterState,
   type WifiFilterState,
-  WifiFilters,
-} from '@/components/wifi/wifi-filters';
+} from '@/components/wifi/wifi-filter-state';
+import { WifiFilters } from '@/components/wifi/wifi-filters';
 import {
   useDeleteWifiDevice,
   useDeleteWifiUser,
@@ -47,9 +48,9 @@ import {
   useWifiSpeedProfiles,
   useWifiUsers,
   type WifiDevice,
+  type WifiSpeedProfile,
   type WifiUser,
 } from '@/hooks/wifi-admin';
-import { confirmDestructiveAction } from '@/utils/confirm';
 
 /** Devices idle longer than this are flagged. */
 const STALE_DAYS = 45;
@@ -155,9 +156,13 @@ function WifiUsersPage() {
   const deleteUser = useDeleteWifiUser();
   const deleteDevice = useDeleteWifiDevice();
 
-  const users = usersQuery.data?.users ?? [];
-  const allDevices = devicesQuery.data?.devices ?? [];
-  const profiles = profilesQuery.data?.speedProfiles ?? [];
+  // These `?? []` fallbacks would be new arrays on every render, which makes
+  // every memo and callback depending on them re-run (react-doctor/exhaustive-deps).
+  const usersData = usersQuery.data?.items;
+  const devicesData = devicesQuery.data?.items;
+  const users = useMemo(() => usersData ?? [], [usersData]);
+  const allDevices = useMemo(() => devicesData ?? [], [devicesData]);
+  const profiles = profilesQuery.data?.items ?? [];
 
   const { combined, macCounts } = useMemo(() => {
     const counts = new Map<string, number>();
@@ -265,57 +270,22 @@ function WifiUsersPage() {
 
   return (
     <div className="flex h-full flex-col gap-6 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('wifiAdminUsers.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('wifiAdminUsers.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            disabled={isLoading}
-            onClick={() => {
-              usersQuery.refetch();
-              devicesQuery.refetch();
-            }}
-            size="icon"
-            variant="outline"
-          >
-            <RefreshCw
-              className={isLoading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
-            />
-          </Button>
-          <Button
-            className="gap-2"
-            onClick={() => {
-              setEditingUser(undefined);
-              setUserDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {t('wifiAdminUsers.addUser')}
-            </span>
-          </Button>
-          <Button
-            className="gap-2"
-            onClick={() => {
-              setTargetUserId(null);
-              setEditingDevice(undefined);
-              setDeviceDialogOpen(true);
-            }}
-            variant="outline"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {t('wifiAdminUsers.addDevice')}
-            </span>
-          </Button>
-        </div>
-      </div>
+      <WifiUsersHeader
+        isLoading={isLoading}
+        onAddDevice={() => {
+          setTargetUserId(null);
+          setEditingDevice(undefined);
+          setDeviceDialogOpen(true);
+        }}
+        onAddUser={() => {
+          setEditingUser(undefined);
+          setUserDialogOpen(true);
+        }}
+        onRefresh={() => {
+          usersQuery.refetch();
+          devicesQuery.refetch();
+        }}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[200px] max-w-sm flex-1">
@@ -330,295 +300,34 @@ function WifiUsersPage() {
         <WifiFilters filters={filters} onChange={setFilters} />
       </div>
 
-      <div className="rounded-md border bg-card">
-        {filteredData.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
-            {isLoading ? t('common.loading') : t('wifiAdminUsers.noUsersFound')}
-          </div>
-        ) : (
-          <div className="flex w-full flex-col">
-            {filteredData.map((user) => (
-              <Collapsible
-                className="border-b px-4 py-2 last:border-b-0"
-                key={user.id}
-                open={Boolean(expandedUsers[user.id])}
-              >
-                <CollapsibleTrigger
-                  className="flex w-full cursor-pointer items-center justify-between py-2 hover:no-underline"
-                  onClick={() =>
-                    setExpandedUsers((previous) => ({
-                      ...previous,
-                      [user.id]: !previous[user.id],
-                    }))
-                  }
-                >
-                  <div className="flex w-full items-center justify-between pr-4">
-                    <div className="flex items-center gap-4 text-left">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-semibold">{user.username}</span>
-                        {user.banned && (
-                          <Badge variant="destructive">
-                            {t('wifiAdminUsers.banned')}
-                          </Badge>
-                        )}
-                        {isStale(user.lastActiveAt) && !user.isOrphan && (
-                          <Badge
-                            className="border-amber-500 text-amber-500"
-                            variant="outline"
-                          >
-                            {t('wifiAdminUsers.inactiveWarning')}
-                          </Badge>
-                        )}
-                        {!user.isOrphan && user.createdBy === null && (
-                          <Badge
-                            className="border-destructive/50 font-normal text-destructive"
-                            variant="secondary"
-                          >
-                            {t('wifiAdminUsers.createdByDeletedAdmin')}
-                          </Badge>
-                        )}
-                        {!user.isOrphan &&
-                          user.createdBy !== null &&
-                          user.userId !== user.createdBy && (
-                            <Badge className="font-normal" variant="secondary">
-                              {t('wifiAdminUsers.createdByHint', {
-                                name: user.creatorName ?? 'Admin',
-                              })}
-                            </Badge>
-                          )}
-                      </div>
-                      <div className="hidden text-muted-foreground text-sm md:flex">
-                        {user.comment && (
-                          <span className="max-w-[200px] truncate">
-                            {user.comment}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 font-normal text-sm">
-                      {!user.isOrphan && user.speedProfileId && (
-                        <div className="hidden items-center gap-1 text-muted-foreground sm:flex">
-                          <Badge
-                            className="h-5 px-1.5 text-[10px]"
-                            variant="secondary"
-                          >
-                            {profiles.find(
-                              (profile) => profile.id === user.speedProfileId
-                            )?.name ?? user.speedProfileId}
-                          </Badge>
-                        </div>
-                      )}
-                      {!user.isOrphan && (
-                        <div className="hidden text-muted-foreground sm:flex">
-                          {user.filteredDevices.length}{' '}
-                          {t('wifiAdminUsers.devices')}
-                        </div>
-                      )}
-                      {!user.isOrphan && (
-                        <div className="hidden w-[140px] text-right min-[460px]:block">
-                          <RelativeTime date={user.lastActiveAt} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="flex flex-col gap-4 py-2">
-                    {!user.isOrphan && (
-                      <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex gap-4 text-muted-foreground text-sm">
-                          {user.speedProfileId && (
-                            <span>
-                              {t('wifiAdminUsers.speedProfile')}:{' '}
-                              <Badge variant="secondary">
-                                {user.speedProfileId}
-                              </Badge>
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            onClick={() => {
-                              setEditingUser(user);
-                              setUserDialogOpen(true);
-                            }}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Pencil className="mr-2 h-4 w-4" />
-                            {t('wifiAdminUsers.editUser')}
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              setTargetUserId(user.id);
-                              setEditingDevice(undefined);
-                              setDeviceDialogOpen(true);
-                            }}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('wifiAdminUsers.addDevice')}
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              if (
-                                confirmDestructiveAction(
-                                  t('wifiAdminUsers.deleteUserWarning')
-                                )
-                              ) {
-                                deleteUser.mutate({ id: user.id });
-                              }
-                            }}
-                            size="sm"
-                            variant="destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {user.filteredDevices.length > 0 ? (
-                      <div className="rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>
-                                {t('wifiAdminUsers.deviceMac')}
-                              </TableHead>
-                              <TableHead>
-                                {t('wifiAdminUsers.deviceNickname')}
-                              </TableHead>
-                              <TableHead>
-                                {t('wifiAdminUsers.lastActive')}
-                              </TableHead>
-                              <TableHead>
-                                {t('wifiAdminUsers.status')}
-                              </TableHead>
-                              <TableHead className="w-[100px] text-right">
-                                {t('wifiAdminUsers.actions')}
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {user.filteredDevices.map((device) => {
-                              const macCount =
-                                macCounts.get(
-                                  device.macAddress.toLowerCase()
-                                ) ?? 1;
-
-                              return (
-                                <TableRow key={device.id}>
-                                  <TableCell className="font-mono uppercase">
-                                    {formatMac(device.macAddress)}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex flex-col">
-                                      <div className="flex items-baseline gap-2">
-                                        <span className="font-medium">
-                                          {device.nickname ?? '-'}
-                                        </span>
-                                        {device.reportedHostname && (
-                                          <span
-                                            className="text-muted-foreground text-xs"
-                                            title={t(
-                                              'wifiAdminUsers.reportedHostname'
-                                            )}
-                                          >
-                                            ({device.reportedHostname})
-                                          </span>
-                                        )}
-                                      </div>
-                                      {device.adminNotes && (
-                                        <span className="max-w-[150px] truncate text-muted-foreground text-xs">
-                                          {device.adminNotes}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <RelativeTime date={device.lastActiveAt} />
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex flex-col items-start gap-1">
-                                      {device.banned && (
-                                        <Badge
-                                          className="h-4 py-1 text-[10px] leading-none"
-                                          variant="destructive"
-                                        >
-                                          <ShieldAlert className="mr-1 h-3 w-3" />
-                                          {t('wifiAdminUsers.banned')}
-                                        </Badge>
-                                      )}
-                                      {macCount > 1 && (
-                                        <Badge
-                                          className="h-4 border-amber-500 py-1 text-[10px] text-amber-500 leading-none"
-                                          title={t(
-                                            'wifiAdminUsers.macUsedMultipleTimes'
-                                          )}
-                                          variant="outline"
-                                        >
-                                          <AlertTriangle className="mr-1 h-3 w-3" />
-                                          {macCount}x
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      <Button
-                                        onClick={() => {
-                                          setEditingDevice(device);
-                                          setDeviceDialogOpen(true);
-                                        }}
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        className="text-destructive"
-                                        onClick={() => {
-                                          if (
-                                            confirmDestructiveAction(
-                                              t(
-                                                'wifiAdminUsers.deleteDeviceWarning'
-                                              )
-                                            )
-                                          ) {
-                                            deleteDevice.mutate({
-                                              id: device.id,
-                                            });
-                                          }
-                                        }}
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <Trash className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <div className="py-4 text-center text-muted-foreground text-sm">
-                        {t('wifiAdminUsers.noDevicesFound')}
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
-          </div>
-        )}
-      </div>
+      <WifiUsersTable
+        expandedUsers={expandedUsers}
+        isLoading={isLoading}
+        macCounts={macCounts}
+        onAddDevice={(userId) => {
+          setTargetUserId(userId);
+          setEditingDevice(undefined);
+          setDeviceDialogOpen(true);
+        }}
+        onDeleteDevice={(id) => deleteDevice.mutate({ id })}
+        onDeleteUser={(id) => deleteUser.mutate({ id })}
+        onEditDevice={(device) => {
+          setEditingDevice(device);
+          setDeviceDialogOpen(true);
+        }}
+        onEditUser={(user) => {
+          setEditingUser(user);
+          setUserDialogOpen(true);
+        }}
+        onToggleExpanded={(userId) =>
+          setExpandedUsers((previous) => ({
+            ...previous,
+            [userId]: !previous[userId],
+          }))
+        }
+        profiles={profiles}
+        rows={filteredData}
+      />
 
       <WifiUserDialog
         onOpenChange={setUserDialogOpen}
@@ -631,6 +340,422 @@ function WifiUsersPage() {
         open={deviceDialogOpen}
         wifiUserId={targetUserId}
       />
+    </div>
+  );
+}
+
+/** Page header: what this screen is, plus the three actions that change it. */
+function WifiUsersHeader({
+  isLoading,
+  onAddDevice,
+  onAddUser,
+  onRefresh,
+}: {
+  isLoading: boolean;
+  onAddDevice: () => void;
+  onAddUser: () => void;
+  onRefresh: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 className="font-bold text-3xl tracking-tight">
+          {t('wifiAdminUsers.title')}
+        </h1>
+        <p className="text-muted-foreground">
+          {t('wifiAdminUsers.description')}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          aria-label={t('wifiAdminUsers.refresh')}
+          disabled={isLoading}
+          onClick={onRefresh}
+          size="icon"
+          variant="outline"
+        >
+          <RefreshCw
+            className={isLoading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+          />
+        </Button>
+        <Button className="gap-2" onClick={onAddUser}>
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {t('wifiAdminUsers.addUser')}
+          </span>
+        </Button>
+        <Button className="gap-2" onClick={onAddDevice} variant="outline">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {t('wifiAdminUsers.addDevice')}
+          </span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** The account list: one collapsible row per account (or orphan device group). */
+function WifiUsersTable({
+  expandedUsers,
+  isLoading,
+  macCounts,
+  onAddDevice,
+  onDeleteDevice,
+  onDeleteUser,
+  onEditDevice,
+  onEditUser,
+  onToggleExpanded,
+  profiles,
+  rows,
+}: {
+  expandedUsers: Record<string, boolean>;
+  isLoading: boolean;
+  macCounts: Map<string, number>;
+  onAddDevice: (userId: string) => void;
+  onDeleteDevice: (deviceId: string) => void;
+  onDeleteUser: (userId: string) => void;
+  onEditDevice: (device: WifiDevice) => void;
+  onEditUser: (user: WifiUserRow) => void;
+  onToggleExpanded: (userId: string) => void;
+  profiles: WifiSpeedProfile[];
+  rows: WifiUserRow[];
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="rounded-md border bg-card">
+      {rows.length === 0 ? (
+        <div className="p-8 text-center text-muted-foreground">
+          {isLoading ? t('common.loading') : t('wifiAdminUsers.noUsersFound')}
+        </div>
+      ) : (
+        <div className="flex w-full flex-col">
+          {rows.map((user) => (
+            <WifiUserRowItem
+              expanded={Boolean(expandedUsers[user.id])}
+              key={user.id}
+              macCounts={macCounts}
+              onAddDevice={onAddDevice}
+              onDeleteDevice={onDeleteDevice}
+              onDeleteUser={onDeleteUser}
+              onEditDevice={onEditDevice}
+              onEditUser={onEditUser}
+              onToggle={() => onToggleExpanded(user.id)}
+              profiles={profiles}
+              user={user}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The username line: the account name plus its status badges. */
+function WifiUserBadges({ user }: { user: WifiUserRow }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Users className="h-4 w-4 text-muted-foreground" />
+      <span className="font-semibold">{user.username}</span>
+      {user.banned && (
+        <Badge variant="destructive">{t('wifiAdminUsers.banned')}</Badge>
+      )}
+      {isStale(user.lastActiveAt) && !user.isOrphan && (
+        <Badge className="border-amber-500 text-amber-500" variant="outline">
+          {t('wifiAdminUsers.inactiveWarning')}
+        </Badge>
+      )}
+      {!user.isOrphan && user.createdBy === null && (
+        <Badge
+          className="border-destructive/50 font-normal text-destructive"
+          variant="secondary"
+        >
+          {t('wifiAdminUsers.createdByDeletedAdmin')}
+        </Badge>
+      )}
+      {!user.isOrphan &&
+        user.createdBy !== null &&
+        user.userId !== user.createdBy && (
+          <Badge className="font-normal" variant="secondary">
+            {t('wifiAdminUsers.createdByHint', {
+              name: user.creatorName ?? 'Admin',
+            })}
+          </Badge>
+        )}
+    </div>
+  );
+}
+
+/** The summary column: the account's speed profile, device count and last activity. */
+function WifiUserMeta({
+  profiles,
+  user,
+}: {
+  profiles: WifiSpeedProfile[];
+  user: WifiUserRow;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center gap-4 font-normal text-sm">
+      {!user.isOrphan && user.speedProfileId && (
+        <div className="hidden items-center gap-1 text-muted-foreground sm:flex">
+          <Badge className="h-5 px-1.5 text-[10px]" variant="secondary">
+            {profiles.find((profile) => profile.id === user.speedProfileId)
+              ?.name ?? user.speedProfileId}
+          </Badge>
+        </div>
+      )}
+      {!user.isOrphan && (
+        <div className="hidden text-muted-foreground sm:flex">
+          {user.filteredDevices.length} {t('wifiAdminUsers.devices')}
+        </div>
+      )}
+      {!user.isOrphan && (
+        <div className="hidden w-[140px] text-right min-[460px]:block">
+          <RelativeTime date={user.lastActiveAt} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** One account row: its summary, its action bar and the devices under it. */
+function WifiUserRowItem({
+  expanded,
+  macCounts,
+  onAddDevice,
+  onDeleteDevice,
+  onDeleteUser,
+  onEditDevice,
+  onEditUser,
+  onToggle,
+  profiles,
+  user,
+}: {
+  expanded: boolean;
+  macCounts: Map<string, number>;
+  onAddDevice: (userId: string) => void;
+  onDeleteDevice: (deviceId: string) => void;
+  onDeleteUser: (userId: string) => void;
+  onEditDevice: (device: WifiDevice) => void;
+  onEditUser: (user: WifiUserRow) => void;
+  onToggle: () => void;
+  profiles: WifiSpeedProfile[];
+  user: WifiUserRow;
+}) {
+  const { t } = useTranslation();
+  const confirm = useConfirm();
+
+  return (
+    <Collapsible className="border-b px-4 py-2 last:border-b-0" open={expanded}>
+      <CollapsibleTrigger
+        className="flex w-full cursor-pointer items-center justify-between py-2 hover:no-underline"
+        onClick={onToggle}
+      >
+        <div className="flex w-full items-center justify-between pr-4">
+          <div className="flex items-center gap-4 text-left">
+            <WifiUserBadges user={user} />
+            <div className="hidden text-muted-foreground text-sm md:flex">
+              {user.comment && (
+                <span className="max-w-[200px] truncate">{user.comment}</span>
+              )}
+            </div>
+          </div>
+
+          <WifiUserMeta profiles={profiles} user={user} />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="flex flex-col gap-4 py-2">
+          {!user.isOrphan && (
+            <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-4 text-muted-foreground text-sm">
+                {user.speedProfileId && (
+                  <span>
+                    {t('wifiAdminUsers.speedProfile')}:{' '}
+                    <Badge variant="secondary">{user.speedProfileId}</Badge>
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => onEditUser(user)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {t('wifiAdminUsers.editUser')}
+                </Button>
+                <Button
+                  onClick={() => onAddDevice(user.id)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('wifiAdminUsers.addDevice')}
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const confirmed = await confirm({
+                      title: t('wifiAdminUsers.deleteUserWarning'),
+                    });
+                    if (confirmed) {
+                      onDeleteUser(user.id);
+                    }
+                  }}
+                  size="sm"
+                  variant="destructive"
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {user.filteredDevices.length > 0 ? (
+            <WifiUserDevicesTable
+              devices={user.filteredDevices}
+              macCounts={macCounts}
+              onDeleteDevice={onDeleteDevice}
+              onEditDevice={onEditDevice}
+            />
+          ) : (
+            <div className="py-4 text-center text-muted-foreground text-sm">
+              {t('wifiAdminUsers.noDevicesFound')}
+            </div>
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/** The devices of one account, with their own edit and delete actions. */
+function WifiUserDevicesTable({
+  devices,
+  macCounts,
+  onDeleteDevice,
+  onEditDevice,
+}: {
+  devices: WifiDevice[];
+  macCounts: Map<string, number>;
+  onDeleteDevice: (deviceId: string) => void;
+  onEditDevice: (device: WifiDevice) => void;
+}) {
+  const { t } = useTranslation();
+  const confirm = useConfirm();
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('wifiAdminUsers.deviceMac')}</TableHead>
+            <TableHead>{t('wifiAdminUsers.deviceNickname')}</TableHead>
+            <TableHead>{t('wifiAdminUsers.lastActive')}</TableHead>
+            <TableHead>{t('wifiAdminUsers.status')}</TableHead>
+            <TableHead className="w-[100px] text-right">
+              {t('wifiAdminUsers.actions')}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {devices.map((device) => {
+            const macCount =
+              macCounts.get(device.macAddress.toLowerCase()) ?? 1;
+
+            return (
+              <TableRow key={device.id}>
+                <TableCell className="font-mono uppercase">
+                  {formatMac(device.macAddress)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-medium">
+                        {device.nickname ?? '-'}
+                      </span>
+                      {device.reportedHostname && (
+                        <span
+                          className="text-muted-foreground text-xs"
+                          title={t('wifiAdminUsers.reportedHostname')}
+                        >
+                          ({device.reportedHostname})
+                        </span>
+                      )}
+                    </div>
+                    {device.adminNotes && (
+                      <span className="max-w-[150px] truncate text-muted-foreground text-xs">
+                        {device.adminNotes}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <RelativeTime date={device.lastActiveAt} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col items-start gap-1">
+                    {device.banned && (
+                      <Badge
+                        className="h-4 py-1 text-[10px] leading-none"
+                        variant="destructive"
+                      >
+                        <ShieldAlert className="mr-1 h-3 w-3" />
+                        {t('wifiAdminUsers.banned')}
+                      </Badge>
+                    )}
+                    {macCount > 1 && (
+                      <Badge
+                        className="h-4 border-amber-500 py-1 text-[10px] text-amber-500 leading-none"
+                        title={t('wifiAdminUsers.macUsedMultipleTimes')}
+                        variant="outline"
+                      >
+                        <AlertTriangle className="mr-1 h-3 w-3" />
+                        {macCount}x
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      aria-label={t('wifiAdminUsers.editDevice')}
+                      onClick={() => onEditDevice(device)}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      aria-label={t('wifiAdminUsers.deleteDevice')}
+                      className="text-destructive"
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t('wifiAdminUsers.deleteDeviceWarning'),
+                        });
+                        if (confirmed) {
+                          onDeleteDevice(device.id);
+                        }
+                      }}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

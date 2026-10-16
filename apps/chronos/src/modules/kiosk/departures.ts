@@ -176,5 +176,5 @@ export const departures = base.kiosk.departures.handler(async ({ input }) => {
     })
   );
 
-  return { departures: next };
+  return { items: next, total: next.length };
 });

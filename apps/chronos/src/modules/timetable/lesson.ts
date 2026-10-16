@@ -12,20 +12,17 @@ import { db } from '#database';
 import {
   classroom,
   cohort,
-  cohortGroup,
-  dayDefinition,
   lesson,
   lessonCohortMTM,
-  period,
   subject,
   substitutionLessonMTM,
   teacher,
-  weekDefinition,
 } from '#modules/timetable/schema';
 import {
   getActiveTimetableId,
   getTimetableIdForDate,
 } from '#modules/timetable/utils/active';
+import { enrichLessons } from '#modules/timetable/utils/enrich-lessons';
 import {
   getWeekdayInBudapest,
   isMatchingWeekday,
@@ -34,205 +31,6 @@ import { base } from '#orpc';
 import { notFound } from '#utils/http';
 
 const logger = getLogger(['chronos', 'lesson']);
-
-async function enrichLessons(lessons: (typeof lesson.$inferSelect)[]) {
-  if (lessons.length === 0) {
-    return [];
-  }
-
-  const subjectIds = Array.from(
-    new Set(lessons.map((l) => l.subjectId))
-  ).filter((id): id is string => id != null);
-  const dayIds = Array.from(new Set(lessons.map((l) => l.dayDefinitionId)));
-  const periodIds = Array.from(new Set(lessons.map((l) => l.periodId)));
-  const teacherIds = Array.from(
-    new Set(
-      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
-    )
-  );
-  const classroomIds = Array.from(
-    new Set(
-      lessons.flatMap((l) =>
-        Array.isArray(l.classroomIds) ? l.classroomIds : []
-      )
-    )
-  );
-  const groupIds = Array.from(
-    new Set(
-      lessons.flatMap((l) => (Array.isArray(l.groupsIds) ? l.groupsIds : []))
-    )
-  );
-
-  const weekDefinitionIds = Array.from(
-    new Set(lessons.map((l) => l.weeksDefinitionId))
-  );
-
-  const lessonIds = lessons.map((l) => l.id);
-
-  const [
-    subjects,
-    days,
-    periods,
-    teachers,
-    classrooms,
-    cohortRows,
-    groupRows,
-    weekDefinitions,
-  ] = await Promise.all([
-    subjectIds.length
-      ? db.select().from(subject).where(inArray(subject.id, subjectIds))
-      : Promise.resolve([] as (typeof subject.$inferSelect)[]),
-    db.select().from(dayDefinition).where(inArray(dayDefinition.id, dayIds)),
-    db.select().from(period).where(inArray(period.id, periodIds)),
-    teacherIds.length
-      ? db.select().from(teacher).where(inArray(teacher.id, teacherIds))
-      : Promise.resolve([] as (typeof teacher.$inferSelect)[]),
-    classroomIds.length
-      ? db.select().from(classroom).where(inArray(classroom.id, classroomIds))
-      : Promise.resolve([] as (typeof classroom.$inferSelect)[]),
-    lessonIds.length
-      ? db
-          .select({
-            cohortId: cohort.id,
-            cohortName: cohort.name,
-            cohortShort: cohort.short,
-            lessonId: lessonCohortMTM.lessonId,
-          })
-          .from(lessonCohortMTM)
-          .innerJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
-          .where(inArray(lessonCohortMTM.lessonId, lessonIds))
-      : Promise.resolve([] as never[]),
-    groupIds.length
-      ? db
-          .select({
-            divisionTag: cohortGroup.divisionTag,
-            entireClass: cohortGroup.entireClass,
-            id: cohortGroup.id,
-            name: cohortGroup.name,
-          })
-          .from(cohortGroup)
-          .where(inArray(cohortGroup.id, groupIds))
-      : Promise.resolve([] as never[]),
-
-    db
-      .select()
-      .from(weekDefinition)
-      .where(inArray(weekDefinition.id, weekDefinitionIds)),
-  ]);
-
-  const subjMap = new Map(subjects.map((s) => [s.id, s] as const));
-  const dayMap = new Map(days.map((d) => [d.id, d] as const));
-  const periodMap = new Map(periods.map((p) => [p.id, p] as const));
-  const teacherMap = new Map(teachers.map((t) => [t.id, t] as const));
-  const classroomMap = new Map(classrooms.map((cr) => [cr.id, cr] as const));
-  const groupMap = new Map(
-    groupRows.map(
-      (g) =>
-        [
-          g.id,
-          {
-            divisionTag: g.divisionTag,
-            entireClass: g.entireClass,
-            id: g.id,
-            name: g.name,
-          },
-        ] as const
-    )
-  );
-  const weekDefinitionMap = new Map(
-    weekDefinitions.map((week) => [week.id, week] as const)
-  );
-  const cohortMap = new Map<
-    string,
-    { id: string; name: string; short: string }[]
-  >(lessonIds.map((id) => [id, []]));
-  for (const row of cohortRows) {
-    const list = cohortMap.get(row.lessonId);
-    if (list) {
-      list.push({
-        id: row.cohortId,
-        name: row.cohortName,
-        short: row.cohortShort,
-      });
-    }
-  }
-
-  return lessons.map((l) => {
-    const tIds = (Array.isArray(l.teacherIds) ? l.teacherIds : []) as string[];
-    const cIds = (
-      Array.isArray(l.classroomIds) ? l.classroomIds : []
-    ) as string[];
-
-    return {
-      classrooms: cIds
-        .map((id) => classroomMap.get(id))
-        .filter(Boolean)
-        .map((cr) => ({
-          id: (cr as (typeof classrooms)[number]).id,
-          name: (cr as (typeof classrooms)[number]).name,
-          short: (cr as (typeof classrooms)[number]).short,
-        })),
-      cohorts: (cohortMap.get(l.id) ?? []).map((c) => ({
-        id: c.id,
-        name: c.name,
-        short: c.short,
-      })),
-      day: (() => {
-        const d = dayMap.get(l.dayDefinitionId);
-        return d;
-      })(),
-      groups: (Array.isArray(l.groupsIds) ? l.groupsIds : [])
-        .map((id) => groupMap.get(id))
-        .filter(Boolean)
-        .map((g) => ({
-          divisionTag: (g as (typeof groupRows)[number]).divisionTag,
-          entireClass: (g as (typeof groupRows)[number]).entireClass,
-          id: (g as (typeof groupRows)[number]).id,
-          name: (g as (typeof groupRows)[number]).name,
-        })),
-      groupsIds: (Array.isArray(l.groupsIds) ? l.groupsIds : []) as string[],
-      id: l.id,
-      period: (() => {
-        const p = periodMap.get(l.periodId);
-        return p
-          ? {
-              endTime: String(p.endTime),
-              id: p.id,
-              period: p.period,
-              startTime: String(p.startTime),
-            }
-          : null;
-      })(),
-      periodsPerWeek: l.periodsPerWeek,
-      subject: (() => {
-        const s = subjMap.get(l.subjectId ?? '');
-        return s ? { id: s.id, name: s.name, short: s.short } : null;
-      })(),
-      teachers: tIds
-        .map((id) => teacherMap.get(id))
-        .filter(Boolean)
-        .map((t) => ({
-          id: (t as (typeof teachers)[number]).id,
-          name: `${(t as (typeof teachers)[number]).firstName} ${(t as (typeof teachers)[number]).lastName}`,
-          short: (t as (typeof teachers)[number]).short,
-        })),
-      termDefinitionId: l.termDefinitionId,
-      weekDefinition: (() => {
-        const week = weekDefinitionMap.get(l.weeksDefinitionId);
-
-        return week
-          ? {
-              id: week.id,
-              name: week.name,
-              short: week.short,
-              weeks: Array.isArray(week.weeks) ? week.weeks : [],
-            }
-          : null;
-      })(),
-      weeksDefinitionId: l.weeksDefinitionId,
-    };
-  });
-}
 
 export const getLessonsForCohort = base.timetable.lessons.getForCohort.handler(
   async ({ input }) => {
@@ -252,7 +50,7 @@ export const getLessonsForCohort = base.timetable.lessons.getForCohort.handler(
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!effectiveTimetableId) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const whereClause = and(
@@ -269,12 +67,12 @@ export const getLessonsForCohort = base.timetable.lessons.getForCohort.handler(
     const lessons = lessonRows.map((r) => r.lesson);
 
     if (lessons.length === 0) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return enriched;
+    return { items: enriched, total: enriched.length };
   }
 );
 
@@ -296,7 +94,7 @@ export const getLessonsForTeacher =
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!effectiveTimetableId) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const whereClause = and(
@@ -307,12 +105,12 @@ export const getLessonsForTeacher =
     const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return enriched;
+    return { items: enriched, total: enriched.length };
   });
 
 type CandidateLessonEntry = {
@@ -529,14 +327,14 @@ export const getLessonsForTeachers =
     const existingTeacherIds = existingTeachers.map((t) => t.id);
 
     if (existingTeacherIds.length === 0) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const timetableId = await getActiveTimetableId();
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!timetableId) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const lessons = await db
@@ -574,7 +372,7 @@ export const getLessonsForTeachers =
       teacherId,
     }));
 
-    return data;
+    return { items: data, total: data.length };
   });
 
 export const getSubstitutionCandidates =
@@ -729,7 +527,7 @@ export const getLessonsForRoom = base.timetable.lessons.getForRoom.handler(
 
     // No active timetable: yield no lessons rather than every timetable.
     if (!effectiveTimetableId) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const whereClause = and(
@@ -740,12 +538,12 @@ export const getLessonsForRoom = base.timetable.lessons.getForRoom.handler(
     const lessons = await db.select().from(lesson).where(whereClause);
 
     if (lessons.length === 0) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     const enriched = await enrichLessons(lessons);
 
-    return enriched;
+    return { items: enriched, total: enriched.length };
   }
 );
 
@@ -793,7 +591,7 @@ export const getLessonForId = base.timetable.lessons.getForId.handler(
 export const getSubjects = base.timetable.subjects.handler(async () => {
   try {
     const subjects = await db.select().from(subject);
-    return subjects;
+    return { items: subjects, total: subjects.length };
   } catch (error) {
     logger.error('Error while fetching subjects', { error });
     throw new ORPCError('INTERNAL', { message: 'Failed to fetch subjects' });

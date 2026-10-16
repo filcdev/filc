@@ -6,7 +6,10 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
 import { systemMessage, systemMessageCohortMtm } from '#modules/news/schema';
-import { validateCohortIds } from '#modules/news/utils/cohort';
+import {
+  cohortVisibilityCondition,
+  validateCohortIds,
+} from '#modules/news/utils/cohort';
 import { authorSelect } from '#modules/news/utils/shared';
 import { base } from '#orpc';
 import { badRequest, notFound } from '#utils/http';
@@ -29,21 +32,16 @@ export const listSystemMessages = base.news.systemMessages.list.handler(
     }
 
     // A message with no cohort rows is global; a targeted one is only visible
-    // to its cohorts. A user without a cohort therefore sees global messages
-    // only — without this branch the predicate is skipped entirely and they
-    // would receive messages targeted at every other cohort.
-    if (userCohortId) {
-      conditions.push(
-        sql`(
-          NOT EXISTS (SELECT 1 FROM system_message_cohort_mtm WHERE system_message_id = ${systemMessage.id})
-          OR EXISTS (SELECT 1 FROM system_message_cohort_mtm WHERE system_message_id = ${systemMessage.id} AND cohort_id = ${userCohortId})
-        )`
-      );
-    } else {
-      conditions.push(
-        sql`NOT EXISTS (SELECT 1 FROM system_message_cohort_mtm WHERE system_message_id = ${systemMessage.id})`
-      );
-    }
+    // to its cohorts, so a viewer without a cohort sees global ones only.
+    conditions.push(
+      cohortVisibilityCondition(
+        systemMessageCohortMtm,
+        systemMessageCohortMtm.systemMessageId,
+        systemMessage.id,
+        systemMessageCohortMtm.cohortId,
+        userCohortId
+      )
+    );
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -85,7 +83,7 @@ export const listSystemMessages = base.news.systemMessages.list.handler(
         .map((m) => m.cohortId),
     }));
 
-    return { data, total: totalResult[0]?.count ?? 0 };
+    return { items: data, total: totalResult[0]?.count ?? 0 };
   }
 );
 
@@ -134,30 +132,37 @@ export const createSystemMessage = base.news.systemMessages.create
       await validateCohortIds(body.cohortIds);
     }
 
-    const [created] = await db
-      .insert(systemMessage)
-      .values({
-        authorId,
-        content: body.content,
-        title: body.title,
-        validFrom: body.validFrom,
-        validUntil: body.validUntil,
-      })
-      .returning();
-    if (!created) {
-      throw new ORPCError('INTERNAL', {
-        message: 'Failed to create system message',
-      });
-    }
+    // Row and cohort links are one unit: a failure between them leaves a
+    // message with no targeting, i.e. visible to every cohort.
+    const created = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(systemMessage)
+        .values({
+          authorId,
+          content: body.content,
+          title: body.title,
+          validFrom: body.validFrom,
+          validUntil: body.validUntil,
+        })
+        .returning();
 
-    if (body.cohortIds && body.cohortIds.length > 0) {
-      await db.insert(systemMessageCohortMtm).values(
-        body.cohortIds.map((cohortId) => ({
-          cohortId,
-          systemMessageId: created.id,
-        }))
-      );
-    }
+      if (!row) {
+        throw new ORPCError('INTERNAL', {
+          message: 'Failed to create system message',
+        });
+      }
+
+      if (body.cohortIds && body.cohortIds.length > 0) {
+        await tx.insert(systemMessageCohortMtm).values(
+          body.cohortIds.map((cohortId) => ({
+            cohortId,
+            systemMessageId: row.id,
+          }))
+        );
+      }
+
+      return row;
+    });
 
     dispatchPendingNotification(created.id, 'system_message', {
       cohortIds: body.cohortIds ?? [],
@@ -218,18 +223,22 @@ export const updateSystemMessage = base.news.systemMessages.update
     }
 
     if (body.cohortIds !== undefined) {
-      await db
-        .delete(systemMessageCohortMtm)
-        .where(eq(systemMessageCohortMtm.systemMessageId, id));
+      // Clear-then-reinsert must not be observable half-done: a failure between
+      // the two leaves the message with no targeting, i.e. visible to everyone.
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(systemMessageCohortMtm)
+          .where(eq(systemMessageCohortMtm.systemMessageId, id));
 
-      if (body.cohortIds.length > 0) {
-        await db.insert(systemMessageCohortMtm).values(
-          body.cohortIds.map((cohortId) => ({
-            cohortId,
-            systemMessageId: id,
-          }))
-        );
-      }
+        if (body.cohortIds && body.cohortIds.length > 0) {
+          await tx.insert(systemMessageCohortMtm).values(
+            body.cohortIds.map((cohortId) => ({
+              cohortId,
+              systemMessageId: id,
+            }))
+          );
+        }
+      });
     }
 
     const cohortIds =

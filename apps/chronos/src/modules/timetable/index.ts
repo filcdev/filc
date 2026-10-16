@@ -16,9 +16,9 @@ import {
 } from '#modules/timetable/schema';
 import { getActiveTimetableId } from '#modules/timetable/utils/active';
 import { cleanupOrphanedCohorts } from '#modules/timetable/utils/cleanup';
-import { dateToYYYYMMDD } from '#modules/timetable/utils/date';
 import { remapSubstitutionLessonsToTimetable } from '#modules/timetable/utils/remap-substitutions';
 import { base } from '#orpc';
+import { toDateOnlyString } from '#utils/date';
 import { badRequest, notFound } from '#utils/http';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 
@@ -26,7 +26,7 @@ export const getAllTimetables = base.timetable.timetables.list.handler(
   async () => {
     const timetables = await db.select().from(timetable);
 
-    return timetables;
+    return { items: timetables, total: timetables.length };
   }
 );
 
@@ -52,7 +52,7 @@ export const getLatestValidTimetable =
 
 export const getAllValidTimetables = base.timetable.timetables.valid.handler(
   async () => {
-    const today = dateToYYYYMMDD(new Date());
+    const today = toDateOnlyString(new Date());
 
     const timetables = await db
       .select()
@@ -64,7 +64,7 @@ export const getAllValidTimetables = base.timetable.timetables.valid.handler(
         )
       );
 
-    return timetables;
+    return { items: timetables, total: timetables.length };
   }
 );
 

@@ -144,14 +144,15 @@ export const petrikNews = base.kiosk.petrikNews.handler(async ({ input }) => {
   const feed = await resolveFeed(machine);
 
   if (!feed.enabled) {
-    return { items: [] };
+    return { items: [], total: 0 };
   }
 
   // Serve the cache without a DNS round-trip; only a miss reaches the SSRF
   // guard, so a warm cache never pays for the validation.
   const cached = feedCache.get(feed.feedUrl);
   if (cached && cached.expiresAt > Date.now()) {
-    return { items: cached.items.slice(0, feed.maxItems) };
+    const items = cached.items.slice(0, feed.maxItems);
+    return { items, total: items.length };
   }
 
   let xml: string;
@@ -201,5 +202,6 @@ export const petrikNews = base.kiosk.petrikNews.handler(async ({ input }) => {
     items,
   });
 
-  return { items: items.slice(0, feed.maxItems) };
+  const capped = items.slice(0, feed.maxItems);
+  return { items: capped, total: capped.length };
 });

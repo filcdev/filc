@@ -14,7 +14,6 @@ export const importContract = {
         method: 'POST',
         operationId: 'postTimetableImport',
         path: '/timetable/import',
-        successStatus: 200,
         tags: ['Timetable', 'Import'],
       })
     )

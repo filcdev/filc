@@ -23,7 +23,7 @@ export const getTeachers = base.timetable.teachers.getAll.handler(async () => {
     })
     .from(teacher);
 
-  return teachers;
+  return { items: teachers, total: teachers.length };
 });
 
 /**
@@ -85,7 +85,7 @@ export const listTeachersAdmin = base.timetable.teachers.list
       userId: row.userId,
     }));
 
-    return data;
+    return { items: data, total: data.length };
   });
 
 /** Manually set a teacher's email and/or linked user. */

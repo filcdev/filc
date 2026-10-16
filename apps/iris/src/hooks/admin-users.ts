@@ -3,22 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { sortCohorts } from '@/utils/cohort';
 import { api, orpc } from '@/utils/orpc';
+import type { MutationCallbacks } from './types';
 
 type UsersResponse = Awaited<ReturnType<typeof api.users.list>>;
 
-export type User = UsersResponse['users'][number];
+export type User = UsersResponse['items'][number];
 
 type RolesResponse = Awaited<ReturnType<typeof api.roles.list>>;
 
-export type Role = RolesResponse['roles'][number];
-
-type Cohort = Awaited<ReturnType<typeof api.cohort.cohort>>[number];
-
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
+export type Role = RolesResponse['items'][number];
 
 /** Page size shared by the admin users page and its query. */
 export const USERS_PAGE_SIZE = 20;
@@ -45,7 +38,7 @@ export function useRoles() {
 export function usePermissions() {
   return useQuery({
     ...orpc.roles.permissions.queryOptions(),
-    select: (payload) => payload.permissions,
+    select: (payload) => payload.items,
   });
 }
 
@@ -53,7 +46,7 @@ export function usePermissions() {
 export function useCohorts() {
   return useQuery({
     ...orpc.cohort.cohort.queryOptions(),
-    select: sortCohorts as (cohorts: Cohort[]) => Cohort[],
+    select: (data) => sortCohorts(data.items),
   });
 }
 

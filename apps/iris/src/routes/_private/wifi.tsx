@@ -1,3 +1,4 @@
+import { ERROR_CODE } from '@filcdev/api/errors';
 import { useSession } from '@filcdev/auth/client';
 import {
   Alert,
@@ -101,10 +102,10 @@ const getWifiPageState = ({
   const accountMissing =
     selfQuery.isError &&
     isDefinedError(selfQuery.error) &&
-    selfQuery.error.code === 'NOT_FOUND';
+    selfQuery.error.code === ERROR_CODE.NOT_FOUND;
 
   return {
-    account: accountMissing ? null : (selfQuery.data?.wifi ?? null),
+    account: accountMissing ? null : (selfQuery.data ?? null),
     hasOtherError: selfQuery.isError && !accountMissing,
     kind: 'content',
   };

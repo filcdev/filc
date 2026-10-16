@@ -11,7 +11,7 @@ import { base } from '#orpc';
 export const getClassrooms = base.timetable.classrooms.getAll.handler(
   async () => {
     const classrooms = await db.select().from(classroom);
-    return classrooms;
+    return { items: classrooms, total: classrooms.length };
   }
 );
 
@@ -74,5 +74,5 @@ export const getAvailableClassrooms =
         )
       );
 
-    return availableClassrooms;
+    return { items: availableClassrooms, total: availableClassrooms.length };
   });

@@ -31,7 +31,6 @@ export const rolesContract = {
         method: 'DELETE',
         operationId: 'deleteRolesByName',
         path: '/roles/{name}',
-        successStatus: 200,
         tags: ['Roles'],
       })
     )
@@ -44,7 +43,6 @@ export const rolesContract = {
         method: 'GET',
         operationId: 'getRoles',
         path: '/roles',
-        successStatus: 200,
         tags: ['Roles'],
       })
     )
@@ -56,7 +54,6 @@ export const rolesContract = {
         method: 'GET',
         operationId: 'getRolesPermissions',
         path: '/roles/permissions',
-        successStatus: 200,
         tags: ['Roles'],
       })
     )
@@ -68,7 +65,6 @@ export const rolesContract = {
         method: 'PATCH',
         operationId: 'patchRolesByName',
         path: '/roles/{name}',
-        successStatus: 200,
         tags: ['Roles'],
       })
     )

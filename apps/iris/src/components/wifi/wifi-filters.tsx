@@ -20,26 +20,7 @@ import type { ChangeEvent } from 'react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWifiSpeedProfiles } from '@/hooks/wifi-admin';
-
-export type WifiFilterState = {
-  speedProfileId: string | null;
-  bannedOnly: boolean;
-  inactiveOnly: boolean;
-  activeOnly: boolean;
-  sharedMacsOnly: boolean;
-  manualOnly: boolean;
-  minDevices: number;
-};
-
-export const defaultWifiFilterState: WifiFilterState = {
-  activeOnly: false,
-  bannedOnly: false,
-  inactiveOnly: false,
-  manualOnly: false,
-  minDevices: 0,
-  sharedMacsOnly: false,
-  speedProfileId: null,
-};
+import type { WifiFilterState } from './wifi-filter-state';
 
 type WifiFiltersProps = {
   filters: WifiFilterState;
@@ -61,7 +42,7 @@ export function WifiFilters({ filters, onChange }: WifiFiltersProps) {
   const { t } = useTranslation();
   const minDevicesId = useId();
   const profilesQuery = useWifiSpeedProfiles();
-  const profiles = profilesQuery.data?.speedProfiles ?? [];
+  const profiles = profilesQuery.data?.items ?? [];
 
   const handleToggle = (key: keyof WifiFilterState) => {
     onChange({ ...filters, [key]: !filters[key] });

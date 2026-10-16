@@ -44,10 +44,6 @@ export const wifiSelfCreateSchema = z.object({
   password: z.string().min(8).max(256),
 });
 
-export const wifiSelfCreateResponseSchema = z.object({
-  wifi: wifiSelfSchema,
-});
-
 export type WifiSelf = z.infer<typeof wifiSelfSchema>;
 export type WifiSelfDevice = z.infer<typeof wifiSelfDeviceSchema>;
 export type WifiSpeedLimitInfo = z.infer<typeof wifiSpeedLimitInfoSchema>;
@@ -58,6 +54,3 @@ export type WifiSelfPasswordChangeResponse = z.infer<
   typeof wifiSelfPasswordChangeResponseSchema
 >;
 export type WifiSelfCreate = z.infer<typeof wifiSelfCreateSchema>;
-export type WifiSelfCreateResponse = z.infer<
-  typeof wifiSelfCreateResponseSchema
->;

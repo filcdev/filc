@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@filcdev/ui/components/card';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { FingerprintPattern, Shield } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +41,7 @@ function RouteComponent() {
       toast.error(
         err instanceof Error ? err.message : t('microsoft.signInError')
       );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -99,12 +100,13 @@ function RouteComponent() {
               {t('termsOfService')}
             </a>{' '}
             {t('and')}{' '}
-            <a
+            <Link
               className="underline transition-colors hover:text-foreground"
-              href="/policy"
+              preload="intent"
+              to="/policy"
             >
               {t('privacyPolicy')}
-            </a>
+            </Link>
           </p>
         </div>
       </div>

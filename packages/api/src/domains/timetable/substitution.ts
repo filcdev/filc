@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { linkedLessonSchema } from './lesson';
+import { lessonSchema } from './lesson';
 
 /** Path parameters for substitution endpoints addressed by substitution id. */
 export const substitutionIdParamsSchema = z.object({
@@ -26,13 +26,13 @@ export type CohortIdParamsInput = z.infer<typeof cohortIdParamsSchema>;
  * therefore remain in apps/chronos.
  */
 export const manualCreateSchema = z.object({
-  cohortId: z.string().uuid(),
+  cohortId: z.uuid(),
   comment: z.string().nullable().optional(),
   date: z.coerce.date<Date>(),
-  periodId: z.string().uuid(),
-  subjectId: z.string().uuid().nullable(),
-  substituter: z.string().uuid().nullable(),
-  teacherId: z.string().uuid(),
+  periodId: z.uuid(),
+  subjectId: z.uuid().nullable(),
+  substituter: z.uuid().nullable(),
+  teacherId: z.uuid(),
 });
 
 export type ManualCreateInput = z.infer<typeof manualCreateSchema>;
@@ -46,7 +46,7 @@ export const teacherRowSchema = z.object({
     .max(1)
     .regex(/^[01]+$/)
     .nullable(),
-  id: z.string(),
+  id: z.uuid(),
   lastName: z.string(),
   short: z.string(),
   userId: z.uuid().nullable(),
@@ -56,26 +56,26 @@ export const teacherRowSchema = z.object({
 export const substitutionRowSchema = z.object({
   comment: z.string().nullable(),
   date: z.date(),
-  id: z.string(),
-  substituter: z.string().nullable(),
+  id: z.uuid(),
+  substituter: z.uuid().nullable(),
 });
 
 /** Substitution with its linked lessons already enriched. */
 export const substitutionWithRelationsSchema = z.object({
-  lessons: linkedLessonSchema.array(),
+  lessons: lessonSchema.array(),
   substitution: substitutionRowSchema,
   teacher: teacherRowSchema.nullable(),
 });
 
 /** Substitution carrying bare linked lesson ids. */
 export const substitutionWithLessonIdsSchema = z.object({
-  lessons: z.string().array(),
+  lessons: z.array(z.uuid()),
   substitution: substitutionRowSchema,
   teacher: teacherRowSchema.nullable(),
 });
 
 export const substitutionsByCohortSchema = z.object({
-  cohortId: z.string(),
+  cohortId: z.uuid(),
   substitutions: substitutionWithLessonIdsSchema.array(),
 });
 
@@ -83,14 +83,14 @@ export const substitutionsByCohortSchema = z.object({
 export const createSubstitutionSchema = z.object({
   comment: z.string().nullable().optional(),
   date: z.coerce.date<Date>(),
-  lessonIds: z.string().array().min(1),
-  substituter: z.string().nullable().optional(),
+  lessonIds: z.array(z.uuid()).min(1),
+  substituter: z.uuid().nullable().optional(),
 });
 
 /** Body of `timetable.substitutions.update` (path params excluded). */
 export const updateSubstitutionSchema = z.object({
   comment: z.string().nullable().optional(),
   date: z.coerce.date<Date>().optional(),
-  lessonIds: z.string().array().nullable(),
-  substituter: z.string().nullable().optional(),
+  lessonIds: z.array(z.uuid()).nullable(),
+  substituter: z.uuid().nullable().optional(),
 });

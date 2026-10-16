@@ -36,7 +36,7 @@ export function SystemMessageBanner() {
   const systemMessagesQuery = useQuery({
     ...orpc.news.systemMessages.list.queryOptions({ input: {} }),
     enabled: !isPending,
-    select: (payload): SystemMessageItem[] => payload.data,
+    select: (payload): SystemMessageItem[] => payload.items,
   });
 
   const visibleMessages = useMemo(() => {

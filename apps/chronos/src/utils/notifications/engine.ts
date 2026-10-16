@@ -118,70 +118,41 @@ export async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
   return enrichUsersWithLanguage(users);
 }
 
-export async function resolveAudienceForDoorlock(
+/**
+ * The audience for a notification addressed to one user: that user, with their
+ * stored language. Used by the types that notify a single person (a door-lock
+ * card holder, a cohort that has to be reselected).
+ */
+export async function resolveAudienceForUser(
   payload: unknown
 ): Promise<AudienceUser[]> {
-  const p = payload as { userId: string };
-  const userResult = await db
+  const { userId } = payload as { userId: string };
+
+  const [target] = await db
     .select({
       cohortId: userTable.cohortId,
       email: userTable.email,
       id: userTable.id,
     })
     .from(userTable)
-    .where(eq(userTable.id, p.userId))
+    .where(eq(userTable.id, userId))
     .limit(1);
 
-  const u = userResult[0];
-  if (!u) {
+  if (!target) {
     return [];
   }
 
   const [prefs] = await db
-    .select()
+    .select({ language: userPreferences.language })
     .from(userPreferences)
-    .where(eq(userPreferences.userId, u.id))
+    .where(eq(userPreferences.userId, target.id))
     .limit(1);
 
   return [
     {
-      cohortId: u.cohortId,
-      email: u.email,
-      id: u.id,
-      language: prefs?.language ?? 'hu',
-    },
-  ];
-}
-
-export async function resolveAudienceForCohortReselection(
-  payload: unknown
-): Promise<AudienceUser[]> {
-  const p = payload as { userId: string };
-  const [targetUser] = await db
-    .select({
-      cohortId: userTable.cohortId,
-      email: userTable.email,
-      id: userTable.id,
-    })
-    .from(userTable)
-    .where(eq(userTable.id, p.userId))
-    .limit(1);
-
-  if (!targetUser) {
-    return [];
-  }
-
-  const [prefs] = await db
-    .select()
-    .from(userPreferences)
-    .where(eq(userPreferences.userId, targetUser.id))
-    .limit(1);
-
-  return [
-    {
-      cohortId: targetUser.cohortId,
-      email: targetUser.email,
-      id: targetUser.id,
+      cohortId: target.cohortId,
+      email: target.email,
+      id: target.id,
       language: prefs?.language ?? 'hu',
     },
   ];

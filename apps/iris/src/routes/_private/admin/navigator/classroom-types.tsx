@@ -12,7 +12,6 @@ import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plus, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BaseDialogProps } from '@/components/admin/admin.types';
@@ -20,6 +19,7 @@ import {
   EntityTable,
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
+import { PageHeader } from '@/components/admin/page-header';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -212,26 +212,13 @@ function ClassroomTypesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('navigator.classroomTypes.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('navigator.classroomTypes.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => classroomTypes.refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4" />
-            {t('navigator.refresh')}
-          </Button>
-          <Button onClick={startCreate}>
-            <Plus className="h-4 w-4" />
-            {t('navigator.classroomTypes.add')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        addLabel={t('navigator.classroomTypes.add')}
+        description={t('navigator.classroomTypes.description')}
+        onAdd={startCreate}
+        onRefresh={() => classroomTypes.refetch()}
+        title={t('navigator.classroomTypes.title')}
+      />
 
       <QueryBoundary data={classroomTypes.data} query={classroomTypes}>
         {(rows) => (

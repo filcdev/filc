@@ -9,7 +9,6 @@ import type {
   RPCHandlerOptions,
 } from '@orpc/server/fetch';
 import { RPCHandler } from '@orpc/server/fetch';
-import { CORSPlugin, ResponseHeadersPlugin } from '@orpc/server/plugins';
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4';
 import type { ChronosContext } from '#_types/globals';
 import { prepareDb } from '#database';
@@ -29,6 +28,12 @@ import { env } from '#utils/environment';
 import { configureLogger } from '#utils/logger';
 import { initializeNotificationEngine } from '#utils/notifications/initialize';
 import { openApiSpecOptions } from '#utils/openapi-spec';
+import {
+  corsPlugins,
+  MAX_REQUEST_BODY_BYTES,
+  resolveClientIp,
+  withSecurityHeaders,
+} from '#utils/security';
 import { initSentry } from '#utils/telemetry';
 
 await configureLogger('chronos');
@@ -43,43 +48,7 @@ if (env.mode === 'development') {
 await prepareDb();
 await initializeRBAC();
 setupCronJobs();
-initializeNotificationEngine();
-
-/**
- * The header set the pre-oRPC `secureHeaders` middleware produced, applied to
- * every response the server emits. `script-src-elem`/`style-src-elem` keep
- * allowing the CDN bundles Swagger UI loads, and `Cross-Origin-Resource-Policy:
- * cross-origin` keeps announcement images embeddable by the kiosk build, which
- * is served from a host of its own.
- */
-const SECURITY_HEADERS: Readonly<Record<string, string>> = {
-  'Content-Security-Policy':
-    "base-uri 'self'; child-src 'self'; connect-src 'self'; default-src 'self'; font-src 'self' https: data:; form-action 'self'; frame-ancestors 'self'; frame-src 'self'; img-src 'self' data:; manifest-src 'self'; media-src 'self'; object-src 'none'; report-to endpoint-1; sandbox allow-same-origin allow-scripts; script-src 'self'; script-src-attr 'none'; script-src-elem 'self'  https: 'unsafe-inline'; style-src 'self' https: 'unsafe-inline'; style-src-attr 'none'; style-src-elem 'self' https: 'unsafe-inline'; upgrade-insecure-requests; worker-src 'self'",
-  'Cross-Origin-Opener-Policy': 'same-origin',
-  'Cross-Origin-Resource-Policy': 'cross-origin',
-  'Origin-Agent-Cluster': '?1',
-  'Referrer-Policy': 'no-referrer',
-  'Strict-Transport-Security': 'max-age=15552000; includeSubDomains',
-  'X-Content-Type-Options': 'nosniff',
-  'X-DNS-Prefetch-Control': 'off',
-  'X-Download-Options': 'noopen',
-  'X-Frame-Options': 'SAMEORIGIN',
-  'X-Permitted-Cross-Domain-Policies': 'none',
-  'X-XSS-Protection': '0',
-};
-
-const withSecurityHeaders = (response: Response): Response => {
-  const headers = new Headers(response.headers);
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    headers.set(name, value);
-  }
-
-  return new Response(response.body, {
-    headers,
-    status: response.status,
-    statusText: response.statusText,
-  });
-};
+await initializeNotificationEngine();
 
 const isDevelopment = env.mode === 'development';
 
@@ -133,9 +102,9 @@ type AdapterInterceptor = NonNullable<
 >[number];
 
 /**
- * Request log: trace line in development, structured line otherwise. Carries
- * the request id so it can be joined to the error boundary's line and to a
- * client's `x-request-id` response header.
+ * Request log: `debug` line in development, structured `info` line otherwise.
+ * Carries the request id so it can be joined to the error boundary's line and
+ * to a client's `x-request-id` response header.
  */
 const timingInterceptor: AdapterInterceptor = async (options) => {
   const start = Date.now();
@@ -150,7 +119,7 @@ const timingInterceptor: AdapterInterceptor = async (options) => {
   } = options;
 
   if (isDevelopment) {
-    logger.trace(`${method} ${url} - ${ms}ms`, {
+    logger.debug(`${method} ${url} - ${ms}ms`, {
       duration: ms,
       method,
       requestId,
@@ -176,19 +145,6 @@ const timingInterceptor: AdapterInterceptor = async (options) => {
   return result;
 };
 
-const corsPlugins = () => [
-  new CORSPlugin<ChronosContext>({
-    allowHeaders: ['Content-Type', 'Authorization'],
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    origin: isDevelopment
-      ? (origin) => origin
-      : [env.baseUrl, ...(env.trustedOrigins ?? [])],
-  }),
-  // Lets a procedure set response headers (`context.resHeaders`), which the
-  // announcement image uses for its long-lived Cache-Control.
-  new ResponseHeadersPlugin<ChronosContext>(),
-];
-
 const openApiPlugin = new OpenAPIReferencePlugin<ChronosContext>({
   docsPath: '/doc/swagger',
   docsProvider: 'swagger',
@@ -210,31 +166,17 @@ export const openApiHandler = new OpenAPIHandler<ChronosContext>(appRouter, {
   plugins: [...corsPlugins(), openApiPlugin],
 });
 
-/**
- * Everything the transport knows before a procedure runs. Built per request,
- * once, only for the requests that reach an oRPC handler.
- */
 const buildContext = async (
   request: Request,
   srv: Bun.Server<DeviceSocketData>
 ): Promise<ChronosContext> => ({
   ...(await resolveCaller(request.headers)),
-  clientIp: env.realIpHeader
-    ? (request.headers.get(env.realIpHeader) ?? '')
-    : (srv.requestIP(request)?.address ?? 'unknown'),
+  clientIp: resolveClientIp(request, srv),
   reqHeaders: request.headers,
   // Echoed on the response as `x-request-id`, so a client can name the exact
   // request it is reporting and the line can be found in the log stream.
   requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
 });
-
-/**
- * Ceiling for any request body, enforced by Bun before the handler buffers it.
- * The largest legitimate upload is the 20 MiB timetable import
- * (`modules/timetable/import.ts`); Bun's own default is 128 MiB, which is a lot
- * of memory to hand a single unauthenticated-shaped request.
- */
-const MAX_REQUEST_BODY_BYTES = 25 * 1024 * 1024;
 
 export const server = Bun.serve<DeviceSocketData>({
   fetch: async (request, srv) => {
@@ -248,13 +190,16 @@ export const server = Bun.serve<DeviceSocketData>({
 
     // better-auth owns /api/auth/*; it answers its own JSON and HTML.
     if (url.pathname.startsWith('/api/auth/')) {
-      return withSecurityHeaders(await auth.handler(request));
+      return withSecurityHeaders(await auth.handler(request), url.pathname);
     }
 
     // The unsubscribe pages are HTML forms and links from emails: no envelope,
     // no oRPC.
     if (url.pathname === '/api/notifications/unsubscribe') {
-      return withSecurityHeaders(await handleUnsubscribe(request));
+      return withSecurityHeaders(
+        await handleUnsubscribe(request),
+        url.pathname
+      );
     }
 
     const requestId =
@@ -267,7 +212,8 @@ export const server = Bun.serve<DeviceSocketData>({
     const final = withSecurityHeaders(
       matched && response
         ? response
-        : new Response('Not found', { status: 404 })
+        : new Response('Not found', { status: 404 }),
+      url.pathname
     );
     final.headers.set('x-request-id', requestId);
 
@@ -279,9 +225,6 @@ export const server = Bun.serve<DeviceSocketData>({
 });
 
 logger.info(`chronos listening on http://localhost:${env.port}`);
-if (env.logLevel === 'trace') {
-  logger.info('Log level set to TRACE, verbose request logging enabled');
-}
 
 const handleShutdown = async () => {
   logger.info('Shutting down chronos...');

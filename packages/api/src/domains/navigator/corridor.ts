@@ -38,13 +38,3 @@ export const updateCorridorSchema = createCorridorSchema.partial();
 export type Corridor = z.infer<typeof corridorSchema>;
 export type CreateCorridorInput = z.infer<typeof createCorridorSchema>;
 export type UpdateCorridorInput = z.infer<typeof updateCorridorSchema>;
-
-/** Payload of `GET /navigator/corridors`. */
-export const corridorsResponseSchema = z.object({
-  corridors: z.array(corridorRowSchema),
-});
-
-/** Payload of `POST /navigator/corridors`, `PUT` and `DELETE /navigator/corridors/{id}`. */
-export const corridorResponseSchema = z.object({
-  corridor: corridorRowSchema,
-});

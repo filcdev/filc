@@ -16,6 +16,7 @@ import {
 } from '@filcdev/ui/components/table';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lazy } from '@/components/lazy';
 import { useDoorlockDeviceStats } from '@/hooks/doorlock-admin';
 
@@ -37,13 +38,16 @@ export function DeviceStatsDialog({
   onOpenChange,
   open,
 }: DeviceStatsDialogProps) {
+  const { t } = useTranslation();
   const statsQuery = useDoorlockDeviceStats(deviceId, open);
+  // The payload wraps the reports under `stats`; everything below is one row.
+  const stats = statsQuery.data?.stats;
 
   const chartData = useMemo(() => {
-    if (!statsQuery.data) {
+    if (!stats) {
       return [];
     }
-    return statsQuery.data
+    return stats
       .map((stat) => ({
         ...stat,
         formattedTime: dayjs(stat.timestamp).format('HH:mm:ss'),
@@ -52,15 +56,17 @@ export function DeviceStatsDialog({
           Math.round((stat.deviceMeta.uptime / 3600 / 1000) * 10) / 10,
       }))
       .reverse();
-  }, [statsQuery.data]);
+  }, [stats]);
 
-  const latestStat = statsQuery.data?.[0];
+  const latestStat = stats?.[0];
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Device Statistics: {deviceName}</DialogTitle>
+          <DialogTitle>
+            {t('doorlockDevices.statsTitle', { name: deviceName })}
+          </DialogTitle>
         </DialogHeader>
 
         {statsQuery.isLoading && (
@@ -71,7 +77,9 @@ export function DeviceStatsDialog({
         )}
 
         {statsQuery.isError && (
-          <div className="text-destructive">Failed to load statistics.</div>
+          <div className="text-destructive">
+            {t('doorlockDevices.statsLoadError')}
+          </div>
         )}
 
         {statsQuery.isSuccess && (
@@ -80,13 +88,17 @@ export function DeviceStatsDialog({
               {/* Summary */}
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div className="rounded-lg border p-3">
-                  <div className="text-muted-foreground text-xs">Firmware</div>
+                  <div className="text-muted-foreground text-xs">
+                    {t('doorlockDevices.firmware')}
+                  </div>
                   <div className="font-bold font-mono">
                     {latestStat?.deviceMeta.fwVersion ?? 'N/A'}
                   </div>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <div className="text-muted-foreground text-xs">Uptime</div>
+                  <div className="text-muted-foreground text-xs">
+                    {t('doorlockDevices.uptime')}
+                  </div>
                   <div className="font-bold font-mono">
                     {latestStat
                       ? `${Math.round(latestStat.deviceMeta.uptime / 3_600_000)}h`
@@ -94,7 +106,9 @@ export function DeviceStatsDialog({
                   </div>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <div className="text-muted-foreground text-xs">Free RAM</div>
+                  <div className="text-muted-foreground text-xs">
+                    {t('doorlockDevices.freeRam')}
+                  </div>
                   <div className="font-bold font-mono">
                     {latestStat
                       ? `${Math.round(latestStat.deviceMeta.ramFree / 1024)} KB`
@@ -102,7 +116,9 @@ export function DeviceStatsDialog({
                   </div>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <div className="text-muted-foreground text-xs">Storage</div>
+                  <div className="text-muted-foreground text-xs">
+                    {t('doorlockDevices.storage')}
+                  </div>
                   <div className="font-bold font-mono">
                     {latestStat
                       ? `${Math.round(
@@ -128,19 +144,23 @@ export function DeviceStatsDialog({
 
               {/* Recent History Table */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm">Recent History</h3>
+                <h3 className="font-semibold text-sm">
+                  {t('doorlockDevices.recentHistory')}
+                </h3>
                 <div className="rounded-md border">
                   <Table className="w-full min-w-3xl table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>State</TableHead>
-                        <TableHead>Reset Reason</TableHead>
-                        <TableHead>Errors</TableHead>
+                        <TableHead>{t('doorlockDevices.time')}</TableHead>
+                        <TableHead>{t('doorlockDevices.state')}</TableHead>
+                        <TableHead>
+                          {t('doorlockDevices.resetReason')}
+                        </TableHead>
+                        <TableHead>{t('doorlockDevices.errors')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {statsQuery.data?.slice(0, 10).map((stat) => (
+                      {stats?.slice(0, 10).map((stat) => (
                         <TableRow key={stat.id}>
                           <TableCell className="font-mono text-xs">
                             {dayjs(stat.timestamp).format(

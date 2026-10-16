@@ -18,9 +18,10 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
-  // The params come off the location rather than `loaderDeps`: a `loaderDeps`
-  // above `validateSearch` would fix the search type to `{}`, and biome sorts
-  // these keys.
+  // The params come off the location rather than `loaderDeps`; either is valid
+  // now that `validateSearch` comes first (see the routes override in
+  // biome.jsonc), and this predates that change.
+  validateSearch: searchSchema,
   loader: ({ context, location }) => {
     const params = new URLSearchParams(location.searchStr);
     const page = Number(params.get('page')) || 1;
@@ -38,7 +39,6 @@ export const Route = createFileRoute('/_private/admin/users')({
       prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
     ]);
   },
-  validateSearch: searchSchema,
 });
 
 function AdminUsersPage() {
@@ -134,7 +134,7 @@ function AdminUsersPage() {
             }
             page={page}
             total={data.total}
-            users={data.users}
+            users={data.items}
           />
         )}
       </QueryBoundary>

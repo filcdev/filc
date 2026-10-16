@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from './list';
 
 /** Query parameters for listing users. */
 export const listUsersQuerySchema = z.object({
@@ -11,7 +12,7 @@ export type ListUsersQueryInput = z.infer<typeof listUsersQuerySchema>;
 
 /** Payload for updating a user's profile and roles. */
 export const userUpdatePayload = z.object({
-  cohortId: z.string().nullable().optional(),
+  cohortId: z.uuid().nullable().optional(),
   nickname: z.string().optional(),
   roles: z.array(z.string()).optional(),
 });
@@ -25,7 +26,7 @@ export const updateUserInputSchema = userUpdatePayload.extend({
 
 /** A user row, as stored in the `user` table. */
 export const userSelectSchema = z.object({
-  cohortId: z.string().nullable(),
+  cohortId: z.uuid().nullable(),
   createdAt: z.date(),
   email: z.string(),
   emailVerified: z.boolean(),
@@ -46,7 +47,4 @@ export const userWithPermissionsSchema = userSelectSchema.extend({
 export type UserWithPermissions = z.infer<typeof userWithPermissionsSchema>;
 
 /** Response payload for listing users. */
-export const usersListResponseSchema = z.object({
-  total: z.number(),
-  users: z.array(userWithPermissionsSchema),
-});
+export const usersListResponseSchema = listResponse(userWithPermissionsSchema);

@@ -21,6 +21,16 @@ export const ERROR_CODES = [
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
 /**
+ * The same codes as named constants, derived from the list above so the two
+ * cannot disagree. A call site reads `ERROR_CODE.CONFLICT` rather than the
+ * string literal: a typo then fails to compile instead of silently never
+ * matching.
+ */
+export const ERROR_CODE: Record<ErrorCode, ErrorCode> = Object.fromEntries(
+  ERROR_CODES.map((code) => [code, code])
+) as Record<ErrorCode, ErrorCode>;
+
+/**
  * The contract-wide error map. Statuses and default messages reproduce the
  * statuses the previous status-derived mapping produced, so clients keep
  * seeing the same HTTP status for the same failure; `BAD_REQUEST` is what oRPC raises

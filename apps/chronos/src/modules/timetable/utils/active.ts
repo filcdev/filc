@@ -1,12 +1,12 @@
 import { and, desc, gte, isNull, lte, or } from 'drizzle-orm';
 import { db } from '#database';
 import { timetable } from '#modules/timetable/schema';
-import { dateToYYYYMMDD } from './date';
+import { toDateOnlyString } from '#utils/date';
 
 export async function getTimetableIdForDate(
   date: Date
 ): Promise<string | null> {
-  const targetDate = dateToYYYYMMDD(date);
+  const targetDate = toDateOnlyString(date);
 
   const [active] = await db
     .select({ id: timetable.id })

@@ -14,7 +14,9 @@ export const listTranslationLanguagesRoute =
       .from(navigatorTranslation)
       .orderBy(asc(navigatorTranslation.lang_key));
 
-    return { languages: rows.map((row) => row.lang_key) };
+    const languages = rows.map((row) => row.lang_key);
+
+    return { items: languages, total: languages.length };
   });
 
 export const getTranslationBundleRoute =
@@ -43,7 +45,7 @@ export const listTranslationsRoute = base.navigator.translations.list
         asc(navigatorTranslation.lang_key)
       );
 
-    return { translations };
+    return { items: translations, total: translations.length };
   });
 
 export const createTranslationRoute = base.navigator.translations.create
@@ -72,7 +74,7 @@ export const createTranslationRoute = base.navigator.translations.create
       })
       .returning();
 
-    return { translations: rows };
+    return { items: rows, total: rows.length };
   });
 
 export const updateTranslationRoute = base.navigator.translations.update
@@ -95,7 +97,7 @@ export const updateTranslationRoute = base.navigator.translations.update
       });
     }
 
-    return { translation };
+    return translation;
   });
 
 export const deleteTranslationRoute = base.navigator.translations.delete
@@ -117,5 +119,5 @@ export const deleteTranslationRoute = base.navigator.translations.delete
       throw notFound('Translation not found');
     }
 
-    return { translation };
+    return { id: key };
   });

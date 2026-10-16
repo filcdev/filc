@@ -19,7 +19,7 @@ export const getPeriodsForTimetable = base.timetable.periods.getAll.handler(
       const ids = usedPeriodIds.map((r) => r.periodId);
 
       if (ids.length === 0) {
-        return [];
+        return { items: [], total: 0 };
       }
 
       periods = await db
@@ -38,6 +38,6 @@ export const getPeriodsForTimetable = base.timetable.periods.getAll.handler(
       startTime: String(p.startTime),
     }));
 
-    return data;
+    return { items: data, total: data.length };
   }
 );

@@ -3,16 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { type api, orpc } from '@/utils/orpc';
+import type { MutationCallbacks } from './types';
 
-/** Options accepted by every mutation hook: react to a successful save. */
-export type KioskMutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
-
-type KioskListRow = Awaited<
-  ReturnType<typeof api.kiosk.list>
->['kiosks'][number];
+type KioskListRow = Awaited<ReturnType<typeof api.kiosk.list>>['items'][number];
 
 /** One managed kiosk box as stored by Chronos. */
 export type KioskRow = Omit<KioskListRow, 'kind'> & { kind: KioskKind };
@@ -24,12 +17,12 @@ export function useKiosks(enabled = true) {
     enabled,
     // `kind` is a plain text column validated when written, so its values are
     // always the enum the pickers expect.
-    select: (payload) => payload.kiosks as KioskRow[],
+    select: (payload) => payload.items as KioskRow[],
   });
 }
 
 /** Enrol a box; a duplicate machine id is rejected with a conflict. */
-export function useCreateKiosk({ onSaved }: KioskMutationCallbacks = {}) {
+export function useCreateKiosk({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation(
@@ -47,7 +40,7 @@ export function useCreateKiosk({ onSaved }: KioskMutationCallbacks = {}) {
 }
 
 /** Update a kiosk's name, kind, enabled flag or config. */
-export function useUpdateKiosk({ onSaved }: KioskMutationCallbacks = {}) {
+export function useUpdateKiosk({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation(
@@ -65,7 +58,7 @@ export function useUpdateKiosk({ onSaved }: KioskMutationCallbacks = {}) {
 }
 
 /** Remove a kiosk row. */
-export function useDeleteKiosk({ onSaved }: KioskMutationCallbacks = {}) {
+export function useDeleteKiosk({ onSaved }: MutationCallbacks = {}) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation(

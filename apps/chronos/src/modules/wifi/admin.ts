@@ -3,6 +3,7 @@ import { ORPCError } from '@orpc/server';
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   getTableColumns,
@@ -95,16 +96,22 @@ export const listWifiUsers = base.wifi.users.list
   .use(requireAuthorization(permissions.wifiRead))
   .handler(async ({ input }) => {
     const { limit, offset, search } = input;
-    const users = await db
-      .select(userColumns)
-      .from(wifiUser)
-      .leftJoin(user, eq(wifiUser.createdBy, user.id))
-      .where(search ? ilike(wifiUser.username, `%${search}%`) : undefined)
-      .orderBy(asc(wifiUser.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const where = search ? ilike(wifiUser.username, `%${search}%`) : undefined;
+    // `total` is the unpaged count: this endpoint pages, so the page length
+    // would leave a client unable to work out how many pages there are.
+    const [users, totalResult] = await Promise.all([
+      db
+        .select(userColumns)
+        .from(wifiUser)
+        .leftJoin(user, eq(wifiUser.createdBy, user.id))
+        .where(where)
+        .orderBy(asc(wifiUser.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: count() }).from(wifiUser).where(where),
+    ]);
 
-    return { users };
+    return { items: users, total: totalResult[0]?.count ?? 0 };
   });
 
 export const createWifiUser = base.wifi.users.create
@@ -147,7 +154,7 @@ export const createWifiUser = base.wifi.users.create
       throw notFound('WiFi user not found');
     }
 
-    return { user: row };
+    return row;
   });
 
 export const updateWifiUser = base.wifi.users.update
@@ -201,7 +208,7 @@ export const updateWifiUser = base.wifi.users.update
       throw notFound('WiFi user not found');
     }
 
-    return { user: row };
+    return row;
   });
 
 export const deleteWifiUser = base.wifi.users.delete
@@ -235,20 +242,23 @@ export const listWifiDevices = base.wifi.devices.list
   .use(requireAuthorization(permissions.wifiRead))
   .handler(async ({ input }) => {
     const { limit, offset, search, wifiUserId } = input;
-    const devices = await db
-      .select()
-      .from(wifiDevice)
-      .where(
-        and(
-          search ? ilike(wifiDevice.macAddress, `%${search}%`) : undefined,
-          ownerFilter(wifiUserId)
-        )
-      )
-      .orderBy(desc(wifiDevice.updatedAt))
-      .limit(limit)
-      .offset(offset);
+    const where = and(
+      search ? ilike(wifiDevice.macAddress, `%${search}%`) : undefined,
+      ownerFilter(wifiUserId)
+    );
+    // Unpaged count, like every other paged list.
+    const [devices, totalResult] = await Promise.all([
+      db
+        .select()
+        .from(wifiDevice)
+        .where(where)
+        .orderBy(desc(wifiDevice.updatedAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: count() }).from(wifiDevice).where(where),
+    ]);
 
-    return { devices };
+    return { items: devices, total: totalResult[0]?.count ?? 0 };
   });
 
 export const createWifiDevice = base.wifi.devices.create
@@ -263,7 +273,7 @@ export const createWifiDevice = base.wifi.devices.create
       throw notFound('WiFi device not found');
     }
 
-    return { device };
+    return device;
   });
 
 export const updateWifiDevice = base.wifi.devices.update
@@ -284,7 +294,7 @@ export const updateWifiDevice = base.wifi.devices.update
       throw notFound('WiFi device not found');
     }
 
-    return { device };
+    return device;
   });
 
 export const deleteWifiDevice = base.wifi.devices.delete
@@ -305,9 +315,10 @@ export const deleteWifiDevice = base.wifi.devices.delete
 export const listWifiNas = base.wifi.nas.list
   .use(requireWifiEnabled)
   .use(requireAuthorization(permissions.wifiRead))
-  .handler(async () => ({
-    nas: await db.select().from(wifiNas).orderBy(asc(wifiNas.ipAddress)),
-  }));
+  .handler(async () => {
+    const nas = await db.select().from(wifiNas).orderBy(asc(wifiNas.ipAddress));
+    return { items: nas, total: nas.length };
+  });
 
 export const createWifiNas = base.wifi.nas.create
   .use(requireWifiEnabled)
@@ -321,7 +332,7 @@ export const createWifiNas = base.wifi.nas.create
       throw notFound('WiFi NAS not found');
     }
 
-    return { nas };
+    return nas;
   });
 
 export const updateWifiNas = base.wifi.nas.update
@@ -342,7 +353,7 @@ export const updateWifiNas = base.wifi.nas.update
       throw notFound('WiFi NAS not found');
     }
 
-    return { nas };
+    return nas;
   });
 
 export const deleteWifiNas = base.wifi.nas.delete
@@ -364,24 +375,24 @@ export const listWifiSpeedProfiles = base.wifi.speedProfiles.list
   .use(requireWifiEnabled)
   .use(requireAuthorization(permissions.wifiRead))
   .handler(async () => {
-    const profiles = await db
-      .select()
-      .from(wifiSpeedProfile)
-      .orderBy(asc(wifiSpeedProfile.name));
+    const profiles = (
+      await db
+        .select()
+        .from(wifiSpeedProfile)
+        .orderBy(asc(wifiSpeedProfile.name))
+    ).map((profile) =>
+      serializeSpeedProfile(
+        {
+          downloadSpeedMbps: profile.downloadSpeedMbps,
+          id: profile.id,
+          name: profile.name,
+          uploadSpeedMbps: profile.uploadSpeedMbps,
+        },
+        profile.isWlanDefault
+      )
+    );
 
-    return {
-      speedProfiles: profiles.map((profile) =>
-        serializeSpeedProfile(
-          {
-            downloadSpeedMbps: profile.downloadSpeedMbps,
-            id: profile.id,
-            name: profile.name,
-            uploadSpeedMbps: profile.uploadSpeedMbps,
-          },
-          profile.isWlanDefault
-        )
-      ),
-    };
+    return { items: profiles, total: profiles.length };
   });
 
 export const createWifiSpeedProfile = base.wifi.speedProfiles.create
@@ -398,7 +409,7 @@ export const createWifiSpeedProfile = base.wifi.speedProfiles.create
       uploadSpeedMbps: profile.uploadSpeedMbps ?? null,
     });
 
-    return { profile: serializeSpeedProfile(profile) };
+    return serializeSpeedProfile(profile);
   });
 
 export const updateWifiSpeedProfile = base.wifi.speedProfiles.update
@@ -433,17 +444,19 @@ export const updateWifiSpeedProfile = base.wifi.speedProfiles.update
       .where(eq(wifiSpeedProfile.id, profile.id))
       .returning({ isWlanDefault: wifiSpeedProfile.isWlanDefault });
 
-    return {
-      profile: serializeSpeedProfile(profile, updated?.isWlanDefault ?? false),
-    };
+    return serializeSpeedProfile(profile, updated?.isWlanDefault ?? false);
   });
 
 export const deleteWifiSpeedProfile = base.wifi.speedProfiles.delete
   .use(requireWifiEnabled)
   .use(requireAuthorization(permissions.wifiWrite))
   .handler(async ({ input }) => {
-    await configured().deleteSpeedProfile(input.id);
+    // Delete the local row before the controller: the local table is the
+    // source of truth that Radius reads, and the sync job reconciles a stale
+    // controller profile, whereas a local row pointing at a deleted profile is
+    // not recoverable.
     await db.delete(wifiSpeedProfile).where(eq(wifiSpeedProfile.id, input.id));
+    await configured().deleteSpeedProfile(input.id);
 
     return { id: input.id };
   });
@@ -451,12 +464,13 @@ export const deleteWifiSpeedProfile = base.wifi.speedProfiles.delete
 export const listWifiRoleProfiles = base.wifi.roleSpeedProfiles.list
   .use(requireWifiEnabled)
   .use(requireAuthorization(permissions.wifiRead))
-  .handler(async () => ({
-    roleSpeedProfiles: await db
+  .handler(async () => {
+    const roleSpeedProfiles = await db
       .select()
       .from(wifiRoleSpeedProfile)
-      .orderBy(desc(wifiRoleSpeedProfile.priority)),
-  }));
+      .orderBy(desc(wifiRoleSpeedProfile.priority));
+    return { items: roleSpeedProfiles, total: roleSpeedProfiles.length };
+  });
 
 export const createWifiRoleProfile = base.wifi.roleSpeedProfiles.create
   .use(requireWifiEnabled)
@@ -470,7 +484,7 @@ export const createWifiRoleProfile = base.wifi.roleSpeedProfiles.create
       throw notFound('WiFi role mapping not found');
     }
 
-    return { mapping };
+    return mapping;
   });
 
 export const updateWifiRoleProfile = base.wifi.roleSpeedProfiles.update
@@ -487,7 +501,7 @@ export const updateWifiRoleProfile = base.wifi.roleSpeedProfiles.update
       throw notFound('WiFi role mapping not found');
     }
 
-    return { mapping };
+    return mapping;
   });
 
 export const deleteWifiRoleProfile = base.wifi.roleSpeedProfiles.delete
@@ -510,51 +524,52 @@ export const listWifiAuthLogs = base.wifi.authLogs.list
   .use(requireAuthorization(permissions.wifiRead))
   .handler(async ({ input }) => {
     const { limit, offset, search, failureReason, result } = input;
-    const logs = await db
-      .select({
-        deviceNickname: wifiDevice.nickname,
-        deviceReportedHostname: wifiDevice.reportedHostname,
-        failureReason: wifiAuthLog.failureReason,
-        id: wifiAuthLog.id,
-        macAddress: wifiAuthLog.macAddress,
-        nasComment: wifiNas.comment,
-        nasIpAddress: wifiAuthLog.nasIpAddress,
-        nasMacAddress: wifiAuthLog.nasMacAddress,
-        result: wifiAuthLog.result,
-        timestamp: wifiAuthLog.timestamp,
-        userComment: wifiUser.comment,
-        username: wifiAuthLog.username,
-        wifiUserId: wifiAuthLog.wifiUserId,
-      })
-      .from(wifiAuthLog)
-      .leftJoin(
-        wifiNas,
-        or(
-          eq(wifiAuthLog.nasIpAddress, wifiNas.ipAddress),
-          eq(wifiAuthLog.nasMacAddress, wifiNas.macAddress)
+    const where = and(
+      search
+        ? or(
+            ilike(wifiAuthLog.username, `%${search}%`),
+            ilike(wifiAuthLog.macAddress, `%${search}%`),
+            ilike(wifiAuthLog.nasIpAddress, `%${search}%`),
+            ilike(wifiAuthLog.failureReason, `%${search}%`)
+          )
+        : undefined,
+      failureReason ? eq(wifiAuthLog.failureReason, failureReason) : undefined,
+      result === undefined ? undefined : eq(wifiAuthLog.result, result)
+    );
+    // Unpaged count, like every other paged list.
+    const [logs, totalResult] = await Promise.all([
+      db
+        .select({
+          deviceNickname: wifiDevice.nickname,
+          deviceReportedHostname: wifiDevice.reportedHostname,
+          failureReason: wifiAuthLog.failureReason,
+          id: wifiAuthLog.id,
+          macAddress: wifiAuthLog.macAddress,
+          nasComment: wifiNas.comment,
+          nasIpAddress: wifiAuthLog.nasIpAddress,
+          nasMacAddress: wifiAuthLog.nasMacAddress,
+          result: wifiAuthLog.result,
+          timestamp: wifiAuthLog.timestamp,
+          userComment: wifiUser.comment,
+          username: wifiAuthLog.username,
+          wifiUserId: wifiAuthLog.wifiUserId,
+        })
+        .from(wifiAuthLog)
+        .leftJoin(
+          wifiNas,
+          or(
+            eq(wifiAuthLog.nasIpAddress, wifiNas.ipAddress),
+            eq(wifiAuthLog.nasMacAddress, wifiNas.macAddress)
+          )
         )
-      )
-      .leftJoin(wifiDevice, eq(wifiAuthLog.macAddress, wifiDevice.macAddress))
-      .leftJoin(wifiUser, eq(wifiAuthLog.username, wifiUser.username))
-      .where(
-        and(
-          search
-            ? or(
-                ilike(wifiAuthLog.username, `%${search}%`),
-                ilike(wifiAuthLog.macAddress, `%${search}%`),
-                ilike(wifiAuthLog.nasIpAddress, `%${search}%`),
-                ilike(wifiAuthLog.failureReason, `%${search}%`)
-              )
-            : undefined,
-          failureReason
-            ? eq(wifiAuthLog.failureReason, failureReason)
-            : undefined,
-          result === undefined ? undefined : eq(wifiAuthLog.result, result)
-        )
-      )
-      .orderBy(desc(wifiAuthLog.timestamp))
-      .limit(limit)
-      .offset(offset);
+        .leftJoin(wifiDevice, eq(wifiAuthLog.macAddress, wifiDevice.macAddress))
+        .leftJoin(wifiUser, eq(wifiAuthLog.username, wifiUser.username))
+        .where(where)
+        .orderBy(desc(wifiAuthLog.timestamp))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: count() }).from(wifiAuthLog).where(where),
+    ]);
 
-    return { logs };
+    return { items: logs, total: totalResult[0]?.count ?? 0 };
   });

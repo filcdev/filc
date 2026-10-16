@@ -51,7 +51,7 @@ export type TeacherLessonsBatchRequestInput = z.infer<
 export const substitutionCandidatesRequestSchema = z.object({
   date: z.coerce.date(),
   missingTeacherId: z.uuid(),
-  selectedLessonIds: z.array(z.string().min(1)).default([]),
+  selectedLessonIds: z.array(z.uuid()).default([]),
   teacherIds: z.array(z.uuid()).min(1),
 });
 
@@ -64,7 +64,7 @@ export const substitutionCandidateSchema = z.object({
   hasH2: z.boolean(),
   teacher: z.object({
     firstName: z.string(),
-    id: z.string(),
+    id: z.uuid(),
     lastName: z.string(),
     short: z.string(),
   }),
@@ -78,7 +78,7 @@ export type SubstitutionCandidateInput = z.infer<
 export const dayDefinitionRowSchema = z.object({
   createdAt: z.date(),
   days: z.string().array().nullable(),
-  id: z.string(),
+  id: z.uuid(),
   name: z.string(),
   short: z.string(),
   updatedAt: z.date(),
@@ -86,7 +86,7 @@ export const dayDefinitionRowSchema = z.object({
 
 /** The week definition an enriched lesson belongs to. */
 export const weekDefinitionRefSchema = z.object({
-  id: z.string(),
+  id: z.uuid(),
   name: z.string(),
   short: z.string(),
   weeks: z.string().array(),
@@ -109,57 +109,41 @@ export const entityRefSchema = z.object({
 export const groupRefSchema = z.object({
   divisionTag: z.string().nullable(),
   entireClass: z.boolean(),
-  id: z.string(),
+  id: z.uuid(),
   name: z.string(),
 });
 
-/** Enriched lesson payload of the `timetable.lessons.*` lookups. */
-export const enrichedLessonSchema = z.object({
+/** A lesson as returned by the `timetable.lessons.*` lookups and embedded into substitutions and moved lessons. */
+export const lessonSchema = z.object({
   classrooms: entityRefSchema.array(),
   cohorts: entityRefSchema.array(),
   day: dayDefinitionRowSchema.optional(),
   groups: groupRefSchema.array(),
-  groupsIds: z.string().array(),
-  id: z.string(),
+  groupsIds: z.array(z.uuid()),
+  id: z.uuid(),
   period: periodSelectSchema.nullable(),
   periodsPerWeek: z.number(),
   subject: entityRefSchema.nullable(),
   teachers: entityRefSchema.array(),
-  termDefinitionId: z.string().nullable(),
+  termDefinitionId: z.uuid().nullable(),
   weekDefinition: weekDefinitionRefSchema.nullable(),
-  weeksDefinitionId: z.string(),
+  weeksDefinitionId: z.uuid(),
 });
 
-/** Single lesson lookup: the enriched lesson plus the substituted cohort name. */
-export const lessonDetailSchema = enrichedLessonSchema.extend({
+export type Lesson = z.infer<typeof lessonSchema>;
+
+/** Single lesson lookup: the lesson plus the substituted cohort name. */
+export const lessonDetailSchema = lessonSchema.extend({
   substitutionCohortName: z.string().nullable(),
 });
 
 export const teacherLessonsBatchResultSchema = z.object({
-  lessons: enrichedLessonSchema.array(),
+  lessons: lessonSchema.array(),
   teacherId: z.uuid(),
 });
 
 export const substitutionCandidatesResultSchema = z.object({
-  availableLessons: enrichedLessonSchema.array(),
-  parallelLessons: enrichedLessonSchema.array(),
+  availableLessons: lessonSchema.array(),
+  parallelLessons: lessonSchema.array(),
   substituteCandidates: substitutionCandidateSchema.array(),
-});
-
-/**
- * Lesson as linked from a substitution or a moved lesson: the same enrichment
- * with `cohorts` reduced to names and without group data, matching what
- * `#utils/timetable/enrich-lessons` returns.
- */
-export const linkedLessonSchema = z.object({
-  classrooms: entityRefSchema.array(),
-  cohorts: z.string().array(),
-  day: dayDefinitionRowSchema.optional(),
-  id: z.string(),
-  period: periodSelectSchema.nullable(),
-  periodsPerWeek: z.number(),
-  subject: entityRefSchema.nullable(),
-  teachers: entityRefSchema.array(),
-  termDefinitionId: z.string().nullable(),
-  weeksDefinitionId: z.string(),
 });

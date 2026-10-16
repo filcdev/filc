@@ -1,3 +1,4 @@
+import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
@@ -18,8 +19,8 @@ import {
 } from '#modules/timetable/schema';
 import { getActiveTimetableId } from '#modules/timetable/utils/active';
 import {
-  type EnrichedLesson,
   enrichLessons,
+  loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
 import {
   getWeekdayInBudapest,
@@ -360,14 +361,16 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
     // Enrich every linked lesson. A substitution keeps pointing at the lesson
     // it was created for, even after that lesson's timetable is retired, so
     // this must not be scoped to the active timetable.
-    const enrichedLessons = await enrichLessons(allLessonIds);
+    const enrichedLessons = await enrichLessons(
+      await loadLessonsByIds(allLessonIds)
+    );
     const lessonMap = new Map(enrichedLessons.map((l) => [l.id, l]));
 
     // Map lessons back to substitutions
     const result = substitutions.map((s) => ({
       lessons: s.lessonIds
         .map((id) => lessonMap.get(id))
-        .filter((l): l is EnrichedLesson => l !== undefined),
+        .filter((l): l is Lesson => l !== undefined),
       substitution: s.substitution,
       teacher: s.teacher,
     }));
@@ -391,7 +394,7 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
       return minPeriod(a) - minPeriod(b);
     });
 
-    return result;
+    return { items: result, total: result.length };
   }
 );
 
@@ -421,7 +424,7 @@ export const getRelevantSubstitutions =
       .groupBy(substitution.id, teacher.id)
       .orderBy(asc(substitution.date), asc(sql`MIN(${period.period})`));
 
-    return substitutions;
+    return { items: substitutions, total: substitutions.length };
   });
 
 export const getRelevantSubstitutionsForCohort =

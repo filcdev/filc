@@ -1,4 +1,5 @@
 import { index, jsonb, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import type { JSONType } from 'zod';
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 
@@ -7,7 +8,7 @@ export const bugReport = pgTable(
   {
     description: text('description').notNull(),
     id: uuid('id').primaryKey().defaultRandom(),
-    metadata: jsonb('metadata'),
+    metadata: jsonb('metadata').$type<JSONType | null>(),
     page: text('page'),
     reporterEmail: text('reporter_email'),
     reporterId: uuid('reporter_id').references(() => user.id, {

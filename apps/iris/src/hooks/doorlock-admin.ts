@@ -2,12 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { api, orpc } from '@/utils/orpc';
-
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
+import type { MutationCallbacks } from './types';
 
 type DevicesData = Awaited<ReturnType<typeof api.doorlock.devices.list>>;
 type CardsData = Awaited<ReturnType<typeof api.doorlock.cards.list>>;
@@ -17,18 +12,18 @@ type StatsOverviewData = Awaited<
   ReturnType<typeof api.doorlock.stats.overview>
 >;
 
-export type DoorlockDevice = DevicesData['devices'][number];
-export type DoorlockCard = CardsData['cards'][number];
-export type DoorlockLogEntry = LogsData['logs'][number];
-export type DoorlockUser = UsersData['users'][number];
+export type DoorlockDevice = DevicesData['items'][number];
+export type DoorlockCard = CardsData['items'][number];
+export type DoorlockLogEntry = LogsData['items'][number];
+export type DoorlockUser = UsersData['items'][number];
 export type DoorlockStatsOverview = StatsOverviewData['stats'];
 
 type DeviceStats = Awaited<ReturnType<typeof api.doorlock.devices.stats>>;
-export type DeviceStat = DeviceStats[number];
+export type DeviceStat = DeviceStats['stats'][number];
 
 type SelfCardsData = Awaited<ReturnType<typeof api.doorlock.self.cards.list>>;
 /** A card owned by the signed-in user. */
-export type SelfCard = SelfCardsData['cards'][number];
+export type SelfCard = SelfCardsData['items'][number];
 
 export type CardPayload = Parameters<typeof api.doorlock.cards.create>[0];
 export type DevicePayload = Parameters<typeof api.doorlock.devices.create>[0];

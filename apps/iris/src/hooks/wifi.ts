@@ -1,19 +1,14 @@
+import { ERROR_CODE } from '@filcdev/api/errors';
 import { isDefinedError } from '@orpc/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { type api, orpc } from '@/utils/orpc';
-
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
+import type { MutationCallbacks } from './types';
 
 export type WifiStatus = Awaited<ReturnType<typeof api.wifi.status>>;
 
-type SelfData = Awaited<ReturnType<typeof api.wifi.self.get>>;
-export type WifiSelfData = SelfData['wifi'];
+export type WifiSelfData = Awaited<ReturnType<typeof api.wifi.self.get>>;
 export type WifiSelfDevice = WifiSelfData['devices'][number];
 
 /**
@@ -34,7 +29,7 @@ export function useWifiSelf(enabled = true) {
     ...orpc.wifi.self.get.queryOptions(),
     enabled,
     retry: (failureCount, error) =>
-      !(isDefinedError(error) && error.code === 'NOT_FOUND') &&
+      !(isDefinedError(error) && error.code === ERROR_CODE.NOT_FOUND) &&
       failureCount < 2,
   });
 }

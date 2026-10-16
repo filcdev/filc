@@ -9,6 +9,7 @@
     "db:seed": "bun run ./src/database/scripts/seed.ts",
     "db:import-navigator": "bun --bun src/database/scripts/import-navigator.ts",
     "db:reset": "bun run ./src/database/scripts/reset.ts",
+    "openapi:check": "bun run scripts/check-openapi.ts",
     "openapi:generate": "bun run scripts/generate-openapi.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"

@@ -43,7 +43,7 @@ export const listUsers = base.users.list
       .from(user)
       .where(whereClause);
 
-    return { total: countResult?.count ?? 0, users };
+    return { items: users, total: countResult?.count ?? 0 };
   });
 
 export const updateUser = base.users.update

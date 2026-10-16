@@ -7,6 +7,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { JSONType } from 'zod';
 import { timestamps } from '#database/helpers';
 
 /**
@@ -17,7 +18,7 @@ import { timestamps } from '#database/helpers';
  */
 export const kiosk = pgTable('kiosk', {
   appVersion: text('app_version'),
-  config: jsonb('config').notNull().default(sql`'{}'::jsonb`),
+  config: jsonb('config').$type<JSONType>().notNull().default(sql`'{}'::jsonb`),
   enabled: boolean('enabled').notNull().default(true),
   id: uuid('id').primaryKey().defaultRandom(),
   kind: text('kind').notNull(),

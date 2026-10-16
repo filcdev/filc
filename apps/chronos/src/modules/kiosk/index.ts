@@ -11,11 +11,11 @@ import { requireAuthorization } from '#middleware/auth';
 import { kiosk } from '#modules/kiosk/schema';
 import { base } from '#orpc';
 import { badRequest, conflict, notFound } from '#utils/http';
+import { someErrorCause, UNIQUE_VIOLATION } from '#utils/postgres';
 
 const logger = getLogger(['chronos', 'kiosk']);
 
 const MACHINE_ID_CONSTRAINT = 'kiosk_machine_id_unique';
-const UNIQUE_VIOLATION = '23505';
 
 /**
  * The discriminator and the config blob arrive as separate fields, so the blob
@@ -36,35 +36,23 @@ function parseKioskConfig(kind: KioskKind, config: unknown) {
 }
 
 /**
- * Drizzle wraps driver errors, so the violation is reported on the cause
- * chain. `machine_id` is the kiosk table's only unique constraint, so both its
- * name and the SQLSTATE (Bun exposes it as `errno`) identify the conflict.
+ * `machine_id` is the kiosk table's only unique constraint, so either its name
+ * or the SQLSTATE identifies the conflict.
  */
-function isMachineIdConflict(error: unknown): boolean {
-  let current: unknown = error;
-
-  while (current !== null && typeof current === 'object') {
-    const { constraint, errno } = current as {
-      constraint?: unknown;
-      errno?: unknown;
-    };
-
-    if (constraint === MACHINE_ID_CONSTRAINT || errno === UNIQUE_VIOLATION) {
-      return true;
-    }
-
-    current = (current as { cause?: unknown }).cause;
-  }
-
-  return false;
-}
+const isMachineIdConflict = (error: unknown): boolean =>
+  someErrorCause(
+    error,
+    (node) =>
+      node.constraint === MACHINE_ID_CONSTRAINT ||
+      node.errno === UNIQUE_VIOLATION
+  );
 
 export const listKiosks = base.kiosk.list
   .use(requireAuthorization(permissions.kiosksManage))
   .handler(async () => {
     const kiosks = await db.select().from(kiosk).orderBy(asc(kiosk.name));
 
-    return { kiosks };
+    return { items: kiosks, total: kiosks.length };
   });
 
 export const createKiosk = base.kiosk.create
@@ -99,7 +87,7 @@ export const createKiosk = base.kiosk.create
       throw errors.INTERNAL({ message: 'Failed to create kiosk' });
     }
 
-    return { kiosk: inserted };
+    return inserted;
   });
 
 export const updateKiosk = base.kiosk.update
@@ -124,7 +112,7 @@ export const updateKiosk = base.kiosk.update
     };
 
     if (Object.keys(changes).length === 0) {
-      return { kiosk: existing };
+      return existing;
     }
 
     const [updated] = await db
@@ -137,7 +125,7 @@ export const updateKiosk = base.kiosk.update
       throw notFound('Kiosk not found');
     }
 
-    return { kiosk: updated };
+    return updated;
   });
 
 export const deleteKiosk = base.kiosk.delete
@@ -154,5 +142,5 @@ export const deleteKiosk = base.kiosk.delete
       throw notFound('Kiosk not found');
     }
 
-    return { kiosk: deleted };
+    return { id: deleted.id };
   });

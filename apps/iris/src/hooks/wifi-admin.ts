@@ -2,12 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { type api, orpc } from '@/utils/orpc';
-
-/** Options accepted by every mutation hook: react to a successful save. */
-export type MutationCallbacks = {
-  /** Called after success toast + cache invalidation; use to close dialogs. */
-  onSaved?: () => void;
-};
+import type { MutationCallbacks } from './types';
 
 /**
  * Query inputs are the procedures' *wire* input types, not the parsed output
@@ -29,16 +24,12 @@ type RoleProfilesData = Awaited<
   ReturnType<typeof api.wifi.roleSpeedProfiles.list>
 >;
 
-export type WifiUser = UsersData['users'][number];
-export type WifiDevice = DevicesData['devices'][number];
-export type WifiAuthLog = LogsData['logs'][number];
-export type WifiNas = NasData['nas'][number];
-export type WifiSpeedProfile = SpeedProfilesData['speedProfiles'][number];
-export type WifiRoleSpeedProfile =
-  RoleProfilesData['roleSpeedProfiles'][number];
-export type WifiStatsOverview = Awaited<
-  ReturnType<typeof api.wifi.stats.overview>
->;
+export type WifiUser = UsersData['items'][number];
+export type WifiDevice = DevicesData['items'][number];
+export type WifiAuthLog = LogsData['items'][number];
+export type WifiNas = NasData['items'][number];
+export type WifiSpeedProfile = SpeedProfilesData['items'][number];
+export type WifiRoleSpeedProfile = RoleProfilesData['items'][number];
 
 export type WifiUserPayload = Parameters<typeof api.wifi.users.create>[0];
 export type WifiDevicePayload = Parameters<typeof api.wifi.devices.create>[0];

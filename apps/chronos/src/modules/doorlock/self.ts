@@ -17,7 +17,7 @@ export const listSelfCards = base.doorlock.self.cards.list
   .handler(async ({ context }) => {
     const cards = await fetchCards(eq(card.userId, context.session.userId));
 
-    return { cards };
+    return { items: cards, total: cards.length };
   });
 
 export const updateSelfCardFrozen = base.doorlock.self.cards.setFrozen
@@ -51,7 +51,7 @@ export const updateSelfCardFrozen = base.doorlock.self.cards.setFrozen
       )
     );
 
-    return { card: updatedCard };
+    return updatedCard;
   });
 
 export const activateVirtualCard = base.doorlock.self.cards.activate
@@ -127,5 +127,5 @@ export const activateVirtualCard = base.doorlock.self.cards.activate
       });
     }
 
-    return { log: logEntry };
+    return logEntry;
   });

@@ -183,7 +183,7 @@ export function GeneralPane({
   const cohortQuery = useQuery({
     ...orpc.cohort.cohort.queryOptions(),
     enabled: active,
-    select: (data) => sortCohorts(data),
+    select: (data) => sortCohorts(data.items),
   });
 
   useEffect(() => {

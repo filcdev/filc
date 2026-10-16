@@ -84,7 +84,7 @@ function readCsvField(
  * and free-text comments in single fields, so a naive `split(',')` would both
  * split those values and misalign every following column.
  */
-export function parseCsv(text: string): Record<string, string>[] {
+function parseCsv(text: string): Record<string, string>[] {
   const rows: string[][] = [];
   let row: string[] = [];
   let offset = 0;

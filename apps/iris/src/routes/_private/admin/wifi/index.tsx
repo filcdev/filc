@@ -18,12 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filcdev/ui/components/select';
+import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
@@ -37,14 +36,22 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TableHeaderRow } from '@/components/admin/table-header-row';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { RelativeTime } from '@/components/util/relative-time';
-import { WifiAuthChart } from '@/components/wifi/wifi-auth-chart';
 import { useWifiAdminStatsOverview, useWifiAuthLogs } from '@/hooks/wifi-admin';
 import { orpc, prefetch } from '@/utils/orpc';
 
 const LOGS_PAGE_SIZE = 20;
+
+// recharts is the heaviest import on this page; load the chart only when the
+// stats have arrived and it actually renders.
+const loadWifiAuthChart = () =>
+  import('@/components/wifi/wifi-auth-chart').then((m) => ({
+    default: m.WifiAuthChart,
+  }));
 
 /** The wire enum is `'true' | 'false'`; the UI's tri-state maps onto it. */
 const RESULT_FILTERS = ['all', 'success', 'failure'] as const;
@@ -100,7 +107,7 @@ function WifiDashboard() {
         }
         query={statsQuery}
       >
-        {(stats) => (
+        {({ stats }) => (
           <>
             <div className="grid gap-4 md:grid-cols-3">
               <StatCard
@@ -125,7 +132,11 @@ function WifiDashboard() {
                 <CardTitle>{t('wifiAdminDashboard.authentications')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <WifiAuthChart data={stats.authSeries} />
+                <Lazy
+                  data={stats.authSeries}
+                  fallback={<Skeleton className="h-80 w-full" />}
+                  load={loadWifiAuthChart}
+                />
               </CardContent>
             </Card>
           </>
@@ -172,7 +183,7 @@ function WifiAuthLogs() {
     search: search || undefined,
   });
 
-  const logs = logsQuery.data?.logs ?? [];
+  const logs = logsQuery.data?.items ?? [];
   const resultLabels: Record<ResultFilter, string> = {
     all: t('wifiAdminDashboard.allResults'),
     failure: t('wifiAdminDashboard.failuresOnly'),
@@ -217,15 +228,18 @@ function WifiAuthLogs() {
 
         <div className="rounded-md border">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('wifiAdminDashboard.time')}</TableHead>
-                <TableHead>{t('wifiAdminDashboard.username')}</TableHead>
-                <TableHead>{t('wifiAdminDashboard.macAddress')}</TableHead>
-                <TableHead>{t('wifiAdminDashboard.nas')}</TableHead>
-                <TableHead>{t('wifiAdminDashboard.result')}</TableHead>
-              </TableRow>
-            </TableHeader>
+            <TableHeaderRow
+              columns={[
+                { key: 'time', label: t('wifiAdminDashboard.time') },
+                { key: 'username', label: t('wifiAdminDashboard.username') },
+                {
+                  key: 'macAddress',
+                  label: t('wifiAdminDashboard.macAddress'),
+                },
+                { key: 'nas', label: t('wifiAdminDashboard.nas') },
+                { key: 'result', label: t('wifiAdminDashboard.result') },
+              ]}
+            />
             <TableBody>
               {logsQuery.isLoading && (
                 <TableRow>

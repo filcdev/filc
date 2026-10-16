@@ -1,4 +1,5 @@
 import z from 'zod';
+import { listResponse } from './list';
 
 /** Payload for `POST /api/bug-report`. */
 export const createBugReportSchema = z.object({
@@ -6,7 +7,7 @@ export const createBugReportSchema = z.object({
   // Bounded like the sibling text fields: the column is jsonb and the caller
   // is any signed-in user, so an unbounded record is an unbounded write.
   metadata: z
-    .record(z.string().max(64), z.unknown())
+    .record(z.string().max(64), z.json())
     .refine(
       (value) => JSON.stringify(value).length <= 4096,
       'Metadata must serialize to at most 4096 characters'
@@ -58,7 +59,7 @@ export const bugReportSelectSchema = z.object({
   createdAt: z.date(),
   description: z.string(),
   id: z.uuid(),
-  metadata: z.unknown(),
+  metadata: z.json().nullable(),
   page: z.string().nullable(),
   reporterEmail: z.string().nullable(),
   reporterId: z.uuid().nullable(),
@@ -70,7 +71,4 @@ export const bugReportSelectSchema = z.object({
 export type BugReportSelect = z.infer<typeof bugReportSelectSchema>;
 
 /** Response payload for listing bug reports. */
-export const bugReportListResponseSchema = z.object({
-  reports: z.array(bugReportSelectSchema),
-  total: z.number(),
-});
+export const bugReportListResponseSchema = listResponse(bugReportSelectSchema);

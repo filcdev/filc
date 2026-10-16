@@ -1,7 +1,7 @@
 import z from 'zod';
 
 import { classroomRowSchema } from '../navigator/classroom';
-import { dayDefinitionRowSchema, linkedLessonSchema } from './lesson';
+import { dayDefinitionRowSchema, lessonSchema } from './lesson';
 
 /** Path parameters for moved lesson endpoints addressed by moved lesson id. */
 export const movedLessonIdParamsSchema = z.object({
@@ -52,7 +52,7 @@ export type UpdateMovedLessonInput = z.infer<typeof updateSchema>;
 export const periodRowSchema = z.object({
   createdAt: z.date(),
   endTime: z.string(),
-  id: z.string(),
+  id: z.uuid(),
   period: z.number().int(),
   startTime: z.string(),
   updatedAt: z.date(),
@@ -62,17 +62,17 @@ export const periodRowSchema = z.object({
 export const movedLessonRowSchema = z.object({
   comment: z.string().nullable(),
   date: z.date(),
-  id: z.string(),
+  id: z.uuid(),
   room: z.string().nullable(),
-  startingDay: z.string().nullable(),
-  startingPeriod: z.string().nullable(),
+  startingDay: z.uuid().nullable(),
+  startingPeriod: z.uuid().nullable(),
 });
 
 /** A moved lesson with its target joins and linked, enriched lessons. */
 export const movedLessonWithRelationsSchema = z.object({
   classroom: classroomRowSchema.nullable(),
   dayDefinition: dayDefinitionRowSchema.nullable(),
-  lessons: linkedLessonSchema.array(),
+  lessons: lessonSchema.array(),
   movedLesson: movedLessonRowSchema,
   period: periodRowSchema.nullable(),
 });
@@ -83,6 +83,6 @@ export const createMovedLessonSchema = z.object({
   date: z.coerce.date(),
   lessonIds: lessonIdsSchema,
   room: z.string().nullable().optional(),
-  startingDay: z.string().nullable().optional(),
-  startingPeriod: z.string().nullable().optional(),
+  startingDay: z.uuid().nullable().optional(),
+  startingPeriod: z.uuid().nullable().optional(),
 });

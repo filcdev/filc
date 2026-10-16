@@ -8,12 +8,21 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ShieldCheck } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 
-type PolicySection = {
-  title: string;
-  paragraphs?: string[];
-  bullets?: string[];
-};
+/**
+ * The `policy.sections` resource is a JSON array, so i18next hands it back as
+ * `unknown` data with `returnObjects`. Validating it beats asserting it: a
+ * translation that drifts from this shape fails here, loudly, instead of
+ * rendering a half-empty page.
+ */
+const policySectionsSchema = z.array(
+  z.object({
+    bullets: z.array(z.string()).optional(),
+    paragraphs: z.array(z.string()).optional(),
+    title: z.string(),
+  })
+);
 
 export const Route = createFileRoute('/_public/policy')({
   component: PolicyPage,
@@ -21,9 +30,9 @@ export const Route = createFileRoute('/_public/policy')({
 
 function PolicyPage() {
   const { t } = useTranslation('policy');
-  const sections = t('sections', {
-    returnObjects: true,
-  }) as unknown as PolicySection[];
+  const sections = policySectionsSchema.parse(
+    t('sections', { returnObjects: true })
+  );
 
   useEffect(() => {
     document.title = t('pageTitle');
