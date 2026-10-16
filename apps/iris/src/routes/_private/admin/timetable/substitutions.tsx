@@ -262,7 +262,7 @@ function SubstitutionsPage() {
           item={selectedItem}
           // Remounting re-seeds the form's defaultValues, replacing the
           // reset-on-open effect that used to live in the dialog.
-          key={`${dialogOpen ? 'open' : 'closed'}:${selectedItem?.substitution.id ?? 'new'}`}
+          key={selectedItem?.substitution.id ?? 'new'}
           manual={manualMode}
           onManualChange={setManualMode}
           onOpenChange={(open) => {

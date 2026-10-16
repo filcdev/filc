@@ -90,7 +90,7 @@ export function RolesTable({ roles }: RolesTableProps) {
       {isDialogOpen && (
         <RoleDialog
           editingRole={selectedRole}
-          key={`${isDialogOpen ? 'open' : 'closed'}:${selectedRole?.name ?? 'new'}`}
+          key={selectedRole?.name ?? 'new'}
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
