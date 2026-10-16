@@ -14,6 +14,7 @@ const baseUrl =
 export const apiBaseUrl = baseUrl;
 
 const { client, orpc } = createApiClient({
+  cache: 'no-store',
   credentials: 'omit',
   url: `${baseUrl}/rpc`,
 });

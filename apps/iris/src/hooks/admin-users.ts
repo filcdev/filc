@@ -17,12 +17,13 @@ export type Role = RolesResponse['items'][number];
 export const USERS_PAGE_SIZE = 20;
 
 /** Paged user list for the admin users page. */
-export function useUsers(page: number, search: string) {
+export function useUsers(page: number, search: string, role: string) {
   return useQuery(
     orpc.users.list.queryOptions({
       input: {
         limit: USERS_PAGE_SIZE,
         offset: (page - 1) * USERS_PAGE_SIZE,
+        role: role || undefined,
         search,
       },
     })

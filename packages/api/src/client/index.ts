@@ -10,6 +10,15 @@ export type ApiClient = ContractRouterClient<typeof appContract>;
 
 type RequestCredentials = 'include' | 'omit' | 'same-origin';
 
+/** The fetch cache modes, declared here because this package has no DOM lib. */
+type RequestCache =
+  | 'default'
+  | 'force-cache'
+  | 'no-cache'
+  | 'no-store'
+  | 'only-if-cached'
+  | 'reload';
+
 export type ApiClientOptions = {
   /**
    * Base RPC URL. A function is re-evaluated per call, so a server render can
@@ -17,6 +26,11 @@ export type ApiClientOptions = {
    */
   url: string | (() => string | Promise<string>);
   credentials?: RequestCredentials;
+  /**
+   * Fetch cache mode for every call. The kiosk passes `no-store`: a TV polling
+   * substitutions for days must not read a stale list out of the HTTP cache.
+   */
+  cache?: RequestCache;
   /** Extra headers per call — the incoming request's, during SSR. */
   headers?: () => Headers;
 };
@@ -32,6 +46,9 @@ export function createApiClient(options: ApiClientOptions) {
       fetch(request, {
         ...init,
         credentials: options.credentials ?? 'same-origin',
+        // An absent option may not be passed as `undefined`
+        // (`exactOptionalPropertyTypes`).
+        ...(options.cache ? { cache: options.cache } : {}),
       }),
     // `exactOptionalPropertyTypes` is on in this package, so an absent header
     // function may not be passed as `undefined`.

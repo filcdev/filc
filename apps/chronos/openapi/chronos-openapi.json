@@ -47147,6 +47147,15 @@
             "allowReserved": true
           },
           {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "allowEmptyValue": true,
+            "allowReserved": true
+          },
+          {
             "name": "search",
             "in": "query",
             "schema": {

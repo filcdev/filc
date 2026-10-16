@@ -1,5 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
-import { count, desc, eq, ilike, or } from 'drizzle-orm';
+import { arrayContains, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
@@ -8,17 +8,20 @@ import { getUserPermissionsBulk } from '#utils/authorization';
 import { notFound } from '#utils/http';
 
 export const listUsers = base.users.list
-  .use(requireAuthorization(permissions.usersManage))
+  .use(requireAuthorization(permissions.usersRead))
   .handler(async ({ input }) => {
-    const { limit, offset, search } = input;
+    const { limit, offset, role, search } = input;
 
-    const whereClause = search
-      ? or(
-          ilike(user.name, `%${search}%`),
-          ilike(user.email, `%${search}%`),
-          ilike(user.nickname, `%${search}%`)
-        )
-      : undefined;
+    const whereClause = or(
+      search
+        ? or(
+            ilike(user.name, `%${search}%`),
+            ilike(user.email, `%${search}%`),
+            ilike(user.nickname, `%${search}%`)
+          )
+        : undefined,
+      role ? arrayContains(user.roles, [role]) : undefined
+    );
 
     const usersQuery = await db
       .select()

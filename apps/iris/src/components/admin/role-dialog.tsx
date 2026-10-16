@@ -84,6 +84,22 @@ export function RoleDialog({
     }
   };
 
+  const allKnownPermissionsSelected =
+    knownPermissions.length > 0 &&
+    knownPermissions.every((permission) => permissions.includes(permission));
+
+  const toggleAllKnownPermissions = () => {
+    if (allKnownPermissionsSelected) {
+      setPermissions((current) =>
+        current.filter((permission) => !knownPermissions.includes(permission))
+      );
+      return;
+    }
+    setPermissions((current) => [
+      ...new Set([...current, ...knownPermissions]),
+    ]);
+  };
+
   const isPending = createRole.isPending || updateRole.isPending;
 
   const nameValue = useStore(form.store, (state) => state.values.name);
@@ -123,26 +139,26 @@ export function RoleDialog({
             )}
           </form.Field>
           <div className="space-y-2">
-            <FieldLabel>{t('roles.permissions')}</FieldLabel>
-            {permissions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {permissions.map((perm) => (
-                  <Badge
-                    className="cursor-pointer"
-                    key={perm}
-                    onClick={() => handleRemovePermission(perm)}
-                    variant="secondary"
-                  >
-                    {perm} ✕
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {permissions.length === 0 && (
-              <p className="text-muted-foreground text-sm">
-                {t('roles.noPermissions')}
-              </p>
-            )}
+            <div className="flex items-center justify-between gap-2">
+              <FieldLabel>{t('roles.permissions')}</FieldLabel>
+              <Button
+                disabled={knownPermissions.length === 0}
+                onClick={toggleAllKnownPermissions}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                {t(
+                  allKnownPermissionsSelected
+                    ? 'roles.deselectAllPermissions'
+                    : 'roles.selectAllPermissions'
+                )}
+              </Button>
+            </div>
+            <PermissionChips
+              onRemove={handleRemovePermission}
+              permissions={permissions}
+            />
             <Command className="rounded-lg border" shouldFilter>
               <CommandInput
                 onValueChange={setPermissionInput}
@@ -232,5 +248,39 @@ export function RoleDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** The permissions picked so far, each removable by clicking it. */
+function PermissionChips({
+  onRemove,
+  permissions,
+}: {
+  onRemove: (permission: string) => void;
+  permissions: string[];
+}) {
+  const { t } = useTranslation();
+
+  if (permissions.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        {t('roles.noPermissions')}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {permissions.map((perm) => (
+        <Badge
+          className="cursor-pointer"
+          key={perm}
+          onClick={() => onRemove(perm)}
+          variant="secondary"
+        >
+          {perm} ✕
+        </Badge>
+      ))}
+    </div>
   );
 }
