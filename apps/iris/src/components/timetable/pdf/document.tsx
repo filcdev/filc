@@ -164,11 +164,11 @@ export function TimetablePDF({
                             <View style={{ flex: 1 }} />
                           </View>
                         ) : (
-                          lessons.map((lesson, idx) => (
+                          lessons.map((lesson) => (
                             <LessonCard
                               activeFilter={activeFilter}
                               blackAndWhite={blackAndWhite}
-                              key={lesson.id ?? idx}
+                              key={lesson.id}
                               lesson={lesson}
                             />
                           ))

@@ -1,40 +1,39 @@
 import process from 'node:process';
-import { swaggerUI } from '@hono/swagger-ui';
+import { apiErrors } from '@filcdev/api/errors';
 import { getLogger } from '@logtape/logtape';
-import type { Session } from 'better-auth';
-import { Hono } from 'hono';
-import { getConnInfo, websocket } from 'hono/bun';
-import { showRoutes } from 'hono/dev';
-import { HTTPException } from 'hono/http-exception';
-import { openAPIRouteHandler } from 'hono-openapi';
-import { rateLimiter } from 'hono-rate-limiter';
-import { StatusCodes } from 'http-status-codes';
-import type { Context, ErrorResponse } from '#_types/globals';
+import { OpenAPIHandler } from '@orpc/openapi/fetch';
+import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins';
+import { ORPCError } from '@orpc/server';
+import type {
+  FetchHandlerOptions,
+  RPCHandlerOptions,
+} from '@orpc/server/fetch';
+import { RPCHandler } from '@orpc/server/fetch';
+import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4';
+import type { ChronosContext } from '#_types/globals';
 import { prepareDb } from '#database';
-import { anonymousIdMiddleware } from '#middleware/anonymous-id';
-import { authenticationMiddleware } from '#middleware/auth';
-import { corsMiddleware, securityMiddleware } from '#middleware/security';
-import { timingMiddleware } from '#middleware/timing';
-import { bugReportRouter } from '#routes/bug-report/_router';
-import { cohortRouter } from '#routes/cohort/_router';
-import { dashboardRouter } from '#routes/dashboard/_router';
-import { doorlockRouter } from '#routes/doorlock/_router';
-import { healthRouter } from '#routes/health/_router';
-import { kioskRouter } from '#routes/kiosk/_router';
-import { navigatorRouter } from '#routes/navigator/_router';
-import { newsRouter } from '#routes/news/_router';
-import { notificationsRouter } from '#routes/notifications/_router';
-import { pingRouter } from '#routes/ping/_router';
-import { rolesRouter } from '#routes/roles/_router';
-import { timetableRouter } from '#routes/timetable/_router';
-import { usersRouter } from '#routes/users/_router';
-import { authRouter } from '#utils/authentication';
+import { resolveCaller } from '#middleware/auth';
+import {
+  type DeviceSocketData,
+  DOORLOCK_SOCKET_PATH,
+  handlers as deviceSocketHandlers,
+  upgrade as upgradeDeviceSocket,
+} from '#modules/doorlock/device-socket';
+import { handleUnsubscribe } from '#modules/notifications/unsubscribe-html';
+import { appRouter } from '#router';
+import { auth } from '#utils/authentication';
 import { initializeRBAC } from '#utils/authorization';
 import { setupCronJobs } from '#utils/cron';
 import { env } from '#utils/environment';
-import { errorCodeOf } from '#utils/http';
 import { configureLogger } from '#utils/logger';
 import { initializeNotificationEngine } from '#utils/notifications/initialize';
+import { openApiSpecOptions } from '#utils/openapi-spec';
+import {
+  corsPlugins,
+  MAX_REQUEST_BODY_BYTES,
+  resolveClientIp,
+  withSecurityHeaders,
+} from '#utils/security';
 import { initSentry } from '#utils/telemetry';
 
 await configureLogger('chronos');
@@ -46,146 +45,186 @@ if (env.mode === 'development') {
   logger.warn('Running in development mode, do not use in production!');
 }
 
-export const api = new Hono<Context>();
-
 await prepareDb();
 await initializeRBAC();
 setupCronJobs();
-initializeNotificationEngine();
+await initializeNotificationEngine();
 
-api.use('*', corsMiddleware);
-api.use('*', authenticationMiddleware);
-api.use('*', anonymousIdMiddleware);
-api.use('*', securityMiddleware);
-api.use('*', timingMiddleware);
+const isDevelopment = env.mode === 'development';
 
-api.use(
-  '*',
-  rateLimiter({
-    handler: async (c, _, options) => {
-      // Log the rate limit event
-      logger.debug(`Rate limit exceeded for ${await options.keyGenerator(c)}`);
+type ClientInterceptor = NonNullable<
+  RPCHandlerOptions<ChronosContext>['clientInterceptors']
+>[number];
 
-      // Return custom response
-      return c.json<ErrorResponse>(
-        {
-          code: 'RATE_LIMITED',
-          data: {
-            retryAfter: c.res.headers.get('Retry-After'),
-          },
-          error: 'Too many requests',
-          success: false,
-        },
-        429
-      );
-    },
-    keyGenerator: (c) => {
-      const session = c.get('session' as never) as Session | null;
-      const anonymousId = c.get('anonymousId' as never) as string | null;
-      const connInfo = getConnInfo(c);
-      const realIp = env.realIpHeader
-        ? c.req.header(env.realIpHeader)
-        : undefined;
-      const clientId = session?.id ?? anonymousId ?? 'unknown';
-      const ip = realIp ?? connInfo.remote.address ?? 'unknown';
-      return `${clientId}|${ip}`;
-    },
-    limit: env.rateLimitMax,
-    windowMs: env.rateLimitWindowMs,
-  })
-);
+/**
+ * Turns anything a handler throws that is not already an `ORPCError` into a
+ * logged `INTERNAL` error: the message is the raw one in development and the
+ * generic one in production, so internal failures never leak their details.
+ *
+ * The log line carries the request id, the client address and the procedure
+ * that failed, because a bare stack is not enough to tell *which* request
+ * produced it once more than one is in flight.
+ */
+const errorBoundaryInterceptor: ClientInterceptor = async ({
+  context,
+  next,
+  path,
+}) => {
+  try {
+    return await next();
+  } catch (error) {
+    if (error instanceof ORPCError) {
+      throw error;
+    }
 
-api.route('/auth', authRouter);
-api.route('/ping', pingRouter);
-api.route('/health', healthRouter);
-api.route('/timetable', timetableRouter);
-api.route('/cohort', cohortRouter);
-api.route('/dashboard', dashboardRouter);
-api.route('/doorlock', doorlockRouter);
-api.route('/kiosk', kioskRouter);
-api.route('/navigator', navigatorRouter);
-api.route('/users', usersRouter);
-api.route('/roles', rolesRouter);
-api.route('/news', newsRouter);
-api.route('/notifications', notificationsRouter);
-api.route('/bug-report', bugReportRouter);
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('UNCAUGHT API error occurred:', {
+      context: {
+        clientIp: context.clientIp,
+        procedure: path.join('/'),
+        requestId: context.requestId,
+        userId: context.user?.id ?? context.session?.userId ?? null,
+      },
+      message: err.message,
+      stack: err.stack,
+    });
 
-api.onError((err, c) => {
-  if (err instanceof HTTPException) {
-    return (
-      err.res ??
-      c.json<ErrorResponse>(
-        {
-          cause: env.mode === 'production' ? undefined : err.cause,
-          code: errorCodeOf(err),
-          error: err.message,
-          success: false,
-        },
-        err.status
-      )
-    );
+    throw new ORPCError('INTERNAL', {
+      cause: err,
+      message: isDevelopment ? err.message : 'Internal Server Error',
+      status: apiErrors.INTERNAL.status,
+    });
+  }
+};
+
+type AdapterInterceptor = NonNullable<
+  FetchHandlerOptions<ChronosContext>['adapterInterceptors']
+>[number];
+
+/**
+ * Request log: `debug` line in development, structured `info` line otherwise.
+ * Carries the request id so it can be joined to the error boundary's line and
+ * to a client's `x-request-id` response header.
+ */
+const timingInterceptor: AdapterInterceptor = async (options) => {
+  const start = Date.now();
+  const result = await options.next();
+  const ms = Date.now() - start;
+
+  const status = result.response?.status ?? 404;
+  const { method } = options.request;
+  const { url } = options.request;
+  const {
+    context: { clientIp, requestId, user },
+  } = options;
+
+  if (isDevelopment) {
+    logger.debug(`${method} ${url} - ${ms}ms`, {
+      duration: ms,
+      method,
+      requestId,
+      status,
+      url,
+      user: user ? { email: user.email, id: user.id } : null,
+    });
+
+    return result;
   }
 
-  logger.error('UNCAUGHT API error occurred:', {
-    message: err.message,
-    stack: err.stack,
+  logger.info('Received request', {
+    duration: ms,
+    ip: clientIp,
+    method,
+    requestId,
+    status,
+    ua: options.request.headers.get('user-agent') ?? 'unknown',
+    url,
+    user: user ? { email: user.email, id: user.id } : null,
   });
 
-  const isProduction = env.mode === 'production';
-  const cause = err instanceof Error ? err.cause : undefined;
+  return result;
+};
 
-  return c.json<ErrorResponse>(
-    {
-      cause: isProduction ? undefined : cause,
-      code: 'INTERNAL',
-      error: isProduction ? 'Internal Server Error' : err.message,
-      success: false,
-    },
-    StatusCodes.INTERNAL_SERVER_ERROR
-  );
+const openApiPlugin = new OpenAPIReferencePlugin<ChronosContext>({
+  docsPath: '/doc/swagger',
+  docsProvider: 'swagger',
+  docsTitle: 'Chronos backend API',
+  schemaConverters: [new ZodToJsonSchemaConverter()],
+  specGenerateOptions: openApiSpecOptions,
+  specPath: '/doc/openapi.json',
 });
 
-api.get(
-  '/doc/openapi.json',
-  openAPIRouteHandler(api, {
-    documentation: {
-      info: {
-        description: 'API for consumption by the Filc app family.',
-        title: 'Chronos backend API',
-        version: '0.0.1',
-      },
-      servers: [
-        env.mode === 'development'
-          ? { description: 'Local Server', url: 'http://localhost:3000/api' }
-          : { description: 'chronos', url: 'https://filc.petrik.hu/api' },
-      ],
-    },
-  })
-);
-api.get('/doc/swagger', swaggerUI({ url: '/api/doc/openapi.json' }));
-
-const app = new Hono();
-app.route('/api', api);
-
-app.onError((err, c) => {
-  logger.error('Unhandled error occurred:', {
-    message: err.message,
-    stack: err.stack,
-  });
-  return c.redirect('/error');
+export const rpcHandler = new RPCHandler<ChronosContext>(appRouter, {
+  adapterInterceptors: [timingInterceptor],
+  clientInterceptors: [errorBoundaryInterceptor],
+  plugins: corsPlugins(),
 });
 
-export const server = Bun.serve({
-  fetch: app.fetch,
+export const openApiHandler = new OpenAPIHandler<ChronosContext>(appRouter, {
+  adapterInterceptors: [timingInterceptor],
+  clientInterceptors: [errorBoundaryInterceptor],
+  plugins: [...corsPlugins(), openApiPlugin],
+});
+
+const buildContext = async (
+  request: Request,
+  srv: Bun.Server<DeviceSocketData>
+): Promise<ChronosContext> => ({
+  ...(await resolveCaller(request.headers)),
+  clientIp: resolveClientIp(request, srv),
+  reqHeaders: request.headers,
+  // Echoed on the response as `x-request-id`, so a client can name the exact
+  // request it is reporting and the line can be found in the log stream.
+  requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
+});
+
+export const server = Bun.serve<DeviceSocketData>({
+  fetch: async (request, srv) => {
+    const url = new URL(request.url);
+
+    // The aegis firmware speaks a hand-rolled JSON protocol over this socket,
+    // not oRPC, so it is handled before either handler.
+    if (url.pathname === DOORLOCK_SOCKET_PATH) {
+      return upgradeDeviceSocket(request, srv);
+    }
+
+    // better-auth owns /api/auth/*; it answers its own JSON and HTML.
+    if (url.pathname.startsWith('/api/auth/')) {
+      return withSecurityHeaders(await auth.handler(request), url.pathname);
+    }
+
+    // The unsubscribe pages are HTML forms and links from emails: no envelope,
+    // no oRPC.
+    if (url.pathname === '/api/notifications/unsubscribe') {
+      return withSecurityHeaders(
+        await handleUnsubscribe(request),
+        url.pathname
+      );
+    }
+
+    const requestId =
+      request.headers.get('x-request-id') ?? crypto.randomUUID();
+    const context = await buildContext(request, srv);
+    const { matched, response } = url.pathname.startsWith('/api/rpc/')
+      ? await rpcHandler.handle(request, { context, prefix: '/api/rpc' })
+      : await openApiHandler.handle(request, { context, prefix: '/api' });
+
+    const final = withSecurityHeaders(
+      matched && response
+        ? response
+        : new Response('Not found', { status: 404 }),
+      url.pathname
+    );
+    final.headers.set('x-request-id', requestId);
+
+    return final;
+  },
+  maxRequestBodySize: MAX_REQUEST_BODY_BYTES,
   port: env.port,
-  websocket,
+  websocket: deviceSocketHandlers,
 });
 
 logger.info(`chronos listening on http://localhost:${env.port}`);
-if (env.logLevel === 'trace') {
-  logger.info('Log level set to TRACE, verbose route listing enabled');
-  showRoutes(app, { verbose: true });
-}
 
 const handleShutdown = async () => {
   logger.info('Shutting down chronos...');
@@ -196,6 +235,3 @@ const handleShutdown = async () => {
 
 process.on('SIGINT', handleShutdown);
 process.on('SIGTERM', handleShutdown);
-
-export type ApiType = typeof api;
-export type AppType = typeof app;

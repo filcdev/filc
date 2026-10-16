@@ -27,6 +27,7 @@ import {
   useMarkNotificationRead,
   useNotifications,
 } from '@/hooks/notifications';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { NOTIFICATION_TYPES, typeLabel } from '@/utils/notification-labels';
 
 type NotificationHistoryDialogProps = {
@@ -38,7 +39,7 @@ export function NotificationHistoryDialog({
   open,
   onOpenChange,
 }: NotificationHistoryDialogProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [page, setPage] = useState(0);
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -72,7 +73,7 @@ export function NotificationHistoryDialog({
     };
   };
 
-  const items = data?.data ?? [];
+  const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
   const ready = !(isLoading || isError);
@@ -172,13 +173,17 @@ export function NotificationHistoryDialog({
                           {notif.content}
                         </p>
                         <p className="mt-1 text-muted-foreground text-xs">
-                          {new Date(notif.createdAt).toLocaleString()}
+                          {formatLocalizedDate(notif.createdAt, i18n.language, {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                            timeZone: 'Europe/Budapest',
+                          })}
                         </p>
                       </div>
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
-                          markReadMutation.mutate(notif.id);
+                          markReadMutation.mutate({ id: notif.id });
                         }}
                         size="sm"
                         variant="ghost"

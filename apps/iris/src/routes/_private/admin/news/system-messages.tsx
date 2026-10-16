@@ -1,14 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@filcdev/ui/components/dialog';
-import { Input } from '@filcdev/ui/components/input';
 import {
   Table,
   TableBody,
@@ -18,10 +10,12 @@ import {
   TableRow,
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
-import { Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Pen, Trash } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
 import { NewsItemDialog } from '@/components/admin/news-item-dialog';
+import { TableToolbar } from '@/components/admin/table-toolbar';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -32,8 +26,9 @@ import {
   useDeleteSystemMessage,
 } from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
+import { useSortable } from '@/hooks/use-sortable';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/news/system-messages')({
   component: () => (
@@ -41,26 +36,26 @@ export const Route = createFileRoute('/_private/admin/news/system-messages')({
       <SystemMessagesPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.news.systemMessages.list.queryOptions({ input: {} })
+      ),
+      prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+    ]),
 });
 
 function SystemMessagesPage() {
   const { i18n, t } = useTranslation();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SystemMessageItem | null>(
     null
   );
-  const [itemToDelete, setItemToDelete] = useState<SystemMessageItem | null>(
-    null
-  );
-  const [sortColumn, setSortColumn] = useState<
-    'title' | 'validFrom' | 'validUntil' | 'cohorts' | null
-  >(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
+  const itemToDelete = useRef<SystemMessageItem | null>(null);
 
   const hasManagePermission = useHasPermission(
     permissions.systemMessagesManage,
@@ -73,66 +68,48 @@ function SystemMessagesPage() {
   const deleteMutation = useDeleteSystemMessage({
     onSaved: () => {
       setDeleteDialogOpen(false);
-      setItemToDelete(null);
+      itemToDelete.current = null;
     },
   });
 
-  const filteredSystemMessages = useMemo(() => {
-    let list = systemMessagesQuery.data ?? [];
+  // The search filter stays here; only the ordering is delegated.
+  const filtered = useMemo(() => {
+    const list = systemMessagesQuery.data ?? [];
     const term = search.trim().toLowerCase();
 
-    if (term) {
-      list = list.filter((message) => {
-        const titleMatches = message.title.toLowerCase().includes(term);
-        const cohortsMatch = message.cohortIds.some((id) =>
-          cohortsData?.some(
-            (c) => c?.id === id && c?.name.toLowerCase().includes(term)
-          )
-        );
-        return titleMatches || cohortsMatch;
-      });
+    if (!term) {
+      return list;
     }
 
-    if (sortColumn && sortDirection) {
-      list = sortSystemMessages(list, sortColumn, sortDirection);
-    }
+    return list.filter((message) => {
+      const titleMatches = message.title.toLowerCase().includes(term);
+      const cohortsMatch = message.cohortIds.some((id) =>
+        cohortsData?.some(
+          (c) => c?.id === id && c?.name.toLowerCase().includes(term)
+        )
+      );
+      return titleMatches || cohortsMatch;
+    });
+  }, [systemMessagesQuery.data, search, cohortsData]);
 
-    return list;
-  }, [
-    systemMessagesQuery.data,
-    search,
-    sortColumn,
-    sortDirection,
-    cohortsData,
-  ]);
-
-  const handleSort = (
-    column: 'title' | 'validFrom' | 'validUntil' | 'cohorts'
-  ) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const {
+    column: sortColumn,
+    direction: sortDirection,
+    rows: filteredSystemMessages,
+    toggle: handleSort,
+  } = useSortable(filtered, { getValue: getSortValue });
 
   const handleDelete = (message: SystemMessageItem) => {
     if (!hasManagePermission) {
       return;
     }
-    setItemToDelete(message);
+    itemToDelete.current = message;
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteMutation.mutateAsync(itemToDelete.id);
+    if (itemToDelete.current) {
+      deleteMutation.mutateAsync({ id: itemToDelete.current.id });
     }
   };
 
@@ -149,34 +126,19 @@ function SystemMessagesPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <Input
-          className="max-w-sm"
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={t('search')}
-          value={search}
-        />
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={() => systemMessagesQuery.refetch()}
-            variant="outline"
-          >
-            <RefreshCw className="h-4 w-4" />
-            {t('systemMessages.refresh')}
-          </Button>
-          {hasManagePermission && (
-            <Button
-              onClick={() => {
-                setSelectedItem(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              {t('systemMessages.create')}
-            </Button>
-          )}
-        </div>
-      </div>
+      <TableToolbar
+        canCreate={hasManagePermission}
+        createLabel={t('systemMessages.create')}
+        onCreate={() => {
+          setSelectedItem(null);
+          setDialogOpen(true);
+        }}
+        onRefresh={() => systemMessagesQuery.refetch()}
+        onSearchChange={setSearch}
+        refreshLabel={t('systemMessages.refresh')}
+        search={search}
+        searchPlaceholder={t('search')}
+      />
 
       <QueryBoundary
         data={systemMessagesQuery.data}
@@ -272,6 +234,7 @@ function SystemMessagesPage() {
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
+                            aria-label={t('systemMessages.edit')}
                             onClick={() => {
                               setSelectedItem(message);
                               setDialogOpen(true);
@@ -282,6 +245,7 @@ function SystemMessagesPage() {
                             <Pen className="h-4 w-4" />
                           </Button>
                           <Button
+                            aria-label={t('systemMessages.deleteConfirm')}
                             disabled={deleteMutation.isPending}
                             onClick={() => handleDelete(message)}
                             size="icon"
@@ -314,6 +278,9 @@ function SystemMessagesPage() {
         <>
           <NewsItemDialog
             item={selectedItem}
+            // Remounting re-seeds the form's defaultValues, replacing the
+            // reset-on-open effect that used to live in the dialog.
+            key={`${dialogOpen ? 'open' : 'closed'}:${selectedItem?.id ?? 'new'}`}
             mode="system-messages"
             onOpenChange={(open) => {
               setDialogOpen(open);
@@ -323,65 +290,24 @@ function SystemMessagesPage() {
             }}
             open={dialogOpen}
           />
-          <Dialog
+          <DeleteConfirmDialog
+            description={t('systemMessages.deleteDescription')}
+            onCancel={() => setDeleteDialogOpen(false)}
+            onConfirm={confirmDelete}
             onOpenChange={(open) => {
               setDeleteDialogOpen(open);
               if (!open) {
-                setItemToDelete(null);
+                itemToDelete.current = null;
               }
             }}
             open={deleteDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t('systemMessages.deleteConfirm')}</DialogTitle>
-                <DialogDescription>
-                  {t('systemMessages.deleteDescription')}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  onClick={() => setDeleteDialogOpen(false)}
-                  variant="outline"
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  disabled={deleteMutation.isPending}
-                  onClick={confirmDelete}
-                  variant="destructive"
-                >
-                  {deleteMutation.isPending
-                    ? t('common.deleting')
-                    : t('common.delete')}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            pending={deleteMutation.isPending}
+            title={t('systemMessages.deleteConfirm')}
+          />
         </>
       )}
     </div>
   );
-}
-
-function sortSystemMessages(
-  list: SystemMessageItem[],
-  column: 'title' | 'validFrom' | 'validUntil' | 'cohorts',
-  direction: 'asc' | 'desc'
-): SystemMessageItem[] {
-  return [...list].sort((a, b) => {
-    const aVal = getSortValue(a, column);
-    const bVal = getSortValue(b, column);
-
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      const comparison = aVal.localeCompare(bVal);
-      return direction === 'asc' ? comparison : -comparison;
-    }
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return direction === 'asc' ? aVal - bVal : bVal - aVal;
-    }
-    return 0;
-  });
 }
 
 function getSortValue(

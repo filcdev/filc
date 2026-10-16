@@ -6,7 +6,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@filcdev/ui/components/input-group';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ClassroomCard } from '@/components/navigator/classroom-card';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 import { classroomInfo, searchClassrooms } from '@/utils/classroom-search';
@@ -33,6 +33,10 @@ export const SearchPanel = memo(function SearchPanelImpl({
 
   const [query, setQuery] = useState('');
 
+  // The magnifier is a `<label>` for the field, so tapping it focuses the input
+  // the way a click handler on the addon used to — without putting an
+  // interaction on a non-interactive element.
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -58,8 +62,10 @@ export const SearchPanel = memo(function SearchPanelImpl({
       return found;
     }
 
-    return found.filter((classroom) =>
-      selectedTypeIds.includes(classroom.type_id)
+    return found.filter(
+      (classroom) =>
+        classroom.type_id !== null &&
+        selectedTypeIds.includes(classroom.type_id)
     );
   }, [graph, query, resolve, selectedTypeIds, t]);
 
@@ -67,19 +73,23 @@ export const SearchPanel = memo(function SearchPanelImpl({
     <Card className="min-h-0 flex-1 flex-col gap-2 p-3">
       <InputGroup>
         <InputGroupAddon>
-          <svg
-            aria-hidden={true}
-            fill="currentColor"
-            height="16"
-            viewBox="0 0 16 16"
-            width="16"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
-          </svg>
+          <label htmlFor={inputId}>
+            <svg
+              aria-hidden={true}
+              fill="currentColor"
+              height="16"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+            </svg>
+          </label>
         </InputGroupAddon>
 
         <InputGroupInput
+          aria-label={t('ui.search.placeholder')}
+          id={inputId}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t('ui.search.placeholder')}
           ref={inputRef}

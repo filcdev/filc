@@ -12,7 +12,6 @@ import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getOwnerLabel } from '@/components/doorlock/doorlock.utils';
 import {
@@ -80,14 +79,11 @@ export function CardDialog<
     },
   });
 
-  useEffect(() => {
-    form.reset(initialState(card));
-  }, [card, form.reset]);
-
   const authorizedDeviceIds = useStore(
     form.store,
     (state) => state.values.authorizedDeviceIds
   );
+  const authorizedDeviceIdSet = new Set(authorizedDeviceIds);
 
   const toggleDevice = (deviceId: string, checked: boolean) => {
     const current = form.getFieldValue('authorizedDeviceIds');
@@ -108,7 +104,11 @@ export function CardDialog<
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isCreate ? 'Add card' : 'Edit card'}</DialogTitle>
+          <DialogTitle>
+            {isCreate
+              ? t('doorlockCards.createCardDialogTitle')
+              : t('doorlockCards.editCard')}
+          </DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -218,7 +218,7 @@ export function CardDialog<
                     key={device.id}
                   >
                     <Checkbox
-                      checked={authorizedDeviceIds.includes(device.id)}
+                      checked={authorizedDeviceIdSet.has(device.id)}
                       id={checkboxId}
                       onCheckedChange={(checked) =>
                         toggleDevice(device.id, Boolean(checked))
@@ -233,7 +233,9 @@ export function CardDialog<
           <DialogFooter>
             <Button disabled={!form.state.canSubmit} type="submit">
               <Save />
-              {isCreate ? 'Create card' : 'Save changes'}
+              {isCreate
+                ? t('doorlockCards.createCard')
+                : t('doorlockCards.saveChanges')}
             </Button>
           </DialogFooter>
         </form>

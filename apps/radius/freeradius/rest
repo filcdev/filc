@@ -1,0 +1,59 @@
+# Configuration for the REST module
+# Connects FreeRADIUS to the Chronos backend API
+rest {
+	tls {
+		check_cert_cn = no
+	}
+
+	# Points to the Chronos backend API
+	connect_uri = "http://chronos:3000/api/wifi"
+
+	authorize {
+		uri = "${..connect_uri}/radius/authorize"
+		method = 'post'
+		body = 'JSON'
+		data = '{"username": "%{User-Name}", "password": "%{User-Password}", "source": "%{Calling-Station-Id}", "destination": "%{Called-Station-Id}", "NAS": "%{NAS-Identifier}", "IP": "%{NAS-IP-Address}", "sharedSecret": "SECRET_HERE"}'
+		tls = ${..tls}
+	}
+	authenticate {
+		uri = "${..connect_uri}/radius/authenticate"
+		method = 'post'
+		body = 'JSON'
+		data = '{"username": "%{User-Name}", "password": "%{User-Password}", "source": "%{Calling-Station-Id}", "destination": "%{Called-Station-Id}", "NAS": "%{NAS-Identifier}", "IP": "%{NAS-IP-Address}", "sharedSecret": "SECRET_HERE"}'
+		tls = ${..tls}
+	}
+	preacct {
+		uri = "${..connect_uri}/radius/preacct"
+		method = 'post'
+		body = 'JSON'
+		tls = ${..tls}
+	}
+	accounting {
+		uri = "${..connect_uri}/radius/accounting"
+		method = 'post'
+		body = 'JSON'
+		tls = ${..tls}
+	}
+	post-auth {
+		uri = "${..connect_uri}/radius/post-auth"
+		method = 'post'
+		body = 'JSON'
+		tls = ${..tls}
+	}
+
+	xlat {
+		body_uri_encode = yes
+		tls = ${..tls}
+	}
+
+	pool {
+		start = ${thread[pool].start_servers}
+		min = ${thread[pool].min_spare_servers}
+		max = ${thread[pool].max_servers}
+		spare = ${thread[pool].max_spare_servers}
+		uses = 0
+		retry_delay = 30
+		lifetime = 0
+		idle_timeout = 60
+	}
+}

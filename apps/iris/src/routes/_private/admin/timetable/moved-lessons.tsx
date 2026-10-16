@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import {
   Alert,
   AlertDescription,
@@ -6,14 +7,6 @@ import {
 } from '@filcdev/ui/components/alert';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@filcdev/ui/components/dialog';
 import { Input } from '@filcdev/ui/components/input';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
@@ -26,14 +19,16 @@ import {
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { ArrowRightLeft, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { ArrowRightLeft, Plus, RefreshCw } from 'lucide-react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
 import {
   MovedLessonDialog,
   type MoveMode,
 } from '@/components/admin/moved-lesson-dialog';
 import { MovedLessonExportButton } from '@/components/admin/moved-lesson-export';
+import { RowActions } from '@/components/admin/row-actions';
 import {
   DateRangePicker,
   type DateRangeValue,
@@ -54,8 +49,9 @@ import {
 } from '@/hooks/moved-lessons';
 import type { SubstitutionItem } from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
+import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -64,6 +60,22 @@ export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
         <MovedLessonsPage />
       </PermissionGuard>
     ),
+    loader: ({ context }) =>
+      Promise.all([
+        prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.substitutions.list.queryOptions()
+        ),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.movedLessons.list.queryOptions()
+        ),
+        prefetch(
+          context.queryClient,
+          orpc.timetable.classrooms.getAll.queryOptions()
+        ),
+      ]),
   }
 );
 
@@ -191,9 +203,9 @@ function detectMoveMode(item: MovedLessonItem): MoveMode {
 }
 
 function MovedLessonsPage() {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const showPastId = useId();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [moveMode, setMoveMode] = useState<MoveMode>('room');
@@ -201,15 +213,7 @@ function MovedLessonsPage() {
     null
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<MovedLessonItem | null>(
-    null
-  );
-  const [sortColumn, setSortColumn] = useState<
-    'date' | 'day' | 'period' | 'room' | 'count' | null
-  >(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
+  const itemToDelete = useRef<MovedLessonItem | null>(null);
   const [showPast, setShowPast] = useState(false);
   const [dateRange, setDateRange] = useState<DateRangeValue>({});
 
@@ -246,7 +250,7 @@ function MovedLessonsPage() {
 
   const deleteMutation = useDeleteMovedLesson();
 
-  const filteredMovedLessons = useMemo(() => {
+  const matchingMovedLessons = useMemo(() => {
     let list = movedLessonsQuery.data ?? [];
     const term = search.trim().toLowerCase();
     const today = dayjs().startOf('day');
@@ -265,54 +269,43 @@ function MovedLessonsPage() {
         const roomName = ml.classroom?.name?.toLowerCase() ?? '';
         const dayName = ml.dayDefinition?.name?.toLowerCase() ?? '';
         return (
-          ml.movedLesson.date.includes(term) ||
+          ml.movedLesson.date.toISOString().includes(term) ||
           roomName.includes(term) ||
           dayName.includes(term)
         );
       });
     }
 
-    // Rendezés
-    if (sortColumn && sortDirection) {
-      list = [...list].sort((a, b) =>
-        compareMovedLessons(a, b, sortColumn, sortDirection)
-      );
-    }
-
     return list;
-  }, [movedLessonsQuery.data, search, sortColumn, sortDirection, showPast]);
+  }, [movedLessonsQuery.data, search, showPast]);
 
-  const handleSort = (column: 'date' | 'day' | 'period' | 'room' | 'count') => {
-    if (sortColumn === column) {
-      // Ugyanaz az oszlop: asc -> desc -> null
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      // Új oszlop: kezdjük asc-vel
-      setSortColumn(column);
-      setSortDirection('asc');
+  // Only the day column needs custom order; the rest fall back to the hook's
+  // numeric-or-lexical default, which matches what this table used to inline.
+  const { rows: filteredMovedLessons, ...sort } = useSortable(
+    matchingMovedLessons,
+    {
+      compare: compareDayColumn,
+      getValue: getMovedLessonSortValue,
     }
-  };
+  );
 
   const handleDelete = (ml: MovedLessonItem) => {
     if (!hasWritePermission) {
       return;
     }
-    setItemToDelete(ml);
+    itemToDelete.current = ml;
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!itemToDelete) {
+    if (!itemToDelete.current) {
       return;
     }
-    await deleteMutation.mutateAsync(itemToDelete.movedLesson.id);
+    await deleteMutation.mutateAsync({
+      id: itemToDelete.current.movedLesson.id,
+    });
     setDeleteDialogOpen(false);
-    setItemToDelete(null);
+    itemToDelete.current = null;
   };
 
   const isLoading = movedLessonsQuery.isLoading;
@@ -388,159 +381,20 @@ function MovedLessonsPage() {
         </Alert>
       )}
 
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-md border">
-          <Table className="w-full min-w-3xl">
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('date')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('movedLesson.date')}
-                    <SortIcon
-                      column="date"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('day')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('movedLesson.targetDay')}
-                    <SortIcon
-                      column="day"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('period')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('movedLesson.targetPeriod')}
-                    <SortIcon
-                      column="period"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('room')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('movedLesson.targetRoom')}
-                    <SortIcon
-                      column="room"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer select-none hover:bg-muted/50"
-                  onClick={() => handleSort('count')}
-                >
-                  <div className="flex items-center gap-2">
-                    {t('movedLesson.lessonsCount')}
-                    <SortIcon
-                      column="count"
-                      currentColumn={sortColumn}
-                      direction={sortDirection}
-                    />
-                  </div>
-                </TableHead>
-                <TableHead>{t('movedLesson.comment')}</TableHead>
-                {hasWritePermission && (
-                  <TableHead>{t('movedLesson.actions')}</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMovedLessons.map((ml) => (
-                <TableRow key={ml.movedLesson.id}>
-                  <TableCell className="font-medium">
-                    {formatLocalizedDate(ml.movedLesson.date, i18n.language)}
-                  </TableCell>
-                  <TableCell>
-                    {ml.dayDefinition
-                      ? `${ml.dayDefinition.name} (${ml.dayDefinition.short})`
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {ml.period
-                      ? `P${ml.period.period} (${ml.period.startTime.toString().slice(0, 5)}\u2013${ml.period.endTime.toString().slice(0, 5)})`
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {ml.classroom ? ml.classroom.name : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
-                      {ml.lessons.length}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {ml.movedLesson.comment ? (
-                      <span className="whitespace-pre-wrap text-sm">
-                        {ml.movedLesson.comment}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  {hasWritePermission && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setSelectedItem(ml);
-                            setMoveMode(detectMoveMode(ml));
-                            setDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="outline"
-                        >
-                          <Pen className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          disabled={deleteMutation.isPending}
-                          onClick={() => handleDelete(ml)}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {!(filteredMovedLessons.length || hasError) && (
-                <TableRow>
-                  <TableCell
-                    className="text-muted-foreground"
-                    colSpan={hasWritePermission ? 7 : 6}
-                  >
-                    {t('movedLesson.noMovedLessons')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <MovedLessonsTable
+        deletePending={deleteMutation.isPending}
+        hasError={hasError}
+        hasWritePermission={hasWritePermission}
+        isLoading={isLoading}
+        onDelete={handleDelete}
+        onEdit={(ml) => {
+          setSelectedItem(ml);
+          setMoveMode(detectMoveMode(ml));
+          setDialogOpen(true);
+        }}
+        rows={filteredMovedLessons}
+        sort={sort}
+      />
 
       {hasWritePermission && dialogOpen && (
         <MovedLessonDialog
@@ -549,6 +403,7 @@ function MovedLessonsPage() {
           cohorts={cohortsQuery.data ?? []}
           days={days}
           item={selectedItem}
+          key={selectedItem?.movedLesson.id ?? 'new'}
           mode={moveMode}
           onModeChange={setMoveMode}
           onOpenChange={(open) => {
@@ -563,53 +418,159 @@ function MovedLessonsPage() {
       )}
 
       {hasWritePermission && (
-        <Dialog
+        <DeleteConfirmDialog
+          description={t('movedLesson.deleteDescription')}
+          onCancel={() => setDeleteDialogOpen(false)}
+          onConfirm={confirmDelete}
           onOpenChange={(open) => {
             setDeleteDialogOpen(open);
             if (!open) {
-              setItemToDelete(null);
+              itemToDelete.current = null;
             }
           }}
           open={deleteDialogOpen}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('movedLesson.deleteConfirm')}</DialogTitle>
-              <DialogDescription>
-                {t('movedLesson.deleteDescription')}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                onClick={() => setDeleteDialogOpen(false)}
-                variant="outline"
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                disabled={deleteMutation.isPending}
-                onClick={confirmDelete}
-                variant="destructive"
-              >
-                {deleteMutation.isPending
-                  ? t('common.deleting')
-                  : t('common.delete')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          pending={deleteMutation.isPending}
+          title={t('movedLesson.deleteConfirm')}
+        />
       )}
+    </div>
+  );
+}
+
+type MovedLessonSortColumn = 'date' | 'day' | 'period' | 'room' | 'count';
+
+type MovedLessonsTableProps = {
+  deletePending: boolean;
+  hasError: boolean;
+  hasWritePermission: boolean;
+  isLoading: boolean;
+  onDelete: (ml: MovedLessonItem) => void;
+  onEdit: (ml: MovedLessonItem) => void;
+  rows: MovedLessonItem[];
+  sort: Pick<
+    UseSortableResult<MovedLessonItem, MovedLessonSortColumn>,
+    'ariaSort' | 'column' | 'direction' | 'toggle'
+  >;
+};
+
+function MovedLessonsTable({
+  deletePending,
+  hasError,
+  hasWritePermission,
+  isLoading,
+  onDelete,
+  onEdit,
+  rows,
+  sort,
+}: MovedLessonsTableProps) {
+  const { i18n, t } = useTranslation();
+  const { ariaSort, direction, toggle } = sort;
+
+  const header = (column: MovedLessonSortColumn, label: string) => (
+    <TableHead
+      aria-sort={ariaSort(column)}
+      className="cursor-pointer select-none hover:bg-muted/50"
+      onClick={() => toggle(column)}
+    >
+      <div className="flex items-center gap-2">
+        {label}
+        <SortIcon
+          column={column}
+          currentColumn={column}
+          direction={direction}
+        />
+      </div>
+    </TableHead>
+  );
+
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  return (
+    <div className="w-full overflow-x-auto rounded-md border">
+      <Table className="w-full min-w-3xl">
+        <TableHeader>
+          <TableRow>
+            {header('date', t('movedLesson.date'))}
+            {header('day', t('movedLesson.targetDay'))}
+            {header('period', t('movedLesson.targetPeriod'))}
+            {header('room', t('movedLesson.targetRoom'))}
+            {header('count', t('movedLesson.lessonsCount'))}
+            <TableHead>{t('movedLesson.comment')}</TableHead>
+            {hasWritePermission && (
+              <TableHead>{t('movedLesson.actions')}</TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((ml) => (
+            <TableRow key={ml.movedLesson.id}>
+              <TableCell className="font-medium">
+                {formatLocalizedDate(ml.movedLesson.date, i18n.language)}
+              </TableCell>
+              <TableCell>
+                {ml.dayDefinition
+                  ? `${ml.dayDefinition.name} (${ml.dayDefinition.short})`
+                  : '-'}
+              </TableCell>
+              <TableCell>
+                {ml.period
+                  ? `P${ml.period.period} (${ml.period.startTime.toString().slice(0, 5)}\u2013${ml.period.endTime.toString().slice(0, 5)})`
+                  : '-'}
+              </TableCell>
+              <TableCell>{ml.classroom ? ml.classroom.name : '-'}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
+                  {ml.lessons.length}
+                </div>
+              </TableCell>
+              <TableCell>
+                {ml.movedLesson.comment ? (
+                  <span className="whitespace-pre-wrap text-sm">
+                    {ml.movedLesson.comment}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              {hasWritePermission && (
+                <TableCell>
+                  <RowActions
+                    deleteLabel={t('movedLesson.deleteConfirm')}
+                    editLabel={t('movedLesson.edit')}
+                    isDeleting={deletePending}
+                    onDelete={() => onDelete(ml)}
+                    onEdit={() => onEdit(ml)}
+                  />
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {!(rows.length || hasError) && (
+            <TableRow>
+              <TableCell
+                className="text-muted-foreground"
+                colSpan={hasWritePermission ? 7 : 6}
+              >
+                {t('movedLesson.noMovedLessons')}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }
 
 function getMovedLessonSortValue(
   ml: MovedLessonItem,
-  sortColumn: 'date' | 'day' | 'period' | 'room' | 'count'
+  sortColumn: MovedLessonSortColumn
 ): string | number {
   switch (sortColumn) {
     case 'date':
-      return ml.movedLesson.date;
+      return ml.movedLesson.date.toISOString();
     case 'day':
       return ml.dayDefinition?.name ?? '';
     case 'period':
@@ -641,25 +602,18 @@ function compareByDayOrder(
   return sortDirection === 'asc' ? comparison : -comparison;
 }
 
-function compareMovedLessons(
+/**
+ * The only column `useSortable` cannot order by itself: days sort in week
+ * order, not alphabetically. Returning `undefined` for the others hands them to
+ * the hook's numeric-or-lexical default.
+ */
+function compareDayColumn(
   a: MovedLessonItem,
   b: MovedLessonItem,
   sortColumn: 'date' | 'day' | 'period' | 'room' | 'count',
   sortDirection: 'asc' | 'desc'
 ) {
-  if (sortColumn === 'day') {
-    return compareByDayOrder(a, b, sortDirection);
-  }
-
-  const aVal = getMovedLessonSortValue(a, sortColumn);
-  const bVal = getMovedLessonSortValue(b, sortColumn);
-
-  if (typeof aVal === 'string' && typeof bVal === 'string') {
-    const comparison = aVal.localeCompare(bVal);
-    return sortDirection === 'asc' ? comparison : -comparison;
-  }
-  if (typeof aVal === 'number' && typeof bVal === 'number') {
-    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-  }
-  return 0;
+  return sortColumn === 'day'
+    ? compareByDayOrder(a, b, sortDirection)
+    : undefined;
 }

@@ -1,0 +1,10 @@
+# Ignore everything 
+*
+
+# Except the CA certificates
+!.gitignore
+!ca.pem
+!ca.der
+!ca.crl
+!passwords.example.mk
+!Makefile

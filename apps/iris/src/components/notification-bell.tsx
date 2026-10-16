@@ -1,3 +1,4 @@
+import { useSession } from '@filcdev/auth/client';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -20,14 +21,14 @@ import {
   useRecentNotifications,
   useUnreadNotificationCount,
 } from '@/hooks/notifications';
-import { authClient } from '@/utils/authentication';
+import { formatLocalizedDate } from '@/utils/date-locale';
 
 export function NotificationBell() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] =
     useState<NotificationItem | null>(null);
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const userId = session?.session.userId;
 
   const { data: unreadData } = useUnreadNotificationCount(userId);
@@ -99,7 +100,10 @@ export function NotificationBell() {
                     {notif.title}
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    {new Date(notif.createdAt).toLocaleDateString()}
+                    {formatLocalizedDate(notif.createdAt, i18n.language, {
+                      dateStyle: 'short',
+                      timeZone: 'Europe/Budapest',
+                    })}
                   </span>
                 </div>
               </DropdownMenuItem>

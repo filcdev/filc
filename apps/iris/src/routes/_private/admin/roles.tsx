@@ -2,16 +2,22 @@ import { Button } from '@filcdev/ui/components/button';
 import { Input } from '@filcdev/ui/components/input';
 import { createFileRoute } from '@tanstack/react-router';
 import { RefreshCw, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RoleDialog } from '@/components/admin/role-dialog';
 import { RolesTable } from '@/components/admin/roles-table';
 import { StatCard } from '@/components/admin/stat-card';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { useRoles } from '@/hooks/admin-users';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/roles')({
   component: AdminRolesPage,
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(context.queryClient, orpc.roles.list.queryOptions()),
+      prefetch(context.queryClient, orpc.roles.permissions.queryOptions()),
+    ]),
 });
 
 function AdminRolesPage() {
@@ -21,24 +27,18 @@ function AdminRolesPage() {
 
   const rolesQuery = useRoles();
 
-  const allRoles = rolesQuery.data?.roles ?? [];
+  const allRoles = rolesQuery.data?.items ?? [];
 
-  const filteredRoles = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) {
-      return allRoles;
-    }
-    return allRoles.filter((role) => role.name.toLowerCase().includes(term));
-  }, [allRoles, search]);
+  const term = search.trim().toLowerCase();
+  const filteredRoles = term
+    ? allRoles.filter((role) => role.name.toLowerCase().includes(term))
+    : allRoles;
 
-  const stats = useMemo(
-    () => ({
-      emptyRoles: allRoles.filter((r) => r.can.length === 0).length,
-      totalPermissions: allRoles.reduce((sum, r) => sum + r.can.length, 0),
-      totalRoles: allRoles.length,
-    }),
-    [allRoles]
-  );
+  const stats = {
+    emptyRoles: allRoles.filter((r) => r.can.length === 0).length,
+    totalPermissions: allRoles.reduce((sum, r) => sum + r.can.length, 0),
+    totalRoles: allRoles.length,
+  };
 
   return (
     <div className="space-y-6">
@@ -91,6 +91,7 @@ function AdminRolesPage() {
 
       <RoleDialog
         editingRole={null}
+        key={isCreateDialogOpen ? 'open:new' : 'closed:new'}
         onOpenChange={setIsCreateDialogOpen}
         open={isCreateDialogOpen}
       />

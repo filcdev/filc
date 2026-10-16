@@ -1,4 +1,4 @@
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 
 /** Combining diacritical marks, stripped after NFD. */
@@ -49,7 +49,7 @@ export function slugify(value: string): string {
  * `'b' + building.id`, e.g. `classroom.desc.b1.a05`).
  */
 export function classroomDescriptionKey(
-  classroom: Classroom,
+  classroom: ClassroomRow,
   buildingId: string
 ): string {
   return `classroom.desc.b${buildingId}.${slugify(classroom.name)}`;
@@ -58,7 +58,7 @@ export function classroomDescriptionKey(
 /** A classroom plus the display strings the kiosk shows alongside it. */
 export type ClassroomInfo = {
   buildingName: string;
-  classroom: Classroom;
+  classroom: ClassroomRow;
   /**
    * Resolved description: the bundle text for the derived
    * `classroom.desc.*` key when present, otherwise `classroom.description`,
@@ -91,7 +91,7 @@ export function storeyLabel(storey: number, t: Translator): string {
  */
 export function classroomInfo(
   graph: FullGraph,
-  classroom: Classroom,
+  classroom: ClassroomRow,
   t: Translator,
   resolve: Resolver
 ): ClassroomInfo {
@@ -123,11 +123,11 @@ export function searchClassrooms(
   query: string,
   t: Translator,
   resolve: Resolver
-): Classroom[] {
+): ClassroomRow[] {
   const rooms = graph?.classrooms ?? [];
   const q = normalize(query);
 
-  const values: Classroom[] = [];
+  const values: ClassroomRow[] = [];
 
   for (const classroom of rooms) {
     if (

@@ -1,11 +1,11 @@
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react';
 import type { ClassroomInfo, Translator } from '@/utils/classroom-search';
 
 type ClassroomCardProps = {
-  classroom: Classroom;
+  classroom: ClassroomRow;
   info: ClassroomInfo;
   itemRefs: RefObject<Record<string, HTMLButtonElement | null>>;
   onNavigate: (id: string) => void;

@@ -1,21 +1,15 @@
 import z from 'zod';
 
-export const getPeriodsResponseSchema = z.object({
-  data: z
-    .object({
-      endTime: z.string(),
-      id: z.string(),
-      period: z.number(),
-      startTime: z.string(),
-    })
-    .array(),
-  success: z.boolean(),
+/** A period definition: `startTime`/`endTime` are `time` columns. */
+export const periodSelectSchema = z.object({
+  endTime: z.string(),
+  id: z.uuid(),
+  period: z.number(),
+  startTime: z.string(),
 });
 
-export type GetPeriodsResponse = z.infer<typeof getPeriodsResponseSchema>;
-
 export const getPeriodsQuerySchema = z.object({
-  timetableId: z.string().uuid().optional(),
+  timetableId: z.uuid().optional(),
 });
 
 export type GetPeriodsQueryInput = z.infer<typeof getPeriodsQuerySchema>;

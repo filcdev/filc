@@ -56,6 +56,19 @@ export const initializeTelemetry = () => {
 
       return event;
     },
+
+    // Privacy: Sentry v11 collects all the categories below by default, so
+    // each one is pinned explicitly; the values match the v10 behaviour this
+    // app relied on when it passed `sendDefaultPii: false`. Anything omitted
+    // here (e.g. `stackFrameVariables`) keeps its permissive default.
+    dataCollection: {
+      cookies: false,
+      databaseQueryData: false,
+      genAI: { inputs: false, outputs: false },
+      graphQL: { document: false, variables: false },
+      httpBodies: [],
+      userInfo: false,
+    },
     dsn,
     environment,
 
@@ -78,7 +91,10 @@ export const initializeTelemetry = () => {
       replayIntegration({
         blockAllMedia: true, // Don't capture images/videos
         maskAllInputs: true, // Mask sensitive input fields
-        maskAllText: false, // We want to see text for debugging
+        // Students type names and free text into substitution and announcement
+        // forms; recording it would ship that to Sentry and contradict the
+        // `dataCollection` privacy baseline below.
+        maskAllText: true,
       }),
     ],
     release,
@@ -87,9 +103,6 @@ export const initializeTelemetry = () => {
     // Session Replay sample rates
     replaysSessionSampleRate,
     sampleRate,
-
-    // Privacy: don't send PII by default
-    sendDefaultPii: false,
 
     // Performance Monitoring
     tracesSampleRate,

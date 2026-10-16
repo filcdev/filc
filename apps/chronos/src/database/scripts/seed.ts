@@ -9,22 +9,23 @@ import { checkbox, confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import { Presets, SingleBar } from 'cli-progress';
 import dayjs from 'dayjs';
-import { eq, inArray } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { db, prepareDb } from '#database/index';
 import { user } from '#database/schema/authentication';
+import { timetableImportStore } from '#database/timetable-import-store';
 import {
   auditLog,
   card,
   cardDevice,
   device,
   deviceHealth,
-} from '#database/schema/doorlock';
+} from '#modules/doorlock/schema';
 import {
   announcement,
   announcementCohortMtm,
   blogPost,
   systemMessage,
-} from '#database/schema/news';
+} from '#modules/news/schema';
 import {
   classroom,
   cohort,
@@ -37,11 +38,15 @@ import {
   substitution,
   substitutionLessonMTM,
   teacher,
-} from '#database/schema/timetable';
-import { timetableImportStore } from '#database/timetable-import-store';
+} from '#modules/timetable/schema';
+import { getActiveTimetableId } from '#modules/timetable/utils/active';
+import { env } from '#utils/environment';
 import { configureLogger } from '#utils/logger';
 
 const CANCELLATION_PROBABILITY = 0.3;
+/** Rows of PetrikTV demo data: one substitution and one moved lesson each. */
+const PETRIKTV_ROW_COUNT = 16;
+const PETRIKTV_TEST_PREFIX = 'petriktv-test';
 const SUBSTITUTION_ROOM_PROBABILITY = 0.4;
 
 await configureLogger('chronos');
@@ -813,6 +818,147 @@ const seedNews = async (baseData: BaseData) => {
   logger.info('News module seeded successfully');
 };
 
+/** Minutes since midnight, for comparing a period's end against the clock. */
+const timeToMinutes = (value: string): number => {
+  const [hours, minutes] = value.split(':').map(Number);
+  return (hours ?? 0) * 60 + (minutes ?? 0);
+};
+
+type PetrikTvLesson = {
+  dayDefinitionId: string;
+  id: string;
+  periodId: string;
+};
+
+/**
+ * Demo data for the PetrikTV kiosk screens: substitutions and moved lessons on
+ * today's date, derived from the lessons that have not finished yet. Re-running
+ * it replaces the previous batch — the rows carry a prefixed id, so nothing else
+ * in the database is touched.
+ */
+const seedPetrikTv = async () => {
+  if (env.mode === 'production') {
+    throw new Error('The PetrikTV test-data seeder cannot run in production.');
+  }
+
+  const timetableId = await getActiveTimetableId();
+  if (!timetableId) {
+    throw new Error('No active timetable found. Import a timetable first.');
+  }
+
+  const now = dayjs();
+  const nowMinutes = now.hour() * 60 + now.minute();
+  const today = new Date(`${now.format('YYYY-MM-DD')}T12:00:00.000Z`);
+
+  const [teachers, classrooms, lessons] = await Promise.all([
+    db.select({ id: teacher.id }).from(teacher),
+    db.select({ id: classroom.id }).from(classroom),
+    db
+      .select({
+        dayDefinitionId: lesson.dayDefinitionId,
+        id: lesson.id,
+        periodEndTime: period.endTime,
+        periodId: lesson.periodId,
+      })
+      .from(lesson)
+      .innerJoin(period, eq(lesson.periodId, period.id))
+      .where(eq(lesson.timetableId, timetableId))
+      .orderBy(asc(period.period), asc(lesson.id)),
+  ]);
+
+  const upcomingLessons: PetrikTvLesson[] = lessons
+    .filter((item) => timeToMinutes(item.periodEndTime) > nowMinutes)
+    .map(({ dayDefinitionId, id, periodId }) => ({
+      dayDefinitionId,
+      id,
+      periodId,
+    }));
+
+  if (upcomingLessons.length === 0) {
+    throw new Error('No upcoming lessons found for the active timetable.');
+  }
+
+  if (classrooms.length === 0) {
+    throw new Error('No classrooms found. Moved lessons need target rooms.');
+  }
+
+  const selectedLessons = Array.from(
+    { length: PETRIKTV_ROW_COUNT },
+    (_, index) => {
+      const selectedLesson = upcomingLessons[index % upcomingLessons.length];
+      if (!selectedLesson) {
+        throw new Error('Failed to select an upcoming lesson.');
+      }
+      return selectedLesson;
+    }
+  );
+
+  const substitutionIds = Array.from(
+    { length: PETRIKTV_ROW_COUNT },
+    (_, index) =>
+      `${PETRIKTV_TEST_PREFIX}-sub-${String(index + 1).padStart(2, '0')}`
+  );
+  const movedLessonIds = Array.from(
+    { length: PETRIKTV_ROW_COUNT },
+    (_, index) =>
+      `${PETRIKTV_TEST_PREFIX}-moved-${String(index + 1).padStart(2, '0')}`
+  );
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(substitutionLessonMTM)
+      .where(inArray(substitutionLessonMTM.substitutionId, substitutionIds));
+    await tx
+      .delete(substitution)
+      .where(inArray(substitution.id, substitutionIds));
+    await tx
+      .delete(movedLessonLessonMTM)
+      .where(inArray(movedLessonLessonMTM.movedLessonId, movedLessonIds));
+    await tx.delete(movedLesson).where(inArray(movedLesson.id, movedLessonIds));
+
+    await tx.insert(substitution).values(
+      selectedLessons.map((_, index) => ({
+        comment: 'PetrikTV test data',
+        date: today,
+        id: substitutionIds[index] as string,
+        substituter:
+          index % 8 === 7
+            ? null
+            : (teachers[index % teachers.length]?.id ?? null),
+      }))
+    );
+
+    await tx.insert(substitutionLessonMTM).values(
+      selectedLessons.map((selectedLesson, index) => ({
+        lessonId: selectedLesson.id,
+        substitutionId: substitutionIds[index] as string,
+      }))
+    );
+
+    await tx.insert(movedLesson).values(
+      selectedLessons.map((selectedLesson, index) => ({
+        comment: 'PetrikTV test data',
+        date: today,
+        id: movedLessonIds[index] as string,
+        room: classrooms[index % classrooms.length]?.id ?? null,
+        startingDay: selectedLesson.dayDefinitionId,
+        startingPeriod: selectedLesson.periodId,
+      }))
+    );
+
+    await tx.insert(movedLessonLessonMTM).values(
+      selectedLessons.map((selectedLesson, index) => ({
+        lessonId: selectedLesson.id,
+        movedLessonId: movedLessonIds[index] as string,
+      }))
+    );
+  });
+
+  logger.info(
+    `Created ${PETRIKTV_ROW_COUNT} substitutions and ${PETRIKTV_ROW_COUNT} moved lessons for ${now.format('YYYY-MM-DD')}.`
+  );
+};
+
 const handleUserCreation = async (
   modules: string[],
   baseData: BaseData
@@ -870,6 +1016,10 @@ const seed = async () => {
       { name: 'Substitutions and Moved Lessons', value: 'lessons' },
       { name: 'Doorlock (Devices, Cards, Logs)', value: 'doorlock' },
       { name: 'News (Announcements, System Messages, Blogs)', value: 'news' },
+      {
+        name: 'PetrikTV test data (substitutions and moved lessons for the TV)',
+        value: 'petriktv',
+      },
     ],
     message: 'Select which modules to seed:',
   });
@@ -878,6 +1028,7 @@ const seed = async () => {
     doorlock: seedDoorlock,
     lessons: seedLessons,
     news: seedNews,
+    petriktv: () => seedPetrikTv(),
   };
 
   if (modules.length === 0) {

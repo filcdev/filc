@@ -8,17 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
-import type { InferResponseType } from 'hono';
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SortIcon } from '@/components/util/sort-icon';
-import type { api } from '@/utils/hc';
+import type { User } from '@/hooks/admin-users';
+import { useSortable } from '@/hooks/use-sortable';
 import type { PaginationProps } from './admin.types';
 import { UserDialog } from './user-dialog';
-
-type User = NonNullable<
-  InferResponseType<typeof api.users.index.$get>['data']
->['users'][number];
 
 type SortColumn = 'name' | 'email' | 'cohort' | 'roles';
 
@@ -26,17 +22,6 @@ type UsersTableProps = PaginationProps & {
   cohortMap: Map<string, string>;
   users: User[];
 };
-
-function getAriaSortState(
-  column: string,
-  sortColumn: string | null,
-  sortDirection: 'asc' | 'desc' | null
-): 'ascending' | 'descending' | 'none' {
-  if (sortColumn !== column) {
-    return 'none';
-  }
-  return sortDirection === 'asc' ? 'ascending' : 'descending';
-}
 
 export function UsersTable({
   cohortMap,
@@ -49,38 +34,23 @@ export function UsersTable({
   const { t } = useTranslation();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  // Stable so the sort does not re-run on every render; the cohort names it
+  // reads are the only thing outside the row.
+  const getValue = useCallback(
+    (user: User, column: SortColumn) => getSortValue(user, column, cohortMap),
+    [cohortMap]
+  );
 
-  const sortedUsers = useMemo(() => {
-    if (!(sortColumn && sortDirection)) {
-      return users;
-    }
-    return [...users].sort((a, b) => {
-      const aVal = getSortValue(a, sortColumn, cohortMap) ?? '';
-      const bVal = getSortValue(b, sortColumn, cohortMap) ?? '';
-      const comparison = aVal.localeCompare(bVal);
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  }, [users, sortColumn, sortDirection, cohortMap]);
+  const {
+    ariaSort,
+    column: sortColumn,
+    direction: sortDirection,
+    rows: sortedUsers,
+    toggle: handleSort,
+  } = useSortable(users, { getValue });
 
   return (
     <div className="space-y-4">
@@ -88,10 +58,7 @@ export function UsersTable({
         <Table className="w-full min-w-3xl">
           <TableHeader>
             <TableRow>
-              <TableHead
-                aria-sort={getAriaSortState('name', sortColumn, sortDirection)}
-                className="select-none"
-              >
+              <TableHead aria-sort={ariaSort('name')} className="select-none">
                 <button
                   className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
                   onClick={() => handleSort('name')}
@@ -105,10 +72,7 @@ export function UsersTable({
                   />
                 </button>
               </TableHead>
-              <TableHead
-                aria-sort={getAriaSortState('email', sortColumn, sortDirection)}
-                className="select-none"
-              >
+              <TableHead aria-sort={ariaSort('email')} className="select-none">
                 <button
                   className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
                   onClick={() => handleSort('email')}
@@ -122,14 +86,7 @@ export function UsersTable({
                   />
                 </button>
               </TableHead>
-              <TableHead
-                aria-sort={getAriaSortState(
-                  'cohort',
-                  sortColumn,
-                  sortDirection
-                )}
-                className="select-none"
-              >
+              <TableHead aria-sort={ariaSort('cohort')} className="select-none">
                 <button
                   className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
                   onClick={() => handleSort('cohort')}
@@ -143,10 +100,7 @@ export function UsersTable({
                   />
                 </button>
               </TableHead>
-              <TableHead
-                aria-sort={getAriaSortState('roles', sortColumn, sortDirection)}
-                className="select-none"
-              >
+              <TableHead aria-sort={ariaSort('roles')} className="select-none">
                 <button
                   className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
                   onClick={() => handleSort('roles')}

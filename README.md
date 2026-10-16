@@ -18,9 +18,9 @@
 
 | Path           | Description                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------------- |
-| `apps/chronos` | Hono + Drizzle backend: API, auth (better-auth), scheduled jobs                                         |
+| `apps/chronos` | oRPC + Drizzle backend: implements the shared API contract, auth (better-auth), scheduled jobs          |
 | `apps/iris`    | React 19 + Vite frontend: TanStack Router / Query / Form                                                |
-| `packages/api` | Shared API contract (`@filcdev/api`): zod wire schemas, error types, permission constants, typed client |
+| `packages/api` | Shared API contract (`@filcdev/api`): the oRPC contract, zod wire schemas, error map, permissions, typed client |
 
 ## Quickstart
 

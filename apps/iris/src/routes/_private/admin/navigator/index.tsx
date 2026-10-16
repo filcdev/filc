@@ -21,6 +21,7 @@ import {
   useLifts,
   useStairs,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/navigator/')({
   component: () => (
@@ -28,6 +29,8 @@ export const Route = createFileRoute('/_private/admin/navigator/')({
       <NavigatorOverviewPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
 });
 
 function NavigatorOverviewPage() {

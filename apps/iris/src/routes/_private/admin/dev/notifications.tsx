@@ -131,17 +131,19 @@ function DevNotificationsPage() {
       push: values.pushEnabled,
     };
     try {
-      for (const type of NOTIFICATION_TYPES) {
-        const mock = NOTIFICATION_MOCKS[type][values.language];
-        await sendAllNotification.mutateAsync({
-          channels,
-          content: mock.content,
-          email: values.email || undefined,
-          language: values.language,
-          subject: mock.title,
-          type,
-        });
-      }
+      await Promise.all(
+        NOTIFICATION_TYPES.map((type) => {
+          const mock = NOTIFICATION_MOCKS[type][values.language];
+          return sendAllNotification.mutateAsync({
+            channels,
+            content: mock.content,
+            email: values.email || undefined,
+            language: values.language,
+            subject: mock.title,
+            type,
+          });
+        })
+      );
       toast.success(t('devNotifications.sendAllSuccess'));
     } catch {
       toast.error(t('devNotifications.sendError'));
@@ -328,6 +330,7 @@ function DevNotificationsPage() {
           {previewHtml && (
             <iframe
               className="h-full w-full rounded-md border"
+              sandbox=""
               srcDoc={previewHtml}
               title={t('devNotifications.previewTitle')}
             />

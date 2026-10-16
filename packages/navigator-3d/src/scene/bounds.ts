@@ -1,5 +1,5 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import { degToRad } from 'three/src/math/MathUtils.js';
@@ -7,7 +7,10 @@ import { degToRad } from 'three/src/math/MathUtils.js';
 export type LocalBounds = { x: number; y: number; w: number; h: number };
 export type Vector2 = { x: number; y: number };
 
-function GetRoomBounds(building: Building, classroom: Classroom): LocalBounds {
+function GetRoomBounds(
+  building: Building,
+  classroom: ClassroomRow
+): LocalBounds {
   const origin = { x: building.x, y: building.y };
 
   const rot = degToRad(classroom.rotation);
@@ -100,7 +103,7 @@ function GetCorridorBounds(
 
 function GetBoundsByClassrooms(
   building: Building,
-  classrooms: Classroom[]
+  classrooms: ClassroomRow[]
 ): LocalBounds {
   if (classrooms.length === 0) {
     return { h: 0, w: 0, x: 0, y: 0 };

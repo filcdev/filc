@@ -1,24 +1,18 @@
-import type { InferResponseType } from 'hono/client';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { api, useApiQuery } from '@/utils/api';
 import { REFETCH_INTERVALS } from '@/utils/constants';
+import { type api, orpc } from '@/utils/orpc';
 
-type KioskPetrikNews = InferResponseType<
-  (typeof api.kiosk)['petrik-news']['$get'],
-  200
->['data'];
+type KioskPetrikNews = Awaited<ReturnType<typeof api.kiosk.petrikNews>>;
 
 export type PetrikNewsItem = KioskPetrikNews['items'][number];
 
 /** The petrik.hu feed the navigator shows full screen after idling. */
 export function usePetrikNews(machine: string): { items: PetrikNewsItem[] } {
-  const query = useApiQuery<KioskPetrikNews>(
-    () => api.kiosk['petrik-news'].$get({ query: { machine } }),
-    {
-      queryKey: ['kiosk', 'petrik-news', machine],
-      refetchInterval: REFETCH_INTERVALS.news,
-    }
-  );
+  const query = useQuery({
+    ...orpc.kiosk.petrikNews.queryOptions({ input: { machine } }),
+    refetchInterval: REFETCH_INTERVALS.news,
+  });
 
   return { items: query.data?.items ?? [] };
 }

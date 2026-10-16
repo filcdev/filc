@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
-import { userPreferences } from '#database/schema/notifications';
+import { userPreferences } from '#modules/notifications/schema';
 import {
   classroom,
   cohort,
@@ -10,7 +10,8 @@ import {
   period,
   subject,
   teacher,
-} from '#database/schema/timetable';
+} from '#modules/timetable/schema';
+import { isHungarianLocale } from './locale';
 import type { AudienceUser, NotificationContent } from './types';
 
 const TRAILING_NEWLINES = /\n+$/;
@@ -206,7 +207,7 @@ export function buildSubstitutionTeacherContent(
   payload: SubstitutionTeacherPayload,
   locale: string
 ): NotificationContent {
-  const hu = locale.toLowerCase().startsWith('hu');
+  const hu = isHungarianLocale(locale);
   const { date, lessons } = payload;
 
   const label = {

@@ -1,6 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import { api, useApiQuery } from '@/utils/api';
 import type { Resolver, Translator } from '@/utils/classroom-search';
+import { orpc } from '@/utils/orpc';
 import { UI_STRINGS } from '@/utils/ui-strings';
 
 /** The kiosk speaks Hungarian; the campus codenames are stored per language. */
@@ -24,15 +25,17 @@ export function useKioskTranslations(): {
   resolve: Resolver;
   t: Translator;
 } {
-  const query = useApiQuery<Record<string, string>>(
-    () => api.navigator.translations.lang.$get({ query: { lang: LANGUAGE } }),
-    {
-      queryKey: ['navigator', 'translations', LANGUAGE],
-      staleTime: 5 * 60 * 1000,
-    }
-  );
+  const query = useQuery({
+    ...orpc.navigator.translations.lang.queryOptions({
+      input: { lang: LANGUAGE },
+    }),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const bundle = useMemo(() => query.data ?? {}, [query.data]);
+  const bundle = useMemo<Record<string, string>>(
+    () => query.data ?? {},
+    [query.data]
+  );
 
   const t = useCallback<Translator>(
     (key, options) => {

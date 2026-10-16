@@ -7,6 +7,9 @@ export const translationSchema = z.object({
   text_key: z.string(),
 });
 
+/** One language code (`en`, `hu`, …), the element of the available-languages list. */
+export const languageSchema = z.string();
+
 /** A flat `text_key -> text` bundle for one language. */
 export const translationMapSchema = z.record(z.string(), z.string());
 

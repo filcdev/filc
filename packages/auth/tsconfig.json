@@ -1,0 +1,4 @@
+{
+  "extends": "@filcdev/tsconfig/node.json",
+  "include": ["src"]
+}

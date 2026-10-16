@@ -6,10 +6,11 @@ import {
   DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
   DEFAULT_PETRIK_NEWS_MAX_ITEMS,
   type KioskKind,
+  type NavigatorKioskConfig,
   navigatorKioskConfigSchema,
+  type TvKioskConfig,
   tvKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import {
@@ -26,14 +27,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filcdev/ui/components/select';
-import { useForm, useStore } from '@tanstack/react-form';
+import {
+  type FormAsyncValidateOrFn,
+  type FormValidateOrFn,
+  type ReactFormExtendedApi,
+  useForm,
+  useStore,
+} from '@tanstack/react-form';
 import { Plus, Trash } from 'lucide-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { BaseDialogProps } from '@/components/admin/admin.types';
+import { Lazy } from '@/components/lazy';
 import { type KioskRow, useCreateKiosk, useUpdateKiosk } from '@/hooks/kiosks';
 import { useBuildings, useNavigatorGraph } from '@/hooks/navigator';
+
+// The canvas pulls in three.js, which the kiosk list must not pay for until
+// the dialog is actually opened.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 type DepartureStopForm = {
   key: string;
@@ -113,11 +124,14 @@ function toFormValues(kiosk: KioskRow | null): KioskFormValues {
       };
   const departures =
     kiosk.kind === 'tv' && tvConfig.success
-      ? tvConfig.data.departures.map((group) => ({
-          key: crypto.randomUUID(),
+      ? tvConfig.data.departures.map((group, groupIndex) => ({
+          // Index-derived, never random: this runs again on every `reset`, and
+          // a fresh key each time changes the form's values, which the reset
+          // effect turns into an endless render loop.
+          key: `group-${groupIndex}`,
           label: group.label,
-          stops: group.stops.map((stop) => ({
-            key: crypto.randomUUID(),
+          stops: group.stops.map((stop, stopIndex) => ({
+            key: `stop-${groupIndex}-${stopIndex}`,
             routeFilter: stop.routeFilter ?? '',
             stopId: stop.stopId,
           })),
@@ -159,29 +173,494 @@ type KioskDialogProps = BaseDialogProps & {
   kiosk: KioskRow | null;
 };
 
+type SyncValidator = FormValidateOrFn<KioskFormValues> | undefined;
+type AsyncValidator = FormAsyncValidateOrFn<KioskFormValues> | undefined;
+
+/**
+ * The form API the dialog hands its sections. TanStack's validator generics are
+ * invariant, so the alias spells out each slot's validator type.
+ */
+type KioskFormApi = ReactFormExtendedApi<
+  KioskFormValues,
+  SyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  SyncValidator,
+  AsyncValidator,
+  AsyncValidator,
+  unknown
+>;
+
+/** The TV kiosk's departure-group editor. */
+function DeparturesField({ form }: { form: KioskFormApi }) {
+  const { t } = useTranslation();
+
+  return (
+    <form.Field mode="array" name="departures">
+      {(groupsField) => (
+        <div className="space-y-4">
+          {groupsField.state.value.map((group, groupIndex) => (
+            <div className="space-y-3 rounded-md border p-3" key={group.key}>
+              <div className="flex items-end gap-2">
+                <form.Field name={`departures[${groupIndex}].label`}>
+                  {(field) => (
+                    <Field className="flex-1">
+                      <FieldLabel htmlFor={field.name}>
+                        {t('kiosk.fields.groupLabel')}
+                      </FieldLabel>
+                      <Input
+                        id={field.name}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        value={field.state.value}
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+                <Button
+                  aria-label={t('kiosk.removeGroup')}
+                  onClick={() => groupsField.removeValue(groupIndex)}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+
+              <form.Field mode="array" name={`departures[${groupIndex}].stops`}>
+                {(stopsField) => (
+                  <div className="space-y-2">
+                    {stopsField.state.value.map((stop, stopIndex) => (
+                      <div className="flex items-end gap-2" key={stop.key}>
+                        <form.Field
+                          name={`departures[${groupIndex}].stops[${stopIndex}].stopId`}
+                        >
+                          {(field) => (
+                            <Field className="flex-1">
+                              <FieldLabel htmlFor={field.name}>
+                                {t('kiosk.fields.stopId')}
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                value={field.state.value}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+                        <form.Field
+                          name={`departures[${groupIndex}].stops[${stopIndex}].routeFilter`}
+                        >
+                          {(field) => (
+                            <Field className="flex-1">
+                              <FieldLabel htmlFor={field.name}>
+                                {t('kiosk.fields.routeFilter')}
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                value={field.state.value}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+                        <Button
+                          aria-label={t('kiosk.removeStop')}
+                          onClick={() => stopsField.removeValue(stopIndex)}
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Trash className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      onClick={() =>
+                        stopsField.pushValue({
+                          key: crypto.randomUUID(),
+                          routeFilter: '',
+                          stopId: '',
+                        })
+                      }
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {t('kiosk.addStop')}
+                    </Button>
+                  </div>
+                )}
+              </form.Field>
+            </div>
+          ))}
+          <Button
+            onClick={() =>
+              groupsField.pushValue({
+                key: crypto.randomUUID(),
+                label: '',
+                stops: [
+                  { key: crypto.randomUUID(), routeFilter: '', stopId: '' },
+                ],
+              })
+            }
+            type="button"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
+            {t('kiosk.addGroup')}
+          </Button>
+        </div>
+      )}
+    </form.Field>
+  );
+}
+
+/** The TV kiosk's news ticker settings. */
+function TvNewsFields({ form }: { form: KioskFormApi }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-3 rounded-md border p-3">
+      <form.Field name="highlightedNews">
+        {(field) => (
+          <Field orientation="horizontal">
+            <FieldLabel htmlFor={field.name}>
+              {t('kiosk.fields.highlightedNews')}
+            </FieldLabel>
+            <Checkbox
+              checked={field.state.value}
+              id={field.name}
+              onCheckedChange={(checked) =>
+                field.handleChange(checked === true)
+              }
+            />
+          </Field>
+        )}
+      </form.Field>
+      <form.Field name="newsImages">
+        {(field) => (
+          <Field orientation="horizontal">
+            <FieldLabel htmlFor={field.name}>
+              {t('kiosk.fields.newsImages')}
+            </FieldLabel>
+            <Checkbox
+              checked={field.state.value}
+              id={field.name}
+              onCheckedChange={(checked) =>
+                field.handleChange(checked === true)
+              }
+            />
+          </Field>
+        )}
+      </form.Field>
+      <form.Field name="newsSlideSeconds">
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>
+              {t('kiosk.fields.newsSlideSeconds')}
+            </FieldLabel>
+            <Input
+              id={field.name}
+              max={120}
+              min={5}
+              onChange={(event) =>
+                field.handleChange(Number(event.target.value))
+              }
+              type="number"
+              value={field.state.value}
+            />
+          </Field>
+        )}
+      </form.Field>
+      <form.Field name="newsTickerSeconds">
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>
+              {t('kiosk.fields.newsTickerSeconds')}
+            </FieldLabel>
+            <Input
+              id={field.name}
+              max={600}
+              min={5}
+              onChange={(event) =>
+                field.handleChange(Number(event.target.value))
+              }
+              type="number"
+              value={field.state.value}
+            />
+          </Field>
+        )}
+      </form.Field>
+    </div>
+  );
+}
+
+type NavigatorKioskFieldsProps = {
+  form: KioskFormApi;
+};
+
+/** The navigator kiosk's idle/news settings and its start location picker. */
+function NavigatorKioskFields({ form }: NavigatorKioskFieldsProps) {
+  const { t } = useTranslation();
+  const values = useStore(form.store, (state) => state.values);
+  const graph = useNavigatorGraph();
+  const buildings = useBuildings();
+
+  const buildingItems = (buildings.data ?? []).map((building) => ({
+    label: building.name,
+    value: building.id,
+  }));
+
+  const myLocation = values.startBuildingId
+    ? {
+        buildingId: values.startBuildingId,
+        storey: values.startStorey,
+        x: values.startX,
+        y: values.startY,
+      }
+    : null;
+
+  return (
+    <div className="space-y-4">
+      <form.Field name="idleResetSeconds">
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>
+              {t('kiosk.fields.idleResetSeconds')}
+            </FieldLabel>
+            <Input
+              id={field.name}
+              max={600}
+              min={10}
+              onChange={(event) =>
+                field.handleChange(Number(event.target.value))
+              }
+              type="number"
+              value={field.state.value}
+            />
+          </Field>
+        )}
+      </form.Field>
+      <form.Field name="petrikNewsEnabled">
+        {(field) => (
+          <Field orientation="horizontal">
+            <FieldLabel htmlFor={field.name}>
+              {t('kiosk.fields.petrikNewsEnabled')}
+            </FieldLabel>
+            <Checkbox
+              checked={field.state.value}
+              id={field.name}
+              onCheckedChange={(checked) =>
+                field.handleChange(checked === true)
+              }
+            />
+          </Field>
+        )}
+      </form.Field>
+      {values.petrikNewsEnabled && (
+        <>
+          <form.Field name="petrikNewsIdleSeconds">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>
+                  {t('kiosk.fields.petrikNewsIdleSeconds')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  max={600}
+                  min={10}
+                  onChange={(event) =>
+                    field.handleChange(Number(event.target.value))
+                  }
+                  type="number"
+                  value={field.state.value}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="petrikNewsDwellSeconds">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>
+                  {t('kiosk.fields.petrikNewsDwellSeconds')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  max={120}
+                  min={5}
+                  onChange={(event) =>
+                    field.handleChange(Number(event.target.value))
+                  }
+                  type="number"
+                  value={field.state.value}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="petrikNewsFeedUrl">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>
+                  {t('kiosk.fields.petrikNewsFeedUrl')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  placeholder={DEFAULT_PETRIK_NEWS_FEED_URL}
+                  type="text"
+                  value={field.state.value}
+                />
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="petrikNewsMaxItems">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor={field.name}>
+                  {t('kiosk.fields.petrikNewsMaxItems')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  max={30}
+                  min={1}
+                  onChange={(event) =>
+                    field.handleChange(Number(event.target.value))
+                  }
+                  type="number"
+                  value={field.state.value}
+                />
+              </Field>
+            )}
+          </form.Field>
+        </>
+      )}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <form.Field name="startBuildingId">
+          {(field) => (
+            <Field>
+              <FieldLabel>{t('kiosk.fields.building')}</FieldLabel>
+              <Select
+                items={buildingItems}
+                onValueChange={(value) => field.handleChange(value ?? '')}
+                value={field.state.value}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('kiosk.fields.building')} />
+                </SelectTrigger>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="startStorey">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('kiosk.fields.storey')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="startX">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('kiosk.fields.x')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+        <form.Field name="startY">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>
+                {t('kiosk.fields.y')}
+              </FieldLabel>
+              <Input
+                id={field.name}
+                onChange={(event) =>
+                  field.handleChange(Number(event.target.value))
+                }
+                step="any"
+                type="number"
+                value={field.state.value}
+              />
+            </Field>
+          )}
+        </form.Field>
+      </div>
+      <div className="h-[40vh] overflow-hidden rounded-xl border">
+        <Lazy
+          emptyLabel={t('ui.common.no_data')}
+          graph={graph.data ?? null}
+          initialDistance={120}
+          load={loadEditorView3D}
+          myLocation={myLocation}
+          onTransform={(patch) => {
+            if (patch.x !== undefined) {
+              form.setFieldValue('startX', patch.x);
+            }
+            if (patch.y !== undefined) {
+              form.setFieldValue('startY', patch.y);
+            }
+          }}
+          showAxes
+        />
+      </div>
+    </div>
+  );
+}
+
 export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
   const { t } = useTranslation();
   const createKiosk = useCreateKiosk({ onSaved: () => onOpenChange(false) });
   const updateKiosk = useUpdateKiosk({ onSaved: () => onOpenChange(false) });
-  const graph = useNavigatorGraph();
-  const buildings = useBuildings();
-  const [defaultValues] = useState(() => toFormValues(kiosk));
 
-  const submit = (value: KioskFormValues, config: unknown) => {
+  const submit = (
+    value: KioskFormValues,
+    config: TvKioskConfig | NavigatorKioskConfig
+  ) => {
     if (kiosk) {
       updateKiosk.mutate({
+        config,
+        enabled: value.enabled,
         id: kiosk.id,
-        payload: {
-          config,
-          enabled: value.enabled,
-          kind: value.kind,
-          name: value.name,
-        },
+        kind: value.kind,
+        name: value.name,
       });
       return;
     }
     createKiosk.mutate({
       config,
+      enabled: value.enabled,
       kind: value.kind,
       machineId: value.machineId,
       name: value.name,
@@ -189,7 +668,7 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
   };
 
   const form = useForm({
-    defaultValues,
+    defaultValues: toFormValues(kiosk),
     onSubmit: ({ value }) => {
       if (value.kind === 'tv') {
         const config = tvKioskConfigSchema.safeParse({
@@ -238,20 +717,6 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
   });
 
   const values = useStore(form.store, (state) => state.values);
-
-  const buildingItems = (buildings.data ?? []).map((building) => ({
-    label: building.name,
-    value: building.id,
-  }));
-
-  const myLocation = values.startBuildingId
-    ? {
-        buildingId: values.startBuildingId,
-        storey: values.startStorey,
-        x: values.startX,
-        y: values.startY,
-      }
-    : null;
 
   const isPending = createKiosk.isPending || updateKiosk.isPending;
 
@@ -341,432 +806,12 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
 
           {values.kind === 'tv' ? (
             <div className="space-y-4">
-              <form.Field mode="array" name="departures">
-                {(groupsField) => (
-                  <div className="space-y-4">
-                    {groupsField.state.value.map((group, groupIndex) => (
-                      <div
-                        className="space-y-3 rounded-md border p-3"
-                        key={group.key}
-                      >
-                        <div className="flex items-end gap-2">
-                          <form.Field name={`departures[${groupIndex}].label`}>
-                            {(field) => (
-                              <Field className="flex-1">
-                                <FieldLabel htmlFor={field.name}>
-                                  {t('kiosk.fields.groupLabel')}
-                                </FieldLabel>
-                                <Input
-                                  id={field.name}
-                                  onChange={(event) =>
-                                    field.handleChange(event.target.value)
-                                  }
-                                  value={field.state.value}
-                                />
-                              </Field>
-                            )}
-                          </form.Field>
-                          <Button
-                            aria-label={t('kiosk.removeGroup')}
-                            onClick={() => groupsField.removeValue(groupIndex)}
-                            size="icon-sm"
-                            type="button"
-                            variant="ghost"
-                          >
-                            <Trash className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+              <DeparturesField form={form} />
 
-                        <form.Field
-                          mode="array"
-                          name={`departures[${groupIndex}].stops`}
-                        >
-                          {(stopsField) => (
-                            <div className="space-y-2">
-                              {stopsField.state.value.map((stop, stopIndex) => (
-                                <div
-                                  className="flex items-end gap-2"
-                                  key={stop.key}
-                                >
-                                  <form.Field
-                                    name={`departures[${groupIndex}].stops[${stopIndex}].stopId`}
-                                  >
-                                    {(field) => (
-                                      <Field className="flex-1">
-                                        <FieldLabel htmlFor={field.name}>
-                                          {t('kiosk.fields.stopId')}
-                                        </FieldLabel>
-                                        <Input
-                                          id={field.name}
-                                          onChange={(event) =>
-                                            field.handleChange(
-                                              event.target.value
-                                            )
-                                          }
-                                          value={field.state.value}
-                                        />
-                                      </Field>
-                                    )}
-                                  </form.Field>
-                                  <form.Field
-                                    name={`departures[${groupIndex}].stops[${stopIndex}].routeFilter`}
-                                  >
-                                    {(field) => (
-                                      <Field className="flex-1">
-                                        <FieldLabel htmlFor={field.name}>
-                                          {t('kiosk.fields.routeFilter')}
-                                        </FieldLabel>
-                                        <Input
-                                          id={field.name}
-                                          onChange={(event) =>
-                                            field.handleChange(
-                                              event.target.value
-                                            )
-                                          }
-                                          value={field.state.value}
-                                        />
-                                      </Field>
-                                    )}
-                                  </form.Field>
-                                  <Button
-                                    aria-label={t('kiosk.removeStop')}
-                                    onClick={() =>
-                                      stopsField.removeValue(stopIndex)
-                                    }
-                                    size="icon-sm"
-                                    type="button"
-                                    variant="ghost"
-                                  >
-                                    <Trash className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              ))}
-                              <Button
-                                onClick={() =>
-                                  stopsField.pushValue({
-                                    key: crypto.randomUUID(),
-                                    routeFilter: '',
-                                    stopId: '',
-                                  })
-                                }
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                <Plus className="h-4 w-4" />
-                                {t('kiosk.addStop')}
-                              </Button>
-                            </div>
-                          )}
-                        </form.Field>
-                      </div>
-                    ))}
-                    <Button
-                      onClick={() =>
-                        groupsField.pushValue({
-                          key: crypto.randomUUID(),
-                          label: '',
-                          stops: [
-                            {
-                              key: crypto.randomUUID(),
-                              routeFilter: '',
-                              stopId: '',
-                            },
-                          ],
-                        })
-                      }
-                      type="button"
-                      variant="outline"
-                    >
-                      <Plus className="h-4 w-4" />
-                      {t('kiosk.addGroup')}
-                    </Button>
-                  </div>
-                )}
-              </form.Field>
-
-              <div className="space-y-3 rounded-md border p-3">
-                <form.Field name="highlightedNews">
-                  {(field) => (
-                    <Field orientation="horizontal">
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.highlightedNews')}
-                      </FieldLabel>
-                      <Checkbox
-                        checked={field.state.value}
-                        id={field.name}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked === true)
-                        }
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="newsImages">
-                  {(field) => (
-                    <Field orientation="horizontal">
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.newsImages')}
-                      </FieldLabel>
-                      <Checkbox
-                        checked={field.state.value}
-                        id={field.name}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked === true)
-                        }
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="newsSlideSeconds">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.newsSlideSeconds')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        max={120}
-                        min={5}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="newsTickerSeconds">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.newsTickerSeconds')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        max={600}
-                        min={5}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
+              <TvNewsFields form={form} />
             </div>
           ) : (
-            <div className="space-y-4">
-              <form.Field name="idleResetSeconds">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      {t('kiosk.fields.idleResetSeconds')}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      max={600}
-                      min={10}
-                      onChange={(event) =>
-                        field.handleChange(Number(event.target.value))
-                      }
-                      type="number"
-                      value={field.state.value}
-                    />
-                  </Field>
-                )}
-              </form.Field>
-              <form.Field name="petrikNewsEnabled">
-                {(field) => (
-                  <Field orientation="horizontal">
-                    <FieldLabel htmlFor={field.name}>
-                      {t('kiosk.fields.petrikNewsEnabled')}
-                    </FieldLabel>
-                    <Checkbox
-                      checked={field.state.value}
-                      id={field.name}
-                      onCheckedChange={(checked) =>
-                        field.handleChange(checked === true)
-                      }
-                    />
-                  </Field>
-                )}
-              </form.Field>
-              {values.petrikNewsEnabled && (
-                <>
-                  <form.Field name="petrikNewsIdleSeconds">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                          {t('kiosk.fields.petrikNewsIdleSeconds')}
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          max={600}
-                          min={10}
-                          onChange={(event) =>
-                            field.handleChange(Number(event.target.value))
-                          }
-                          type="number"
-                          value={field.state.value}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="petrikNewsDwellSeconds">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                          {t('kiosk.fields.petrikNewsDwellSeconds')}
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          max={120}
-                          min={5}
-                          onChange={(event) =>
-                            field.handleChange(Number(event.target.value))
-                          }
-                          type="number"
-                          value={field.state.value}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="petrikNewsFeedUrl">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                          {t('kiosk.fields.petrikNewsFeedUrl')}
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          placeholder={DEFAULT_PETRIK_NEWS_FEED_URL}
-                          type="text"
-                          value={field.state.value}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="petrikNewsMaxItems">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                          {t('kiosk.fields.petrikNewsMaxItems')}
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          max={30}
-                          min={1}
-                          onChange={(event) =>
-                            field.handleChange(Number(event.target.value))
-                          }
-                          type="number"
-                          value={field.state.value}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                </>
-              )}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <form.Field name="startBuildingId">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>{t('kiosk.fields.building')}</FieldLabel>
-                      <Select
-                        items={buildingItems}
-                        onValueChange={(value) =>
-                          field.handleChange(value ?? '')
-                        }
-                        value={field.state.value}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue
-                            placeholder={t('kiosk.fields.building')}
-                          />
-                        </SelectTrigger>
-                      </Select>
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="startStorey">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.storey')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="startX">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.x')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-                <form.Field name="startY">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('kiosk.fields.y')}
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        onChange={(event) =>
-                          field.handleChange(Number(event.target.value))
-                        }
-                        step="any"
-                        type="number"
-                        value={field.state.value}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
-              <div className="h-[40vh] overflow-hidden rounded-xl border">
-                <EditorView3D
-                  emptyLabel={t('ui.common.no_data')}
-                  graph={graph.data ?? null}
-                  initialDistance={120}
-                  myLocation={myLocation}
-                  onTransform={(patch) => {
-                    if (patch.x !== undefined) {
-                      form.setFieldValue('startX', patch.x);
-                    }
-                    if (patch.y !== undefined) {
-                      form.setFieldValue('startY', patch.y);
-                    }
-                  }}
-                  showAxes
-                />
-              </div>
-            </div>
+            <NavigatorKioskFields form={form} />
           )}
 
           <DialogFooter>

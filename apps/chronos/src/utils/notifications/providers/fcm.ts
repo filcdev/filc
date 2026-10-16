@@ -5,32 +5,34 @@ import type {
   MulticastMessage,
 } from 'firebase-admin/messaging';
 import { db } from '#database';
-import { fcmToken } from '#database/schema/notifications';
+import { fcmToken } from '#modules/notifications/schema';
 import { env } from '#utils/environment';
 
 const logger = getLogger(['chronos', 'notifications', 'fcm']);
 
 let fcmMessaging: FirebaseMessaging | null = null;
 
-export function initializeFcm(): boolean {
+export async function initializeFcm(): Promise<boolean> {
   if (!env.fcmCredentials) {
     logger.warn('FCM credentials not configured, push notifications disabled');
     return false;
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-    const admin = require('firebase-admin');
+    // Imported dynamically so firebase-admin is only loaded when FCM
+    // credentials are configured (a static import would pull it in always).
+    const { cert, getApps, initializeApp } = await import('firebase-admin');
+    const { getMessaging } = await import('firebase-admin/messaging');
     const credentials = JSON.parse(env.fcmCredentials);
 
-    if (admin.apps.length === 0) {
-      admin.initializeApp({
-        credential: admin.credential.cert(credentials),
+    if (getApps().length === 0) {
+      initializeApp({
+        credential: cert(credentials),
         projectId: env.fcmProjectId,
       });
     }
 
-    fcmMessaging = admin.messaging();
+    fcmMessaging = getMessaging();
     logger.info('FCM initialized successfully');
     return true;
   } catch (error) {

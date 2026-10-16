@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "fcm_token_user_id_token_unique" ON "fcm_token" USING btree ("user_id","token");

@@ -7,6 +7,8 @@
  * resolution, deduplication and orchestration logic in the package.
  */
 
+import type { PeriodInput, TeacherInput, TermInput, WeekInput } from './types';
+
 export type ActiveTimetableRow = {
   id: string;
   validTo: string | null;
@@ -17,12 +19,12 @@ export type PeriodRow = {
   period: number;
 };
 
-export type NewPeriod = {
-  id: string;
-  period: number;
-  startTime: string;
-  endTime: string;
-};
+/**
+ * What a writer is handed. These are the parsed inputs verbatim — the importer
+ * persists exactly what the parser produced, so re-declaring the fields here
+ * would only let a field the parser learns to read go silently un-stored.
+ */
+export type NewPeriod = PeriodInput;
 
 export type DayRow = {
   id: string;
@@ -55,13 +57,7 @@ export type TeacherRow = {
   lastName: string;
 };
 
-export type NewTeacher = {
-  email?: string | null;
-  id: string;
-  firstName: string;
-  lastName: string;
-  short: string;
-};
+export type NewTeacher = TeacherInput;
 
 export type ClassroomRow = {
   id: string;
@@ -88,12 +84,7 @@ export type NewCohort = {
   timetableId: string;
 };
 
-export type NewWeekDefinition = {
-  id: string;
-  name: string;
-  short: string;
-  weeks: string[];
-};
+export type NewWeekDefinition = WeekInput;
 
 export type NewCohortGroup = {
   id: string;
@@ -111,12 +102,7 @@ export type CohortGroupRow = {
   name: string;
 };
 
-export type NewTerm = {
-  id: string;
-  name: string;
-  short: string;
-  terms: string[];
-};
+export type NewTerm = TermInput;
 
 export type ExistingLessonRow = {
   id: string;

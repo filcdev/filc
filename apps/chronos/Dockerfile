@@ -18,6 +18,7 @@ RUN bun run build --filter=@filcdev/chronos
 
 FROM base AS release
 ENV NODE_ENV=production
+ENV CHRONOS_MODE=production
 ENV CHRONOS_PORT=3001
 COPY --from=builder /app/apps/chronos/src/database/migrations ./src/database/migrations
 COPY --from=builder /app/apps/chronos/dist ./dist

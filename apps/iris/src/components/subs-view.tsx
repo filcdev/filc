@@ -1,31 +1,18 @@
+import { useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import { ButtonGroup } from '@filcdev/ui/components/button-group';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@filcdev/ui/components/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@filcdev/ui/components/popover';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { cn } from '@filcdev/ui/lib/utils';
 import {
   Building2,
   CalendarDays,
-  CheckIcon,
-  ChevronsUpDownIcon,
   GraduationCap,
   UserRound,
   XIcon,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FilterCombobox } from '@/components/timetable/filter-combobox';
 import type {
   ClassroomItem,
   CohortItem,
@@ -46,7 +33,6 @@ import {
   useTimetableCohorts,
   useTimetables,
 } from '@/hooks/timetable-public';
-import { authClient } from '@/utils/authentication';
 import { compareClassNames } from '@/utils/cohort';
 import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
 import { DayNews } from './news-panel';
@@ -196,7 +182,9 @@ const lessonMatchesFilter = (
 ): boolean => {
   if (activeFilter === 'class') {
     const cohortName = cohorts?.find((c) => c.id === selectionId)?.name;
-    return cohortName ? lesson.cohorts.includes(cohortName) : false;
+    return cohortName
+      ? lesson.cohorts.some((c) => c.name === cohortName)
+      : false;
   }
   if (activeFilter === 'teacher') {
     return (
@@ -224,7 +212,7 @@ const filterSubs = (
       .map((sub) => ({
         ...sub,
         lessons: sub.lessons.filter((lesson) =>
-          lesson?.cohorts.includes(cohortName)
+          lesson?.cohorts.some((c) => c.name === cohortName)
         ),
       }))
       .filter((sub) => sub.lessons.length > 0);
@@ -260,7 +248,7 @@ const filterMovedLessons = (
       .map((ml) => ({
         ...ml,
         lessons: ml.lessons.filter((lesson) =>
-          lesson.cohorts.includes(cohortName)
+          lesson.cohorts.some((c) => c.name === cohortName)
         ),
       }))
       .filter((ml) => ml.lessons.length > 0);
@@ -343,10 +331,12 @@ const getCohortsForDate = (
   [
     ...new Set([
       ...subs.flatMap((sub) =>
-        sub.lessons.flatMap((lesson) => lesson?.cohorts ?? [])
+        sub.lessons.flatMap(
+          (lesson) => lesson?.cohorts.map((c) => c.name) ?? []
+        )
       ),
       ...movedLessons.flatMap((ml) =>
-        ml.lessons.flatMap((lesson) => lesson.cohorts)
+        ml.lessons.flatMap((lesson) => lesson.cohorts.map((c) => c.name))
       ),
     ]),
   ].sort(compareClassNames);
@@ -373,14 +363,16 @@ const buildDateCohortBoxes = (
     <SubsV
       cohortFilter={cohort}
       data={dateSubs.filter((sub) =>
-        sub.lessons.some((l) => l?.cohorts.includes(cohort))
+        sub.lessons.some((l) => l?.cohorts.some((c) => c.name === cohort))
       )}
       date={date}
       key={`${date}-${cohort}`}
       movedLessons={dateMovedLessons
         .map((ml) => ({
           ...ml,
-          lessons: ml.lessons.filter((l) => l.cohorts.includes(cohort)),
+          lessons: ml.lessons.filter((l) =>
+            l.cohorts.some((c) => c.name === cohort)
+          ),
         }))
         .filter((ml) => ml.lessons.length > 0)}
     />
@@ -445,9 +437,6 @@ function SubsFilterBar({
   });
 
   const placeholderLabel = getPlaceholder(activeFilter, t);
-  const selectedLabel =
-    filterOptions.find((option) => option.value === selectedValue)?.label ??
-    placeholderLabel;
 
   const handleSelection = (value: string) => {
     setComboboxOpen(false);
@@ -464,58 +453,20 @@ function SubsFilterBar({
       return <Skeleton className={`h-9 ${selectWidthClassName}`} />;
     }
 
-    const filterSelectId = `subs-filter-${activeFilter}`;
-    const comboboxContentId = `${filterSelectId}-content`;
-
     return (
-      <Popover onOpenChange={setComboboxOpen} open={comboboxOpen}>
-        <PopoverTrigger
-          render={
-            <Button
-              aria-controls={comboboxContentId}
-              aria-expanded={comboboxOpen}
-              className={`h-9 ${selectWidthClassName} justify-between`}
-              id={filterSelectId}
-              role="combobox"
-              size="sm"
-              variant="outline"
-            >
-              <span className="truncate">{selectedLabel}</span>
-              <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          }
-        />
-        <PopoverContent
-          className="w-[var(--radix-popper-anchor-width)] p-0"
-          id={comboboxContentId}
-        >
-          <Command>
-            <CommandInput placeholder={getSearchPlaceholder(activeFilter, t)} />
-            <CommandList>
-              <CommandEmpty>{getEmptyMessage(activeFilter, t)}</CommandEmpty>
-              <CommandGroup>
-                {filterOptions.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    onSelect={() => handleSelection(option.value)}
-                    value={option.label}
-                  >
-                    <CheckIcon
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        selectedValue === option.value
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <FilterCombobox
+        className={selectWidthClassName}
+        emptyMessage={getEmptyMessage(activeFilter, t)}
+        id={`subs-filter-${activeFilter}`}
+        onOpenChange={setComboboxOpen}
+        onSelect={handleSelection}
+        open={comboboxOpen}
+        options={filterOptions}
+        placeholder={placeholderLabel}
+        searchPlaceholder={getSearchPlaceholder(activeFilter, t)}
+        selectedValue={selectedValue}
+        size="sm"
+      />
     );
   };
 
@@ -565,7 +516,7 @@ function SubsFilterBar({
 // SubstitutionView
 
 export function SubstitutionView() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useSession();
   const { i18n, t } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('class');
@@ -636,58 +587,73 @@ export function SubstitutionView() {
     cohortsQuery.data
   );
 
-  const filteredSubs = filterSubs(
-    substitutionsQuery.data ?? [],
-    activeFilter,
-    activeSelectionId,
-    cohortsQuery.data
-  );
-
-  const filteredMovedLessons = filterMovedLessons(
-    movedLessonsQuery.data ?? [],
-    activeFilter,
-    activeSelectionId,
-    cohortsQuery.data
-  );
-
   const isLoading =
     substitutionsQuery.isLoading ||
     substitutionsQuery.isFetching ||
     movedLessonsQuery.isLoading ||
     movedLessonsQuery.isFetching;
-  const hasError = substitutionsQuery.error || movedLessonsQuery.error;
+  const hasError = Boolean(substitutionsQuery.error || movedLessonsQuery.error);
 
-  const groupedData = groupByDate(filteredSubs);
-  const groupedMovedLessons = groupMovedLessonsByDate(filteredMovedLessons);
+  // Re-key on the local day so a tab left open overnight still rolls over to
+  // today's substitutions instead of freezing on the day it was mounted.
+  const dayKey = toDateKey(new Date());
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Every one of these is a full pass over the substitution and moved-lesson
+  // lists, so they are derived together and cached: the only inputs are the
+  // query payloads, the active filter/selection, and the current day.
+  const { allDates, groupedData, groupedMovedLessons, hasContent } =
+    useMemo(() => {
+      const subs = filterSubs(
+        substitutionsQuery.data ?? [],
+        activeFilter,
+        activeSelectionId,
+        cohortsQuery.data
+      );
+      const movedLessons = filterMovedLessons(
+        movedLessonsQuery.data ?? [],
+        activeFilter,
+        activeSelectionId,
+        cohortsQuery.data
+      );
+      const byDate = groupByDate(subs);
+      const movedByDate = groupMovedLessonsByDate(movedLessons);
 
-  const now = new Date();
+      const startOfToday = parseDateOnly(dayKey);
 
-  const announcementDates = getAnnouncementDates(
-    announcementsQuery.data ?? [],
-    newsClassId,
-    today,
-    now
-  );
+      const dates = getAnnouncementDates(
+        announcementsQuery.data ?? [],
+        newsClassId,
+        startOfToday,
+        new Date()
+      );
 
-  const allDates = Array.from(
-    new Set([
-      ...Object.keys(groupedData),
-      ...Object.keys(groupedMovedLessons),
-      ...announcementDates,
-    ])
-  )
-    .filter((date) => parseDateOnly(date) >= today)
-    .sort((a, b) => a.localeCompare(b));
+      const upcoming = Array.from(
+        new Set([...Object.keys(byDate), ...Object.keys(movedByDate), ...dates])
+      )
+        .filter((date) => parseDateOnly(date) >= startOfToday)
+        .sort((a, b) => a.localeCompare(b));
 
-  const hasContent = hasVisibleContent(
-    filteredSubs,
-    filteredMovedLessons,
-    today,
-    announcementDates.length
-  );
+      return {
+        allDates: upcoming,
+        groupedData: byDate,
+        groupedMovedLessons: movedByDate,
+        hasContent: hasVisibleContent(
+          subs,
+          movedLessons,
+          startOfToday,
+          dates.length
+        ),
+      };
+    }, [
+      activeFilter,
+      activeSelectionId,
+      announcementsQuery.data,
+      cohortsQuery.data,
+      dayKey,
+      movedLessonsQuery.data,
+      newsClassId,
+      substitutionsQuery.data,
+    ]);
 
   const selectorLoading = getSelectorLoading(
     activeFilter,
@@ -803,6 +769,39 @@ export function SubstitutionView() {
           />
         </div>
       </div>
+      <SubstitutionDays
+        dates={allDates}
+        hasContent={hasContent}
+        hasError={hasError}
+        isLoading={isLoading}
+        renderDay={renderDateSection}
+      />
+    </div>
+  );
+}
+
+type SubstitutionDaysProps = {
+  dates: string[];
+  hasContent: boolean;
+  hasError: boolean;
+  isLoading: boolean;
+  /** Renders one day's cards; the view owns the data they read. */
+  renderDay: (date: string) => ReactNode;
+};
+
+/** The day sections of the view, or its loading, error and empty states. */
+function SubstitutionDays({
+  dates,
+  hasContent,
+  hasError,
+  isLoading,
+  renderDay,
+}: SubstitutionDaysProps) {
+  const { t } = useTranslation();
+  const ready = !(isLoading || hasError);
+
+  return (
+    <>
       {isLoading && (
         <div className="w-full max-w-5xl">
           <Skeleton className="h-96 w-full rounded-lg" />
@@ -819,9 +818,9 @@ export function SubstitutionView() {
         </div>
       )}
       <div className="w-full max-w-5xl space-y-4">
-        {!(isLoading || hasError) && hasContent
-          ? allDates.map((date) => renderDateSection(date))
-          : !(isLoading || hasError) && (
+        {ready && hasContent
+          ? dates.map((date) => renderDay(date))
+          : ready && (
               <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <p className="font-medium text-foreground text-lg">
@@ -834,6 +833,6 @@ export function SubstitutionView() {
               </div>
             )}
       </div>
-    </div>
+    </>
   );
 }

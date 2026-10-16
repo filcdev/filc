@@ -538,13 +538,6 @@ type MissingTeacher = {
   short: string;
 };
 
-type TeacherLinkTarget = {
-  email: string | null;
-  firstName: string;
-  id: string;
-  lastName: string;
-};
-
 /** A backfill on an existing teacher row, which always carries an email. */
 type TeacherEmailBackfill = {
   email: string;
@@ -649,7 +642,7 @@ const insertMissingTeachers = async <Tx>(
  */
 const linkTeachersToUsers = async <Tx>(
   tx: Tx,
-  targets: TeacherLinkTarget[],
+  targets: TeacherRow[],
   store: TimetableImportStore<Tx>
 ): Promise<void> => {
   // Pass 1: email. Email wins, so resolve and link it before the name fallback.
@@ -694,7 +687,7 @@ const linkTeachersToUsers = async <Tx>(
  */
 const linkTeachersByFullName = async <Tx>(
   tx: Tx,
-  targets: TeacherLinkTarget[],
+  targets: TeacherRow[],
   store: TimetableImportStore<Tx>
 ): Promise<void> => {
   const names = [
@@ -770,7 +763,7 @@ const loadTeachers = async <Tx>(
   // Link every teacher touched by this import, not just inserted/backfilled
   // rows: an existing teacher with a populated email still needs reconciling
   // with a user account. Deduplicate by persisted teacher id.
-  const targetsById = new Map<string, TeacherLinkTarget>();
+  const targetsById = new Map<string, TeacherRow>();
   for (const source of teachers) {
     const id = result.get(source.id);
     if (!id || targetsById.has(id)) {

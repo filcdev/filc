@@ -11,19 +11,22 @@ import {
 } from '@filcdev/ui/components/dialog';
 import { Label } from '@filcdev/ui/components/label';
 import { Textarea } from '@filcdev/ui/components/textarea';
-import { useForm, useStore } from '@tanstack/react-form';
-import { useQuery } from '@tanstack/react-query';
 import {
-  type InferRequestType,
-  type InferResponseType,
-  parseResponse,
-} from 'hono/client';
+  type ReactFormExtendedApi,
+  useForm,
+  useStore,
+} from '@tanstack/react-form';
+import { useQuery } from '@tanstack/react-query';
 import { Hand, Save } from 'lucide-react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type {
+  CohortItem,
+  PeriodItem,
+  TeacherItem,
+} from '@/components/timetable/types';
 import {
   type SubstitutionItem,
-  type Teacher,
   useCreateManualSubstitution,
   useCreateSubstitution,
   useSubstitutionTeachers,
@@ -31,22 +34,16 @@ import {
 } from '@/hooks/substitutions';
 import { sortCohorts } from '@/utils/cohort';
 import { getIntlLocale } from '@/utils/date-locale';
-import { api } from '@/utils/hc';
-import { queryKeys } from '@/utils/query-keys';
+import { type api, orpc } from '@/utils/orpc';
 import type { BaseDialogProps } from './admin.types';
 
-type EnrichedLesson = NonNullable<SubstitutionItem['lessons'][number]>;
+type TeacherLesson = Awaited<
+  ReturnType<typeof api.timetable.lessons.getSubstitutionCandidates>
+>['availableLessons'][number];
 
-type TeacherLessonsApiResponse = InferResponseType<
-  typeof api.timetable.lessons.getSubstitutionCandidates.$post
->;
-type TeacherLesson = NonNullable<
-  NonNullable<TeacherLessonsApiResponse['data']>['availableLessons'][number]
->;
-
-type SubstitutionFormValues = InferRequestType<
-  typeof api.timetable.substitutions.$post
->['json'] & {
+type SubstitutionFormValues = Parameters<
+  typeof api.timetable.substitutions.create
+>[0] & {
   manualCohort: string;
   manualPeriod: string;
   manualSubject: string;
@@ -55,31 +52,29 @@ type SubstitutionFormValues = InferRequestType<
 };
 
 /**
- * The dialog's fully-typed form API. Derived from `useForm` itself because
- * TanStack's validator generics are invariant; this form instance is the DI
- * boundary between the dialog shell and its field-group components.
+ * The dialog's fully-typed form API. TanStack's validator generics are
+ * invariant, so they are spelled out to match the `useForm` call below; this
+ * form instance is the DI boundary between the dialog shell and its
+ * field-group components.
  */
-type SubstitutionFormApi = ReturnType<
-  typeof useForm<
-    SubstitutionFormValues,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    unknown
-  >
+type SubstitutionFormApi = ReactFormExtendedApi<
+  SubstitutionFormValues,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  unknown
 >;
 
-type SubjectApiResponse = InferResponseType<typeof api.timetable.subjects.$get>;
-type Subject = NonNullable<SubjectApiResponse['data']>[number];
-
-type Period = NonNullable<EnrichedLesson['period']>;
+type Subject = Awaited<
+  ReturnType<typeof api.timetable.subjects>
+>['items'][number];
 
 type SubstitutionDialogProps = BaseDialogProps & {
   item?: SubstitutionItem | null;
@@ -110,9 +105,7 @@ function formatLessonLabel(
     parts.push(`${lesson.period.period}. óra`);
   }
   if (lesson.cohorts && lesson.cohorts.length > 0) {
-    const cohortLabels = lesson.cohorts.map((c) =>
-      typeof c === 'string' ? c : (c.short ?? c.name)
-    );
+    const cohortLabels = lesson.cohorts.map((c) => c.short ?? c.name);
     parts.push(`(${cohortLabels.join(', ')})`);
   }
   return parts.join(' - ') || lesson.id;
@@ -120,7 +113,7 @@ function formatLessonLabel(
 
 const initialState = (
   item?: SubstitutionItem | null
-): InferRequestType<typeof api.timetable.substitutions.$post>['json'] => ({
+): Parameters<typeof api.timetable.substitutions.create>[0] => ({
   comment: item?.substitution.comment ?? null,
   date: toUTCDate(
     item?.substitution.date ? new Date(item.substitution.date) : new Date()
@@ -152,11 +145,11 @@ function compareSubOptions(
 }
 
 type ManualSubstitutionFieldsProps = {
-  cohorts: NonNullable<InferResponseType<typeof api.cohort.index.$get>['data']>;
+  cohorts: CohortItem[];
   form: SubstitutionFormApi;
-  periods: Period[];
+  periods: PeriodItem[];
   subjects: Subject[];
-  teachers: Teacher[];
+  teachers: TeacherItem[];
 };
 
 function ManualSubstitutionFields({
@@ -294,7 +287,7 @@ type AutomaticSubstitutionFieldsProps = {
     value: string;
   }[];
   substituteCandidatesLoading: boolean;
-  teachers: Teacher[];
+  teachers: TeacherItem[];
   onSelectedMissingTeacherChange: (value: string) => void;
 };
 
@@ -499,6 +492,150 @@ function ManualModeToggle({ manual, onToggle }: ManualModeToggleProps) {
   );
 }
 
+type UseSubstitutionOptionsParams = {
+  date: Date;
+  lessonIds: string[];
+  manual: boolean;
+  missingTeacherId: string;
+  teachers: TeacherItem[];
+};
+
+/**
+ * The dialog's option sources: the manual-mode lookups, and — in automatic
+ * mode — the candidate lessons and substitute teachers for the picked date,
+ * absent teacher and lessons.
+ */
+function useSubstitutionOptions({
+  date,
+  lessonIds,
+  manual,
+  missingTeacherId,
+  teachers,
+}: UseSubstitutionOptionsParams) {
+  const { t } = useTranslation();
+
+  const subjectsQuery = useQuery({
+    ...orpc.timetable.subjects.queryOptions(),
+    enabled: manual,
+  });
+
+  const cohortsQuery = useQuery({
+    ...orpc.cohort.cohort.queryOptions(),
+    enabled: manual,
+    select: (data) => sortCohorts(data.items),
+  });
+
+  const periodsQuery = useQuery({
+    ...orpc.timetable.periods.getAll.queryOptions({ input: {} }),
+    enabled: manual,
+  });
+
+  const substituteCandidatesQuery = useQuery({
+    ...orpc.timetable.lessons.getSubstitutionCandidates.queryOptions({
+      input: {
+        date,
+        missingTeacherId,
+        selectedLessonIds: lessonIds,
+        teacherIds: teachers.map((teacher) => teacher.id),
+      },
+    }),
+    enabled: !manual && !!date && teachers.length > 0 && !!missingTeacherId,
+  });
+
+  const availableLessons = useMemo(() => {
+    if (!missingTeacherId) {
+      return [];
+    }
+
+    return (substituteCandidatesQuery.data?.availableLessons ??
+      []) as TeacherLesson[];
+  }, [missingTeacherId, substituteCandidatesQuery.data]);
+
+  const parallelTeachers = useMemo(() => {
+    const parallelLessons =
+      substituteCandidatesQuery.data?.parallelLessons ?? [];
+    const lessonIdSet = new Set(lessonIds);
+    const selectedLessons = availableLessons.filter((lesson) =>
+      lessonIdSet.has(lesson.id)
+    );
+    const selectedSubjectIds = new Set(
+      selectedLessons
+        .filter((lesson) => lesson.subject)
+        .map((lesson) => lesson.subject?.id)
+    );
+    const seen = new Map<string, { id: string; name: string }>();
+
+    const addTeachers = (
+      teacherList: { id: string; name: string }[] | undefined
+    ) => {
+      for (const teacher of teacherList ?? []) {
+        // Never offer the absent teacher as their own substitute.
+        if (teacher.id === missingTeacherId || seen.has(teacher.id)) {
+          continue;
+        }
+        seen.set(teacher.id, { id: teacher.id, name: teacher.name });
+      }
+    };
+
+    // Co-teachers of the selected lessons: a multi-group practical block is a
+    // single lesson carrying several teachers, so there is no sibling lesson
+    // for `parallelLessons` to find.
+    for (const lesson of selectedLessons) {
+      addTeachers(lesson.teachers);
+    }
+
+    // Teachers of parallel sibling lessons (split lessons stored separately).
+    for (const lesson of parallelLessons) {
+      if (!(lesson.subject && selectedSubjectIds.has(lesson.subject.id))) {
+        continue;
+      }
+      addTeachers(lesson.teachers);
+    }
+
+    return [...seen.values()];
+  }, [
+    availableLessons,
+    lessonIds,
+    missingTeacherId,
+    substituteCandidatesQuery.data,
+  ]);
+
+  const sortedSubstituteOptions = useMemo(() => {
+    const candidates =
+      substituteCandidatesQuery.data?.substituteCandidates ?? [];
+
+    const options = candidates.map((candidate) => {
+      let tag = '';
+      if (candidate.hasH1 && candidate.hasH2) {
+        tag = ` - ${t('substitution.nearbyTeacherTag')}`;
+      } else if (candidate.hasH1) {
+        tag = ` - ${t('substitution.h1Tag')}`;
+      } else if (candidate.hasH2) {
+        tag = ` - ${t('substitution.h2Tag')}`;
+      }
+
+      return {
+        hasH1: candidate.hasH1,
+        hasH2: candidate.hasH2,
+        label: `${candidate.teacher.firstName} ${candidate.teacher.lastName} (${candidate.teacher.short})${tag}`,
+        value: candidate.teacher.id,
+      };
+    });
+
+    return [...options].sort(compareSubOptions);
+  }, [substituteCandidatesQuery.data, t]);
+
+  return {
+    availableLessons,
+    cohortsQuery,
+    parallelTeachers,
+    periodsQuery,
+    sortedSubstituteOptions,
+    subjectsQuery,
+    substituteCandidatesLoading: substituteCandidatesQuery.isLoading,
+  };
+}
+
 export function SubstitutionDialog({
   item,
   manual = false,
@@ -514,8 +651,11 @@ export function SubstitutionDialog({
   const updateMutation = useUpdateSubstitution({ onSaved: close });
   const manualMutation = useCreateManualSubstitution({ onSaved: close });
   const { data: teachers = [] } = useSubstitutionTeachers(open);
-  const [selectedMissingTeacher, setSelectedMissingTeacher] =
-    useState<string>('');
+  // Changing the absent teacher is local edit state; the reset that used to
+  // seed it is gone, so it starts from the edited item on mount.
+  const [selectedMissingTeacher, setSelectedMissingTeacher] = useState<string>(
+    () => item?.lessons[0]?.teachers?.[0]?.id ?? ''
+  );
   const defaultValues = useMemo(
     () => ({
       ...initialState(item),
@@ -556,8 +696,8 @@ export function SubstitutionDialog({
       } = { ...value, substituter: resolvedSubstituter };
       if (item) {
         await updateMutation.mutateAsync({
+          ...payload,
           id: item.substitution.id,
-          payload,
         });
       } else {
         await createMutation.mutateAsync(payload);
@@ -576,174 +716,21 @@ export function SubstitutionDialog({
     manualTeacher,
   } = useStore(form.store, (state) => state.values);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    form.reset(defaultValues);
-    if (item && item.lessons.length > 0) {
-      const firstLesson = item.lessons[0];
-      const firstTeacherId = firstLesson?.teachers?.[0]?.id;
-      setSelectedMissingTeacher(firstTeacherId ?? '');
-    } else {
-      setSelectedMissingTeacher('');
-    }
-  }, [defaultValues, form, item, open]);
-
-  const subjectsQuery = useQuery({
-    enabled: manual,
-    queryFn: async (): Promise<Subject[]> => {
-      const res = await parseResponse(api.timetable.subjects.$get());
-      if (!res.success) {
-        throw new Error('Failed to load subjects');
-      }
-      return res.data as Subject[];
-    },
-    queryKey: queryKeys.subjects(),
-  });
-
-  const cohortsQuery = useQuery({
-    enabled: manual,
-    queryFn: async () => {
-      const res = await parseResponse(api.cohort.index.$get());
-      if (!res.success) {
-        throw new Error('Failed to load cohorts');
-      }
-      return sortCohorts(res.data);
-    },
-    queryKey: queryKeys.cohorts(),
-  });
-
-  const periodsQuery = useQuery({
-    enabled: manual,
-    queryFn: async (): Promise<Period[]> => {
-      const res = await parseResponse(
-        api.timetable.periods.getAll.$get({ query: {} })
-      );
-      if (!res.success) {
-        throw new Error('Failed to load periods');
-      }
-      return res.data as Period[];
-    },
-    queryKey: queryKeys.timetable.periods(null),
-  });
-
-  const substituteCandidatesQuery = useQuery({
-    enabled:
-      !manual && !!formDate && teachers.length > 0 && !!selectedMissingTeacher,
-    queryFn: async () => {
-      const res = await parseResponse(
-        api.timetable.lessons.getSubstitutionCandidates.$post({
-          json: {
-            date: formDate,
-            missingTeacherId: selectedMissingTeacher,
-            selectedLessonIds: formLessonIds,
-            teacherIds: teachers.map((teacher) => teacher.id),
-          },
-        })
-      );
-
-      if (!res.success) {
-        throw new Error('Failed to load substitution candidates');
-      }
-
-      return res.data;
-    },
-    queryKey: queryKeys.timetable.substituteCandidates(
-      selectedMissingTeacher,
-      formDate?.toISOString(),
-      [...formLessonIds].sort().join(','),
-      teachers
-        .map((teacher) => teacher.id)
-        .sort()
-        .join(',')
-    ),
-  });
-
-  const availableLessons = useMemo(() => {
-    if (!selectedMissingTeacher) {
-      return [];
-    }
-
-    return (substituteCandidatesQuery.data?.availableLessons ??
-      []) as TeacherLesson[];
-  }, [selectedMissingTeacher, substituteCandidatesQuery.data]);
-
-  const parallelTeachers = useMemo(() => {
-    const parallelLessons =
-      substituteCandidatesQuery.data?.parallelLessons ?? [];
-    const selectedLessons = availableLessons.filter((lesson) =>
-      formLessonIds.includes(lesson.id)
-    );
-    const selectedSubjectIds = new Set(
-      selectedLessons
-        .filter((lesson) => lesson.subject)
-        .map((lesson) => lesson.subject?.id)
-    );
-    const seen = new Map<string, { id: string; name: string }>();
-
-    const addTeachers = (
-      teacherList: { id: string; name: string }[] | undefined
-    ) => {
-      for (const teacher of teacherList ?? []) {
-        // Never offer the absent teacher as their own substitute.
-        if (teacher.id === selectedMissingTeacher || seen.has(teacher.id)) {
-          continue;
-        }
-        seen.set(teacher.id, { id: teacher.id, name: teacher.name });
-      }
-    };
-
-    // Co-teachers of the selected lessons: a multi-group practical block is a
-    // single lesson carrying several teachers, so there is no sibling lesson
-    // for `parallelLessons` to find.
-    for (const lesson of selectedLessons) {
-      addTeachers(lesson.teachers);
-    }
-
-    // Teachers of parallel sibling lessons (split lessons stored separately).
-    for (const lesson of parallelLessons) {
-      if (!(lesson.subject && selectedSubjectIds.has(lesson.subject.id))) {
-        continue;
-      }
-      addTeachers(lesson.teachers);
-    }
-
-    return [...seen.values()];
-  }, [
+  const {
     availableLessons,
-    formLessonIds,
-    selectedMissingTeacher,
-    substituteCandidatesQuery.data,
-  ]);
-
-  const substituteOptions = useMemo(() => {
-    const candidates =
-      substituteCandidatesQuery.data?.substituteCandidates ?? [];
-
-    return candidates.map((candidate) => {
-      let tag = '';
-      if (candidate.hasH1 && candidate.hasH2) {
-        tag = ` - ${t('substitution.nearbyTeacherTag')}`;
-      } else if (candidate.hasH1) {
-        tag = ` - ${t('substitution.h1Tag')}`;
-      } else if (candidate.hasH2) {
-        tag = ` - ${t('substitution.h2Tag')}`;
-      }
-
-      return {
-        hasH1: candidate.hasH1,
-        hasH2: candidate.hasH2,
-        label: `${candidate.teacher.firstName} ${candidate.teacher.lastName} (${candidate.teacher.short})${tag}`,
-        value: candidate.teacher.id,
-      };
-    });
-  }, [substituteCandidatesQuery.data, t]);
-
-  const sortedSubstituteOptions = useMemo(() => {
-    return [...substituteOptions].sort(compareSubOptions);
-  }, [substituteOptions]);
+    cohortsQuery,
+    parallelTeachers,
+    periodsQuery,
+    sortedSubstituteOptions,
+    subjectsQuery,
+    substituteCandidatesLoading,
+  } = useSubstitutionOptions({
+    date: formDate,
+    lessonIds: formLessonIds,
+    manual,
+    missingTeacherId: selectedMissingTeacher,
+    teachers,
+  });
 
   const isCreate = !item;
 
@@ -816,8 +803,8 @@ export function SubstitutionDialog({
               <ManualSubstitutionFields
                 cohorts={cohortsQuery.data ?? []}
                 form={form}
-                periods={periodsQuery.data ?? []}
-                subjects={subjectsQuery.data ?? []}
+                periods={periodsQuery.data?.items ?? []}
+                subjects={subjectsQuery.data?.items ?? []}
                 teachers={teachers}
               />
             ) : (
@@ -828,9 +815,7 @@ export function SubstitutionDialog({
                 parallelTeachers={parallelTeachers}
                 selectedMissingTeacher={selectedMissingTeacher}
                 sortedSubstituteOptions={sortedSubstituteOptions}
-                substituteCandidatesLoading={
-                  substituteCandidatesQuery.isLoading
-                }
+                substituteCandidatesLoading={substituteCandidatesLoading}
                 teachers={teachers}
               />
             )}

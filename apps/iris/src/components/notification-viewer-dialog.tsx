@@ -7,14 +7,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
-import { useNavigate } from '@tanstack/react-router';
 import { MailCheck, MailX } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSettingsDialog } from '@/components/settings-dialog-store';
 import {
   type NotificationItem,
   useMarkNotificationRead,
 } from '@/hooks/notifications';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { typeLabel } from '@/utils/notification-labels';
 
 type NotificationViewerDialogProps = {
@@ -28,13 +29,13 @@ export function NotificationViewerDialog({
   onOpenChange,
   notification,
 }: NotificationViewerDialogProps) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { i18n, t } = useTranslation();
+  const { openSettings } = useSettingsDialog();
   const markReadMutation = useMarkNotificationRead();
 
   useEffect(() => {
     if (open && notification && !notification.read) {
-      markReadMutation.mutate(notification.id);
+      markReadMutation.mutate({ id: notification.id });
     }
   }, [open, notification, markReadMutation.mutate]);
 
@@ -56,12 +57,16 @@ export function NotificationViewerDialog({
 
         <p className="whitespace-pre-wrap text-sm">{notification.content}</p>
         <p className="text-muted-foreground text-xs">
-          {new Date(notification.createdAt).toLocaleString()}
+          {formatLocalizedDate(notification.createdAt, i18n.language, {
+            dateStyle: 'short',
+            timeStyle: 'short',
+            timeZone: 'Europe/Budapest',
+          })}
         </p>
 
         <DialogFooter>
           <Button
-            onClick={() => markReadMutation.mutate(notification.id)}
+            onClick={() => markReadMutation.mutate({ id: notification.id })}
             size="sm"
             variant="ghost"
           >
@@ -75,7 +80,7 @@ export function NotificationViewerDialog({
             <Button
               onClick={() => {
                 onOpenChange(false);
-                navigate({ to: '/settings' });
+                openSettings('general');
               }}
               size="sm"
               variant="outline"

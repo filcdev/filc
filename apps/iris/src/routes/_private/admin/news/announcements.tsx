@@ -1,15 +1,8 @@
 import { permissions } from '@filcdev/api/permissions';
+import { useSession } from '@filcdev/auth/client';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@filcdev/ui/components/dialog';
 import { Input } from '@filcdev/ui/components/input';
 import {
   Table,
@@ -20,10 +13,12 @@ import {
   TableRow,
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
-import { ImageIcon, Pen, Plus, RefreshCw, Trash } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { ImageIcon, Plus, RefreshCw } from 'lucide-react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
+import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
+import { RowActions } from '@/components/admin/row-actions';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import { SortIcon } from '@/components/util/sort-icon';
@@ -35,8 +30,9 @@ import {
   useDeleteAnnouncement,
 } from '@/hooks/news';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { authClient } from '@/utils/authentication';
+import { type SortDirection, useSortable } from '@/hooks/use-sortable';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/news/announcements')({
   component: () => (
@@ -44,27 +40,33 @@ export const Route = createFileRoute('/_private/admin/news/announcements')({
       <AnnouncementsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.news.announcements.list.queryOptions({
+          input: {
+            includeAll: 'true',
+            includeExpired: 'true',
+            includeKioskOnly: 'true',
+          },
+        })
+      ),
+      prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+    ]),
 });
 
 function AnnouncementsPage() {
   const { i18n, t } = useTranslation();
   const showPastId = useId();
-  const { data: session } = authClient.useSession();
+  const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<AnnouncementItem | null>(
     null
   );
-  const [itemToDelete, setItemToDelete] = useState<AnnouncementItem | null>(
-    null
-  );
-  const [sortColumn, setSortColumn] = useState<
-    'title' | 'validFrom' | 'validUntil' | 'cohorts' | null
-  >(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
+  const itemToDelete = useRef<AnnouncementItem | null>(null);
   const [showPast, setShowPast] = useState(false);
 
   const hasWritePermission = useHasPermission(
@@ -78,11 +80,12 @@ function AnnouncementsPage() {
   const deleteMutation = useDeleteAnnouncement({
     onSaved: () => {
       setDeleteDialogOpen(false);
-      setItemToDelete(null);
+      itemToDelete.current = null;
     },
   });
 
-  const filteredAnnouncements = useMemo(() => {
+  // The past/search filters stay here; only the ordering is delegated.
+  const filtered = useMemo(() => {
     let list = announcementsQuery.data ?? [];
     const now = new Date();
 
@@ -104,47 +107,27 @@ function AnnouncementsPage() {
       });
     }
 
-    if (sortColumn && sortDirection) {
-      list = sortAnnouncements(list, sortColumn, sortDirection, cohortsData);
-    }
-
     return list;
-  }, [
-    announcementsQuery.data,
-    search,
-    sortColumn,
-    sortDirection,
-    cohortsData,
-    showPast,
-  ]);
+  }, [announcementsQuery.data, search, cohortsData, showPast]);
 
-  const handleSort = (
-    column: 'title' | 'validFrom' | 'validUntil' | 'cohorts'
-  ) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const {
+    column: sortColumn,
+    direction: sortDirection,
+    rows: filteredAnnouncements,
+    toggle: handleSort,
+  } = useSortable(filtered, { getValue: getSortValue });
 
   const handleDelete = (announcement: AnnouncementItem) => {
     if (!hasWritePermission) {
       return;
     }
-    setItemToDelete(announcement);
+    itemToDelete.current = announcement;
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteMutation.mutateAsync(itemToDelete.id);
+    if (itemToDelete.current) {
+      deleteMutation.mutateAsync({ id: itemToDelete.current.id });
     }
   };
 
@@ -205,162 +188,22 @@ function AnnouncementsPage() {
 
       <QueryBoundary data={announcementsQuery.data} query={announcementsQuery}>
         {() => (
-          <div className="w-full overflow-x-auto rounded-md border">
-            <Table className="w-full min-w-3xl">
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    className="w-[25%] cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('title')}
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('announcements.titleLabel')}
-                      <SortIcon
-                        column="title"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('validFrom')}
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('announcements.validFrom')}
-                      <SortIcon
-                        column="validFrom"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('validUntil')}
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('announcements.validUntil')}
-                      <SortIcon
-                        column="validUntil"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead
-                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
-                    onClick={() => handleSort('cohorts')}
-                  >
-                    <div className="flex items-center gap-2">
-                      {t('announcements.cohorts')}
-                      <SortIcon
-                        column="cohorts"
-                        currentColumn={sortColumn}
-                        direction={sortDirection}
-                      />
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[15%]">
-                    {t('announcements.kiosk')}
-                  </TableHead>
-                  {hasWritePermission && (
-                    <TableHead className="w-[20%]">
-                      {t('announcements.actions')}
-                    </TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAnnouncements.map((announcement) => (
-                  <TableRow key={announcement.id}>
-                    <TableCell className="font-medium">
-                      {announcement.title ??
-                        t('announcements.untitled', 'Untitled')}
-                    </TableCell>
-                    <TableCell>
-                      {formatLocalizedDate(
-                        announcement.validFrom,
-                        i18n.language
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {formatLocalizedDate(
-                        announcement.validUntil,
-                        i18n.language
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {announcement.cohortIds.length > 0
-                        ? cohortsData
-                            ?.filter((c) =>
-                              announcement.cohortIds.includes(c?.id || '')
-                            )
-                            .map((c) => c?.name)
-                            .join(', ')
-                        : t('announcements.noCohorts')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {announcement.highlighted && (
-                          <Badge variant="secondary">
-                            {t('announcements.highlighted')}
-                          </Badge>
-                        )}
-                        {announcement.kioskOnly && (
-                          <Badge variant="outline">
-                            {t('announcements.kioskOnly')}
-                          </Badge>
-                        )}
-                        {announcement.imageKey && (
-                          <ImageIcon className="h-4 w-4" />
-                        )}
-                        {!(
-                          announcement.highlighted ||
-                          announcement.imageKey ||
-                          announcement.kioskOnly
-                        ) && t('announcements.notOnKiosk')}
-                      </div>
-                    </TableCell>
-                    {hasWritePermission && (
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => {
-                              setSelectedItem(announcement);
-                              setDialogOpen(true);
-                            }}
-                            size="icon"
-                            variant="outline"
-                          >
-                            <Pen className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            disabled={deleteMutation.isPending}
-                            onClick={() => handleDelete(announcement)}
-                            size="icon"
-                            variant="destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-                {!(filteredAnnouncements.length || hasError) && (
-                  <TableRow>
-                    <TableCell
-                      className="text-muted-foreground"
-                      colSpan={hasWritePermission ? 6 : 5}
-                    >
-                      {t('announcements.noAnnouncements')}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <AnnouncementsTable
+            announcements={filteredAnnouncements}
+            cohorts={cohortsData}
+            hasError={hasError}
+            hasWritePermission={hasWritePermission}
+            isDeleting={deleteMutation.isPending}
+            language={i18n.language}
+            onDelete={handleDelete}
+            onEdit={(announcement) => {
+              setSelectedItem(announcement);
+              setDialogOpen(true);
+            }}
+            onSort={handleSort}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+          />
         )}
       </QueryBoundary>
 
@@ -368,6 +211,9 @@ function AnnouncementsPage() {
         <>
           <AnnouncementsDialog
             item={selectedItem}
+            // Remounting re-seeds the form's defaultValues, replacing the
+            // reset-on-open effect that used to live in the dialog.
+            key={`${dialogOpen ? 'open' : 'closed'}:${selectedItem?.id ?? 'new'}`}
             onOpenChange={(open) => {
               setDialogOpen(open);
               if (!open) {
@@ -376,66 +222,192 @@ function AnnouncementsPage() {
             }}
             open={dialogOpen}
           />
-          <Dialog
+          <DeleteConfirmDialog
+            description={t('announcements.deleteDescription')}
+            onCancel={() => setDeleteDialogOpen(false)}
+            onConfirm={confirmDelete}
             onOpenChange={(open) => {
               setDeleteDialogOpen(open);
               if (!open) {
-                setItemToDelete(null);
+                itemToDelete.current = null;
               }
             }}
             open={deleteDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t('announcements.deleteConfirm')}</DialogTitle>
-                <DialogDescription>
-                  {t('announcements.deleteDescription')}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  onClick={() => setDeleteDialogOpen(false)}
-                  variant="outline"
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  disabled={deleteMutation.isPending}
-                  onClick={confirmDelete}
-                  variant="destructive"
-                >
-                  {deleteMutation.isPending
-                    ? t('common.deleting')
-                    : t('common.delete')}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            pending={deleteMutation.isPending}
+            title={t('announcements.deleteConfirm')}
+          />
         </>
       )}
     </div>
   );
 }
 
-function sortAnnouncements(
-  list: AnnouncementItem[],
-  column: 'title' | 'validFrom' | 'validUntil' | 'cohorts',
-  direction: 'asc' | 'desc',
-  _cohorts?: Cohort[]
-): AnnouncementItem[] {
-  return [...list].sort((a, b) => {
-    const aVal = getSortValue(a, column);
-    const bVal = getSortValue(b, column);
+type AnnouncementsSortColumn = 'title' | 'validFrom' | 'validUntil' | 'cohorts';
 
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      const comparison = aVal.localeCompare(bVal);
-      return direction === 'asc' ? comparison : -comparison;
-    }
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return direction === 'asc' ? aVal - bVal : bVal - aVal;
-    }
-    return 0;
-  });
+type AnnouncementsTableProps = {
+  announcements: AnnouncementItem[];
+  cohorts: Cohort[] | undefined;
+  hasError: boolean;
+  hasWritePermission: boolean;
+  isDeleting: boolean;
+  language: string;
+  onDelete: (announcement: AnnouncementItem) => void;
+  onEdit: (announcement: AnnouncementItem) => void;
+  onSort: (column: AnnouncementsSortColumn) => void;
+  sortColumn: AnnouncementsSortColumn | null;
+  sortDirection: SortDirection | null;
+};
+
+/** The announcements table: sortable headers, kiosk badges and row actions. */
+function AnnouncementsTable({
+  announcements,
+  cohorts,
+  hasError,
+  hasWritePermission,
+  isDeleting,
+  language,
+  onDelete,
+  onEdit,
+  onSort,
+  sortColumn,
+  sortDirection,
+}: AnnouncementsTableProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="w-full overflow-x-auto rounded-md border">
+      <Table className="w-full min-w-3xl">
+        <TableHeader>
+          <TableRow>
+            <TableHead
+              className="w-[25%] cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('title')}
+            >
+              <div className="flex items-center gap-2">
+                {t('announcements.titleLabel')}
+                <SortIcon
+                  column="title"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('validFrom')}
+            >
+              <div className="flex items-center gap-2">
+                {t('announcements.validFrom')}
+                <SortIcon
+                  column="validFrom"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('validUntil')}
+            >
+              <div className="flex items-center gap-2">
+                {t('announcements.validUntil')}
+                <SortIcon
+                  column="validUntil"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead
+              className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+              onClick={() => onSort('cohorts')}
+            >
+              <div className="flex items-center gap-2">
+                {t('announcements.cohorts')}
+                <SortIcon
+                  column="cohorts"
+                  currentColumn={sortColumn}
+                  direction={sortDirection}
+                />
+              </div>
+            </TableHead>
+            <TableHead className="w-[15%]">
+              {t('announcements.kiosk')}
+            </TableHead>
+            {hasWritePermission && (
+              <TableHead className="w-[20%]">
+                {t('announcements.actions')}
+              </TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {announcements.map((announcement) => (
+            <TableRow key={announcement.id}>
+              <TableCell className="font-medium">
+                {announcement.title ?? t('announcements.untitled', 'Untitled')}
+              </TableCell>
+              <TableCell>
+                {formatLocalizedDate(announcement.validFrom, language)}
+              </TableCell>
+              <TableCell>
+                {formatLocalizedDate(announcement.validUntil, language)}
+              </TableCell>
+              <TableCell>
+                {announcement.cohortIds.length > 0
+                  ? cohorts
+                      ?.filter((c) =>
+                        announcement.cohortIds.includes(c?.id || '')
+                      )
+                      .map((c) => c?.name)
+                      .join(', ')
+                  : t('announcements.noCohorts')}
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap items-center gap-2">
+                  {announcement.highlighted && (
+                    <Badge variant="secondary">
+                      {t('announcements.highlighted')}
+                    </Badge>
+                  )}
+                  {announcement.kioskOnly && (
+                    <Badge variant="outline">
+                      {t('announcements.kioskOnly')}
+                    </Badge>
+                  )}
+                  {announcement.imageKey && <ImageIcon className="h-4 w-4" />}
+                  {!(
+                    announcement.highlighted ||
+                    announcement.imageKey ||
+                    announcement.kioskOnly
+                  ) && t('announcements.notOnKiosk')}
+                </div>
+              </TableCell>
+              {hasWritePermission && (
+                <TableCell>
+                  <RowActions
+                    isDeleting={isDeleting}
+                    onDelete={() => onDelete(announcement)}
+                    onEdit={() => onEdit(announcement)}
+                  />
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {!(announcements.length || hasError) && (
+            <TableRow>
+              <TableCell
+                className="text-muted-foreground"
+                colSpan={hasWritePermission ? 6 : 5}
+              >
+                {t('announcements.noAnnouncements')}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
 }
 
 function getSortValue(

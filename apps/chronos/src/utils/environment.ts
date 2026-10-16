@@ -15,24 +15,38 @@ const boolean = z.preprocess((v) => {
 
 const envShape = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),
+  CHRONOS_API_KEY_RATE_LIMIT_MAX: z.coerce.number().default(120),
+  CHRONOS_API_KEY_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
   CHRONOS_AUTH_SECRET: z.base64().min(MIN_SECRET_LENGTH),
   CHRONOS_BASE_URL: z.url(),
   CHRONOS_BKK_API_KEY: z.string().optional(),
   CHRONOS_DATABASE_URL: z.url(),
   CHRONOS_DRIZZLE_DEBUG: boolean.default(false),
+  // Gates the three test-notification endpoints (`notifications.test`,
+  // `sendTest`, `previewTest`). They can inject a notification of any type into
+  // another user's inbox and send mail to an arbitrary address, so they are off
+  // unless explicitly requested.
+  CHRONOS_ENABLE_TEST_NOTIFICATIONS: boolean.default(false),
   CHRONOS_ENTRA_CLIENT_ID: z.string(),
   CHRONOS_ENTRA_CLIENT_SECRET: z.string().optional(),
   CHRONOS_ENTRA_TENANT_ID: z.string(),
 
   CHRONOS_FCM_CREDENTIALS: z.string().optional(),
   CHRONOS_FCM_PROJECT_ID: z.string().optional(),
+  CHRONOS_FREERADIUS_IP: z.string().optional(),
+  CHRONOS_FREERADIUS_SHARED_SECRET: z.string().optional(),
   CHRONOS_KIOSK_WEATHER_LOCATION: z
     .string()
     .default('47.50535837979173,19.090123083749727'),
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
-  CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
+  // Defaults to production: the development branch opens the test-notification
+  // endpoints to every signed-in user, echoes internal error messages to
+  // clients and reflects any CORS origin. Making it explicit opt-in means a
+  // deployment that forgets to set it fails safe. Set CHRONOS_MODE=development
+  // to get the pretty logs and the test endpoints.
+  CHRONOS_MODE: z.enum(['development', 'production']).default('production'),
   CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce.number().default(60),
   CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce.number().default(60),
   CHRONOS_NOTIFICATION_DELAY_COHORT_RESELECTION_REQUIRED: z.coerce
@@ -71,6 +85,7 @@ const envShape = z.object({
     .min(0)
     .max(1)
     .default(0.1),
+  CHRONOS_SMTP_AUTH: z.enum(['basic', 'oauth2']).default('basic'),
   CHRONOS_SMTP_FROM_EMAIL: z.string().optional(),
   CHRONOS_SMTP_FROM_NAME: z.string().optional(),
 
@@ -84,6 +99,16 @@ const envShape = z.object({
     z.array(z.url()).optional()
   ),
   CHRONOS_WEATHER_API_KEY: z.string().optional(),
+  CHRONOS_WIFI_CA_CERT_PATH: z.string().optional(),
+  CHRONOS_WIFI_CONTROLLER_PROVIDER: z.enum(['none', 'unifi']).default('none'),
+  CHRONOS_WIFI_ENABLED: boolean.default(false),
+  CHRONOS_WIFI_ENCRYPTION_SECRET: z.string().optional(),
+  CHRONOS_WIFI_SSID: z.string().optional(),
+  UNIFI_HOST: z.string().optional(),
+  UNIFI_INSECURE_TLS: boolean.default(false),
+  UNIFI_PASSWORD: z.string().optional(),
+  UNIFI_PORT: z.coerce.number().min(MIN_PORT).max(MAX_PORT).default(8443),
+  UNIFI_USERNAME: z.string().optional(),
 });
 
 const envSchema = envShape.refine(

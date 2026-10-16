@@ -19,6 +19,7 @@ import {
   useRoles,
   useUsers,
 } from '@/hooks/admin-users';
+import { orpc, prefetch } from '@/utils/orpc';
 
 const searchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -28,7 +29,28 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
+  // The params come off the location rather than `loaderDeps`; either is valid
+  // now that `validateSearch` comes first (see the routes override in
+  // biome.jsonc), and this predates that change.
   validateSearch: searchSchema,
+  loader: ({ context, location }) => {
+    const params = new URLSearchParams(location.searchStr);
+    const page = Number(params.get('page')) || 1;
+    return Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.users.list.queryOptions({
+          input: {
+            limit: USERS_PAGE_SIZE,
+            offset: (page - 1) * USERS_PAGE_SIZE,
+            role: params.get('role') || undefined,
+            search: params.get('search') ?? '',
+          },
+        })
+      ),
+      prefetch(context.queryClient, orpc.cohort.cohort.queryOptions()),
+    ]);
+  },
 });
 
 function AdminUsersPage() {
@@ -92,7 +114,7 @@ function AdminUsersPage() {
         <Select
           items={[
             { label: t('users.allRoles'), value: '' },
-            ...(rolesQuery.data?.roles ?? []).map((availableRole) => ({
+            ...(rolesQuery.data?.items ?? []).map((availableRole) => ({
               label: availableRole.name,
               value: availableRole.name,
             })),
@@ -144,7 +166,7 @@ function AdminUsersPage() {
             }
             page={page}
             total={data.total}
-            users={data.users}
+            users={data.items}
           />
         )}
       </QueryBoundary>

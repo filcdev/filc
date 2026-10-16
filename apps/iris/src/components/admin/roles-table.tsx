@@ -74,7 +74,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                     </Button>
                     <Button
                       disabled={deleteRole.isPending}
-                      onClick={() => deleteRole.mutate(role.name)}
+                      onClick={() => deleteRole.mutate({ name: role.name })}
                       size="sm"
                       variant="destructive"
                     >
@@ -90,6 +90,7 @@ export function RolesTable({ roles }: RolesTableProps) {
       {isDialogOpen && (
         <RoleDialog
           editingRole={selectedRole}
+          key={selectedRole?.name ?? 'new'}
           onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {

@@ -20,7 +20,7 @@ import { Input } from '@filcdev/ui/components/input';
 import { cn } from '@filcdev/ui/lib/utils';
 import { useForm, useStore } from '@tanstack/react-form';
 import { CheckIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type Role,
@@ -44,7 +44,9 @@ export function RoleDialog({
   const { t } = useTranslation();
   const isEditing = editingRole !== null;
   const [permissionInput, setPermissionInput] = useState('');
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>(
+    editingRole?.can ?? []
+  );
   const permissionsQuery = usePermissions();
 
   const knownPermissions = permissionsQuery.data ?? [];
@@ -59,14 +61,6 @@ export function RoleDialog({
       }
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      form.reset({ name: editingRole?.name ?? '' });
-      setPermissions(editingRole?.can ?? []);
-      setPermissionInput('');
-    }
-  }, [open, editingRole, form.reset]);
 
   const createRole = useCreateRole({ onSaved: () => onOpenChange(false) });
   const updateRole = useUpdateRole({ onSaved: () => onOpenChange(false) });
@@ -84,7 +78,7 @@ export function RoleDialog({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleAddPermission();
     }
@@ -110,6 +104,7 @@ export function RoleDialog({
 
   const nameValue = useStore(form.store, (state) => state.values.name);
   const isNameValid = ROLE_NAME_REGEX.test(nameValue) && nameValue.length > 0;
+  const permissionSet = new Set(permissions);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -160,25 +155,10 @@ export function RoleDialog({
                 )}
               </Button>
             </div>
-            {permissions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {permissions.map((perm) => (
-                  <Badge
-                    className="cursor-pointer"
-                    key={perm}
-                    onClick={() => handleRemovePermission(perm)}
-                    variant="secondary"
-                  >
-                    {perm} ✕
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {permissions.length === 0 && (
-              <p className="text-muted-foreground text-sm">
-                {t('roles.noPermissions')}
-              </p>
-            )}
+            <PermissionChips
+              onRemove={handleRemovePermission}
+              permissions={permissions}
+            />
             <Command className="rounded-lg border" shouldFilter>
               <CommandInput
                 onValueChange={setPermissionInput}
@@ -204,7 +184,7 @@ export function RoleDialog({
                 </CommandEmpty>
                 <CommandGroup>
                   {knownPermissions.map((perm) => {
-                    const selected = permissions.includes(perm);
+                    const selected = permissionSet.has(perm);
                     return (
                       <CommandItem
                         key={perm}
@@ -268,5 +248,39 @@ export function RoleDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** The permissions picked so far, each removable by clicking it. */
+function PermissionChips({
+  onRemove,
+  permissions,
+}: {
+  onRemove: (permission: string) => void;
+  permissions: string[];
+}) {
+  const { t } = useTranslation();
+
+  if (permissions.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        {t('roles.noPermissions')}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {permissions.map((perm) => (
+        <Badge
+          className="cursor-pointer"
+          key={perm}
+          onClick={() => onRemove(perm)}
+          variant="secondary"
+        >
+          {perm} ✕
+        </Badge>
+      ))}
+    </div>
   );
 }

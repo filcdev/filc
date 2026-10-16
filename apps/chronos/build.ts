@@ -12,3 +12,7 @@ await Bun.build({
 });
 
 console.timeEnd('Built Chronos server');
+
+// we must make this file a module
+// in order to make top-level export work
+export {};

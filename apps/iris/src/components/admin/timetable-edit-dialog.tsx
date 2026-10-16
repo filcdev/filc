@@ -11,7 +11,6 @@ import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type TimetableRow,
@@ -48,13 +47,11 @@ export function TimetableEditDialog({
       }
       await updateMutation.mutateAsync({
         id: item.id,
-        payload: {
-          name: value.name.trim() || undefined,
-          validFrom: value.validFrom?.toISOString().slice(0, 10),
-          validTo: value.validTo
-            ? value.validTo.toISOString().slice(0, 10)
-            : null,
-        },
+        name: value.name.trim() || undefined,
+        validFrom: value.validFrom?.toISOString().slice(0, 10),
+        validTo: value.validTo
+          ? value.validTo.toISOString().slice(0, 10)
+          : null,
       });
     },
     validators: {
@@ -67,16 +64,6 @@ export function TimetableEditDialog({
       },
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        name: item?.name ?? '',
-        validFrom: item?.validFrom ? new Date(item.validFrom) : undefined,
-        validTo: item?.validTo ? new Date(item.validTo) : undefined,
-      });
-    }
-  }, [open, item, form.reset]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>

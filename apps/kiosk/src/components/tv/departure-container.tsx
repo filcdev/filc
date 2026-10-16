@@ -15,7 +15,7 @@ export function DepartureContainer({ groups }: DepartureContainerProps) {
     <>
       {groups.map((group, index) => (
         <BusDeparture
-          departure={data?.departures[index] ?? null}
+          departure={data?.items[index] ?? null}
           displayName={group.label}
           isError={isError}
           isLoading={isLoading}

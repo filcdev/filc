@@ -1,3 +1,4 @@
+import { devicePayloadSchema } from '@filcdev/api/domains/doorlock/devices';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Dialog,
@@ -10,17 +11,20 @@ import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
 import { RotateCw, Save } from 'lucide-react';
-import { useEffect } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   DeviceDialogProps,
   DeviceFormValues,
   DeviceLike,
 } from '@/components/doorlock/doorlock.types';
 import { useUpsertDoorlockDevice } from '@/hooks/doorlock-admin';
-import { deviceSchema } from '@/utils/form-schemas';
 
-const initialState = (device?: DeviceLike | null): DeviceFormValues => ({
-  apiToken: device?.apiToken ?? crypto.randomUUID(),
+const initialState = (
+  device: DeviceLike | null | undefined,
+  draftToken: string
+): DeviceFormValues => ({
+  apiToken: device?.apiToken ?? draftToken,
   lastResetReason: device?.lastResetReason ?? null,
   location: device?.location ?? null,
   name: device?.name ?? '',
@@ -31,11 +35,16 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
   onOpenChange,
   open,
 }: DeviceDialogProps<TDevice>) {
+  const { t } = useTranslation();
   const upsertMutation = useUpsertDoorlockDevice({
     onSaved: () => onOpenChange(false),
   });
+  // One token per dialog mount: a fresh `crypto.randomUUID()` inside
+  // `initialState` would change the form's values on every render.
+  const [draftToken] = useState(() => crypto.randomUUID());
+
   const form = useForm({
-    defaultValues: initialState(device),
+    defaultValues: initialState(device, draftToken),
     onSubmit: async ({ value }) => {
       await upsertMutation.mutateAsync({
         ...(device?.id && { id: device.id }),
@@ -47,12 +56,8 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
         },
       });
     },
-    validators: { onSubmit: deviceSchema },
+    validators: { onSubmit: devicePayloadSchema },
   });
-
-  useEffect(() => {
-    form.reset(initialState(device));
-  }, [device, form.reset]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -119,6 +124,7 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
                     value={field.state.value}
                   />
                   <Button
+                    aria-label={t('doorlockDevices.generateApiToken')}
                     onClick={() => field.handleChange(crypto.randomUUID())}
                     size="icon"
                     type="button"
@@ -134,7 +140,9 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
           <DialogFooter>
             <Button disabled={!form.state.canSubmit} type="submit">
               <Save />
-              {device ? 'Save changes' : 'Create device'}
+              {device
+                ? t('doorlockDevices.saveChanges')
+                : t('doorlockDevices.createDevice')}
             </Button>
           </DialogFooter>
         </form>

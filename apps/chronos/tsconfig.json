@@ -1,28 +1,10 @@
 {
-  "extends": "@tsconfig/strictest/tsconfig.json",
+  "extends": "@filcdev/tsconfig/node.json",
   "compilerOptions": {
-    "strict": true,
-    "skipLibCheck": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "noUnusedLocals": false, // biome handles this
-    "noUnusedParameters": true,
-    "allowSyntheticDefaultImports": true,
-    "types": ["bun"],
-    "outDir": "dist",
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "target": "es2022",
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-
+    "jsx": "react-jsx",
     "paths": {
-      "#*": ["./src/*"]
+      "@/*": ["./src/*"]
     }
-  }
+  },
+  "include": ["src", "scripts", "drizzle.config.ts", "build.ts"]
 }

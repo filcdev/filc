@@ -1,4 +1,25 @@
 import z from 'zod';
+import { listResponse } from './list';
+
+/**
+ * The per-type email/push toggles stored in
+ * `user_preferences.notification_preferences`. Declared first because
+ * `updateSettingsSchema` narrows it with `.partial()`: the column has to hold
+ * a complete record, so a caller may patch a subset but never store one.
+ */
+export const notificationPreferencesSchema = z.object({
+  announcement: z.boolean(),
+  blogPost: z.boolean(),
+  channelsEnabled: z.boolean(),
+  doorlockCardUsed: z.boolean(),
+  movedLesson: z.boolean(),
+  substitution: z.boolean(),
+  systemMessage: z.boolean(),
+});
+
+export type NotificationPreferences = z.infer<
+  typeof notificationPreferencesSchema
+>;
 
 export const paginationSchema = z.object({
   dateFrom: z.string().optional(),
@@ -9,7 +30,10 @@ export const paginationSchema = z.object({
   unread: z
     .enum(['true', 'false'])
     .optional()
-    .transform((v) => v === 'true'),
+    // `undefined` must survive, or zod emits the key for an absent param and
+    // the handler's `unread !== undefined` check never short-circuits — which
+    // would filter the inbox to read rows only.
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
@@ -20,7 +44,7 @@ export type TimetableGroupDisplay =
 
 export const updateSettingsSchema = z.object({
   language: z.string().optional(),
-  notificationPreferences: z.record(z.string(), z.unknown()).optional(),
+  notificationPreferences: notificationPreferencesSchema.partial().optional(),
   theme: z.string().optional(),
   timetableClassColors: z.record(z.string(), z.number()).optional(),
   timetableGroupDisplay: z.enum(timetableGroupDisplayValues).optional(),
@@ -44,13 +68,13 @@ export const tokenDeleteSchema = z.object({
 
 export type UnregisterFcmTokenInput = z.infer<typeof tokenDeleteSchema>;
 
-export const notificationIdParamsSchema = z.object({ id: z.string().uuid() });
+export const notificationIdParamsSchema = z.object({ id: z.uuid() });
 
 export type NotificationIdParams = z.infer<typeof notificationIdParamsSchema>;
 
 export const unsubscribeSchema = z.object({
   token: z.string().regex(/^[a-f0-9]{64}$/i, 'Invalid unsubscribe token'),
-  userId: z.string().uuid(),
+  userId: z.uuid(),
 });
 
 export type UnsubscribeInput = z.infer<typeof unsubscribeSchema>;
@@ -103,4 +127,72 @@ export const previewTestNotificationSchema = z.object({
 
 export type PreviewTestNotificationInput = z.infer<
   typeof previewTestNotificationSchema
+>;
+
+/** One `notification` row: a single inbox entry. */
+export const notificationRowSchema = z.object({
+  content: z.string(),
+  createdAt: z.date(),
+  id: z.uuid(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  read: z.boolean(),
+  title: z.string(),
+  type: z.string(),
+  userId: z.uuid(),
+});
+
+export type NotificationRow = z.infer<typeof notificationRowSchema>;
+
+/**
+ * Paged notification history. The row count used to travel in the response
+ * envelope's `total`; it is part of the payload now.
+ */
+export const notificationListResponseSchema = listResponse(
+  notificationRowSchema
+);
+
+export type NotificationListResponse = z.infer<
+  typeof notificationListResponseSchema
+>;
+
+/** Unread badge count for the signed-in user. */
+export const unreadCountResponseSchema = z.object({ count: z.number() });
+
+export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
+
+/** One `user_preferences` row: notification, language and timetable settings. */
+export const userPreferencesSchema = z.object({
+  createdAt: z.date(),
+  id: z.uuid(),
+  language: z.string(),
+  notificationPreferences: notificationPreferencesSchema,
+  theme: z.string(),
+  timetableClassColors: z.record(z.string(), z.number()),
+  timetableGroupDisplay: z.string(),
+  timetableView: z.string(),
+  updatedAt: z.date(),
+  userId: z.uuid(),
+});
+
+export type UserPreferences = z.infer<typeof userPreferencesSchema>;
+
+/** Which channels a dev-only test notification actually went out on. */
+export const sendTestResultSchema = z.object({
+  email: z.boolean(),
+  inApp: z.boolean(),
+  push: z.boolean(),
+});
+
+export type SendTestResult = z.infer<typeof sendTestResultSchema>;
+
+/** Rendered HTML of a notification template, for the dev preview pane. */
+export const previewTestResponseSchema = z.object({ html: z.string() });
+
+export type PreviewTestResponse = z.infer<typeof previewTestResponseSchema>;
+
+/** Payload of the notification writes that have nothing to return. */
+export const notificationsOkResponseSchema = z.object({ ok: z.literal(true) });
+
+export type NotificationsOkResponse = z.infer<
+  typeof notificationsOkResponseSchema
 >;

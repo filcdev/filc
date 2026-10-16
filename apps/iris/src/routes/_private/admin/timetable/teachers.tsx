@@ -21,6 +21,8 @@ import {
   type AdminTeacher,
   useTeachersAdmin,
 } from '@/hooks/timetable-teachers';
+import { useSortable } from '@/hooks/use-sortable';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/timetable/teachers')({
   component: () => (
@@ -28,20 +30,11 @@ export const Route = createFileRoute('/_private/admin/timetable/teachers')({
       <TeachersPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.timetable.teachers.list.queryOptions()),
 });
 
 type SortColumn = 'name' | 'short' | 'email' | 'user';
-
-function getAriaSortState(
-  column: SortColumn,
-  sortColumn: SortColumn | null,
-  sortDirection: 'asc' | 'desc' | null
-): 'ascending' | 'descending' | 'none' {
-  if (sortColumn !== column) {
-    return 'none';
-  }
-  return sortDirection === 'asc' ? 'ascending' : 'descending';
-}
 
 function getSortValue(teacher: AdminTeacher, column: SortColumn): string {
   switch (column) {
@@ -65,58 +58,39 @@ function TeachersPage() {
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
-    null
-  );
 
   const teachersQuery = useTeachersAdmin();
 
-  const filtered = useMemo(() => {
-    let list = teachersQuery.data ?? [];
+  const matchingTeachers = useMemo(() => {
+    const list = teachersQuery.data ?? [];
     const term = search.trim().toLowerCase();
 
-    if (term) {
-      list = list.filter(
-        (teacher) =>
-          `${teacher.firstName} ${teacher.lastName}`
-            .toLowerCase()
-            .includes(term) ||
-          teacher.short.toLowerCase().includes(term) ||
-          (teacher.email ?? '').toLowerCase().includes(term) ||
-          (teacher.user
-            ? `${teacher.user.name} ${teacher.user.email}`
-                .toLowerCase()
-                .includes(term)
-            : false)
-      );
+    if (!term) {
+      return list;
     }
 
-    if (sortColumn && sortDirection) {
-      list = [...list].sort((a, b) => {
-        const aVal = getSortValue(a, sortColumn);
-        const bVal = getSortValue(b, sortColumn);
-        const comparison = aVal.localeCompare(bVal);
-        return sortDirection === 'asc' ? comparison : -comparison;
-      });
-    }
+    return list.filter(
+      (teacher) =>
+        `${teacher.firstName} ${teacher.lastName}`
+          .toLowerCase()
+          .includes(term) ||
+        teacher.short.toLowerCase().includes(term) ||
+        (teacher.email ?? '').toLowerCase().includes(term) ||
+        (teacher.user
+          ? `${teacher.user.name} ${teacher.user.email}`
+              .toLowerCase()
+              .includes(term)
+          : false)
+    );
+  }, [teachersQuery.data, search]);
 
-    return list;
-  }, [teachersQuery.data, search, sortColumn, sortDirection]);
-
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const {
+    ariaSort,
+    column: sortColumn,
+    direction: sortDirection,
+    rows: filtered,
+    toggle: handleSort,
+  } = useSortable(matchingTeachers, { getValue: getSortValue });
 
   return (
     <div className="space-y-6">
@@ -143,11 +117,7 @@ function TeachersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    aria-sort={getAriaSortState(
-                      'name',
-                      sortColumn,
-                      sortDirection
-                    )}
+                    aria-sort={ariaSort('name')}
                     className="select-none"
                   >
                     <button
@@ -164,11 +134,7 @@ function TeachersPage() {
                     </button>
                   </TableHead>
                   <TableHead
-                    aria-sort={getAriaSortState(
-                      'short',
-                      sortColumn,
-                      sortDirection
-                    )}
+                    aria-sort={ariaSort('short')}
                     className="select-none"
                   >
                     <button
@@ -185,11 +151,7 @@ function TeachersPage() {
                     </button>
                   </TableHead>
                   <TableHead
-                    aria-sort={getAriaSortState(
-                      'email',
-                      sortColumn,
-                      sortDirection
-                    )}
+                    aria-sort={ariaSort('email')}
                     className="select-none"
                   >
                     <button
@@ -206,11 +168,7 @@ function TeachersPage() {
                     </button>
                   </TableHead>
                   <TableHead
-                    aria-sort={getAriaSortState(
-                      'user',
-                      sortColumn,
-                      sortDirection
-                    )}
+                    aria-sort={ariaSort('user')}
                     className="select-none"
                   >
                     <button

@@ -6,14 +6,12 @@
     "includes": [
       "**/*",
       "!apps/chronos/src/database/migrations/**/*",
-      "!apps/iris/src/route-tree.gen.ts",
+      "!apps/chronos/openapi/**/*",
+      "!apps/iris/src/routeTree.gen.ts",
       "!apps/kiosk/src/route-tree.gen.ts",
       "!bun.lock"
     ]
   },
-  // `noNodejsModules` is off globally (chronos scripts and entry code need
-  // `node:*`), but enforced for the browser-bound and server-free workspaces
-  // via the override below.
   "overrides": [
     {
       "includes": [
@@ -26,6 +24,23 @@
       "linter": {
         "rules": {
           "correctness": { "noNodejsModules": "error" }
+        }
+      }
+    },
+    {
+      // TanStack Router's route options are order-sensitive: each step feeds the
+      // inferred context and loader types the later ones consume, so `validateSearch`
+      // must precede `loader`/`loaderDeps` (see
+      // https://tanstack.com/router/latest/docs/eslint/create-route-property-order).
+      // Alphabetical key sorting inverts that and silently widens the search type
+      // to `{}`, so it is off here and the routes keep the framework's order —
+      // enforced by react-doctor's `tanstack-start-route-property-order`.
+      "includes": ["apps/iris/src/routes/**"],
+      "assist": {
+        "actions": {
+          "source": {
+            "useSortedKeys": "off"
+          }
         }
       }
     }

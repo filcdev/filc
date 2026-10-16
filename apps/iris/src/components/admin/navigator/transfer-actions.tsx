@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   exportNavigatorJson,
-  type NavigatorExportPayload,
+  type NavigatorImportPayload,
   useImportNavigator,
 } from '@/hooks/navigator';
 
@@ -28,7 +28,7 @@ export function TransferActions() {
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [pendingPayload, setPendingPayload] =
-    useState<NavigatorExportPayload | null>(null);
+    useState<NavigatorImportPayload | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importMutation = useImportNavigator({
     onSaved: () => {
@@ -55,9 +55,9 @@ export function TransferActions() {
       return;
     }
 
-    let payload: NavigatorExportPayload;
+    let payload: NavigatorImportPayload;
     try {
-      payload = JSON.parse(await file.text()) as NavigatorExportPayload;
+      payload = JSON.parse(await file.text()) as NavigatorImportPayload;
     } catch {
       toast.error(t('navigator.transfer.invalidFile'));
       return;

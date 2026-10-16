@@ -1,4 +1,4 @@
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { StoreyResolver } from '../types/three/storey-types';
 
 export const FLOOR_GAP = 30;
@@ -6,7 +6,9 @@ export const FLOOR_GAP = 30;
 // Per-building storey stack: storey N+1 sits on the cumulative sum of
 // storeys 0..N. Storey height = tallest room on that storey (+1m headroom),
 // capped to FLOOR_HEIGHT. Storeys without rooms fall back to FLOOR_HEIGHT.
-export function buildStoreyResolver(classrooms: Classroom[]): StoreyResolver {
+export function buildStoreyResolver(
+  classrooms: ClassroomRow[]
+): StoreyResolver {
   const heightOf = (bid: string, storey: number): number => {
     let maxH = 0;
     for (const c of classrooms) {

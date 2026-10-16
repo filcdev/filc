@@ -11,7 +11,7 @@ import { Field, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plus, RefreshCw, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BaseDialogProps } from '@/components/admin/admin.types';
@@ -19,6 +19,7 @@ import {
   EntityTable,
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
+import { PageHeader } from '@/components/admin/page-header';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -28,6 +29,7 @@ import {
   useSaveNavigatorTranslation,
   useUpdateNavigatorTranslation,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/navigator/translations')({
   component: () => (
@@ -35,6 +37,17 @@ export const Route = createFileRoute('/_private/admin/navigator/translations')({
       <TranslationsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.navigator.translations.list.queryOptions()
+      ),
+      prefetch(
+        context.queryClient,
+        orpc.navigator.translations.available.queryOptions()
+      ),
+    ]),
 });
 
 type TranslationGroup = {
@@ -84,7 +97,7 @@ function TranslationDialog({
           updateTranslation.mutateAsync({
             key: group.key,
             lang,
-            payload: { text: value.translations[lang] ?? '' },
+            text: value.translations[lang] ?? '',
           })
         )
       ).then(() => onOpenChange(false));
@@ -246,26 +259,13 @@ function TranslationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('navigator.translations.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('navigator.translations.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => translations.refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4" />
-            {t('navigator.refresh')}
-          </Button>
-          <Button onClick={startCreate}>
-            <Plus className="h-4 w-4" />
-            {t('navigator.translations.add')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        addLabel={t('navigator.translations.add')}
+        description={t('navigator.translations.description')}
+        onAdd={startCreate}
+        onRefresh={() => translations.refetch()}
+        title={t('navigator.translations.title')}
+      />
 
       <div className="relative max-w-sm">
         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

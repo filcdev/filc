@@ -2,19 +2,17 @@ import { getLogger } from '@logtape/logtape';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
-import { notification, userPreferences } from '#database/schema/notifications';
-import { lessonCohortMTM } from '#database/schema/timetable';
+import { notification, userPreferences } from '#modules/notifications/schema';
+import { lessonCohortMTM } from '#modules/timetable/schema';
 import { enqueue } from '#utils/notifications/queue';
-import {
-  resolveSubstituteTeacherAudience,
-  type SubstitutionTeacherPayload,
-} from '#utils/notifications/substitution-teacher';
 import type {
   AudienceUser,
   NotificationContent,
   NotificationHandler,
+  NotificationPreferences,
   NotificationType,
 } from '#utils/notifications/types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 
@@ -45,7 +43,7 @@ export function cancelPendingNotification(
   }
 }
 
-async function resolveAudienceForLessonChange(
+export async function resolveAudienceForLessonChange(
   payload: unknown
 ): Promise<AudienceUser[]> {
   const p = payload as { lessonIds?: string[] };
@@ -82,7 +80,7 @@ async function resolveAudienceByCohortIds(
   return enrichUsersWithLanguage(users);
 }
 
-async function resolveAudienceByCohortOrAll(
+export async function resolveAudienceByCohortOrAll(
   cohortIds?: string[]
 ): Promise<AudienceUser[]> {
   let users: { id: string; email: string; cohortId: string | null }[];
@@ -108,7 +106,7 @@ async function resolveAudienceByCohortOrAll(
   return enrichUsersWithLanguage(users);
 }
 
-async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
+export async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
   const users = await db
     .select({
       cohortId: userTable.cohortId,
@@ -120,70 +118,41 @@ async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
   return enrichUsersWithLanguage(users);
 }
 
-async function resolveAudienceForDoorlock(
+/**
+ * The audience for a notification addressed to one user: that user, with their
+ * stored language. Used by the types that notify a single person (a door-lock
+ * card holder, a cohort that has to be reselected).
+ */
+export async function resolveAudienceForUser(
   payload: unknown
 ): Promise<AudienceUser[]> {
-  const p = payload as { userId: string };
-  const userResult = await db
+  const { userId } = payload as { userId: string };
+
+  const [target] = await db
     .select({
       cohortId: userTable.cohortId,
       email: userTable.email,
       id: userTable.id,
     })
     .from(userTable)
-    .where(eq(userTable.id, p.userId))
+    .where(eq(userTable.id, userId))
     .limit(1);
 
-  const u = userResult[0];
-  if (!u) {
+  if (!target) {
     return [];
   }
 
   const [prefs] = await db
-    .select()
+    .select({ language: userPreferences.language })
     .from(userPreferences)
-    .where(eq(userPreferences.userId, u.id))
+    .where(eq(userPreferences.userId, target.id))
     .limit(1);
 
   return [
     {
-      cohortId: u.cohortId,
-      email: u.email,
-      id: u.id,
-      language: prefs?.language ?? 'hu',
-    },
-  ];
-}
-
-async function resolveAudienceForCohortReselection(
-  payload: unknown
-): Promise<AudienceUser[]> {
-  const p = payload as { userId: string };
-  const [targetUser] = await db
-    .select({
-      cohortId: userTable.cohortId,
-      email: userTable.email,
-      id: userTable.id,
-    })
-    .from(userTable)
-    .where(eq(userTable.id, p.userId))
-    .limit(1);
-
-  if (!targetUser) {
-    return [];
-  }
-
-  const [prefs] = await db
-    .select()
-    .from(userPreferences)
-    .where(eq(userPreferences.userId, targetUser.id))
-    .limit(1);
-
-  return [
-    {
-      cohortId: targetUser.cohortId,
-      email: targetUser.email,
-      id: targetUser.id,
+      cohortId: target.cohortId,
+      email: target.email,
+      id: target.id,
       language: prefs?.language ?? 'hu',
     },
   ];
@@ -219,43 +188,6 @@ async function enrichUsersWithLanguage(
   });
 }
 
-const audienceResolvers: Record<
-  string,
-  (payload: unknown) => Promise<AudienceUser[]>
-> = {
-  announcement: (p) =>
-    resolveAudienceByCohortOrAll((p as { cohortIds?: string[] }).cohortIds),
-  blog_post: () => resolveAudienceForBlogPost(),
-  cohort_reselection_required: resolveAudienceForCohortReselection,
-  doorlock_card_used: resolveAudienceForDoorlock,
-  moved_lesson: resolveAudienceForLessonChange,
-  substitution: resolveAudienceForLessonChange,
-  substitution_teacher: (payload) =>
-    resolveSubstituteTeacherAudience(payload as SubstitutionTeacherPayload),
-  system_message: (p) =>
-    resolveAudienceByCohortOrAll((p as { cohortIds?: string[] }).cohortIds),
-};
-
-const preferenceKeys: Record<
-  string,
-  keyof {
-    substitution: boolean;
-    movedLesson: boolean;
-    announcement: boolean;
-    systemMessage: boolean;
-    blogPost: boolean;
-    doorlockCardUsed: boolean;
-  }
-> = {
-  announcement: 'announcement',
-  blog_post: 'blogPost',
-  doorlock_card_used: 'doorlockCardUsed',
-  moved_lesson: 'movedLesson',
-  substitution: 'substitution',
-  substitution_teacher: 'substitution',
-  system_message: 'systemMessage',
-};
-
 async function fireNotification(
   type: NotificationType,
   payload: unknown
@@ -269,10 +201,7 @@ async function fireNotification(
   }
 
   try {
-    const resolver = audienceResolvers[type];
-    const audience = resolver
-      ? await resolver(payload)
-      : await handler.getAudience(payload);
+    const audience = await handler.getAudience(payload);
 
     if (audience.length === 0) {
       logger.debug('Empty audience for notification type: {type}', { type });
@@ -286,8 +215,17 @@ async function fireNotification(
         .where(eq(userPreferences.userId, user.id))
         .limit(1);
 
-      const prefKey = preferenceKeys[type];
-      if (prefs && prefKey && !prefs.notificationPreferences[prefKey]) {
+      // A user who never opened their settings has no row, and a row written
+      // before a toggle existed lacks that key; both fall back per key rather
+      // than reading `undefined`, which the gate below would treat as an
+      // opt-out.
+      const preferences: NotificationPreferences = {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...prefs?.notificationPreferences,
+      };
+
+      const prefKey = handler.preferenceKey;
+      if (prefKey && !preferences[prefKey]) {
         logger.debug('User {userId} opted out of notification type {type}', {
           type,
           userId: user.id,
@@ -295,8 +233,7 @@ async function fireNotification(
         continue;
       }
 
-      const channelsEnabled =
-        prefs?.notificationPreferences.channelsEnabled ?? true;
+      const channelsEnabled = preferences.channelsEnabled;
       const content: NotificationContent = handler.buildContent(
         payload,
         user.language
@@ -318,6 +255,7 @@ async function fireNotification(
           channelsEnabled,
           content: content.content,
           email: user.email,
+          language: user.language,
           notificationId: notif.id,
           title: content.title,
           type,

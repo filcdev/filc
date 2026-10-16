@@ -51,7 +51,7 @@ export function TimetableSelector({
   const { t } = useTranslation();
 
   if (loading || !timetables) {
-    return <Skeleton className="h-9 w-44" />;
+    return <Skeleton className="h-9 w-full" />;
   }
 
   const selected = timetables.find((item) => item.id === selectedId);
@@ -62,7 +62,7 @@ export function TimetableSelector({
       <DropdownMenuTrigger
         render={
           <Button
-            className="h-9 w-44 justify-between"
+            className="h-9 w-full min-w-0 justify-between"
             size="sm"
             variant="outline"
           >

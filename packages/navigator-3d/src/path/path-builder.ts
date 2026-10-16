@@ -1,5 +1,5 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { Lift } from '@filcdev/api/domains/navigator/lift';
@@ -20,7 +20,7 @@ export class GraphPathBuilder {
   private barrierFree: boolean;
   private readonly myLocation: MyLocation | null;
 
-  private pointIdToClassroom = new Map<number, Classroom>();
+  private pointIdToClassroom = new Map<number, ClassroomRow>();
   private pointIdToCorridor = new Map<number, Corridor>();
   private pointIdToStoreyConnector = new Map<
     number,
@@ -91,7 +91,7 @@ export class GraphPathBuilder {
   }
 
   private build(): void {
-    this.pointIdToClassroom = new Map<number, Classroom>();
+    this.pointIdToClassroom = new Map<number, ClassroomRow>();
     this.pointIdToCorridor = new Map<number, Corridor>();
     this.pointIdToStoreyConnector = new Map<
       number,
@@ -413,7 +413,7 @@ export class GraphPathBuilder {
     return b;
   }
 
-  private classroomDoorPos(c: Classroom): Vec3 {
+  private classroomDoorPos(c: ClassroomRow): Vec3 {
     const building = this.getBuilding(c.building_id);
     const rad = (c.rotation * Math.PI) / 180;
     // Vector2(0,1).rotated(rad) — same formula as `Classroom.GetDoorOffset`.

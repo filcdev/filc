@@ -1,5 +1,5 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 // biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
 import * as THREE from 'three';
@@ -14,7 +14,7 @@ const DOOR_COLOR = 0xd9_9a_1f;
 /** One classroom: fill box + wireframe + door panel. Pivot is the room
  *  center so rotation matches the editor. Only the fill box is pickable. */
 export function buildClassroomNode(
-  c: Classroom,
+  c: ClassroomRow,
   b: Building,
   graph: FullGraph,
   storeys: StoreyResolver

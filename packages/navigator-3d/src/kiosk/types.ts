@@ -24,8 +24,9 @@ export type KioskNode = {
   storeyMin?: number;
   storeyMax?: number;
   /** Classroom type id — lets the appearance layer highlight by type
-   *  without a graph lookup. Only set for classroom nodes. */
-  typeId?: string;
+   *  without a graph lookup. Only set for classroom nodes; null for rooms
+   *  the import left untyped. */
+  typeId?: string | null;
   /** Visibility container — toggled by the appearance layer. */
   object: THREE.Object3D;
   /** Meshes tagged with `userData.app` that the appearance layer recolors. */

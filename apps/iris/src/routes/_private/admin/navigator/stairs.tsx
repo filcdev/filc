@@ -1,23 +1,19 @@
 import type { Stair } from '@filcdev/api/domains/navigator/stair';
 import { permissions } from '@filcdev/api/permissions';
-import EditorView3D from '@filcdev/navigator-3d/editor-view';
 import { Button } from '@filcdev/ui/components/button';
 import { Field, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-} from '@filcdev/ui/components/select';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
-import { Plus, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   EntityTable,
   type EntityTableColumn,
 } from '@/components/admin/navigator/entity-table';
+import { LabeledSelectField } from '@/components/admin/navigator/labeled-select-field';
 import { useNavigatorEditor } from '@/components/admin/navigator/use-navigator-editor';
+import { PageHeader } from '@/components/admin/page-header';
+import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
@@ -28,6 +24,11 @@ import {
   useStairs,
   useUpdateStair,
 } from '@/hooks/navigator';
+import { orpc, prefetch } from '@/utils/orpc';
+
+// The 3D editor is three.js (~560 kB). It is the bulk of this page, so it
+// loads into its own chunk instead of with the route that hosts the preview.
+const loadEditorView3D = () => import('@filcdev/navigator-3d/editor-view');
 
 export const Route = createFileRoute('/_private/admin/navigator/stairs')({
   component: () => (
@@ -35,6 +36,15 @@ export const Route = createFileRoute('/_private/admin/navigator/stairs')({
       <StairsPage />
     </PermissionGuard>
   ),
+  loader: ({ context }) =>
+    Promise.all([
+      prefetch(context.queryClient, orpc.navigator.stairs.list.queryOptions()),
+      prefetch(
+        context.queryClient,
+        orpc.navigator.buildings.list.queryOptions()
+      ),
+      prefetch(context.queryClient, orpc.navigator.graph.queryOptions()),
+    ]),
 });
 
 type StairFormValues = {
@@ -69,7 +79,7 @@ function StairsPage() {
     onSubmit: ({ value }) => {
       const { id, ...payload } = value;
       if (id) {
-        updateStair.mutate({ id, payload });
+        updateStair.mutate({ ...payload, id });
       } else {
         createStair.mutate(payload);
       }
@@ -139,28 +149,14 @@ function StairsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-bold text-3xl tracking-tight">
-            {t('navigator.stairs.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('navigator.stairs.description')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => stairs.refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4" />
-            {t('navigator.refresh')}
-          </Button>
-          {!editor.isEditing && (
-            <Button onClick={startCreate}>
-              <Plus className="h-4 w-4" />
-              {t('navigator.stairs.add')}
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        addLabel={t('navigator.stairs.add')}
+        canAdd={!editor.isEditing}
+        description={t('navigator.stairs.description')}
+        onAdd={startCreate}
+        onRefresh={() => stairs.refetch()}
+        title={t('navigator.stairs.title')}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <div>
@@ -191,22 +187,12 @@ function StairsPage() {
                 </form.Field>
                 <form.Field name="building_id">
                   {(field) => (
-                    <Field>
-                      <FieldLabel>{t('navigator.fields.building')}</FieldLabel>
-                      <Select
-                        items={buildingItems}
-                        onValueChange={(value) =>
-                          field.handleChange(value ?? '')
-                        }
-                        value={field.state.value}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue
-                            placeholder={t('navigator.fields.building')}
-                          />
-                        </SelectTrigger>
-                      </Select>
-                    </Field>
+                    <LabeledSelectField
+                      items={buildingItems}
+                      label={t('navigator.fields.building')}
+                      onChange={field.handleChange}
+                      value={field.state.value}
+                    />
                   )}
                 </form.Field>
                 <form.Field name="x">
@@ -319,7 +305,7 @@ function StairsPage() {
                   columns={columns}
                   getRowId={(stair) => stair.id}
                   getRowLabel={(stair) => stair.name}
-                  onDelete={(stair) => deleteStair.mutate(stair.id)}
+                  onDelete={(stair) => deleteStair.mutate({ id: stair.id })}
                   onEdit={startEdit}
                   onHover={(stair) => editor.setHoveredId(stair?.id ?? null)}
                   rows={rows}
@@ -330,12 +316,13 @@ function StairsPage() {
         </div>
 
         <div className="h-[70vh] overflow-hidden rounded-xl border">
-          <EditorView3D
+          <Lazy
             appearance={editor.appearance}
             edit={editor.edit}
             emptyLabel={t('ui.common.no_data')}
             graph={graph.data ?? null}
             initialDistance={120}
+            load={loadEditorView3D}
             onTransform={editor.foldPatch}
             showAxes
           />

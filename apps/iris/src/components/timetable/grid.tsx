@@ -100,14 +100,14 @@ function SplitLessons({
           getSplitGridClass(lessons.length)
         )}
       >
-        {lessons.map((lesson, idx) => (
+        {lessons.map((lesson) => (
           <LessonCard
             emphasis={getLessonGroupEmphasis(
               lesson,
               selectedGroupIds,
               selectedDivisionTags
             )}
-            key={lesson.id ?? idx}
+            key={lesson.id}
             lesson={lesson}
             onColorChange={onColorChange}
             showCohorts={showCohorts}

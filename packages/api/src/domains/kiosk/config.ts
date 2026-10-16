@@ -39,6 +39,15 @@ export const kioskDeparturesRequestSchema = z.object({
 });
 
 /**
+ * Query for the petrik.hu news feed: the machine id whose stored feed URL,
+ * item cap and enable flag are used. An unknown machine falls back to the
+ * default feed.
+ */
+export const kioskPetrikNewsQuerySchema = z.object({
+  machine: z.string().min(1).optional(),
+});
+
+/**
  * `kind: 'tv'` configuration: the departure cards under the timetable plus the
  * full-screen news takeover. Strict, like the navigator one: a payload carrying
  * the other kind's keys must be a loud 400, not a silent reset of the stored
@@ -85,16 +94,14 @@ function migrateLegacyNavigatorConfig(input: unknown): unknown {
   if (!('idleResetMs' in source) || 'idleResetSeconds' in source) {
     return input;
   }
-  // Copy before rewriting so a failed validation never leaves the caller's
-  // object mutated.
-  const value = { ...source };
-  const rawMs = value.idleResetMs;
+  // Destructure the legacy millisecond key out rather than mutating the input:
+  // the rest object is fresh, so a failed validation never leaves the caller's
+  // object touched, and the strict schema never sees the old key.
+  const { idleResetMs: rawMs, ...value } = source;
   if (typeof rawMs === 'number' && Number.isFinite(rawMs)) {
     const seconds = Math.round(rawMs / 1000);
     value.idleResetSeconds = Math.min(600, Math.max(10, seconds));
   }
-  // biome-ignore lint/performance/noDelete: the legacy millisecond key must not survive into the strict schema
-  delete value.idleResetMs;
   if (!('petrikNewsEnabled' in value)) {
     value.petrikNewsEnabled = false;
   }
@@ -151,6 +158,15 @@ export const navigatorKioskConfigSchema = z.preprocess(
     startLocation: myLocationSchema.nullable().default(null),
   })
 );
+
+/**
+ * A stored kiosk config blob. The kind-specific schemas above are applied by
+ * the handler, which is the only place that knows the kiosk's `kind`, and the
+ * column is a plain `jsonb` defaulting to `{}` — validating it against one
+ * branch of the kind union here would reject a kiosk whose config has not
+ * been written yet, turning a read into a 500.
+ */
+export const kioskConfigBlobSchema = z.json();
 
 export type TvKioskConfig = z.infer<typeof tvKioskConfigSchema>;
 export type NavigatorKioskConfig = z.infer<typeof navigatorKioskConfigSchema>;

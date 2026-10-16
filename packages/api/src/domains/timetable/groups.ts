@@ -16,7 +16,7 @@ export const groupResponseSchema = z.object({
   name: z.string(),
   selected: z.boolean(),
   studentCount: z.number().nullable(),
-  teacherId: z.string().nullable(),
+  teacherId: z.uuid().nullable(),
 });
 
 export type GroupResponseInput = z.infer<typeof groupResponseSchema>;
@@ -27,14 +27,11 @@ export const selectGroupRequestSchema = z.object({
 
 export type SelectGroupRequestInput = z.infer<typeof selectGroupRequestSchema>;
 
-export const selectGroupResponseSchema = z.object({
-  data: z.object({
-    divisionTag: z.string().nullable(),
-    selectedGroupId: z.uuid().nullable(),
-  }),
-  success: z.boolean(),
+/**
+ * Payload after selecting a group: the group that is now selected for the
+ * division the caller picked in.
+ */
+export const selectGroupPayloadSchema = z.object({
+  divisionTag: z.string().nullable(),
+  selectedGroupId: z.uuid().nullable(),
 });
-
-export type SelectGroupResponseInput = z.infer<
-  typeof selectGroupResponseSchema
->;

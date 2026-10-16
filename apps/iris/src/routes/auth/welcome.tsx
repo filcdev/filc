@@ -1,3 +1,5 @@
+import type { User as UserType } from '@filcdev/auth/client';
+import { authClient, useSession } from '@filcdev/auth/client';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
@@ -25,7 +27,14 @@ import { Spinner } from '@filcdev/ui/components/spinner';
 import Stepper, { Step } from '@filcdev/ui/components/stepper';
 import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Check, ChevronDown, CircleCheck, Mail, User } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  CircleCheck,
+  Mail,
+  User,
+  Wifi,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -34,15 +43,19 @@ import {
   ADMIN_UI_PERMISSIONS,
   useHasPermission,
 } from '@/hooks/use-has-permission';
-import type { User as UserType } from '@/utils/authentication';
-import { authClient } from '@/utils/authentication';
+import { useWifiStatus } from '@/hooks/wifi';
+import {
+  NICKNAME_MAX_LENGTH,
+  NICKNAME_MIN_LENGTH,
+  nicknamePattern,
+} from '@/utils/form-schemas';
 
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data, error, isPending } = authClient.useSession();
+  const { data, error, isPending } = useSession();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -94,9 +107,6 @@ const InfoLine = (props: {
   </div>
 );
 
-const NICKNAME_MIN_LENGTH = 3;
-const NICKNAME_MAX_LENGTH = 32;
-const nicknamePattern = /^[\p{L}\p{N} _'-]+$/u;
 const normalizeNickname = (value?: string | null) =>
   (value ?? '').trim().replace(/\s+/g, ' ');
 
@@ -111,6 +121,9 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(
     user.cohortId ?? null
   );
+
+  const wifiStatus = useWifiStatus();
+  const showWifiStep = wifiStatus.data?.enabled === true;
 
   const isStaff = useHasPermission(ADMIN_UI_PERMISSIONS, user.permissions);
 
@@ -196,8 +209,22 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
     if (currentStep === 3 && isStaff) {
       return t('common.skip');
     }
+    if (currentStep === 4 && showWifiStep) {
+      return t('common.skip');
+    }
     return t('common.next');
   };
+
+  // The step count must not change while the stepper is mounted: inserting the
+  // WiFi step after the status query resolves would shift the step the user is
+  // already on. Waiting for the answer keeps the list fixed for the whole run.
+  if (wifiStatus.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner className="h-8 w-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -290,6 +317,31 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
           </div>
         </Step>
 
+        {showWifiStep && (
+          <Step>
+            <div className="space-y-4">
+              <h2 className="font-bold text-2xl">{t('wifi.setup')}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t('welcome.wifiDescription')}
+              </p>
+              <Card className="mb-1 shadow-sm">
+                <CardContent className="pt-6 text-center">
+                  <Wifi className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p className="mb-4">{t('welcome.wifiPrompt')}</p>
+                  <Button
+                    onClick={() => {
+                      window.open('/wifi', '_blank');
+                    }}
+                    variant="outline"
+                  >
+                    {t('wifi.goToSetup')}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </Step>
+        )}
+
         <Step>
           <div className="space-y-4 text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10 dark:bg-green-500/20">
@@ -324,17 +376,21 @@ const CohortSelectorStep = (props: {
   const updateCohort = async (cohortId: string) => {
     setIsUpdating(true);
     setOpen(false);
-    const success = await props.onCohortSelect(cohortId);
-    setIsUpdating(false);
-    return success;
+    try {
+      return await props.onCohortSelect(cohortId);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const clearCohort = async () => {
     setIsUpdating(true);
     setOpen(false);
-    const success = await props.onSkip();
-    setIsUpdating(false);
-    return success;
+    try {
+      return await props.onSkip();
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (
