@@ -1,6 +1,9 @@
+import { getLogger } from '@logtape/logtape';
 import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { badGateway } from '#utils/http';
+
+const logger = getLogger(['chronos', 'kiosk', 'departures']);
 
 const BKK_URL =
   'https://futar.bkk.hu/api/query/v1/ws/otp/api/where/arrivals-and-departures-for-stop';
@@ -119,7 +122,11 @@ async function fetchDeparturesForStop(
     return routeFilter
       ? filteredDeparture(stopTimes, body.data?.references, routeFilter)
       : nextDeparture(stopTimes, body.data?.references);
-  } catch {
+  } catch (error) {
+    // A timeout or a network error is not "stop has no departures": the kiosk
+    // renders nothing either way, so the reason must be recoverable from the
+    // log stream rather than only from the empty screen.
+    logger.debug('BKK departures lookup failed', { error, stopId });
     return null;
   }
 }

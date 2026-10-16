@@ -1,4 +1,7 @@
+import { getLogger } from '@logtape/logtape';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+const logger = getLogger(['chronos', 'entra-id-token']);
 
 /** Microsoft public cloud authority; the same default the Microsoft provider uses. */
 const DEFAULT_AUTHORITY = 'https://login.microsoftonline.com';
@@ -49,8 +52,11 @@ export function createEntraIdTokenVerifier(
       });
 
       return !nonce || payload.nonce === nonce;
-    } catch {
-      // Any failure (signature, audience, issuer, age, malformed token) is a rejection.
+    } catch (error) {
+      // Any failure (signature, audience, issuer, age, malformed token) is a
+      // rejection. Logged at debug so a JWKS outage is distinguishable from a
+      // genuinely bad token when someone reports a sign-in failure.
+      logger.debug('Entra ID token rejected', { error });
       return false;
     }
   };

@@ -73,7 +73,14 @@ export class UnifiController implements WifiController {
   async getWlanDefaultSpeedProfile(ssid: string): Promise<string | null> {
     const wlans = await this.client.getWlanConf();
     const wlan = wlans.find((w) => w.name === ssid);
-    return wlan?.usergroup_id ?? null;
+    if (!wlan) {
+      logger.warn(
+        'UniFi has no WLAN named {ssid}, no speed profile can be marked default',
+        { ssid }
+      );
+      return null;
+    }
+    return wlan.usergroup_id ?? null;
   }
 
   async createSpeedProfile(

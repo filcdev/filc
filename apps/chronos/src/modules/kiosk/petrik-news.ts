@@ -3,6 +3,7 @@ import {
   DEFAULT_PETRIK_NEWS_MAX_ITEMS,
   navigatorKioskConfigSchema,
 } from '@filcdev/api/domains/kiosk/config';
+import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
@@ -16,6 +17,8 @@ import {
 } from '#modules/kiosk/utils/petrik-news';
 import { base } from '#orpc';
 import { badGateway } from '#utils/http';
+
+const logger = getLogger(['chronos', 'kiosk', 'petrik-news']);
 
 const PETRIK_NEWS_CACHE_TTL_MS = 10 * 60 * 1000;
 const PETRIK_NEWS_TIMEOUT_MS = 10_000;
@@ -186,8 +189,11 @@ export const petrikNews = base.kiosk.petrikNews.handler(async ({ input }) => {
         item.imageUrl =
           featured.get(stripTrailingSlash(item.url)) ?? item.imageUrl;
       }
-    } catch {
+    } catch (error) {
       // Best-effort fallback; keep the parsed items as-is on any failure.
+      // Logged because the REST lookup is the part that breaks when petrik.hu
+      // reshapes its response.
+      logger.warn('Failed to look up petrik.hu featured images', { error });
     }
   }
 

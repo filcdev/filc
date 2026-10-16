@@ -1,9 +1,12 @@
+import { getLogger } from '@logtape/logtape';
 import { and, lt, notExists, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { env } from '#utils/environment';
 import { wifiSpeedProfile, wifiUser } from '../schema';
 import { SPEED_PROFILE_NONE } from './constants';
 import { getWifiController } from './controller';
+
+const logger = getLogger(['chronos', 'unifi', 'sync']);
 
 /**
  * Mirror the UniFi controller's speed profiles into the local table.
@@ -19,6 +22,12 @@ export async function syncSpeedProfiles() {
   }
 
   const profiles = await controller.getSpeedProfiles();
+
+  if (profiles.length === 0) {
+    logger.warn('Received empty list of speed profile from Unifi controller');
+    return;
+  }
+
   let defaultProfileId: string | null = null;
   if (env.wifiSsid) {
     defaultProfileId = await controller.getWlanDefaultSpeedProfile(

@@ -50,6 +50,11 @@ const normalizeSourceMac = (value: string): string => {
   try {
     return canonicalizeMac(value);
   } catch {
+    // A malformed MAC becomes the raw value, so it can only ever match an
+    // identical raw value: worth a line when the request is investigated.
+    logger.debug('Radius request with an unparseable source MAC', {
+      source: value,
+    });
     return value.trim().toLowerCase();
   }
 };
@@ -61,6 +66,9 @@ const normalizeNasMac = (value: string | undefined): string | null => {
   try {
     return canonicalizeMac(value);
   } catch {
+    // Distinct from "no NAS reported": the DB row then shows null where a
+    // usable NAS MAC should be.
+    logger.debug('Radius request with an unparseable NAS MAC', { nas: value });
     return null;
   }
 };
@@ -160,7 +168,8 @@ const enrichControllerDevice = (
             : undefined
         ),
       resolveEffectiveSpeedProfile(account).then((profileId) =>
-        profileId ? controller.applySpeedProfile(mac, profileId) : undefined
+        // Always apply, send an empty string to the controller to reflect if the speed profile is null
+        controller.applySpeedProfile(mac, profileId ?? '')
       ),
       controller.updateClientName(mac, account.username),
     ])

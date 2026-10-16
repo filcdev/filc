@@ -91,8 +91,16 @@ type ClientInterceptor = NonNullable<
  * Turns anything a handler throws that is not already an `ORPCError` into a
  * logged `INTERNAL` error: the message is the raw one in development and the
  * generic one in production, so internal failures never leak their details.
+ *
+ * The log line carries the request id, the client address and the procedure
+ * that failed, because a bare stack is not enough to tell *which* request
+ * produced it once more than one is in flight.
  */
-const errorBoundaryInterceptor: ClientInterceptor = async ({ next }) => {
+const errorBoundaryInterceptor: ClientInterceptor = async ({
+  context,
+  next,
+  path,
+}) => {
   try {
     return await next();
   } catch (error) {
@@ -102,6 +110,12 @@ const errorBoundaryInterceptor: ClientInterceptor = async ({ next }) => {
 
     const err = error instanceof Error ? error : new Error(String(error));
     logger.error('UNCAUGHT API error occurred:', {
+      context: {
+        clientIp: context.clientIp,
+        procedure: path.join('/'),
+        requestId: context.requestId,
+        userId: context.user?.id ?? context.session?.userId ?? null,
+      },
       message: err.message,
       stack: err.stack,
     });
@@ -118,7 +132,11 @@ type AdapterInterceptor = NonNullable<
   FetchHandlerOptions<ChronosContext>['adapterInterceptors']
 >[number];
 
-/** Request log: trace line in development, structured line otherwise. */
+/**
+ * Request log: trace line in development, structured line otherwise. Carries
+ * the request id so it can be joined to the error boundary's line and to a
+ * client's `x-request-id` response header.
+ */
 const timingInterceptor: AdapterInterceptor = async (options) => {
   const start = Date.now();
   const result = await options.next();
@@ -128,13 +146,14 @@ const timingInterceptor: AdapterInterceptor = async (options) => {
   const { method } = options.request;
   const { url } = options.request;
   const {
-    context: { user, clientIp },
+    context: { clientIp, requestId, user },
   } = options;
 
   if (isDevelopment) {
     logger.trace(`${method} ${url} - ${ms}ms`, {
       duration: ms,
       method,
+      requestId,
       status,
       url,
       user: user ? { email: user.email, id: user.id } : null,
@@ -147,6 +166,7 @@ const timingInterceptor: AdapterInterceptor = async (options) => {
     duration: ms,
     ip: clientIp,
     method,
+    requestId,
     status,
     ua: options.request.headers.get('user-agent') ?? 'unknown',
     url,
@@ -203,6 +223,9 @@ const buildContext = async (
     ? (request.headers.get(env.realIpHeader) ?? '')
     : (srv.requestIP(request)?.address ?? 'unknown'),
   reqHeaders: request.headers,
+  // Echoed on the response as `x-request-id`, so a client can name the exact
+  // request it is reporting and the line can be found in the log stream.
+  requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
 });
 
 export const server = Bun.serve<DeviceSocketData>({
@@ -226,16 +249,21 @@ export const server = Bun.serve<DeviceSocketData>({
       return withSecurityHeaders(await handleUnsubscribe(request));
     }
 
+    const requestId =
+      request.headers.get('x-request-id') ?? crypto.randomUUID();
     const context = await buildContext(request, srv);
     const { matched, response } = url.pathname.startsWith('/api/rpc/')
       ? await rpcHandler.handle(request, { context, prefix: '/api/rpc' })
       : await openApiHandler.handle(request, { context, prefix: '/api' });
 
-    return withSecurityHeaders(
+    const final = withSecurityHeaders(
       matched && response
         ? response
         : new Response('Not found', { status: 404 })
     );
+    final.headers.set('x-request-id', requestId);
+
+    return final;
   },
   port: env.port,
   websocket: deviceSocketHandlers,

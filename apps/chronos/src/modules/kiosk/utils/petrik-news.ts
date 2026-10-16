@@ -1,4 +1,7 @@
+import { getLogger } from '@logtape/logtape';
 import { XMLParser } from 'fast-xml-parser';
+
+const logger = getLogger(['chronos', 'kiosk', 'petrik-news']);
 
 /** One petrik.hu article, reduced to what the navigator slideshow needs. */
 export type PetrikNewsItem = {
@@ -144,7 +147,10 @@ export function parsePetrikNewsFeed(xml: string): PetrikNewsItem[] {
   let parsed: unknown;
   try {
     parsed = parser.parse(xml);
-  } catch {
+  } catch (error) {
+    // A feed that stops parsing is the whole kiosk slideshow going dark; the
+    // shape change that caused it is invisible without this.
+    logger.warn('Failed to parse the petrik.hu news feed', { error });
     return [];
   }
 

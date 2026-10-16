@@ -81,7 +81,13 @@ const findCertFile = (targetPath: string): string | null => {
         return caCrt;
       }
     }
-  } catch {
+  } catch (error) {
+    // A permission failure on the directory is not "file absent"; the caller
+    // reports the path as missing either way.
+    logger.debug('Could not stat the WiFi CA cert path {targetPath}', {
+      error,
+      targetPath,
+    });
     return null;
   }
   return null;

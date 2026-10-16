@@ -1,4 +1,4 @@
-import { reactErrorHandler } from '@sentry/react';
+import { captureException, reactErrorHandler } from '@sentry/react';
 import { StartClient } from '@tanstack/react-start/client';
 import { StrictMode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
@@ -15,8 +15,12 @@ hydrateRoot(
   {
     onCaughtError: reactErrorHandler(),
     onRecoverableError: reactErrorHandler(),
-    onUncaughtError: reactErrorHandler((_error, _errorInfo) => {
-      // TODO: logger
+    onUncaughtError: reactErrorHandler((error, errorInfo) => {
+      // An error that escapes the React tree never reaches the query/mutation
+      // caches either, so this is the only place it can be captured.
+      captureException(error, {
+        extra: { componentStack: errorInfo.componentStack },
+      });
     }),
   }
 );

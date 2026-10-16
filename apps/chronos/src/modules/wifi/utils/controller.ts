@@ -1,5 +1,8 @@
+import { getLogger } from '@logtape/logtape';
 import { env } from '#utils/environment';
 import { createUnifiController } from './unifi-controller';
+
+const logger = getLogger(['chronos', 'wifi', 'controller']);
 
 export type WifiSpeedProfile = {
   id: string;
@@ -46,6 +49,17 @@ export const getWifiController = (): WifiController | null => {
           env.unifiPassword
         )
       ) {
+        // Without this the controller is just absent: enrichment never runs and
+        // every speed-profile call answers a bare 503 with no stated reason.
+        const missing = [
+          !env.unifiHost && 'UNIFI_HOST',
+          !env.unifiUsername && 'UNIFI_USERNAME',
+          !env.unifiPassword && 'UNIFI_PASSWORD',
+        ].filter((field): field is string => field !== false);
+        logger.warn(
+          'WiFi controller is set to unifi but {fields} is not configured, controller disabled',
+          { fields: missing.join(', ') }
+        );
         controller = null;
         return controller;
       }

@@ -1,10 +1,13 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { getLogger } from '@logtape/logtape';
 import type { ChronosContext } from '#_types/globals';
 import { base } from '#orpc';
 import { auth } from '#utils/authentication';
 import { rbac, userHasPermission } from '#utils/authorization';
 import { env } from '#utils/environment';
 import { setSentryUser } from '#utils/telemetry';
+
+const logger = getLogger(['chronos', 'auth']);
 
 const SIGNATURE_LENGTH = 64; // SHA-256 hex digest
 
@@ -73,7 +76,16 @@ export async function resolveCaller(
   // request carrying a stale key into a 500. A key that fails to resolve is
   // simply not a caller, so the request continues as anonymous and the route's
   // own guard decides.
-  const session = await auth.api.getSession({ headers }).catch(() => null);
+  //
+  // The failure is logged rather than discarded: a database outage throws here
+  // too, and "every request became anonymous" is otherwise indistinguishable
+  // from a mass logout.
+  const session = await auth.api.getSession({ headers }).catch((error) => {
+    logger.debug('Session resolution failed, continuing as anonymous', {
+      error,
+    });
+    return null;
+  });
 
   if (session) {
     setSentryUser(session.session, session.user);
