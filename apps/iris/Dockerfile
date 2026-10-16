@@ -1,5 +1,5 @@
 FROM oven/bun:1.4.2-alpine AS base
-RUN apk update && apk add --no-cache libc6-compat && rm -rf /var/cache/apk/*
+RUN apk update && apk add --no-cache wget libc6-compat && rm -rf /var/cache/apk/*
 WORKDIR /app
 
 FROM base AS prepare
