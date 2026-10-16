@@ -18,7 +18,6 @@ import {
   enrichLessons,
 } from '#modules/timetable/utils/enrich-lessons';
 import { base } from '#orpc';
-import { env } from '#utils/environment';
 import { badRequest, notFound } from '#utils/http';
 import {
   cancelPendingNotification,
@@ -348,51 +347,46 @@ export const createMovedLesson = base.timetable.movedLessons.create
       startingPeriod,
     });
 
-    const [newMovedLesson] = await db
-      .insert(movedLesson)
-      .values({
-        comment,
-        date,
-        id: crypto.randomUUID(),
-        room,
-        startingDay,
-        startingPeriod,
-      })
-      .returning();
+    // Row and lesson links are one unit: a failure between them leaves a moved
+    // lesson with no lessons, which nothing downstream can repair.
+    const newMovedLesson = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(movedLesson)
+        .values({
+          comment,
+          date,
+          id: crypto.randomUUID(),
+          room,
+          startingDay,
+          startingPeriod,
+        })
+        .returning();
 
-    if (
-      lessonIds &&
-      Array.isArray(lessonIds) &&
-      lessonIds.length > 0 &&
-      newMovedLesson
-    ) {
-      await db.insert(movedLessonLessonMTM).values(
-        lessonIds.map((lessonId: string) => ({
-          lessonId,
-          movedLessonId: newMovedLesson.id,
-        }))
-      );
-    }
+      if (!row) {
+        throw new ORPCError('INTERNAL', {
+          message: 'Failed to create moved lesson',
+        });
+      }
 
-    if (newMovedLesson) {
-      dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
-        date: body.date,
-        lessonIds: lessonIds ?? [],
-        room,
-        startingDay,
-        startingPeriod,
-      });
-    }
+      if (lessonIds && lessonIds.length > 0) {
+        await tx.insert(movedLessonLessonMTM).values(
+          lessonIds.map((lessonId: string) => ({
+            lessonId,
+            movedLessonId: row.id,
+          }))
+        );
+      }
 
-    if (!newMovedLesson) {
-      throw new ORPCError('INTERNAL', {
-        cause:
-          env.mode === 'development'
-            ? 'No moved lesson returned from insert query'
-            : undefined,
-        message: 'Failed to create moved lesson.',
-      });
-    }
+      return row;
+    });
+
+    dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
+      date: newMovedLesson.date,
+      lessonIds: lessonIds ?? [],
+      room: newMovedLesson.room,
+      startingDay: newMovedLesson.startingDay,
+      startingPeriod: newMovedLesson.startingPeriod,
+    });
 
     return newMovedLesson;
   });
@@ -400,57 +394,64 @@ export const createMovedLesson = base.timetable.movedLessons.create
 export const updateMovedLesson = base.timetable.movedLessons.update
   .use(requireAuthorization(permissions.movedLessonUpdate))
   .handler(async ({ input }) => {
-    const { id } = input;
-    const { startingPeriod, startingDay, room, date, lessonIds, comment } =
-      input;
+    const { id, lessonIds, ...columns } = input;
 
-    await validateMovedLessonReferences({
-      lessonIds,
-      room,
-      startingDay,
-      startingPeriod,
-    });
+    await validateMovedLessonReferences({ ...columns, lessonIds });
 
     cancelPendingNotification(id, 'moved_lesson');
 
-    const [updatedMovedLesson] = await db
-      .update(movedLesson)
-      .set({
-        comment: comment === undefined ? undefined : comment,
-        date,
-        room: room === undefined ? undefined : room,
-        startingDay: startingDay === undefined ? undefined : startingDay,
-        startingPeriod:
-          startingPeriod === undefined ? undefined : startingPeriod,
-      })
-      .where(eq(movedLesson.id, id))
-      .returning();
+    // The row and its lesson links are one unit: a failure between them would
+    // leave a moved lesson attached to the wrong lessons. Both writes go in one
+    // transaction, and the row is read back so an empty patch still 404s.
+    const updatedMovedLesson = await db.transaction(async (tx) => {
+      const [row] =
+        Object.keys(columns).length > 0
+          ? await tx
+              .update(movedLesson)
+              .set(columns)
+              .where(eq(movedLesson.id, id))
+              .returning()
+          : await tx.select().from(movedLesson).where(eq(movedLesson.id, id));
 
-    if (!updatedMovedLesson) {
-      throw notFound('Moved lesson not found');
-    }
-
-    if (lessonIds !== undefined && Array.isArray(lessonIds)) {
-      await db
-        .delete(movedLessonLessonMTM)
-        .where(eq(movedLessonLessonMTM.movedLessonId, id));
-
-      if (lessonIds.length > 0) {
-        await db.insert(movedLessonLessonMTM).values(
-          lessonIds.map((lessonId: string) => ({
-            lessonId,
-            movedLessonId: id,
-          }))
-        );
+      if (!row) {
+        throw notFound('Moved lesson not found');
       }
-    }
+
+      if (lessonIds !== undefined) {
+        await tx
+          .delete(movedLessonLessonMTM)
+          .where(eq(movedLessonLessonMTM.movedLessonId, id));
+
+        if (lessonIds.length > 0) {
+          await tx.insert(movedLessonLessonMTM).values(
+            lessonIds.map((lessonId: string) => ({
+              lessonId,
+              movedLessonId: id,
+            }))
+          );
+        }
+      }
+
+      return row;
+    });
+
+    // A partial patch must not notify an empty audience, so the payload is the
+    // merged result rather than just what the caller sent.
+    const effectiveLessonIds =
+      lessonIds ??
+      (
+        await db
+          .select({ lessonId: movedLessonLessonMTM.lessonId })
+          .from(movedLessonLessonMTM)
+          .where(eq(movedLessonLessonMTM.movedLessonId, id))
+      ).map(({ lessonId }) => lessonId);
 
     dispatchPendingNotification(id, 'moved_lesson', {
-      date,
-      lessonIds: lessonIds ?? [],
-      room,
-      startingDay,
-      startingPeriod,
+      date: updatedMovedLesson.date,
+      lessonIds: effectiveLessonIds,
+      room: updatedMovedLesson.room,
+      startingDay: updatedMovedLesson.startingDay,
+      startingPeriod: updatedMovedLesson.startingPeriod,
     });
 
     return updatedMovedLesson;

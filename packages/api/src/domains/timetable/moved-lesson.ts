@@ -1,5 +1,6 @@
 import z from 'zod';
 
+import { classroomRowSchema } from '../navigator/classroom';
 import { dayDefinitionRowSchema, linkedLessonSchema } from './lesson';
 
 /** Path parameters for moved lesson endpoints addressed by moved lesson id. */
@@ -18,36 +19,34 @@ export const cohortIdParamsSchema = z.object({
 
 export type CohortIdParamsInput = z.infer<typeof cohortIdParamsSchema>;
 
-/** Payload for updating an existing moved lesson. */
+/**
+ * The lesson-id list both write shapes take. Duplicates would hit the MTM
+ * primary key and surface as a 500, so they are rejected as the malformed
+ * request they are.
+ */
+const lessonIdsSchema = z
+  .uuid()
+  .array()
+  .min(1)
+  .refine(
+    (ids) => new Set(ids).size === ids.length,
+    'Lesson ids must be unique'
+  );
+
+/** Payload for updating an existing moved lesson. Every field is optional and an
+ * omitted one means "leave as it is" — the handler reads `undefined` that way.
+ * `room` is nullable because the column is, and a moved lesson may have no room.
+ */
 export const updateSchema = z.object({
   comment: z.string().nullable().optional(),
-  date: z.coerce.date(),
-  lessonIds: z.uuid().array().min(1),
-  room: z.string(),
-  startingDay: z.uuid(),
-  startingPeriod: z.uuid(),
+  date: z.coerce.date().optional(),
+  lessonIds: lessonIdsSchema.optional(),
+  room: z.string().nullable().optional(),
+  startingDay: z.uuid().optional(),
+  startingPeriod: z.uuid().optional(),
 });
 
 export type UpdateMovedLessonInput = z.infer<typeof updateSchema>;
-
-/** `classroom` row, as returned alongside a moved lesson. */
-export const classroomRowSchema = z.object({
-  building_id: z.string(),
-  capacity: z.number().int().nullable(),
-  description: z.string(),
-  id: z.string(),
-  mapped: z.boolean(),
-  name: z.string(),
-  rotation: z.number(),
-  short: z.string(),
-  size_x: z.number(),
-  size_y: z.number(),
-  size_z: z.number(),
-  storey: z.number().int(),
-  type_id: z.string().nullable(),
-  x: z.number(),
-  y: z.number(),
-});
 
 /** `period` row, as returned alongside a moved lesson. */
 export const periodRowSchema = z.object({
@@ -82,7 +81,7 @@ export const movedLessonWithRelationsSchema = z.object({
 export const createMovedLessonSchema = z.object({
   comment: z.string().nullable().optional(),
   date: z.coerce.date(),
-  lessonIds: z.uuid().array().min(1),
+  lessonIds: lessonIdsSchema,
   room: z.string().nullable().optional(),
   startingDay: z.string().nullable().optional(),
   startingPeriod: z.string().nullable().optional(),

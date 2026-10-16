@@ -183,6 +183,7 @@ export function KioskDialog({ kiosk, onOpenChange, open }: KioskDialogProps) {
     }
     createKiosk.mutate({
       config,
+      enabled: value.enabled,
       kind: value.kind,
       machineId: value.machineId,
       name: value.name,

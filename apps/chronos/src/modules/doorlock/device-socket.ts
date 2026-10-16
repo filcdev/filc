@@ -15,8 +15,6 @@ import {
   type OutgoingMessage,
   outgoingMessageSchema,
 } from '#modules/doorlock/utils/schemas';
-import { auth } from '#utils/authentication';
-import { userHasPermission } from '#utils/authorization';
 import { dispatchImmediateNotification } from '#utils/notifications/engine';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
@@ -198,89 +196,32 @@ export async function upgrade(
   request: Request,
   srv: Bun.Server<DeviceSocketData>
 ): Promise<Response | undefined> {
-  // Primary auth: the device's provisioned token.
   const gotToken = request.headers.get('X-Aegis-Device-Token');
 
-  if (gotToken) {
-    const [device] = await db
-      .select()
-      .from(lockDevice)
-      .where(eq(lockDevice.apiToken, gotToken))
-      .limit(1);
-
-    if (!device) {
-      logger.debug('WebSocket connection attempt with invalid device token', {
-        token: gotToken,
-      });
-      return new Response(null, { status: 401 });
-    }
-
-    const d = { id: device.id, name: device.name };
-    logger.debug('WebSocket connection authorized via device token', {
-      device: d,
-    });
-    return connect(request, srv, d);
-  }
-
-  // Alternative auth: a user-generated API key, resolved through the
-  // better-auth plugin (`enableSessionForAPIKeys`) so the key's own enable
-  // flag, expiry and rate limit all apply. The connecting client must also
-  // identify which device it represents.
-  // `getSession` throws on a key that is present but unusable (invalid or
-  // disabled), so a failed key is treated as "not this credential" and the
-  // request falls through to the 401 below rather than failing the handler.
-  const apiSession = await auth.api
-    .getSession({ headers: request.headers })
-    .catch(() => null);
-  if (apiSession) {
-    const apiUser = apiSession.user;
-    const canControl = await userHasPermission(
-      apiUser.id,
-      'doorlock:devices:read'
+  if (!gotToken) {
+    logger.warn('WebSocket connection attempt without a device token');
+    return Response.json(
+      { message: 'Authentication required: provide X-Aegis-Device-Token' },
+      { status: 401 }
     );
-    if (!canControl) {
-      logger.debug('WebSocket connection with insufficient API key scope', {
-        userId: apiUser.id,
-      });
-      return new Response(null, { status: 403 });
-    }
-
-    const deviceId = new URL(request.url).searchParams.get('deviceId');
-    if (!deviceId) {
-      return Response.json(
-        {
-          message: 'deviceId query parameter is required when using an API key',
-        },
-        { status: 400 }
-      );
-    }
-
-    const [device] = await db
-      .select()
-      .from(lockDevice)
-      .where(eq(lockDevice.id, deviceId))
-      .limit(1);
-
-    if (!device) {
-      return Response.json({ message: 'Device not found' }, { status: 404 });
-    }
-
-    const d = { id: device.id, name: device.name };
-    logger.debug('WebSocket connection authorized via API key', {
-      device: d,
-      userId: apiUser.id,
-    });
-    return connect(request, srv, d);
   }
 
-  logger.warn('WebSocket connection attempt without any credentials');
-  return Response.json(
-    {
-      message:
-        'Authentication required: provide X-Aegis-Device-Token or an API key',
-    },
-    { status: 401 }
-  );
+  const [device] = await db
+    .select()
+    .from(lockDevice)
+    .where(eq(lockDevice.apiToken, gotToken))
+    .limit(1);
+
+  if (!device) {
+    logger.debug('WebSocket connection attempt with an invalid device token');
+    return new Response(null, { status: 401 });
+  }
+
+  const d = { id: device.id, name: device.name };
+  logger.debug('WebSocket connection authorized via device token', {
+    device: d,
+  });
+  return connect(request, srv, d);
 }
 
 function connect(
@@ -327,6 +268,14 @@ export const handlers: Bun.WebSocketHandler<DeviceSocketData> = {
       device,
     });
     ws.subscribe(`device-${device.id}`);
-    await syncDatabase(device.id);
+
+    try {
+      await syncDatabase(device.id);
+    } catch (error) {
+      logger.error('Failed to sync the card database to a device', {
+        device,
+        error,
+      });
+    }
   },
 };

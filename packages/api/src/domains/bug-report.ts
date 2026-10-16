@@ -3,7 +3,15 @@ import z from 'zod';
 /** Payload for `POST /api/bug-report`. */
 export const createBugReportSchema = z.object({
   description: z.string().min(10).max(5000),
-  metadata: z.record(z.string(), z.unknown()).optional(),
+  // Bounded like the sibling text fields: the column is jsonb and the caller
+  // is any signed-in user, so an unbounded record is an unbounded write.
+  metadata: z
+    .record(z.string().max(64), z.unknown())
+    .refine(
+      (value) => JSON.stringify(value).length <= 4096,
+      'Metadata must serialize to at most 4096 characters'
+    )
+    .optional(),
   page: z.string().max(255).optional(),
   subject: z.string().min(3).max(200),
 });
@@ -32,7 +40,7 @@ export const bugReportListQuerySchema = z.object({
   dateTo: z.iso.datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   page: z.coerce.number().int().min(1).default(1),
-  search: z.string().optional(),
+  search: z.string().max(200).optional(),
   status: bugReportStatusSchema.optional(),
 });
 

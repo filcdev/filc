@@ -8,7 +8,7 @@ import { ORPCError } from '@orpc/server';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { kiosk } from '#modules/kiosk/schema';
-import { assertAllowedFeedUrl } from '#modules/kiosk/utils/feed-url';
+import { fetchAllowedFeedUrl } from '#modules/kiosk/utils/feed-url';
 import {
   type PetrikNewsItem,
   parseFeaturedImages,
@@ -75,9 +75,10 @@ async function readCappedText(
  * Fetch featured images from the WordPress REST API at the feed's own origin.
  * petrik.hu's RSS carries no featured image, so `wp/v2/posts` is the primary
  * picture source — a post's banner replaces its first in-body `<img>` as the
- * default. The REST host is the feed's own origin, already validated by
- * `assertAllowedFeedUrl`. A non-ok response means "no featured images
- * available", leaving the in-body fallback in place.
+ * default. The REST host is the feed's own origin, and the request goes through
+ * `fetchAllowedFeedUrl` so the same SSRF guard and IP pinning apply. A non-ok
+ * response means "no featured images available", leaving the in-body fallback
+ * in place.
  */
 async function fetchFeaturedImages(
   feedUrl: string
@@ -89,7 +90,7 @@ async function fetchFeaturedImages(
   // `_fields` is set, so restricting fields would strip the `source_url` the
   // fallback needs. The uncapped response is bounded by `MAX_JSON_BYTES`.
 
-  const response = await fetch(restUrl, {
+  const response = await fetchAllowedFeedUrl(restUrl.toString(), {
     headers: { 'user-agent': 'filc-kiosk/1.0 (+https://filc.petrik.hu)' },
     redirect: 'manual',
     signal: AbortSignal.timeout(PETRIK_NEWS_TIMEOUT_MS),
@@ -147,17 +148,15 @@ export const petrikNews = base.kiosk.petrikNews.handler(async ({ input }) => {
   }
 
   // Serve the cache without a DNS round-trip; only a miss reaches the SSRF
-  // guard, so a warm cache never pays for `assertAllowedFeedUrl`.
+  // guard, so a warm cache never pays for the validation.
   const cached = feedCache.get(feed.feedUrl);
   if (cached && cached.expiresAt > Date.now()) {
     return { items: cached.items.slice(0, feed.maxItems) };
   }
 
-  await assertAllowedFeedUrl(feed.feedUrl);
-
   let xml: string;
   try {
-    const response = await fetch(feed.feedUrl, {
+    const response = await fetchAllowedFeedUrl(feed.feedUrl, {
       headers: { 'user-agent': 'filc-kiosk/1.0 (+https://filc.petrik.hu)' },
       redirect: 'manual',
       signal: AbortSignal.timeout(PETRIK_NEWS_TIMEOUT_MS),

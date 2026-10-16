@@ -9,8 +9,10 @@ import type {
   AudienceUser,
   NotificationContent,
   NotificationHandler,
+  NotificationPreferences,
   NotificationType,
 } from '#utils/notifications/types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 
@@ -242,8 +244,17 @@ async function fireNotification(
         .where(eq(userPreferences.userId, user.id))
         .limit(1);
 
+      // A user who never opened their settings has no row, and a row written
+      // before a toggle existed lacks that key; both fall back per key rather
+      // than reading `undefined`, which the gate below would treat as an
+      // opt-out.
+      const preferences: NotificationPreferences = {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...prefs?.notificationPreferences,
+      };
+
       const prefKey = handler.preferenceKey;
-      if (prefs && prefKey && !prefs.notificationPreferences[prefKey]) {
+      if (prefKey && !preferences[prefKey]) {
         logger.debug('User {userId} opted out of notification type {type}', {
           type,
           userId: user.id,
@@ -251,8 +262,7 @@ async function fireNotification(
         continue;
       }
 
-      const channelsEnabled =
-        prefs?.notificationPreferences.channelsEnabled ?? true;
+      const channelsEnabled = preferences.channelsEnabled;
       const content: NotificationContent = handler.buildContent(
         payload,
         user.language
@@ -274,6 +284,7 @@ async function fireNotification(
           channelsEnabled,
           content: content.content,
           email: user.email,
+          language: user.language,
           notificationId: notif.id,
           title: content.title,
           type,

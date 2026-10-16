@@ -1,16 +1,16 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import { FLOOR_GAP } from '../scene/storey-resolver';
 
 export function getClassroomsInBuilding(
   graph: FullGraph,
   building: Building
-): Classroom[] {
+): ClassroomRow[] {
   return graph.classrooms.filter((c) => c.building_id === building.id);
 }
 
-export function getValidStoreys(rooms: Classroom[]): number[] {
+export function getValidStoreys(rooms: ClassroomRow[]): number[] {
   const set = new Set<number>();
   set.add(0);
   for (const r of rooms) {

@@ -28,12 +28,20 @@ export const listSystemMessages = base.news.systemMessages.list.handler(
       conditions.push(gte(systemMessage.validUntil, now));
     }
 
+    // A message with no cohort rows is global; a targeted one is only visible
+    // to its cohorts. A user without a cohort therefore sees global messages
+    // only — without this branch the predicate is skipped entirely and they
+    // would receive messages targeted at every other cohort.
     if (userCohortId) {
       conditions.push(
         sql`(
           NOT EXISTS (SELECT 1 FROM system_message_cohort_mtm WHERE system_message_id = ${systemMessage.id})
           OR EXISTS (SELECT 1 FROM system_message_cohort_mtm WHERE system_message_id = ${systemMessage.id} AND cohort_id = ${userCohortId})
         )`
+      );
+    } else {
+      conditions.push(
+        sql`NOT EXISTS (SELECT 1 FROM system_message_cohort_mtm WHERE system_message_id = ${systemMessage.id})`
       );
     }
 

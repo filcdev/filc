@@ -1,41 +1,38 @@
 import z from 'zod';
 import { blockContentSchema, newsAuthorSchema } from './announcements';
 
-export const dateRangeBodySchema = z
-  .object({
-    cohortIds: z.array(z.string()).optional(),
-    content: blockContentSchema,
-    title: z.string().min(1),
-    validFrom: z.coerce.date(),
-    validUntil: z.coerce.date(),
-  })
-  .refine((data) => data.validUntil >= data.validFrom, {
-    message: 'validUntil must be on or after validFrom',
-    path: ['validUntil'],
-  });
+/**
+ * The fields a system message is written with. The update shape is this one
+ * partial-ed, so a field added here reaches both.
+ */
+const dateRangeFieldsSchema = z.object({
+  cohortIds: z.array(z.string()).optional(),
+  content: blockContentSchema,
+  title: z.string().min(1),
+  validFrom: z.coerce.date(),
+  validUntil: z.coerce.date(),
+});
+
+const validRangeMessage = 'validUntil must be on or after validFrom';
+
+export const dateRangeBodySchema = dateRangeFieldsSchema.refine(
+  (data) => data.validUntil >= data.validFrom,
+  { message: validRangeMessage, path: ['validUntil'] }
+);
 
 export type DateRangeBodyInput = z.infer<typeof dateRangeBodySchema>;
 
-export const dateRangeUpdateBodySchema = z
-  .object({
-    cohortIds: z.array(z.string()).optional(),
-    content: blockContentSchema.optional(),
-    title: z.string().min(1).optional(),
-    validFrom: z.coerce.date().optional(),
-    validUntil: z.coerce.date().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.validFrom && data.validUntil) {
-        return data.validUntil >= data.validFrom;
-      }
-      return true;
-    },
-    {
-      message: 'validUntil must be on or after validFrom',
-      path: ['validUntil'],
+export const dateRangeUpdateBodySchema = dateRangeFieldsSchema.partial().refine(
+  // A patch may carry neither bound, so the ordering only applies when both
+  // are present.
+  (data) => {
+    if (data.validFrom && data.validUntil) {
+      return data.validUntil >= data.validFrom;
     }
-  );
+    return true;
+  },
+  { message: validRangeMessage, path: ['validUntil'] }
+);
 
 export type DateRangeUpdateBodyInput = z.infer<
   typeof dateRangeUpdateBodySchema

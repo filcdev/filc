@@ -19,6 +19,22 @@ export type NotificationPreferences = {
   channelsEnabled: boolean;
 };
 
+/**
+ * What a user who has never touched their settings gets. Also the base a
+ * stored record is merged over, so a row written before a toggle existed — or
+ * a partial one — falls back per key instead of reading `undefined`, which
+ * would silently opt the user out of that type.
+ */
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  announcement: true,
+  blogPost: false,
+  channelsEnabled: true,
+  doorlockCardUsed: false,
+  movedLesson: true,
+  substitution: true,
+  systemMessage: true,
+};
+
 export type AudienceUser = {
   id: string;
   email: string;
@@ -55,4 +71,6 @@ export type DeliveryJob = {
   title: string;
   content: string;
   channelsEnabled: boolean;
+  /** Locale the recipient's `buildContent` ran with; the email wrapper uses it too. */
+  language: string;
 };

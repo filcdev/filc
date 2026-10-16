@@ -351,7 +351,6 @@ export const newsContract = {
     list: oc
       .route(
         filcRoute({
-          auth: true,
           description:
             'List active system messages within date range, filtered by user cohort',
           group: 'SystemMessage',

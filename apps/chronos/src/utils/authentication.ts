@@ -11,6 +11,7 @@ import {
   authenticationSchema,
   user as userTable,
 } from '#database/schema/authentication';
+import { userPreferences } from '#modules/notifications/schema';
 import { teacher } from '#modules/timetable/schema';
 import { wifiUser } from '#modules/wifi/schema';
 import { getUserPermissions } from '#utils/authorization';
@@ -176,6 +177,15 @@ const authOptions = {
     },
     user: {
       create: {
+        after: async (user) => {
+          // Every user owns a preferences row from the start. Creating it
+          // lazily leaves a new user with none, and the notification engine
+          // could not then tell "no row" from "all toggles on".
+          await db
+            .insert(userPreferences)
+            .values({ userId: user.id })
+            .onConflictDoNothing({ target: userPreferences.userId });
+        },
         before: async (user, _ctx) => ({
           data: {
             ...user,

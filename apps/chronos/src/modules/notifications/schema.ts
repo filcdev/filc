@@ -10,6 +10,7 @@ import {
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 import type { NotificationPreferences } from '#utils/notifications/types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
 
 export const userPreferences = pgTable('user_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -17,15 +18,7 @@ export const userPreferences = pgTable('user_preferences', {
   notificationPreferences: jsonb('notification_preferences')
     .$type<NotificationPreferences>()
     .notNull()
-    .default({
-      announcement: true,
-      blogPost: false,
-      channelsEnabled: true,
-      doorlockCardUsed: false,
-      movedLesson: true,
-      substitution: true,
-      systemMessage: true,
-    }),
+    .default(DEFAULT_NOTIFICATION_PREFERENCES),
   theme: text('theme').default('system').notNull(),
   timetableClassColors: jsonb('timetable_class_colors')
     .$type<Record<string, number>>()

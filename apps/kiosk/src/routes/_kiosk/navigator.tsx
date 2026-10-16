@@ -4,7 +4,7 @@ import {
   DEFAULT_PETRIK_NEWS_ENABLED,
   DEFAULT_PETRIK_NEWS_IDLE_SECONDS,
 } from '@filcdev/api/domains/kiosk/config';
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
 import type { KioskNode } from '@filcdev/navigator-3d/kiosk/types';
 import type {
@@ -199,7 +199,7 @@ function NavigatorKioskPage() {
   const [viewResetToken, setViewResetToken] = useState(0);
 
   const classroomById = useMemo(() => {
-    const map = new Map<string, Classroom>();
+    const map = new Map<string, ClassroomRow>();
     for (const classroom of graph?.classrooms ?? []) {
       map.set(classroom.id, classroom);
     }

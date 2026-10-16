@@ -1,3 +1,4 @@
+import { devicePayloadSchema } from '@filcdev/api/domains/doorlock/devices';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Dialog,
@@ -17,7 +18,6 @@ import type {
   DeviceLike,
 } from '@/components/doorlock/doorlock.types';
 import { useUpsertDoorlockDevice } from '@/hooks/doorlock-admin';
-import { deviceSchema } from '@/utils/form-schemas';
 
 const initialState = (device?: DeviceLike | null): DeviceFormValues => ({
   apiToken: device?.apiToken ?? crypto.randomUUID(),
@@ -47,7 +47,7 @@ export function DeviceDialog<TDevice extends DeviceLike = DeviceLike>({
         },
       });
     },
-    validators: { onSubmit: deviceSchema },
+    validators: { onSubmit: devicePayloadSchema },
   });
 
   useEffect(() => {

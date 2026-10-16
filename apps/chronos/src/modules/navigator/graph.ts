@@ -47,13 +47,10 @@ export const graphRoute = base.navigator.graph.handler(async () => {
   return {
     buildings,
     classroom_types: classroomTypes,
-    // The graph's shape has no nullable campus fields: only placed rooms are
-    // here, and placing one is what fills them in.
-    classrooms: classrooms.map((row) => ({
-      ...row,
-      capacity: row.capacity ?? 0,
-      type_id: row.type_id ?? '',
-    })),
+    // Passed through as stored: a room the timetable imported carries a null
+    // `type_id`/`capacity` until an admin places it, and the output schema
+    // above is shaped to accept exactly that.
+    classrooms,
     corridors,
     lifts,
     stairs,

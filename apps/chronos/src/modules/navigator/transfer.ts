@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+import { ORPCError } from '@orpc/server';
 import { asc, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
@@ -21,6 +22,9 @@ import {
 } from '#modules/timetable/schema';
 import { base } from '#orpc';
 import { badRequest } from '#utils/http';
+
+/** Matches the timetable importer's ceiling; the payload is parsed as one JSON string. */
+const MAX_NAVIGATOR_IMPORT_BYTES = 20 * 1024 * 1024;
 
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -170,6 +174,15 @@ export const importNavigatorRoute = base.navigator.import
   .handler(async ({ input }) => {
     // The upload is a navigator export file. A body that is not JSON and a
     // body that fails the transfer schema are both the caller's fault.
+    if (input.file.size > MAX_NAVIGATOR_IMPORT_BYTES) {
+      // Same ceiling class as the timetable import. Checked before the body is
+      // read so an oversized file is never parsed into memory.
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'The uploaded navigator file is too large.',
+        status: 413,
+      });
+    }
+
     let payload: NavigatorTransfer;
     try {
       payload = navigatorImportSchema.parse(

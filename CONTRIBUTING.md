@@ -45,6 +45,11 @@ This guide gets you from a fresh clone to a running dev environment, then covers
    - `CHRONOS_DATABASE_URL` — point it at your local Postgres
    - Entra (Microsoft) OAuth values — see [docs/entra-setup.md](docs/entra-setup.md)
 
+   If you need the test-notification endpoints, set
+   `CHRONOS_ENABLE_TEST_NOTIFICATIONS=true` as well; they are off regardless of
+   the mode, because they can write into another user's inbox and send mail to
+   any address.
+
 4. **Optional** - Apply migrations:
 
     > [!tip]

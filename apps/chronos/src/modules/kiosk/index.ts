@@ -78,6 +78,7 @@ export const createKiosk = base.kiosk.create
         .insert(kiosk)
         .values({
           config,
+          enabled: input.enabled ?? true,
           kind: input.kind,
           machineId: input.machineId,
           name: input.name,

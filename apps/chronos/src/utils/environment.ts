@@ -22,6 +22,11 @@ const envShape = z.object({
   CHRONOS_BKK_API_KEY: z.string().optional(),
   CHRONOS_DATABASE_URL: z.url(),
   CHRONOS_DRIZZLE_DEBUG: boolean.default(false),
+  // Gates the three test-notification endpoints (`notifications.test`,
+  // `sendTest`, `previewTest`). They can inject a notification of any type into
+  // another user's inbox and send mail to an arbitrary address, so they are off
+  // unless explicitly requested.
+  CHRONOS_ENABLE_TEST_NOTIFICATIONS: boolean.default(false),
   CHRONOS_ENTRA_CLIENT_ID: z.string(),
   CHRONOS_ENTRA_CLIENT_SECRET: z.string().optional(),
   CHRONOS_ENTRA_TENANT_ID: z.string(),
@@ -36,7 +41,12 @@ const envShape = z.object({
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
-  CHRONOS_MODE: z.enum(['development', 'production']).default('development'),
+  // Defaults to production: the development branch opens the test-notification
+  // endpoints to every signed-in user, echoes internal error messages to
+  // clients and reflects any CORS origin. Making it explicit opt-in means a
+  // deployment that forgets to set it fails safe. Set CHRONOS_MODE=development
+  // to get the pretty logs and the test endpoints.
+  CHRONOS_MODE: z.enum(['development', 'production']).default('production'),
   CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce.number().default(60),
   CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce.number().default(60),
   CHRONOS_NOTIFICATION_DELAY_COHORT_RESELECTION_REQUIRED: z.coerce

@@ -36,7 +36,10 @@ export function kioskStoreyColor(storey: number): number {
 
 /** Classroom base color from its type's colorhex, with a neutral
  *  fallback when the type is missing or has no usable color. */
-export function kioskTypeColor(graph: FullGraph, typeId: string): number {
+export function kioskTypeColor(
+  graph: FullGraph,
+  typeId: string | null
+): number {
   const type = graph.classroom_types.find((t) => t.id === typeId);
   if (!type?.colorhex) {
     return KIOSK_COLORS.classroomFallback;

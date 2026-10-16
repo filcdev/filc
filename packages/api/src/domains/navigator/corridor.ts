@@ -1,29 +1,10 @@
 import z from 'zod';
 
-/** A corridor segment on a storey; `x1`/`y1`–`x2`/`y2` is its centre line. */
-export const corridorSchema = z.object({
-  barrier_free: z.boolean(),
-  building_id: z.string().min(1),
-  id: z.string(),
-  is_outdoor: z.boolean(),
-  name: z.string().min(1),
-  storey: z.number().int(),
-  width: z.number(),
-  x1: z.number(),
-  x2: z.number(),
-  y1: z.number(),
-  y2: z.number(),
-});
-
-export const createCorridorSchema = corridorSchema.omit({ id: true });
-
-export const updateCorridorSchema = createCorridorSchema.partial();
-
-export type Corridor = z.infer<typeof corridorSchema>;
-export type CreateCorridorInput = z.infer<typeof createCorridorSchema>;
-export type UpdateCorridorInput = z.infer<typeof updateCorridorSchema>;
-
-/** A corridor row as the API returns it (see `buildingRowSchema`). */
+/**
+ * A corridor row as the API returns it: the columns, unconstrained beyond their
+ * types (see `buildingRowSchema` for why). The base definition; the write shape
+ * narrows it.
+ */
 export const corridorRowSchema = z.object({
   barrier_free: z.boolean(),
   building_id: z.string(),
@@ -41,6 +22,22 @@ export const corridorRowSchema = z.object({
 });
 
 export type CorridorRow = z.infer<typeof corridorRowSchema>;
+
+/** A corridor on a storey of a building. */
+export const corridorSchema = corridorRowSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .extend({
+    building_id: z.string().min(1),
+    name: z.string().min(1),
+  });
+
+export const createCorridorSchema = corridorSchema.omit({ id: true });
+
+export const updateCorridorSchema = createCorridorSchema.partial();
+
+export type Corridor = z.infer<typeof corridorSchema>;
+export type CreateCorridorInput = z.infer<typeof createCorridorSchema>;
+export type UpdateCorridorInput = z.infer<typeof updateCorridorSchema>;
 
 /** Payload of `GET /navigator/corridors`. */
 export const corridorsResponseSchema = z.object({

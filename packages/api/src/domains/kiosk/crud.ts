@@ -8,6 +8,7 @@ import { kioskKindSchema } from './config';
  */
 export const createKioskSchema = z.object({
   config: z.unknown().optional(),
+  enabled: z.boolean().optional(),
   kind: kioskKindSchema,
   machineId: z.string().min(1).max(64),
   name: z.string().min(1),

@@ -986,7 +986,8 @@
                   "metadata": {
                     "type": "object",
                     "propertyNames": {
-                      "type": "string"
+                      "type": "string",
+                      "maxLength": 64
                     },
                     "additionalProperties": {}
                   },
@@ -1275,7 +1276,8 @@
             "name": "search",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 200
             },
             "allowEmptyValue": true,
             "allowReserved": true
@@ -4272,7 +4274,8 @@
                 "properties": {
                   "apiToken": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 32,
+                    "maxLength": 128
                   },
                   "lastResetReason": {
                     "anyOf": [
@@ -5097,7 +5100,8 @@
                 "properties": {
                   "apiToken": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 32,
+                    "maxLength": 128
                   },
                   "lastResetReason": {
                     "anyOf": [
@@ -5749,7 +5753,7 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "format": "uri"
+                    "pattern": "^https:\\/\\/"
                   }
                 },
                 "required": [
@@ -5979,7 +5983,7 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "format": "uri"
+                    "pattern": "^https:\\/\\/"
                   }
                 },
                 "required": [
@@ -8468,6 +8472,9 @@
                 "type": "object",
                 "properties": {
                   "config": {},
+                  "enabled": {
+                    "type": "boolean"
+                  },
                   "kind": {
                     "enum": [
                       "tv",
@@ -16234,8 +16241,7 @@
                             "type": "boolean"
                           },
                           "name": {
-                            "type": "string",
-                            "minLength": 1
+                            "type": "string"
                           },
                           "x": {
                             "type": "number"
@@ -16260,21 +16266,31 @@
                         "type": "object",
                         "properties": {
                           "colorhex": {
+                            "type": "string"
+                          },
+                          "createdAt": {
                             "type": "string",
-                            "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "id": {
                             "type": "string"
                           },
                           "name": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
                             "type": "string",
-                            "minLength": 1
+                            "format": "date-time",
+                            "x-native-type": "date"
                           }
                         },
                         "required": [
                           "colorhex",
+                          "createdAt",
                           "id",
-                          "name"
+                          "name",
+                          "updatedAt"
                         ]
                       }
                     },
@@ -16284,13 +16300,19 @@
                         "type": "object",
                         "properties": {
                           "building_id": {
-                            "type": "string",
-                            "minLength": 1
+                            "type": "string"
                           },
                           "capacity": {
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "description": {
                             "type": "string"
@@ -16302,8 +16324,7 @@
                             "type": "boolean"
                           },
                           "name": {
-                            "type": "string",
-                            "minLength": 1
+                            "type": "string"
                           },
                           "rotation": {
                             "type": "number"
@@ -16326,8 +16347,14 @@
                             "maximum": 9007199254740991
                           },
                           "type_id": {
-                            "type": "string",
-                            "minLength": 1
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "x": {
                             "type": "number"
@@ -16364,8 +16391,12 @@
                             "type": "boolean"
                           },
                           "building_id": {
+                            "type": "string"
+                          },
+                          "createdAt": {
                             "type": "string",
-                            "minLength": 1
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "id": {
                             "type": "string"
@@ -16374,13 +16405,17 @@
                             "type": "boolean"
                           },
                           "name": {
-                            "type": "string",
-                            "minLength": 1
+                            "type": "string"
                           },
                           "storey": {
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "width": {
                             "type": "number"
@@ -16401,10 +16436,12 @@
                         "required": [
                           "barrier_free",
                           "building_id",
+                          "createdAt",
                           "id",
                           "is_outdoor",
                           "name",
                           "storey",
+                          "updatedAt",
                           "width",
                           "x1",
                           "x2",
@@ -16419,8 +16456,12 @@
                         "type": "object",
                         "properties": {
                           "building_id": {
+                            "type": "string"
+                          },
+                          "createdAt": {
                             "type": "string",
-                            "minLength": 1
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "id": {
                             "type": "string"
@@ -16436,8 +16477,12 @@
                             "maximum": 9007199254740991
                           },
                           "name": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
                             "type": "string",
-                            "minLength": 1
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "x": {
                             "type": "number"
@@ -16448,10 +16493,12 @@
                         },
                         "required": [
                           "building_id",
+                          "createdAt",
                           "id",
                           "max_storey",
                           "min_storey",
                           "name",
+                          "updatedAt",
                           "x",
                           "y"
                         ]
@@ -16463,8 +16510,12 @@
                         "type": "object",
                         "properties": {
                           "building_id": {
+                            "type": "string"
+                          },
+                          "createdAt": {
                             "type": "string",
-                            "minLength": 1
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "id": {
                             "type": "string"
@@ -16480,28 +16531,34 @@
                             "maximum": 9007199254740991
                           },
                           "name": {
+                            "type": "string"
+                          },
+                          "rotation": {
+                            "type": "number"
+                          },
+                          "updatedAt": {
                             "type": "string",
-                            "minLength": 1
+                            "format": "date-time",
+                            "x-native-type": "date"
                           },
                           "x": {
                             "type": "number"
                           },
                           "y": {
                             "type": "number"
-                          },
-                          "rotation": {
-                            "type": "number"
                           }
                         },
                         "required": [
                           "building_id",
+                          "createdAt",
                           "id",
                           "max_storey",
                           "min_storey",
                           "name",
+                          "rotation",
+                          "updatedAt",
                           "x",
-                          "y",
-                          "rotation"
+                          "y"
                         ]
                       }
                     }
@@ -18190,13 +18247,13 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "rotation": {
+                    "type": "number"
+                  },
                   "x": {
                     "type": "number"
                   },
                   "y": {
-                    "type": "number"
-                  },
-                  "rotation": {
                     "type": "number"
                   }
                 },
@@ -18205,9 +18262,9 @@
                   "max_storey",
                   "min_storey",
                   "name",
+                  "rotation",
                   "x",
-                  "y",
-                  "rotation"
+                  "y"
                 ]
               }
             }
@@ -19066,13 +19123,13 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "rotation": {
+                    "type": "number"
+                  },
                   "x": {
                     "type": "number"
                   },
                   "y": {
-                    "type": "number"
-                  },
-                  "rotation": {
                     "type": "number"
                   }
                 }
@@ -26689,13 +26746,7 @@
           }
         },
         "x-filc_group_name": "SystemMessage",
-        "x-filc_type_name": "@listof SystemMessage @field(.author, Author)",
-        "x-filc_auth": "true",
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
+        "x-filc_type_name": "@listof SystemMessage @field(.author, Author)"
       }
     },
     "/news/system-messages/{id}": {
@@ -41493,7 +41544,7 @@
           }
         ],
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {
@@ -41523,7 +41574,14 @@
                     }
                   },
                   "room": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "startingDay": {
                     "type": "string",
@@ -41533,14 +41591,7 @@
                     "type": "string",
                     "format": "uuid"
                   }
-                },
-                "required": [
-                  "date",
-                  "lessonIds",
-                  "room",
-                  "startingDay",
-                  "startingPeriod"
-                ]
+                }
               }
             }
           }
@@ -45132,7 +45183,7 @@
                   },
                   "macAddress": {
                     "type": "string",
-                    "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                    "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                   },
                   "nickname": {
                     "anyOf": [
@@ -45210,7 +45261,7 @@
                         },
                         "macAddress": {
                           "type": "string",
-                          "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                          "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                         },
                         "nickname": {
                           "anyOf": [
@@ -45575,7 +45626,7 @@
                           },
                           "macAddress": {
                             "type": "string",
-                            "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                            "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                           },
                           "nickname": {
                             "anyOf": [
@@ -46098,7 +46149,7 @@
                   },
                   "macAddress": {
                     "type": "string",
-                    "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                    "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                   },
                   "nickname": {
                     "anyOf": [
@@ -46173,7 +46224,7 @@
                         },
                         "macAddress": {
                           "type": "string",
-                          "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                          "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                         },
                         "nickname": {
                           "anyOf": [
@@ -46455,7 +46506,7 @@
                   },
                   "macAddress": {
                     "type": "string",
-                    "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                    "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                   }
                 },
                 "required": [
@@ -46501,7 +46552,7 @@
                         },
                         "macAddress": {
                           "type": "string",
-                          "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                          "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                         },
                         "updatedAt": {
                           "type": "string",
@@ -46761,7 +46812,7 @@
                           },
                           "macAddress": {
                             "type": "string",
-                            "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                            "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                           },
                           "updatedAt": {
                             "type": "string",
@@ -47249,7 +47300,7 @@
                   },
                   "macAddress": {
                     "type": "string",
-                    "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                    "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                   }
                 }
               }
@@ -47291,7 +47342,7 @@
                         },
                         "macAddress": {
                           "type": "string",
-                          "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                          "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                         },
                         "updatedAt": {
                           "type": "string",
@@ -51847,7 +51898,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                      "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                     }
                   },
                   "comment": {
@@ -51916,7 +51967,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                                "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                               }
                             },
                             {
@@ -52284,7 +52335,7 @@
                                 "type": "array",
                                 "items": {
                                   "type": "string",
-                                  "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                                  "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                                 }
                               },
                               {
@@ -52852,7 +52903,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                      "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                     }
                   },
                   "comment": {
@@ -52927,7 +52978,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "pattern": "^([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})$"
+                                "pattern": "^(?:[0-9a-fA-F]{12}|(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2})$"
                               }
                             },
                             {

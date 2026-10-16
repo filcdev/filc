@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import { periodSelectSchema } from './period';
+
 export const getLessonsForCohortParamsSchema = z.object({
   cohortId: z.uuid(),
 });
@@ -82,14 +84,6 @@ export const dayDefinitionRowSchema = z.object({
   updatedAt: z.date(),
 });
 
-/** The period an enriched lesson is scheduled in. */
-export const periodRefSchema = z.object({
-  endTime: z.string(),
-  id: z.string(),
-  period: z.number(),
-  startTime: z.string(),
-});
-
 /** The week definition an enriched lesson belongs to. */
 export const weekDefinitionRefSchema = z.object({
   id: z.string(),
@@ -98,25 +92,15 @@ export const weekDefinitionRefSchema = z.object({
   weeks: z.string().array(),
 });
 
-export const classroomRefSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  short: z.string(),
-});
-
-export const cohortRefSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  short: z.string(),
-});
-
-export const subjectRefSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  short: z.string(),
-});
-
-export const teacherRefSchema = z.object({
+/**
+ * A lightweight reference to a named entity that carries a short code — used
+ * for the classroom/cohort/subject/teacher projections on a linked lesson.
+ *
+ * One schema rather than four identical ones: they are the same projection of
+ * different tables, the field name at the use site is what says which, and four
+ * copies would let a change to one silently diverge from the rest.
+ */
+export const entityRefSchema = z.object({
   id: z.string(),
   name: z.string(),
   short: z.string(),
@@ -131,16 +115,16 @@ export const groupRefSchema = z.object({
 
 /** Enriched lesson payload of the `timetable.lessons.*` lookups. */
 export const enrichedLessonSchema = z.object({
-  classrooms: classroomRefSchema.array(),
-  cohorts: cohortRefSchema.array(),
+  classrooms: entityRefSchema.array(),
+  cohorts: entityRefSchema.array(),
   day: dayDefinitionRowSchema.optional(),
   groups: groupRefSchema.array(),
   groupsIds: z.string().array(),
   id: z.string(),
-  period: periodRefSchema.nullable(),
+  period: periodSelectSchema.nullable(),
   periodsPerWeek: z.number(),
-  subject: subjectRefSchema.nullable(),
-  teachers: teacherRefSchema.array(),
+  subject: entityRefSchema.nullable(),
+  teachers: entityRefSchema.array(),
   termDefinitionId: z.string().nullable(),
   weekDefinition: weekDefinitionRefSchema.nullable(),
   weeksDefinitionId: z.string(),
@@ -168,14 +152,14 @@ export const substitutionCandidatesResultSchema = z.object({
  * `#utils/timetable/enrich-lessons` returns.
  */
 export const linkedLessonSchema = z.object({
-  classrooms: classroomRefSchema.array(),
+  classrooms: entityRefSchema.array(),
   cohorts: z.string().array(),
   day: dayDefinitionRowSchema.optional(),
   id: z.string(),
-  period: periodRefSchema.nullable(),
+  period: periodSelectSchema.nullable(),
   periodsPerWeek: z.number(),
-  subject: subjectRefSchema.nullable(),
-  teachers: teacherRefSchema.array(),
+  subject: entityRefSchema.nullable(),
+  teachers: entityRefSchema.array(),
   termDefinitionId: z.string().nullable(),
   weeksDefinitionId: z.string(),
 });

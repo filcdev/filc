@@ -1,5 +1,8 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
-import type { Classroom } from '@filcdev/api/domains/navigator/classroom';
+import type {
+  Classroom,
+  ClassroomRow,
+} from '@filcdev/api/domains/navigator/classroom';
 import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { Lift } from '@filcdev/api/domains/navigator/lift';
@@ -70,7 +73,7 @@ const defaultCorridor = (): Corridor => ({
  *  preview. Used to build the live preview node + gizmo anchor without
  *  rebuilding the whole campus. Never mutates the graph. */
 export type MergedEntity =
-  | { kind: 'classroom'; entity: Classroom }
+  | { kind: 'classroom'; entity: ClassroomRow }
   | { kind: 'building'; entity: Building }
   | { kind: 'lift'; entity: Lift }
   | { kind: 'stairs'; entity: Stair }

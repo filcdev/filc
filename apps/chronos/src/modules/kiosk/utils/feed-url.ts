@@ -228,11 +228,19 @@ export function isPrivateAddress(address: string): boolean {
 const feedNotAllowed = () => badRequest('Feed URL is not allowed');
 
 /**
- * SSRF protection for the public petrik-news endpoint: only https URLs whose
- * hostname is a public DNS name resolving to non-private addresses may be
- * fetched. Fails closed on any DNS error.
+ * SSRF protection for the kiosk feed fetches: only https URLs whose hostname is
+ * a public DNS name resolving to non-private addresses are fetched, and the
+ * connection is pinned to the address that was checked.
+ *
+ * Pinning matters: resolving a name and then letting `fetch` resolve it again
+ * leaves a rebinding window, because the second lookup is free to answer with
+ * `127.0.0.1`. Connecting to the validated literal IP, with the hostname sent as
+ * `Host` and used as the TLS SNI name, closes it. Fails closed on any DNS error.
  */
-export async function assertAllowedFeedUrl(url: string): Promise<void> {
+export async function fetchAllowedFeedUrl(
+  url: string,
+  init: Omit<RequestInit, 'tls'> = {}
+): Promise<Response> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -269,7 +277,26 @@ export async function assertAllowedFeedUrl(url: string): Promise<void> {
     throw feedNotAllowed();
   });
 
+  if (addresses.length === 0) {
+    throw feedNotAllowed();
+  }
+
   if (addresses.some(({ address }) => isPrivateAddress(address))) {
     throw feedNotAllowed();
   }
+
+  // Every address is public, so any is safe to pin to. IPv4 first: it is the
+  // family a dual-stack host is virtually always reachable on, and pinning to
+  // an unreachable IPv6 address would fail the fetch outright.
+  const chosen = addresses.find(({ family }) => family === 4) ?? addresses[0];
+  const pinned = `https://${chosen.family === 6 ? `[${chosen.address}]` : chosen.address}${parsed.port ? `:${parsed.port}` : ''}${parsed.pathname}${parsed.search}`;
+
+  return fetch(pinned, {
+    ...init,
+    headers: {
+      ...Object.fromEntries(new Headers(init.headers)),
+      host: hostname,
+    },
+    tls: { serverName: hostname },
+  } as RequestInit);
 }

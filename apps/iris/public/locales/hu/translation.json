@@ -184,6 +184,7 @@
     "importSuccessTitle": "Sikeres importálás",
     "importSuccessMessage": "Az órarend importálva lett, és minden kapcsolódó adat frissítve lett.",
     "importErrorTitle": "Sikertelen importálás",
+    "loadError": "Nem sikerült betölteni az órarendet",
     "importInfo": "Fontos információk",
     "importInfoPoint1": "Csak OMAN-ból exportált XML fájlok támogatottak",
     "importInfoPoint2": "Az importálási folyamat frissíti az összes órarenddel kapcsolatos adatot, beleértve a csoportokat, tárgyakat, tanárokat és órákat",

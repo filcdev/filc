@@ -228,6 +228,14 @@ const buildContext = async (
   requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
 });
 
+/**
+ * Ceiling for any request body, enforced by Bun before the handler buffers it.
+ * The largest legitimate upload is the 20 MiB timetable import
+ * (`modules/timetable/import.ts`); Bun's own default is 128 MiB, which is a lot
+ * of memory to hand a single unauthenticated-shaped request.
+ */
+const MAX_REQUEST_BODY_BYTES = 25 * 1024 * 1024;
+
 export const server = Bun.serve<DeviceSocketData>({
   fetch: async (request, srv) => {
     const url = new URL(request.url);
@@ -265,6 +273,7 @@ export const server = Bun.serve<DeviceSocketData>({
 
     return final;
   },
+  maxRequestBodySize: MAX_REQUEST_BODY_BYTES,
   port: env.port,
   websocket: deviceSocketHandlers,
 });

@@ -1,5 +1,25 @@
 import z from 'zod';
 
+/**
+ * The per-type email/push toggles stored in
+ * `user_preferences.notification_preferences`. Declared first because
+ * `updateSettingsSchema` narrows it with `.partial()`: the column has to hold
+ * a complete record, so a caller may patch a subset but never store one.
+ */
+export const notificationPreferencesSchema = z.object({
+  announcement: z.boolean(),
+  blogPost: z.boolean(),
+  channelsEnabled: z.boolean(),
+  doorlockCardUsed: z.boolean(),
+  movedLesson: z.boolean(),
+  substitution: z.boolean(),
+  systemMessage: z.boolean(),
+});
+
+export type NotificationPreferences = z.infer<
+  typeof notificationPreferencesSchema
+>;
+
 export const paginationSchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
@@ -9,7 +29,10 @@ export const paginationSchema = z.object({
   unread: z
     .enum(['true', 'false'])
     .optional()
-    .transform((v) => v === 'true'),
+    // `undefined` must survive, or zod emits the key for an absent param and
+    // the handler's `unread !== undefined` check never short-circuits — which
+    // would filter the inbox to read rows only.
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
@@ -20,7 +43,7 @@ export type TimetableGroupDisplay =
 
 export const updateSettingsSchema = z.object({
   language: z.string().optional(),
-  notificationPreferences: z.record(z.string(), z.unknown()).optional(),
+  notificationPreferences: notificationPreferencesSchema.partial().optional(),
   theme: z.string().optional(),
   timetableClassColors: z.record(z.string(), z.number()).optional(),
   timetableGroupDisplay: z.enum(timetableGroupDisplayValues).optional(),
@@ -103,21 +126,6 @@ export const previewTestNotificationSchema = z.object({
 
 export type PreviewTestNotificationInput = z.infer<
   typeof previewTestNotificationSchema
->;
-
-/** The per-type email/push toggles stored in `user_preferences.notification_preferences`. */
-export const notificationPreferencesSchema = z.object({
-  announcement: z.boolean(),
-  blogPost: z.boolean(),
-  channelsEnabled: z.boolean(),
-  doorlockCardUsed: z.boolean(),
-  movedLesson: z.boolean(),
-  substitution: z.boolean(),
-  systemMessage: z.boolean(),
-});
-
-export type NotificationPreferences = z.infer<
-  typeof notificationPreferencesSchema
 >;
 
 /** One `notification` row: a single inbox entry. */

@@ -58,8 +58,10 @@ export const SearchPanel = memo(function SearchPanelImpl({
       return found;
     }
 
-    return found.filter((classroom) =>
-      selectedTypeIds.includes(classroom.type_id)
+    return found.filter(
+      (classroom) =>
+        classroom.type_id !== null &&
+        selectedTypeIds.includes(classroom.type_id)
     );
   }, [graph, query, resolve, selectedTypeIds, t]);
 

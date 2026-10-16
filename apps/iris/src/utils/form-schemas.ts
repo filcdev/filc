@@ -20,13 +20,6 @@ export const createCardSchema = cardBaseSchema.refine(
 
 export const updateCardSchema = cardBaseSchema;
 
-export const deviceSchema = z.object({
-  apiToken: z.string().min(1, 'API token is required'),
-  lastResetReason: z.string().nullable().optional(),
-  location: z.string().nullable().optional(),
-  name: z.string().min(1, 'Name is required'),
-});
-
 export const userFormSchema = z.object({
   nickname: z.string(),
   roles: z.array(z.string()),

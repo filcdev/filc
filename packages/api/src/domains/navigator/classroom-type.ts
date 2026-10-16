@@ -1,23 +1,43 @@
 import z from 'zod';
 
 /**
- * A classroom category; `colorhex` is the fill colour used in the 3D views.
+ * The colour a classroom type fills with in the 3D views.
  *
  * `#RRGGBBAA` is accepted alongside `#RRGGBB`: the upstream campus capture (and
  * so the imported rows) carries an alpha pair, and the 3D palette reads the
  * leading six digits (`packages/navigator-3d/src/kiosk/palette.ts`), so both
- * forms describe the same colour.
+ * forms describe the same colour. The read shape leaves it unconstrained, since
+ * whatever the capture wrote has to come back out.
  */
-export const classroomTypeSchema = z.object({
-  colorhex: z
-    .string()
-    .regex(
-      /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/,
-      'Colour must be a hex value like #1a2b3c or #1a2b3cff'
-    ),
+const colorhexPattern = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
+
+/**
+ * A classroom-type row as the API returns it: the columns, unconstrained beyond
+ * their types (see `buildingRowSchema` for why). The base definition; the write
+ * shape narrows it.
+ */
+export const classroomTypeRowSchema = z.object({
+  colorhex: z.string(),
+  createdAt: z.date(),
   id: z.string(),
-  name: z.string().min(1),
+  name: z.string(),
+  updatedAt: z.date(),
 });
+
+export type ClassroomTypeRow = z.infer<typeof classroomTypeRowSchema>;
+
+/** A classroom category; `colorhex` is the fill colour used in the 3D views. */
+export const classroomTypeSchema = classroomTypeRowSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .extend({
+    colorhex: z
+      .string()
+      .regex(
+        colorhexPattern,
+        'Colour must be a hex value like #1a2b3c or #1a2b3cff'
+      ),
+    name: z.string().min(1),
+  });
 
 export const createClassroomTypeSchema = classroomTypeSchema.omit({ id: true });
 
@@ -30,17 +50,6 @@ export type CreateClassroomTypeInput = z.infer<
 export type UpdateClassroomTypeInput = z.infer<
   typeof updateClassroomTypeSchema
 >;
-
-/** A classroom-type row as the API returns it (see `buildingRowSchema`). */
-export const classroomTypeRowSchema = z.object({
-  colorhex: z.string(),
-  createdAt: z.date(),
-  id: z.string(),
-  name: z.string(),
-  updatedAt: z.date(),
-});
-
-export type ClassroomTypeRow = z.infer<typeof classroomTypeRowSchema>;
 
 /** Payload of `GET /navigator/classroom-types`. */
 export const classroomTypesResponseSchema = z.object({

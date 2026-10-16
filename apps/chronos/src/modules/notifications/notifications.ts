@@ -17,6 +17,7 @@ import {
   sendEmail,
 } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
 
 export const listNotifications = base.notifications.list
   .use(requireAuthentication)
@@ -109,6 +110,27 @@ export const markAllAsRead = base.notifications.markAllAsRead
     return { ok: true as const };
   });
 
+/**
+ * Complete a stored preferences record from the defaults.
+ *
+ * Rows written before the update path merged a partial patch can be missing
+ * keys, and the response schema requires all of them — without this a user
+ * whose row was written that way could never open their settings again.
+ */
+const withCompletePreferences = <
+  T extends { notificationPreferences: unknown },
+>(
+  row: T
+) => ({
+  ...row,
+  notificationPreferences: {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...(row.notificationPreferences as Partial<
+      typeof DEFAULT_NOTIFICATION_PREFERENCES
+    >),
+  },
+});
+
 export const getNotificationSettings = base.notifications.settings
   .use(requireAuthentication)
   .handler(async ({ context }) => {
@@ -120,7 +142,7 @@ export const getNotificationSettings = base.notifications.settings
       .where(eq(userPreferences.userId, userId));
 
     if (prefs) {
-      return prefs;
+      return withCompletePreferences(prefs);
     }
 
     const [created] = await db
@@ -134,7 +156,7 @@ export const getNotificationSettings = base.notifications.settings
       });
     }
 
-    return created;
+    return withCompletePreferences(created);
   });
 
 export const updateNotificationSettings = base.notifications.updateSettings
@@ -154,14 +176,31 @@ export const updateNotificationSettings = base.notifications.updateSettings
     if (body.timetableView !== undefined) {
       values.timetableView = body.timetableView;
     }
-    if (body.notificationPreferences !== undefined) {
-      values.notificationPreferences = body.notificationPreferences;
-    }
     if (body.timetableClassColors !== undefined) {
       values.timetableClassColors = body.timetableClassColors;
     }
     if (body.timetableGroupDisplay !== undefined) {
       values.timetableGroupDisplay = body.timetableGroupDisplay;
+    }
+
+    // A patch may name a subset of the toggles, but the column has to hold a
+    // complete record: a stored object missing a key reads as `undefined`
+    // downstream, which the engine treats as an opt-out (and fails the
+    // response schema on read). Merge over what is stored, or the defaults.
+    const [existing] = await db
+      .select({
+        notificationPreferences: userPreferences.notificationPreferences,
+      })
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, userId))
+      .limit(1);
+
+    if (body.notificationPreferences !== undefined) {
+      values.notificationPreferences = {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        ...existing?.notificationPreferences,
+        ...body.notificationPreferences,
+      };
     }
 
     const [updated] = await db
@@ -171,7 +210,7 @@ export const updateNotificationSettings = base.notifications.updateSettings
       .returning();
 
     if (updated) {
-      return updated;
+      return withCompletePreferences(updated);
     }
 
     const [created] = await db
@@ -185,7 +224,7 @@ export const updateNotificationSettings = base.notifications.updateSettings
       });
     }
 
-    return created;
+    return withCompletePreferences(created);
   });
 
 export const registerFcmToken = base.notifications.fcmTokens.register
@@ -216,9 +255,9 @@ export const registerFcmToken = base.notifications.fcmTokens.register
 export const testNotification = base.notifications.test
   .use(requireAuthentication)
   .handler(async ({ context }) => {
-    if (env.mode !== 'development') {
+    if (!env.enableTestNotifications) {
       throw forbidden(
-        'Test notifications can only be sent in development mode'
+        'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
       );
     }
 
@@ -257,6 +296,7 @@ export const testNotification = base.notifications.test
       channelsEnabled: prefs?.notificationPreferences?.channelsEnabled ?? true,
       content: notif.content,
       email: userRecords[0]?.email ?? '',
+      language: prefs?.language ?? 'hu',
       notificationId: notif.id,
       title: notif.title,
       type: 'test',
@@ -344,9 +384,9 @@ async function resolveTestTarget(
 export const sendTestNotification = base.notifications.sendTest
   .use(requireAuthentication)
   .handler(async ({ context, input }) => {
-    if (env.mode !== 'development') {
+    if (!env.enableTestNotifications) {
       throw forbidden(
-        'Test notifications can only be sent in development mode'
+        'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
       );
     }
 
@@ -391,9 +431,9 @@ export const sendTestNotification = base.notifications.sendTest
 export const previewTestNotification = base.notifications.previewTest
   .use(requireAuthentication)
   .handler(async ({ input }) => {
-    if (env.mode !== 'development') {
+    if (!env.enableTestNotifications) {
       throw forbidden(
-        'Test notifications can only be previewed in development mode'
+        'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
       );
     }
 

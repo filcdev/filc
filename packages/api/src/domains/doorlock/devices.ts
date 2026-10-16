@@ -7,7 +7,13 @@ export type IdParamInput = z.infer<typeof idParamSchema>;
 
 /** Payload for creating or updating a doorlock device. */
 export const devicePayloadSchema = z.object({
-  apiToken: z.string().min(1, 'API token is required'),
+  // The token is the device's only credential and grants its card database, so
+  // a guessable one is a door. The admin UI generates a UUID; this keeps a
+  // hand-typed token in the same strength class.
+  apiToken: z
+    .string()
+    .min(32, 'API token must be at least 32 characters')
+    .max(128),
   lastResetReason: z.string().trim().optional().nullable(),
   location: z.string().trim().optional().nullable(),
   name: z.string().min(1, 'Device name is required'),
