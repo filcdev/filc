@@ -12,7 +12,10 @@ import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { forbidden, notFound } from '#utils/http';
 import { sendPush } from '#utils/notifications/providers/fcm';
-import { renderEmail, sendEmail } from '#utils/notifications/providers/smtp';
+import {
+  renderPreviewEmail,
+  sendEmail,
+} from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
 
 export const listNotifications = base.notifications.list
@@ -372,7 +375,6 @@ export const sendTestNotification = base.notifications.sendTest
     if (body.channels.email) {
       results.email = await sendEmail(
         target.email,
-        subject,
         body.type,
         target.language,
         { content, title: subject },
@@ -401,7 +403,7 @@ export const previewTestNotification = base.notifications.previewTest
       body.content ??
       'This is a development test message. If you received this, everything works.';
 
-    const html = await renderEmail(body.type, body.language ?? 'hu', {
+    const html = await renderPreviewEmail(body.type, body.language ?? 'hu', {
       content,
       title: subject,
     });

@@ -1,0 +1,4 @@
+{
+  "extends": "@filcdev/tsconfig/react-library.json",
+  "include": ["src"]
+}

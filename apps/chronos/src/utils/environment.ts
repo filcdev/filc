@@ -75,6 +75,7 @@ const envShape = z.object({
     .min(0)
     .max(1)
     .default(0.1),
+  CHRONOS_SMTP_AUTH: z.enum(['basic', 'oauth2']).default('basic'),
   CHRONOS_SMTP_FROM_EMAIL: z.string().optional(),
   CHRONOS_SMTP_FROM_NAME: z.string().optional(),
 

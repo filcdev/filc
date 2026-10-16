@@ -32,7 +32,6 @@ async function processJob(job: DeliveryJob): Promise<boolean> {
 
   const emailPromise = sendEmail(
     job.email,
-    job.title,
     job.type,
     'hu',
     {

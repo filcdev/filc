@@ -12,9 +12,6 @@
       "!bun.lock"
     ]
   },
-  // `noNodejsModules` is off globally (chronos scripts and entry code need
-  // `node:*`), but enforced for the browser-bound and server-free workspaces
-  // via the override below.
   "overrides": [
     {
       "includes": [
