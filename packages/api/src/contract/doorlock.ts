@@ -156,6 +156,7 @@ export const doorlockContract = {
     triggerOta: oc
       .route(
         filcRoute({
+          auth: true,
           description: 'Trigger an OTA update on a specific device',
           method: 'POST',
           operationId: 'postDoorlockDevicesByIdUpdate',
@@ -181,6 +182,7 @@ export const doorlockContract = {
     updateAll: oc
       .route(
         filcRoute({
+          auth: true,
           description: 'Trigger an OTA update on all devices',
           method: 'POST',
           operationId: 'postDoorlockDevicesUpdate',

@@ -14,6 +14,7 @@ export const rolesContract = {
   create: oc
     .route(
       filcRoute({
+        auth: true,
         description: 'Create a new role',
         method: 'POST',
         operationId: 'postRoles',
@@ -27,6 +28,7 @@ export const rolesContract = {
   delete: oc
     .route(
       filcRoute({
+        auth: true,
         description: 'Delete a role',
         method: 'DELETE',
         operationId: 'deleteRolesByName',
@@ -39,6 +41,7 @@ export const rolesContract = {
   list: oc
     .route(
       filcRoute({
+        auth: true,
         description: 'List all roles with their permissions',
         method: 'GET',
         operationId: 'getRoles',
@@ -50,6 +53,7 @@ export const rolesContract = {
   permissions: oc
     .route(
       filcRoute({
+        auth: true,
         description: 'List all known permissions registered by the application',
         method: 'GET',
         operationId: 'getRolesPermissions',
@@ -61,6 +65,7 @@ export const rolesContract = {
   update: oc
     .route(
       filcRoute({
+        auth: true,
         description: 'Update permissions for a role',
         method: 'PATCH',
         operationId: 'patchRolesByName',

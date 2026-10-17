@@ -285,7 +285,6 @@ export const newsContract = {
     get: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get a single system message by ID',
           method: 'GET',
           operationId: 'getNewsSystemMessagesById',
