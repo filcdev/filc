@@ -33,10 +33,6 @@ export const openApiSpecOptions = {
     required: ['code', 'message', 'status'],
     type: 'object',
   }),
-  // The notifications endpoints are internal to the apps: they predate the
-  // OpenAPI metadata convention, so they are procedures without a public
-  // description. Drop the `filter` to publish them.
-  filter: ({ path }) => path[0] !== 'notifications',
   info: {
     description: 'API for consumption by the Filc app family.',
     title: 'Chronos backend API',

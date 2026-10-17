@@ -60,7 +60,6 @@ export const substitutionsContract = {
     list: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get all substitutions from the database.',
           method: 'GET',
           operationId: 'getTimetableSubstitutions',
@@ -86,7 +85,6 @@ export const substitutionsContract = {
     relevant: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get relevant substitutions from the database.',
           method: 'GET',
           operationId: 'getTimetableSubstitutionsRelevant',
@@ -98,7 +96,6 @@ export const substitutionsContract = {
     relevantForCohort: oc
       .route(
         filcRoute({
-          auth: true,
           description:
             'Get relevant substitutions for a given cohort from the database.',
           method: 'GET',

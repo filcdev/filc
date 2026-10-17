@@ -19,7 +19,14 @@ export default defineConfig({
     tanstackStart(),
     viteReact(),
     tailwindcss(),
-    devtools(),
+    // `consolePiping` is off because the pipe patches `console` in *both* realms
+    // and feeds each side's output to the other: a server log printed in the
+    // browser console is then piped back as a client log, and each round embeds
+    // the previous message — tens of thousands of lines a minute, which also
+    // stalls hydration. 0.8.5 is the latest release, so re-enable it when
+    // upstream stops echoing. Server logs still reach the terminal, browser
+    // logs still reach the browser console.
+    devtools({ consolePiping: { enabled: false } }),
     sentryVitePlugin({
       org: 'filc',
       project: Bun.env.PROD_DEPLOY ? 'iris' : 'iris-preview',

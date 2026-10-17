@@ -43,7 +43,6 @@ export const timetablesContract = {
     latestValid: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get the latest valid timetable.',
           method: 'GET',
           operationId: 'getTimetableTimetablesLatestValid',
@@ -55,7 +54,6 @@ export const timetablesContract = {
     list: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get all timetables from the database.',
           method: 'GET',
           operationId: 'getTimetableTimetables',
@@ -94,7 +92,6 @@ export const timetablesContract = {
     valid: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get all the latest valid timetables.',
           method: 'GET',
           operationId: 'getTimetableTimetablesValid',

@@ -10,6 +10,7 @@ export const importContract = {
   import: oc
     .route(
       filcRoute({
+        auth: true,
         description: 'Import a timetable from an Oman or aSc 2012 XML file.',
         method: 'POST',
         operationId: 'postTimetableImport',

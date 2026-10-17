@@ -7,6 +7,19 @@ import {
 } from '@tanstack/react-start/server';
 
 /**
+ * Absolute origin for a server render whose own origin could not be read.
+ *
+ * A relative origin is fatal for the callers below — oRPC builds a `URL` from
+ * it, and the browser constructor rejects a relative one outright. The
+ * development server is exactly that case: `getRequestUrl` answers nothing
+ * there, so a server render has no origin of its own to use. Development points
+ * straight at Chronos, which is also where the Vite proxy sends `/api`; behind
+ * the platform proxy the request origin is always available and this is unused.
+ */
+export const fallbackApiOrigin =
+  import.meta.env.VITE_API_ORIGIN ?? 'http://localhost:3001';
+
+/**
  * The origin the request being rendered came in on, e.g.
  * `https://filc.petrik.hu`.
  *
@@ -17,19 +30,17 @@ import {
  * origin, so parsing it would send a server render's API calls back to
  * localhost instead of out to Chronos.
  *
- * Returns `null` where there is no request to read — outside a server render,
- * such as during the build.
+ * Returns `null` where there is no request origin to read — the development
+ * server and the build both qualify — so callers use `fallbackApiOrigin`.
  */
 export const requestOrigin = () =>
   createIsomorphicFn()
     .server(() => {
       try {
-        // `xForwardedHost` is off by default in the accessor, and the host is
-        // the half that matters here: behind the platform proxy it is the
-        // public origin, while the request object still carries the internal
-        // one. `null` outside a request — during the build, say.
-        return getRequestUrl({ xForwardedHost: true, xForwardedProto: true })
-          .origin;
+        return getRequestUrl({
+          xForwardedHost: true,
+          xForwardedProto: true,
+        }).origin;
       } catch {
         return null;
       }
@@ -53,10 +64,10 @@ export const fetchLanguage = () =>
 export const fetchSession = (): Promise<AuthSession | null> =>
   createIsomorphicFn()
     .server(async () => {
-      const origin = requestOrigin();
-      if (!origin) {
-        return null;
-      }
+      // Without an origin to read — the development server — the read used to
+      // bail out, which left every server render looking signed out and sent the
+      // browser's guard to /auth/login on the next refresh.
+      const origin = requestOrigin() ?? fallbackApiOrigin;
 
       try {
         const response = await fetch(`${origin}/api/auth/get-session`, {

@@ -57,7 +57,6 @@ export const peopleContract = {
     getAllForTimetable: oc
       .route(
         filcRoute({
-          auth: true,
           description: 'Get cohorts for a given timetable from the database.',
           method: 'GET',
           operationId: 'getTimetableCohortsGetAllForTimetableByTimetableId',
@@ -72,7 +71,6 @@ export const peopleContract = {
     getForCohort: oc
       .route(
         filcRoute({
-          auth: true,
           description:
             'Get the groups of a cohort, marking the current user selection.',
           method: 'GET',
@@ -116,7 +114,6 @@ export const peopleContract = {
   subjects: oc
     .route(
       filcRoute({
-        auth: true,
         description: 'Get all subjects from the database.',
         method: 'GET',
         operationId: 'getTimetableSubjects',
