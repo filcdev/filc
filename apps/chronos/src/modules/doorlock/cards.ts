@@ -4,6 +4,10 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
+import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
 import { card } from '#modules/doorlock/schema';
 import {
   type DoorlockCardWithRelations,
@@ -49,7 +53,7 @@ export const listDoorlockUsers = base.doorlock.cards.users
 
 export const createCard = base.doorlock.cards.create
   .use(requireAuthorization(permissions.doorlockCardsWrite))
-  .handler(async ({ input: payload }) => {
+  .handler(async ({ context, input: payload }) => {
     const cardId = await db.transaction(async (tx) => {
       const [inserted] = await tx
         .insert(card)
@@ -77,6 +81,24 @@ export const createCard = base.doorlock.cards.create
           payload.cardData
         );
       }
+
+      // Never record cardData — it is the card secret.
+      await recordActivity(
+        context,
+        {
+          action: 'create',
+          entityId: inserted.id,
+          entityType: 'card',
+          metadata: {
+            enabled: payload.enabled,
+            frozen: payload.frozen,
+            name: payload.name,
+            userId: payload.userId ?? null,
+          },
+        },
+        tx
+      );
+
       return inserted.id;
     });
 
@@ -93,8 +115,10 @@ export const createCard = base.doorlock.cards.create
 
 export const updateCard = base.doorlock.cards.update
   .use(requireAuthorization(permissions.doorlockCardsWrite))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id: cardId, ...payload } = input;
+
+    const existing = assertCardExists(await fetchCardById(cardId));
 
     await db.transaction(async (tx) => {
       const [updated] = await tx
@@ -113,6 +137,35 @@ export const updateCard = base.doorlock.cards.update
       }
 
       await replaceCardDevices(tx, cardId, payload.authorizedDeviceIds);
+
+      // Never record cardData/card_uid — the card secret. Only diff the
+      // non-secret fields this call touched.
+      const before = {
+        authorizedDeviceIds: existing.authorizedDevices.map(
+          (authorizedDevice) => authorizedDevice.id
+        ),
+        enabled: existing.enabled,
+        frozen: existing.frozen,
+        name: existing.name,
+        userId: existing.userId,
+      };
+      const diff = diffActivity(
+        before,
+        { ...before, ...payload },
+        Object.keys(before)
+      );
+      if (diff) {
+        await recordActivity(
+          context,
+          {
+            action: 'update',
+            entityId: cardId,
+            entityType: 'card',
+            metadata: diff,
+          },
+          tx
+        );
+      }
     });
 
     const updatedCard = assertCardExists(await fetchCardById(cardId));
@@ -128,7 +181,7 @@ export const updateCard = base.doorlock.cards.update
 
 export const deleteCard = base.doorlock.cards.delete
   .use(requireAuthorization(permissions.doorlockCardsWrite))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const cardId = input.id;
 
     const existingCard = await fetchCardById(cardId);
@@ -143,6 +196,12 @@ export const deleteCard = base.doorlock.cards.delete
     if (!deleted) {
       throw notFound('Card not found');
     }
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: cardId,
+      entityType: 'card',
+    });
 
     await syncDevicesByIds(
       existingCard.authorizedDevices.map(

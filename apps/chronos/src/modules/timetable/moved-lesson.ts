@@ -5,6 +5,10 @@ import { and, eq, gte, inArray, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
+import {
   classroom,
   dayDefinition,
   lesson,
@@ -336,7 +340,7 @@ export const getRelevantMovedLessonsForCohort =
 
 export const createMovedLesson = base.timetable.movedLessons.create
   .use(requireAuthorization(permissions.movedLessonCreate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const body = input;
     const { startingPeriod, startingDay, room, date, lessonIds, comment } =
       body;
@@ -382,6 +386,23 @@ export const createMovedLesson = base.timetable.movedLessons.create
         );
       }
 
+      await recordActivity(
+        context,
+        {
+          action: 'create',
+          entityId: row.id,
+          entityType: 'movedLesson',
+          metadata: {
+            date: date.toISOString(),
+            lessonIds: lessonIds ?? [],
+            room: room ?? null,
+            startingDay: startingDay ?? null,
+            startingPeriod: startingPeriod ?? null,
+          },
+        },
+        tx
+      );
+
       return row;
     });
 
@@ -398,8 +419,14 @@ export const createMovedLesson = base.timetable.movedLessons.create
 
 export const updateMovedLesson = base.timetable.movedLessons.update
   .use(requireAuthorization(permissions.movedLessonUpdate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id, lessonIds, ...columns } = input;
+
+    // Read the row before the patch so the audit diff can carry real before values.
+    const [existing] = await db
+      .select()
+      .from(movedLesson)
+      .where(eq(movedLesson.id, id));
 
     await validateMovedLessonReferences({ ...columns, lessonIds });
 
@@ -422,7 +449,15 @@ export const updateMovedLesson = base.timetable.movedLessons.update
         throw notFound('Moved lesson not found');
       }
 
+      let oldLessonIds: string[] = [];
       if (lessonIds !== undefined) {
+        oldLessonIds = (
+          await tx
+            .select({ lessonId: movedLessonLessonMTM.lessonId })
+            .from(movedLessonLessonMTM)
+            .where(eq(movedLessonLessonMTM.movedLessonId, id))
+        ).map((r) => r.lessonId);
+
         await tx
           .delete(movedLessonLessonMTM)
           .where(eq(movedLessonLessonMTM.movedLessonId, id));
@@ -435,6 +470,28 @@ export const updateMovedLesson = base.timetable.movedLessons.update
             }))
           );
         }
+      }
+
+      // Only the fields this PATCH touched, judged against the pre-update row.
+      const diff = diffActivity(
+        existing,
+        columns,
+        ['comment', 'date', 'room', 'startingDay', 'startingPeriod'],
+        lessonIds === undefined
+          ? undefined
+          : { after: { lessonIds }, before: { lessonIds: oldLessonIds } }
+      );
+      if (diff) {
+        await recordActivity(
+          context,
+          {
+            action: 'update',
+            entityId: id,
+            entityType: 'movedLesson',
+            metadata: diff,
+          },
+          tx
+        );
       }
 
       return row;
@@ -464,7 +521,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
 
 export const deleteMovedLesson = base.timetable.movedLessons.delete
   .use(requireAuthorization(permissions.movedLessonDelete))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [deletedMovedLesson] = await db
@@ -475,6 +532,12 @@ export const deleteMovedLesson = base.timetable.movedLessons.delete
     if (!deletedMovedLesson) {
       throw notFound('Moved lesson not found');
     }
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: id,
+      entityType: 'movedLesson',
+    });
 
     cancelPendingNotification(id, 'moved_lesson');
 

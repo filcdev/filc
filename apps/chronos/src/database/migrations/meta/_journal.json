@@ -183,6 +183,13 @@
       "when": 1792151024241,
       "tag": "0025_mean_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792414381686,
+      "tag": "0026_unique_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }

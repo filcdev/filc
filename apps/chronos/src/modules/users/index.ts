@@ -3,6 +3,10 @@ import { arrayContains, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
+import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
 import { base } from '#orpc';
 import { getUserPermissionsBulk } from '#utils/authorization';
 import { notFound } from '#utils/http';
@@ -51,8 +55,17 @@ export const listUsers = base.users.list
 
 export const updateUser = base.users.update
   .use(requireAuthorization(permissions.usersManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id: userId, cohortId, nickname, roles } = input;
+
+    const [before] = await db
+      .select({
+        cohortId: user.cohortId,
+        nickname: user.nickname,
+        roles: user.roles,
+      })
+      .from(user)
+      .where(eq(user.id, userId));
 
     const [updatedUser] = await db
       .update(user)
@@ -66,6 +79,22 @@ export const updateUser = base.users.update
 
     if (!updatedUser) {
       throw notFound('User not found');
+    }
+
+    if (before) {
+      const diff = diffActivity(before, { cohortId, nickname, roles }, [
+        'cohortId',
+        'nickname',
+        'roles',
+      ]);
+      if (diff) {
+        await recordActivity(context, {
+          action: 'update',
+          entityId: userId,
+          entityType: 'user',
+          metadata: diff,
+        });
+      }
     }
 
     const permissionsByUser = await getUserPermissionsBulk([updatedUser.id]);

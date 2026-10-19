@@ -5,6 +5,10 @@ import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
+import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
 import { systemMessage, systemMessageCohortMtm } from '#modules/news/schema';
 import {
   cohortVisibilityCondition,
@@ -161,6 +165,17 @@ export const createSystemMessage = base.news.systemMessages.create
         );
       }
 
+      await recordActivity(
+        context,
+        {
+          action: 'create',
+          entityId: row.id,
+          entityType: 'systemMessage',
+          metadata: { title: row.title },
+        },
+        tx
+      );
+
       return row;
     });
 
@@ -174,7 +189,7 @@ export const createSystemMessage = base.news.systemMessages.create
 
 export const updateSystemMessage = base.news.systemMessages.update
   .use(requireAuthorization(permissions.systemMessagesManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
     const body: DateRangeUpdateBodyInput = input;
 
@@ -222,6 +237,34 @@ export const updateSystemMessage = base.news.systemMessages.update
       throw notFound('System message not found');
     }
 
+    // Only the fields this PATCH touched, judged against the pre-update row.
+    const diff = diffActivity(
+      existing,
+      body,
+      ['content', 'title', 'validFrom', 'validUntil'],
+      body.cohortIds === undefined
+        ? undefined
+        : {
+            after: { cohortIds: body.cohortIds },
+            before: {
+              cohortIds: (
+                await db
+                  .select({ cohortId: systemMessageCohortMtm.cohortId })
+                  .from(systemMessageCohortMtm)
+                  .where(eq(systemMessageCohortMtm.systemMessageId, id))
+              ).map((m) => m.cohortId),
+            },
+          }
+    );
+    if (diff) {
+      await recordActivity(context, {
+        action: 'update',
+        entityId: id,
+        entityType: 'systemMessage',
+        metadata: diff,
+      });
+    }
+
     if (body.cohortIds !== undefined) {
       // Clear-then-reinsert must not be observable half-done: a failure between
       // the two leaves the message with no targeting, i.e. visible to everyone.
@@ -260,7 +303,7 @@ export const updateSystemMessage = base.news.systemMessages.update
 
 export const deleteSystemMessage = base.news.systemMessages.delete
   .use(requireAuthorization(permissions.systemMessagesManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [deleted] = await db
@@ -273,6 +316,12 @@ export const deleteSystemMessage = base.news.systemMessages.delete
     }
 
     cancelPendingNotification(id, 'system_message');
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: id,
+      entityType: 'systemMessage',
+    });
 
     return { id };
   });

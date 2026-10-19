@@ -1,5 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
 import { requireAuthorization } from '#middleware/auth';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import { base } from '#orpc';
 import { rbac } from '#utils/authorization';
 import { badRequest, conflict, notFound } from '#utils/http';
@@ -28,7 +29,7 @@ export const listRoles = base.roles.list
 
 export const createRole = base.roles.create
   .use(requireAuthorization(permissions.rolesManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { name, permissions: rolePermissions } = input;
 
     const existingRoles = rbac.getAllRoles();
@@ -48,12 +49,19 @@ export const createRole = base.roles.create
       throw error;
     }
 
+    await recordActivity(context, {
+      action: 'create',
+      entityId: name,
+      entityType: 'role',
+      metadata: { can: rolePermissions },
+    });
+
     return { can: rolePermissions, name };
   });
 
 export const updateRole = base.roles.update
   .use(requireAuthorization(permissions.rolesManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { name: roleName, permissions: rolePermissions } = input;
     if (!roleName) {
       throw badRequest('Role name is required');
@@ -64,14 +72,28 @@ export const updateRole = base.roles.update
       throw notFound(`Role "${roleName}" not found`);
     }
 
+    const before = existingRoles[roleName]?.can ?? [];
+    const changed =
+      JSON.stringify([...before].sort()) !==
+      JSON.stringify([...rolePermissions].sort());
+
     await rbac.setPermissions(roleName, rolePermissions);
+
+    if (changed) {
+      await recordActivity(context, {
+        action: 'update',
+        entityId: roleName,
+        entityType: 'role',
+        metadata: { after: { can: rolePermissions }, before: { can: before } },
+      });
+    }
 
     return { can: rolePermissions, name: roleName };
   });
 
 export const deleteRole = base.roles.delete
   .use(requireAuthorization(permissions.rolesManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { name: roleName } = input;
 
     const existingRoles = rbac.getAllRoles();
@@ -80,6 +102,12 @@ export const deleteRole = base.roles.delete
     }
 
     await rbac.deleteRole(roleName);
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: roleName,
+      entityType: 'role',
+    });
 
     return { ok: true as const };
   });

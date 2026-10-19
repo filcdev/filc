@@ -7,6 +7,7 @@
  * renamed without a data migration.
  */
 export const permissions = {
+  activityLogRead: 'activity-log:read',
   announcementsCreate: 'announcements:create',
   bugReportsRead: 'bug-reports:read',
   bugReportsWrite: 'bug-reports:write',

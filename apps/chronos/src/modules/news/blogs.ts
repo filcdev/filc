@@ -5,6 +5,10 @@ import { and, count, eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
+import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
 import { blogPost } from '#modules/news/schema';
 import { ensureUniqueSlug, generateSlug } from '#modules/news/utils/schemas';
 import { base } from '#orpc';
@@ -180,12 +184,19 @@ export const createBlog = base.news.blogs.create
       });
     }
 
+    await recordActivity(context, {
+      action: 'create',
+      entityId: row.id,
+      entityType: 'blog',
+      metadata: { slug: row.slug, status: row.status, title: row.title },
+    });
+
     return row;
   });
 
 export const updateBlog = base.news.blogs.update
   .use(requireAuthorization(permissions.newsBlogsManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
     const body: BlogUpdateInput = input;
 
@@ -223,12 +234,27 @@ export const updateBlog = base.news.blogs.update
       throw notFound('Blog post not found');
     }
 
+    // Only the fields this PATCH touched, judged against the pre-update row.
+    const diff = diffActivity(existing, body, ['content', 'slug', 'title']);
+    if (diff) {
+      // ensureUniqueSlug may suffix the requested slug; record what applied.
+      if (diff.after.slug !== undefined && updated.slug) {
+        diff.after.slug = updated.slug;
+      }
+      await recordActivity(context, {
+        action: 'update',
+        entityId: id,
+        entityType: 'blog',
+        metadata: diff,
+      });
+    }
+
     return updated;
   });
 
 export const publishBlog = base.news.blogs.publish
   .use(requireAuthorization(permissions.newsBlogsManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [existing] = await db
@@ -254,6 +280,16 @@ export const publishBlog = base.news.blogs.publish
       throw notFound('Blog post not found');
     }
 
+    await recordActivity(context, {
+      action: 'update',
+      entityId: id,
+      entityType: 'blog',
+      metadata: {
+        after: { status: 'published' },
+        before: { status: existing.status },
+      },
+    });
+
     dispatchPendingNotification(id, 'blog_post', {
       slug: existing.slug,
       title: existing.title,
@@ -264,7 +300,7 @@ export const publishBlog = base.news.blogs.publish
 
 export const unpublishBlog = base.news.blogs.unpublish
   .use(requireAuthorization(permissions.newsBlogsManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [existing] = await db
@@ -290,6 +326,16 @@ export const unpublishBlog = base.news.blogs.unpublish
       throw notFound('Blog post not found');
     }
 
+    await recordActivity(context, {
+      action: 'update',
+      entityId: id,
+      entityType: 'blog',
+      metadata: {
+        after: { status: 'draft' },
+        before: { status: existing.status },
+      },
+    });
+
     cancelPendingNotification(id, 'blog_post');
 
     return updated;
@@ -297,7 +343,7 @@ export const unpublishBlog = base.news.blogs.unpublish
 
 export const deleteBlog = base.news.blogs.delete
   .use(requireAuthorization(permissions.newsBlogsManage))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [deleted] = await db
@@ -308,6 +354,12 @@ export const deleteBlog = base.news.blogs.delete
     if (!deleted) {
       throw notFound('Blog post not found');
     }
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: id,
+      entityType: 'blog',
+    });
 
     return { id };
   });

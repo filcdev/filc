@@ -5,6 +5,10 @@ import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
+import {
   cohort,
   dayDefinition,
   lesson,
@@ -453,7 +457,7 @@ export const getRelevantSubstitutionsForCohort =
 
 export const createSubstitution = base.timetable.substitutions.create
   .use(requireAuthorization(permissions.substitutionCreate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { lessonIds, date, substituter, comment } = input;
 
     const lessonCount = await db.$count(lesson, inArray(lesson.id, lessonIds));
@@ -500,6 +504,22 @@ export const createSubstitution = base.timetable.substitutions.create
         }));
 
         await tx.insert(substitutionLessonMTM).values(mtmValues);
+
+        await recordActivity(
+          context,
+          {
+            action: 'create',
+            entityId: insertedSubstitution.id,
+            entityType: 'substitution',
+            metadata: {
+              comment: comment ?? null,
+              date: date.toISOString(),
+              lessonIds,
+              substituter: substituter ?? null,
+            },
+          },
+          tx
+        );
 
         return insertedSubstitution;
       },
@@ -654,7 +674,7 @@ async function getDayDefinitionIdForDate(date: Date): Promise<string | null> {
 
 export const createManualSubstitution = base.timetable.substitutions.manual
   .use(requireAuthorization(permissions.substitutionCreate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const {
       cohortId,
       comment,
@@ -785,6 +805,23 @@ export const createManualSubstitution = base.timetable.substitutions.manual
           substitutionId: insertedSubstitution.id,
         });
 
+        await recordActivity(
+          context,
+          {
+            action: 'create',
+            entityId: insertedSubstitution.id,
+            entityType: 'substitution',
+            metadata: {
+              comment: comment ?? null,
+              date: date.toISOString(),
+              lessonIds: [lessonId],
+              manual: true,
+              substituter: substituter ?? null,
+            },
+          },
+          tx
+        );
+
         return insertedSubstitution;
       },
       { isolationLevel: 'serializable' }
@@ -811,7 +848,7 @@ export const createManualSubstitution = base.timetable.substitutions.manual
 
 export const updateSubstitution = base.timetable.substitutions.update
   .use(requireAuthorization(permissions.substitutionUpdate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id, ...body } = input;
 
     const [existing] = await db
@@ -850,8 +887,15 @@ export const updateSubstitution = base.timetable.substitutions.update
           .where(eq(substitution.id, id))
           .returning();
 
+        let oldLessonIds: string[] = [];
         // If lessonIds were explicitly provided, replace MTM relationships
         if (body.lessonIds != null) {
+          oldLessonIds = (
+            await tx
+              .select({ lessonId: substitutionLessonMTM.lessonId })
+              .from(substitutionLessonMTM)
+              .where(eq(substitutionLessonMTM.substitutionId, id))
+          ).map((r) => r.lessonId);
           // Delete existing relationships
           await tx
             .delete(substitutionLessonMTM)
@@ -866,6 +910,40 @@ export const updateSubstitution = base.timetable.substitutions.update
 
             await tx.insert(substitutionLessonMTM).values(mtmValues);
           }
+        }
+
+        // Only the fields this PATCH touched, judged against the pre-update row.
+        const diff = diffActivity(
+          {
+            comment: existing.comment,
+            date: existing.date.toISOString(),
+            substituter: existing.substituter,
+          },
+          {
+            comment: body.comment,
+            date: body.date?.toISOString(),
+            substituter: body.substituter,
+          },
+          ['comment', 'date', 'substituter'],
+          body.lessonIds == null
+            ? undefined
+            : {
+                after: { lessonIds: body.lessonIds },
+                before: { lessonIds: oldLessonIds },
+              }
+        );
+
+        if (updated && diff) {
+          await recordActivity(
+            context,
+            {
+              action: 'update',
+              entityId: id,
+              entityType: 'substitution',
+              metadata: diff,
+            },
+            tx
+          );
         }
 
         return updated;
@@ -914,7 +992,7 @@ export const updateSubstitution = base.timetable.substitutions.update
 
 export const deleteSubstitution = base.timetable.substitutions.delete
   .use(requireAuthorization(permissions.substitutionDelete))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [existingSubstitution] = await db
@@ -936,6 +1014,12 @@ export const deleteSubstitution = base.timetable.substitutions.delete
     if (!deletedSubstitution) {
       throw notFound('Substitution not found');
     }
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: id,
+      entityType: 'substitution',
+    });
 
     cancelPendingNotification(id, 'substitution');
     cancelPendingNotification(id, 'substitution_teacher');

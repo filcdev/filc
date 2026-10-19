@@ -3,13 +3,58 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { desc, eq } from 'drizzle-orm';
+import type { ChronosContext } from '#_types/globals';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
+import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
 import { device } from '#modules/doorlock/schema';
 import { base } from '#orpc';
 import { conflict, notFound } from '#utils/http';
 
 const logger = getLogger(['chronos', 'doorlock', 'devices']);
+
+/**
+ * Best-effort audit of a device update. Never records apiToken — it is the
+ * device credential, so a change is only flagged, never stored.
+ */
+async function auditDeviceUpdate(
+  context: ChronosContext,
+  id: string,
+  payload: DevicePayloadInput,
+  existing: typeof device.$inferSelect | undefined
+) {
+  const diff = diffActivity(
+    {
+      lastResetReason: existing?.lastResetReason ?? null,
+      location: existing?.location ?? null,
+      name: existing?.name ?? null,
+    },
+    {
+      lastResetReason: payload.lastResetReason ?? null,
+      location: payload.location ?? null,
+      name: payload.name ?? null,
+    },
+    ['lastResetReason', 'location', 'name']
+  );
+  const rotated = existing && payload.apiToken !== existing.apiToken;
+  if (diff || rotated) {
+    await recordActivity(context, {
+      action: 'update',
+      entityId: id,
+      entityType: 'device',
+      metadata: {
+        after: {
+          ...(diff?.after ?? {}),
+          ...(rotated ? { apiTokenRotated: true } : {}),
+        },
+        before: diff?.before ?? {},
+      },
+    });
+  }
+}
 
 function mapDevicePayload(payload: DevicePayloadInput) {
   return {
@@ -45,7 +90,7 @@ export const listDevices = base.doorlock.devices.list
 
 export const createDevice = base.doorlock.devices.create
   .use(requireAuthorization(permissions.doorlockDevicesWrite))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     try {
       const [inserted] = await db
         .insert(device)
@@ -57,6 +102,18 @@ export const createDevice = base.doorlock.devices.create
           message: 'Failed to create device',
         });
       }
+
+      // Never record apiToken — it is the device credential.
+      await recordActivity(context, {
+        action: 'create',
+        entityId: inserted.id,
+        entityType: 'device',
+        metadata: {
+          lastResetReason: inserted.lastResetReason,
+          location: inserted.location,
+          name: inserted.name,
+        },
+      });
 
       return inserted;
     } catch (error) {
@@ -74,8 +131,10 @@ export const createDevice = base.doorlock.devices.create
 
 export const updateDevice = base.doorlock.devices.update
   .use(requireAuthorization(permissions.doorlockDevicesWrite))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id, ...payload } = input;
+
+    const [existing] = await db.select().from(device).where(eq(device.id, id));
 
     try {
       const [updated] = await db
@@ -87,6 +146,8 @@ export const updateDevice = base.doorlock.devices.update
       if (!updated) {
         throw notFound('Device not found');
       }
+
+      await auditDeviceUpdate(context, id, payload, existing);
 
       return updated;
     } catch (error) {
@@ -107,7 +168,7 @@ export const updateDevice = base.doorlock.devices.update
 
 export const deleteDevice = base.doorlock.devices.delete
   .use(requireAuthorization(permissions.doorlockDevicesWrite))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const [deleted] = await db
       .delete(device)
       .where(eq(device.id, input.id))
@@ -116,6 +177,12 @@ export const deleteDevice = base.doorlock.devices.delete
     if (!deleted) {
       throw notFound('Device not found');
     }
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: input.id,
+      entityType: 'device',
+    });
 
     return deleted;
   });

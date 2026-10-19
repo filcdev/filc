@@ -20,6 +20,7 @@ import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscr
 import { Route as AuthErrorRouteImport } from './routes/auth/error'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
+import { Route as PrivateAdminActivityLogRouteImport } from './routes/_private/admin/activity-log'
 import { Route as PrivateAdminApiKeysRouteImport } from './routes/_private/admin/api-keys'
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
 import { Route as PrivateAdminKiosksRouteImport } from './routes/_private/admin/kiosks'
@@ -104,6 +105,11 @@ const AuthWelcomeRoute = AuthWelcomeRouteImport.update({
   id: '/auth/welcome',
   path: '/auth/welcome',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PrivateAdminActivityLogRoute = PrivateAdminActivityLogRouteImport.update({
+  id: '/activity-log',
+  path: '/activity-log',
+  getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
 const PrivateAdminApiKeysRoute = PrivateAdminApiKeysRouteImport.update({
   id: '/api-keys',
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
+  '/admin/activity-log': typeof PrivateAdminActivityLogRoute
   '/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
@@ -335,6 +342,7 @@ export interface FileRoutesByTo {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
+  '/admin/activity-log': typeof PrivateAdminActivityLogRoute
   '/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/welcome': typeof AuthWelcomeRoute
   '/_public/': typeof PublicIndexRoute
+  '/_private/admin/activity-log': typeof PrivateAdminActivityLogRoute
   '/_private/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/_private/admin/kiosks': typeof PrivateAdminKiosksRoute
@@ -424,6 +433,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
+    | '/admin/activity-log'
     | '/admin/api-keys'
     | '/admin/bug-reports'
     | '/admin/kiosks'
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/welcome'
+    | '/admin/activity-log'
     | '/admin/api-keys'
     | '/admin/bug-reports'
     | '/admin/kiosks'
@@ -510,6 +521,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/welcome'
     | '/_public/'
+    | '/_private/admin/activity-log'
     | '/_private/admin/api-keys'
     | '/_private/admin/bug-reports'
     | '/_private/admin/kiosks'
@@ -629,6 +641,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/welcome'
       preLoaderRoute: typeof AuthWelcomeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_private/admin/activity-log': {
+      id: '/_private/admin/activity-log'
+      path: '/activity-log'
+      fullPath: '/admin/activity-log'
+      preLoaderRoute: typeof PrivateAdminActivityLogRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/api-keys': {
       id: '/_private/admin/api-keys'
@@ -851,6 +870,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface PrivateAdminRouteRouteChildren {
+  PrivateAdminActivityLogRoute: typeof PrivateAdminActivityLogRoute
   PrivateAdminApiKeysRoute: typeof PrivateAdminApiKeysRoute
   PrivateAdminBugReportsRoute: typeof PrivateAdminBugReportsRoute
   PrivateAdminKiosksRoute: typeof PrivateAdminKiosksRoute
@@ -884,6 +904,7 @@ interface PrivateAdminRouteRouteChildren {
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
+  PrivateAdminActivityLogRoute: PrivateAdminActivityLogRoute,
   PrivateAdminApiKeysRoute: PrivateAdminApiKeysRoute,
   PrivateAdminBugReportsRoute: PrivateAdminBugReportsRoute,
   PrivateAdminKiosksRoute: PrivateAdminKiosksRoute,

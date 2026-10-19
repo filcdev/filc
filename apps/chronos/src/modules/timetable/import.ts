@@ -13,6 +13,7 @@ import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { timetableImportStore } from '#database/timetable-import-store';
 import { requireAuthorization } from '#middleware/auth';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { badRequest } from '#utils/http';
@@ -98,8 +99,14 @@ export const importRoute = base.timetable.import
   // Authorize before the upload is parsed and persisted: an unauthenticated
   // caller must not be able to trigger the import work.
   .use(requireAuthorization(permissions.importTimetable))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     await runImport(input);
+
+    await recordActivity(context, {
+      action: 'import',
+      entityType: 'timetable',
+      metadata: { name: input.name },
+    });
 
     return { ok: true } as const;
   });

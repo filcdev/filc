@@ -3,9 +3,14 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, type SQL, sql } from 'drizzle-orm';
+import type { ChronosContext } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import {
+  diffActivity,
+  recordActivity,
+} from '#modules/activity-log/utils/record';
 import {
   announcement,
   announcementCohortMtm,
@@ -69,6 +74,48 @@ const announcementKioskIds = async (id: string): Promise<string[]> =>
  * The kiosk feed only ever carries titled announcements, so a featured item
  * without a title would never reach the screen it was featured on.
  */
+/**
+ * Best-effort audit of an announcement update: only the fields the PATCH
+ * touched, judged against the row it started from, plus targeting lists.
+ */
+async function auditAnnouncementUpdate(
+  context: ChronosContext,
+  id: string,
+  body: AnnouncementUpdateInput,
+  existing: typeof announcement.$inferSelect
+) {
+  const diff = diffActivity(existing, body, [
+    'content',
+    'highlighted',
+    'kioskOnly',
+    'title',
+    'validFrom',
+    'validUntil',
+  ]);
+  const after = {
+    ...(body.cohortIds === undefined ? {} : { cohortIds: body.cohortIds }),
+    ...(body.kioskIds === undefined ? {} : { kioskIds: body.kioskIds }),
+    ...(diff?.after ?? {}),
+  };
+  const before = {
+    ...(body.cohortIds === undefined
+      ? {}
+      : { cohortIds: await announcementCohortIds(id) }),
+    ...(body.kioskIds === undefined
+      ? {}
+      : { kioskIds: await announcementKioskIds(id) }),
+    ...(diff?.before ?? {}),
+  };
+  if (Object.keys(after).length > 0) {
+    await recordActivity(context, {
+      action: 'update',
+      entityId: id,
+      entityType: 'announcement',
+      metadata: { after, before },
+    });
+  }
+}
+
 function assertFeaturedAnnouncementIsTitled(
   highlighted: boolean,
   title: string | null | undefined
@@ -304,6 +351,12 @@ export const createAnnouncement = base.news.announcements.create
       });
     }
 
+    await recordActivity(context, {
+      action: 'create',
+      entityId: created.id,
+      entityType: 'announcement',
+    });
+
     return {
       ...created,
       cohortIds: body.cohortIds ?? [],
@@ -313,7 +366,7 @@ export const createAnnouncement = base.news.announcements.create
 
 export const updateAnnouncement = base.news.announcements.update
   .use(requireAuthorization(permissions.announcementsCreate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
     const body: AnnouncementUpdateInput = input;
 
@@ -364,6 +417,8 @@ export const updateAnnouncement = base.news.announcements.update
       kioskIds: body.kioskIds,
     });
 
+    await auditAnnouncementUpdate(context, id, body, existing);
+
     const cohortIds = body.cohortIds ?? (await announcementCohortIds(id));
     const kioskIds = body.kioskIds ?? (await announcementKioskIds(id));
 
@@ -379,7 +434,7 @@ export const updateAnnouncement = base.news.announcements.update
 
 export const deleteAnnouncement = base.news.announcements.delete
   .use(requireAuthorization(permissions.announcementsCreate))
-  .handler(async ({ input }) => {
+  .handler(async ({ context, input }) => {
     const { id } = input;
 
     const [deleted] = await db
@@ -405,6 +460,12 @@ export const deleteAnnouncement = base.news.announcements.delete
     }
 
     cancelPendingNotification(id, 'announcement');
+
+    await recordActivity(context, {
+      action: 'delete',
+      entityId: id,
+      entityType: 'announcement',
+    });
 
     return { id };
   });

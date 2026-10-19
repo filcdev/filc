@@ -1,3 +1,4 @@
+import { activityLogSchema } from '#modules/activity-log/schema';
 import { bugReportSchema } from '#modules/bug-report/schema';
 import { doorlockSchema } from '#modules/doorlock/schema';
 import { kioskSchema } from '#modules/kiosk/schema';
@@ -21,6 +22,7 @@ import { wifiSchema } from '#modules/wifi/schema';
  * notifications adds itself to `modules`.
  */
 export const moduleSchemas = {
+  ...activityLogSchema,
   ...bugReportSchema,
   ...doorlockSchema,
   ...kioskSchema,
