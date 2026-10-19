@@ -43,6 +43,20 @@
           }
         }
       }
+    },
+    {
+      // Playwright specs print progress to the console and lean on `any` for
+      // JSON bodies the schemas do not live in this repo's typegraph.
+      // `noFocusedTests` stays on: `.only` would silently shrink the CI run.
+      "includes": ["apps/e2e/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off",
+            "noExplicitAny": "off"
+          }
+        }
+      }
     }
   ],
   "formatter": {

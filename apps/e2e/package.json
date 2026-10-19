@@ -1,0 +1,12 @@
+{
+  "name": "@filcdev/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "compose:test:up": "docker compose -f compose.test.yml up -d --wait"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { fileURLToPath, URL } from 'node:url';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
@@ -47,8 +48,10 @@ export default defineConfig({
     allowedHosts: true,
     host: true,
     port: 3000,
+    // The E2E suite boots its own Chronos on another port; local dev keeps the
+    // default.
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': process.env.IRIS_API_ORIGIN ?? 'http://localhost:3001',
     },
   },
 });

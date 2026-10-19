@@ -13,6 +13,7 @@
     "lint": "biome check --write .",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "prepare": "lefthook install --reset-hooks-path || true"
   },
   "workspaces": {
