@@ -17,7 +17,7 @@
     "@orpc/client": "catalog:",
     "@react-pdf/renderer": "^4.9.0",
     "@sentry/react": "^11.5.0",
-    "@sentry/vite-plugin": "^5.4.1",
+    "@sentry/vite-plugin": "^11.8.0",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-devtools": "^0.10.13",
     "@tanstack/react-form": "catalog:",
