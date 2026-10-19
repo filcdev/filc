@@ -312,24 +312,12 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
           ARRAY[]::text[]
         )`.as('lessonIds'),
         substitution,
-        // teacher: sql`
-        //   CASE
-        //     WHEN ${teacher.id} IS NOT NULL THEN
-        //       jsonb_build_object(
-        //         'id', ${teacher.id},
-        //         'firstName', ${teacher.firstName},
-        //         'lastName', ${teacher.lastName},
-        //         'short', ${teacher.short},
-        //         'gender', ${teacher.gender},
-        //         'userId', ${teacher.userId}
-        //       )
-        //     ELSE NULL
-        //   END
-        // `.as('teacher'),
         teacher: {
           email: teacher.email,
           firstName: teacher.firstName,
           gender: teacher.gender,
+          // `id` first: drizzle nulls a whole left-joined nested object when
+          // its first selected column is NULL (see the `teacher` table def).
           id: teacher.id,
           lastName: teacher.lastName,
           short: teacher.short,

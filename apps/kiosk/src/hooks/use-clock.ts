@@ -1,3 +1,4 @@
+import type { Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
 import { dayjs } from '@/utils/dayjs';
 
@@ -22,4 +23,17 @@ export function useClock(): [string, string] {
   }, []);
 
   return clockText;
+}
+
+/** A ticking clock as a Dayjs value, so time-based filters keep re-running even
+ *  when a refetch returns a structurally identical payload. */
+export function useNowTick(intervalMs: number): Dayjs {
+  const [now, setNow] = useState<Dayjs>(() => dayjs());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(dayjs()), intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+
+  return now;
 }

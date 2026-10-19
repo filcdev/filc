@@ -130,7 +130,10 @@ export function useUpdateBuilding({ onSaved }: MutationCallbacks = {}) {
   );
 }
 
-/** Delete a building; its classrooms, corridors, lifts and stairs cascade. */
+/** Delete a building. Corridors, lifts and stairs cascade at the database; the
+ *  rooms do not (deleting them also means cleaning up timetable references), so
+ *  the backend answers 409 ("Building still has rooms; delete them first") while
+ *  any room is still attached. */
 export function useDeleteBuilding({ onSaved }: MutationCallbacks = {}) {
   const invalidate = useInvalidateNavigator();
   const { t } = useTranslation();

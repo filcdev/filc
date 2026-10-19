@@ -8,7 +8,7 @@ import { TABLE } from '@/utils/constants';
 
 /** Today's substitutions, cycled a page at a time. */
 export function Substitutions() {
-  const { isError, isLoading, rows } = useTvSubstitutions();
+  const { data, isError, isLoading, rows } = useTvSubstitutions();
 
   const pageSize = TABLE.substitutions.pageSize;
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -17,11 +17,16 @@ export function Substitutions() {
     totalPages,
   });
 
-  if (isLoading) {
+  // Guard on `data`, not `isError`: React Query keeps the last successful
+  // `data` after a background refetch fails (it only flips `isError`), so a
+  // transient network blip would otherwise swap the whole board for the error
+  // state and blank the header until the next success. Fall through to the
+  // table so the retained rows keep rendering.
+  if (data === undefined && isLoading) {
     return <Loading />;
   }
 
-  if (isError) {
+  if (data === undefined && isError) {
     return <QueryError />;
   }
 
@@ -33,7 +38,7 @@ export function Substitutions() {
 
   return (
     <div className="flex h-full max-h-full max-w-full flex-col rounded-lg">
-      <div className="grow">
+      <div className="min-h-0 grow overflow-hidden">
         <table className="h-full w-full">
           <thead>
             <tr className="border-border border-b">
@@ -72,18 +77,20 @@ export function Substitutions() {
             {pageRows.map((row, index) => (
               <tr
                 className={`h-12 border-border border-b last:border-border/80 ${index % 2 === 0 ? 'bg-background/20' : 'bg-transparent'}`}
-                key={`${row.lesson}-${row.className}-${row.teacher}-${row.classroom}-${row.missing}`}
+                key={row.id}
               >
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
                   {row.lesson}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
-                  {row.teacher}
+                  {/* Tanár is the teacher whose lesson is substituted. */}
+                  {row.missing}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
+                  {/* Helyettes is the substitute; a cancelled row has none. */}
                   {row.cancelled
                     ? TV_STRINGS.substitutions.cancelled
-                    : row.missing}
+                    : row.teacher}
                 </td>
                 <td className="border-border py-2 text-center [&:not(:first-child)]:border-l">
                   {row.className}
