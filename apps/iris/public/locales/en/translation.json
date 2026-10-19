@@ -165,6 +165,7 @@
     "users": "Users",
     "roles": "Roles",
     "apiKeys": "API Keys",
+    "activityLog": "Activity log",
     "bugReports": "Bug reports",
     "developer": "Developer",
     "kiosks": "Kiosks",
@@ -725,6 +726,36 @@
     "error": "Failed to update preferences",
     "invalidToken": "Invalid or expired unsubscribe link"
   },
+  "activityLog": {
+    "title": "Activity Log",
+    "search": "Search",
+    "searchAria": "Search the activity log",
+    "searchPlaceholder": "Search actor email or id…",
+    "action": "Action",
+    "actionAria": "Filter by action",
+    "actionAll": "All actions",
+    "action_create": "Create",
+    "action_update": "Update",
+    "action_delete": "Delete",
+    "action_import": "Import",
+    "entityType": "Entity type",
+    "entityTypeAria": "Filter by entity type",
+    "entityTypePlaceholder": "e.g. timetable",
+    "dateFrom": "From",
+    "dateFromAria": "Filter entries from this date",
+    "dateTo": "To",
+    "dateToAria": "Filter entries until this date",
+    "createdAt": "Created at",
+    "actor": "Actor",
+    "entityId": "Entity ID",
+    "metadata": "Metadata",
+    "details": "Details",
+    "metadataToggleAria": "Toggle metadata details",
+    "empty": "No activity found",
+    "prevPageAria": "Previous page",
+    "nextPageAria": "Next page",
+    "pageInfo": "Page {{page}} of {{pageCount}} · {{total}} entries"
+  },
   "apiKeys": {
     "title": "API Keys",
     "description": "Keys let scripts and tools act as you. Treat each one like a password.",
@@ -1051,7 +1082,8 @@
       "importError": "Import failed",
       "exportError": "Export failed",
       "invalidFile": "The selected file is not a valid navigator export"
-    }
+    },
+    "deleteConflictError": "Can't delete the building: remove its rooms first."
   },
   "kiosk": {
     "title": "Kiosks",

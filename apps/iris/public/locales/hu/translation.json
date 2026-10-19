@@ -147,6 +147,7 @@
     "users": "Felhasználók",
     "roles": "Szerepkörök",
     "apiKeys": "API-kulcsok",
+    "activityLog": "Tevékenységi napló",
     "bugReports": "Hibajelentések",
     "developer": "Fejlesztő",
     "kiosks": "Kijelzők",
@@ -725,8 +726,38 @@
     "error": "Nem sikerült frissíteni a beállításokat",
     "invalidToken": "Érvénytelen vagy lejárt leiratkozási link"
   },
+  "activityLog": {
+    "title": "Tevékenységi napló",
+    "search": "Keresés",
+    "searchAria": "Keresés a tevékenységi naplóban",
+    "searchPlaceholder": "Keresés szereplő e-mail vagy azonosító alapján…",
+    "action": "Művelet",
+    "actionAria": "Szűrés művelet szerint",
+    "actionAll": "Összes művelet",
+    "action_create": "Létrehozás",
+    "action_update": "Módosítás",
+    "action_delete": "Törlés",
+    "action_import": "Importálás",
+    "entityType": "Entitástípus",
+    "entityTypeAria": "Szűrés entitástípus szerint",
+    "entityTypePlaceholder": "pl. timetable",
+    "dateFrom": "Ettől",
+    "dateFromAria": "Szűrés ettől a naptól",
+    "dateTo": "Eddig",
+    "dateToAria": "Szűrés eddig a napig",
+    "createdAt": "Létrehozva",
+    "actor": "Szereplő",
+    "entityId": "Entitás azonosítója",
+    "metadata": "Metaadat",
+    "details": "Részletek",
+    "metadataToggleAria": "Metaadat részleteinek megjelenítése vagy elrejtése",
+    "empty": "Nem található tevékenység",
+    "prevPageAria": "Előző oldal",
+    "nextPageAria": "Következő oldal",
+    "pageInfo": "{{page}}. / {{pageCount}}. oldal · {{total}} bejegyzés"
+  },
   "apiKeys": {
-    "title": "API kulcsok",
+    "title": "API-kulcsok",
     "description": "A kulcsokkal szkriptek és eszközök cselekedhetnek a nevedben. Kezeld mindegyiket úgy, mint egy jelszót.",
     "createKey": "Kulcs létrehozása",
     "createTitle": "API kulcs létrehozása",
@@ -1051,7 +1082,8 @@
       "importError": "Hiba történt az importálás során",
       "exportError": "Hiba történt az exportálás során",
       "invalidFile": "A kiválasztott fájl nem érvényes navigátor export"
-    }
+    },
+    "deleteConflictError": "Az épület nem törölhető: előbb töröld a hozzá tartozó termeket!"
   },
   "kiosk": {
     "title": "Kijelzők",

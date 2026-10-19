@@ -1,3 +1,5 @@
+import { ERROR_CODE } from '@filcdev/api/errors';
+import { isDefinedError } from '@orpc/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -139,8 +141,14 @@ export function useDeleteBuilding({ onSaved }: MutationCallbacks = {}) {
   const { t } = useTranslation();
   return useMutation(
     orpc.navigator.buildings.delete.mutationOptions({
-      onError: (error: Error) => {
-        toast.error(error.message || t('navigator.deleteError'));
+      onError: (error) => {
+        // The 409 ("Building still has rooms; delete them first") is the
+        // expected refusal; show it translated, fall back to backend otherwise.
+        toast.error(
+          isDefinedError(error) && error.code === ERROR_CODE.CONFLICT
+            ? t('navigator.deleteConflictError')
+            : error.message || t('navigator.deleteError')
+        );
       },
       onSuccess: () => {
         toast.success(t('navigator.deleteSuccess'));
