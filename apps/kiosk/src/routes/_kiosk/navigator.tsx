@@ -14,7 +14,6 @@ import type {
 } from '@filcdev/navigator-3d/kiosk-view';
 import KioskView3D from '@filcdev/navigator-3d/kiosk-view';
 import { GraphPathBuilder } from '@filcdev/navigator-3d/path/path-builder';
-import { CANVAS_BG_LIGHT } from '@filcdev/navigator-3d/types/three/material-types';
 import type { Vec3 } from '@filcdev/navigator-3d/types/three/vector';
 import { Alert, AlertDescription } from '@filcdev/ui/components/alert';
 import { Badge } from '@filcdev/ui/components/badge';
@@ -22,6 +21,7 @@ import { Button } from '@filcdev/ui/components/button';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Moon, Sun } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VirtualKeyboardProvider } from '@/components/keyboard/virtual-keyboard-context';
 import { NavigatePanel } from '@/components/navigator/navigate-panel';
@@ -30,7 +30,11 @@ import { SearchPanel } from '@/components/navigator/search-panel';
 import { TypeHighlighter } from '@/components/navigator/type-highlighter';
 import { useKioskHeartbeat } from '@/hooks/kiosk';
 import { useIdleTimer } from '@/hooks/use-idle-timer';
-import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
+import {
+  useKioskLanguage,
+  useKioskTranslations,
+} from '@/hooks/use-kiosk-translations';
+import { useNavigatorCanvasBackground } from '@/hooks/use-navigator-theme';
 import type { Translator } from '@/utils/classroom-search';
 import { REFETCH_INTERVALS } from '@/utils/constants';
 import { orpc } from '@/utils/orpc';
@@ -80,6 +84,43 @@ type CanvasOverlayProps = {
   t: Translator;
 };
 
+/** Buttons for every language the campus translation bundles exist in; the
+ *  active one is highlighted. Chronos owns the list (`translations.available`). */
+function LanguageSwitcher({
+  onSelect,
+  t,
+}: {
+  onSelect: (lang: string) => void;
+  t: Translator;
+}) {
+  const { data } = useQuery({
+    ...orpc.navigator.translations.available.queryOptions({}),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const active = useKioskLanguage();
+
+  if (!data || data.items.length < 2) {
+    return null;
+  }
+
+  return (
+    <>
+      {data.items.map((lang) => (
+        <Button
+          aria-label={t('ui.kiosk.select_language')}
+          key={lang}
+          onClick={() => onSelect(lang)}
+          size="sm"
+          type="button"
+          variant={lang === active ? 'default' : 'outline'}
+        >
+          {lang.toUpperCase()}
+        </Button>
+      ))}
+    </>
+  );
+}
+
 /** The badges and buttons floating above the campus canvas. */
 function CanvasOverlay({
   hoveredName,
@@ -88,6 +129,17 @@ function CanvasOverlay({
   showClearHighlight,
   t,
 }: CanvasOverlayProps) {
+  const { theme } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const themeValue = theme === 'dark' ? 'dark' : 'light';
+  // Search-param writes keep `?machine=` and survive a reload.
+  const setSearch = (patch: Record<string, undefined | string>) => {
+    navigate({
+      search: (previous) => ({ ...previous, ...patch }),
+      to: '/navigator',
+    });
+  };
+
   return (
     <>
       {hoveredName && (
@@ -95,6 +147,27 @@ function CanvasOverlay({
           {hoveredName}
         </Badge>
       )}
+
+      <div className="absolute top-2 right-2 flex items-center space-x-2">
+        {/* Languages the campus translation bundles exist in, straight from
+            Chronos; the active one reads as selected. */}
+        <LanguageSwitcher onSelect={(lang) => setSearch({ lang })} t={t} />
+        <Button
+          aria-label={t('ui.kiosk.toggle_theme')}
+          onClick={() =>
+            setSearch({ theme: themeValue === 'dark' ? 'light' : 'dark' })
+          }
+          size="icon"
+          type="button"
+          variant="outline"
+        >
+          {themeValue === 'dark' ? (
+            <Sun className="size-4" />
+          ) : (
+            <Moon className="size-4" />
+          )}
+        </Button>
+      </div>
 
       <div className="absolute right-2 bottom-2 space-x-2">
         {showClearHighlight && (
@@ -152,6 +225,7 @@ function NavigatorKioskPage() {
   const { machine } = Route.useSearch();
   const { t } = useKioskTranslations();
   const heartbeat = useKioskHeartbeat(machine);
+  const canvasBackground = useNavigatorCanvasBackground();
 
   const graphQuery = useQuery({
     ...orpc.navigator.graph.queryOptions({}),
@@ -363,7 +437,7 @@ function NavigatorKioskPage() {
           <div className="flex h-full min-h-0 flex-col gap-4 xl:flex-row">
             <div className="relative min-h-[50%] flex-1 overflow-hidden rounded-xl border border-border md:min-h-0">
               <KioskView3D
-                background={CANVAS_BG_LIGHT}
+                background={canvasBackground}
                 className="h-full w-full"
                 emptyLabel={t('ui.common.no_data')}
                 graph={graph}

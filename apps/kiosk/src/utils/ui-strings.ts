@@ -32,6 +32,8 @@ export const UI_STRINGS: Record<string, string> = {
 
   'ui.kiosk.reset': 'Visszaállítás',
   'ui.kiosk.scan_to_open': 'Nyisd meg a telefonodon!',
+  'ui.kiosk.select_language': 'Nyelvválasztás',
+  'ui.kiosk.toggle_theme': 'Világos/sötét mód',
   'ui.navigate.back': 'Vissza',
   'ui.navigate.barrier_free': 'Akadálymentes útvonal',
   'ui.navigate.choose_room': 'Válassz termet',

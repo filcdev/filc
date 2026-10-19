@@ -1,11 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
+import { useSearch } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
 import type { Resolver, Translator } from '@/utils/classroom-search';
 import { orpc } from '@/utils/orpc';
 import { UI_STRINGS } from '@/utils/ui-strings';
 
-/** The kiosk speaks Hungarian; the campus codenames are stored per language. */
-const LANGUAGE = 'hu';
+/** Campus codenames are stored per language; the box falls back to Hungarian,
+ *  the kiosk's built-in language. */
+export const DEFAULT_LANGUAGE = 'hu';
+
+/** The language this box renders navigator texts in: `?lang=` on the URL, so it
+ *  survives a reload; every page under `_kiosk` shares the schema. */
+export function useKioskLanguage(): string {
+  const { lang } = useSearch({ strict: false }) as { lang?: string };
+  return lang ?? DEFAULT_LANGUAGE;
+}
 
 /**
  * Translator backed by the campus translation bundle Chronos serves for the
@@ -25,9 +34,11 @@ export function useKioskTranslations(): {
   resolve: Resolver;
   t: Translator;
 } {
+  const language = useKioskLanguage();
+
   const query = useQuery({
     ...orpc.navigator.translations.lang.queryOptions({
-      input: { lang: LANGUAGE },
+      input: { lang: language },
     }),
     staleTime: 5 * 60 * 1000,
   });
