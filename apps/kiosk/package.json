@@ -24,9 +24,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@filcdev/tsconfig": "workspace:*",
     "@filcdev/api": "workspace:*",
-    "@tanstack/router-plugin": "^1.168.42",
+    "@filcdev/tsconfig": "workspace:*",
+    "@tanstack/router-plugin": "^1.168.47",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
