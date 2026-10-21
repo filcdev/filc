@@ -38,7 +38,7 @@ export function BusDeparture({
   isError,
   isLoading,
 }: BusDepartureProps) {
-  if (isLoading) {
+  if (isLoading && !departure) {
     return (
       <DepartureRow displayName={displayName}>
         <Loading />
@@ -46,7 +46,9 @@ export function BusDeparture({
     );
   }
 
-  if (isError) {
+  // A failed background refetch keeps the last payload, so only show the error
+  // when there is no departure to fall back to.
+  if (isError && !departure) {
     return (
       <DepartureRow displayName={displayName}>
         <QueryError />

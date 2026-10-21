@@ -32,8 +32,9 @@ export const period = pgTable('period', {
 });
 
 export const dayDefinition = pgTable('day_definition', {
-  days: text('days').array(),
+  // `id` first for the same left-join reason as `teacher`.
   id: text('id').primaryKey(),
+  days: text('days').array(),
   name: text('name').notNull(),
   short: text('short').notNull(),
   ...timestamps,
@@ -64,14 +65,14 @@ export const subject = pgTable('subject', {
 });
 
 export const teacher = pgTable('teacher', {
-  email: text('email'),
-  firstName: text('first_name').notNull(),
-  gender: bit({ dimensions: 1 }),
   // `id` must stay the first field: drizzle's left-join result mapper nulls a
   // whole nested object when its first selected column is NULL, so a nullable
   // column up front (e.g. `email`) would collapse real joined rows into null
   // and turn substituted lessons into "cancelled" on every client.
   id: text('id').primaryKey(),
+  email: text('email'),
+  firstName: text('first_name').notNull(),
+  gender: bit({ dimensions: 1 }),
   lastName: text('last_name').notNull(),
   short: text('short').notNull(),
   userId: uuid('user_id').references((): PgColumn => user.id),

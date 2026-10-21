@@ -39,13 +39,15 @@ export function Header({ newsPolicy }: HeaderProps) {
 
 /** Announcement titles, scrolling slowly enough to be readable. */
 function News({ policy }: { policy: NewsTakeoverPolicy }) {
-  const { headlines, isError, isLoading } = useFeaturedNews(policy);
+  const { data, headlines, isError, isLoading } = useFeaturedNews(policy);
 
-  if (isLoading) {
+  if (isLoading && data === undefined) {
     return <Loading />;
   }
 
-  if (isError) {
+  // A failed background refetch keeps the last successful payload; only a
+  // first load with nothing to show is an error.
+  if (isError && data === undefined) {
     return <QueryError />;
   }
 
