@@ -316,13 +316,12 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
           ARRAY[]::text[]
         )`.as('lessonIds'),
         substitution,
+        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
         teacher: {
+          id: teacher.id,
           email: teacher.email,
           firstName: teacher.firstName,
           gender: teacher.gender,
-          // `id` first: drizzle nulls a whole left-joined nested object when
-          // its first selected column is NULL (see the `teacher` table def).
-          id: teacher.id,
           lastName: teacher.lastName,
           short: teacher.short,
           userId: teacher.userId,

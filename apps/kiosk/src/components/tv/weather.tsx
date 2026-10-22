@@ -5,13 +5,15 @@ import { getWindType } from '@/utils/wind-types';
 
 /** Current conditions at the school, proxied through Chronos. */
 export function Weather() {
-  const { data, isError, isLoading } = useKioskWeather();
+  const { data, isLoading } = useKioskWeather();
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <Loading />;
   }
 
-  if (isError || !data) {
+  // Keep the last reading through a failed background refetch; only a failed
+  // first load has nothing to show.
+  if (!data) {
     return <QueryError />;
   }
 

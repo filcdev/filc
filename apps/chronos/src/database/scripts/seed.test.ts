@@ -180,7 +180,8 @@ const [linkedTeacher, substituterTeacher] = await db
       userId: adminUser.id,
     },
     {
-      email: 'e2e-bob@e2e.filc',
+      // Deliberately no email: most real teachers lack one, and a nullable
+      // first column used to collapse the whole left-joined teacher row.
       firstName: 'Bence',
       id: '60000000-0000-4000-8000-000000000002',
       lastName: 'Pótló',
