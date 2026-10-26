@@ -1,9 +1,9 @@
 {
   "name": "@filcdev/filc",
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
+    "@biomejs/biome": "^2.6.2",
     "lefthook": "^2.2.2",
-    "turbo": "^2.11.9",
+    "turbo": "^2.11.10",
     "typescript": "catalog:"
   },
   "packageManager": "bun@1.4.3",
@@ -22,26 +22,26 @@
       "apps/*"
     ],
     "catalog": {
-      "@orpc/client": "1.15.7",
-      "@orpc/contract": "1.15.7",
-      "@orpc/experimental-ratelimit": "1.15.7",
-      "@orpc/openapi": "1.15.7",
-      "@orpc/server": "1.15.7",
-      "@orpc/tanstack-query": "1.15.7",
-      "@orpc/zod": "1.15.7",
+      "@orpc/client": "1.16.1",
+      "@orpc/contract": "1.16.1",
+      "@orpc/experimental-ratelimit": "1.16.1",
+      "@orpc/openapi": "1.16.1",
+      "@orpc/server": "1.16.1",
+      "@orpc/tanstack-query": "1.16.1",
+      "@orpc/zod": "1.16.1",
       "@tailwindcss/vite": "^4.3.3",
       "@tanstack/react-form": "^1.33.5",
-      "@tanstack/react-query": "^5.104.4",
+      "@tanstack/react-query": "^5.104.5",
       "@tanstack/react-router": "^1.170.45",
       "@tanstack/react-router-ssr-query": "^1.167.3",
-      "@types/bun": "^1.4.3",
+      "@types/bun": "^1.4.4",
       "@types/react": "^19.3.0",
       "@types/react-dom": "^19.3.0",
       "@vitejs/plugin-react": "^6.1.2",
-      "better-auth": "^1.7.11",
+      "better-auth": "^1.7.12",
       "dayjs": "^1.11.23",
       "fast-xml-parser": "^5.11.2",
-      "lucide-react": "^1.59.0",
+      "lucide-react": "^1.61.0",
       "next-themes": "^0.4.6",
       "react": "^19.3.1",
       "react-dom": "^19.3.1",
@@ -50,7 +50,7 @@
       "sonner": "^2.0.8",
       "tailwindcss": "^4.3.3",
       "typescript": "^7.0.2",
-      "vite": "^8.3.4",
+      "vite": "^8.3.5",
       "zod": "^4.6.7"
     }
   }
