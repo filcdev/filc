@@ -11,7 +11,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@better-auth/api-key": "1.7.11",
+    "@better-auth/api-key": "1.7.12",
     "better-auth": "catalog:"
   },
   "peerDependencies": {
