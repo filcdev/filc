@@ -3,7 +3,7 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
 import { siteTheme } from '#modules/theme/schema';
 import { base } from '#orpc';
@@ -32,10 +32,26 @@ export const getSiteTheme = base.theme.get.handler(async ({ context }) => {
 });
 
 export const updateSiteTheme = base.theme.update
-  .use(requireAuthentication)
   .use(requireAuthorization(permissions.rolesManage))
   .handler(async ({ context, input }) => {
     const { theme } = input;
+
+    const [existing] = await db
+      .select({ theme: siteTheme.theme })
+      .from(siteTheme)
+      .where(eq(siteTheme.id, 'default'))
+      .limit(1);
+
+    const before = (existing?.theme ?? 'default') as SiteTheme;
+
+    if (before === theme) {
+      logger.debug('site theme unchanged', {
+        requestId: context.requestId,
+        theme,
+        userId: context.user?.id,
+      });
+      return { theme };
+    }
 
     const [row] = await db
       .insert(siteTheme)
@@ -47,8 +63,9 @@ export const updateSiteTheme = base.theme.update
       .returning({ theme: siteTheme.theme });
 
     logger.info('site theme updated', {
+      from: before,
       requestId: context.requestId,
-      theme,
+      to: theme,
       userId: context.user?.id,
     });
 
@@ -56,7 +73,7 @@ export const updateSiteTheme = base.theme.update
       action: 'update',
       entityId: 'default',
       entityType: 'site-theme',
-      metadata: { theme },
+      metadata: { after: theme, before },
     });
 
     return { theme: row.theme as SiteTheme };
