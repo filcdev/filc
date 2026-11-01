@@ -170,7 +170,33 @@
     "developer": "Developer",
     "kiosks": "Kiosks",
     "navigator": "Navigator",
-    "wifi": "WiFi"
+    "wifi": "WiFi",
+    "appearance": "Appearance"
+  },
+  "siteTheme": {
+    "title": "Site theme",
+    "description": "Apply a seasonal skin across the whole site.",
+    "heroTitle": "Give the site a seasonal look",
+    "heroDescription": "Pick a theme and it applies to everyone instantly — no reload, signed-out visitors included.",
+    "default": {
+      "name": "Default",
+      "description": "The clean, everyday look with no seasonal styling."
+    },
+    "halloween": {
+      "name": "Halloween",
+      "description": "Warm parchment, pumpkin orange and deep purple for spooky season."
+    },
+    "christmas": {
+      "name": "Christmas",
+      "description": "Snow, crimson and pine green for the holidays."
+    },
+    "active": "Active",
+    "apply": "Apply theme",
+    "applying": "Applying…",
+    "saved": "Site theme updated",
+    "saveError": "Failed to update the site theme",
+    "previewLabel": "Preview",
+    "currentTheme": "Current theme"
   },
   "timetable": {
     "selectClass": "Select class",

@@ -152,7 +152,33 @@
     "developer": "Fejlesztő",
     "kiosks": "Kijelzők",
     "navigator": "Navigátor",
-    "wifi": "WiFi"
+    "wifi": "WiFi",
+    "appearance": "Megjelenés"
+  },
+  "siteTheme": {
+    "title": "Webhelytéma",
+    "description": "Idényjellegű megjelenés alkalmazása az egész webhelyre.",
+    "heroTitle": "Adj idényjellegű hangulatot az oldalnak",
+    "heroDescription": "Válassz egy témát, és az azonnal érvényes lesz mindenkire – újratöltés nélkül, a kijelentkezett látogatókat is beleértve.",
+    "default": {
+      "name": "Alapértelmezett",
+      "description": "A tiszta, hétköznapi megjelenés, idényjellegű stílus nélkül."
+    },
+    "halloween": {
+      "name": "Halloween",
+      "description": "Meleg pergamen, tök narancs és mélylila a Halloween hangulatához."
+    },
+    "christmas": {
+      "name": "Karácsony",
+      "description": "Hó, karmazsin és fenyőzöld az ünnepekre."
+    },
+    "active": "Aktív",
+    "apply": "Téma alkalmazása",
+    "applying": "Alkalmazás…",
+    "saved": "Webhelytéma frissítve",
+    "saveError": "Nem sikerült frissíteni a webhelytémát",
+    "previewLabel": "Előnézet",
+    "currentTheme": "Jelenlegi téma"
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
