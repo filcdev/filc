@@ -1,4 +1,5 @@
 @import "@filcdev/ui/globals.css";
+@import "./themes.css";
 @import "@fontsource-variable/outfit";
 
 @source "../../../packages/ui/src";

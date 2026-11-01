@@ -17,8 +17,10 @@ import { SettingsDialogProvider } from '@/components/settings-dialog-store';
 import { SystemMessageBanner } from '@/components/system-message-banner';
 import { CookiePopup } from '@/components/util/cookie-popup';
 import { useNotificationSettings } from '@/hooks/notifications';
+import { useSiteTheme } from '@/hooks/site-theme';
 import { useThemeSync } from '@/hooks/use-theme-sync';
 import { createI18n } from '@/utils/i18n';
+import { orpc, prefetch } from '@/utils/orpc';
 import { fetchLanguage, fetchSession } from '@/utils/request';
 import '@/global.css';
 import { setSentryUser } from '@/utils/telemetry';
@@ -26,10 +28,24 @@ import { setSentryUser } from '@/utils/telemetry';
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
 }>()({
-  beforeLoad: async () => ({
-    language: await fetchLanguage(),
-    session: await fetchSession(),
-  }),
+  beforeLoad: async ({ context }) => {
+    // The site theme is public and read during SSR so the `<html>` attribute
+    // is in the first paint; `prefetch` returns `undefined` (and drops the
+    // failed query) when the fetch is refused, so fall back to the default.
+    const [language, session, theme] = await Promise.all([
+      fetchLanguage(),
+      fetchSession(),
+      prefetch(
+        context.queryClient,
+        orpc.theme.get.queryOptions({ staleTime: 5 * 60_000 })
+      ),
+    ]);
+    return {
+      language,
+      session,
+      siteTheme: theme?.theme ?? 'default',
+    };
+  },
   component: RootComponent,
   head: () => ({
     links: [
@@ -86,7 +102,7 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
-  const { language, session } = Route.useRouteContext();
+  const { language, session, siteTheme } = Route.useRouteContext();
   const [i18n] = useState(() => createI18n(language));
 
   return (
@@ -94,7 +110,12 @@ function RootComponent() {
     // sets `class` and `color-scheme` on <html> before React hydrates, so the
     // server HTML and the first client render legitimately differ. React would
     // otherwise warn on every load and refuse to patch the attributes.
-    <html lang={language} suppressHydrationWarning translate="no">
+    <html
+      data-site-theme={siteTheme}
+      lang={language}
+      suppressHydrationWarning
+      translate="no"
+    >
       <head>
         <HeadContent />
       </head>
@@ -120,7 +141,16 @@ function AppShell() {
   // Fetch user preferences to sync theme on load
   const { data: settings } = useNotificationSettings(!!data?.session);
 
+  // The site-wide seasonal skin: prefetched during SSR, applied here so an
+  // admin's change takes effect live without a reload. This effect only runs
+  // in the browser, so it never touches `document` during a server render.
+  const { data: siteTheme } = useSiteTheme();
+
   useThemeSync(settings?.theme);
+
+  useEffect(() => {
+    document.documentElement.dataset.siteTheme = siteTheme?.theme ?? 'default';
+  }, [siteTheme]);
 
   useEffect(() => {
     if (data?.session && data?.user) {

@@ -51,8 +51,8 @@ export const api = rpcClient;
 export const prefetch = async <
   TQueryFnData,
   TError,
-  TData,
   TQueryKey extends QueryKey,
+  TData = TQueryFnData,
 >(
   queryClient: QueryClient,
   options: EnsureQueryDataOptions<TQueryFnData, TError, TData, TQueryKey>

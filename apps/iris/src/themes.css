@@ -1,0 +1,193 @@
+/*
+ * Seasonal site-wide skins, layered on top of the per-user light/dark setting
+ * (`@filcdev/ui/globals.css`). The `<html>` element carries `data-site-theme`
+ * (set server-side, applied live on the client), and the admin preview cards
+ * set the same attribute on a plain `<div>`, so these selectors deliberately
+ * work on ANY element rather than only `:root`.
+ *
+ * Every block is scoped as `:not(.dark)` OR `.dark` so no token bleeds between
+ * the two modes: the light pair never runs while next-themes has `.dark` on
+ * the element, and vice versa.
+ */
+
+/* ---------------------------------- Halloween ---------------------------------- */
+
+[data-site-theme="halloween"]:not(.dark) {
+  --background: oklch(0.97 0.02 85);
+  --foreground: oklch(0.28 0.02 160);
+  --card: oklch(0.985 0.015 85);
+  --card-foreground: oklch(0.28 0.02 160);
+  --popover: oklch(0.985 0.015 85);
+  --popover-foreground: oklch(0.28 0.02 160);
+  --primary: oklch(0.62 0.18 42);
+  --primary-foreground: oklch(0.98 0.01 85);
+  --secondary: oklch(0.55 0.12 300);
+  --secondary-foreground: oklch(0.97 0.01 300);
+  --muted: oklch(0.93 0.02 85);
+  --muted-foreground: oklch(0.5 0.02 160);
+  --accent: oklch(0.55 0.18 300);
+  --accent-foreground: oklch(0.97 0.01 300);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.88 0.02 85);
+  --input: oklch(0.88 0.02 85);
+  --ring: oklch(0.62 0.18 42);
+  --warning: oklch(0.82 0.17 75);
+  --warning-foreground: oklch(0.3 0.06 75);
+  --chart-1: oklch(0.62 0.18 42);
+  --chart-2: oklch(0.55 0.18 300);
+  --chart-3: oklch(0.5 0.1 160);
+  --chart-4: oklch(0.82 0.17 75);
+  --chart-5: oklch(0.4 0.05 85);
+  --sidebar: oklch(0.955 0.02 85);
+  --sidebar-foreground: oklch(0.28 0.02 160);
+  --sidebar-primary: oklch(0.62 0.18 42);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.55 0.12 300);
+  --sidebar-accent-foreground: oklch(0.97 0.01 300);
+  --sidebar-border: oklch(0.88 0.02 85);
+  --sidebar-ring: oklch(0.62 0.18 42);
+}
+
+[data-site-theme="halloween"].dark {
+  --background: oklch(0.18 0.03 310);
+  --foreground: oklch(0.95 0.02 85);
+  --card: oklch(0.22 0.03 310);
+  --card-foreground: oklch(0.95 0.02 85);
+  --popover: oklch(0.22 0.03 310);
+  --popover-foreground: oklch(0.95 0.02 85);
+  --primary: oklch(0.7 0.19 42);
+  --primary-foreground: oklch(0.2 0.03 310);
+  --secondary: oklch(0.3 0.06 300);
+  --secondary-foreground: oklch(0.95 0.02 85);
+  --muted: oklch(0.3 0.03 310);
+  --muted-foreground: oklch(0.72 0.02 85);
+  --accent: oklch(0.6 0.15 300);
+  --accent-foreground: oklch(0.97 0.01 300);
+  --destructive: oklch(0.63 0.22 25);
+  --border: oklch(0.95 0.02 85 / 12%);
+  --input: oklch(0.95 0.02 85 / 15%);
+  --ring: oklch(0.6 0.15 300);
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.2 0.05 75);
+  --chart-1: oklch(0.7 0.19 42);
+  --chart-2: oklch(0.6 0.15 300);
+  --chart-3: oklch(0.55 0.1 160);
+  --chart-4: oklch(0.78 0.15 75);
+  --chart-5: oklch(0.9 0.02 85);
+  --sidebar: oklch(0.2 0.03 310);
+  --sidebar-foreground: oklch(0.95 0.02 85);
+  --sidebar-primary: oklch(0.7 0.19 42);
+  --sidebar-primary-foreground: oklch(0.2 0.03 310);
+  --sidebar-accent: oklch(0.3 0.06 300);
+  --sidebar-accent-foreground: oklch(0.95 0.02 85);
+  --sidebar-border: oklch(0.95 0.02 85 / 12%);
+  --sidebar-ring: oklch(0.6 0.15 300);
+}
+
+/* ---------------------------------- Christmas ---------------------------------- */
+
+[data-site-theme="christmas"]:not(.dark) {
+  --background: oklch(0.985 0.005 220);
+  --foreground: oklch(0.3 0.04 160);
+  --card: oklch(0.995 0.003 220);
+  --card-foreground: oklch(0.3 0.04 160);
+  --popover: oklch(0.995 0.003 220);
+  --popover-foreground: oklch(0.3 0.04 160);
+  --primary: oklch(0.55 0.19 25);
+  --primary-foreground: oklch(0.98 0.01 220);
+  --secondary: oklch(0.55 0.09 160);
+  --secondary-foreground: oklch(0.97 0.01 160);
+  --muted: oklch(0.95 0.01 220);
+  --muted-foreground: oklch(0.5 0.03 160);
+  --accent: oklch(0.55 0.09 160);
+  --accent-foreground: oklch(0.97 0.01 160);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.9 0.02 220);
+  --input: oklch(0.9 0.02 220);
+  --ring: oklch(0.7 0.06 230);
+  --warning: oklch(0.85 0.14 90);
+  --warning-foreground: oklch(0.3 0.05 90);
+  --chart-1: oklch(0.55 0.19 25);
+  --chart-2: oklch(0.55 0.09 160);
+  --chart-3: oklch(0.7 0.06 230);
+  --chart-4: oklch(0.85 0.14 90);
+  --chart-5: oklch(0.45 0.08 160);
+  --sidebar: oklch(0.975 0.005 220);
+  --sidebar-foreground: oklch(0.3 0.04 160);
+  --sidebar-primary: oklch(0.55 0.19 25);
+  --sidebar-primary-foreground: oklch(0.98 0.01 220);
+  --sidebar-accent: oklch(0.55 0.09 160);
+  --sidebar-accent-foreground: oklch(0.97 0.01 160);
+  --sidebar-border: oklch(0.9 0.02 220);
+  --sidebar-ring: oklch(0.7 0.06 230);
+}
+
+[data-site-theme="christmas"].dark {
+  --background: oklch(0.22 0.04 160);
+  --foreground: oklch(0.97 0.005 220);
+  --card: oklch(0.26 0.04 160);
+  --card-foreground: oklch(0.97 0.005 220);
+  --popover: oklch(0.26 0.04 160);
+  --popover-foreground: oklch(0.97 0.005 220);
+  --primary: oklch(0.62 0.19 25);
+  --primary-foreground: oklch(0.97 0.005 220);
+  --secondary: oklch(0.32 0.05 160);
+  --secondary-foreground: oklch(0.97 0.005 220);
+  --muted: oklch(0.32 0.05 160);
+  --muted-foreground: oklch(0.75 0.02 220);
+  --accent: oklch(0.7 0.08 230);
+  --accent-foreground: oklch(0.2 0.04 160);
+  --destructive: oklch(0.63 0.22 25);
+  --border: oklch(0.97 0.005 220 / 12%);
+  --input: oklch(0.97 0.005 220 / 15%);
+  --ring: oklch(0.7 0.08 230);
+  --warning: oklch(0.8 0.13 90);
+  --warning-foreground: oklch(0.25 0.05 90);
+  --chart-1: oklch(0.62 0.19 25);
+  --chart-2: oklch(0.5 0.09 160);
+  --chart-3: oklch(0.7 0.08 230);
+  --chart-4: oklch(0.8 0.13 90);
+  --chart-5: oklch(0.9 0.01 220);
+  --sidebar: oklch(0.24 0.04 160);
+  --sidebar-foreground: oklch(0.97 0.005 220);
+  --sidebar-primary: oklch(0.62 0.19 25);
+  --sidebar-primary-foreground: oklch(0.97 0.005 220);
+  --sidebar-accent: oklch(0.32 0.05 160);
+  --sidebar-accent-foreground: oklch(0.97 0.005 220);
+  --sidebar-border: oklch(0.97 0.005 220 / 12%);
+  --sidebar-ring: oklch(0.7 0.08 230);
+}
+
+/*
+ * Decorative background art: a faint gradient plus a hand-drawn, repeating SVG
+ * tile (pumpkin/bat/moon/stars, or snowflakes/tree/snowman). Inline data URIs,
+ * `#` encoded as `%23` and angle brackets as `%3C`/`%3E`; low opacity so text
+ * stays readable. Cards keep their own `--card` background, so content never
+ * sits directly on the art.
+ */
+
+html[data-site-theme="halloween"] body {
+  background-image:
+    linear-gradient(
+      to bottom,
+      oklch(0.62 0.18 42 / 8%),
+      transparent 40%,
+      oklch(0.55 0.18 300 / 6%)
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='%23e8590c' opacity='0.06'%3E%3Cellipse cx='60' cy='60' rx='22' ry='18'/%3E%3Crect x='57' y='40' width='6' height='8' rx='2'/%3E%3Cpath d='M45 60 q3 -12 8 -12 q5 0 8 12'/%3E%3C/g%3E%3Cg fill='%237c3aed' opacity='0.07'%3E%3Cpath d='M150 40 A18 18 0 1 0 186 40 A13 13 0 1 1 150 40 Z'/%3E%3Cellipse cx='55' cy='150' rx='5' ry='8'/%3E%3Cpath d='M55 150 Q44 130 28 130 Q18 130 18 140 Q18 148 27 150 Q38 152 50 151 Z'/%3E%3Cpath d='M55 150 Q66 130 82 130 Q92 130 92 140 Q92 148 83 150 Q72 152 60 151 Z'/%3E%3C/g%3E%3Cg fill='%23f59e0b' opacity='0.08'%3E%3Cpath d='M30 40 l3 6 l6 1 l-4.5 4 l1 6 l-5.5 -3 l-5.5 3 l1 -6 l-4.5 -4 l6 -1 z'/%3E%3Cpath d='M120 150 l2 4 l4 0.6 l-3 2.8 l0.8 4 l-3.8 -2 l-3.8 2 l0.8 -4 l-3 -2.8 l4 -0.6 z'/%3E%3Ccircle cx='180' cy='130' r='2.5'/%3E%3Ccircle cx='90' cy='20' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+
+html[data-site-theme="christmas"] body {
+  background-image:
+    linear-gradient(
+      to bottom,
+      oklch(0.55 0.19 25 / 6%),
+      transparent 40%,
+      oklch(0.55 0.09 160 / 7%)
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='%230284c7' opacity='0.10'%3E%3Cpath d='M60 40 l3 8 l8 1 l-6 6 l2 8 l-7 -4 l-7 4 l2 -8 l-6 -6 l8 -1 z'/%3E%3Cpath d='M170 60 l3 8 l8 1 l-6 6 l2 8 l-7 -4 l-7 4 l2 -8 l-6 -6 l8 -1 z'/%3E%3Ccircle cx='40' cy='170' r='2.5'/%3E%3Ccircle cx='150' cy='30' r='2'/%3E%3C/g%3E%3Cg fill='%2316a34a' opacity='0.09'%3E%3Cpath d='M100 54 l14 13 l-14 13 z'/%3E%3Cpath d='M100 70 l20 18 l-20 18 z'/%3E%3Cpath d='M100 86 l26 22 l-26 22 z'/%3E%3Crect x='96' y='108' width='8' height='10' rx='1'/%3E%3C/g%3E%3Cg fill='%23e11d48' opacity='0.09'%3E%3Ccircle cx='160' cy='150' r='10'/%3E%3Ccircle cx='160' cy='166' r='13'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
