@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@filcdev/ui/components/sidebar';
+import { cn } from '@filcdev/ui/lib/utils';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
@@ -20,6 +21,7 @@ import {
   Bell,
   Bug,
   Building2,
+  ChevronDown,
   DoorOpen,
   Eye,
   FlaskConical,
@@ -42,7 +44,7 @@ import {
   Users,
   Wifi,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasPermission } from '@/hooks/use-has-permission';
 import { useWifiStatus } from '@/hooks/wifi';
@@ -57,6 +59,7 @@ type MenuItem = {
 };
 
 type MenuCategory = {
+  id: string;
   label: string;
   items: MenuItem[];
 };
@@ -75,6 +78,7 @@ function useAdminMenuCategories(): MenuCategory[] {
   return useMemo(
     () => [
       {
+        id: 'overview',
         items: [
           {
             icon: LayoutDashboard,
@@ -85,6 +89,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('dashboard.overview'),
       },
       {
+        id: 'timetable',
         items: [
           {
             icon: List,
@@ -114,6 +119,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.timetable'),
       },
       {
+        id: 'communications',
         items: [
           {
             icon: Bell,
@@ -131,6 +137,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.communications'),
       },
       {
+        id: 'doorlock',
         items: [
           {
             icon: DoorOpen,
@@ -160,6 +167,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.doorlock'),
       },
       {
+        id: 'management',
         items: [
           {
             icon: Users,
@@ -195,6 +203,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.management'),
       },
       {
+        id: 'navigator',
         items: [
           {
             icon: Sparkles,
@@ -265,6 +274,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.navigator'),
       },
       {
+        id: 'kiosks',
         items: [
           {
             icon: MonitorSmartphone,
@@ -278,6 +288,7 @@ function useAdminMenuCategories(): MenuCategory[] {
       ...(wifiEnabled
         ? [
             {
+              id: 'wifi',
               items: [
                 {
                   icon: Wifi,
@@ -311,6 +322,7 @@ function useAdminMenuCategories(): MenuCategory[] {
       ...(import.meta.env.MODE === 'development'
         ? [
             {
+              id: 'developer',
               items: [
                 {
                   icon: FlaskConical,
@@ -328,12 +340,58 @@ function useAdminMenuCategories(): MenuCategory[] {
   );
 }
 
+const CLOSED_SECTIONS_KEY = 'filc.admin-sidebar.closed';
+
+function readClosedSections(): Set<string> {
+  if (typeof window === 'undefined') {
+    return new Set();
+  }
+  try {
+    const stored = window.localStorage.getItem(CLOSED_SECTIONS_KEY);
+    if (!stored) {
+      return new Set();
+    }
+    const parsed: unknown = JSON.parse(stored);
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((id): id is string => typeof id === 'string')
+        : []
+    );
+  } catch {
+    return new Set();
+  }
+}
+
 export function AdminSidebar() {
   const { data: session } = useSession();
   const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
   const userPermissions = session?.user?.permissions;
   const categories = useAdminMenuCategories();
+  const [closedSections, setClosedSections] =
+    useState<Set<string>>(readClosedSections);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(
+      CLOSED_SECTIONS_KEY,
+      JSON.stringify([...closedSections])
+    );
+  }, [closedSections]);
+
+  const toggleSection = (id: string) => {
+    setClosedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const handleNavigate = (url: string) => {
     navigate({ to: url });
@@ -368,26 +426,62 @@ export function AdminSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        {visibleCategories.map((category) => (
-          <SidebarGroup key={category.label}>
-            <SidebarGroupLabel>{category.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {category.items.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      className="flex items-center gap-2"
-                      onClick={() => handleNavigate(item.url)}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {visibleCategories.map((category) => {
+          const isClosed = closedSections.has(category.id);
+          const isOpen = !isClosed;
+          const contentId = `admin-sidebar-${category.id}`;
+          return (
+            <SidebarGroup key={category.id}>
+              <SidebarGroupLabel
+                render={
+                  <button
+                    aria-controls={contentId}
+                    aria-expanded={isOpen}
+                    className="w-full cursor-pointer justify-between text-left hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    onClick={() => toggleSection(category.id)}
+                    type="button"
+                  >
+                    <span>{category.label}</span>
+                    <ChevronDown
+                      className={cn(
+                        'transition-transform duration-200',
+                        isClosed && '-rotate-90'
+                      )}
+                    />
+                  </button>
+                }
+              />
+              <div
+                className={cn(
+                  'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+                  isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                )}
+              >
+                <div
+                  aria-hidden={!isOpen}
+                  className="overflow-hidden"
+                  inert={!isOpen}
+                >
+                  <SidebarGroupContent id={contentId}>
+                    <SidebarMenu>
+                      {category.items.map((item) => (
+                        <SidebarMenuItem key={item.url}>
+                          <SidebarMenuButton
+                            className="flex items-center gap-2"
+                            onClick={() => handleNavigate(item.url)}
+                          >
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </div>
+              </div>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
       <SidebarFooter className="border-border border-t p-4">
         <div className="text-muted-foreground text-sm">
