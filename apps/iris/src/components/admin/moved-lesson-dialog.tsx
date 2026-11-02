@@ -365,6 +365,7 @@ const initialState = (
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
   manualCohortIds: item?.movedLesson.manualCohortIds ?? [],
+  manualSourceRoomId: item?.movedLesson.manualSourceRoomId ?? undefined,
   manualSubjectId: item?.movedLesson.manualSubjectId ?? undefined,
   manualTeacherIds: item?.movedLesson.manualTeacherIds ?? [],
   room: item?.movedLesson.room || undefined,
@@ -529,19 +530,29 @@ function CheckboxList<T extends { id: string }>({
 }
 
 type ManualSourceSectionProps = {
+  classrooms: ClassroomItem[];
   cohorts: Cohort[];
   form: AnyFormApi;
 };
 
-// The manual source: a subject, teachers and classes. Replaces every timetable
-// source field (date/cohort/from-room/lesson list) when the source is manual.
-// Self-contained so it owns its lookups and handlers; it only ever mounts in
-// manual mode, so the subject/teacher queries can run unconditionally.
-function ManualSourceSection({ cohorts, form }: ManualSourceSectionProps) {
+// The manual source: a subject, teachers, classes and (optionally) the room it
+// comes from. Replaces every timetable source field (date/cohort/from-room/
+// lesson list) when the source is manual. Self-contained so it owns its lookups
+// and handlers; it only ever mounts in manual mode, so the subject/teacher
+// queries can run unconditionally.
+function ManualSourceSection({
+  classrooms,
+  cohorts,
+  form,
+}: ManualSourceSectionProps) {
   const { t } = useTranslation();
   const formManualCohortIds = useStore(
     form.store,
     (state) => state.values.manualCohortIds
+  );
+  const formManualSourceRoomId = useStore(
+    form.store,
+    (state) => state.values.manualSourceRoomId
   );
   const formManualSubjectId = useStore(
     form.store,
@@ -561,6 +572,10 @@ function ManualSourceSection({ cohorts, form }: ManualSourceSectionProps) {
 
   const handleSubjectChange = (value: string) => {
     form.setFieldValue('manualSubjectId', value || undefined);
+  };
+
+  const handleSourceRoomChange = (value: string) => {
+    form.setFieldValue('manualSourceRoomId', value || undefined);
   };
 
   const handleTeacherToggle = (id: string, checked: boolean) => {
@@ -610,6 +625,12 @@ function ManualSourceSection({ cohorts, form }: ManualSourceSectionProps) {
         label={t('movedLesson.classes')}
         onChange={handleCohortToggle}
         selectedIds={formManualCohortIds ?? []}
+      />
+
+      <FromRoomField
+        classrooms={classrooms}
+        onChange={handleSourceRoomChange}
+        value={formManualSourceRoomId ?? ''}
       />
 
       {(!formManualSubjectId || needsClass) && (
@@ -1060,6 +1081,7 @@ async function submitMovedLesson(
   const sourceFields = isManual
     ? {
         manualCohortIds: value.manualCohortIds ?? [],
+        manualSourceRoomId: value.manualSourceRoomId,
         manualSubjectId: value.manualSubjectId,
         manualTeacherIds: value.manualTeacherIds ?? [],
       }
@@ -1304,8 +1326,9 @@ export function MovedLessonDialog({
     }
     setSource(next);
     form.setFieldValue('lessonIds', []);
-    form.setFieldValue('manualSubjectId', undefined);
     form.setFieldValue('manualCohortIds', []);
+    form.setFieldValue('manualSourceRoomId', undefined);
+    form.setFieldValue('manualSubjectId', undefined);
     form.setFieldValue('manualTeacherIds', []);
   };
 
@@ -1338,7 +1361,11 @@ export function MovedLessonDialog({
             }}
           >
             {isManual ? (
-              <ManualSourceSection cohorts={cohorts} form={form} />
+              <ManualSourceSection
+                classrooms={classrooms}
+                cohorts={cohorts}
+                form={form}
+              />
             ) : (
               <MovedLessonSourceFields
                 classrooms={classrooms}

@@ -59,6 +59,7 @@ export const updateSchema = z.object({
   date: z.coerce.date().optional(),
   lessonIds: lessonIdsSchema.optional(),
   manualCohortIds: manualCohortIdsSchema.optional(),
+  manualSourceRoomId: z.uuid().optional(),
   manualSubjectId: z.uuid().optional(),
   manualTeacherIds: manualTeacherIdsSchema.optional(),
   room: z.string().nullable().optional(),
@@ -84,6 +85,7 @@ export const movedLessonRowSchema = z.object({
   date: z.date(),
   id: z.uuid(),
   manualCohortIds: z.string().array(),
+  manualSourceRoomId: z.uuid().nullable(),
   manualSubjectId: z.uuid().nullable(),
   manualTeacherIds: z.string().array(),
   room: z.string().nullable(),
@@ -99,6 +101,7 @@ export const movedLessonWithRelationsSchema = z.object({
   manual: z
     .object({
       cohorts: entityRefSchema.array(),
+      sourceRoom: entityRefSchema.nullable(),
       subject: subjectSelectSchema.nullable(),
       teachers: entityRefSchema.array(),
     })
@@ -118,6 +121,7 @@ export const createMovedLessonSchema = z
     date: z.coerce.date(),
     lessonIds: lessonIdsSchema.optional(),
     manualCohortIds: manualCohortIdsSchema.optional(),
+    manualSourceRoomId: z.uuid().optional(),
     manualSubjectId: z.uuid().optional(),
     manualTeacherIds: manualTeacherIdsSchema.optional(),
     room: z.string().nullable().optional(),

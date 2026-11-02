@@ -123,7 +123,9 @@ function getMovedLessonRows(data: MovedLessonItem[]): MovedLessonRow[] {
             cohorts: ml.manual.cohorts,
             key: `${ml.movedLesson.id}-manual`,
             ml,
-            originalClassrooms: [],
+            originalClassrooms: ml.manual.sourceRoom
+              ? [ml.manual.sourceRoom]
+              : [],
             originalPeriod: null,
             subjectLabel:
               ml.manual.subject?.short ?? ml.manual.subject?.name ?? null,

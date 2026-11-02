@@ -46322,6 +46322,10 @@
                       "format": "uuid"
                     }
                   },
+                  "manualSourceRoomId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "manualSubjectId": {
                     "type": "string",
                     "format": "uuid"
@@ -46406,6 +46410,17 @@
                         "type": "string"
                       }
                     },
+                    "manualSourceRoomId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "manualSubjectId": {
                       "anyOf": [
                         {
@@ -46461,6 +46476,7 @@
                     "date",
                     "id",
                     "manualCohortIds",
+                    "manualSourceRoomId",
                     "manualSubjectId",
                     "manualTeacherIds",
                     "room",
@@ -47139,6 +47155,32 @@
                                       ]
                                     }
                                   },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "subject": {
                                     "anyOf": [
                                       {
@@ -47203,6 +47245,7 @@
                                 },
                                 "required": [
                                   "cohorts",
+                                  "sourceRoom",
                                   "subject",
                                   "teachers"
                                 ]
@@ -47239,6 +47282,17 @@
                                 "items": {
                                   "type": "string"
                                 }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               },
                               "manualSubjectId": {
                                 "anyOf": [
@@ -47295,6 +47349,7 @@
                               "date",
                               "id",
                               "manualCohortIds",
+                              "manualSourceRoomId",
                               "manualSubjectId",
                               "manualTeacherIds",
                               "room",
@@ -47835,6 +47890,10 @@
                       "format": "uuid"
                     }
                   },
+                  "manualSourceRoomId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "manualSubjectId": {
                     "type": "string",
                     "format": "uuid"
@@ -47902,6 +47961,17 @@
                         "type": "string"
                       }
                     },
+                    "manualSourceRoomId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "manualSubjectId": {
                       "anyOf": [
                         {
@@ -47957,6 +48027,7 @@
                     "date",
                     "id",
                     "manualCohortIds",
+                    "manualSourceRoomId",
                     "manualSubjectId",
                     "manualTeacherIds",
                     "room",
@@ -48879,6 +48950,32 @@
                                       ]
                                     }
                                   },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "subject": {
                                     "anyOf": [
                                       {
@@ -48943,6 +49040,7 @@
                                 },
                                 "required": [
                                   "cohorts",
+                                  "sourceRoom",
                                   "subject",
                                   "teachers"
                                 ]
@@ -48979,6 +49077,17 @@
                                 "items": {
                                   "type": "string"
                                 }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               },
                               "manualSubjectId": {
                                 "anyOf": [
@@ -49035,6 +49144,7 @@
                               "date",
                               "id",
                               "manualCohortIds",
+                              "manualSourceRoomId",
                               "manualSubjectId",
                               "manualTeacherIds",
                               "room",
@@ -49775,6 +49885,32 @@
                                       ]
                                     }
                                   },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "subject": {
                                     "anyOf": [
                                       {
@@ -49839,6 +49975,7 @@
                                 },
                                 "required": [
                                   "cohorts",
+                                  "sourceRoom",
                                   "subject",
                                   "teachers"
                                 ]
@@ -49875,6 +50012,17 @@
                                 "items": {
                                   "type": "string"
                                 }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               },
                               "manualSubjectId": {
                                 "anyOf": [
@@ -49931,6 +50079,7 @@
                               "date",
                               "id",
                               "manualCohortIds",
+                              "manualSourceRoomId",
                               "manualSubjectId",
                               "manualTeacherIds",
                               "room",
@@ -50682,6 +50831,32 @@
                                       ]
                                     }
                                   },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "subject": {
                                     "anyOf": [
                                       {
@@ -50746,6 +50921,7 @@
                                 },
                                 "required": [
                                   "cohorts",
+                                  "sourceRoom",
                                   "subject",
                                   "teachers"
                                 ]
@@ -50782,6 +50958,17 @@
                                 "items": {
                                   "type": "string"
                                 }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               },
                               "manualSubjectId": {
                                 "anyOf": [
@@ -50838,6 +51025,7 @@
                               "date",
                               "id",
                               "manualCohortIds",
+                              "manualSourceRoomId",
                               "manualSubjectId",
                               "manualTeacherIds",
                               "room",

@@ -272,6 +272,12 @@ export const movedLesson = pgTable('moved_lesson', {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
+  // The room a manual move starts FROM (the target is `room`). Optional — a
+  // manual move may not have a known source room.
+  manualSourceRoomId: text('manual_source_room_id').references(
+    () => classroom.id,
+    { onDelete: 'set null' }
+  ),
   manualSubjectId: text('manual_subject_id').references(() => subject.id, {
     onDelete: 'set null',
   }),

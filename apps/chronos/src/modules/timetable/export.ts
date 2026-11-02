@@ -192,6 +192,7 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
         dayShort: dayDefinition.short,
         id: movedLesson.id,
         manualCohortIds: movedLesson.manualCohortIds,
+        manualSourceRoomId: movedLesson.manualSourceRoomId,
         manualSubjectId: movedLesson.manualSubjectId,
         manualTeacherIds: movedLesson.manualTeacherIds,
         periodEnd: period.endTime,
@@ -247,7 +248,8 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
       }
     }
 
-    // Manual moves have no lesson links: resolve their subject and cohorts.
+    // Manual moves have no lesson links: resolve their subject, cohorts and
+    // source room.
     const manualSubjectIds = Array.from(
       new Set(
         movedLessons
@@ -258,20 +260,46 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
     const manualCohortIds = Array.from(
       new Set(movedLessons.flatMap((m) => m.manualCohortIds))
     );
+    const manualSourceRoomIds = Array.from(
+      new Set(
+        movedLessons
+          .map((m) => m.manualSourceRoomId)
+          .filter((id): id is string => id !== null)
+      )
+    );
 
-    const [manualSubjects, manualCohorts] = await Promise.all([
-      manualSubjectIds.length
-        ? db.select().from(subject).where(inArray(subject.id, manualSubjectIds))
-        : Promise.resolve([] as (typeof subject.$inferSelect)[]),
-      manualCohortIds.length
-        ? db.select().from(cohort).where(inArray(cohort.id, manualCohortIds))
-        : Promise.resolve([] as (typeof cohort.$inferSelect)[]),
-    ]);
+    const [manualSubjects, manualCohorts, manualSourceRooms] =
+      await Promise.all([
+        manualSubjectIds.length
+          ? db
+              .select()
+              .from(subject)
+              .where(inArray(subject.id, manualSubjectIds))
+          : Promise.resolve([] as (typeof subject.$inferSelect)[]),
+        manualCohortIds.length
+          ? db.select().from(cohort).where(inArray(cohort.id, manualCohortIds))
+          : Promise.resolve([] as (typeof cohort.$inferSelect)[]),
+        manualSourceRoomIds.length
+          ? db
+              .select({
+                id: classroom.id,
+                name: classroom.name,
+                short: classroom.short,
+              })
+              .from(classroom)
+              .where(inArray(classroom.id, manualSourceRoomIds))
+          : Promise.resolve(
+              [] as { id: string; name: string; short: string }[]
+            ),
+      ]);
 
     const manualSubjectMap = new Map(
       manualSubjects.map((s) => [s.id, s.short || s.name])
     );
     const manualCohortMap = new Map(manualCohorts.map((c) => [c.id, c.name]));
+    const manualSourceRoomMap = new Map(
+      manualSourceRooms.map((cr) => [cr.id, cr.short || cr.name])
+    );
 
     const lessonsByMovedLesson = new Map<string, string[]>();
     for (const link of lessonLinks) {
@@ -289,6 +317,7 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
       'lesson_count',
       'subject',
       'classes',
+      'source_room',
     ];
 
     type MovedLessonExportRow = (typeof movedLessons)[number];
@@ -320,6 +349,13 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
             .join('; ')
         : classes.join('; ');
 
+    // The source room is a manual-only field; linked moves derive their source
+    // rooms from the linked lessons, so the column stays empty for them.
+    const sourceRoomValue = (m: MovedLessonExportRow): string =>
+      m.manualSourceRoomId
+        ? (manualSourceRoomMap.get(m.manualSourceRoomId) ?? '')
+        : '';
+
     const rows = movedLessons.map((m) => {
       const linkedLessonIds = lessonsByMovedLesson.get(m.id) ?? [];
       const subjects = Array.from(
@@ -338,6 +374,7 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
         date: m.date.toISOString().slice(0, 10),
         lesson_count: linkedLessonIds.length,
         lessons: subjects.join('; '),
+        source_room: sourceRoomValue(m),
         subject: subjectValue(m, subjects),
         target_day: targetDay(m),
         target_period: targetPeriod(m),

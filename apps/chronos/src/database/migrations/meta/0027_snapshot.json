@@ -1,5 +1,5 @@
 {
-  "id": "44b7ead0-8cf6-4af8-a533-0ce7cf292fa7",
+  "id": "dc509063-c2e6-4437-a2e0-911a88ec1523",
   "prevId": "e445cdfb-3edc-4f34-ad6f-595ec59c2a9c",
   "version": "7",
   "dialect": "postgresql",
@@ -3391,6 +3391,12 @@
           "notNull": true,
           "default": "'{}'::text[]"
         },
+        "manual_source_room_id": {
+          "name": "manual_source_room_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "manual_subject_id": {
           "name": "manual_subject_id",
           "type": "text",
@@ -3425,6 +3431,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "moved_lesson_manual_source_room_id_classroom_id_fk": {
+          "name": "moved_lesson_manual_source_room_id_classroom_id_fk",
+          "tableFrom": "moved_lesson",
+          "tableTo": "classroom",
+          "columnsFrom": [
+            "manual_source_room_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "moved_lesson_manual_subject_id_subject_id_fk": {
           "name": "moved_lesson_manual_subject_id_subject_id_fk",
           "tableFrom": "moved_lesson",

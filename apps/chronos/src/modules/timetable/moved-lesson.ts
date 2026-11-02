@@ -183,6 +183,7 @@ const validateMovedLessonReferences = async (options: {
   manualSubjectId?: unknown;
   manualCohortIds?: unknown;
   manualTeacherIds?: unknown;
+  manualSourceRoomId?: unknown;
 }) => {
   const {
     startingPeriod,
@@ -192,6 +193,7 @@ const validateMovedLessonReferences = async (options: {
     manualSubjectId,
     manualCohortIds,
     manualTeacherIds,
+    manualSourceRoomId,
   } = options;
 
   const normalizedStartingPeriod = normalizeOptionalString(
@@ -238,6 +240,14 @@ const validateMovedLessonReferences = async (options: {
   );
   if (normalizedManualSubjectId) {
     await ensureSubjectExists(normalizedManualSubjectId);
+  }
+
+  const normalizedManualSourceRoomId = normalizeOptionalString(
+    manualSourceRoomId,
+    'Manual source room'
+  );
+  if (normalizedManualSourceRoomId) {
+    await ensureClassroomExists(normalizedManualSourceRoomId);
   }
 
   const normalizedManualCohortIds = normalizeOptionalStringArray(
@@ -291,12 +301,14 @@ const resolveUpdateSource = (options: {
   existing: typeof movedLesson.$inferSelect;
   lessonIds: string[] | undefined;
   manualCohortIds: string[] | undefined;
+  manualSourceRoomId: string | undefined;
   manualSubjectId: string | undefined;
   manualTeacherIds: string[] | undefined;
   storedLessonIds: string[];
 }): {
   effectiveLessonIds: string[];
   effectiveManualCohortIds: string[];
+  effectiveManualSourceRoomId: string | null;
   effectiveManualSubjectId: string | null;
   effectiveManualTeacherIds: string[];
   source: 'linked' | 'manual' | null;
@@ -305,6 +317,7 @@ const resolveUpdateSource = (options: {
     existing,
     lessonIds,
     manualCohortIds,
+    manualSourceRoomId,
     manualSubjectId,
     manualTeacherIds,
     storedLessonIds,
@@ -316,10 +329,15 @@ const resolveUpdateSource = (options: {
   const effectiveManualCohortIds = manualCohortIds ?? existing.manualCohortIds;
   const effectiveManualTeacherIds =
     manualTeacherIds ?? existing.manualTeacherIds;
+  const effectiveManualSourceRoomId =
+    manualSourceRoomId === undefined
+      ? existing.manualSourceRoomId
+      : manualSourceRoomId;
 
   const sourcePatchPresent =
     lessonIds !== undefined ||
     manualCohortIds !== undefined ||
+    manualSourceRoomId !== undefined ||
     manualSubjectId !== undefined ||
     manualTeacherIds !== undefined;
 
@@ -334,6 +352,7 @@ const resolveUpdateSource = (options: {
   return {
     effectiveLessonIds,
     effectiveManualCohortIds,
+    effectiveManualSourceRoomId,
     effectiveManualSubjectId,
     effectiveManualTeacherIds,
     source,
@@ -349,6 +368,7 @@ const buildUpdateSetValues = (
   source: 'linked' | 'manual' | null,
   manual: {
     cohortIds: string[];
+    sourceRoomId: string | null;
     subjectId: string | null;
     teacherIds: string[];
   }
@@ -357,10 +377,12 @@ const buildUpdateSetValues = (
 
   if (source === 'linked') {
     setValues.manualCohortIds = [];
+    setValues.manualSourceRoomId = null;
     setValues.manualSubjectId = null;
     setValues.manualTeacherIds = [];
   } else if (source === 'manual') {
     setValues.manualCohortIds = manual.cohortIds;
+    setValues.manualSourceRoomId = manual.sourceRoomId;
     setValues.manualSubjectId = manual.subjectId;
     setValues.manualTeacherIds = manual.teacherIds;
   }
@@ -395,6 +417,30 @@ const syncMovedLessonLinks = async (
       .where(eq(movedLessonLessonMTM.movedLessonId, movedLessonId));
   }
 };
+
+// The audit metadata for a created moved lesson: the scalar inputs plus the
+// resolved manual ids (null/empty for linked moves).
+const buildCreateMetadata = (input: {
+  date: Date;
+  lessonIds?: string[];
+  manualCohortIds?: string[];
+  manualSourceRoomId?: string;
+  manualSubjectId?: string;
+  manualTeacherIds?: string[];
+  room?: string | null;
+  startingDay?: string | null;
+  startingPeriod?: string | null;
+}): Record<string, unknown> => ({
+  date: input.date.toISOString(),
+  lessonIds: input.lessonIds ?? [],
+  manualCohortIds: input.manualCohortIds ?? [],
+  manualSourceRoomId: input.manualSourceRoomId ?? null,
+  manualSubjectId: input.manualSubjectId ?? null,
+  manualTeacherIds: input.manualTeacherIds ?? [],
+  room: input.room ?? null,
+  startingDay: input.startingDay ?? null,
+  startingPeriod: input.startingPeriod ?? null,
+});
 
 // Shared by every moved-lesson list endpoint: rows carry the target joins and
 // their linked lessons already enriched.
@@ -431,8 +477,15 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   const manualTeacherIds = Array.from(
     new Set(rows.flatMap((r) => r.movedLesson.manualTeacherIds))
   );
+  const manualSourceRoomIds = Array.from(
+    new Set(
+      rows
+        .map((r) => r.movedLesson.manualSourceRoomId)
+        .filter((id): id is string => id !== null)
+    )
+  );
 
-  const [subjects, cohorts, teachers] = await Promise.all([
+  const [subjects, cohorts, teachers, sourceRooms] = await Promise.all([
     manualSubjectIds.length
       ? db.select().from(subject).where(inArray(subject.id, manualSubjectIds))
       : Promise.resolve([] as (typeof subject.$inferSelect)[]),
@@ -460,6 +513,16 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
             short: string;
           }[]
         ),
+    manualSourceRoomIds.length
+      ? db
+          .select({
+            id: classroom.id,
+            name: classroom.name,
+            short: classroom.short,
+          })
+          .from(classroom)
+          .where(inArray(classroom.id, manualSourceRoomIds))
+      : Promise.resolve([] as { id: string; name: string; short: string }[]),
   ]);
 
   const subjectMap = new Map(subjects.map((s) => [s.id, s]));
@@ -470,6 +533,7 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
       { id: t.id, name: `${t.firstName} ${t.lastName}`.trim(), short: t.short },
     ])
   );
+  const sourceRoomMap = new Map(sourceRooms.map((cr) => [cr.id, cr]));
 
   return rows.map((r) => {
     const manual = r.movedLesson.manualSubjectId
@@ -477,6 +541,9 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
           cohorts: r.movedLesson.manualCohortIds
             .map((id) => cohortMap.get(id))
             .filter((c): c is NonNullable<typeof c> => c !== undefined),
+          sourceRoom: r.movedLesson.manualSourceRoomId
+            ? (sourceRoomMap.get(r.movedLesson.manualSourceRoomId) ?? null)
+            : null,
           subject: subjectMap.get(r.movedLesson.manualSubjectId) ?? null,
           teachers: r.movedLesson.manualTeacherIds
             .map((id) => teacherMap.get(id))
@@ -645,6 +712,7 @@ export const createMovedLesson = base.timetable.movedLessons.create
       date,
       lessonIds,
       manualCohortIds,
+      manualSourceRoomId,
       manualSubjectId,
       manualTeacherIds,
       room,
@@ -665,6 +733,7 @@ export const createMovedLesson = base.timetable.movedLessons.create
     await validateMovedLessonReferences({
       lessonIds,
       manualCohortIds,
+      manualSourceRoomId,
       manualSubjectId,
       manualTeacherIds,
       room,
@@ -682,6 +751,7 @@ export const createMovedLesson = base.timetable.movedLessons.create
           date,
           id: crypto.randomUUID(),
           manualCohortIds: manualCohortIds ?? [],
+          manualSourceRoomId: manualSourceRoomId ?? null,
           manualSubjectId: manualSubjectId ?? null,
           manualTeacherIds: manualTeacherIds ?? [],
           room,
@@ -711,16 +781,7 @@ export const createMovedLesson = base.timetable.movedLessons.create
           action: 'create',
           entityId: row.id,
           entityType: 'movedLesson',
-          metadata: {
-            date: date.toISOString(),
-            lessonIds: lessonIds ?? [],
-            manualCohortIds: manualCohortIds ?? [],
-            manualSubjectId: manualSubjectId ?? null,
-            manualTeacherIds: manualTeacherIds ?? [],
-            room: room ?? null,
-            startingDay: startingDay ?? null,
-            startingPeriod: startingPeriod ?? null,
-          },
+          metadata: buildCreateMetadata(body),
         },
         tx
       );
@@ -747,6 +808,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
       id,
       lessonIds,
       manualCohortIds,
+      manualSourceRoomId,
       manualSubjectId,
       manualTeacherIds,
       ...columns
@@ -766,6 +828,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
       ...columns,
       lessonIds,
       manualCohortIds,
+      manualSourceRoomId,
       manualSubjectId,
       manualTeacherIds,
     });
@@ -782,6 +845,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     const {
       effectiveLessonIds,
       effectiveManualCohortIds,
+      effectiveManualSourceRoomId,
       effectiveManualSubjectId,
       effectiveManualTeacherIds,
       source,
@@ -789,6 +853,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
       existing,
       lessonIds,
       manualCohortIds,
+      manualSourceRoomId,
       manualSubjectId,
       manualTeacherIds,
       storedLessonIds,
@@ -800,6 +865,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     const updatedMovedLesson = await db.transaction(async (tx) => {
       const setValues = buildUpdateSetValues(columns, source, {
         cohortIds: effectiveManualCohortIds,
+        sourceRoomId: effectiveManualSourceRoomId,
         subjectId: effectiveManualSubjectId,
         teacherIds: effectiveManualTeacherIds,
       });
@@ -827,6 +893,7 @@ export const updateMovedLesson = base.timetable.movedLessons.update
           'comment',
           'date',
           'manualCohortIds',
+          'manualSourceRoomId',
           'manualSubjectId',
           'manualTeacherIds',
           'room',
