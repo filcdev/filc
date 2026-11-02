@@ -203,7 +203,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.management'),
       },
       {
-        id: 'navigator',
+        id: 'appearance',
         items: [
           {
             icon: Sparkles,
@@ -215,6 +215,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         label: t('admin.appearance'),
       },
       {
+        id: 'navigator',
         items: [
           {
             icon: LayoutDashboard,
