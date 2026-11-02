@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   bit,
   boolean,
@@ -262,6 +263,22 @@ export const movedLesson = pgTable('moved_lesson', {
   comment: text('comment'),
   date: date('date', { mode: 'date' }).notNull(),
   id: text('id').primaryKey(),
+  // A manual moved lesson is built from a subject + cohorts + teachers instead
+  // of linked lessons. The cohort/teacher ids are text arrays (mirroring
+  // `lesson.teacherIds`): ids are validated on write, and a cohort or teacher
+  // that is later removed simply stops matching. These columns are only set
+  // for manual moves; linked moves keep them empty (or a null subject).
+  manualCohortIds: text('manual_cohort_ids')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  manualSubjectId: text('manual_subject_id').references(() => subject.id, {
+    onDelete: 'set null',
+  }),
+  manualTeacherIds: text('manual_teacher_ids')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   room: text('room').references(() => classroom.id),
   startingDay: text('starting_day').references(() => dayDefinition.id),
   startingPeriod: text('starting_period').references(() => period.id),

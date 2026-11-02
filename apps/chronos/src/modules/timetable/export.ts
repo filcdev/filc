@@ -191,6 +191,9 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
         dayName: dayDefinition.name,
         dayShort: dayDefinition.short,
         id: movedLesson.id,
+        manualCohortIds: movedLesson.manualCohortIds,
+        manualSubjectId: movedLesson.manualSubjectId,
+        manualTeacherIds: movedLesson.manualTeacherIds,
         periodEnd: period.endTime,
         periodNumber: period.period,
         periodStart: period.startTime,
@@ -219,19 +222,56 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
     const lessonInfo = lessonIds.length
       ? await db
           .select({
+            cohortName: cohort.name,
             id: lesson.id,
             subjectName: subject.name,
             subjectShort: subject.short,
           })
           .from(lesson)
           .leftJoin(subject, eq(lesson.subjectId, subject.id))
+          .leftJoin(lessonCohortMTM, eq(lesson.id, lessonCohortMTM.lessonId))
+          .leftJoin(cohort, eq(lessonCohortMTM.cohortId, cohort.id))
           .where(inArray(lesson.id, lessonIds))
       : [];
 
     const lessonSubjectMap = new Map<string, string>();
+    const lessonCohortMap = new Map<string, string[]>();
     for (const li of lessonInfo) {
-      lessonSubjectMap.set(li.id, li.subjectShort || li.subjectName || '');
+      if (li.subjectShort || li.subjectName) {
+        lessonSubjectMap.set(li.id, li.subjectShort || li.subjectName || '');
+      }
+      if (li.cohortName) {
+        const list = lessonCohortMap.get(li.id) ?? [];
+        list.push(li.cohortName);
+        lessonCohortMap.set(li.id, list);
+      }
     }
+
+    // Manual moves have no lesson links: resolve their subject and cohorts.
+    const manualSubjectIds = Array.from(
+      new Set(
+        movedLessons
+          .map((m) => m.manualSubjectId)
+          .filter((id): id is string => id !== null)
+      )
+    );
+    const manualCohortIds = Array.from(
+      new Set(movedLessons.flatMap((m) => m.manualCohortIds))
+    );
+
+    const [manualSubjects, manualCohorts] = await Promise.all([
+      manualSubjectIds.length
+        ? db.select().from(subject).where(inArray(subject.id, manualSubjectIds))
+        : Promise.resolve([] as (typeof subject.$inferSelect)[]),
+      manualCohortIds.length
+        ? db.select().from(cohort).where(inArray(cohort.id, manualCohortIds))
+        : Promise.resolve([] as (typeof cohort.$inferSelect)[]),
+    ]);
+
+    const manualSubjectMap = new Map(
+      manualSubjects.map((s) => [s.id, s.short || s.name])
+    );
+    const manualCohortMap = new Map(manualCohorts.map((c) => [c.id, c.name]));
 
     const lessonsByMovedLesson = new Map<string, string[]>();
     for (const link of lessonLinks) {
@@ -247,7 +287,38 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
       'target_room',
       'lessons',
       'lesson_count',
+      'subject',
+      'classes',
     ];
+
+    type MovedLessonExportRow = (typeof movedLessons)[number];
+
+    const targetDay = (m: MovedLessonExportRow): string =>
+      m.dayName ? `${m.dayName}${m.dayShort ? ` (${m.dayShort})` : ''}` : '';
+
+    const targetPeriod = (m: MovedLessonExportRow): string =>
+      m.periodNumber
+        ? `P${m.periodNumber}${m.periodStart && m.periodEnd ? ` (${String(m.periodStart).slice(0, 5)}\u2013${String(m.periodEnd).slice(0, 5)})` : ''}`
+        : '';
+
+    const subjectValue = (
+      m: MovedLessonExportRow,
+      subjects: string[]
+    ): string =>
+      m.manualSubjectId
+        ? (manualSubjectMap.get(m.manualSubjectId) ?? '')
+        : subjects.join('; ');
+
+    const classesValue = (
+      m: MovedLessonExportRow,
+      classes: string[]
+    ): string =>
+      m.manualCohortIds.length > 0
+        ? m.manualCohortIds
+            .map((id) => manualCohortMap.get(id))
+            .filter((v): v is string => Boolean(v))
+            .join('; ')
+        : classes.join('; ');
 
     const rows = movedLessons.map((m) => {
       const linkedLessonIds = lessonsByMovedLesson.get(m.id) ?? [];
@@ -258,23 +329,18 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
             .filter((v): v is string => Boolean(v))
         )
       );
-      const targetDay = m.dayName
-        ? `${m.dayName}${m.dayShort ? ` (${m.dayShort})` : ''}`
-        : '';
-      const targetPeriod = m.periodNumber
-        ? `P${m.periodNumber}${
-            m.periodStart && m.periodEnd
-              ? ` (${String(m.periodStart).slice(0, 5)}\u2013${String(m.periodEnd).slice(0, 5)})`
-              : ''
-          }`
-        : '';
+      const classes = Array.from(
+        new Set(linkedLessonIds.flatMap((id) => lessonCohortMap.get(id) ?? []))
+      );
 
       return {
+        classes: classesValue(m, classes),
         date: m.date.toISOString().slice(0, 10),
         lesson_count: linkedLessonIds.length,
         lessons: subjects.join('; '),
-        target_day: targetDay,
-        target_period: targetPeriod,
+        subject: subjectValue(m, subjects),
+        target_day: targetDay(m),
+        target_period: targetPeriod(m),
         target_room: m.classroomName ?? '',
       };
     });

@@ -46,17 +46,24 @@ export function cancelPendingNotification(
 export async function resolveAudienceForLessonChange(
   payload: unknown
 ): Promise<AudienceUser[]> {
-  const p = payload as { lessonIds?: string[] };
-  if (!p.lessonIds || p.lessonIds.length === 0) {
+  const p = payload as { lessonIds?: string[]; cohortIds?: string[] };
+  const lessonIds = p.lessonIds ?? [];
+  const manualCohortIds = p.cohortIds ?? [];
+
+  if (lessonIds.length === 0 && manualCohortIds.length === 0) {
     return [];
   }
 
-  const cohortResults = await db
-    .select({ cohortId: lessonCohortMTM.cohortId })
-    .from(lessonCohortMTM)
-    .where(inArray(lessonCohortMTM.lessonId, p.lessonIds));
+  const lessonCohorts = lessonIds.length
+    ? await db
+        .select({ cohortId: lessonCohortMTM.cohortId })
+        .from(lessonCohortMTM)
+        .where(inArray(lessonCohortMTM.lessonId, lessonIds))
+    : [];
 
-  const cohortIds = [...new Set(cohortResults.map((c) => c.cohortId))];
+  const cohortIds = [
+    ...new Set([...lessonCohorts.map((c) => c.cohortId), ...manualCohortIds]),
+  ];
 
   if (cohortIds.length === 0) {
     return [];
