@@ -74,6 +74,18 @@
           }
         }
       }
+    },
+    {
+      // The kiosk image build tool is a root-run CLI rather than app code: it
+      // owns the terminal (raw mode, ANSI, stdin/stdout) and spawns sudo, mount
+      // and dd, so the `process` global is its interface, not a convention break.
+      "includes": ["apps/kiosk/image/*.ts"],
+      "linter": {
+        "rules": {
+          "correctness": { "noProcessGlobal": "off" },
+          "suspicious": { "noConsole": "off" }
+        }
+      }
     }
   ],
   "formatter": {

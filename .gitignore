@@ -31,9 +31,15 @@ out/
 build
 dist
 
-# Kiosk disk images are built locally (apps/kiosk/image/build.sh) and flashed
+# Kiosk disk images are built locally (apps/kiosk/image/build.ts) and flashed
 # straight to a USB stick; a 2G artifact has no business in git.
 apps/kiosk/image/*.img
+# Files the TUI build writes from the options it collected: the config channel
+# setup.sh reads chrooted, plus the kanshi config and the OpenRC service Alpine
+# ships no unit script for. All regenerated on every build.
+apps/kiosk/image/build.env
+apps/kiosk/image/skel/etc/init.d/kanshi
+apps/kiosk/image/skel/etc/kiosk/kanshi/
 
 
 # Debug

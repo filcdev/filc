@@ -26,6 +26,7 @@
   "devDependencies": {
     "@filcdev/api": "workspace:*",
     "@filcdev/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
     "@tanstack/router-plugin": "^1.168.47",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
