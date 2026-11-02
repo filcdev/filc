@@ -75,6 +75,10 @@ function ThemePage() {
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-accent/10">
         <SelectedArt className="absolute inset-0 h-full w-full" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent"
+        />
         <div className="relative space-y-2 p-8">
           <h1 className="font-bold text-3xl tracking-tight">
             {t('siteTheme.heroTitle')}
