@@ -767,33 +767,47 @@ function TargetDateField({ date, locale, onChange }: TargetDateFieldProps) {
 }
 
 type TargetRoomFieldProps = {
+  checkAvailability: boolean;
+  classrooms: ClassroomItem[];
   isLoading: boolean;
   onChange: (value: string) => void;
   options: RoomOption[];
   value: string;
 };
 
-// Target-room picker, annotated with the queried slot's availability.
+// Target-room picker. In timetable mode the options carry the queried slot's
+// availability (occupied rooms disabled); in manual mode every classroom is
+// offered as-is so the admin can pick any room.
 function TargetRoomField({
+  checkAvailability,
+  classrooms,
   isLoading,
   onChange,
   options,
   value,
 }: TargetRoomFieldProps) {
   const { t } = useTranslation();
+  const roomOptions: RoomOption[] = checkAvailability
+    ? options
+    : classrooms.map((c) => ({
+        disabled: false,
+        label: `${c.name} (${c.short})`,
+        value: c.id,
+      }));
+  const showLoading = checkAvailability && isLoading;
 
   return (
     <div className="space-y-2">
       <Label>{t('movedLesson.toRoom')}</Label>
       <Combobox
-        className={isLoading ? 'pointer-events-none opacity-50' : undefined}
+        className={showLoading ? 'pointer-events-none opacity-50' : undefined}
         emptyMessage={
-          isLoading
+          showLoading
             ? t('movedLesson.loadingRooms')
             : t('movedLesson.noRoomFound')
         }
         onValueChange={onChange}
-        options={options}
+        options={roomOptions}
         placeholder={t('movedLesson.toRoom')}
         searchPlaceholder={t('search')}
         value={value}
@@ -880,6 +894,8 @@ function MovedLessonSourceFields({
 }
 
 type MovedLessonTargetFieldsProps = {
+  checkAvailability: boolean;
+  classrooms: ClassroomItem[];
   isLoadingRooms: boolean;
   mode: MoveMode;
   onPeriodChange: (value: string) => void;
@@ -895,6 +911,8 @@ type MovedLessonTargetFieldsProps = {
 // Everything that selects *where* the lessons move to: the target date, period
 // and room.
 function MovedLessonTargetFields({
+  checkAvailability,
+  classrooms,
   isLoadingRooms,
   mode,
   onPeriodChange,
@@ -911,6 +929,8 @@ function MovedLessonTargetFields({
   if (mode !== 'day') {
     return (
       <TargetRoomField
+        checkAvailability={checkAvailability}
+        classrooms={classrooms}
         isLoading={isLoadingRooms}
         onChange={onTargetRoomChange}
         options={roomOptions}
@@ -943,6 +963,8 @@ function MovedLessonTargetFields({
       </div>
 
       <TargetRoomField
+        checkAvailability={checkAvailability}
+        classrooms={classrooms}
         isLoading={isLoadingRooms}
         onChange={onTargetRoomChange}
         options={roomOptions}
@@ -1015,7 +1037,11 @@ function useMovedLessonTargetSlot({
         startingPeriod: formStartingPeriod ?? '',
       },
     }),
-    enabled: !!formDate && !!formStartingDay && !!formStartingPeriod,
+    enabled:
+      source === 'timetable' &&
+      !!formDate &&
+      !!formStartingDay &&
+      !!formStartingPeriod,
   });
 
   const availabilityKnown = Boolean(
@@ -1386,6 +1412,8 @@ export function MovedLessonDialog({
             )}
 
             <MovedLessonTargetFields
+              checkAvailability={!isManual}
+              classrooms={classrooms}
               isLoadingRooms={availableClassroomsQuery.isLoading}
               mode={isManual ? 'day' : mode}
               onPeriodChange={handleTargetPeriodChange}
