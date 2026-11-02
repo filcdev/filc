@@ -16,7 +16,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, Save } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ClassroomItem, PeriodItem } from '@/components/timetable/types';
+import type {
+  ClassroomItem,
+  PeriodItem,
+  TeacherItem,
+} from '@/components/timetable/types';
 import {
   type Cohort,
   type DayDefinition,
@@ -31,6 +35,10 @@ import { formatPeriodLabel } from '@/utils/period';
 import type { BaseDialogProps } from './admin.types';
 
 export type MoveMode = 'room' | 'day';
+
+// What a moved lesson is built from: existing timetable lessons, or a
+// one-off manual entry (a subject plus classes) with no source lessons.
+export type SourceMode = 'timetable' | 'manual';
 
 type MovedLessonDialogProps = BaseDialogProps & {
   allLessons: EnrichedLesson[];
@@ -118,6 +126,11 @@ function cohortLabel(cohorts: CohortRef[] | undefined): string {
   return cohorts.map((cohort) => cohort.short ?? cohort.name ?? '').join(', ');
 }
 
+/** `Firstname Lastname (short)` for the teacher checkbox list. */
+function formatTeacherLabel(teacher: TeacherItem): string {
+  return `${teacher.firstName} ${teacher.lastName} (${teacher.short})`;
+}
+
 // Order lessons by period number ascending (unknown periods last), breaking
 // ties by subject short then class so same-period lessons group sensibly.
 function compareLessonsByPeriod(a: EnrichedLesson, b: EnrichedLesson): number {
@@ -187,6 +200,12 @@ function resolveSourceSlot(item?: MovedLessonItem | null): {
   };
 }
 
+// A move is manual when it carries a manual subject; editing is always fixed
+// to that source so an existing move can never be converted by accident.
+function resolveInitialSource(item?: MovedLessonItem | null): SourceMode {
+  return item?.movedLesson.manualSubjectId ? 'manual' : 'timetable';
+}
+
 // The source date is the lesson's date. For a room move the move's own date
 // already lands on the source weekday; otherwise anchor on it and shift to the
 // source weekday so the derived weekday stays correct. The shift stays within
@@ -242,21 +261,29 @@ function isOriginalSlot(params: {
 }
 
 // A move is submittable once a target date, room, source day, period and at
-// least one lesson are selected.
+// least one lesson are selected; a manual move needs a subject and ≥1 class
+// instead of lessons.
 function isMoveComplete(params: {
   date: unknown;
   lessonIds?: string[];
+  manualCohortIds?: string[];
+  manualSubjectId?: string;
   room?: string | null;
+  source: SourceMode;
   startingDay?: string | null;
   startingPeriod?: string | null;
 }): boolean {
-  return Boolean(
-    params.date &&
-      params.room &&
-      params.startingDay &&
-      params.startingPeriod &&
-      params.lessonIds?.length
-  );
+  const hasTarget =
+    Boolean(params.date) &&
+    Boolean(params.room) &&
+    Boolean(params.startingDay) &&
+    Boolean(params.startingPeriod);
+  if (!hasTarget) {
+    return false;
+  }
+  return params.source === 'manual'
+    ? Boolean(params.manualSubjectId && params.manualCohortIds?.length)
+    : Boolean(params.lessonIds?.length);
 }
 
 // The lesson list has enough context to render: a day always, plus a from-room
@@ -337,6 +364,9 @@ const initialState = (
   comment: item?.movedLesson.comment ?? null,
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
+  manualCohortIds: item?.movedLesson.manualCohortIds ?? [],
+  manualSubjectId: item?.movedLesson.manualSubjectId ?? undefined,
+  manualTeacherIds: item?.movedLesson.manualTeacherIds ?? [],
   room: item?.movedLesson.room || undefined,
   startingDay: item?.movedLesson.startingDay || undefined,
   startingPeriod: item?.movedLesson.startingPeriod || undefined,
@@ -381,6 +411,47 @@ function MoveModeToggle({ mode, onChange }: MoveModeToggleProps) {
   );
 }
 
+type SourceToggleProps = {
+  disabled?: boolean;
+  onChange: (source: SourceMode) => void;
+  source: SourceMode;
+};
+
+// Timetable-linked vs manual (one-off) source. Disabled while editing: an
+// existing move's source is fixed so it can never be converted by accident.
+function SourceToggle({ disabled, onChange, source }: SourceToggleProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+      <p className="font-medium text-sm">{t('movedLesson.source')}</p>
+      <div className="flex gap-2">
+        <Button
+          disabled={disabled}
+          onClick={() => onChange('timetable')}
+          size="sm"
+          variant={source === 'timetable' ? 'default' : 'outline'}
+        >
+          {t('movedLesson.sourceTimetable')}
+        </Button>
+        <Button
+          disabled={disabled}
+          onClick={() => onChange('manual')}
+          size="sm"
+          variant={source === 'manual' ? 'default' : 'outline'}
+        >
+          {t('movedLesson.sourceManual')}
+        </Button>
+      </div>
+      {source === 'manual' && (
+        <p className="text-muted-foreground text-xs">
+          {t('movedLesson.manualHint')}
+        </p>
+      )}
+    </div>
+  );
+}
+
 type CohortSelectorProps = {
   cohorts: Cohort[];
   onChange: (value: string) => void;
@@ -405,6 +476,148 @@ function CohortSelector({ cohorts, onChange, value }: CohortSelectorProps) {
         value={value}
       />
     </div>
+  );
+}
+
+// A scrollable, bordered checkbox list in the same visual style as `LessonList`.
+function CheckboxList<T extends { id: string }>({
+  emptyMessage,
+  htmlFor,
+  items,
+  label,
+  onChange,
+  selectedIds,
+  format,
+}: {
+  emptyMessage: string;
+  format: (item: T) => string;
+  htmlFor: (id: string) => string;
+  items: T[];
+  label: string;
+  onChange: (id: string, checked: boolean) => void;
+  selectedIds: string[];
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="max-h-48 overflow-y-auto rounded-lg border">
+        <div className="space-y-1 p-2">
+          {items.length === 0 && (
+            <p className="p-2 text-muted-foreground text-sm">{emptyMessage}</p>
+          )}
+          {items.map((item) => {
+            const checked = selectedIds.includes(item.id);
+            return (
+              <label
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                htmlFor={htmlFor(item.id)}
+                key={item.id}
+              >
+                <Checkbox
+                  checked={checked}
+                  id={htmlFor(item.id)}
+                  onCheckedChange={(value) => onChange(item.id, !!value)}
+                />
+                <span>{format(item)}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type ManualSourceSectionProps = {
+  cohorts: Cohort[];
+  form: AnyFormApi;
+};
+
+// The manual source: a subject, teachers and classes. Replaces every timetable
+// source field (date/cohort/from-room/lesson list) when the source is manual.
+// Self-contained so it owns its lookups and handlers; it only ever mounts in
+// manual mode, so the subject/teacher queries can run unconditionally.
+function ManualSourceSection({ cohorts, form }: ManualSourceSectionProps) {
+  const { t } = useTranslation();
+  const formManualCohortIds = useStore(
+    form.store,
+    (state) => state.values.manualCohortIds
+  );
+  const formManualSubjectId = useStore(
+    form.store,
+    (state) => state.values.manualSubjectId
+  );
+  const formManualTeacherIds = useStore(
+    form.store,
+    (state) => state.values.manualTeacherIds
+  );
+
+  const subjectsQuery = useQuery({
+    ...orpc.timetable.subjects.queryOptions(),
+  });
+  const teachersQuery = useQuery({
+    ...orpc.timetable.teachers.getAll.queryOptions(),
+  });
+
+  const handleSubjectChange = (value: string) => {
+    form.setFieldValue('manualSubjectId', value || undefined);
+  };
+
+  const handleTeacherToggle = (id: string, checked: boolean) => {
+    const current = form.getFieldValue('manualTeacherIds') ?? [];
+    form.setFieldValue('manualTeacherIds', nextLessonIds(current, id, checked));
+  };
+
+  const handleCohortToggle = (id: string, checked: boolean) => {
+    const current = form.getFieldValue('manualCohortIds') ?? [];
+    form.setFieldValue('manualCohortIds', nextLessonIds(current, id, checked));
+  };
+
+  const needsClass = (formManualCohortIds ?? []).length === 0;
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>{t('movedLesson.subject')}</Label>
+        <Combobox
+          emptyMessage={t('movedLesson.noSubjectFound')}
+          onValueChange={handleSubjectChange}
+          options={(subjectsQuery.data?.items ?? []).map((subject) => ({
+            label: `${subject.name} (${subject.short})`,
+            value: subject.id,
+          }))}
+          placeholder={t('movedLesson.selectSubjectPlaceholder')}
+          searchPlaceholder={t('search')}
+          value={formManualSubjectId ?? ''}
+        />
+      </div>
+
+      <CheckboxList
+        emptyMessage={t('movedLesson.noTeacherFound')}
+        format={formatTeacherLabel}
+        htmlFor={(id) => `ml-teacher-${id}`}
+        items={teachersQuery.data?.items ?? []}
+        label={t('movedLesson.teachers')}
+        onChange={handleTeacherToggle}
+        selectedIds={formManualTeacherIds ?? []}
+      />
+
+      <CheckboxList
+        emptyMessage={t('movedLesson.noClassFound')}
+        format={(cohort) => `${cohort.name} (${cohort.short})`}
+        htmlFor={(id) => `ml-cohort-${id}`}
+        items={cohorts}
+        label={t('movedLesson.classes')}
+        onChange={handleCohortToggle}
+        selectedIds={formManualCohortIds ?? []}
+      />
+
+      {(!formManualSubjectId || needsClass) && (
+        <p className="text-muted-foreground text-xs">
+          {t('movedLesson.manualRequired')}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -723,6 +936,7 @@ type MovedLessonTargetSlotOptions = {
   form: AnyFormApi;
   item?: MovedLessonItem | null;
   labels: { free: string; occupied: string };
+  source: SourceMode;
 };
 
 /**
@@ -735,9 +949,18 @@ function useMovedLessonTargetSlot({
   form,
   item,
   labels,
+  source,
 }: MovedLessonTargetSlotOptions) {
   const formDate = useStore(form.store, (state) => state.values.date);
   const formLessonIds = useStore(form.store, (state) => state.values.lessonIds);
+  const formManualCohortIds = useStore(
+    form.store,
+    (state) => state.values.manualCohortIds
+  );
+  const formManualSubjectId = useStore(
+    form.store,
+    (state) => state.values.manualSubjectId
+  );
   const formStartingDay = useStore(
     form.store,
     (state) => state.values.startingDay
@@ -801,7 +1024,10 @@ function useMovedLessonTargetSlot({
   const isValid = isMoveComplete({
     date: formDate,
     lessonIds: formLessonIds,
+    manualCohortIds: formManualCohortIds,
+    manualSubjectId: formManualSubjectId,
     room: formRoom,
+    source,
     startingDay: formStartingDay,
     startingPeriod: formStartingPeriod,
   });
@@ -816,6 +1042,57 @@ function useMovedLessonTargetSlot({
     isValid,
     roomOptions,
   };
+}
+
+// Build and send the create/update payload. Exactly one source is sent: manual
+// moves carry the subject + class/teacher ids, timetable moves the linked
+// lesson ids; the other source stays omitted.
+async function submitMovedLesson(
+  value: MovedLessonFormValues,
+  params: {
+    createMutation: ReturnType<typeof useCreateMovedLesson>;
+    isManual: boolean;
+    item?: MovedLessonItem | null;
+    updateMutation: ReturnType<typeof useUpdateMovedLesson>;
+  }
+): Promise<void> {
+  const { createMutation, isManual, item, updateMutation } = params;
+  const sourceFields = isManual
+    ? {
+        manualCohortIds: value.manualCohortIds ?? [],
+        manualSubjectId: value.manualSubjectId,
+        manualTeacherIds: value.manualTeacherIds ?? [],
+      }
+    : { lessonIds: value.lessonIds ?? [] };
+
+  if (item) {
+    // Updates require every target field to be present.
+    const hasAllFields =
+      Boolean(value.room) &&
+      Boolean(value.startingDay) &&
+      Boolean(value.startingPeriod);
+    if (!hasAllFields) {
+      throw new Error('All fields are required for updates');
+    }
+    await updateMutation.mutateAsync({
+      comment: value.comment ?? null,
+      date: value.date,
+      id: item.movedLesson.id,
+      ...sourceFields,
+      room: value.room as string,
+      startingDay: value.startingDay as string,
+      startingPeriod: value.startingPeriod as string,
+    });
+  } else {
+    await createMutation.mutateAsync({
+      comment: value.comment ?? null,
+      date: value.date,
+      ...sourceFields,
+      room: value.room,
+      startingDay: value.startingDay,
+      startingPeriod: value.startingPeriod,
+    });
+  }
 }
 
 export function MovedLessonDialog({
@@ -844,6 +1121,12 @@ export function MovedLessonDialog({
   );
   const [selectedCohort, setSelectedCohort] = useState<string>('');
 
+  // The move's source. On edit it is fixed by the stored manual subject; a new
+  // move starts from the timetable. Local state is fine because the parent
+  // remounts this dialog per open/item via `key`.
+  const [source, setSource] = useState<SourceMode>(resolveInitialSource(item));
+  const isManual = source === 'manual';
+
   const defaultValues = useMemo(() => initialState(item), [item]);
 
   // The source weekday id is derived from the source date.
@@ -855,27 +1138,12 @@ export function MovedLessonDialog({
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
-      if (item) {
-        // Updates require every target field to be present.
-        const hasAllFields =
-          Boolean(value.room) &&
-          Boolean(value.startingDay) &&
-          Boolean(value.startingPeriod);
-        if (!hasAllFields) {
-          throw new Error('All fields are required for updates');
-        }
-        await updateMutation.mutateAsync({
-          comment: value.comment ?? null,
-          date: value.date,
-          id: item.movedLesson.id,
-          lessonIds: value.lessonIds ?? [],
-          room: value.room as string,
-          startingDay: value.startingDay as string,
-          startingPeriod: value.startingPeriod as string,
-        });
-      } else {
-        await createMutation.mutateAsync(value);
-      }
+      await submitMovedLesson(value, {
+        createMutation,
+        isManual,
+        item,
+        updateMutation,
+      });
     },
   });
 
@@ -897,11 +1165,12 @@ export function MovedLessonDialog({
       free: t('movedLesson.free'),
       occupied: t('movedLesson.occupied'),
     },
+    source,
   });
 
   const periodsQuery = useQuery({
     ...orpc.timetable.periods.getAll.queryOptions({ input: {} }),
-    enabled: mode === 'day',
+    enabled: mode === 'day' || isManual,
     select: (data): PeriodItem[] => data.items,
   });
 
@@ -914,9 +1183,10 @@ export function MovedLessonDialog({
     return allLessons.find((lesson) => lesson.id === firstId)?.period?.id ?? '';
   }, [allLessons, formLessonIds]);
 
-  // In room-move mode the target slot is the source slot.
+  // In room-move mode the target slot is the source slot. Manual moves have no
+  // source slot, so the sync is skipped for them.
   useEffect(() => {
-    if (mode !== 'room') {
+    if (mode !== 'room' || isManual) {
       return;
     }
     const synced = resolveRoomModeSlot(sourceDay, sourceDate, {
@@ -929,7 +1199,7 @@ export function MovedLessonDialog({
     if (synced.date !== undefined) {
       form.setFieldValue('date', synced.date);
     }
-  }, [form, mode, sourceDate, sourceDay]);
+  }, [form, isManual, mode, sourceDate, sourceDay]);
 
   // Keep the target period in sync with the selected lesson's period.
   useEffect(() => {
@@ -1026,6 +1296,19 @@ export function MovedLessonDialog({
     }
   };
 
+  // Switching source clears both sources' selections so a timetable and a
+  // manual move never leak into one another (create only — edit is disabled).
+  const handleSourceChange = (next: SourceMode) => {
+    if (next === source) {
+      return;
+    }
+    setSource(next);
+    form.setFieldValue('lessonIds', []);
+    form.setFieldValue('manualSubjectId', undefined);
+    form.setFieldValue('manualCohortIds', []);
+    form.setFieldValue('manualTeacherIds', []);
+  };
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="flex max-h-[85vh] max-w-lg flex-col p-2">
@@ -1036,7 +1319,15 @@ export function MovedLessonDialog({
             </DialogTitle>
           </DialogHeader>
 
-          <MoveModeToggle mode={mode} onChange={handleModeChange} />
+          <SourceToggle
+            disabled={Boolean(item)}
+            onChange={handleSourceChange}
+            source={source}
+          />
+
+          {!isManual && (
+            <MoveModeToggle mode={mode} onChange={handleModeChange} />
+          )}
 
           <form
             className="mt-4 space-y-4"
@@ -1046,26 +1337,30 @@ export function MovedLessonDialog({
               form.handleSubmit();
             }}
           >
-            <MovedLessonSourceFields
-              classrooms={classrooms}
-              cohorts={cohorts}
-              formLessonIds={formLessonIds}
-              fromRoom={fromRoom}
-              hasSlotContext={hasSlotContext}
-              lessons={visibleLessons}
-              mode={mode}
-              onCohortChange={handleCohortChange}
-              onFromRoomChange={handleFromRoomChange}
-              onSourceDateChange={handleSourceDateChange}
-              onToggleLesson={toggleLesson}
-              selectedCohort={selectedCohort}
-              selectedPeriodId={selectedPeriodId}
-              sourceDate={sourceDate}
-            />
+            {isManual ? (
+              <ManualSourceSection cohorts={cohorts} form={form} />
+            ) : (
+              <MovedLessonSourceFields
+                classrooms={classrooms}
+                cohorts={cohorts}
+                formLessonIds={formLessonIds}
+                fromRoom={fromRoom}
+                hasSlotContext={hasSlotContext}
+                lessons={visibleLessons}
+                mode={mode}
+                onCohortChange={handleCohortChange}
+                onFromRoomChange={handleFromRoomChange}
+                onSourceDateChange={handleSourceDateChange}
+                onToggleLesson={toggleLesson}
+                selectedCohort={selectedCohort}
+                selectedPeriodId={selectedPeriodId}
+                sourceDate={sourceDate}
+              />
+            )}
 
             <MovedLessonTargetFields
               isLoadingRooms={availableClassroomsQuery.isLoading}
-              mode={mode}
+              mode={isManual ? 'day' : mode}
               onPeriodChange={handleTargetPeriodChange}
               onTargetDateChange={handleTargetDateChange}
               onTargetRoomChange={handleTargetRoomChange}

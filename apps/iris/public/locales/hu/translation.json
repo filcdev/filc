@@ -416,7 +416,20 @@
     "export": "Exportálás",
     "exportTitle": "Áthelyezett órák exportálása",
     "exportSuccess": "Export sikeresen letöltve",
-    "exportError": "Nem sikerült exportálni az áthelyezett órákat"
+    "exportError": "Nem sikerült exportálni az áthelyezett órákat",
+    "source": "Forrás",
+    "sourceTimetable": "Órarendből",
+    "sourceManual": "Kézi",
+    "manualHint": "Egyszeri óra, ami nem szerepel az órarendben.",
+    "subject": "Tantárgy",
+    "selectSubjectPlaceholder": "Válassz tantárgyat",
+    "noSubjectFound": "Nem található tantárgy.",
+    "teachers": "Tanárok",
+    "noTeacherFound": "Nem található tanár.",
+    "classes": "Osztályok",
+    "noClassFound": "Nem található osztály.",
+    "manual": "Kézi",
+    "manualRequired": "Válassz tantárgyat és legalább egy osztályt."
   },
   "news": {
     "title": "Hírek"

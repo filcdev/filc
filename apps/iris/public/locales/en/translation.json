@@ -416,7 +416,20 @@
     "export": "Export",
     "exportTitle": "Moved lessons export",
     "exportSuccess": "Export downloaded successfully",
-    "exportError": "Failed to export moved lessons"
+    "exportError": "Failed to export moved lessons",
+    "source": "Source",
+    "sourceTimetable": "From the timetable",
+    "sourceManual": "Manual",
+    "manualHint": "A one-off lesson that is not in the timetable.",
+    "subject": "Subject",
+    "selectSubjectPlaceholder": "Select a subject",
+    "noSubjectFound": "No subject found.",
+    "teachers": "Teachers",
+    "noTeacherFound": "No teacher found.",
+    "classes": "Classes",
+    "noClassFound": "No class found.",
+    "manual": "Manual",
+    "manualRequired": "Pick a subject and at least one class."
   },
   "news": {
     "title": "News"

@@ -5,6 +5,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@filcdev/ui/components/alert';
+import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Input } from '@filcdev/ui/components/input';
@@ -19,7 +20,7 @@ import {
 } from '@filcdev/ui/components/table';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
-import { ArrowRightLeft, Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
@@ -437,7 +438,7 @@ function MovedLessonsPage() {
   );
 }
 
-type MovedLessonSortColumn = 'date' | 'day' | 'period' | 'room' | 'count';
+type MovedLessonSortColumn = 'date' | 'day' | 'period' | 'room' | 'subject';
 
 type MovedLessonsTableProps = {
   deletePending: boolean;
@@ -496,7 +497,7 @@ function MovedLessonsTable({
             {header('day', t('movedLesson.targetDay'))}
             {header('period', t('movedLesson.targetPeriod'))}
             {header('room', t('movedLesson.targetRoom'))}
-            {header('count', t('movedLesson.lessonsCount'))}
+            {header('subject', t('movedLesson.subject'))}
             <TableHead>{t('movedLesson.comment')}</TableHead>
             {hasWritePermission && (
               <TableHead>{t('movedLesson.actions')}</TableHead>
@@ -521,10 +522,40 @@ function MovedLessonsTable({
               </TableCell>
               <TableCell>{ml.classroom ? ml.classroom.name : '-'}</TableCell>
               <TableCell>
-                <div className="flex items-center gap-1">
-                  <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
-                  {ml.lessons.length}
-                </div>
+                {ml.manual ? (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="font-medium">
+                      {ml.manual.subject?.short ??
+                        ml.manual.subject?.name ??
+                        '—'}
+                    </span>
+                    {ml.manual.cohorts.map((cohort) => (
+                      <Badge key={cohort.id} variant="secondary">
+                        {cohort.short ?? cohort.name}
+                      </Badge>
+                    ))}
+                    <Badge variant="outline">{t('movedLesson.manual')}</Badge>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1">
+                    {(() => {
+                      const subjects = Array.from(
+                        new Set(
+                          ml.lessons
+                            .map((lesson) => lesson.subject?.short)
+                            .filter((short): short is string => Boolean(short))
+                        )
+                      );
+                      return subjects.length > 0
+                        ? subjects.map((short) => (
+                            <Badge key={short} variant="secondary">
+                              {short}
+                            </Badge>
+                          ))
+                        : `${t('movedLesson.lessonsCount')} ${ml.lessons.length}`;
+                    })()}
+                  </div>
+                )}
               </TableCell>
               <TableCell>
                 {ml.movedLesson.comment ? (
@@ -577,11 +608,26 @@ function getMovedLessonSortValue(
       return ml.period?.period ?? 0;
     case 'room':
       return ml.classroom?.name ?? '';
-    case 'count':
-      return ml.lessons.length;
+    case 'subject':
+      return getMovedLessonSubjectSortValue(ml);
     default:
       return '';
   }
+}
+
+// The subject a row sorts by: the manual subject's short, or the distinct
+// subject shorts of the linked lessons.
+function getMovedLessonSubjectSortValue(ml: MovedLessonItem): string {
+  if (ml.manual) {
+    return ml.manual.subject?.short ?? ml.manual.subject?.name ?? '';
+  }
+  return Array.from(
+    new Set(
+      ml.lessons
+        .map((lesson) => lesson.subject?.short)
+        .filter((short): short is string => Boolean(short))
+    )
+  ).join(', ');
 }
 
 // Special handling for 'day' column - order by week day sequence
@@ -610,7 +656,7 @@ function compareByDayOrder(
 function compareDayColumn(
   a: MovedLessonItem,
   b: MovedLessonItem,
-  sortColumn: 'date' | 'day' | 'period' | 'room' | 'count',
+  sortColumn: 'date' | 'day' | 'period' | 'room' | 'subject',
   sortDirection: 'asc' | 'desc'
 ) {
   return sortColumn === 'day'
