@@ -22,7 +22,6 @@ type ThemeOption = {
   nameKey: string;
   descriptionKey: string;
   Art: typeof DefaultArt;
-  swatches: string[];
 };
 
 const THEMES: ThemeOption[] = [
@@ -31,21 +30,18 @@ const THEMES: ThemeOption[] = [
     nameKey: 'siteTheme.default.name',
     descriptionKey: 'siteTheme.default.description',
     Art: DefaultArt,
-    swatches: ['#16a34a', '#18181b', '#fafafa', '#71717a'],
   },
   {
     id: 'halloween',
     nameKey: 'siteTheme.halloween.name',
     descriptionKey: 'siteTheme.halloween.description',
     Art: HalloweenArt,
-    swatches: ['#ea580c', '#7c3aed', '#f59e0b', '#2d2a26'],
   },
   {
     id: 'christmas',
     nameKey: 'siteTheme.christmas.name',
     descriptionKey: 'siteTheme.christmas.description',
     Art: ChristmasArt,
-    swatches: ['#dc2626', '#16a34a', '#0ea5e9', '#14532d'],
   },
 ];
 
@@ -161,18 +157,7 @@ function ThemeCard({ active, option, selected, onSelect }: ThemeCardProps) {
         )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-semibold">{t(option.nameKey)}</h2>
-          <div className="flex gap-1.5">
-            {option.swatches.map((color) => (
-              <span
-                className="h-4 w-4 rounded-full border border-black/10"
-                key={color}
-                style={{ backgroundColor: color }}
-              />
-            ))}
-          </div>
-        </div>
+        <h2 className="font-semibold">{t(option.nameKey)}</h2>
         <p className="text-muted-foreground text-sm">
           {t(option.descriptionKey)}
         </p>
@@ -200,12 +185,19 @@ function ThemePreview({ themeId }: { themeId: SiteTheme }) {
 function MiniUi({ dark, themeId }: { dark: boolean; themeId: SiteTheme }) {
   return (
     <div
-      {...(themeId === 'default' ? {} : { 'data-site-theme': themeId })}
       className={cn(
         'space-y-1.5 rounded-lg border border-border bg-background p-2 text-foreground',
         dark && 'dark'
       )}
+      data-site-theme={themeId}
     >
+      {/* palette swatches, driven by this card's own tokens */}
+      <div aria-hidden="true" className="flex gap-1">
+        <span className="h-3 w-3 rounded-full bg-primary" />
+        <span className="h-3 w-3 rounded-full bg-accent" />
+        <span className="h-3 w-3 rounded-full border border-border bg-background" />
+        <span className="h-3 w-3 rounded-full bg-foreground" />
+      </div>
       {/* top bar */}
       <div className="flex items-center justify-between rounded-md bg-card px-1.5 py-1">
         <span className="h-1.5 w-8 rounded-full bg-primary" />

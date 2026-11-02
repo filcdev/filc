@@ -6,9 +6,12 @@
  * matter which theme happens to be active on the page.
  */
 
+import { useId } from 'react';
+
 type ArtProps = { className?: string };
 
 export function DefaultArt({ className }: ArtProps) {
+  const id = useId();
   return (
     <svg
       aria-hidden="true"
@@ -18,12 +21,12 @@ export function DefaultArt({ className }: ArtProps) {
       viewBox="0 0 400 160"
     >
       <defs>
-        <linearGradient id="dflt-grad" x1="0" x2="1" y1="0" y2="1">
+        <linearGradient id={`dflt-grad-${id}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.28" />
           <stop offset="100%" stopColor="#0f766e" stopOpacity="0.04" />
         </linearGradient>
       </defs>
-      <rect fill="url(#dflt-grad)" height="160" width="400" />
+      <rect fill={`url(#dflt-grad-${id})`} height="160" width="400" />
       <circle cx="300" cy="80" fill="#14b8a6" opacity="0.14" r="90" />
       <circle cx="322" cy="60" fill="#2dd4bf" opacity="0.18" r="44" />
       <circle cx="70" cy="120" fill="#0d9488" opacity="0.12" r="40" />
@@ -37,6 +40,7 @@ export function DefaultArt({ className }: ArtProps) {
 }
 
 export function HalloweenArt({ className }: ArtProps) {
+  const id = useId();
   return (
     <svg
       aria-hidden="true"
@@ -46,16 +50,16 @@ export function HalloweenArt({ className }: ArtProps) {
       viewBox="0 0 400 160"
     >
       <defs>
-        <linearGradient id="hw-bg" x1="0" x2="1" y1="0" y2="1">
+        <linearGradient id={`hw-bg-${id}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.16" />
           <stop offset="100%" stopColor="#ea580c" stopOpacity="0.10" />
         </linearGradient>
-        <linearGradient id="hw-pumpkin" x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`hw-pumpkin-${id}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#fb923c" />
           <stop offset="100%" stopColor="#c2410c" />
         </linearGradient>
       </defs>
-      <rect fill="url(#hw-bg)" height="160" width="400" />
+      <rect fill={`url(#hw-bg-${id})`} height="160" width="400" />
       {/* crescent moon */}
       <path
         d="M312 26 a30 30 0 1 0 0 60 a21 21 0 1 1 0 -60 Z"
@@ -82,7 +86,13 @@ export function HalloweenArt({ className }: ArtProps) {
         <circle cx="103" cy="60" fill="#fbbf24" r="2.5" />
       </g>
       {/* pumpkin */}
-      <ellipse cx="210" cy="128" fill="url(#hw-pumpkin)" rx="62" ry="44" />
+      <ellipse
+        cx="210"
+        cy="128"
+        fill={`url(#hw-pumpkin-${id})`}
+        rx="62"
+        ry="44"
+      />
       <path
         d="M180 128 q30 -30 60 0 q-30 30 -60 0 Z"
         fill="#9a3412"
@@ -101,6 +111,7 @@ export function HalloweenArt({ className }: ArtProps) {
 }
 
 export function ChristmasArt({ className }: ArtProps) {
+  const id = useId();
   return (
     <svg
       aria-hidden="true"
@@ -110,16 +121,16 @@ export function ChristmasArt({ className }: ArtProps) {
       viewBox="0 0 400 160"
     >
       <defs>
-        <linearGradient id="xmas-bg" x1="0" x2="1" y1="0" y2="1">
+        <linearGradient id={`xmas-bg-${id}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor="#16a34a" stopOpacity="0.14" />
           <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.10" />
         </linearGradient>
-        <linearGradient id="xmas-tree" x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`xmas-tree-${id}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#22c55e" />
           <stop offset="100%" stopColor="#15803d" />
         </linearGradient>
       </defs>
-      <rect fill="url(#xmas-bg)" height="160" width="400" />
+      <rect fill={`url(#xmas-bg-${id})`} height="160" width="400" />
       {/* snowflakes */}
       <path
         d="M60 32 l3 8 l8 1 l-6 6 l2 8 l-7 -4 l-7 4 l2 -8 l-6 -6 l8 -1 z"
@@ -134,9 +145,9 @@ export function ChristmasArt({ className }: ArtProps) {
       <circle cx="362" cy="92" fill="#0ea5e9" r="2" />
       {/* pine tree */}
       <g>
-        <path d="M260 50 l30 26 l-30 26 Z" fill="url(#xmas-tree)" />
-        <path d="M260 76 l38 34 l-38 34 Z" fill="url(#xmas-tree)" />
-        <path d="M260 106 l46 40 l-46 40 Z" fill="url(#xmas-tree)" />
+        <path d="M260 50 l30 26 l-30 26 Z" fill={`url(#xmas-tree-${id})`} />
+        <path d="M260 76 l38 34 l-38 34 Z" fill={`url(#xmas-tree-${id})`} />
+        <path d="M260 106 l46 40 l-46 40 Z" fill={`url(#xmas-tree-${id})`} />
         <rect fill="#92400e" height="14" rx="2" width="12" x="254" y="146" />
         <circle cx="260" cy="64" fill="#facc15" r="3" />
         <circle cx="250" cy="96" fill="#f87171" r="3" />
