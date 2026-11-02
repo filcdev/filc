@@ -34913,6 +34913,11 @@
                     "theme": {
                       "enum": [
                         "default",
+                        "newYear",
+                        "valentines",
+                        "march15",
+                        "easter",
+                        "summer",
                         "halloween",
                         "christmas"
                       ],
@@ -35126,6 +35131,11 @@
                   "theme": {
                     "enum": [
                       "default",
+                      "newYear",
+                      "valentines",
+                      "march15",
+                      "easter",
+                      "summer",
                       "halloween",
                       "christmas"
                     ],
@@ -35150,6 +35160,11 @@
                     "theme": {
                       "enum": [
                         "default",
+                        "newYear",
+                        "valentines",
+                        "march15",
+                        "easter",
+                        "summer",
                         "halloween",
                         "christmas"
                       ],

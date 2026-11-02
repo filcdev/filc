@@ -2,7 +2,16 @@ import z from 'zod';
 
 /** The seasonal skins an admin can apply site-wide. `default` is the off
  *  state: every visitor keeps their own per-user light/dark setting. */
-export const siteThemeIds = ['default', 'halloween', 'christmas'] as const;
+export const siteThemeIds = [
+  'default',
+  'newYear',
+  'valentines',
+  'march15',
+  'easter',
+  'summer',
+  'halloween',
+  'christmas',
+] as const;
 
 export const siteThemeSchema = z.enum(siteThemeIds);
 
