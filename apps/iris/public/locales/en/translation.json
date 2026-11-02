@@ -182,6 +182,26 @@
       "name": "Default",
       "description": "The clean, everyday look with no seasonal styling."
     },
+    "newYear": {
+      "name": "New Year's Eve",
+      "description": "Midnight blue, gold and fireworks."
+    },
+    "valentines": {
+      "name": "Valentine's Day",
+      "description": "Rose, blush and hearts."
+    },
+    "march15": {
+      "name": "15 March",
+      "description": "The Hungarian national colours, red-white-green, for the 1848 revolution memorial day."
+    },
+    "easter": {
+      "name": "Easter",
+      "description": "Pastel lilac, butter yellow and spring green."
+    },
+    "summer": {
+      "name": "Summer",
+      "description": "Azure, turquoise and sunny yellow."
+    },
     "halloween": {
       "name": "Halloween",
       "description": "Warm parchment, pumpkin orange and deep purple for spooky season."

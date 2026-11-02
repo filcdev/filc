@@ -164,6 +164,26 @@
       "name": "Alapértelmezett",
       "description": "A tiszta, hétköznapi megjelenés, idényjellegű stílus nélkül."
     },
+    "newYear": {
+      "name": "Szilveszter",
+      "description": "Éjféli kék, arany és tűzijáték."
+    },
+    "valentines": {
+      "name": "Valentin-nap",
+      "description": "Rózsaszín, pír és szívek."
+    },
+    "march15": {
+      "name": "Március 15.",
+      "description": "A magyar nemzeti színek, piros-fehér-zöld, az 1848-as forradalom emléknapjára."
+    },
+    "easter": {
+      "name": "Húsvét",
+      "description": "Pasztell lila, vajsárga és tavaszi zöld."
+    },
+    "summer": {
+      "name": "Nyár",
+      "description": "Azúrkék, türkiz és napfényes sárga."
+    },
     "halloween": {
       "name": "Halloween",
       "description": "Meleg pergamen, tök narancs és mélylila a Halloween hangulatához."

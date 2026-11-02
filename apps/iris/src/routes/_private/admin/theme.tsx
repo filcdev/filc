@@ -11,7 +11,12 @@ import { useTranslation } from 'react-i18next';
 import {
   ChristmasArt,
   DefaultArt,
+  EasterArt,
   HalloweenArt,
+  March15Art,
+  NewYearArt,
+  SummerArt,
+  ValentinesArt,
 } from '@/components/admin/theme-art';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { useSiteTheme, useUpdateSiteTheme } from '@/hooks/site-theme';
@@ -30,6 +35,36 @@ const THEMES: ThemeOption[] = [
     nameKey: 'siteTheme.default.name',
     descriptionKey: 'siteTheme.default.description',
     Art: DefaultArt,
+  },
+  {
+    id: 'newYear',
+    nameKey: 'siteTheme.newYear.name',
+    descriptionKey: 'siteTheme.newYear.description',
+    Art: NewYearArt,
+  },
+  {
+    id: 'valentines',
+    nameKey: 'siteTheme.valentines.name',
+    descriptionKey: 'siteTheme.valentines.description',
+    Art: ValentinesArt,
+  },
+  {
+    id: 'march15',
+    nameKey: 'siteTheme.march15.name',
+    descriptionKey: 'siteTheme.march15.description',
+    Art: March15Art,
+  },
+  {
+    id: 'easter',
+    nameKey: 'siteTheme.easter.name',
+    descriptionKey: 'siteTheme.easter.description',
+    Art: EasterArt,
+  },
+  {
+    id: 'summer',
+    nameKey: 'siteTheme.summer.name',
+    descriptionKey: 'siteTheme.summer.description',
+    Art: SummerArt,
   },
   {
     id: 'halloween',
@@ -90,14 +125,14 @@ function ThemePage() {
       </div>
 
       {siteThemeQuery.isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {THEMES.map((option) => (
             <Skeleton className="h-96 w-full rounded-2xl" key={option.id} />
           ))}
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {THEMES.map((option) => (
               <ThemeCard
                 active={option.id === activeTheme}

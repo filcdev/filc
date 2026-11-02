@@ -88,6 +88,271 @@ export function HalloweenArt({ className }: ArtProps) {
   );
 }
 
+export function NewYearArt({ className }: ArtProps) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none overflow-hidden bg-gradient-to-br from-indigo-700/20 via-blue-900/10 to-amber-500/15',
+        className
+      )}
+    >
+      <img
+        alt=""
+        className="absolute top-[2%] right-[4%] h-[42%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/new-year/fireworks.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute bottom-[2%] left-[4%] h-[62%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/new-year/party-popper.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[42%] right-[16%] h-[34%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/new-year/champagne.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[24%] left-[40%] h-[16%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/new-year/sparkles.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[12%] left-[22%] h-[14%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/new-year/star.svg"
+        width={36}
+      />
+    </div>
+  );
+}
+
+export function ValentinesArt({ className }: ArtProps) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none overflow-hidden bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-rose-600/15',
+        className
+      )}
+    >
+      <img
+        alt=""
+        className="absolute top-[20%] left-1/2 h-[52%] w-auto -translate-x-1/2"
+        draggable={false}
+        height={36}
+        src="/assets/themes/valentines/heart.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[6%] left-[6%] h-[34%] w-auto -rotate-12"
+        draggable={false}
+        height={36}
+        src="/assets/themes/valentines/heart-arrow.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute right-[5%] bottom-[4%] h-[38%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/valentines/rose.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute bottom-[8%] left-[8%] h-[30%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/valentines/love-letter.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[10%] right-[16%] h-[16%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/valentines/hearts.svg"
+        width={36}
+      />
+    </div>
+  );
+}
+
+export function March15Art({ className }: ArtProps) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none overflow-hidden bg-gradient-to-br from-red-600/15 via-emerald-500/10 to-green-600/15',
+        className
+      )}
+    >
+      <img
+        alt=""
+        className="absolute top-[16%] right-[5%] h-[48%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/march15/flag-hungary.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[38%] left-[6%] h-[34%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/march15/tulip.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute bottom-[4%] left-1/2 h-[30%] w-auto -translate-x-1/2"
+        draggable={false}
+        height={36}
+        src="/assets/themes/march15/medal.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[8%] left-[8%] h-[16%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/march15/star.svg"
+        width={36}
+      />
+    </div>
+  );
+}
+
+export function EasterArt({ className }: ArtProps) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none overflow-hidden bg-gradient-to-br from-purple-400/20 via-yellow-300/10 to-emerald-400/15',
+        className
+      )}
+    >
+      <img
+        alt=""
+        className="absolute top-[24%] left-1/2 h-[44%] w-auto -translate-x-1/2"
+        draggable={false}
+        height={36}
+        src="/assets/themes/easter/hatching-chick.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[40%] right-[6%] h-[38%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/easter/rabbit.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute bottom-[4%] left-[6%] h-[26%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/easter/egg.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[6%] left-[8%] h-[30%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/easter/tulip.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute right-[18%] bottom-[4%] h-[22%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/easter/chick.svg"
+        width={36}
+      />
+    </div>
+  );
+}
+
+export function SummerArt({ className }: ArtProps) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none overflow-hidden bg-gradient-to-br from-sky-500/20 via-cyan-400/10 to-yellow-400/15',
+        className
+      )}
+    >
+      <img
+        alt=""
+        className="absolute top-[4%] right-[6%] h-[44%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/summer/sun.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute bottom-[6%] left-[4%] h-[46%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/summer/beach.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute bottom-[-4%] left-1/2 h-[32%] w-auto -translate-x-1/2"
+        draggable={false}
+        height={36}
+        src="/assets/themes/summer/wave.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute right-[4%] bottom-[6%] h-[34%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/summer/ice-cream.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[44%] left-[14%] h-[34%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/summer/palm.svg"
+        width={36}
+      />
+      <img
+        alt=""
+        className="absolute top-[16%] left-[34%] h-[14%] w-auto"
+        draggable={false}
+        height={36}
+        src="/assets/themes/summer/sunglasses.svg"
+        width={36}
+      />
+    </div>
+  );
+}
+
 export function ChristmasArt({ className }: ArtProps) {
   return (
     <div
