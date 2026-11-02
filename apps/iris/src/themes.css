@@ -232,6 +232,376 @@
   --sidebar-ring: oklch(0.7 0.08 230);
 }
 
+/* ---------------------------------- New Year ---------------------------------- */
+
+[data-site-theme="newYear"]:not(.dark) {
+  --background: oklch(0.98 0.012 90);
+  --foreground: oklch(0.22 0.03 265);
+  --card: oklch(0.995 0.008 90);
+  --card-foreground: oklch(0.22 0.03 265);
+  --popover: oklch(0.995 0.008 90);
+  --popover-foreground: oklch(0.22 0.03 265);
+  --primary: oklch(0.45 0.12 265);
+  --primary-foreground: oklch(0.98 0.01 90);
+  --secondary: oklch(0.9 0.03 265);
+  --secondary-foreground: oklch(0.32 0.05 265);
+  --muted: oklch(0.93 0.01 90);
+  --muted-foreground: oklch(0.48 0.02 265);
+  --accent: oklch(0.86 0.11 88);
+  --accent-foreground: oklch(0.28 0.05 88);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.9 0.015 90);
+  --input: oklch(0.9 0.015 90);
+  --ring: oklch(0.75 0.12 88);
+  --warning: oklch(0.85 0.14 90);
+  --warning-foreground: oklch(0.3 0.05 90);
+  --chart-1: oklch(0.45 0.12 265);
+  --chart-2: oklch(0.86 0.11 88);
+  --chart-3: oklch(0.75 0.12 88);
+  --chart-4: oklch(0.62 0.14 265);
+  --chart-5: oklch(0.55 0.03 90);
+  --sidebar: oklch(0.975 0.012 90);
+  --sidebar-foreground: oklch(0.22 0.03 265);
+  --sidebar-primary: oklch(0.45 0.12 265);
+  --sidebar-primary-foreground: oklch(0.98 0.01 90);
+  --sidebar-accent: oklch(0.86 0.11 88);
+  --sidebar-accent-foreground: oklch(0.28 0.05 88);
+  --sidebar-border: oklch(0.9 0.015 90);
+  --sidebar-ring: oklch(0.75 0.12 88);
+}
+
+[data-site-theme="newYear"].dark {
+  --background: oklch(0.17 0.03 265);
+  --foreground: oklch(0.97 0.01 90);
+  --card: oklch(0.21 0.03 265);
+  --card-foreground: oklch(0.97 0.01 90);
+  --popover: oklch(0.21 0.03 265);
+  --popover-foreground: oklch(0.97 0.01 90);
+  --primary: oklch(0.8 0.12 88);
+  --primary-foreground: oklch(0.2 0.03 265);
+  --secondary: oklch(0.29 0.03 265);
+  --secondary-foreground: oklch(0.9 0.03 265);
+  --muted: oklch(0.26 0.03 265);
+  --muted-foreground: oklch(0.72 0.02 90);
+  --accent: oklch(0.5 0.12 265);
+  --accent-foreground: oklch(0.93 0.03 265);
+  --destructive: oklch(0.66 0.22 25);
+  --border: oklch(0.97 0.01 90 / 12%);
+  --input: oklch(0.97 0.01 90 / 15%);
+  --ring: oklch(0.72 0.1 88);
+  --warning: oklch(0.8 0.13 90);
+  --warning-foreground: oklch(0.25 0.05 90);
+  --chart-1: oklch(0.8 0.12 88);
+  --chart-2: oklch(0.5 0.12 265);
+  --chart-3: oklch(0.72 0.1 88);
+  --chart-4: oklch(0.65 0.12 265);
+  --chart-5: oklch(0.9 0.02 90);
+  --sidebar: oklch(0.19 0.03 265);
+  --sidebar-foreground: oklch(0.97 0.01 90);
+  --sidebar-primary: oklch(0.8 0.12 88);
+  --sidebar-primary-foreground: oklch(0.2 0.03 265);
+  --sidebar-accent: oklch(0.5 0.12 265);
+  --sidebar-accent-foreground: oklch(0.93 0.03 265);
+  --sidebar-border: oklch(0.97 0.01 90 / 12%);
+  --sidebar-ring: oklch(0.72 0.1 88);
+}
+
+/* ---------------------------------- Valentines ---------------------------------- */
+
+[data-site-theme="valentines"]:not(.dark) {
+  --background: oklch(0.985 0.012 350);
+  --foreground: oklch(0.28 0.07 350);
+  --card: oklch(0.99 0.01 350);
+  --card-foreground: oklch(0.28 0.07 350);
+  --popover: oklch(0.99 0.01 350);
+  --popover-foreground: oklch(0.28 0.07 350);
+  --primary: oklch(0.55 0.2 12);
+  --primary-foreground: oklch(0.98 0.01 350);
+  --secondary: oklch(0.9 0.04 350);
+  --secondary-foreground: oklch(0.34 0.08 350);
+  --muted: oklch(0.94 0.012 350);
+  --muted-foreground: oklch(0.5 0.03 350);
+  --accent: oklch(0.88 0.06 350);
+  --accent-foreground: oklch(0.32 0.09 350);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.9 0.015 350);
+  --input: oklch(0.9 0.015 350);
+  --ring: oklch(0.7 0.14 10);
+  --warning: oklch(0.85 0.14 90);
+  --warning-foreground: oklch(0.3 0.05 90);
+  --chart-1: oklch(0.55 0.2 12);
+  --chart-2: oklch(0.88 0.06 350);
+  --chart-3: oklch(0.7 0.14 10);
+  --chart-4: oklch(0.62 0.18 350);
+  --chart-5: oklch(0.5 0.05 350);
+  --sidebar: oklch(0.975 0.012 350);
+  --sidebar-foreground: oklch(0.28 0.07 350);
+  --sidebar-primary: oklch(0.55 0.2 12);
+  --sidebar-primary-foreground: oklch(0.98 0.01 350);
+  --sidebar-accent: oklch(0.88 0.06 350);
+  --sidebar-accent-foreground: oklch(0.32 0.09 350);
+  --sidebar-border: oklch(0.9 0.015 350);
+  --sidebar-ring: oklch(0.7 0.14 10);
+}
+
+[data-site-theme="valentines"].dark {
+  --background: oklch(0.19 0.035 350);
+  --foreground: oklch(0.97 0.01 350);
+  --card: oklch(0.23 0.04 350);
+  --card-foreground: oklch(0.97 0.01 350);
+  --popover: oklch(0.23 0.04 350);
+  --popover-foreground: oklch(0.97 0.01 350);
+  --primary: oklch(0.68 0.2 10);
+  --primary-foreground: oklch(0.16 0.03 350);
+  --secondary: oklch(0.3 0.05 350);
+  --secondary-foreground: oklch(0.9 0.04 350);
+  --muted: oklch(0.28 0.04 350);
+  --muted-foreground: oklch(0.72 0.03 350);
+  --accent: oklch(0.52 0.12 350);
+  --accent-foreground: oklch(0.93 0.04 350);
+  --destructive: oklch(0.66 0.22 25);
+  --border: oklch(0.97 0.01 350 / 12%);
+  --input: oklch(0.97 0.01 350 / 15%);
+  --ring: oklch(0.62 0.14 10);
+  --warning: oklch(0.8 0.13 90);
+  --warning-foreground: oklch(0.25 0.05 90);
+  --chart-1: oklch(0.68 0.2 10);
+  --chart-2: oklch(0.52 0.12 350);
+  --chart-3: oklch(0.62 0.14 10);
+  --chart-4: oklch(0.72 0.12 350);
+  --chart-5: oklch(0.9 0.02 350);
+  --sidebar: oklch(0.21 0.035 350);
+  --sidebar-foreground: oklch(0.97 0.01 350);
+  --sidebar-primary: oklch(0.68 0.2 10);
+  --sidebar-primary-foreground: oklch(0.16 0.03 350);
+  --sidebar-accent: oklch(0.52 0.12 350);
+  --sidebar-accent-foreground: oklch(0.93 0.04 350);
+  --sidebar-border: oklch(0.97 0.01 350 / 12%);
+  --sidebar-ring: oklch(0.62 0.14 10);
+}
+
+/* ---------------------------------- March 15 ---------------------------------- */
+
+[data-site-theme="march15"]:not(.dark) {
+  --background: oklch(0.99 0.003 100);
+  --foreground: oklch(0.24 0.02 30);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.02 30);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.02 30);
+  --primary: oklch(0.5 0.19 25);
+  --primary-foreground: oklch(0.98 0.01 100);
+  --secondary: oklch(0.94 0.03 150);
+  --secondary-foreground: oklch(0.3 0.07 150);
+  --muted: oklch(0.95 0.005 100);
+  --muted-foreground: oklch(0.48 0.02 100);
+  --accent: oklch(0.9 0.05 150);
+  --accent-foreground: oklch(0.3 0.08 150);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.9 0.005 100);
+  --input: oklch(0.9 0.005 100);
+  --ring: oklch(0.6 0.14 25);
+  --warning: oklch(0.85 0.14 90);
+  --warning-foreground: oklch(0.3 0.05 90);
+  --chart-1: oklch(0.5 0.19 25);
+  --chart-2: oklch(0.94 0.03 150);
+  --chart-3: oklch(0.9 0.05 150);
+  --chart-4: oklch(0.6 0.14 25);
+  --chart-5: oklch(0.7 0.05 100);
+  --sidebar: oklch(0.985 0.003 100);
+  --sidebar-foreground: oklch(0.24 0.02 30);
+  --sidebar-primary: oklch(0.5 0.19 25);
+  --sidebar-primary-foreground: oklch(0.98 0.01 100);
+  --sidebar-accent: oklch(0.9 0.05 150);
+  --sidebar-accent-foreground: oklch(0.3 0.08 150);
+  --sidebar-border: oklch(0.9 0.005 100);
+  --sidebar-ring: oklch(0.6 0.14 25);
+}
+
+[data-site-theme="march15"].dark {
+  --background: oklch(0.19 0.02 160);
+  --foreground: oklch(0.97 0.005 100);
+  --card: oklch(0.23 0.02 160);
+  --card-foreground: oklch(0.97 0.005 100);
+  --popover: oklch(0.23 0.02 160);
+  --popover-foreground: oklch(0.97 0.005 100);
+  --primary: oklch(0.62 0.19 25);
+  --primary-foreground: oklch(0.2 0.02 160);
+  --secondary: oklch(0.3 0.03 160);
+  --secondary-foreground: oklch(0.9 0.03 160);
+  --muted: oklch(0.28 0.02 160);
+  --muted-foreground: oklch(0.72 0.02 160);
+  --accent: oklch(0.5 0.1 150);
+  --accent-foreground: oklch(0.95 0.02 150);
+  --destructive: oklch(0.66 0.22 25);
+  --border: oklch(0.97 0.005 100 / 12%);
+  --input: oklch(0.97 0.005 100 / 15%);
+  --ring: oklch(0.6 0.12 25);
+  --warning: oklch(0.8 0.13 90);
+  --warning-foreground: oklch(0.25 0.05 90);
+  --chart-1: oklch(0.62 0.19 25);
+  --chart-2: oklch(0.5 0.1 150);
+  --chart-3: oklch(0.6 0.12 25);
+  --chart-4: oklch(0.7 0.1 150);
+  --chart-5: oklch(0.9 0.02 160);
+  --sidebar: oklch(0.21 0.02 160);
+  --sidebar-foreground: oklch(0.97 0.005 100);
+  --sidebar-primary: oklch(0.62 0.19 25);
+  --sidebar-primary-foreground: oklch(0.2 0.02 160);
+  --sidebar-accent: oklch(0.5 0.1 150);
+  --sidebar-accent-foreground: oklch(0.95 0.02 150);
+  --sidebar-border: oklch(0.97 0.005 100 / 12%);
+  --sidebar-ring: oklch(0.6 0.12 25);
+}
+
+/* ---------------------------------- Easter ---------------------------------- */
+
+[data-site-theme="easter"]:not(.dark) {
+  --background: oklch(0.985 0.012 300);
+  --foreground: oklch(0.3 0.05 300);
+  --card: oklch(0.99 0.01 300);
+  --card-foreground: oklch(0.3 0.05 300);
+  --popover: oklch(0.99 0.01 300);
+  --popover-foreground: oklch(0.3 0.05 300);
+  --primary: oklch(0.55 0.14 300);
+  --primary-foreground: oklch(0.98 0.01 300);
+  --secondary: oklch(0.94 0.04 95);
+  --secondary-foreground: oklch(0.3 0.05 95);
+  --muted: oklch(0.94 0.012 300);
+  --muted-foreground: oklch(0.5 0.03 300);
+  --accent: oklch(0.9 0.06 300);
+  --accent-foreground: oklch(0.32 0.08 300);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.9 0.015 300);
+  --input: oklch(0.9 0.015 300);
+  --ring: oklch(0.7 0.1 300);
+  --warning: oklch(0.85 0.14 90);
+  --warning-foreground: oklch(0.3 0.05 90);
+  --chart-1: oklch(0.55 0.14 300);
+  --chart-2: oklch(0.94 0.04 95);
+  --chart-3: oklch(0.9 0.06 300);
+  --chart-4: oklch(0.7 0.1 300);
+  --chart-5: oklch(0.55 0.1 160);
+  --sidebar: oklch(0.975 0.012 300);
+  --sidebar-foreground: oklch(0.3 0.05 300);
+  --sidebar-primary: oklch(0.55 0.14 300);
+  --sidebar-primary-foreground: oklch(0.98 0.01 300);
+  --sidebar-accent: oklch(0.9 0.06 300);
+  --sidebar-accent-foreground: oklch(0.32 0.08 300);
+  --sidebar-border: oklch(0.9 0.015 300);
+  --sidebar-ring: oklch(0.7 0.1 300);
+}
+
+[data-site-theme="easter"].dark {
+  --background: oklch(0.2 0.03 300);
+  --foreground: oklch(0.97 0.005 300);
+  --card: oklch(0.24 0.035 300);
+  --card-foreground: oklch(0.97 0.005 300);
+  --popover: oklch(0.24 0.035 300);
+  --popover-foreground: oklch(0.97 0.005 300);
+  --primary: oklch(0.72 0.13 300);
+  --primary-foreground: oklch(0.18 0.03 300);
+  --secondary: oklch(0.3 0.04 300);
+  --secondary-foreground: oklch(0.9 0.04 300);
+  --muted: oklch(0.29 0.03 300);
+  --muted-foreground: oklch(0.72 0.03 300);
+  --accent: oklch(0.5 0.09 160);
+  --accent-foreground: oklch(0.94 0.03 160);
+  --destructive: oklch(0.66 0.22 25);
+  --border: oklch(0.97 0.005 300 / 12%);
+  --input: oklch(0.97 0.005 300 / 15%);
+  --ring: oklch(0.6 0.1 300);
+  --warning: oklch(0.8 0.13 90);
+  --warning-foreground: oklch(0.25 0.05 90);
+  --chart-1: oklch(0.72 0.13 300);
+  --chart-2: oklch(0.5 0.09 160);
+  --chart-3: oklch(0.6 0.1 300);
+  --chart-4: oklch(0.7 0.1 160);
+  --chart-5: oklch(0.9 0.02 300);
+  --sidebar: oklch(0.22 0.03 300);
+  --sidebar-foreground: oklch(0.97 0.005 300);
+  --sidebar-primary: oklch(0.72 0.13 300);
+  --sidebar-primary-foreground: oklch(0.18 0.03 300);
+  --sidebar-accent: oklch(0.5 0.09 160);
+  --sidebar-accent-foreground: oklch(0.94 0.03 160);
+  --sidebar-border: oklch(0.97 0.005 300 / 12%);
+  --sidebar-ring: oklch(0.6 0.1 300);
+}
+
+/* ---------------------------------- Summer ---------------------------------- */
+
+[data-site-theme="summer"]:not(.dark) {
+  --background: oklch(0.99 0.008 200);
+  --foreground: oklch(0.26 0.04 220);
+  --card: oklch(0.995 0.006 200);
+  --card-foreground: oklch(0.26 0.04 220);
+  --popover: oklch(0.995 0.006 200);
+  --popover-foreground: oklch(0.26 0.04 220);
+  --primary: oklch(0.53 0.14 220);
+  --primary-foreground: oklch(0.98 0.01 200);
+  --secondary: oklch(0.94 0.05 85);
+  --secondary-foreground: oklch(0.3 0.07 85);
+  --muted: oklch(0.94 0.01 200);
+  --muted-foreground: oklch(0.48 0.02 220);
+  --accent: oklch(0.9 0.06 85);
+  --accent-foreground: oklch(0.32 0.07 85);
+  --destructive: oklch(0.577 0.2 27);
+  --border: oklch(0.9 0.015 200);
+  --input: oklch(0.9 0.015 200);
+  --ring: oklch(0.7 0.12 200);
+  --warning: oklch(0.85 0.14 90);
+  --warning-foreground: oklch(0.3 0.05 90);
+  --chart-1: oklch(0.53 0.14 220);
+  --chart-2: oklch(0.94 0.05 85);
+  --chart-3: oklch(0.9 0.06 85);
+  --chart-4: oklch(0.7 0.12 200);
+  --chart-5: oklch(0.6 0.1 190);
+  --sidebar: oklch(0.985 0.008 200);
+  --sidebar-foreground: oklch(0.26 0.04 220);
+  --sidebar-primary: oklch(0.53 0.14 220);
+  --sidebar-primary-foreground: oklch(0.98 0.01 200);
+  --sidebar-accent: oklch(0.9 0.06 85);
+  --sidebar-accent-foreground: oklch(0.32 0.07 85);
+  --sidebar-border: oklch(0.9 0.015 200);
+  --sidebar-ring: oklch(0.7 0.12 200);
+}
+
+[data-site-theme="summer"].dark {
+  --background: oklch(0.19 0.03 220);
+  --foreground: oklch(0.97 0.008 200);
+  --card: oklch(0.23 0.035 220);
+  --card-foreground: oklch(0.97 0.008 200);
+  --popover: oklch(0.23 0.035 220);
+  --popover-foreground: oklch(0.97 0.008 200);
+  --primary: oklch(0.7 0.13 205);
+  --primary-foreground: oklch(0.18 0.03 220);
+  --secondary: oklch(0.3 0.03 220);
+  --secondary-foreground: oklch(0.9 0.03 220);
+  --muted: oklch(0.28 0.03 220);
+  --muted-foreground: oklch(0.72 0.02 220);
+  --accent: oklch(0.5 0.11 190);
+  --accent-foreground: oklch(0.95 0.02 190);
+  --destructive: oklch(0.66 0.22 25);
+  --border: oklch(0.97 0.008 200 / 12%);
+  --input: oklch(0.97 0.008 200 / 15%);
+  --ring: oklch(0.62 0.11 205);
+  --warning: oklch(0.8 0.13 90);
+  --warning-foreground: oklch(0.25 0.05 90);
+  --chart-1: oklch(0.7 0.13 205);
+  --chart-2: oklch(0.5 0.11 190);
+  --chart-3: oklch(0.62 0.11 205);
+  --chart-4: oklch(0.72 0.12 85);
+  --chart-5: oklch(0.9 0.02 200);
+  --sidebar: oklch(0.21 0.03 220);
+  --sidebar-foreground: oklch(0.97 0.008 200);
+  --sidebar-primary: oklch(0.7 0.13 205);
+  --sidebar-primary-foreground: oklch(0.18 0.03 220);
+  --sidebar-accent: oklch(0.5 0.11 190);
+  --sidebar-accent-foreground: oklch(0.95 0.02 190);
+  --sidebar-border: oklch(0.97 0.008 200 / 12%);
+  --sidebar-ring: oklch(0.62 0.11 205);
+}
+
 /*
  * Decorative background art: a veil washed with the theme's own `--background`,
  * a soft theme gradient, then a scattered field of the downloaded Twemoji
@@ -437,10 +807,285 @@ html[data-site-theme="christmas"] body {
     32px;
 }
 
+html[data-site-theme="newYear"] body {
+  --theme-art-veil: 76%;
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      oklch(0.45 0.12 265 / 8%),
+      transparent 40%,
+      oklch(0.86 0.11 88 / 7%)
+    ),
+    url("/assets/themes/new-year/fireworks.svg"),
+    url("/assets/themes/new-year/party-popper.svg"),
+    url("/assets/themes/new-year/champagne.svg"),
+    url("/assets/themes/new-year/sparkles.svg"),
+    url("/assets/themes/new-year/star.svg"),
+    url("/assets/themes/new-year/clinking-glasses.svg"),
+    url("/assets/themes/new-year/fireworks.svg"),
+    url("/assets/themes/new-year/sparkles.svg"),
+    url("/assets/themes/new-year/star.svg"),
+    url("/assets/themes/new-year/party-popper.svg"),
+    url("/assets/themes/new-year/champagne.svg"),
+    url("/assets/themes/new-year/sparkles.svg"),
+    url("/assets/themes/new-year/star.svg"),
+    url("/assets/themes/new-year/clinking-glasses.svg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position:
+    center,
+    center,
+    left 82% top 6%,
+    left 8% top 60%,
+    left 60% top 80%,
+    left 30% top 14%,
+    left 92% top 40%,
+    left 16% top 20%,
+    left 40% top 70%,
+    left 70% top 30%,
+    left 4% top 40%,
+    left 88% top 76%,
+    left 26% top 88%,
+    left 54% top 50%,
+    left 64% top 8%,
+    left 12% top 86%;
+  background-size:
+    auto, auto, 96px, 64px, 52px, 32px, 28px, 48px, 40px, 24px, 30px, 44px,
+    56px, 26px, 34px, 60px;
+}
+
+html[data-site-theme="valentines"] body {
+  --theme-art-veil: 76%;
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      oklch(0.55 0.2 12 / 7%),
+      transparent 40%,
+      oklch(0.88 0.06 350 / 7%)
+    ),
+    url("/assets/themes/valentines/heart.svg"),
+    url("/assets/themes/valentines/heart-arrow.svg"),
+    url("/assets/themes/valentines/rose.svg"),
+    url("/assets/themes/valentines/love-letter.svg"),
+    url("/assets/themes/valentines/hearts.svg"),
+    url("/assets/themes/valentines/heart.svg"),
+    url("/assets/themes/valentines/heart-arrow.svg"),
+    url("/assets/themes/valentines/rose.svg"),
+    url("/assets/themes/valentines/hearts.svg"),
+    url("/assets/themes/valentines/love-letter.svg"),
+    url("/assets/themes/valentines/heart.svg"),
+    url("/assets/themes/valentines/heart-arrow.svg"),
+    url("/assets/themes/valentines/rose.svg"),
+    url("/assets/themes/valentines/hearts.svg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position:
+    center,
+    center,
+    left 50% top 10%,
+    left 8% top 30%,
+    left 86% top 70%,
+    left 20% top 76%,
+    left 70% top 16%,
+    left 90% top 26%,
+    left 34% top 46%,
+    left 4% top 60%,
+    left 60% top 62%,
+    left 76% top 88%,
+    left 14% top 12%,
+    left 44% top 82%,
+    left 94% top 44%,
+    left 28% top 30%;
+  background-size:
+    auto, auto, 64px, 48px, 72px, 52px, 40px, 30px, 36px, 44px, 32px, 56px,
+    24px, 90px, 38px, 26px;
+}
+
+html[data-site-theme="march15"] body {
+  --theme-art-veil: 76%;
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      oklch(0.5 0.19 25 / 6%),
+      transparent 40%,
+      oklch(0.5 0.1 150 / 7%)
+    ),
+    url("/assets/themes/march15/flag-hungary.svg"),
+    url("/assets/themes/march15/tulip.svg"),
+    url("/assets/themes/march15/medal.svg"),
+    url("/assets/themes/march15/star.svg"),
+    url("/assets/themes/march15/flag-hungary.svg"),
+    url("/assets/themes/march15/tulip.svg"),
+    url("/assets/themes/march15/star.svg"),
+    url("/assets/themes/march15/medal.svg"),
+    url("/assets/themes/march15/tulip.svg"),
+    url("/assets/themes/march15/star.svg"),
+    url("/assets/themes/march15/flag-hungary.svg"),
+    url("/assets/themes/march15/medal.svg"),
+    url("/assets/themes/march15/tulip.svg"),
+    url("/assets/themes/march15/star.svg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position:
+    center,
+    center,
+    left 78% top 8%,
+    left 10% top 54%,
+    left 50% top 78%,
+    left 30% top 12%,
+    left 6% top 18%,
+    left 68% top 40%,
+    left 90% top 64%,
+    left 40% top 88%,
+    left 88% top 28%,
+    left 56% top 52%,
+    left 22% top 70%,
+    left 4% top 84%,
+    left 74% top 76%,
+    left 14% top 34%;
+  background-size:
+    auto, auto, 72px, 48px, 64px, 30px, 56px, 40px, 26px, 52px, 36px, 24px,
+    60px, 44px, 96px, 32px;
+}
+
+html[data-site-theme="easter"] body {
+  --theme-art-veil: 76%;
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      oklch(0.55 0.14 300 / 7%),
+      transparent 40%,
+      oklch(0.5 0.09 160 / 6%)
+    ),
+    url("/assets/themes/easter/hatching-chick.svg"),
+    url("/assets/themes/easter/rabbit.svg"),
+    url("/assets/themes/easter/egg.svg"),
+    url("/assets/themes/easter/tulip.svg"),
+    url("/assets/themes/easter/chick.svg"),
+    url("/assets/themes/easter/egg.svg"),
+    url("/assets/themes/easter/hatching-chick.svg"),
+    url("/assets/themes/easter/tulip.svg"),
+    url("/assets/themes/easter/chick.svg"),
+    url("/assets/themes/easter/rabbit.svg"),
+    url("/assets/themes/easter/egg.svg"),
+    url("/assets/themes/easter/tulip.svg"),
+    url("/assets/themes/easter/rabbit.svg"),
+    url("/assets/themes/easter/chick.svg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position:
+    center,
+    center,
+    left 70% top 12%,
+    left 12% top 56%,
+    left 40% top 80%,
+    left 90% top 34%,
+    left 24% top 20%,
+    left 56% top 44%,
+    left 4% top 44%,
+    left 80% top 72%,
+    left 66% top 6%,
+    left 88% top 82%,
+    left 34% top 90%,
+    left 48% top 64%,
+    left 8% top 8%,
+    left 74% top 54%;
+  background-size:
+    auto, auto, 64px, 72px, 48px, 44px, 36px, 30px, 52px, 40px, 28px, 60px,
+    38px, 26px, 92px, 32px;
+}
+
+html[data-site-theme="summer"] body {
+  --theme-art-veil: 76%;
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
+    ),
+    linear-gradient(
+      to bottom,
+      oklch(0.53 0.14 220 / 7%),
+      transparent 40%,
+      oklch(0.9 0.06 85 / 7%)
+    ),
+    url("/assets/themes/summer/sun.svg"),
+    url("/assets/themes/summer/beach.svg"),
+    url("/assets/themes/summer/wave.svg"),
+    url("/assets/themes/summer/ice-cream.svg"),
+    url("/assets/themes/summer/palm.svg"),
+    url("/assets/themes/summer/sunglasses.svg"),
+    url("/assets/themes/summer/sun.svg"),
+    url("/assets/themes/summer/wave.svg"),
+    url("/assets/themes/summer/ice-cream.svg"),
+    url("/assets/themes/summer/palm.svg"),
+    url("/assets/themes/summer/sunglasses.svg"),
+    url("/assets/themes/summer/sun.svg"),
+    url("/assets/themes/summer/wave.svg"),
+    url("/assets/themes/summer/beach.svg");
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position:
+    center,
+    center,
+    left 82% top 6%,
+    left 8% top 70%,
+    left 40% top 88%,
+    left 20% top 12%,
+    left 92% top 44%,
+    left 60% top 30%,
+    left 6% top 30%,
+    left 70% top 70%,
+    left 50% top 52%,
+    left 16% top 58%,
+    left 84% top 82%,
+    left 32% top 40%,
+    left 64% top 8%,
+    left 26% top 84%;
+  background-size:
+    auto, auto, 90px, 84px, 72px, 44px, 56px, 36px, 32px, 48px, 40px, 52px,
+    30px, 24px, 60px, 58px;
+}
+
 html[data-site-theme="christmas"].dark body {
   --theme-art-veil: 80%;
 }
 
 html[data-site-theme="halloween"].dark body {
+  --theme-art-veil: 80%;
+}
+
+html[data-site-theme="newYear"].dark body {
+  --theme-art-veil: 80%;
+}
+
+html[data-site-theme="valentines"].dark body {
+  --theme-art-veil: 80%;
+}
+
+html[data-site-theme="march15"].dark body {
+  --theme-art-veil: 80%;
+}
+
+html[data-site-theme="easter"].dark body {
+  --theme-art-veil: 80%;
+}
+
+html[data-site-theme="summer"].dark body {
   --theme-art-veil: 80%;
 }
