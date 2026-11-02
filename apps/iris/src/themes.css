@@ -233,23 +233,26 @@
 }
 
 /*
- * Decorative background art: a faint veil washed with the theme's own
- * `--background`, a soft theme gradient, then a SPARSE scatter of the
- * downloaded Twemoji motifs (see `public/assets/themes/ATTRIBUTION.md`) — a
- * handful of small, irregularly placed motifs, never a repeating grid. Every
- * motif layer is `no-repeat` with `background-attachment: fixed`, so the art is
- * positioned against the viewport and stays put while the page scrolls. The
- * veil is painted first so it sits on top of the motifs and keeps them faint —
- * text stays readable, and because `--background` is set on `<html>`, the same
- * rule works in light and dark mode. Cards keep their own `--card` background,
- * so content never sits directly on the art.
+ * Decorative background art: a veil washed with the theme's own `--background`,
+ * a soft theme gradient, then a scattered field of the downloaded Twemoji
+ * motifs (see `public/assets/themes/ATTRIBUTION.md`) — ~24 small, irregularly
+ * placed illustrations per theme, never a repeating grid. Every motif layer is
+ * `no-repeat` with `background-attachment: fixed`, so the art is positioned
+ * against the viewport and stays put while the page scrolls. The veil is
+ * painted first so it sits on top of the motifs and keeps them clearly
+ * perceptible yet faint enough that text stays readable. Its strength is
+ * carried in `--theme-art-veil` — 76% on the shared rule, raised to 80% in dark
+ * mode (via the `.dark` rule) because the bright motifs read louder against a
+ * dark background. Cards keep their own `--card` background, so content never
+ * sits directly on the art.
  */
 
 html[data-site-theme="halloween"] body {
+  --theme-art-veil: 76%;
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--background) 93%, transparent),
-      color-mix(in oklab, var(--background) 93%, transparent)
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
     ),
     linear-gradient(
       to bottom,
@@ -266,31 +269,85 @@ html[data-site-theme="halloween"] body {
     url("/assets/themes/halloween/pumpkin.svg"),
     url("/assets/themes/halloween/bat.svg"),
     url("/assets/themes/halloween/star.svg"),
-    url("/assets/themes/halloween/moon.svg");
+    url("/assets/themes/halloween/moon.svg"),
+    url("/assets/themes/halloween/pumpkin.svg"),
+    url("/assets/themes/halloween/bat.svg"),
+    url("/assets/themes/halloween/ghost.svg"),
+    url("/assets/themes/halloween/moon.svg"),
+    url("/assets/themes/halloween/star.svg"),
+    url("/assets/themes/halloween/spider-web.svg"),
+    url("/assets/themes/halloween/pumpkin.svg"),
+    url("/assets/themes/halloween/bat.svg"),
+    url("/assets/themes/halloween/star.svg"),
+    url("/assets/themes/halloween/moon.svg"),
+    url("/assets/themes/halloween/ghost.svg"),
+    url("/assets/themes/halloween/bat.svg"),
+    url("/assets/themes/halloween/star.svg"),
+    url("/assets/themes/halloween/pumpkin.svg");
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-position:
     center,
     center,
-    left 12% top 18%,
-    left 78% top 12%,
-    left 62% top 58%,
-    left 88% top 44%,
+    left 10% top 14%,
+    left 80% top 6%,
+    left 58% top 56%,
+    left 90% top 40%,
     left 34% top 76%,
-    left 6% top 86%,
-    left 46% top 30%,
-    left 22% top 48%,
-    left 70% top 72%,
-    left 40% top 8%;
+    left 4% top 86%,
+    left 44% top 30%,
+    left 22% top 44%,
+    left 72% top 72%,
+    left 38% top 4%,
+    left 70% top 22%,
+    left 28% top 88%,
+    left 86% top 76%,
+    left 14% top 48%,
+    left 54% top 42%,
+    left 94% top 92%,
+    left 76% top 52%,
+    left 48% top 60%,
+    left 22% top 18%,
+    left 60% top 10%,
+    left 4% top 34%,
+    left 66% top 88%,
+    left 88% top 60%,
+    left 32% top 58%;
   background-size:
-    auto, auto, 64px, 40px, 48px, 36px, 28px, 44px, 32px, 28px, 24px, 26px;
+    auto,
+    auto,
+    96px,
+    52px,
+    58px,
+    42px,
+    30px,
+    50px,
+    38px,
+    28px,
+    24px,
+    28px,
+    90px,
+    40px,
+    46px,
+    34px,
+    26px,
+    40px,
+    32px,
+    58px,
+    24px,
+    32px,
+    36px,
+    30px,
+    28px,
+    44px;
 }
 
 html[data-site-theme="christmas"] body {
+  --theme-art-veil: 76%;
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--background) 93%, transparent),
-      color-mix(in oklab, var(--background) 93%, transparent)
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent),
+      color-mix(in oklab, var(--background) var(--theme-art-veil), transparent)
     ),
     linear-gradient(
       to bottom,
@@ -307,22 +364,83 @@ html[data-site-theme="christmas"] body {
     url("/assets/themes/christmas/snowflake.svg"),
     url("/assets/themes/christmas/snowflake.svg"),
     url("/assets/themes/christmas/star.svg"),
-    url("/assets/themes/christmas/tree.svg");
+    url("/assets/themes/christmas/tree.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/gift.svg"),
+    url("/assets/themes/christmas/star.svg"),
+    url("/assets/themes/christmas/snowman.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/tree.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/star.svg"),
+    url("/assets/themes/christmas/snowflake.svg"),
+    url("/assets/themes/christmas/gift.svg");
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-position:
     center,
     center,
-    left 84% top 10%,
-    left 14% top 62%,
+    left 84% top 8%,
+    left 12% top 64%,
     left 58% top 82%,
-    left 8% top 24%,
-    left 32% top 42%,
-    left 54% top 14%,
-    left 72% top 66%,
-    left 92% top 36%,
-    left 88% top 6%,
-    left 40% top 80%;
+    left 6% top 22%,
+    left 30% top 40%,
+    left 52% top 12%,
+    left 72% top 64%,
+    left 92% top 34%,
+    left 88% top 4%,
+    left 40% top 80%,
+    left 20% top 84%,
+    left 44% top 52%,
+    left 66% top 26%,
+    left 10% top 44%,
+    left 82% top 90%,
+    left 34% top 14%,
+    left 60% top 46%,
+    left 70% top 40%,
+    left 24% top 6%,
+    left 54% top 68%,
+    left 4% top 70%,
+    left 88% top 62%,
+    left 46% top 88%,
+    left 76% top 18%;
   background-size:
-    auto, auto, 56px, 48px, 44px, 32px, 28px, 24px, 26px, 30px, 28px, 30px;
+    auto,
+    auto,
+    96px,
+    92px,
+    48px,
+    32px,
+    28px,
+    24px,
+    30px,
+    26px,
+    30px,
+    36px,
+    38px,
+    28px,
+    24px,
+    32px,
+    26px,
+    38px,
+    26px,
+    44px,
+    30px,
+    48px,
+    26px,
+    24px,
+    28px,
+    32px;
+}
+
+html[data-site-theme="christmas"].dark body {
+  --theme-art-veil: 80%;
+}
+
+html[data-site-theme="halloween"].dark body {
+  --theme-art-veil: 80%;
 }
