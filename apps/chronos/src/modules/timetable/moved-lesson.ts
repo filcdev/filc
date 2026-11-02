@@ -453,6 +453,16 @@ type MovedLessonRow = {
   period: typeof period.$inferSelect | null;
 };
 
+// A manual move is recognised by any manual field, not just the subject: a
+// subject deleted via ON DELETE SET NULL leaves `manualSubjectId` null while
+// the cohort/teacher/source-room ids remain, and that must still render as a
+// manual row (with a null subject) rather than a linked row with no lessons.
+const hasManualFields = (row: typeof movedLesson.$inferSelect): boolean =>
+  row.manualSubjectId !== null ||
+  row.manualCohortIds.length > 0 ||
+  row.manualTeacherIds.length > 0 ||
+  row.manualSourceRoomId !== null;
+
 // Enrich the linked lesson ids of a batch of moved-lesson rows, preserving the
 // target joins and the per-moved-lesson lesson order. A moved lesson keeps
 // pointing at the lesson it was created for, even after that lesson's timetable
@@ -536,7 +546,7 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   const sourceRoomMap = new Map(sourceRooms.map((cr) => [cr.id, cr]));
 
   return rows.map((r) => {
-    const manual = r.movedLesson.manualSubjectId
+    const manual = hasManualFields(r.movedLesson)
       ? {
           cohorts: r.movedLesson.manualCohortIds
             .map((id) => cohortMap.get(id))
@@ -544,7 +554,9 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
           sourceRoom: r.movedLesson.manualSourceRoomId
             ? (sourceRoomMap.get(r.movedLesson.manualSourceRoomId) ?? null)
             : null,
-          subject: subjectMap.get(r.movedLesson.manualSubjectId) ?? null,
+          subject: r.movedLesson.manualSubjectId
+            ? (subjectMap.get(r.movedLesson.manualSubjectId) ?? null)
+            : null,
           teachers: r.movedLesson.manualTeacherIds
             .map((id) => teacherMap.get(id))
             .filter((t): t is NonNullable<typeof t> => t !== undefined),
@@ -741,6 +753,30 @@ export const createMovedLesson = base.timetable.movedLessons.create
       startingPeriod,
     });
 
+    // A linked move stores no manual fields, even if the client sent stray
+    // manual ids alongside the lesson ids (the schema only requires one
+    // source). This mirrors `buildUpdateSetValues` so a linked row can never
+    // carry a half-manual payload into the notification audience.
+    const manualValues: {
+      manualCohortIds: string[];
+      manualSourceRoomId: string | null;
+      manualSubjectId: string | null;
+      manualTeacherIds: string[];
+    } =
+      mode === 'linked'
+        ? {
+            manualCohortIds: [],
+            manualSourceRoomId: null,
+            manualSubjectId: null,
+            manualTeacherIds: [],
+          }
+        : {
+            manualCohortIds: manualCohortIds ?? [],
+            manualSourceRoomId: manualSourceRoomId ?? null,
+            manualSubjectId: manualSubjectId ?? null,
+            manualTeacherIds: manualTeacherIds ?? [],
+          };
+
     // Row and lesson links are one unit: a failure between them leaves a moved
     // lesson with no lessons, which nothing downstream can repair.
     const newMovedLesson = await db.transaction(async (tx) => {
@@ -750,10 +786,7 @@ export const createMovedLesson = base.timetable.movedLessons.create
           comment,
           date,
           id: crypto.randomUUID(),
-          manualCohortIds: manualCohortIds ?? [],
-          manualSourceRoomId: manualSourceRoomId ?? null,
-          manualSubjectId: manualSubjectId ?? null,
-          manualTeacherIds: manualTeacherIds ?? [],
+          ...manualValues,
           room,
           startingDay,
           startingPeriod,
@@ -790,7 +823,7 @@ export const createMovedLesson = base.timetable.movedLessons.create
     });
 
     dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
-      cohortIds: manualCohortIds ?? [],
+      cohortIds: manualValues.manualCohortIds,
       date: newMovedLesson.date,
       lessonIds: lessonIds ?? [],
       room: newMovedLesson.room,
