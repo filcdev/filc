@@ -287,11 +287,11 @@ function MovedTimeCell({
 
   let periodLabel: string | null = null;
   if (originalPeriod && targetPeriod && targetPeriod.id !== originalPeriod.id) {
-    periodLabel = `${formatPeriodLabel(originalPeriod)} → ${formatPeriodLabel(targetPeriod)}`;
+    periodLabel = `${formatPeriodLabel(originalPeriod, t('substitution.period'))} → ${formatPeriodLabel(targetPeriod, t('substitution.period'))}`;
   } else if (originalPeriod) {
-    periodLabel = formatPeriodLabel(originalPeriod);
+    periodLabel = formatPeriodLabel(originalPeriod, t('substitution.period'));
   } else if (targetPeriod) {
-    periodLabel = formatPeriodLabel(targetPeriod);
+    periodLabel = formatPeriodLabel(targetPeriod, t('substitution.period'));
   }
 
   // The desktop table has no day column; without this a cross-weekday move
@@ -519,9 +519,12 @@ function MovedMobileRow({ row }: { row: MovedLessonRow }) {
   // manual move that has no source — the target period, else not-available.
   let topPeriodLabel: string;
   if (originalPeriod) {
-    topPeriodLabel = formatPeriodLabel(originalPeriod);
+    topPeriodLabel = formatPeriodLabel(
+      originalPeriod,
+      t('substitution.period')
+    );
   } else if (targetPeriod) {
-    topPeriodLabel = formatPeriodLabel(targetPeriod);
+    topPeriodLabel = formatPeriodLabel(targetPeriod, t('substitution.period'));
   } else {
     topPeriodLabel = t('substitution.notAvailable');
   }
@@ -566,7 +569,9 @@ function MovedMobileRow({ row }: { row: MovedLessonRow }) {
         {targetPeriod &&
           (!originalPeriod || targetPeriod.id !== originalPeriod.id) && (
             <Field label={t('movedLesson.targetPeriod')}>
-              <span>{formatPeriodLabel(targetPeriod)}</span>
+              <span>
+                {formatPeriodLabel(targetPeriod, t('substitution.period'))}
+              </span>
             </Field>
           )}
       </dl>

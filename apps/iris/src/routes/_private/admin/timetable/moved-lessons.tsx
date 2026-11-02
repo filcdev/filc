@@ -53,6 +53,7 @@ import { useHasPermission } from '@/hooks/use-has-permission';
 import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
 import { orpc, prefetch } from '@/utils/orpc';
+import { formatPeriodLabel } from '@/utils/period';
 
 export const Route = createFileRoute('/_private/admin/timetable/moved-lessons')(
   {
@@ -517,7 +518,7 @@ function MovedLessonsTable({
               </TableCell>
               <TableCell>
                 {ml.period
-                  ? `P${ml.period.period} (${ml.period.startTime.toString().slice(0, 5)}\u2013${ml.period.endTime.toString().slice(0, 5)})`
+                  ? formatPeriodLabel(ml.period, t('substitution.period'))
                   : '-'}
               </TableCell>
               <TableCell>{ml.classroom ? ml.classroom.name : '-'}</TableCell>

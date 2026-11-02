@@ -67,11 +67,11 @@ type LessonForLabel = {
   teachers?: Array<{ name?: string; short?: string }>;
 };
 
-function formatLessonLabel(lesson: LessonForLabel): string {
+function formatLessonLabel(lesson: LessonForLabel, periodWord: string): string {
   const parts: string[] = [];
 
   if (lesson.period?.startTime && lesson.period?.endTime) {
-    parts.push(formatPeriodLabel(lesson.period));
+    parts.push(formatPeriodLabel(lesson.period, periodWord));
   }
 
   if (lesson.subject?.short) {
@@ -704,7 +704,10 @@ function LessonList({
                     isPeriodMismatch ? 'text-muted-foreground' : undefined
                   }
                 >
-                  {formatLessonLabel(lesson as unknown as LessonForLabel)}
+                  {formatLessonLabel(
+                    lesson as unknown as LessonForLabel,
+                    t('substitution.period')
+                  )}
                 </span>
               </label>
             );
@@ -953,7 +956,7 @@ function MovedLessonTargetFields({
           emptyMessage={t('movedLesson.noPeriodsFound')}
           onValueChange={onPeriodChange}
           options={periods.map((period) => ({
-            label: formatPeriodLabel(period),
+            label: formatPeriodLabel(period, t('substitution.period')),
             value: period.id,
           }))}
           placeholder={t('movedLesson.targetPeriodPlaceholder')}
