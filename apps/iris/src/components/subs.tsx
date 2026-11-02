@@ -276,14 +276,12 @@ function CommentCell({ comment }: { comment?: string | null }) {
 
 function MovedTimeCell({
   originalPeriod,
-  movedTarget,
+  targetPeriod,
 }: {
   originalPeriod: Lesson['period'];
-  movedTarget: MovedTarget;
+  targetPeriod: MovedLessonItem['period'];
 }) {
-  const { i18n, t } = useTranslation();
-  const targetPeriod = movedTarget.period ?? null;
-  const targetDay = movedTarget.day;
+  const { t } = useTranslation();
 
   let periodLabel: string | null = null;
   if (originalPeriod && targetPeriod && targetPeriod.id !== originalPeriod.id) {
@@ -294,18 +292,7 @@ function MovedTimeCell({
     periodLabel = formatPeriodLabel(targetPeriod, t('substitution.period'));
   }
 
-  // The desktop table has no day column; without this a cross-weekday move
-  // looks like a same-day move when the target period is unchanged.
-  const dayLabel = targetDay
-    ? getLocalizedWeekdayName(
-        targetDay.name,
-        targetDay.short,
-        i18n.language,
-        'long'
-      )
-    : null;
-
-  if (!(dayLabel || periodLabel)) {
+  if (!periodLabel) {
     return (
       <span className="text-muted-foreground">
         {t('substitution.notAvailable')}
@@ -313,13 +300,7 @@ function MovedTimeCell({
     );
   }
 
-  return (
-    <span className="font-medium">
-      {dayLabel}
-      {dayLabel && periodLabel ? ' · ' : ''}
-      {periodLabel}
-    </span>
-  );
+  return <span className="font-medium">{periodLabel}</span>;
 }
 
 function MovedRoomCell({
@@ -411,8 +392,8 @@ function MovedTableRow({ row }: { row: MovedLessonRow }) {
       </TableCell>
       <TableCell>
         <MovedTimeCell
-          movedTarget={movedTarget}
           originalPeriod={row.originalPeriod}
+          targetPeriod={movedTarget.period}
         />
       </TableCell>
       <TableCell>
