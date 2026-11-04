@@ -28,4 +28,8 @@ USER bun
 EXPOSE 3001/tcp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -q --spider "http://127.0.0.1:${CHRONOS_PORT}/api/health" || exit 1
-ENTRYPOINT [ "bun", "--bun", "run", "dist/index.js" ]
+# The OAuth proxy hands the whole encrypted login payload (claims, tokens,
+# state) to a preview in a query string, which real Entra logins push past Bun's
+# 16 KiB request-head default — the preview then answers 431 before any route
+# runs. See docs/entra-setup.md §4.
+ENTRYPOINT [ "bun", "--max-http-header-size=65536", "--bun", "run", "dist/index.js" ]

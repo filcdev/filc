@@ -79,12 +79,31 @@ profile as a `data:image/jpeg;base64,…` URI. Chronos imports it instead
 (`apps/chronos/src/utils/avatars.ts`): the bytes are stored in object storage
 under a content-addressed name and only the resulting
 `/api/users/avatars/<sha256>.<ext>` URL is persisted in `user.image` and carried
-through the OAuth proxy redirect. Keeping the base64 out of that redirect is
-what stops the proxy callback from outgrowing the reverse proxy's header buffer
-(better-auth#8338); with storage unset or failing, the picture is dropped and
-the UI falls back to the user's initials rather than failing the sign-in.
+through the OAuth proxy redirect. That keeps roughly 7 KB of base64 out of the
+callback URL and out of the row (better-auth#8338); with storage unset or
+failing, the picture is dropped and the UI falls back to the user's initials
+rather than failing the sign-in.
 
 The object is written by the environment that handles the callback, so a preview
 sharing no bucket with production stores a URL its own storage cannot answer —
 the avatar then renders as initials there. Users can still upload their own
 picture from Settings → Profile, which always writes to the local environment.
+
+## 6. The preview runtime needs a bigger request head
+
+A proxied sign-in sends the entire encrypted login payload in a query string:
+the profile claims, the Entra access, ID and refresh tokens, and the OAuth
+state, **hex-encoded** (two characters per byte). A real login lands at roughly
+15–25 KB of URL, and accounts with many group claims go past 30 KB.
+
+Bun's HTTP server caps the whole request head (request line plus headers) at
+16 KiB by default and answers `431 Request Header Fields Too Large` before a
+route ever runs — which is what a preview deployment hits when the browser
+follows production's redirect back to it. Removing the profile photo is not
+enough on its own; the tokens alone are most of the payload.
+
+`apps/chronos/Dockerfile` therefore starts the server with
+`--max-http-header-size=65536`, and the `dev` script passes the same flag. An
+environment that serves the OAuth proxy callback must use it too, whatever its
+own launch command is; nothing else in the API needs a head that large, so the
+flag can go away if the proxy flow ever does.
