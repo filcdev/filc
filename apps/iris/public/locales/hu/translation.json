@@ -785,6 +785,29 @@
     "seasonalThemesDescription": "Engedélyezed, hogy az iskola szezonális megjelenést kapcsoljon az oldalra (Halloween, Karácsony, …). Kikapcsolva mindig a sajátod marad.",
     "timetableViewDescription": "A rács a megszokott órarend; a kártya a nyomtatható papír nézet."
   },
+  "profile": {
+    "title": "Profil",
+    "picture": {
+      "title": "Profilkép",
+      "description": "A navigációban és a nyilvános blogon a neved mellett jelenik meg.",
+      "choose": "Kép",
+      "current": "Ez a jelenlegi profilképed. Válassz újat a lecseréléséhez.",
+      "empty": "Nincs kép",
+      "emptyHint": "Válassz egy képet a profilképedhez.",
+      "hint": "JPEG, PNG vagy WebP. Feltöltés előtt négyzetre vágjuk.",
+      "cropHint": "Húzd a kört a megtartandó részhez, és a csúszkával méretezd.",
+      "reset": "Visszaállítás",
+      "upload": "Feltöltés",
+      "remove": "Eltávolítás",
+      "pickError": "Előbb válassz ki egy képet",
+      "typeError": "Csak JPEG, PNG vagy WebP kép támogatott",
+      "uploadSuccess": "Profilkép frissítve",
+      "uploadError": "Nem sikerült frissíteni a profilképet",
+      "removeSuccess": "Profilkép eltávolítva",
+      "removeError": "Nem sikerült eltávolítani a profilképet",
+      "cropSize": "Kivágás mérete"
+    }
+  },
   "unsubscribe": {
     "title": "Értesítési beállítások",
     "description": "Értesítési beállítások kezelése",

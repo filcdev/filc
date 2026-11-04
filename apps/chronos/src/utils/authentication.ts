@@ -15,6 +15,11 @@ import { userPreferences } from '#modules/notifications/schema';
 import { teacher } from '#modules/timetable/schema';
 import { wifiUser } from '#modules/wifi/schema';
 import { getUserPermissions } from '#utils/authorization';
+import {
+  isInlineImage,
+  storeInlineImage,
+  withStoredImage,
+} from '#utils/avatars';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
 
@@ -188,10 +193,19 @@ const authOptions = {
         },
         before: async (user, _ctx) => ({
           data: {
-            ...user,
+            ...(await withStoredImage(user, 'user.create')),
             roles: user.email === env.adminEmail ? ['user', 'admin'] : ['user'],
           },
         }),
+      },
+      update: {
+        // A sign-in can refresh the user row from the provider profile, which
+        // carries the same inline image; import that write too so an existing
+        // account is repaired instead of re-poisoned.
+        before: async (user) =>
+          isInlineImage(user.image)
+            ? { data: await withStoredImage(user, 'user.update') }
+            : undefined,
       },
     },
   },
@@ -214,6 +228,24 @@ const authOptions = {
       // provider type still requires a string.
       clientSecret: env.entraClientSecret ?? '',
       enabled: true,
+      // `getUserInfo` copies `profile.picture` into `userInfo.image` *after*
+      // this hook runs, and `oauthProxy` encrypts the whole raw profile into
+      // its redirect URL, so the claim itself has to go: the picture is stored
+      // here and only its URL travels, in `image`. Dropping `image` alone would
+      // leave the base64 in `profile` and the redirect would outgrow the
+      // proxy's header buffer.
+      mapProfileToUser: async (profile) => {
+        if (!isInlineImage(profile.picture)) {
+          return {};
+        }
+
+        const image = await storeInlineImage(profile.picture);
+        // `picture` is declared required on the profile type, but the claim is
+        // what better-auth reads back, so it has to be removed rather than
+        // overwritten.
+        Reflect.deleteProperty(profile, 'picture');
+        return image === null ? {} : { image };
+      },
       prompt: env.mode === 'development' ? 'consent' : undefined,
       tenantId: env.entraTenantId,
       // Clients that sign in natively (Mergen) submit an Entra ID token to

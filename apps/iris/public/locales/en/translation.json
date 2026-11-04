@@ -785,6 +785,29 @@
     "seasonalThemesDescription": "Let the school switch the site to a seasonal look (Halloween, Christmas, …). Turn it off to always keep your own.",
     "timetableViewDescription": "Grid is the timetable you see first; card is the printable paper layout."
   },
+  "profile": {
+    "title": "Profile",
+    "picture": {
+      "title": "Profile picture",
+      "description": "Shown in the navbar and next to your name on the public blog.",
+      "choose": "Picture",
+      "current": "This is your current picture. Pick a new one to replace it.",
+      "empty": "No picture",
+      "emptyHint": "Pick a picture to use as your avatar.",
+      "hint": "JPEG, PNG or WebP. It is cropped to a square before uploading.",
+      "cropHint": "Drag the circle to choose the part to keep, and resize it with the slider.",
+      "reset": "Reset",
+      "upload": "Upload",
+      "remove": "Remove",
+      "pickError": "Choose an image first",
+      "typeError": "Only JPEG, PNG or WebP images are supported",
+      "uploadSuccess": "Profile picture updated",
+      "uploadError": "Failed to update the profile picture",
+      "removeSuccess": "Profile picture removed",
+      "removeError": "Failed to remove the profile picture",
+      "cropSize": "Crop size"
+    }
+  },
   "unsubscribe": {
     "title": "Notification Preferences",
     "description": "Manage your notification preferences",

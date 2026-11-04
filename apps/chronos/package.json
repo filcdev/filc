@@ -2,7 +2,7 @@
   "name": "@filcdev/chronos",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
+    "dev": "bun --max-http-header-size=${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536} run --hot src/index.ts",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun --bun drizzle-kit migrate",
     "db:studio": "bun --bun drizzle-kit studio",
