@@ -9,10 +9,7 @@ import { CalendarDays } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
-import {
-  formatLocalizedDate,
-  parseDateOnly,
-} from '@/utils/date-locale';
+import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
 
 type BlockContent = {
   content: string;
@@ -109,11 +106,7 @@ export function NewsPanel({
 
   const newsDays = useMemo(
     () =>
-      getNewsDates(
-        announcementsQuery.data,
-        classId,
-        parseDateOnly(todayKey)
-      ),
+      getNewsDates(announcementsQuery.data, classId, parseDateOnly(todayKey)),
     [announcementsQuery.data, classId, todayKey]
   );
 

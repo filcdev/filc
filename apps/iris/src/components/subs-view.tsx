@@ -10,13 +10,7 @@ import {
   UserRound,
   XIcon,
 } from 'lucide-react';
-import {
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FilterCombobox } from '@/components/timetable/filter-combobox';
 import type {
