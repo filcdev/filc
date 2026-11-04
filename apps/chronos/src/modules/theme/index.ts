@@ -1,4 +1,4 @@
-import type { SiteTheme } from '@filcdev/api/domains/theme';
+import { type SiteTheme, siteThemeSchema } from '@filcdev/api/domains/theme';
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
@@ -21,10 +21,19 @@ export const getSiteTheme = base.theme.get.handler(async ({ context }) => {
     .where(eq(siteTheme.id, 'default'))
     .limit(1);
 
-  // The column is plain text, but the only writer restricts it to the enum
-  // values and the row default is `default`, so the stored value is always one
-  // of them.
-  const theme = (row?.theme ?? 'default') as SiteTheme;
+  // The column is plain text and the only writer restricts it to the enum, so
+  // the stored value *should* be one of them. Narrow it anyway: this call is in
+  // every visitor's first paint, and one bad row (a manual edit, a future
+  // writer that forgets the enum) would otherwise fail the output schema and
+  // take the whole page down instead of falling back to the everyday look.
+  const theme = siteThemeSchema.catch('default').parse(row?.theme);
+
+  if (row && theme !== row.theme) {
+    logger.warning('site theme row is not a known skin, serving the default', {
+      requestId: context.requestId,
+      stored: row.theme,
+    });
+  }
 
   logger.debug('site theme read', { requestId: context.requestId, theme });
 
@@ -32,7 +41,7 @@ export const getSiteTheme = base.theme.get.handler(async ({ context }) => {
 });
 
 export const updateSiteTheme = base.theme.update
-  .use(requireAuthorization(permissions.rolesManage))
+  .use(requireAuthorization(permissions.siteThemeManage))
   .handler(async ({ context, input }) => {
     const { theme } = input;
 

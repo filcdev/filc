@@ -15,11 +15,21 @@ import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
 
 export const userPreferences = pgTable('user_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
+  /** The visitor's own palette; see `colorSchemeIds` in `@filcdev/api`. */
+  colorScheme: text('color_scheme').default('default').notNull(),
   language: text('language').default('hu').notNull(),
   notificationPreferences: jsonb('notification_preferences')
     .$type<NotificationPreferences>()
     .notNull()
     .default(DEFAULT_NOTIFICATION_PREFERENCES),
+  /**
+   * The seasonal skin this visitor has already been told about. It exists so a
+   * skin is announced once, not on every visit, and it is the skin id rather
+   * than a timestamp so switching to a new skin asks again.
+   */
+  siteThemeAcknowledged: text('site_theme_acknowledged'),
+  /** Whether an active seasonal skin may paint over the visitor's palette. */
+  siteThemeEnabled: boolean('site_theme_enabled').default(true).notNull(),
   theme: text('theme').default('system').notNull(),
   timetableClassColors: jsonb('timetable_class_colors')
     .$type<Record<string, number>>()

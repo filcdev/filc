@@ -1,88 +1,69 @@
-import type { SiteTheme } from '@filcdev/api/domains/theme';
+import { type SiteTheme, siteThemeIds } from '@filcdev/api/domains/theme';
 import { permissions } from '@filcdev/api/permissions';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
+import { SiteThemeArt } from '@filcdev/ui/components/site-theme-art';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ChristmasArt,
-  DefaultArt,
-  EasterArt,
-  HalloweenArt,
-  March15Art,
-  NewYearArt,
-  SummerArt,
-  ValentinesArt,
-} from '@/components/admin/theme-art';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { useSiteTheme, useUpdateSiteTheme } from '@/hooks/site-theme';
 import { orpc, prefetch } from '@/utils/orpc';
 
-type ThemeOption = {
-  id: SiteTheme;
-  nameKey: string;
-  descriptionKey: string;
-  Art: typeof DefaultArt;
+/**
+ * The label keys for each skin, keyed by the contract's id list. Declaring it
+ * as a `Record<SiteTheme, …>` is what makes a new skin a compile error until it
+ * is named in both locales, instead of a missing card at runtime.
+ */
+const THEME_COPY: Record<
+  SiteTheme,
+  { descriptionKey: string; nameKey: string }
+> = {
+  christmas: {
+    descriptionKey: 'siteTheme.christmas.description',
+    nameKey: 'siteTheme.christmas.name',
+  },
+  default: {
+    descriptionKey: 'siteTheme.default.description',
+    nameKey: 'siteTheme.default.name',
+  },
+  easter: {
+    descriptionKey: 'siteTheme.easter.description',
+    nameKey: 'siteTheme.easter.name',
+  },
+  halloween: {
+    descriptionKey: 'siteTheme.halloween.description',
+    nameKey: 'siteTheme.halloween.name',
+  },
+  march15: {
+    descriptionKey: 'siteTheme.march15.description',
+    nameKey: 'siteTheme.march15.name',
+  },
+  newYear: {
+    descriptionKey: 'siteTheme.newYear.description',
+    nameKey: 'siteTheme.newYear.name',
+  },
+  summer: {
+    descriptionKey: 'siteTheme.summer.description',
+    nameKey: 'siteTheme.summer.name',
+  },
+  valentines: {
+    descriptionKey: 'siteTheme.valentines.description',
+    nameKey: 'siteTheme.valentines.name',
+  },
 };
 
-const THEMES: ThemeOption[] = [
-  {
-    id: 'default',
-    nameKey: 'siteTheme.default.name',
-    descriptionKey: 'siteTheme.default.description',
-    Art: DefaultArt,
-  },
-  {
-    id: 'newYear',
-    nameKey: 'siteTheme.newYear.name',
-    descriptionKey: 'siteTheme.newYear.description',
-    Art: NewYearArt,
-  },
-  {
-    id: 'valentines',
-    nameKey: 'siteTheme.valentines.name',
-    descriptionKey: 'siteTheme.valentines.description',
-    Art: ValentinesArt,
-  },
-  {
-    id: 'march15',
-    nameKey: 'siteTheme.march15.name',
-    descriptionKey: 'siteTheme.march15.description',
-    Art: March15Art,
-  },
-  {
-    id: 'easter',
-    nameKey: 'siteTheme.easter.name',
-    descriptionKey: 'siteTheme.easter.description',
-    Art: EasterArt,
-  },
-  {
-    id: 'summer',
-    nameKey: 'siteTheme.summer.name',
-    descriptionKey: 'siteTheme.summer.description',
-    Art: SummerArt,
-  },
-  {
-    id: 'halloween',
-    nameKey: 'siteTheme.halloween.name',
-    descriptionKey: 'siteTheme.halloween.description',
-    Art: HalloweenArt,
-  },
-  {
-    id: 'christmas',
-    nameKey: 'siteTheme.christmas.name',
-    descriptionKey: 'siteTheme.christmas.description',
-    Art: ChristmasArt,
-  },
-];
+/** One card per skin, in the contract's order (which is the calendar's). */
+const THEMES = siteThemeIds.map((id) => ({ id, ...THEME_COPY[id] }));
+
+type ThemeOption = (typeof THEMES)[number];
 
 export const Route = createFileRoute('/_private/admin/theme')({
   component: () => (
-    <PermissionGuard permission={permissions.rolesManage}>
+    <PermissionGuard permission={permissions.siteThemeManage}>
       <ThemePage />
     </PermissionGuard>
   ),
@@ -100,16 +81,16 @@ function ThemePage() {
   const [selected, setSelected] = useState<SiteTheme>(activeTheme);
   const updateMutation = useUpdateSiteTheme();
 
-  const selectedOption =
-    THEMES.find((option) => option.id === selected) ?? THEMES[0];
   const activeOption =
     THEMES.find((option) => option.id === activeTheme) ?? THEMES[0];
-  const SelectedArt = selectedOption.Art;
 
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <SelectedArt className="absolute inset-0 h-full w-full" />
+        <SiteThemeArt
+          className="absolute inset-0 h-full w-full"
+          theme={selected}
+        />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent"
@@ -173,10 +154,10 @@ type ThemeCardProps = {
 
 function ThemeCard({ active, option, selected, onSelect }: ThemeCardProps) {
   const { t } = useTranslation();
-  const Art = option.Art;
 
   return (
     <button
+      aria-pressed={selected}
       className={cn(
         'group flex flex-col overflow-hidden rounded-2xl border text-left transition-all',
         'hover:-translate-y-0.5 hover:shadow-lg',
@@ -188,7 +169,7 @@ function ThemeCard({ active, option, selected, onSelect }: ThemeCardProps) {
       type="button"
     >
       <div className="relative h-32 w-full overflow-hidden">
-        <Art className="h-full w-full" />
+        <SiteThemeArt className="h-full w-full" theme={option.id} />
         {active && (
           <Badge className="absolute top-2 right-2">
             {t('siteTheme.active')}
@@ -196,7 +177,7 @@ function ThemeCard({ active, option, selected, onSelect }: ThemeCardProps) {
         )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h2 className="font-semibold">{t(option.nameKey)}</h2>
+        <span className="font-semibold">{t(option.nameKey)}</span>
         <p className="text-muted-foreground text-sm">
           {t(option.descriptionKey)}
         </p>

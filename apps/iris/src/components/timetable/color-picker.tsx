@@ -7,28 +7,18 @@ import {
 } from '@filcdev/ui/components/dropdown-menu';
 import { cn } from '@filcdev/ui/lib/utils';
 import { Palette } from 'lucide-react';
-
-/** 12-color rainbow palette matching ACCENT_COLORS in helpers.ts */
-const COLOR_SWATCHES = [
-  { bg: 'bg-blue-500', label: 'Blue' },
-  { bg: 'bg-emerald-500', label: 'Emerald' },
-  { bg: 'bg-amber-500', label: 'Amber' },
-  { bg: 'bg-purple-500', label: 'Purple' },
-  { bg: 'bg-rose-500', label: 'Rose' },
-  { bg: 'bg-cyan-500', label: 'Cyan' },
-  { bg: 'bg-teal-500', label: 'Teal' },
-  { bg: 'bg-orange-500', label: 'Orange' },
-  { bg: 'bg-indigo-500', label: 'Indigo' },
-  { bg: 'bg-pink-500', label: 'Pink' },
-  { bg: 'bg-lime-500', label: 'Lime' },
-  { bg: 'bg-sky-500', label: 'Sky' },
-] as const;
+import { CLASS_COLORS } from './helpers';
 
 type ColorPickerProps = {
   currentIndex?: number;
   onSelect: (index: number) => void;
 };
 
+/**
+ * The subject-colour picker. The swatches are the same twelve slots the grid
+ * uses (`CLASS_COLORS`), so a swatch always previews the chip it will paint —
+ * including its tint under the current colour scheme or seasonal skin.
+ */
 export function ColorPicker({ currentIndex, onSelect }: ColorPickerProps) {
   return (
     <DropdownMenu>
@@ -45,14 +35,16 @@ export function ColorPicker({ currentIndex, onSelect }: ColorPickerProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
         <div className="grid grid-cols-6 gap-1 p-1">
-          {COLOR_SWATCHES.map((swatch, idx) => (
+          {CLASS_COLORS.map((swatch, idx) => (
             <DropdownMenuItem
+              aria-label={`${idx + 1}`}
               className={cn(
-                'h-7 w-7 cursor-pointer rounded-md transition-all',
+                'h-7 w-7 cursor-pointer rounded-md border-2 transition-all',
                 swatch.bg,
+                swatch.border,
                 idx === currentIndex && 'ring-2 ring-foreground ring-offset-1'
               )}
-              key={swatch.label}
+              key={swatch.bg}
               onClick={() => onSelect(idx)}
             />
           ))}

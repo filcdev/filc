@@ -32168,6 +32168,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "colorScheme": {
+                      "enum": [
+                        "default",
+                        "catppuccin",
+                        "dracula",
+                        "gruvbox",
+                        "nord",
+                        "rosePine",
+                        "solarized",
+                        "tokyoNight"
+                      ],
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -32215,6 +32228,19 @@
                         "systemMessage"
                       ]
                     },
+                    "siteThemeAcknowledged": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "siteThemeEnabled": {
+                      "type": "boolean"
+                    },
                     "theme": {
                       "type": "string"
                     },
@@ -32244,10 +32270,13 @@
                     }
                   },
                   "required": [
+                    "colorScheme",
                     "createdAt",
                     "id",
                     "language",
                     "notificationPreferences",
+                    "siteThemeAcknowledged",
+                    "siteThemeEnabled",
                     "theme",
                     "timetableClassColors",
                     "timetableGroupDisplay",
@@ -32461,6 +32490,19 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "colorScheme": {
+                    "enum": [
+                      "default",
+                      "catppuccin",
+                      "dracula",
+                      "gruvbox",
+                      "nord",
+                      "rosePine",
+                      "solarized",
+                      "tokyoNight"
+                    ],
+                    "type": "string"
+                  },
                   "language": {
                     "type": "string"
                   },
@@ -32489,6 +32531,19 @@
                         "type": "boolean"
                       }
                     }
+                  },
+                  "siteThemeAcknowledged": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "siteThemeEnabled": {
+                    "type": "boolean"
                   },
                   "theme": {
                     "type": "string"
@@ -32525,6 +32580,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "colorScheme": {
+                      "enum": [
+                        "default",
+                        "catppuccin",
+                        "dracula",
+                        "gruvbox",
+                        "nord",
+                        "rosePine",
+                        "solarized",
+                        "tokyoNight"
+                      ],
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -32572,6 +32640,19 @@
                         "systemMessage"
                       ]
                     },
+                    "siteThemeAcknowledged": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "siteThemeEnabled": {
+                      "type": "boolean"
+                    },
                     "theme": {
                       "type": "string"
                     },
@@ -32601,10 +32682,13 @@
                     }
                   },
                   "required": [
+                    "colorScheme",
                     "createdAt",
                     "id",
                     "language",
                     "notificationPreferences",
+                    "siteThemeAcknowledged",
+                    "siteThemeEnabled",
                     "theme",
                     "timetableClassColors",
                     "timetableGroupDisplay",

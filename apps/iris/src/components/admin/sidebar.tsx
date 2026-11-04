@@ -207,7 +207,7 @@ function useAdminMenuCategories(): MenuCategory[] {
         items: [
           {
             icon: Sparkles,
-            permission: permissions.rolesManage,
+            permission: permissions.siteThemeManage,
             title: t('siteTheme.title'),
             url: '/admin/theme',
           },

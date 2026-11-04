@@ -1,5 +1,11 @@
 import { AuthSessionProvider, useSession } from '@filcdev/auth/client';
+import { SiteThemeBackdrop } from '@filcdev/ui/components/site-theme-art';
 import { Toaster } from '@filcdev/ui/components/sonner';
+import {
+  applyColorScheme,
+  DEFAULT_COLOR_SCHEME,
+} from '@filcdev/ui/lib/color-scheme';
+import { applySiteTheme, DEFAULT_SITE_THEME } from '@filcdev/ui/lib/site-theme';
 import type { QueryClient } from '@tanstack/react-query';
 import {
   createRootRouteWithContext,
@@ -14,6 +20,7 @@ import { I18nextProvider } from 'react-i18next';
 import { ConfirmProvider } from '@/components/confirm-provider';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { SettingsDialogProvider } from '@/components/settings-dialog-store';
+import { SiteThemeNotice } from '@/components/site-theme-notice';
 import { SystemMessageBanner } from '@/components/system-message-banner';
 import { CookiePopup } from '@/components/util/cookie-popup';
 import { useNotificationSettings } from '@/hooks/notifications';
@@ -32,6 +39,8 @@ export const Route = createRootRouteWithContext<{
     // The site theme is public and read during SSR so the `<html>` attribute
     // is in the first paint; `prefetch` returns `undefined` (and drops the
     // failed query) when the fetch is refused, so fall back to the default.
+    // A signed-in visitor's own palette and their seasonal opt-out have to be
+    // in the first paint too, or the skin would flash and then be withdrawn.
     const [language, session, theme] = await Promise.all([
       fetchLanguage(),
       fetchSession(),
@@ -40,10 +49,23 @@ export const Route = createRootRouteWithContext<{
         orpc.theme.get.queryOptions({ staleTime: 5 * 60_000 })
       ),
     ]);
+
+    const preferences = session
+      ? await prefetch(
+          context.queryClient,
+          orpc.notifications.settings.queryOptions()
+        )
+      : undefined;
+
+    const siteThemeEnabled = preferences?.siteThemeEnabled ?? true;
+
     return {
+      colorScheme: preferences?.colorScheme ?? DEFAULT_COLOR_SCHEME,
       language,
       session,
-      siteTheme: theme?.theme ?? 'default',
+      siteTheme: siteThemeEnabled
+        ? (theme?.theme ?? DEFAULT_SITE_THEME)
+        : DEFAULT_SITE_THEME,
     };
   },
   component: RootComponent,
@@ -102,8 +124,13 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
-  const { language, session, siteTheme } = Route.useRouteContext();
+  const { colorScheme, language, session, siteTheme } = Route.useRouteContext();
   const [i18n] = useState(() => createI18n(language));
+  // The server render's values, for the first paint only. The browser decides
+  // after that (`AppShell` re-applies both from the live preferences), because
+  // the router can re-run `beforeLoad` client-side without a session and would
+  // otherwise keep writing the seasonal defaults back over them.
+  const [paintTheme] = useState({ colorScheme, siteTheme });
 
   return (
     // `suppressHydrationWarning` is required by next-themes: its inline script
@@ -111,7 +138,8 @@ function RootComponent() {
     // server HTML and the first client render legitimately differ. React would
     // otherwise warn on every load and refuse to patch the attributes.
     <html
-      data-site-theme={siteTheme}
+      data-color-scheme={paintTheme.colorScheme}
+      data-site-theme={paintTheme.siteTheme}
       lang={language}
       suppressHydrationWarning
       translate="no"
@@ -142,15 +170,28 @@ function AppShell() {
   const { data: settings } = useNotificationSettings(!!data?.session);
 
   // The site-wide seasonal skin: prefetched during SSR, applied here so an
-  // admin's change takes effect live without a reload. This effect only runs
-  // in the browser, so it never touches `document` during a server render.
+  // admin's change takes effect live without a reload. A visitor who turned
+  // seasonal skins off keeps `default`, which lets their own scheme through.
+  // These effects only run in the browser, so they never touch `document`
+  // during a server render.
   const { data: siteTheme } = useSiteTheme();
 
   useThemeSync(settings?.theme);
 
+  const seasonalEnabled = settings?.siteThemeEnabled ?? true;
+  const effectiveSiteTheme = seasonalEnabled
+    ? (siteTheme?.theme ?? DEFAULT_SITE_THEME)
+    : DEFAULT_SITE_THEME;
+
   useEffect(() => {
-    document.documentElement.dataset.siteTheme = siteTheme?.theme ?? 'default';
-  }, [siteTheme]);
+    applySiteTheme(effectiveSiteTheme);
+  }, [effectiveSiteTheme]);
+
+  useEffect(() => {
+    // Falls back after a sign-out, where there are no stored preferences left
+    // to name a palette.
+    applyColorScheme(settings?.colorScheme ?? DEFAULT_COLOR_SCHEME);
+  }, [settings?.colorScheme]);
 
   useEffect(() => {
     if (data?.session && data?.user) {
@@ -163,11 +204,17 @@ function AppShell() {
   return (
     <SettingsDialogProvider>
       <ConfirmProvider>
+        {/* The seasonal motifs, once for the whole app; renders nothing on
+            `default`. Kept behind the content by its own `-z-10`. */}
+        <SiteThemeBackdrop
+          theme={seasonalEnabled ? effectiveSiteTheme : DEFAULT_SITE_THEME}
+        />
         <SystemMessageBanner />
         <Outlet />
         {/* Mounted once for the whole app: the profile menu, the notification
             viewer and any future entry point all open this same dialog. */}
         <SettingsDialog />
+        <SiteThemeNotice />
         <Toaster />
         <CookiePopup />
       </ConfirmProvider>

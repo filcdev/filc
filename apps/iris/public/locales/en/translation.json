@@ -216,7 +216,13 @@
     "saved": "Site theme updated",
     "saveError": "Failed to update the site theme",
     "previewLabel": "Preview",
-    "currentTheme": "Current theme"
+    "currentTheme": "Current theme",
+    "notice": {
+      "title": "New theme: {{name}}",
+      "description": "The school turned on the {{name}} theme for everyone. Want to keep it, or switch it off for good?",
+      "thanks": "Thanks, looks great!",
+      "disable": "Don't turn it on for me"
+    }
   },
   "timetable": {
     "selectClass": "Select class",
@@ -763,6 +769,20 @@
     "languageChangeError": "Could not change the language",
     "appearance": "Appearance",
     "appearanceDescription": "How the app and the timetable look.",
+    "colorScheme": "Colour scheme",
+    "colorSchemeDescription": "Your own palette for the whole app. A seasonal skin from the school paints over it while it is on.",
+    "colorSchemeId": {
+      "default": "Default",
+      "catppuccin": "Catppuccin",
+      "dracula": "Dracula",
+      "gruvbox": "Gruvbox",
+      "nord": "Nord",
+      "rosePine": "Rosé Pine",
+      "solarized": "Solarized",
+      "tokyoNight": "Tokyo Night"
+    },
+    "seasonalThemes": "Seasonal themes",
+    "seasonalThemesDescription": "Let the school switch the site to a seasonal look (Halloween, Christmas, …). Turn it off to always keep your own.",
     "timetableViewDescription": "Grid is the timetable you see first; card is the printable paper layout."
   },
   "unsubscribe": {

@@ -8,7 +8,6 @@
       "!apps/chronos/src/database/migrations/**/*",
       "!apps/chronos/openapi/**/*",
       "!apps/iris/src/routeTree.gen.ts",
-      "!apps/iris/public/assets/themes/**/*",
       "!apps/kiosk/src/route-tree.gen.ts",
       "!bun.lock"
     ]

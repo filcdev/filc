@@ -198,7 +198,13 @@
     "saved": "Webhelytéma frissítve",
     "saveError": "Nem sikerült frissíteni a webhelytémát",
     "previewLabel": "Előnézet",
-    "currentTheme": "Jelenlegi téma"
+    "currentTheme": "Jelenlegi téma",
+    "notice": {
+      "title": "Új téma: {{name}}",
+      "description": "Az iskola bekapcsolta mindenkinek a(z) {{name}} témát. Maradhat, vagy kikapcsoljuk neked véglegesen?",
+      "thanks": "Kösz, király!",
+      "disable": "Ne kapcsoljátok be nekem"
+    }
   },
   "timetable": {
     "selectClass": "Osztály kiválasztása",
@@ -763,6 +769,20 @@
     "languageChangeError": "Nem sikerült megváltoztatni a nyelvet",
     "appearance": "Megjelenés",
     "appearanceDescription": "Az alkalmazás és az órarend megjelenése.",
+    "colorScheme": "Színpaletta",
+    "colorSchemeDescription": "A saját palettád az egész felülethez. Az iskola szezonális témája addig fest rá, amíg be van kapcsolva.",
+    "colorSchemeId": {
+      "default": "Alapértelmezett",
+      "catppuccin": "Catppuccin",
+      "dracula": "Dracula",
+      "gruvbox": "Gruvbox",
+      "nord": "Nord",
+      "rosePine": "Rosé Pine",
+      "solarized": "Solarized",
+      "tokyoNight": "Tokyo Night"
+    },
+    "seasonalThemes": "Szezonális témák",
+    "seasonalThemesDescription": "Engedélyezed, hogy az iskola szezonális megjelenést kapcsoljon az oldalra (Halloween, Karácsony, …). Kikapcsolva mindig a sajátod marad.",
     "timetableViewDescription": "A rács a megszokott órarend; a kártya a nyomtatható papír nézet."
   },
   "unsubscribe": {
