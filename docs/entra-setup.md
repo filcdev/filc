@@ -71,3 +71,20 @@ to start without it.
 Chronos sets the plugin's `currentURL` from `CHRONOS_BASE_URL`, which each
 preview container sets to its own hostname; that value is where the profile is
 handed back to, so it must be the public HTTPS origin.
+
+## 5. Profile pictures
+
+Entra serves the account photo as raw bytes, which better-auth inlines into the
+profile as a `data:image/jpeg;base64,…` URI. Chronos imports it instead
+(`apps/chronos/src/utils/avatars.ts`): the bytes are stored in object storage
+under a content-addressed name and only the resulting
+`/api/users/avatars/<sha256>.<ext>` URL is persisted in `user.image` and carried
+through the OAuth proxy redirect. Keeping the base64 out of that redirect is
+what stops the proxy callback from outgrowing the reverse proxy's header buffer
+(better-auth#8338); with storage unset or failing, the picture is dropped and
+the UI falls back to the user's initials rather than failing the sign-in.
+
+The object is written by the environment that handles the callback, so a preview
+sharing no bucket with production stores a URL its own storage cannot answer —
+the avatar then renders as initials there. Users can still upload their own
+picture from Settings → Profile, which always writes to the local environment.

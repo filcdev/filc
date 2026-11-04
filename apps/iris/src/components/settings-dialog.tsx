@@ -11,6 +11,7 @@ import { cn } from '@filcdev/ui/lib/utils';
 import {
   Bell,
   ChevronLeft,
+  CircleUserRound,
   KeyRound,
   type LucideIcon,
   Palette,
@@ -24,6 +25,7 @@ import { AppearancePane } from '@/components/settings/appearance-pane';
 import { GeneralPane } from '@/components/settings/general-pane';
 import { GroupsPane } from '@/components/settings/groups-pane';
 import { NotificationsPane } from '@/components/settings/notifications-pane';
+import { ProfilePane } from '@/components/settings/profile-pane';
 import {
   type SettingsSection,
   useSettingsDialog,
@@ -34,6 +36,7 @@ const NAV: {
   labelKey: string;
   section: SettingsSection;
 }[] = [
+  { icon: CircleUserRound, labelKey: 'profile.title', section: 'profile' },
   {
     icon: SlidersHorizontal,
     labelKey: 'preferences.general',
@@ -65,6 +68,7 @@ const PANES: Record<SettingsSection, ComponentType<PaneProps>> = {
   general: GeneralPane,
   groups: GroupsPane,
   notifications: NotificationsPane,
+  profile: ProfilePane,
 };
 
 export function SettingsDialog() {
