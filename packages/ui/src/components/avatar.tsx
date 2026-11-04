@@ -1,5 +1,5 @@
 import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar';
-import type { ComponentProps } from 'react';
+import { type ComponentProps, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
 
 function Avatar({
@@ -22,14 +22,69 @@ function Avatar({
   );
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+/**
+ * The avatar's picture, painted over the fallback.
+ *
+ * A plain `<img>` rather than Base UI's `Avatar.Image`: that one probes the
+ * source from an effect and mounts its element only after the probe loads, so
+ * the server render carries no `<img>` at all — the browser cannot start the
+ * request until hydration and then loads the picture a second time. Rendering
+ * the element here puts it in the SSR markup, so the load starts with the
+ * document, and the initials underneath stay visible until the bytes arrive.
+ * A source that fails hides the element, revealing them again.
+ *
+ * With no source there is no element at all: a source-less `<img>` still paints
+ * a broken-image glyph (and its `alt` text) over the initials.
+ */
+function AvatarImage({
+  alt = '',
+  className,
+  onError,
+  onLoad,
+  src,
+  ...props
+}: ComponentProps<'img'>) {
+  const imageRef = useRef<HTMLImageElement | null>(null);
+
+  // The element comes from the server render, so a source that 404s can fail
+  // before React hydrates — that error never reaches `onError`. Check once per
+  // source what the browser already knows.
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!image || image.getAttribute('src') !== src) {
+      return;
+    }
+    if (image.complete && image.naturalWidth === 0) {
+      image.hidden = true;
+    }
+  }, [src]);
+
+  if (!(src || props.srcSet)) {
+    return null;
+  }
+
   return (
-    <AvatarPrimitive.Image
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: a failing <img> reports an error event, not an interaction.
+    // biome-ignore lint/correctness/useImageSize: the picture is sized by its container; its intrinsic size is the upload's.
+    <img
+      alt={alt}
       className={cn(
-        'aspect-square size-full rounded-full object-cover',
+        'absolute inset-0 aspect-square size-full rounded-full object-cover',
         className
       )}
       data-slot="avatar-image"
+      decoding="async"
+      onError={(event) => {
+        event.currentTarget.hidden = true;
+        onError?.(event);
+      }}
+      onLoad={(event) => {
+        // A replaced source clears the failure the previous one marked.
+        event.currentTarget.hidden = false;
+        onLoad?.(event);
+      }}
+      ref={imageRef}
+      src={src}
       {...props}
     />
   );
