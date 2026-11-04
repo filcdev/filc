@@ -4,17 +4,15 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@filcdev/ui/components/alert';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@filcdev/ui/components/collapsible';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
-import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { CalendarDays } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
-import { formatLocalizedDate } from '@/utils/date-locale';
+import {
+  formatLocalizedDate,
+  parseDateOnly,
+} from '@/utils/date-locale';
 
 type BlockContent = {
   content: string;
@@ -45,168 +43,144 @@ function renderBlockContent(content: unknown): string {
   return '';
 }
 
-function filterNewsItemsInDateRange(
+function getNewsDates(
   announcements: AnnouncementItem[] | undefined,
-  today: Date,
-  endDate: Date
-): NewsItem[] {
-  const items: NewsItem[] = [];
+  classId: string | null | undefined,
+  today: Date
+): { date: string; items: NewsItem[] }[] {
+  const grouped = new Map<string, NewsItem[]>();
 
-  // Add announcements
-  if (announcements) {
-    for (const announcement of announcements) {
-      const validFrom = new Date(announcement.validFrom);
-      const validUntil = new Date(announcement.validUntil);
-
-      if (validFrom <= endDate && validUntil >= today) {
-        items.push({
-          content: announcement.content,
-          id: announcement.id,
-          title: announcement.title ?? 'Untitled',
-          type: 'announcement',
-          validFrom: announcement.validFrom,
-          validUntil: announcement.validUntil,
-        });
-      }
+  for (const announcement of announcements ?? []) {
+    if (
+      classId &&
+      announcement.cohortIds.length > 0 &&
+      !announcement.cohortIds.includes(classId)
+    ) {
+      continue;
     }
+
+    const validFrom = parseDateOnly(announcement.validFrom);
+    const validUntil = parseDateOnly(announcement.validUntil);
+    if (validUntil < today) {
+      continue;
+    }
+
+    const date = toDateKey(validFrom < today ? today : validFrom);
+    const items = grouped.get(date) ?? [];
+    items.push({
+      content: announcement.content,
+      id: announcement.id,
+      title: announcement.title ?? 'Untitled',
+      type: 'announcement',
+      validFrom: announcement.validFrom,
+      validUntil: announcement.validUntil,
+    });
+    grouped.set(date, items);
   }
 
-  return items.sort(
-    (a, b) => new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime()
-  );
+  return Array.from(grouped, ([date, items]) => ({
+    date,
+    items: items.sort(
+      (a, b) =>
+        new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime()
+    ),
+  })).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function NewsPanel({ classId }: { classId?: string | null }) {
+function toDateKey(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function NewsPanel({
+  classId,
+  emptyMessage,
+}: {
+  classId?: string | null;
+  emptyMessage?: string;
+}) {
   const { isPending } = useSession();
-  const { i18n, t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(true);
+  const { i18n } = useTranslation();
 
   const announcementsQuery = useAnnouncementsPanel(!isPending);
+  const todayKey = toDateKey(new Date());
 
-  const newsItems = useMemo<NewsItem[]>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const fourteenDaysLater = new Date(today);
-    fourteenDaysLater.setDate(fourteenDaysLater.getDate() + 14);
-
-    const inScope = classId
-      ? (announcementsQuery.data ?? []).filter(
-          (announcement) =>
-            announcement.cohortIds.length === 0 ||
-            announcement.cohortIds.includes(classId)
-        )
-      : announcementsQuery.data;
-
-    return filterNewsItemsInDateRange(inScope, today, fourteenDaysLater);
-  }, [announcementsQuery.data, classId]);
+  const newsDays = useMemo(
+    () =>
+      getNewsDates(
+        announcementsQuery.data,
+        classId,
+        parseDateOnly(todayKey)
+      ),
+    [announcementsQuery.data, classId, todayKey]
+  );
 
   const isLoading =
     announcementsQuery.isLoading ||
     announcementsQuery.isFetching ||
     announcementsQuery.isFetching;
 
-  // Don't render if no news items and not loading
-  if (!isLoading && newsItems.length === 0) {
-    return null;
-  }
-
   return (
-    <div className="w-full max-w-5xl">
-      <Collapsible onOpenChange={setIsOpen} open={isOpen}>
-        <div className="rounded-lg border bg-card">
-          <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-lg">
-                {t('news.title', 'Hírek')}
-              </h2>
-              {!isLoading && newsItems.length > 0 && (
-                <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground text-xs">
-                  {newsItems.length}
-                </span>
-              )}
-            </div>
-            <ChevronDown
-              className={`h-5 w-5 transition-transform duration-200 ${
-                isOpen ? 'rotate-180' : ''
-              }`}
-            />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="border-t p-4">
-              {isLoading && (
-                <div className="space-y-3">
-                  <Skeleton className="h-20 w-full" />
-                  <Skeleton className="h-20 w-full" />
-                </div>
-              )}
-              {!isLoading && newsItems.length > 0 && (
-                <div className="space-y-3">
-                  {newsItems.map((item) => (
-                    <Alert key={item.id}>
-                      <AlertTitle className="font-semibold" translate="yes">
-                        {item.title}
-                      </AlertTitle>
-                      <AlertDescription
-                        className="mt-2 whitespace-pre-wrap"
-                        translate="yes"
-                      >
-                        {renderBlockContent(item.content)}
-                      </AlertDescription>
-                      <div className="mt-2 text-muted-foreground text-xs">
-                        {(() => {
-                          const from = formatLocalizedDate(
-                            item.validFrom,
-                            i18n.language
-                          );
-                          const until = formatLocalizedDate(
-                            item.validUntil,
-                            i18n.language
-                          );
-                          return from === until ? from : `${from} – ${until}`;
-                        })()}
-                      </div>
-                    </Alert>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CollapsibleContent>
+    <div className="space-y-3">
+      {isLoading && (
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
         </div>
-      </Collapsible>
-    </div>
-  );
-}
-
-export function DayNews({ items }: { items: AnnouncementItem[] }) {
-  const { i18n } = useTranslation();
-  if (items.length === 0) {
-    return null;
-  }
-  return (
-    <div className="space-y-2">
-      {items.map((item) => (
-        <Alert key={item.id}>
-          <AlertTitle
-            className="font-semibold text-base sm:text-lg"
-            translate="yes"
-          >
-            {item.title ?? 'Untitled'}
-          </AlertTitle>
-          <AlertDescription
-            className="mt-2 whitespace-pre-wrap text-sm sm:text-base"
-            translate="yes"
-          >
-            {renderBlockContent(item.content)}
-          </AlertDescription>
-          <div className="mt-2 text-muted-foreground text-xs">
-            {(() => {
-              const from = formatLocalizedDate(item.validFrom, i18n.language);
-              const until = formatLocalizedDate(item.validUntil, i18n.language);
-              return from === until ? from : `${from} – ${until}`;
-            })()}
-          </div>
-        </Alert>
-      ))}
+      )}
+      {!isLoading &&
+        newsDays.map(({ date, items }) => (
+          <section className="space-y-3" key={date}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <h2 className="font-semibold text-foreground text-lg">
+                {formatLocalizedDate(parseDateOnly(date), i18n.language, {
+                  day: '2-digit',
+                  month: 'long',
+                  weekday: 'long',
+                  year: 'numeric',
+                })}
+              </h2>
+            </div>
+            <div className="grid gap-3">
+              {items.map((item) => (
+                <Alert key={item.id}>
+                  <AlertTitle className="font-semibold" translate="yes">
+                    {item.title}
+                  </AlertTitle>
+                  <AlertDescription
+                    className="mt-2 whitespace-pre-wrap"
+                    translate="yes"
+                  >
+                    {renderBlockContent(item.content)}
+                  </AlertDescription>
+                  <div className="mt-2 text-muted-foreground text-xs">
+                    {(() => {
+                      const from = formatLocalizedDate(
+                        item.validFrom,
+                        i18n.language
+                      );
+                      const until = formatLocalizedDate(
+                        item.validUntil,
+                        i18n.language
+                      );
+                      return from === until ? from : `${from} – ${until}`;
+                    })()}
+                  </div>
+                </Alert>
+              ))}
+            </div>
+          </section>
+        ))}
+      {!isLoading && newsDays.length === 0 && emptyMessage && (
+        <p className="rounded-lg border border-dashed p-6 text-center text-muted-foreground text-sm">
+          {emptyMessage}
+        </p>
+      )}
     </div>
   );
 }

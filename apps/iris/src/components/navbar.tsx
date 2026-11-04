@@ -27,6 +27,7 @@ import {
   LogIn,
   LogOut,
   Menu,
+  Newspaper,
   UserCog,
   Wifi,
   X,
@@ -69,6 +70,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { icon: Calendar, labelKey: 'schedule', to: '/' },
   { icon: Book, labelKey: 'substitutions', to: '/subs' },
+  { icon: Newspaper, labelKey: 'news.title', to: '/news' },
   { adminOnly: true, icon: UserCog, labelKey: 'adminDashboard', to: '/admin' },
 ];
 
