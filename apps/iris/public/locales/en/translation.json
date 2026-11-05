@@ -170,7 +170,59 @@
     "developer": "Developer",
     "kiosks": "Kiosks",
     "navigator": "Navigator",
-    "wifi": "WiFi"
+    "wifi": "WiFi",
+    "appearance": "Appearance"
+  },
+  "siteTheme": {
+    "title": "Site theme",
+    "description": "Apply a seasonal skin across the whole site.",
+    "heroTitle": "Give the site a seasonal look",
+    "heroDescription": "Pick a theme and it applies to everyone instantly — no reload, signed-out visitors included.",
+    "default": {
+      "name": "Default",
+      "description": "The clean, everyday look with no seasonal styling."
+    },
+    "newYear": {
+      "name": "New Year's Eve",
+      "description": "Midnight blue, gold and fireworks."
+    },
+    "valentines": {
+      "name": "Valentine's Day",
+      "description": "Rose, blush and hearts."
+    },
+    "march15": {
+      "name": "15 March",
+      "description": "The Hungarian national colours, red-white-green, for the 1848 revolution memorial day."
+    },
+    "easter": {
+      "name": "Easter",
+      "description": "Pastel lilac, butter yellow and spring green."
+    },
+    "summer": {
+      "name": "Summer",
+      "description": "Azure, turquoise and sunny yellow."
+    },
+    "halloween": {
+      "name": "Halloween",
+      "description": "Warm parchment, pumpkin orange and deep purple for spooky season."
+    },
+    "christmas": {
+      "name": "Christmas",
+      "description": "Snow, crimson and pine green for the holidays."
+    },
+    "active": "Active",
+    "apply": "Apply theme",
+    "applying": "Applying…",
+    "saved": "Site theme updated",
+    "saveError": "Failed to update the site theme",
+    "previewLabel": "Preview",
+    "currentTheme": "Current theme",
+    "notice": {
+      "title": "New theme: {{name}}",
+      "description": "The school turned on the {{name}} theme for everyone. Want to keep it, or switch it off for good?",
+      "thanks": "Thanks, looks great!",
+      "disable": "Don't turn it on for me"
+    }
   },
   "timetable": {
     "selectClass": "Select class",
@@ -730,6 +782,20 @@
     "languageChangeError": "Could not change the language",
     "appearance": "Appearance",
     "appearanceDescription": "How the app and the timetable look.",
+    "colorScheme": "Colour scheme",
+    "colorSchemeDescription": "Your own palette for the whole app. A seasonal skin from the school paints over it while it is on.",
+    "colorSchemeId": {
+      "default": "Default",
+      "catppuccin": "Catppuccin",
+      "dracula": "Dracula",
+      "gruvbox": "Gruvbox",
+      "nord": "Nord",
+      "rosePine": "Rosé Pine",
+      "solarized": "Solarized",
+      "tokyoNight": "Tokyo Night"
+    },
+    "seasonalThemes": "Seasonal themes",
+    "seasonalThemesDescription": "Let the school switch the site to a seasonal look (Halloween, Christmas, …). Turn it off to always keep your own.",
     "timetableViewDescription": "Grid is the timetable you see first; card is the printable paper layout."
   },
   "profile": {

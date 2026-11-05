@@ -45,9 +45,23 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  /*
+   * The seasonal motifs are emoji glyphs (`SiteThemeArt`), so they render in
+   * whatever colour emoji font the visitor's platform ships.
+   */
+  --font-emoji:
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+    "Twemoji Mozilla", sans-serif;
 }
 
-:root {
+/*
+ * The everyday palette. `[data-site-theme="default"]` answers to the same
+ * tokens so a theme picker can preview "no seasonal skin" inside a page whose
+ * `<html>` carries a seasonal one — the nearer declaration wins over the
+ * inherited value, so no token copy is needed here.
+ */
+:root,
+[data-site-theme="default"]:not(.dark) {
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -84,7 +98,8 @@
   --sidebar-ring: oklch(0.705 0.015 286.067);
 }
 
-.dark {
+.dark,
+[data-site-theme="default"].dark {
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -157,4 +172,117 @@
 
 .animate-collapsible-up {
   animation: collapsible-up 200ms ease-out;
+}
+
+/*
+ * The twelve categorical colours the timetable assigns to subjects, in the
+ * order the stored `timetable_class_colors` index refers to. Only the hues
+ * are fixed: each chip is a `color-mix` against `--card`, so the tint and
+ * contrast follow whichever palette is in force — the visitor's colour
+ * scheme, and the seasonal skin over it — while the twelve stay
+ * distinguishable. That is why there is no per-scheme copy of this list.
+ *
+ * `--class-surface` is what the chips are mixed into: the palette's own card
+ * washed with a little of its `--primary`, so a light scheme — whose card is
+ * usually plain white — still tints the timetable with its character instead of
+ * looking like the default palette.
+ */
+:root {
+  --class-hue-1: #3b82f6; /* blue */
+  --class-hue-2: #10b981; /* emerald */
+  --class-hue-3: #f59e0b; /* amber */
+  --class-hue-4: #8b5cf6; /* purple */
+  --class-hue-5: #f43f5e; /* rose */
+  --class-hue-6: #06b6d4; /* cyan */
+  --class-hue-7: #14b8a6; /* teal */
+  --class-hue-8: #f97316; /* orange */
+  --class-hue-9: #6366f1; /* indigo */
+  --class-hue-10: #ec4899; /* pink */
+  --class-hue-11: #84cc16; /* lime */
+  --class-hue-12: #0ea5e9; /* sky */
+  --class-surface: color-mix(in oklab, var(--primary) 16%, var(--card));
+  --class-1: color-mix(in oklab, var(--class-hue-1) 22%, var(--class-surface));
+  --class-2: color-mix(in oklab, var(--class-hue-2) 22%, var(--class-surface));
+  --class-3: color-mix(in oklab, var(--class-hue-3) 22%, var(--class-surface));
+  --class-4: color-mix(in oklab, var(--class-hue-4) 22%, var(--class-surface));
+  --class-5: color-mix(in oklab, var(--class-hue-5) 22%, var(--class-surface));
+  --class-6: color-mix(in oklab, var(--class-hue-6) 22%, var(--class-surface));
+  --class-7: color-mix(in oklab, var(--class-hue-7) 22%, var(--class-surface));
+  --class-8: color-mix(in oklab, var(--class-hue-8) 22%, var(--class-surface));
+  --class-9: color-mix(in oklab, var(--class-hue-9) 22%, var(--class-surface));
+  --class-10: color-mix(
+    in oklab,
+    var(--class-hue-10) 22%,
+    var(--class-surface)
+  );
+  --class-11: color-mix(
+    in oklab,
+    var(--class-hue-11) 22%,
+    var(--class-surface)
+  );
+  --class-12: color-mix(
+    in oklab,
+    var(--class-hue-12) 22%,
+    var(--class-surface)
+  );
+  --class-1-border: color-mix(
+    in oklab,
+    var(--class-hue-1) 62%,
+    var(--class-surface)
+  );
+  --class-2-border: color-mix(
+    in oklab,
+    var(--class-hue-2) 62%,
+    var(--class-surface)
+  );
+  --class-3-border: color-mix(
+    in oklab,
+    var(--class-hue-3) 62%,
+    var(--class-surface)
+  );
+  --class-4-border: color-mix(
+    in oklab,
+    var(--class-hue-4) 62%,
+    var(--class-surface)
+  );
+  --class-5-border: color-mix(
+    in oklab,
+    var(--class-hue-5) 62%,
+    var(--class-surface)
+  );
+  --class-6-border: color-mix(
+    in oklab,
+    var(--class-hue-6) 62%,
+    var(--class-surface)
+  );
+  --class-7-border: color-mix(
+    in oklab,
+    var(--class-hue-7) 62%,
+    var(--class-surface)
+  );
+  --class-8-border: color-mix(
+    in oklab,
+    var(--class-hue-8) 62%,
+    var(--class-surface)
+  );
+  --class-9-border: color-mix(
+    in oklab,
+    var(--class-hue-9) 62%,
+    var(--class-surface)
+  );
+  --class-10-border: color-mix(
+    in oklab,
+    var(--class-hue-10) 62%,
+    var(--class-surface)
+  );
+  --class-11-border: color-mix(
+    in oklab,
+    var(--class-hue-11) 62%,
+    var(--class-surface)
+  );
+  --class-12-border: color-mix(
+    in oklab,
+    var(--class-hue-12) 62%,
+    var(--class-surface)
+  );
 }

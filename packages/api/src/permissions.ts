@@ -26,6 +26,7 @@ export const permissions = {
   newsBlogsManage: 'news:blogs',
   rolesManage: 'roles:manage',
   rolesRead: 'roles:read',
+  siteThemeManage: 'site-theme:manage',
   substitutionCreate: 'substitution:create',
   substitutionDelete: 'substitution:delete',
   substitutionUpdate: 'substitution:update',

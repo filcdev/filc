@@ -39,6 +39,7 @@ import {
   Route,
   ScrollText,
   Shield,
+  Sparkles,
   UserRound,
   Users,
   Wifi,
@@ -200,6 +201,18 @@ function useAdminMenuCategories(): MenuCategory[] {
           },
         ],
         label: t('admin.management'),
+      },
+      {
+        id: 'appearance',
+        items: [
+          {
+            icon: Sparkles,
+            permission: permissions.siteThemeManage,
+            title: t('siteTheme.title'),
+            url: '/admin/theme',
+          },
+        ],
+        label: t('admin.appearance'),
       },
       {
         id: 'navigator',

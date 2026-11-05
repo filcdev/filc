@@ -1,5 +1,6 @@
 import z from 'zod';
 import { listResponse } from './list';
+import { colorSchemeSchema } from './theme';
 
 /**
  * The per-type email/push toggles stored in
@@ -43,8 +44,11 @@ export type TimetableGroupDisplay =
   (typeof timetableGroupDisplayValues)[number];
 
 export const updateSettingsSchema = z.object({
+  colorScheme: colorSchemeSchema.optional(),
   language: z.string().optional(),
   notificationPreferences: notificationPreferencesSchema.partial().optional(),
+  siteThemeAcknowledged: z.string().nullable().optional(),
+  siteThemeEnabled: z.boolean().optional(),
   theme: z.string().optional(),
   timetableClassColors: z.record(z.string(), z.number()).optional(),
   timetableGroupDisplay: z.enum(timetableGroupDisplayValues).optional(),
@@ -162,10 +166,15 @@ export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
 
 /** One `user_preferences` row: notification, language and timetable settings. */
 export const userPreferencesSchema = z.object({
+  colorScheme: colorSchemeSchema,
   createdAt: z.date(),
   id: z.uuid(),
   language: z.string(),
   notificationPreferences: notificationPreferencesSchema,
+  /** The seasonal skin the visitor last acknowledged, or null for never. */
+  siteThemeAcknowledged: z.string().nullable(),
+  /** Whether the site-wide seasonal skin may paint over the visitor's scheme. */
+  siteThemeEnabled: z.boolean(),
   theme: z.string(),
   timetableClassColors: z.record(z.string(), z.number()),
   timetableGroupDisplay: z.string(),

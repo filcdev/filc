@@ -1,5 +1,5 @@
 {
-  "id": "dc509063-c2e6-4437-a2e0-911a88ec1523",
+  "id": "3db6cb72-75cc-443f-939f-00c6ed3848c7",
   "prevId": "e445cdfb-3edc-4f34-ad6f-595ec59c2a9c",
   "version": "7",
   "dialect": "postgresql",
@@ -2590,6 +2590,60 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.site_theme": {
+      "name": "site_theme",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "'default'"
+        },
+        "theme": {
+          "name": "theme",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'default'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "site_theme_updated_by_user_id_fk": {
+          "name": "site_theme_updated_by_user_id_fk",
+          "tableFrom": "site_theme",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.building": {
       "name": "building",
       "schema": "",
@@ -3384,32 +3438,6 @@
           "primaryKey": true,
           "notNull": true
         },
-        "manual_cohort_ids": {
-          "name": "manual_cohort_ids",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::text[]"
-        },
-        "manual_source_room_id": {
-          "name": "manual_source_room_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "manual_subject_id": {
-          "name": "manual_subject_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "manual_teacher_ids": {
-          "name": "manual_teacher_ids",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::text[]"
-        },
         "room": {
           "name": "room",
           "type": "text",
@@ -3431,32 +3459,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "moved_lesson_manual_source_room_id_classroom_id_fk": {
-          "name": "moved_lesson_manual_source_room_id_classroom_id_fk",
-          "tableFrom": "moved_lesson",
-          "tableTo": "classroom",
-          "columnsFrom": [
-            "manual_source_room_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "moved_lesson_manual_subject_id_subject_id_fk": {
-          "name": "moved_lesson_manual_subject_id_subject_id_fk",
-          "tableFrom": "moved_lesson",
-          "tableTo": "subject",
-          "columnsFrom": [
-            "manual_subject_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "moved_lesson_room_classroom_id_fk": {
           "name": "moved_lesson_room_classroom_id_fk",
           "tableFrom": "moved_lesson",

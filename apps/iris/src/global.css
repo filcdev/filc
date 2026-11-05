@@ -1,4 +1,6 @@
 @import "@filcdev/ui/globals.css";
+@import "@filcdev/ui/schemes.css";
+@import "@filcdev/ui/themes.css";
 @import "@fontsource-variable/outfit";
 
 @source "../../../packages/ui/src";
