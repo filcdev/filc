@@ -7,7 +7,7 @@ import {
 import { Button } from '@filcdev/ui/components/button';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { CalendarDays, XIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FilterCombobox } from '@/components/timetable/filter-combobox';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
@@ -107,6 +107,7 @@ export function NewsPanel({
 }) {
   const { isPending } = useSession();
   const { i18n, t } = useTranslation();
+  const classFilterId = useId();
 
   const announcementsQuery = useAnnouncementsPanel(!isPending);
   const timetablesQuery = useTimetables();
@@ -157,7 +158,7 @@ export function NewsPanel({
           <FilterCombobox
             className="w-36 sm:w-44"
             emptyMessage={t('timetable.noClassFound')}
-            id="news-class-filter"
+            id={classFilterId}
             onOpenChange={setFilterOpen}
             onSelect={(value) => {
               setSelectedClassId(value);
