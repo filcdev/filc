@@ -16,33 +16,30 @@ dayjs.extend(customParseFormat);
 export const toHHMM = (t: string | undefined | null): string =>
   (t ?? '00:00:00').slice(0, 5);
 
-/** Color palette for subject-based coloring — 12-color rainbow */
-const ACCENT_COLORS = [
-  { bg: 'bg-blue-50/50 dark:bg-blue-900/20', border: 'border-blue-500/50' },
-  {
-    bg: 'bg-emerald-50/50 dark:bg-emerald-900/20',
-    border: 'border-emerald-500/50',
-  },
-  { bg: 'bg-amber-50/50 dark:bg-amber-900/20', border: 'border-amber-500/50' },
-  {
-    bg: 'bg-purple-50/50 dark:bg-purple-900/20',
-    border: 'border-purple-500/50',
-  },
-  { bg: 'bg-rose-50/50 dark:bg-rose-900/20', border: 'border-rose-500/50' },
-  { bg: 'bg-cyan-50/50 dark:bg-cyan-900/20', border: 'border-cyan-500/50' },
-  { bg: 'bg-teal-50/50 dark:bg-teal-900/20', border: 'border-teal-500/50' },
-  {
-    bg: 'bg-orange-50/50 dark:bg-orange-900/20',
-    border: 'border-orange-500/50',
-  },
-  {
-    bg: 'bg-indigo-50/50 dark:bg-indigo-900/20',
-    border: 'border-indigo-500/50',
-  },
-  { bg: 'bg-pink-50/50 dark:bg-pink-900/20', border: 'border-pink-500/50' },
-  { bg: 'bg-lime-50/50 dark:bg-lime-900/20', border: 'border-lime-500/50' },
-  { bg: 'bg-sky-50/50 dark:bg-sky-900/20', border: 'border-sky-500/50' },
+/**
+ * The twelve categorical subject colours, in the order the stored
+ * `timetable_class_colors` index refers to. The values are CSS variables from
+ * `@filcdev/ui`'s `globals.css`, which mix a fixed hue into the active
+ * palette's `--card` — so a subject keeps its slot (and its hue identity) while
+ * the chip retints with the visitor's colour scheme and the seasonal skin.
+ */
+export const CLASS_COLORS = [
+  { bg: 'bg-[var(--class-1)]', border: 'border-[var(--class-1-border)]' },
+  { bg: 'bg-[var(--class-2)]', border: 'border-[var(--class-2-border)]' },
+  { bg: 'bg-[var(--class-3)]', border: 'border-[var(--class-3-border)]' },
+  { bg: 'bg-[var(--class-4)]', border: 'border-[var(--class-4-border)]' },
+  { bg: 'bg-[var(--class-5)]', border: 'border-[var(--class-5-border)]' },
+  { bg: 'bg-[var(--class-6)]', border: 'border-[var(--class-6-border)]' },
+  { bg: 'bg-[var(--class-7)]', border: 'border-[var(--class-7-border)]' },
+  { bg: 'bg-[var(--class-8)]', border: 'border-[var(--class-8-border)]' },
+  { bg: 'bg-[var(--class-9)]', border: 'border-[var(--class-9-border)]' },
+  { bg: 'bg-[var(--class-10)]', border: 'border-[var(--class-10-border)]' },
+  { bg: 'bg-[var(--class-11)]', border: 'border-[var(--class-11-border)]' },
+  { bg: 'bg-[var(--class-12)]', border: 'border-[var(--class-12-border)]' },
 ] as const;
+
+/** A subject with no colour: only reachable if the slot list is ever empty. */
+const NO_COLOR = { bg: '', border: '' };
 
 /** Get consistent color classes for a subject */
 export const getSubjectColor = (
@@ -52,8 +49,13 @@ export const getSubjectColor = (
   // Check user preference first
   if (userColors) {
     const idx = userColors[name];
-    if (idx !== undefined && idx >= 0 && idx < ACCENT_COLORS.length) {
-      return ACCENT_COLORS[idx] ?? { bg: '', border: '' };
+    if (
+      idx !== undefined &&
+      Number.isInteger(idx) &&
+      idx >= 0 &&
+      idx < CLASS_COLORS.length
+    ) {
+      return CLASS_COLORS[idx] ?? NO_COLOR;
     }
   }
 
@@ -62,12 +64,7 @@ export const getSubjectColor = (
   for (const ch of name) {
     sum += ch.codePointAt(0) ?? 0;
   }
-  return (
-    ACCENT_COLORS[Math.abs(sum) % ACCENT_COLORS.length] ?? {
-      bg: '',
-      border: '',
-    }
-  );
+  return CLASS_COLORS[Math.abs(sum) % CLASS_COLORS.length] ?? NO_COLOR;
 };
 
 /** Format teacher display name */

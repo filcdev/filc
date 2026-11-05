@@ -190,6 +190,20 @@
       "when": 1792414381686,
       "tag": "0026_unique_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793576395427,
+      "tag": "0027_long_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793823020287,
+      "tag": "0028_rapid_lockheed",
+      "breakpoints": true
     }
   ]
 }

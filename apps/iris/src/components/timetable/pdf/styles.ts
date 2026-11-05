@@ -1,7 +1,12 @@
 import { StyleSheet } from '@react-pdf/renderer';
 
-// Hex equivalents of the Tailwind ACCENT_COLORS palette in helpers.ts
-// Order must match: blue, emerald, amber, purple, rose, cyan, teal, orange, indigo, pink, lime, sky
+// Hex equivalents of the twelve subject colours, which on screen are the
+// `--class-N` / `--class-N-border` tokens in `@filcdev/ui`'s globals.css (a
+// fixed hue mixed into the active palette's `--card`). A PDF has no CSS
+// variables and no theme, so it carries the light-mode tints literally; the
+// order must match the slots, or a subject changes colour between screen and
+// print: blue, emerald, amber, purple, rose, cyan, teal, orange, indigo, pink,
+// lime, sky.
 const COLOR_PALETTE = [
   { bg: '#EFF6FF', border: '#3B82F6' }, // blue
   { bg: '#ECFDF5', border: '#10B981' }, // emerald
@@ -19,7 +24,10 @@ const COLOR_PALETTE = [
 
 const BW_COLOR = { bg: '#F3F4F6', border: '#9CA3AF' };
 
-/** Mirror of getSubjectColor from helpers.ts — returns hex colours for PDF */
+/**
+ * Mirror of `getSubjectColor` from helpers.ts — hex colours for PDF. It takes
+ * no per-user colours: a printed timetable carries no account context.
+ */
 export function getPdfSubjectColor(
   name: string,
   blackAndWhite: boolean

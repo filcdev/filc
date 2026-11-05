@@ -1,0 +1,542 @@
+/*
+ * User-selectable colour schemes, layered between the everyday palette in
+ * `globals.css` and the seasonal skins in `themes.css`.
+ *
+ * Precedence is cascade order in the consuming app, so the imports have to run
+ * `globals.css` → `schemes.css` → `themes.css`. All three set tokens at the
+ * same specificity (`[attr]:not(.dark)` / `.dark`), which makes the last one
+ * win: a chosen scheme recolours the app, and an active seasonal skin paints
+ * over it — unless the visitor turned that off, in which case the app leaves
+ * `data-site-theme` at `default` and nothing here is overridden.
+ *
+ * The values are each palette's own upstream colours (hex, so they are exactly
+ * what the project publishes), not derived shades. `default` has no block on
+ * purpose: leaving it out is what lets `globals.css` answer for it.
+ *
+ * Every block carries the same token list as `globals.css`, light then dark.
+ */
+
+/* ---------------------------------- Catppuccin --------------------------------- */
+/* Latte / Mocha — https://catppuccin.com/palette */
+
+[data-color-scheme="catppuccin"]:not(.dark) {
+  --background: #eff1f5;
+  --foreground: #4c4f69;
+  --card: #ffffff;
+  --card-foreground: #4c4f69;
+  --popover: #ffffff;
+  --popover-foreground: #4c4f69;
+  --primary: #8839ef;
+  --primary-foreground: #eff1f5;
+  --secondary: #ccd0da;
+  --secondary-foreground: #4c4f69;
+  --muted: #e6e9ef;
+  --muted-foreground: #6c6f85;
+  --accent: #dce0e8;
+  --accent-foreground: #4c4f69;
+  --destructive: #d20f39;
+  --border: #ccd0da;
+  --input: #ccd0da;
+  --ring: #8839ef;
+  --chart-1: #1e66f5;
+  --chart-2: #40a02b;
+  --chart-3: #df8e1d;
+  --chart-4: #fe640b;
+  --chart-5: #ea76cb;
+  --warning: #df8e1d;
+  --warning-foreground: #4c4f69;
+  --sidebar: #e6e9ef;
+  --sidebar-foreground: #4c4f69;
+  --sidebar-primary: #8839ef;
+  --sidebar-primary-foreground: #eff1f5;
+  --sidebar-accent: #dce0e8;
+  --sidebar-accent-foreground: #4c4f69;
+  --sidebar-border: #ccd0da;
+  --sidebar-ring: #8839ef;
+}
+
+[data-color-scheme="catppuccin"].dark {
+  --background: #1e1e2e;
+  --foreground: #cdd6f4;
+  --card: #181825;
+  --card-foreground: #cdd6f4;
+  --popover: #181825;
+  --popover-foreground: #cdd6f4;
+  --primary: #cba6f7;
+  --primary-foreground: #1e1e2e;
+  --secondary: #313244;
+  --secondary-foreground: #cdd6f4;
+  --muted: #313244;
+  --muted-foreground: #a6adc8;
+  --accent: #45475a;
+  --accent-foreground: #cdd6f4;
+  --destructive: #f38ba8;
+  --border: #313244;
+  --input: #45475a;
+  --ring: #cba6f7;
+  --chart-1: #89b4fa;
+  --chart-2: #a6e3a1;
+  --chart-3: #f9e2af;
+  --chart-4: #fab387;
+  --chart-5: #f5c2e7;
+  --warning: #f9e2af;
+  --warning-foreground: #1e1e2e;
+  --sidebar: #181825;
+  --sidebar-foreground: #cdd6f4;
+  --sidebar-primary: #cba6f7;
+  --sidebar-primary-foreground: #1e1e2e;
+  --sidebar-accent: #313244;
+  --sidebar-accent-foreground: #cdd6f4;
+  --sidebar-border: #313244;
+  --sidebar-ring: #cba6f7;
+}
+
+/* ---------------------------------- Dracula ------------------------------------ */
+/* Dracula / Alucard — https://draculatheme.com/contribute */
+
+[data-color-scheme="dracula"]:not(.dark) {
+  --background: #f8f8f2;
+  --foreground: #282a36;
+  --card: #ffffff;
+  --card-foreground: #282a36;
+  --popover: #ffffff;
+  --popover-foreground: #282a36;
+  --primary: #644ac9;
+  --primary-foreground: #f8f8f2;
+  --secondary: #ddddd0;
+  --secondary-foreground: #282a36;
+  --muted: #ecece0;
+  --muted-foreground: #6272a4;
+  --accent: #ddddd0;
+  --accent-foreground: #282a36;
+  --destructive: #a3144d;
+  --border: #ddddd0;
+  --input: #ddddd0;
+  --ring: #644ac9;
+  --chart-1: #036a96;
+  --chart-2: #14710a;
+  --chart-3: #846e15;
+  --chart-4: #a34d14;
+  --chart-5: #a3144d;
+  --warning: #846e15;
+  --warning-foreground: #f8f8f2;
+  --sidebar: #ecece0;
+  --sidebar-foreground: #282a36;
+  --sidebar-primary: #644ac9;
+  --sidebar-primary-foreground: #f8f8f2;
+  --sidebar-accent: #ddddd0;
+  --sidebar-accent-foreground: #282a36;
+  --sidebar-border: #ddddd0;
+  --sidebar-ring: #644ac9;
+}
+
+[data-color-scheme="dracula"].dark {
+  --background: #282a36;
+  --foreground: #f8f8f2;
+  --card: #21222c;
+  --card-foreground: #f8f8f2;
+  --popover: #21222c;
+  --popover-foreground: #f8f8f2;
+  --primary: #bd93f9;
+  --primary-foreground: #282a36;
+  --secondary: #44475a;
+  --secondary-foreground: #f8f8f2;
+  --muted: #44475a;
+  --muted-foreground: #bfc7e0;
+  --accent: #44475a;
+  --accent-foreground: #f8f8f2;
+  --destructive: #ff5555;
+  --border: #44475a;
+  --input: #44475a;
+  --ring: #bd93f9;
+  --chart-1: #8be9fd;
+  --chart-2: #50fa7b;
+  --chart-3: #f1fa8c;
+  --chart-4: #ffb86c;
+  --chart-5: #ff79c6;
+  --warning: #f1fa8c;
+  --warning-foreground: #282a36;
+  --sidebar: #21222c;
+  --sidebar-foreground: #f8f8f2;
+  --sidebar-primary: #bd93f9;
+  --sidebar-primary-foreground: #282a36;
+  --sidebar-accent: #44475a;
+  --sidebar-accent-foreground: #f8f8f2;
+  --sidebar-border: #44475a;
+  --sidebar-ring: #bd93f9;
+}
+
+/* ---------------------------------- Gruvbox ------------------------------------ */
+/* Gruvbox dark / light (medium contrast) — https://github.com/morhetz/gruvbox */
+
+[data-color-scheme="gruvbox"]:not(.dark) {
+  --background: #fbf1c7;
+  --foreground: #3c3836;
+  --card: #f2e5bc;
+  --card-foreground: #3c3836;
+  --popover: #f2e5bc;
+  --popover-foreground: #3c3836;
+  --primary: #427b58;
+  --primary-foreground: #fbf1c7;
+  --secondary: #ebdbb2;
+  --secondary-foreground: #3c3836;
+  --muted: #ebdbb2;
+  --muted-foreground: #665c54;
+  --accent: #d5c4a1;
+  --accent-foreground: #3c3836;
+  --destructive: #9d0006;
+  --border: #d5c4a1;
+  --input: #d5c4a1;
+  --ring: #427b58;
+  --chart-1: #076678;
+  --chart-2: #79740e;
+  --chart-3: #b57614;
+  --chart-4: #af3a03;
+  --chart-5: #8f3f71;
+  --warning: #b57614;
+  --warning-foreground: #fbf1c7;
+  --sidebar: #f2e5bc;
+  --sidebar-foreground: #3c3836;
+  --sidebar-primary: #427b58;
+  --sidebar-primary-foreground: #fbf1c7;
+  --sidebar-accent: #ebdbb2;
+  --sidebar-accent-foreground: #3c3836;
+  --sidebar-border: #d5c4a1;
+  --sidebar-ring: #427b58;
+}
+
+[data-color-scheme="gruvbox"].dark {
+  --background: #282828;
+  --foreground: #ebdbb2;
+  --card: #32302f;
+  --card-foreground: #ebdbb2;
+  --popover: #32302f;
+  --popover-foreground: #ebdbb2;
+  --primary: #8ec07c;
+  --primary-foreground: #282828;
+  --secondary: #3c3836;
+  --secondary-foreground: #ebdbb2;
+  --muted: #3c3836;
+  --muted-foreground: #bdae93;
+  --accent: #504945;
+  --accent-foreground: #fbf1c7;
+  --destructive: #fb4934;
+  --border: #3c3836;
+  --input: #504945;
+  --ring: #8ec07c;
+  --chart-1: #83a598;
+  --chart-2: #b8bb26;
+  --chart-3: #fabd2f;
+  --chart-4: #fe8019;
+  --chart-5: #d3869b;
+  --warning: #fabd2f;
+  --warning-foreground: #282828;
+  --sidebar: #32302f;
+  --sidebar-foreground: #ebdbb2;
+  --sidebar-primary: #8ec07c;
+  --sidebar-primary-foreground: #282828;
+  --sidebar-accent: #3c3836;
+  --sidebar-accent-foreground: #ebdbb2;
+  --sidebar-border: #3c3836;
+  --sidebar-ring: #8ec07c;
+}
+
+/* ------------------------------------ Nord ------------------------------------- */
+/* Nordic polar night / snow storm — https://www.nordtheme.com/docs/colors-and-palettes */
+
+[data-color-scheme="nord"]:not(.dark) {
+  --background: #eceff4;
+  --foreground: #2e3440;
+  --card: #ffffff;
+  --card-foreground: #2e3440;
+  --popover: #ffffff;
+  --popover-foreground: #2e3440;
+  --primary: #5e81ac;
+  --primary-foreground: #eceff4;
+  --secondary: #e5e9f0;
+  --secondary-foreground: #2e3440;
+  --muted: #e5e9f0;
+  --muted-foreground: #4c566a;
+  --accent: #d8dee9;
+  --accent-foreground: #2e3440;
+  --destructive: #bf616a;
+  --border: #d8dee9;
+  --input: #d8dee9;
+  --ring: #5e81ac;
+  --chart-1: #5e81ac;
+  --chart-2: #a3be8c;
+  --chart-3: #ebcb8b;
+  --chart-4: #d08770;
+  --chart-5: #b48ead;
+  --warning: #ebcb8b;
+  --warning-foreground: #2e3440;
+  --sidebar: #e5e9f0;
+  --sidebar-foreground: #2e3440;
+  --sidebar-primary: #5e81ac;
+  --sidebar-primary-foreground: #eceff4;
+  --sidebar-accent: #d8dee9;
+  --sidebar-accent-foreground: #2e3440;
+  --sidebar-border: #d8dee9;
+  --sidebar-ring: #5e81ac;
+}
+
+[data-color-scheme="nord"].dark {
+  --background: #2e3440;
+  --foreground: #eceff4;
+  --card: #3b4252;
+  --card-foreground: #eceff4;
+  --popover: #3b4252;
+  --popover-foreground: #eceff4;
+  --primary: #88c0d0;
+  --primary-foreground: #2e3440;
+  --secondary: #434c5e;
+  --secondary-foreground: #eceff4;
+  --muted: #434c5e;
+  --muted-foreground: #d8dee9;
+  --accent: #4c566a;
+  --accent-foreground: #eceff4;
+  --destructive: #bf616a;
+  --border: #434c5e;
+  --input: #4c566a;
+  --ring: #88c0d0;
+  --chart-1: #88c0d0;
+  --chart-2: #a3be8c;
+  --chart-3: #ebcb8b;
+  --chart-4: #d08770;
+  --chart-5: #b48ead;
+  --warning: #ebcb8b;
+  --warning-foreground: #2e3440;
+  --sidebar: #3b4252;
+  --sidebar-foreground: #eceff4;
+  --sidebar-primary: #88c0d0;
+  --sidebar-primary-foreground: #2e3440;
+  --sidebar-accent: #434c5e;
+  --sidebar-accent-foreground: #eceff4;
+  --sidebar-border: #434c5e;
+  --sidebar-ring: #88c0d0;
+}
+
+/* ---------------------------------- Rose Pine ---------------------------------- */
+/* Rosé Pine / Dawn — https://rosepinetheme.com/palette */
+
+[data-color-scheme="rosePine"]:not(.dark) {
+  --background: #faf4ed;
+  --foreground: #575279;
+  --card: #fffaf3;
+  --card-foreground: #575279;
+  --popover: #fffaf3;
+  --popover-foreground: #575279;
+  --primary: #907aa9;
+  --primary-foreground: #faf4ed;
+  --secondary: #f2e9e1;
+  --secondary-foreground: #575279;
+  --muted: #f2e9e1;
+  --muted-foreground: #797593;
+  --accent: #f2e9e1;
+  --accent-foreground: #575279;
+  --destructive: #b4637a;
+  --border: #f2e9e1;
+  --input: #f2e9e1;
+  --ring: #907aa9;
+  --chart-1: #286983;
+  --chart-2: #56949f;
+  --chart-3: #ea9d34;
+  --chart-4: #d7827e;
+  --chart-5: #b4637a;
+  --warning: #ea9d34;
+  --warning-foreground: #575279;
+  --sidebar: #fffaf3;
+  --sidebar-foreground: #575279;
+  --sidebar-primary: #907aa9;
+  --sidebar-primary-foreground: #faf4ed;
+  --sidebar-accent: #f2e9e1;
+  --sidebar-accent-foreground: #575279;
+  --sidebar-border: #f2e9e1;
+  --sidebar-ring: #907aa9;
+}
+
+[data-color-scheme="rosePine"].dark {
+  --background: #191724;
+  --foreground: #e0def4;
+  --card: #1f1d2e;
+  --card-foreground: #e0def4;
+  --popover: #1f1d2e;
+  --popover-foreground: #e0def4;
+  --primary: #c4a7e7;
+  --primary-foreground: #191724;
+  --secondary: #26233a;
+  --secondary-foreground: #e0def4;
+  --muted: #26233a;
+  --muted-foreground: #908caa;
+  --accent: #26233a;
+  --accent-foreground: #e0def4;
+  --destructive: #eb6f92;
+  --border: #26233a;
+  --input: #26233a;
+  --ring: #c4a7e7;
+  --chart-1: #9ccfd8;
+  --chart-2: #31748f;
+  --chart-3: #f6c177;
+  --chart-4: #ebbcba;
+  --chart-5: #eb6f92;
+  --warning: #f6c177;
+  --warning-foreground: #191724;
+  --sidebar: #1f1d2e;
+  --sidebar-foreground: #e0def4;
+  --sidebar-primary: #c4a7e7;
+  --sidebar-primary-foreground: #191724;
+  --sidebar-accent: #26233a;
+  --sidebar-accent-foreground: #e0def4;
+  --sidebar-border: #26233a;
+  --sidebar-ring: #c4a7e7;
+}
+
+/* ---------------------------------- Solarized ---------------------------------- */
+/* Solarized light / dark — https://ethanschoonover.com/solarized */
+
+[data-color-scheme="solarized"]:not(.dark) {
+  --background: #fdf6e3;
+  --foreground: #657b83;
+  --card: #eee8d5;
+  --card-foreground: #586e75;
+  --popover: #eee8d5;
+  --popover-foreground: #586e75;
+  --primary: #268bd2;
+  --primary-foreground: #fdf6e3;
+  --secondary: #eee8d5;
+  --secondary-foreground: #586e75;
+  --muted: #eee8d5;
+  --muted-foreground: #839496;
+  --accent: #e6dfc8;
+  --accent-foreground: #586e75;
+  --destructive: #dc322f;
+  --border: #e6dfc8;
+  --input: #e6dfc8;
+  --ring: #268bd2;
+  --chart-1: #268bd2;
+  --chart-2: #859900;
+  --chart-3: #b58900;
+  --chart-4: #cb4b16;
+  --chart-5: #d33682;
+  --warning: #b58900;
+  --warning-foreground: #fdf6e3;
+  --sidebar: #eee8d5;
+  --sidebar-foreground: #586e75;
+  --sidebar-primary: #268bd2;
+  --sidebar-primary-foreground: #fdf6e3;
+  --sidebar-accent: #e6dfc8;
+  --sidebar-accent-foreground: #586e75;
+  --sidebar-border: #e6dfc8;
+  --sidebar-ring: #268bd2;
+}
+
+[data-color-scheme="solarized"].dark {
+  --background: #002b36;
+  --foreground: #93a1a1;
+  --card: #073642;
+  --card-foreground: #eee8d5;
+  --popover: #073642;
+  --popover-foreground: #eee8d5;
+  --primary: #268bd2;
+  --primary-foreground: #002b36;
+  --secondary: #073642;
+  --secondary-foreground: #eee8d5;
+  --muted: #073642;
+  --muted-foreground: #839496;
+  --accent: #0d4a58;
+  --accent-foreground: #eee8d5;
+  --destructive: #dc322f;
+  --border: #0d4a58;
+  --input: #0d4a58;
+  --ring: #268bd2;
+  --chart-1: #268bd2;
+  --chart-2: #859900;
+  --chart-3: #b58900;
+  --chart-4: #cb4b16;
+  --chart-5: #d33682;
+  --warning: #b58900;
+  --warning-foreground: #002b36;
+  --sidebar: #073642;
+  --sidebar-foreground: #eee8d5;
+  --sidebar-primary: #268bd2;
+  --sidebar-primary-foreground: #002b36;
+  --sidebar-accent: #0d4a58;
+  --sidebar-accent-foreground: #eee8d5;
+  --sidebar-border: #0d4a58;
+  --sidebar-ring: #268bd2;
+}
+
+/* --------------------------------- Tokyo Night --------------------------------- */
+/* Night / Day — https://github.com/folke/tokyonight.nvim */
+
+[data-color-scheme="tokyoNight"]:not(.dark) {
+  --background: #e1e2e7;
+  --foreground: #3760bf;
+  --card: #ffffff;
+  --card-foreground: #3760bf;
+  --popover: #ffffff;
+  --popover-foreground: #3760bf;
+  --primary: #2e7de9;
+  --primary-foreground: #ffffff;
+  --secondary: #d0d5e3;
+  --secondary-foreground: #3760bf;
+  --muted: #d0d5e3;
+  --muted-foreground: #6172b0;
+  --accent: #c4c8da;
+  --accent-foreground: #3760bf;
+  --destructive: #f52a65;
+  --border: #c4c8da;
+  --input: #c4c8da;
+  --ring: #2e7de9;
+  --chart-1: #2e7de9;
+  --chart-2: #587539;
+  --chart-3: #8c6c3e;
+  --chart-4: #9854f1;
+  --chart-5: #b15c00;
+  --warning: #8c6c3e;
+  --warning-foreground: #ffffff;
+  --sidebar: #d0d5e3;
+  --sidebar-foreground: #3760bf;
+  --sidebar-primary: #2e7de9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #c4c8da;
+  --sidebar-accent-foreground: #3760bf;
+  --sidebar-border: #c4c8da;
+  --sidebar-ring: #2e7de9;
+}
+
+[data-color-scheme="tokyoNight"].dark {
+  --background: #1a1b26;
+  --foreground: #c0caf5;
+  --card: #16161e;
+  --card-foreground: #c0caf5;
+  --popover: #16161e;
+  --popover-foreground: #c0caf5;
+  --primary: #7aa2f7;
+  --primary-foreground: #1a1b26;
+  --secondary: #292e42;
+  --secondary-foreground: #c0caf5;
+  --muted: #292e42;
+  --muted-foreground: #a9b1d6;
+  --accent: #292e42;
+  --accent-foreground: #c0caf5;
+  --destructive: #f7768e;
+  --border: #292e42;
+  --input: #292e42;
+  --ring: #7aa2f7;
+  --chart-1: #7aa2f7;
+  --chart-2: #9ece6a;
+  --chart-3: #e0af68;
+  --chart-4: #ff9e64;
+  --chart-5: #bb9af7;
+  --warning: #e0af68;
+  --warning-foreground: #1a1b26;
+  --sidebar: #16161e;
+  --sidebar-foreground: #c0caf5;
+  --sidebar-primary: #7aa2f7;
+  --sidebar-primary-foreground: #1a1b26;
+  --sidebar-accent: #292e42;
+  --sidebar-accent-foreground: #c0caf5;
+  --sidebar-border: #292e42;
+  --sidebar-ring: #7aa2f7;
+}
