@@ -21,7 +21,6 @@ import type {
   TeacherItem,
 } from '@/components/timetable/types';
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
-import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
   useClassrooms,
@@ -35,7 +34,6 @@ import {
 } from '@/hooks/timetable-public';
 import { compareClassNames } from '@/utils/cohort';
 import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
-import { DayNews } from './news-panel';
 import { SubsV } from './subs';
 
 /** Local calendar day as `YYYY-MM-DD`; the key format used for date sections. */
@@ -266,63 +264,13 @@ const filterMovedLessons = (
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
 
-const getAnnouncementsForDay = (
-  announcements: AnnouncementItem[] | undefined,
-  date: string,
-  classId: string | null
-): AnnouncementItem[] => {
-  if (!announcements?.length) {
-    return [];
-  }
-  const start = parseDateOnly(date);
-  const end = new Date(start);
-  end.setHours(23, 59, 59, 999);
-  return announcements
-    .filter((a) => {
-      const from = new Date(a.validFrom);
-      const until = new Date(a.validUntil);
-      if (from > end || until < start) {
-        return false;
-      }
-      return (
-        !classId || a.cohortIds.length === 0 || a.cohortIds.includes(classId)
-      );
-    })
-    .sort(
-      (a, b) =>
-        new Date(a.validFrom).getTime() - new Date(b.validFrom).getTime()
-    );
-};
-
-const getAnnouncementDates = (
-  announcements: AnnouncementItem[],
-  classId: string | null,
-  today: Date,
-  now: Date
-): string[] =>
-  announcements
-    .filter(
-      (announcement) =>
-        !classId ||
-        announcement.cohortIds.length === 0 ||
-        announcement.cohortIds.includes(classId)
-    )
-    // One bounded display date per relevant announcement: its start date, or
-    // today when it has already started. A long validity range stays one section.
-    .map((announcement) => {
-      const start = new Date(announcement.validFrom);
-      return toDateKey(start <= now ? today : start);
-    });
-
 const hasVisibleContent = (
   subs: Subs[],
   movedLessons: MovedLessonItem[],
-  today: Date,
-  announcementCount: number
+  today: Date
 ): boolean =>
   subs.some((sub) => parseDateOnly(sub.substitution.date) >= today) ||
-  movedLessons.some((ml) => parseDateOnly(ml.movedLesson.date) >= today) ||
-  announcementCount > 0;
+  movedLessons.some((ml) => parseDateOnly(ml.movedLesson.date) >= today);
 
 const getCohortsForDate = (
   subs: Subs[],
@@ -575,11 +523,7 @@ export function SubstitutionView() {
 
   const movedLessonsQuery = usePublicMovedLessons(!isPending);
 
-  const announcementsQuery = useAnnouncementsPanel(!isPending);
-
   const activeSelectionId = getActiveSelectionId(activeFilter, selections);
-
-  const newsClassId = activeFilter === 'class' ? selections.class : null;
 
   const activeCohortName = getActiveCohortName(
     activeFilter,
@@ -620,15 +564,8 @@ export function SubstitutionView() {
 
       const startOfToday = parseDateOnly(dayKey);
 
-      const dates = getAnnouncementDates(
-        announcementsQuery.data ?? [],
-        newsClassId,
-        startOfToday,
-        new Date()
-      );
-
       const upcoming = Array.from(
-        new Set([...Object.keys(byDate), ...Object.keys(movedByDate), ...dates])
+        new Set([...Object.keys(byDate), ...Object.keys(movedByDate)])
       )
         .filter((date) => parseDateOnly(date) >= startOfToday)
         .sort((a, b) => a.localeCompare(b));
@@ -637,21 +574,14 @@ export function SubstitutionView() {
         allDates: upcoming,
         groupedData: byDate,
         groupedMovedLessons: movedByDate,
-        hasContent: hasVisibleContent(
-          subs,
-          movedLessons,
-          startOfToday,
-          dates.length
-        ),
+        hasContent: hasVisibleContent(subs, movedLessons, startOfToday),
       };
     }, [
       activeFilter,
       activeSelectionId,
-      announcementsQuery.data,
       cohortsQuery.data,
       dayKey,
       movedLessonsQuery.data,
-      newsClassId,
       substitutionsQuery.data,
     ]);
 
@@ -665,11 +595,6 @@ export function SubstitutionView() {
   const renderDateSection = (date: string) => {
     const dateSubs = groupedData[date] ?? [];
     const dateMovedLessons = groupedMovedLessons[date] ?? [];
-    const dayAnnouncements = getAnnouncementsForDay(
-      announcementsQuery.data,
-      date,
-      newsClassId
-    );
 
     let boxes: ReactNode[] = [];
 
@@ -726,7 +651,6 @@ export function SubstitutionView() {
             )}
           </div>
         </div>
-        {dayAnnouncements.length > 0 && <DayNews items={dayAnnouncements} />}
         <div className="grid gap-3">{boxes}</div>
       </section>
     );
@@ -735,15 +659,13 @@ export function SubstitutionView() {
   return (
     <div className="flex grow flex-col items-center gap-6 p-6">
       <div className="w-full max-w-5xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-bold text-3xl text-foreground tracking-tight">
-              {t('substitution.title')}
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              {t('substitution.description')}
-            </p>
-          </div>
+        <div>
+          <h1 className="font-bold text-3xl text-foreground tracking-tight">
+            {t('substitution.title')}
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            {t('substitution.description')}
+          </p>
         </div>
         <div className="mt-4">
           <SubsFilterBar
