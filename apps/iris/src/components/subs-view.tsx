@@ -244,24 +244,35 @@ const filterMovedLessons = (
     if (!cohortName) {
       return [];
     }
-    return data
-      .map((ml) => ({
-        ...ml,
-        lessons: ml.lessons.filter((lesson) =>
-          lesson.cohorts.some((c) => c.name === cohortName)
-        ),
-      }))
-      .filter((ml) => ml.lessons.length > 0);
+    const matches = (ml: MovedLessonItem): boolean =>
+      (ml.manual?.cohorts.some((c) => c.name === cohortName) ?? false) ||
+      ml.lessons.some((lesson) =>
+        lesson.cohorts.some((c) => c.name === cohortName)
+      );
+    return data.filter(matches).map((ml) => ({
+      ...ml,
+      lessons: ml.manual
+        ? ml.lessons
+        : ml.lessons.filter((lesson) =>
+            lesson.cohorts.some((c) => c.name === cohortName)
+          ),
+    }));
   }
   if (activeFilter === 'teacher') {
-    return data
-      .map((ml) => ({
-        ...ml,
-        lessons: ml.lessons.filter((lesson) =>
-          lesson.teachers.some((teacher) => teacher.id === selectionId)
-        ),
-      }))
-      .filter((ml) => ml.lessons.length > 0);
+    const matches = (ml: MovedLessonItem): boolean =>
+      (ml.manual?.teachers.some((teacher) => teacher.id === selectionId) ??
+        false) ||
+      ml.lessons.some((lesson) =>
+        lesson.teachers.some((teacher) => teacher.id === selectionId)
+      );
+    return data.filter(matches).map((ml) => ({
+      ...ml,
+      lessons: ml.manual
+        ? ml.lessons
+        : ml.lessons.filter((lesson) =>
+            lesson.teachers.some((teacher) => teacher.id === selectionId)
+          ),
+    }));
   }
   return data.filter((ml) => ml.classroom?.id === selectionId);
 };
@@ -335,9 +346,10 @@ const getCohortsForDate = (
           (lesson) => lesson?.cohorts.map((c) => c.name) ?? []
         )
       ),
-      ...movedLessons.flatMap((ml) =>
-        ml.lessons.flatMap((lesson) => lesson.cohorts.map((c) => c.name))
-      ),
+      ...movedLessons.flatMap((ml) => [
+        ...ml.lessons.flatMap((lesson) => lesson.cohorts.map((c) => c.name)),
+        ...(ml.manual?.cohorts.map((c) => c.name) ?? []),
+      ]),
     ]),
   ].sort(compareClassNames);
 
@@ -368,18 +380,23 @@ const buildDateCohortBoxes = (
       date={date}
       key={`${date}-${cohort}`}
       movedLessons={dateMovedLessons
-        .map((ml) => ({
-          ...ml,
-          lessons: ml.lessons.filter((l) =>
+        .map((ml) => {
+          if (ml.manual) {
+            return ml.manual.cohorts.some((c) => c.name === cohort) ? ml : null;
+          }
+          const lessons = ml.lessons.filter((l) =>
             l.cohorts.some((c) => c.name === cohort)
-          ),
-        }))
-        .filter((ml) => ml.lessons.length > 0)}
+          );
+          return lessons.length > 0 ? { ...ml, lessons } : null;
+        })
+        .filter((ml): ml is MovedLessonItem => ml !== null)}
     />
   ));
 
-  const unassignedMovedLessons = dateMovedLessons.filter(
-    (ml) => !ml.lessons.some((l) => l.cohorts.length > 0)
+  const unassignedMovedLessons = dateMovedLessons.filter((ml) =>
+    ml.manual
+      ? ml.manual.cohorts.length === 0
+      : !ml.lessons.some((l) => l.cohorts.length > 0)
   );
 
   const movedCard =

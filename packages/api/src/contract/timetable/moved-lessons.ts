@@ -18,7 +18,8 @@ export const movedLessonsContract = {
       .route(
         filcRoute({
           auth: true,
-          description: 'Create a moved lesson.',
+          description:
+            'Create a moved lesson: linked to existing lessons, or manual (a subject plus cohorts, with no source lessons).',
           method: 'POST',
           operationId: 'postTimetableMovedLessons',
           path: '/timetable/movedLessons',
@@ -104,7 +105,8 @@ export const movedLessonsContract = {
       .route(
         filcRoute({
           auth: true,
-          description: 'Update a moved lesson.',
+          description:
+            'Update a moved lesson, optionally switching between linked and manual sources.',
           method: 'PUT',
           operationId: 'putTimetableMovedLessonsById',
           path: '/timetable/movedLessons/{id}',

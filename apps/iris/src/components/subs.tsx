@@ -95,7 +95,20 @@ function getSubstitutionRows(
   return rows;
 }
 
-type MovedLessonRow = { lesson: Lesson; ml: MovedLessonItem };
+/** A display projection of a cohort/teacher/classroom: id plus the labels the
+ * public card renders. `short` is optional because a manual source only
+ * guarantees `id` and `name` for its cohorts/teachers. */
+type EntityRef = { id: string; name: string; short?: string };
+
+type MovedLessonRow = {
+  key: string;
+  ml: MovedLessonItem;
+  subjectLabel: string | null;
+  cohorts: EntityRef[];
+  teachers: EntityRef[];
+  originalPeriod: Lesson['period'];
+  originalClassrooms: EntityRef[];
+};
 
 function getMovedLessonRows(data: MovedLessonItem[]): MovedLessonRow[] {
   const today = new Date();
@@ -103,12 +116,38 @@ function getMovedLessonRows(data: MovedLessonItem[]): MovedLessonRow[] {
 
   const rows = data
     .filter((ml) => parseDateOnly(ml.movedLesson.date) >= today)
-    .flatMap((ml) => ml.lessons.map((lesson) => ({ lesson, ml })));
+    .flatMap((ml): MovedLessonRow[] => {
+      if (ml.manual) {
+        return [
+          {
+            cohorts: ml.manual.cohorts,
+            key: `${ml.movedLesson.id}-manual`,
+            ml,
+            originalClassrooms: ml.manual.sourceRoom
+              ? [ml.manual.sourceRoom]
+              : [],
+            originalPeriod: null,
+            subjectLabel:
+              ml.manual.subject?.short ?? ml.manual.subject?.name ?? null,
+            teachers: ml.manual.teachers,
+          },
+        ];
+      }
+      return ml.lessons.map((lesson) => ({
+        cohorts: lesson.cohorts,
+        key: `${ml.movedLesson.id}-${lesson.id}`,
+        ml,
+        originalClassrooms: lesson.classrooms,
+        originalPeriod: lesson.period,
+        subjectLabel: lesson.subject?.short ?? lesson.subject?.name ?? null,
+        teachers: lesson.teachers,
+      }));
+    });
 
   rows.sort(
     (a, b) =>
-      (a.lesson.period?.period ?? Number.MAX_SAFE_INTEGER) -
-      (b.lesson.period?.period ?? Number.MAX_SAFE_INTEGER)
+      (a.originalPeriod?.period ?? Number.MAX_SAFE_INTEGER) -
+      (b.originalPeriod?.period ?? Number.MAX_SAFE_INTEGER)
   );
 
   return rows;
@@ -121,23 +160,21 @@ function substituterLabel(sub: Subs): string {
 // --- shared cell content ---------------------------------------------------
 
 function Subject({
-  lesson,
+  subjectLabel,
   className,
 }: {
-  lesson: Lesson;
+  subjectLabel: string | null;
   className?: string;
 }) {
   const { t } = useTranslation();
   return (
     <span className={className}>
-      {lesson.subject?.short ??
-        lesson.subject?.name ??
-        t('substitution.notAvailable')}
+      {subjectLabel ?? t('substitution.notAvailable')}
     </span>
   );
 }
 
-function CohortsCell({ cohorts }: { cohorts: Lesson['cohorts'] }) {
+function CohortsCell({ cohorts }: { cohorts: EntityRef[] }) {
   const { t } = useTranslation();
   if (cohorts.length === 0) {
     return (
@@ -202,7 +239,7 @@ function ClassroomsCell({ classrooms }: { classrooms: Lesson['classrooms'] }) {
   );
 }
 
-function TeachersCell({ teachers }: { teachers: Lesson['teachers'] }) {
+function TeachersCell({ teachers }: { teachers: EntityRef[] }) {
   const { t } = useTranslation();
   if (teachers.length === 0) {
     return (
@@ -238,38 +275,24 @@ function CommentCell({ comment }: { comment?: string | null }) {
 }
 
 function MovedTimeCell({
-  lesson,
-  movedTarget,
+  originalPeriod,
+  targetPeriod,
 }: {
-  lesson: Lesson;
-  movedTarget: MovedTarget;
+  originalPeriod: Lesson['period'];
+  targetPeriod: MovedLessonItem['period'];
 }) {
-  const { i18n, t } = useTranslation();
-  const originalPeriod = lesson.period;
-  const targetPeriod = movedTarget.period ?? null;
-  const targetDay = movedTarget.day;
+  const { t } = useTranslation();
 
   let periodLabel: string | null = null;
   if (originalPeriod && targetPeriod && targetPeriod.id !== originalPeriod.id) {
-    periodLabel = `${formatPeriodLabel(originalPeriod)} → ${formatPeriodLabel(targetPeriod)}`;
+    periodLabel = `${formatPeriodLabel(originalPeriod, t('substitution.period'))} → ${formatPeriodLabel(targetPeriod, t('substitution.period'))}`;
   } else if (originalPeriod) {
-    periodLabel = formatPeriodLabel(originalPeriod);
+    periodLabel = formatPeriodLabel(originalPeriod, t('substitution.period'));
   } else if (targetPeriod) {
-    periodLabel = formatPeriodLabel(targetPeriod);
+    periodLabel = formatPeriodLabel(targetPeriod, t('substitution.period'));
   }
 
-  // The desktop table has no day column; without this a cross-weekday move
-  // looks like a same-day move when the target period is unchanged.
-  const dayLabel = targetDay
-    ? getLocalizedWeekdayName(
-        targetDay.name,
-        targetDay.short,
-        i18n.language,
-        'long'
-      )
-    : null;
-
-  if (!(dayLabel || periodLabel)) {
+  if (!periodLabel) {
     return (
       <span className="text-muted-foreground">
         {t('substitution.notAvailable')}
@@ -277,23 +300,17 @@ function MovedTimeCell({
     );
   }
 
-  return (
-    <span className="font-medium">
-      {dayLabel}
-      {dayLabel && periodLabel ? ' · ' : ''}
-      {periodLabel}
-    </span>
-  );
+  return <span className="font-medium">{periodLabel}</span>;
 }
 
 function MovedRoomCell({
-  lesson,
+  originalClassrooms,
   movedTarget,
 }: {
-  lesson: Lesson;
+  originalClassrooms: EntityRef[];
   movedTarget: MovedTarget;
 }) {
-  const originalRooms = lesson.classrooms ?? [];
+  const originalRooms = originalClassrooms;
   const targetRoom = movedTarget.classroom ?? null;
 
   if (originalRooms.length === 0 && !targetRoom) {
@@ -327,7 +344,9 @@ function SubstitutionTableRow({ row }: { row: SubstitutionRow }) {
   return (
     <TableRow className="border-accent/10 transition-colors hover:bg-accent/5">
       <TableCell className="font-medium">
-        <Subject lesson={lesson} />
+        <Subject
+          subjectLabel={lesson.subject?.short ?? lesson.subject?.name ?? null}
+        />
       </TableCell>
       <TableCell>
         <CohortsCell cohorts={lesson.cohorts} />
@@ -353,39 +372,44 @@ function SubstitutionTableRow({ row }: { row: SubstitutionRow }) {
 
 function MovedTableRow({ row }: { row: MovedLessonRow }) {
   const { t } = useTranslation();
-  const { lesson, ml } = row;
   const movedTarget: MovedTarget = {
-    classroom: ml.classroom,
-    day: ml.dayDefinition,
-    period: ml.period,
+    classroom: row.ml.classroom,
+    day: row.ml.dayDefinition,
+    period: row.ml.period,
   };
   return (
     <TableRow className="border-accent/10 transition-colors hover:bg-accent/5">
       <TableCell className="font-medium">
         <div className="flex items-center gap-1.5">
-          <Subject lesson={lesson} />
+          <Subject subjectLabel={row.subjectLabel} />
           <Badge className="text-xs" variant="secondary">
             {t('movedLesson.moved')}
           </Badge>
         </div>
       </TableCell>
       <TableCell>
-        <CohortsCell cohorts={lesson.cohorts} />
+        <CohortsCell cohorts={row.cohorts} />
       </TableCell>
       <TableCell>
-        <MovedTimeCell lesson={lesson} movedTarget={movedTarget} />
+        <MovedTimeCell
+          originalPeriod={row.originalPeriod}
+          targetPeriod={movedTarget.period}
+        />
       </TableCell>
       <TableCell>
-        <MovedRoomCell lesson={lesson} movedTarget={movedTarget} />
+        <MovedRoomCell
+          movedTarget={movedTarget}
+          originalClassrooms={row.originalClassrooms}
+        />
       </TableCell>
       <TableCell>
-        <TeachersCell teachers={lesson.teachers} />
+        <TeachersCell teachers={row.teachers} />
       </TableCell>
       <TableCell>
         <span className="text-muted-foreground">—</span>
       </TableCell>
       <TableCell>
-        <CommentCell comment={ml.movedLesson.comment} />
+        <CommentCell comment={row.ml.movedLesson.comment} />
       </TableCell>
     </TableRow>
   );
@@ -431,7 +455,10 @@ function SubstitutionMobileRow({ row }: { row: SubstitutionRow }) {
       }
     >
       <div className="flex items-start justify-between gap-2">
-        <Subject className="font-semibold" lesson={lesson} />
+        <Subject
+          className="font-semibold"
+          subjectLabel={lesson.subject?.short ?? lesson.subject?.name ?? null}
+        />
         <SubstitutionTime
           className="shrink-0 text-muted-foreground"
           lesson={lesson}
@@ -464,44 +491,49 @@ function SubstitutionMobileRow({ row }: { row: SubstitutionRow }) {
 
 function MovedMobileRow({ row }: { row: MovedLessonRow }) {
   const { i18n, t } = useTranslation();
-  const { lesson, ml } = row;
   const accent = ACCENT.moved;
-  const originalPeriod = lesson.period;
-  const targetPeriod = ml.period ?? null;
-  const targetDay = ml.dayDefinition;
+  const originalPeriod = row.originalPeriod;
+  const targetPeriod = row.ml.period ?? null;
+  const targetDay = row.ml.dayDefinition;
+
+  // The right-hand "original period" line: the source period, or — for a
+  // manual move that has no source — the target period, else not-available.
+  let topPeriodLabel: string;
+  if (originalPeriod) {
+    topPeriodLabel = formatPeriodLabel(
+      originalPeriod,
+      t('substitution.period')
+    );
+  } else if (targetPeriod) {
+    topPeriodLabel = formatPeriodLabel(targetPeriod, t('substitution.period'));
+  } else {
+    topPeriodLabel = t('substitution.notAvailable');
+  }
 
   return (
     <MobileRow className={cn(accent.rail, accent.soft, accent.border)}>
       <div className="flex items-start justify-between gap-2">
-        <Subject className="font-semibold" lesson={lesson} />
-        {originalPeriod ? (
-          <span className="shrink-0 text-muted-foreground">
-            {formatPeriodLabel(originalPeriod)}
-          </span>
-        ) : (
-          <span className="shrink-0 text-muted-foreground">
-            {t('substitution.notAvailable')}
-          </span>
-        )}
+        <Subject className="font-semibold" subjectLabel={row.subjectLabel} />
+        <span className="shrink-0 text-muted-foreground">{topPeriodLabel}</span>
       </div>
-      {lesson.cohorts.length > 0 && (
+      {row.cohorts.length > 0 && (
         <div className="mt-1">
-          <CohortsCell cohorts={lesson.cohorts} />
+          <CohortsCell cohorts={row.cohorts} />
         </div>
       )}
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
         <Field label={t('timetable.filterByClassroom')}>
           <MovedRoomCell
-            lesson={lesson}
             movedTarget={{
-              classroom: ml.classroom,
-              day: ml.dayDefinition,
-              period: ml.period,
+              classroom: row.ml.classroom,
+              day: row.ml.dayDefinition,
+              period: row.ml.period,
             }}
+            originalClassrooms={row.originalClassrooms}
           />
         </Field>
         <Field label={t('timetable.teacherFallback')}>
-          <TeachersCell teachers={lesson.teachers} />
+          <TeachersCell teachers={row.teachers} />
         </Field>
         {targetDay && (
           <Field label={t('movedLesson.targetDay')}>
@@ -518,13 +550,15 @@ function MovedMobileRow({ row }: { row: MovedLessonRow }) {
         {targetPeriod &&
           (!originalPeriod || targetPeriod.id !== originalPeriod.id) && (
             <Field label={t('movedLesson.targetPeriod')}>
-              <span>{formatPeriodLabel(targetPeriod)}</span>
+              <span>
+                {formatPeriodLabel(targetPeriod, t('substitution.period'))}
+              </span>
             </Field>
           )}
       </dl>
-      {ml.movedLesson.comment && (
+      {row.ml.movedLesson.comment && (
         <p className="mt-2 whitespace-pre-wrap text-xs">
-          {ml.movedLesson.comment}
+          {row.ml.movedLesson.comment}
         </p>
       )}
     </MobileRow>
@@ -759,20 +793,14 @@ function SubsCardBody({
               </TableHeader>
               <TableBody>
                 {movedRows.map((row) => (
-                  <MovedTableRow
-                    key={`${row.ml.movedLesson.id}-${row.lesson.id}`}
-                    row={row}
-                  />
+                  <MovedTableRow key={row.key} row={row} />
                 ))}
               </TableBody>
             </Table>
           </div>
           <div className="space-y-2 p-3 sm:hidden">
             {movedRows.map((row) => (
-              <MovedMobileRow
-                key={`${row.ml.movedLesson.id}-${row.lesson.id}`}
-                row={row}
-              />
+              <MovedMobileRow key={row.key} row={row} />
             ))}
           </div>
         </section>

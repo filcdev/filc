@@ -196,6 +196,7 @@ export const timetableNotifications: readonly NotificationHandler[] = [
   {
     buildContent: (payload, locale) => {
       const p = payload as {
+        cohortIds?: string[];
         date?: Date;
         lessonIds?: string[];
         room?: string;
