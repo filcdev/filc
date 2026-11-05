@@ -4,11 +4,18 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@filcdev/ui/components/alert';
+import { Button } from '@filcdev/ui/components/button';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
-import { CalendarDays } from 'lucide-react';
-import { useMemo } from 'react';
+import { CalendarDays, XIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FilterCombobox } from '@/components/timetable/filter-combobox';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
+import {
+  useLatestValidTimetable,
+  useTimetableCohorts,
+  useTimetables,
+} from '@/hooks/timetable-public';
 import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
 
 type BlockContent = {
@@ -56,8 +63,8 @@ function getNewsDates(
       continue;
     }
 
-    const validFrom = parseDateOnly(announcement.validFrom);
-    const validUntil = parseDateOnly(announcement.validUntil);
+    const validFrom = parseDateOnly(new Date(announcement.validFrom));
+    const validUntil = parseDateOnly(new Date(announcement.validUntil));
     if (validUntil < today) {
       continue;
     }
@@ -99,24 +106,83 @@ export function NewsPanel({
   emptyMessage?: string;
 }) {
   const { isPending } = useSession();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const announcementsQuery = useAnnouncementsPanel(!isPending);
+  const timetablesQuery = useTimetables();
+  const latestTimetableQuery = useLatestValidTimetable();
+  const timetableId =
+    latestTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
+  const cohortsQuery = useTimetableCohorts(timetableId);
+  const cohorts = cohortsQuery.data ?? [];
+  const [selectedClassId, setSelectedClassId] = useState<
+    string | null | undefined
+  >(undefined);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const defaultClassId =
+    cohorts.find((cohort) => cohort.id === classId)?.id ?? null;
+  const activeClassId =
+    selectedClassId === undefined ? defaultClassId : selectedClassId;
+  const cohortOptions = useMemo(
+    () => cohorts.map((cohort) => ({ label: cohort.name, value: cohort.id })),
+    [cohorts]
+  );
+  const isClassFilterLoading =
+    timetablesQuery.isLoading ||
+    latestTimetableQuery.isLoading ||
+    (!!timetableId && cohortsQuery.isLoading);
   const todayKey = toDateKey(new Date());
 
   const newsDays = useMemo(
     () =>
-      getNewsDates(announcementsQuery.data, classId, parseDateOnly(todayKey)),
-    [announcementsQuery.data, classId, todayKey]
+      getNewsDates(
+        announcementsQuery.data,
+        activeClassId,
+        parseDateOnly(todayKey)
+      ),
+    [announcementsQuery.data, activeClassId, todayKey]
   );
 
   const isLoading =
     announcementsQuery.isLoading ||
     announcementsQuery.isFetching ||
-    announcementsQuery.isFetching;
+    isClassFilterLoading;
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1">
+        {isClassFilterLoading ? (
+          <Skeleton className="h-9 w-36 sm:w-44" />
+        ) : (
+          <FilterCombobox
+            className="w-36 sm:w-44"
+            emptyMessage={t('timetable.noClassFound')}
+            id="news-class-filter"
+            onOpenChange={setFilterOpen}
+            onSelect={(value) => {
+              setSelectedClassId(value);
+              setFilterOpen(false);
+            }}
+            open={filterOpen}
+            options={cohortOptions}
+            placeholder={t('timetable.selectClass')}
+            searchPlaceholder={t('timetable.searchClass')}
+            selectedValue={activeClassId ?? ''}
+            size="sm"
+          />
+        )}
+        {activeClassId && !isClassFilterLoading && (
+          <Button
+            aria-label={t('timetable.clearFilter')}
+            className="h-9 w-9 p-0"
+            onClick={() => setSelectedClassId(null)}
+            size="sm"
+            variant="ghost"
+          >
+            <XIcon className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       {isLoading && (
         <div className="space-y-3">
           <Skeleton className="h-20 w-full" />
@@ -154,11 +220,11 @@ export function NewsPanel({
                   <div className="mt-2 text-muted-foreground text-xs">
                     {(() => {
                       const from = formatLocalizedDate(
-                        item.validFrom,
+                        parseDateOnly(new Date(item.validFrom)),
                         i18n.language
                       );
                       const until = formatLocalizedDate(
-                        item.validUntil,
+                        parseDateOnly(new Date(item.validUntil)),
                         i18n.language
                       );
                       return from === until ? from : `${from} – ${until}`;
