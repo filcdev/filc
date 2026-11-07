@@ -14,7 +14,7 @@
  */
 
 import { execFile } from 'node:child_process';
-import { stat } from 'node:fs/promises';
+import { rm, stat } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { type BuildInvocation, planBuild, writeGeneratedFiles } from './config';
 import { formatSize, listFlashTargets, planFlash, runFlash } from './flash';
@@ -27,6 +27,7 @@ import {
   IMAGE_FORMATS,
   KERNEL_FLAVORS,
   ORIENTATION_LABELS,
+  ORIENTATIONS,
   TIMEZONES,
   validateOptions,
 } from './options';
@@ -184,12 +185,14 @@ async function collectOptions(): Promise<BuildOptions> {
     ),
     orientation: (await select(
       'Display orientation',
-      Object.entries(ORIENTATION_LABELS).map(([value, label]) => ({
+      // ORIENTATIONS order, not the label map's: `normal` is the default and has
+      // to be the row the initial index selects.
+      ORIENTATIONS.map((value) => ({
         hint: value === 'normal' ? 'trust the panel' : 'forced transform',
-        label,
+        label: ORIENTATION_LABELS[value],
         value,
       })),
-      0
+      ORIENTATIONS.indexOf(DEFAULT_OPTIONS.orientation)
     )) as BuildOptions['orientation'],
     outputMode: await text(
       'Preferred resolution',
@@ -323,27 +326,77 @@ async function writeFileSafe(path: string, content: string): Promise<void> {
 }
 
 /**
- * Verifies the image really carries a kiosk. The build tool does not fail when
- * apk runs out of space, so without this a truncated image would flash fine and
- * boot to a getty.
+ * Mounts the built root filesystem and returns what is missing from it. A
+ * whole-disk image carries the filesystem at offset 0, but a partitioned one —
+ * UEFI always partitions, `--partition` does it on BIOS — does not: those have
+ * the ESP as partition 1 and the root filesystem as partition 2, so the root is
+ * only reachable through a loop device with partition scanning. Without this a
+ * correctly built UEFI image always failed verification.
  */
-async function verifyImage(path: string, mountDir: string): Promise<string[]> {
+async function verifyImage(
+  options: BuildOptions,
+  path: string,
+  mountDir: string
+): Promise<string[]> {
   const problems: string[] = [];
-  await execFileAsync('mount', ['-o', 'loop,ro', path, mountDir]);
+  const partitioned = options.bootMode === 'UEFI' || options.partition;
+  let loopDevice = '';
 
-  for (const file of REQUIRED_FILES) {
-    const found = await stat(`${mountDir}${file}`).catch(() => null);
-    if (!found) {
-      problems.push(`built image is missing ${file}`);
+  try {
+    if (partitioned) {
+      const { stdout } = await execFileAsync('losetup', [
+        '--find',
+        '--partscan',
+        '--show',
+        path,
+      ]);
+      loopDevice = stdout.trim();
+      // UEFI is ESP + root (p2); a partitioned BIOS image is one system
+      // partition (p1) with syslinux on it — the tool creates the GPT either
+      // way, so the root device depends on the boot mode, not on `partition`.
+      const rootPartition = options.bootMode === 'UEFI' ? 'p2' : 'p1';
+      await waitForDevice(`${loopDevice}${rootPartition}`);
+      await execFileAsync('mount', [
+        '-o',
+        'ro',
+        `${loopDevice}${rootPartition}`,
+        mountDir,
+      ]);
+    } else {
+      await execFileAsync('mount', ['-o', 'loop,ro', path, mountDir]);
+    }
+
+    for (const file of REQUIRED_FILES) {
+      const found = await stat(`${mountDir}${file}`).catch(() => null);
+      if (!found) {
+        problems.push(`built image is missing ${file}`);
+      }
+    }
+    const fstab = await Bun.file(`${mountDir}/etc/fstab`)
+      .text()
+      .catch(() => '');
+    if (!READ_ONLY_FSTAB_RE.test(fstab)) {
+      problems.push('root is not mounted read-only in the image /etc/fstab');
+    }
+  } finally {
+    await ignoreCleanupError(['umount', mountDir]);
+    if (loopDevice) {
+      await ignoreCleanupError(['losetup', '--detach', loopDevice]);
     }
   }
-  const fstab = await Bun.file(`${mountDir}/etc/fstab`)
-    .text()
-    .catch(() => '');
-  if (!READ_ONLY_FSTAB_RE.test(fstab)) {
-    problems.push('root is not mounted read-only in the image /etc/fstab');
-  }
+
   return problems;
+}
+
+/** `losetup --partscan` publishes loopNpX asynchronously on some kernels. */
+async function waitForDevice(path: string): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (await stat(path).catch(() => null)) {
+      return;
+    }
+    await Bun.sleep(250);
+  }
+  fail(`partition device ${path} did not appear`);
 }
 
 /** Interactive flash step offered after a successful build. */
@@ -420,6 +473,14 @@ async function executeBuild(
   await writeGeneratedFiles(options, IMAGE_DIR);
   await guardImageTarget(`${IMAGE_DIR}${IMAGE_FILE}`);
 
+  // The build tool only creates the image when the file is absent, then formats
+  // it in place: a leftover image would silently keep its old size, format and
+  // partition layout. build.sh always started from a fresh file.
+  if (await stat(`${IMAGE_DIR}${IMAGE_FILE}`).catch(() => null)) {
+    await rm(`${IMAGE_DIR}${IMAGE_FILE}`, { force: true });
+    println(`${ANSI.dim}removed the previous ${IMAGE_FILE}${ANSI.reset}`);
+  }
+
   println('');
   let frame = 0;
   const spinner = setInterval(() => {
@@ -436,7 +497,11 @@ async function executeBuild(
 
   const mountDir = await makeTempDir();
   try {
-    const problems = await verifyImage(`${IMAGE_DIR}${IMAGE_FILE}`, mountDir);
+    const problems = await verifyImage(
+      options,
+      `${IMAGE_DIR}${IMAGE_FILE}`,
+      mountDir
+    );
     if (problems.length > 0) {
       for (const problem of problems) {
         println(`${ANSI.red}✗ ${problem}${ANSI.reset}`);
@@ -447,7 +512,6 @@ async function executeBuild(
       `${ANSI.green}✓${ANSI.reset} image verified: kiosk service, browser, read-only root`
     );
   } finally {
-    await ignoreCleanupError(['umount', mountDir]);
     await ignoreCleanupError(['rmdir', mountDir]);
   }
 

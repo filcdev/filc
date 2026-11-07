@@ -110,9 +110,13 @@ Manual flashing still works:
 sudo dd if=apps/kiosk/image/kiosk.img of=/dev/sdX bs=4M status=progress conv=fsync
 ```
 
-Or drop `kiosk.img` onto a Ventoy USB stick. The image is a raw, unpartitioned
+Or drop `kiosk.img` onto a Ventoy USB stick. A BIOS build is a raw, unpartitioned
 ext4 filesystem with a Syslinux BIOS boot sector; the disk is 2 GB, of which
-the packages use roughly 700 MB (chromium dominates).
+the packages use roughly 700 MB (chromium dominates). A UEFI build — or a BIOS
+build with `--partition` — is instead a GPT disk: a 128 MiB FAT ESP as partition
+1 and the ext4 root as partition 2, booting through the UEFI shell's
+`startup.nsh` rather than Syslinux. Verification mounts partition 2 for a
+partitioned image, since a partitioned disk has no filesystem at offset 0.
 
 Boot chain: `seatd` (seat for DRM/input) → `chronyd` (clock) → `kiosk`
 (`cage -- /usr/local/bin/kiosk-browser`, supervised by OpenRC's

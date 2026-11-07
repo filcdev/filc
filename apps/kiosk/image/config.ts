@@ -77,15 +77,20 @@ export async function planBuild(
     flags.push('--partition');
   }
 
+  // UEFI always gets a GPT with an ESP (alpine-make-vm-image forces it), so the
+  // plan must not call a UEFI build "whole-disk" just because the toggle is off.
+  let partitions = 'whole-disk (no partition table)';
+  if (options.partition) {
+    partitions = 'GPT single partition';
+  }
+  if (options.bootMode === 'UEFI') {
+    partitions = 'GPT + ESP (forced by UEFI)';
+  }
+
   const summary = [
     { label: 'Image', value: imagePath },
     { label: 'Boot mode', value: options.bootMode },
-    {
-      label: 'Partitions',
-      value: options.partition
-        ? 'GPT single partition'
-        : 'whole-disk (no partition table)',
-    },
+    { label: 'Partitions', value: partitions },
     { label: 'Alpine branch', value: options.branch },
     { label: 'Architecture', value: options.arch },
     { label: 'Kernel', value: options.kernelFlavor },

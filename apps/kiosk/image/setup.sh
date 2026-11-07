@@ -28,6 +28,11 @@ output_scale=$(read_env OUTPUT_SCALE)
 : "${timezone_value:=Europe/Budapest}"
 : "${kiosk_url:=https://kiosk.filc.petrik.hu}"
 
+# alpine-make-vm-image writes /etc/network/interfaces but deliberately does not
+# start networking, so without this the box boots with no address and no
+# resolver: eth0 never runs DHCP and the kiosk page can never load.
+rc-update add networking boot
+
 # The browser session runs as an unprivileged user. seatd admits members of the
 # `seat` group to the seat cage needs; the others cover direct device access.
 adduser -D -u 1000 -h /home/kiosk -s /bin/sh kiosk

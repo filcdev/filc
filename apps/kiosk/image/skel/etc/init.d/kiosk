@@ -28,8 +28,8 @@ export XDG_RUNTIME_DIR="/run/kiosk"
 export WLR_LIBINPUT_NO_DEVICES="1"
 
 depend() {
-    need localmount
-    after seatd chronyd
+    need localmount seatd
+    after chronyd
     use net
 }
 

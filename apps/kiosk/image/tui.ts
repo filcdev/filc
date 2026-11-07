@@ -100,7 +100,10 @@ export function disableRawMode(): void {
 export const ANSI = {
   bold: '\x1B[1m',
   clear: '\x1B[2J\x1B[H',
-  clearLine: '\x1B[1A\x1B[2K',
+  // Erase the current line and return to column 0 — in place. The spinner frame
+  // leaves the cursor on its own line, so moving up (1A) climbed into the block
+  // above it; only a cursor-restoring erase is safe for a line that is redrawn.
+  clearLine: '\x1B[2K\r',
   cyan: '\x1B[36m',
   dim: '\x1B[2m',
   green: '\x1B[32m',
@@ -154,8 +157,17 @@ export function println(line = ''): void {
 /** Spinner frame, rewritten on the same line each tick. */
 export function renderSpinner(message: string, frame: number): void {
   const frames = ['|', '/', '-', '\\'];
+  const columns = Math.max(20, process.stdout.columns ?? 80);
+  const prefix = `${frames[frame % frames.length]} `;
+  // One terminal row only: a wrapped frame cannot be erased in place, so its
+  // tail would survive under the next one.
+  const room = columns - 1 - prefix.length;
+  const label =
+    message.length > room
+      ? `${message.slice(0, Math.max(0, room - 1))}…`
+      : message;
   process.stdout.write(
-    `${ANSI.clearLine}${ANSI.cyan}${frames[frame % frames.length]}${ANSI.reset} ${message}`
+    `${ANSI.clearLine}${ANSI.cyan}${prefix}${label}${ANSI.reset}`
   );
 }
 
@@ -329,9 +341,9 @@ export async function toggle(
   const paint = (): string[] => {
     const yes = value
       ? `${ANSI.inverse} yes ${ANSI.reset}`
-      : `${ANSI.dim} no ${ANSI.reset}`;
+      : `${ANSI.dim} yes ${ANSI.reset}`;
     const no = value
-      ? `${ANSI.dim} yes ${ANSI.reset}`
+      ? `${ANSI.dim} no  ${ANSI.reset}`
       : `${ANSI.inverse} no  ${ANSI.reset}`;
     const lines = [`${ANSI.bold}${title}${ANSI.reset}`, `${yes}  ${no}`];
     if (hint) {
