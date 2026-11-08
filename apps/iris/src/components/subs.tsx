@@ -548,7 +548,8 @@ function MovedMobileRow({ row }: { row: MovedLessonRow }) {
           </Field>
         )}
         {targetPeriod &&
-          (!originalPeriod || targetPeriod.id !== originalPeriod.id) && (
+          originalPeriod &&
+          targetPeriod.id !== originalPeriod.id && (
             <Field label={t('movedLesson.targetPeriod')}>
               <span>
                 {formatPeriodLabel(targetPeriod, t('substitution.period'))}

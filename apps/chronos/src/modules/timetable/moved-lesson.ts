@@ -301,7 +301,7 @@ const resolveUpdateSource = (options: {
   existing: typeof movedLesson.$inferSelect;
   lessonIds: string[] | undefined;
   manualCohortIds: string[] | undefined;
-  manualSourceRoomId: string | undefined;
+  manualSourceRoomId: string | null | undefined;
   manualSubjectId: string | undefined;
   manualTeacherIds: string[] | undefined;
   storedLessonIds: string[];
@@ -857,13 +857,21 @@ export const updateMovedLesson = base.timetable.movedLessons.update
       throw notFound('Moved lesson not found');
     }
 
+    // Only IDs that are new in this patch are validated. A class or teacher
+    // deleted after the move was created stays in the stored array (there is
+    // no FK to cascade it), and re-sending that stale id must not make the
+    // whole move uneditable.
     await validateMovedLessonReferences({
       ...columns,
       lessonIds,
-      manualCohortIds,
+      manualCohortIds: manualCohortIds?.filter(
+        (cohortId) => !existing.manualCohortIds.includes(cohortId)
+      ),
       manualSourceRoomId,
       manualSubjectId,
-      manualTeacherIds,
+      manualTeacherIds: manualTeacherIds?.filter(
+        (teacherId) => !existing.manualTeacherIds.includes(teacherId)
+      ),
     });
 
     cancelPendingNotification(id, 'moved_lesson');

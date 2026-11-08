@@ -1,4 +1,5 @@
 import type { DepartureGroup } from '@filcdev/api/domains/kiosk/config';
+import type { MovedLessonWithRelations } from '@filcdev/api/domains/timetable/moved-lesson';
 import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
@@ -39,6 +40,28 @@ export type TvRoomChangeRow = {
   lesson: number;
   to: string;
 };
+
+/** Cohorts and source rooms a moved lesson affects, manual or linked. */
+function roomChangeSources(item: MovedLessonWithRelations): {
+  cohorts: string[];
+  fromRooms: string[];
+} {
+  const cohorts = [
+    ...item.lessons.flatMap((lesson) =>
+      lesson.cohorts.map((cohort) => cohort.name)
+    ),
+    ...(item.manual?.cohorts.map((cohort) => cohort.name) ?? []),
+  ];
+  const fromRooms = [
+    ...item.lessons.flatMap((lesson) =>
+      lesson.classrooms.map((room) => room.short || room.name)
+    ),
+    ...(item.manual?.sourceRoom
+      ? [item.manual.sourceRoom.short || item.manual.sourceRoom.name]
+      : []),
+  ];
+  return { cohorts, fromRooms };
+}
 
 /** Today, in the box's own timezone — the ticker is a wall clock. */
 function isToday(date: string | Date, now: Dayjs): boolean {
@@ -161,15 +184,11 @@ export function useRoomChanges() {
         continue;
       }
 
-      // The affected lessons carry the cohorts and their original rooms; the
-      // moved lesson itself carries the target room. Rooms show the short
-      // code (A222), not the full name ("Budavári szombathelyi terem").
-      const cohorts = item.lessons.flatMap((lesson) =>
-        lesson.cohorts.map((cohort) => cohort.name)
-      );
-      const fromRooms = item.lessons.flatMap((lesson) =>
-        lesson.classrooms.map((room) => room.short || room.name)
-      );
+      // Linked lessons carry their cohorts and original rooms; a manual move
+      // carries them itself (its `lessons` list is empty). The moved lesson
+      // itself carries the target room. Rooms show the short code (A222), not
+      // the full name ("Budavári szombathelyi terem").
+      const { cohorts, fromRooms } = roomChangeSources(item);
 
       result.push({
         class: [...new Set(cohorts)].join('/'),

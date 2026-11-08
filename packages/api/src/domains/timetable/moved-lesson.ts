@@ -59,7 +59,7 @@ export const updateSchema = z.object({
   date: z.coerce.date().optional(),
   lessonIds: lessonIdsSchema.optional(),
   manualCohortIds: manualCohortIdsSchema.optional(),
-  manualSourceRoomId: z.uuid().optional(),
+  manualSourceRoomId: z.uuid().nullable().optional(),
   manualSubjectId: z.uuid().optional(),
   manualTeacherIds: manualTeacherIdsSchema.optional(),
   room: z.string().nullable().optional(),
@@ -109,6 +109,11 @@ export const movedLessonWithRelationsSchema = z.object({
   movedLesson: movedLessonRowSchema,
   period: periodRowSchema.nullable(),
 });
+
+/** A moved lesson with its target joins and linked or manual source data. */
+export type MovedLessonWithRelations = z.infer<
+  typeof movedLessonWithRelationsSchema
+>;
 
 /**
  * Body of `timetable.movedLessons.create` (path params excluded). A moved

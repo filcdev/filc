@@ -48448,8 +48448,15 @@
                     }
                   },
                   "manualSourceRoomId": {
-                    "type": "string",
-                    "format": "uuid"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "manualSubjectId": {
                     "type": "string",

@@ -200,12 +200,6 @@ function resolveSourceSlot(item?: MovedLessonItem | null): {
   };
 }
 
-// A move is manual when it carries a manual subject; editing is always fixed
-// to that source so an existing move can never be converted by accident.
-function resolveInitialSource(item?: MovedLessonItem | null): SourceMode {
-  return item?.movedLesson.manualSubjectId ? 'manual' : 'timetable';
-}
-
 // The source date is the lesson's date. For a room move the move's own date
 // already lands on the source weekday; otherwise anchor on it and shift to the
 // source weekday so the derived weekday stays correct. The shift stays within
@@ -364,10 +358,12 @@ const initialState = (
   comment: item?.movedLesson.comment ?? null,
   date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
   lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
-  manualCohortIds: item?.movedLesson.manualCohortIds ?? [],
-  manualSourceRoomId: item?.movedLesson.manualSourceRoomId ?? undefined,
-  manualSubjectId: item?.movedLesson.manualSubjectId ?? undefined,
-  manualTeacherIds: item?.movedLesson.manualTeacherIds ?? [],
+  // Use the resolved refs, not the raw arrays: a deleted cohort/teacher is
+  // filtered out there, and re-submitting its stale id would fail validation.
+  manualCohortIds: item?.manual?.cohorts.map(({ id }) => id) ?? [],
+  manualSourceRoomId: item?.manual?.sourceRoom?.id ?? undefined,
+  manualSubjectId: item?.manual?.subject?.id ?? undefined,
+  manualTeacherIds: item?.manual?.teachers.map(({ id }) => id) ?? [],
   room: item?.movedLesson.room || undefined,
   startingDay: item?.movedLesson.startingDay || undefined,
   startingPeriod: item?.movedLesson.startingPeriod || undefined,
@@ -1130,6 +1126,10 @@ async function submitMovedLesson(
       date: value.date,
       id: item.movedLesson.id,
       ...sourceFields,
+      // An omitted source room means "leave it" on update; null clears it.
+      ...(isManual
+        ? { manualSourceRoomId: value.manualSourceRoomId ?? null }
+        : {}),
       room: value.room as string,
       startingDay: value.startingDay as string,
       startingPeriod: value.startingPeriod as string,
@@ -1172,10 +1172,13 @@ export function MovedLessonDialog({
   );
   const [selectedCohort, setSelectedCohort] = useState<string>('');
 
-  // The move's source. On edit it is fixed by the stored manual subject; a new
-  // move starts from the timetable. Local state is fine because the parent
-  // remounts this dialog per open/item via `key`.
-  const [source, setSource] = useState<SourceMode>(resolveInitialSource(item));
+  // The move's source. On edit it is fixed by the resolved manual fields; a
+  // new move starts from the timetable. The subject may be null after an
+  // ON DELETE SET NULL, so the API's `manual` object is the signal. Local
+  // state is fine because the parent remounts this dialog per open/item.
+  const [source, setSource] = useState<SourceMode>(
+    item?.manual ? 'manual' : 'timetable'
+  );
   const isManual = source === 'manual';
 
   const defaultValues = useMemo(() => initialState(item), [item]);
