@@ -104,6 +104,20 @@ function getWeekdayId(date: Date, days: DayDefinition[]): string {
   );
 }
 
+// The target date of a new move defaults to the next day the timetable knows
+// about: today may be a weekend, and a date whose weekday has no day definition
+// can never be submitted (the picker disables those days).
+function firstTimetableDate(from: Date, days: DayDefinition[]): Date {
+  const date = new Date(from);
+  for (let offset = 0; offset < 7; offset += 1) {
+    if (getWeekdayId(date, days)) {
+      return date;
+    }
+    date.setDate(date.getDate() + 1);
+  }
+  return from;
+}
+
 // Map a day definition id back to a JS weekday index (0 = Sunday … 6 = Saturday).
 function getWeekdayIndex(dayId: string, days: DayDefinition[]): number {
   const day = days.find((d) => d.id === dayId);
@@ -353,21 +367,31 @@ type MovedLessonFormValues = Parameters<
 >[0];
 
 const initialState = (
-  item?: MovedLessonItem | null
-): MovedLessonFormValues => ({
-  comment: item?.movedLesson.comment ?? null,
-  date: item?.movedLesson.date ? new Date(item.movedLesson.date) : new Date(),
-  lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
-  // Use the resolved refs, not the raw arrays: a deleted cohort/teacher is
-  // filtered out there, and re-submitting its stale id would fail validation.
-  manualCohortIds: item?.manual?.cohorts.map(({ id }) => id) ?? [],
-  manualSourceRoomId: item?.manual?.sourceRoom?.id ?? undefined,
-  manualSubjectId: item?.manual?.subject?.id ?? undefined,
-  manualTeacherIds: item?.manual?.teachers.map(({ id }) => id) ?? [],
-  room: item?.movedLesson.room || undefined,
-  startingDay: item?.movedLesson.startingDay || undefined,
-  startingPeriod: item?.movedLesson.startingPeriod || undefined,
-});
+  item: MovedLessonItem | null | undefined,
+  days: DayDefinition[]
+): MovedLessonFormValues => {
+  const date = item?.movedLesson.date
+    ? new Date(item.movedLesson.date)
+    : firstTimetableDate(new Date(), days);
+
+  return {
+    comment: item?.movedLesson.comment ?? null,
+    date,
+    lessonIds: item?.lessons.map((lesson) => lesson.id) ?? [],
+    // Use the resolved refs, not the raw arrays: a deleted cohort/teacher is
+    // filtered out there, and re-submitting its stale id would fail validation.
+    manualCohortIds: item?.manual?.cohorts.map(({ id }) => id) ?? [],
+    manualSourceRoomId: item?.manual?.sourceRoom?.id ?? undefined,
+    manualSubjectId: item?.manual?.subject?.id ?? undefined,
+    manualTeacherIds: item?.manual?.teachers.map(({ id }) => id) ?? [],
+    room: item?.movedLesson.room || undefined,
+    // Derived from the date so the form is valid on mount, not only after the
+    // target date is touched. A stored weekday still wins for an existing move.
+    startingDay:
+      item?.movedLesson.startingDay || getWeekdayId(date, days) || undefined,
+    startingPeriod: item?.movedLesson.startingPeriod || undefined,
+  };
+};
 
 type MoveModeToggleProps = {
   mode: MoveMode;
@@ -744,12 +768,18 @@ function FromRoomField({ classrooms, onChange, value }: FromRoomFieldProps) {
 
 type TargetDateFieldProps = {
   date: Date | undefined;
+  days: DayDefinition[];
   locale: string;
   onChange: (date: Date | undefined) => void;
 };
 
 // Target-date picker, shown in day-move mode only.
-function TargetDateField({ date, locale, onChange }: TargetDateFieldProps) {
+function TargetDateField({
+  date,
+  days,
+  locale,
+  onChange,
+}: TargetDateFieldProps) {
   const { t } = useTranslation();
 
   return (
@@ -757,6 +787,7 @@ function TargetDateField({ date, locale, onChange }: TargetDateFieldProps) {
       <Label>{t('movedLesson.targetDate')}</Label>
       <DatePicker
         date={date}
+        disabledDays={(candidate) => getWeekdayId(candidate, days) === ''}
         locale={locale}
         onDateChange={onChange}
         placeholder={t('movedLesson.datePlaceholder')}
@@ -895,6 +926,7 @@ function MovedLessonSourceFields({
 type MovedLessonTargetFieldsProps = {
   checkAvailability: boolean;
   classrooms: ClassroomItem[];
+  days: DayDefinition[];
   isLoadingRooms: boolean;
   mode: MoveMode;
   onPeriodChange: (value: string) => void;
@@ -912,6 +944,7 @@ type MovedLessonTargetFieldsProps = {
 function MovedLessonTargetFields({
   checkAvailability,
   classrooms,
+  days,
   isLoadingRooms,
   mode,
   onPeriodChange,
@@ -942,6 +975,7 @@ function MovedLessonTargetFields({
     <>
       <TargetDateField
         date={targetDate}
+        days={days}
         locale={getIntlLocale(i18n.language)}
         onChange={onTargetDateChange}
       />
@@ -1181,7 +1215,7 @@ export function MovedLessonDialog({
   );
   const isManual = source === 'manual';
 
-  const defaultValues = useMemo(() => initialState(item), [item]);
+  const defaultValues = useMemo(() => initialState(item, days), [item, days]);
 
   // The source weekday id is derived from the source date.
   const sourceDay = useMemo(
@@ -1316,7 +1350,7 @@ export function MovedLessonDialog({
       return;
     }
     form.setFieldValue('date', date);
-    form.setFieldValue('startingDay', getWeekdayId(date, days));
+    form.setFieldValue('startingDay', getWeekdayId(date, days) || undefined);
   };
 
   const handleTargetRoomChange = (value: string) => {
@@ -1420,6 +1454,7 @@ export function MovedLessonDialog({
             <MovedLessonTargetFields
               checkAvailability={!isManual}
               classrooms={classrooms}
+              days={days}
               isLoadingRooms={availableClassroomsQuery.isLoading}
               mode={isManual ? 'day' : mode}
               onPeriodChange={handleTargetPeriodChange}
