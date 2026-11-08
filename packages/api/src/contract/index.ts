@@ -13,6 +13,7 @@ import { newsContract } from './news';
 import { notificationsContract } from './notifications';
 import { pingContract } from './ping';
 import { rolesContract } from './roles';
+import { themeContract } from './theme';
 import { timetableContract } from './timetable';
 import { usersContract } from './users';
 import { wifiContract } from './wifi';
@@ -40,6 +41,7 @@ export const appContract = oc.errors(apiErrors).router({
   notifications: notificationsContract,
   ping: pingContract,
   roles: rolesContract,
+  theme: themeContract,
   timetable: timetableContract,
   users: usersContract,
   wifi: wifiContract,

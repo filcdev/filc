@@ -1,3 +1,4 @@
+import { colorSchemeSchema } from '@filcdev/api/domains/theme';
 import { ORPCError } from '@orpc/server';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { db } from '#database';
@@ -118,11 +119,17 @@ export const markAllAsRead = base.notifications.markAllAsRead
  * whose row was written that way could never open their settings again.
  */
 const withCompletePreferences = <
-  T extends { notificationPreferences: unknown },
+  T extends { colorScheme: string; notificationPreferences: unknown },
 >(
   row: T
 ) => ({
   ...row,
+  /**
+   * `color_scheme` is a `text` column, so the stored value is only as good as
+   * the last writer: narrow it here rather than fail a whole settings read (and
+   * with it the app's first paint) over one bad row.
+   */
+  colorScheme: colorSchemeSchema.catch('default').parse(row.colorScheme),
   notificationPreferences: {
     ...DEFAULT_NOTIFICATION_PREFERENCES,
     ...(row.notificationPreferences as Partial<
@@ -167,8 +174,17 @@ export const updateNotificationSettings = base.notifications.updateSettings
 
     const values: Record<string, unknown> = {};
 
+    if (body.colorScheme !== undefined) {
+      values.colorScheme = body.colorScheme;
+    }
     if (body.language !== undefined) {
       values.language = body.language;
+    }
+    if (body.siteThemeAcknowledged !== undefined) {
+      values.siteThemeAcknowledged = body.siteThemeAcknowledged;
+    }
+    if (body.siteThemeEnabled !== undefined) {
+      values.siteThemeEnabled = body.siteThemeEnabled;
     }
     if (body.theme !== undefined) {
       values.theme = body.theme;

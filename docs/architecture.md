@@ -70,5 +70,6 @@ better-auth on the server (`apps/chronos/src/utils/authentication.ts`) with Entr
 ## Docs
 
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — onboarding and contribution workflow
+- [theming.md](theming.md) — how the token layers stack, how to add a skin or palette, and what custom themes would need
 - [AGENTS.md](../AGENTS.md) — authoritative code conventions (also consumed by AI agents)
 - This directory — reference material that outlives a single contribution

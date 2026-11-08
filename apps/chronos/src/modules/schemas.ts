@@ -5,6 +5,7 @@ import { kioskSchema } from '#modules/kiosk/schema';
 import { navigatorSchema } from '#modules/navigator/schema';
 import { newsSchema } from '#modules/news/schema';
 import { notificationsSchema } from '#modules/notifications/schema';
+import { themeSchema } from '#modules/theme/schema';
 import { timetableSchema } from '#modules/timetable/schema';
 import { wifiSchema } from '#modules/wifi/schema';
 
@@ -29,6 +30,7 @@ export const moduleSchemas = {
   ...navigatorSchema,
   ...newsSchema,
   ...notificationsSchema,
+  ...themeSchema,
   ...timetableSchema,
   ...wifiSchema,
 };

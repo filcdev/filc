@@ -13,6 +13,7 @@ import {
  * notification viewer's "change cohort" button opens General).
  */
 const settingsSections = [
+  'profile',
   'general',
   'appearance',
   'groups',

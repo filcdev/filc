@@ -12,6 +12,7 @@ import { newsRouter } from '#modules/news/_router';
 import { notificationsRouter } from '#modules/notifications/_router';
 import { pingRouter } from '#modules/ping/_router';
 import { rolesRouter } from '#modules/roles/_router';
+import { themeRouter } from '#modules/theme/_router';
 import { timetableRouter } from '#modules/timetable/_router';
 import { usersRouter } from '#modules/users/_router';
 import { wifiRouter } from '#modules/wifi/_router';
@@ -39,6 +40,7 @@ export const appRouter = base.use(rateLimit).router({
   notifications: notificationsRouter,
   ping: pingRouter,
   roles: rolesRouter,
+  theme: themeRouter,
   timetable: timetableRouter,
   users: usersRouter,
   wifi: wifiRouter,

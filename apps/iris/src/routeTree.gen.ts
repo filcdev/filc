@@ -26,6 +26,7 @@ import { Route as PrivateAdminApiKeysRouteImport } from './routes/_private/admin
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
 import { Route as PrivateAdminKiosksRouteImport } from './routes/_private/admin/kiosks'
 import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
+import { Route as PrivateAdminThemeRouteImport } from './routes/_private/admin/theme'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
 import { Route as PrivateAdminDevNotificationsRouteImport } from './routes/_private/admin/dev/notifications'
@@ -135,6 +136,11 @@ const PrivateAdminKiosksRoute = PrivateAdminKiosksRouteImport.update({
 const PrivateAdminRolesRoute = PrivateAdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
+const PrivateAdminThemeRoute = PrivateAdminThemeRouteImport.update({
+  id: '/theme',
+  path: '/theme',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
 const PrivateAdminUsersRoute = PrivateAdminUsersRouteImport.update({
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
+  '/admin/theme': typeof PrivateAdminThemeRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/cards/': typeof PrivateCardsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
@@ -355,6 +362,7 @@ export interface FileRoutesByTo {
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
+  '/admin/theme': typeof PrivateAdminThemeRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/cards': typeof PrivateCardsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
@@ -402,6 +410,7 @@ export interface FileRoutesById {
   '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
   '/_private/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
+  '/_private/admin/theme': typeof PrivateAdminThemeRoute
   '/_private/admin/users': typeof PrivateAdminUsersRoute
   '/_private/cards/': typeof PrivateCardsIndexRoute
   '/_private/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/admin/bug-reports'
     | '/admin/kiosks'
     | '/admin/roles'
+    | '/admin/theme'
     | '/admin/users'
     | '/cards/'
     | '/admin/dev/notifications'
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/admin/bug-reports'
     | '/admin/kiosks'
     | '/admin/roles'
+    | '/admin/theme'
     | '/admin/users'
     | '/cards'
     | '/admin/dev/notifications'
@@ -538,6 +549,7 @@ export interface FileRouteTypes {
     | '/_private/admin/bug-reports'
     | '/_private/admin/kiosks'
     | '/_private/admin/roles'
+    | '/_private/admin/theme'
     | '/_private/admin/users'
     | '/_private/cards/'
     | '/_private/admin/dev/notifications'
@@ -694,6 +706,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/admin/roles'
       preLoaderRoute: typeof PrivateAdminRolesRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/theme': {
+      id: '/_private/admin/theme'
+      path: '/theme'
+      fullPath: '/admin/theme'
+      preLoaderRoute: typeof PrivateAdminThemeRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/users': {
@@ -894,6 +913,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminBugReportsRoute: typeof PrivateAdminBugReportsRoute
   PrivateAdminKiosksRoute: typeof PrivateAdminKiosksRoute
   PrivateAdminRolesRoute: typeof PrivateAdminRolesRoute
+  PrivateAdminThemeRoute: typeof PrivateAdminThemeRoute
   PrivateAdminUsersRoute: typeof PrivateAdminUsersRoute
   PrivateAdminDevNotificationsRoute: typeof PrivateAdminDevNotificationsRoute
   PrivateAdminDoorlockCardsRoute: typeof PrivateAdminDoorlockCardsRoute
@@ -928,6 +948,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminBugReportsRoute: PrivateAdminBugReportsRoute,
   PrivateAdminKiosksRoute: PrivateAdminKiosksRoute,
   PrivateAdminRolesRoute: PrivateAdminRolesRoute,
+  PrivateAdminThemeRoute: PrivateAdminThemeRoute,
   PrivateAdminUsersRoute: PrivateAdminUsersRoute,
   PrivateAdminDevNotificationsRoute: PrivateAdminDevNotificationsRoute,
   PrivateAdminDoorlockCardsRoute: PrivateAdminDoorlockCardsRoute,
