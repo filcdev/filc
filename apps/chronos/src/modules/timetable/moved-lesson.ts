@@ -963,12 +963,15 @@ export const updateMovedLesson = base.timetable.movedLessons.update
 
     // A partial patch must not notify an empty audience, so the payload is the
     // merged result rather than just what the caller sent. A manual move has no
-    // lesson links, so the audience is resolved from its manual cohort ids.
+    // lesson links, so the audience is resolved from its manual cohort ids —
+    // recognised by `hasManualFields`, not by the subject, because a subject
+    // deleted via ON DELETE SET NULL leaves `manualSubjectId` null while the
+    // cohorts (and therefore the audience) remain. `createMovedLesson` passes
+    // `manualCohortIds` unconditionally for the same reason.
     dispatchPendingNotification(id, 'moved_lesson', {
-      cohortIds:
-        updatedMovedLesson.manualSubjectId == null
-          ? []
-          : updatedMovedLesson.manualCohortIds,
+      cohortIds: hasManualFields(updatedMovedLesson)
+        ? updatedMovedLesson.manualCohortIds
+        : [],
       date: updatedMovedLesson.date,
       lessonIds: effectiveLessonIds,
       room: updatedMovedLesson.room,

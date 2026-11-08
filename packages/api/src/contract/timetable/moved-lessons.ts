@@ -106,7 +106,7 @@ export const movedLessonsContract = {
         filcRoute({
           auth: true,
           description:
-            'Update a moved lesson, optionally switching between linked and manual sources.',
+            'Update a moved lesson. Every field is optional and an omitted one keeps its stored value. A moved lesson still has exactly one source, so switching sources must clear the other one explicitly: send `lessonIds: []` together with the manual fields to switch to manual, or `manualCohortIds: []` together with `lessonIds` to switch to linked.',
           method: 'PUT',
           operationId: 'putTimetableMovedLessonsById',
           path: '/timetable/movedLessons/{id}',
