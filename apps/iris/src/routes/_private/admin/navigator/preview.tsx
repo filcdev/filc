@@ -1,6 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
+
 import { NavigatorPreview } from '@/components/admin/navigator/navigator-preview';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { orpc, prefetch } from '@/utils/orpc';
@@ -21,7 +22,7 @@ function NavigatorPreviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('navigator.preview.title')}
         </h1>
         <p className="text-muted-foreground">

@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Pen } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { TeacherDialog } from '@/components/admin/teacher-dialog';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
@@ -95,7 +96,7 @@ function TeachersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('teachers.title')}
         </h1>
         <p className="text-muted-foreground">{t('teachers.description')}</p>
@@ -121,7 +122,7 @@ function TeachersPage() {
                     className="select-none"
                   >
                     <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                       onClick={() => handleSort('name')}
                       type="button"
                     >
@@ -138,7 +139,7 @@ function TeachersPage() {
                     className="select-none"
                   >
                     <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                       onClick={() => handleSort('short')}
                       type="button"
                     >
@@ -155,7 +156,7 @@ function TeachersPage() {
                     className="select-none"
                   >
                     <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                       onClick={() => handleSort('email')}
                       type="button"
                     >
@@ -172,7 +173,7 @@ function TeachersPage() {
                     className="select-none"
                   >
                     <button
-                      className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                      className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                       onClick={() => handleSort('user')}
                       type="button"
                     >

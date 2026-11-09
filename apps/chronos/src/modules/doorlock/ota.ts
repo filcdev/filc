@@ -1,6 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import { sendMessage } from '#modules/doorlock/device-socket';

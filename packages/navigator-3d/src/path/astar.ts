@@ -89,7 +89,7 @@ export class Astar {
   private readonly points = new Map<number, Vec3>();
   private readonly adj = new Map<number, Set<number>>();
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported A* search loop, kept verbatim
+  // ported A* search loop, kept verbatim
   findPath(start: number, goal: number): Vec3[] {
     const startPos = this.points.get(start);
     if (!startPos) {

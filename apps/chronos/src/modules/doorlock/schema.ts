@@ -8,6 +8,7 @@ import {
   text,
   uuid,
 } from 'drizzle-orm/pg-core';
+
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 

@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { announcement } from '#modules/news/schema';
 import { base } from '#orpc';

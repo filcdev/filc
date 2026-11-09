@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type { SystemMessageItem } from '@/hooks/news';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { orpc } from '@/utils/orpc';
@@ -85,13 +86,13 @@ export function SystemMessageBanner() {
 
   return (
     <div className="fixed inset-x-0 top-0 z-70">
-      <div className="flex items-center bg-destructive text-destructive-foreground shadow-md">
+      <div className="bg-destructive text-destructive-foreground flex items-center shadow-md">
         <div className="min-w-0 flex-1 px-3 py-2 sm:px-4">
-          <p className="font-semibold text-sm leading-5" translate="yes">
+          <p className="text-sm leading-5 font-semibold" translate="yes">
             {message.title}
           </p>
           <p
-            className="wrap-break-word mt-0.5 text-xs leading-5 opacity-95"
+            className="mt-0.5 text-xs leading-5 wrap-break-word opacity-95"
             translate="yes"
           >
             {renderBlockContent(message.content)}
@@ -102,7 +103,7 @@ export function SystemMessageBanner() {
         </div>
         <Button
           aria-label={t('systemMessagesBanner.dismiss')}
-          className="shrink-0 text-destructive-foreground hover:bg-destructive-foreground/15 hover:text-destructive-foreground"
+          className="text-destructive-foreground hover:bg-destructive-foreground/15 hover:text-destructive-foreground shrink-0"
           onClick={() => dismissMessage(message.id)}
           size="icon"
           type="button"

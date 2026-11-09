@@ -7,11 +7,7 @@ import type { Stair } from '@filcdev/api/domains/navigator/stair';
 /** Editor entity kinds the gizmo can edit. Mirrors the old `Highlight`
  *  union, minus the appearance flags (those live in `EditorAppearance`). */
 export type EditKind =
-  | 'classroom'
-  | 'building'
-  | 'lift'
-  | 'stairs'
-  | 'corridor';
+  'classroom' | 'building' | 'lift' | 'stairs' | 'corridor';
 
 /** The entity currently being edited. `id` absent = a brand-new entity
  *  being created (no saved node to hide). `preview` carries the unsaved

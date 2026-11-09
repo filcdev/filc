@@ -7,6 +7,7 @@ import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { Lift } from '@filcdev/api/domains/navigator/lift';
 import type { Stair } from '@filcdev/api/domains/navigator/stair';
+
 import type { EditTarget } from './types';
 
 /** Placeholder id for an entity being created (not yet saved). */
@@ -79,13 +80,13 @@ export type MergedEntity =
   | { kind: 'stairs'; entity: Stair }
   | { kind: 'corridor'; entity: Corridor };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported merge logic, kept verbatim
+// ported merge logic, kept verbatim
 export function mergeEntity(
   graph: FullGraph,
   target: EditTarget
 ): MergedEntity {
   const id = target.id;
-  // biome-ignore lint/style/useDefaultSwitchClause: exhaustive over EditTarget; a default would be dead code
+  // exhaustive over EditTarget; a default would be dead code
   switch (target.kind) {
     case 'classroom': {
       const existing = id

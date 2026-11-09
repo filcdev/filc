@@ -14,7 +14,7 @@ coverage*
 db.local
 dist
 build
-biome.jsonc
+.oxlintrc.json
 compose.yml
 .turbo
 .tanstack

@@ -21,7 +21,7 @@ const Motifs = ({
 }) =>
   slots.map((slot, index) => (
     <span
-      className="absolute select-none font-emoji leading-none"
+      className="font-emoji absolute leading-none select-none"
       key={`${slot.left}-${slot.top}`}
       // Positions come from the slot table, so they cannot be static classes.
       style={{
@@ -74,7 +74,7 @@ export function SiteThemeBackdrop({ className, theme }: SiteThemeArtProps) {
     <div
       aria-hidden="true"
       className={cn(
-        'pointer-events-none fixed inset-0 -z-10 select-none overflow-hidden',
+        'pointer-events-none fixed inset-0 -z-10 overflow-hidden select-none',
         className
       )}
     >

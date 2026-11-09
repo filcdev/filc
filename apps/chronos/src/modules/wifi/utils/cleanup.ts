@@ -1,6 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import { captureException } from '@sentry/bun';
 import { lte } from 'drizzle-orm';
+
 import { db } from '#database';
 import { wifiAuthLog } from '#modules/wifi/schema';
 

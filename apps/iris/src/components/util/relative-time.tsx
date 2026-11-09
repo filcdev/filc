@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/hu';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
+
 import { formatLocalizedDate } from '@/utils/date-locale';
 
 dayjs.extend(relativeTime);

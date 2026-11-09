@@ -2,6 +2,7 @@ import { Toggle as TogglePrimitive } from '@base-ui/react/toggle';
 import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { ComponentProps } from 'react';
+
 import { cn } from '../lib/utils';
 
 /**
@@ -20,7 +21,7 @@ function ToggleGroup({
   return (
     <ToggleGroupPrimitive
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-4xl border border-border bg-input/30 p-0.5',
+        'border-border bg-input/30 inline-flex items-center gap-0.5 rounded-4xl border p-0.5',
         'data-[orientation=vertical]:flex-col data-[orientation=vertical]:rounded-2xl',
         className
       )}
@@ -32,7 +33,7 @@ function ToggleGroup({
 }
 
 const toggleGroupItemVariants = cva(
-  "inline-flex h-8 min-w-0 flex-1 cursor-pointer select-none items-center justify-center gap-1.5 truncate rounded-4xl px-3 font-medium text-sm outline-hidden transition-colors sm:flex-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 truncate rounded-4xl px-3 text-sm font-medium outline-hidden transition-colors select-none sm:flex-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     defaultVariants: {
       tone: 'default',

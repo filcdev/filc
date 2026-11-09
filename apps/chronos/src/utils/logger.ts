@@ -4,6 +4,7 @@ import {
   getLogger,
   jsonLinesFormatter,
 } from '@logtape/logtape';
+
 import { env } from '#utils/environment';
 
 const prettyFormatter = async () => {

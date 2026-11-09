@@ -10,6 +10,7 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import dayjs from 'dayjs';
 import { CalendarCheck, ChevronsUpDownIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import type { TimetableItem } from './types';
 
 type TimetableStatus = 'current' | 'past' | 'upcoming';

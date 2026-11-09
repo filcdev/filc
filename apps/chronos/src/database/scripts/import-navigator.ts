@@ -31,11 +31,13 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import process from 'node:process';
+
 import { fullGraphSchema } from '@filcdev/api/domains/navigator/graph';
 import { translationSchema } from '@filcdev/api/domains/navigator/translation';
 import { getLogger } from '@logtape/logtape';
 import { and, notInArray, sql } from 'drizzle-orm';
 import z from 'zod';
+
 import { db, prepareDb } from '#database';
 import {
   navigatorCorridor,

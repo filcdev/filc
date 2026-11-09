@@ -1,4 +1,5 @@
 import { getLogger } from '@logtape/logtape';
+
 import { modules } from '#modules';
 import { registerHandler } from '#utils/notifications/engine';
 import { initializeFcm } from '#utils/notifications/providers/fcm';

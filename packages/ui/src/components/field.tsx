@@ -1,5 +1,6 @@
 import type { ValidationError } from '@tanstack/react-form';
 import type { ComponentProps } from 'react';
+
 import { cn } from '../lib/utils';
 
 type FieldProps = ComponentProps<'div'> & {
@@ -32,10 +33,9 @@ function FieldContent({ className, ...props }: ComponentProps<'div'>) {
 
 function FieldLabel({ className, ...props }: ComponentProps<'label'>) {
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: used with htmlFor prop in form fields
     <label
       className={cn(
-        'flex select-none items-center gap-2 font-medium text-sm leading-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50',
+        'flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50',
         className
       )}
       {...props}
@@ -95,8 +95,8 @@ function FieldLegend({ className, variant, ...props }: FieldLegendProps) {
     <legend
       className={cn(
         variant === 'label'
-          ? 'font-medium text-sm leading-none'
-          : 'font-semibold text-base',
+          ? 'text-sm leading-none font-medium'
+          : 'text-base font-semibold',
         className
       )}
       {...props}
@@ -105,7 +105,7 @@ function FieldLegend({ className, variant, ...props }: FieldLegendProps) {
 }
 
 function FieldTitle({ className, ...props }: ComponentProps<'p'>) {
-  return <p className={cn('font-medium text-sm', className)} {...props} />;
+  return <p className={cn('text-sm font-medium', className)} {...props} />;
 }
 
 function FieldSeparator({ className }: { className?: string }) {

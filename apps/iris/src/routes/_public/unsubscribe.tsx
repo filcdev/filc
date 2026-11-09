@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+
 import { useUnsubscribe } from '@/hooks/notifications';
 
 export const Route = createFileRoute('/_public/unsubscribe')({
@@ -52,17 +53,17 @@ function UnsubscribePage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-2xl">
-        <h1 className="font-bold text-2xl">{titleMap[status]}</h1>
-        <p className="mt-4 text-muted-foreground">
+    <div className="bg-muted/50 flex min-h-screen items-center justify-center p-4">
+      <div className="bg-card w-full max-w-md rounded-2xl p-8 text-center shadow-2xl">
+        <h1 className="text-2xl font-bold">{titleMap[status]}</h1>
+        <p className="text-muted-foreground mt-4">
           {status === 'loading'
             ? 'Loading...'
             : message || 'Manage your notification preferences'}
         </p>
         {status === 'done' && token && userId && !message && (
           <button
-            className="mt-6 rounded-lg bg-destructive px-6 py-2 text-destructive-foreground hover:opacity-90"
+            className="bg-destructive text-destructive-foreground mt-6 rounded-lg px-6 py-2 hover:opacity-90"
             onClick={handleUnsubscribe}
             type="button"
           >

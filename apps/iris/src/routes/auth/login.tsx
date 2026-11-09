@@ -47,17 +47,17 @@ function RouteComponent() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
+    <main className="bg-background flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Shield className="h-8 w-8 text-primary" />
+          <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
+            <Shield className="text-primary h-8 w-8" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-bold text-3xl text-foreground">
+            <h1 className="text-foreground text-3xl font-bold">
               {t('microsoft.signInTitle')}
             </h1>
-            <p className="text-balance text-muted-foreground">
+            <p className="text-muted-foreground text-balance">
               {t('microsoft.signInSubtitle')}
             </p>
           </div>
@@ -90,18 +90,18 @@ function RouteComponent() {
           </CardContent>
         </Card>
 
-        <div className="text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground text-center text-xs">
           <p>
             {t('login.byContinuing')}{' '}
             <a
-              className="underline transition-colors hover:text-foreground"
+              className="hover:text-foreground underline transition-colors"
               href="/legal/tos"
             >
               {t('termsOfService')}
             </a>{' '}
             {t('and')}{' '}
             <Link
-              className="underline transition-colors hover:text-foreground"
+              className="hover:text-foreground underline transition-colors"
               preload="intent"
               to="/policy"
             >

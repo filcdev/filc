@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { cohort, cohortTimetableMtm } from '#modules/timetable/schema';
 import { base } from '#orpc';

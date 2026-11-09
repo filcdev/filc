@@ -1,4 +1,5 @@
 import z from 'zod';
+
 import { myLocationSchema } from '../navigator/my-location';
 
 /** The two kiosk page kinds a box can be enrolled as. */

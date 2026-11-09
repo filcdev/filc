@@ -13,6 +13,7 @@ import {
 import { Bell, MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { NotificationHistoryDialog } from '@/components/notification-history-dialog';
 import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
 import {
@@ -46,13 +47,13 @@ export function NotificationBell() {
         <DropdownMenuTrigger
           render={
             <Button
-              className="relative text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground relative"
               size="sm"
               variant="ghost"
             >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-primary p-0 text-center text-primary-foreground text-xs">
+                <Badge className="bg-primary text-primary-foreground absolute -top-1 -right-1 h-5 min-w-5 rounded-full p-0 text-center text-xs">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Badge>
               )}
@@ -83,7 +84,7 @@ export function NotificationBell() {
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           {recent.length === 0 ? (
-            <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+            <div className="text-muted-foreground px-2 py-4 text-center text-sm">
               {t('notifications.bell.empty')}
             </div>
           ) : (
@@ -95,7 +96,7 @@ export function NotificationBell() {
               >
                 <div className="flex flex-col gap-0.5">
                   <span
-                    className={notif.read ? 'text-sm' : 'font-medium text-sm'}
+                    className={notif.read ? 'text-sm' : 'text-sm font-medium'}
                   >
                     {notif.title}
                   </span>
@@ -111,7 +112,7 @@ export function NotificationBell() {
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="cursor-pointer justify-center text-muted-foreground text-sm"
+            className="text-muted-foreground cursor-pointer justify-center text-sm"
             onClick={() => setHistoryOpen(true)}
           >
             {t('notifications.bell.viewAll')}

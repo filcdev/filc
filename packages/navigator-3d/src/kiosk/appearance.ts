@@ -1,4 +1,6 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
+
 import { DIM_OPACITY } from '../types/three/material-types';
 import type { AppData } from './materials';
 import { KIOSK_COLORS } from './palette';
@@ -13,9 +15,7 @@ function paint(
   opacity: number
 ): void {
   const mat = (mesh as THREE.Mesh).material as
-    | THREE.MeshBasicMaterial
-    | THREE.LineBasicMaterial
-    | undefined;
+    THREE.MeshBasicMaterial | THREE.LineBasicMaterial | undefined;
   if (!mat) {
     return;
   }
@@ -42,7 +42,7 @@ function visibleUnder(node: KioskNode, iso: IsolatedFloor): boolean {
   return node.storey === iso.storey;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported emphasis logic, kept verbatim
+// ported emphasis logic, kept verbatim
 function classroomEmphasis(node: KioskNode, state: KioskAppearance): Emphasis {
   const { selection, highlight } = state;
 

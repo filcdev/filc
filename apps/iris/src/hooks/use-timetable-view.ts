@@ -42,7 +42,7 @@ const apply = (next: TimetableView, persist: boolean) => {
   }
   view = next;
   if (persist) {
-    // biome-ignore lint/suspicious/noDocumentCookie: read on the next visit
+    // oxlint-disable-next-line unicorn/no-document-cookie -- read on the next visit
     document.cookie = `${VIEW_COOKIE_NAME}=${next}; path=/; max-age=${VIEW_COOKIE_MAX_AGE}; samesite=lax`;
   }
   for (const listener of listeners) {

@@ -2,6 +2,7 @@ import type { LogsQueryInput } from '@filcdev/api/domains/doorlock/logs';
 import { permissions } from '@filcdev/api/permissions';
 import type { SQL } from 'drizzle-orm';
 import { count, desc, eq, gte, ilike, lte, or } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';

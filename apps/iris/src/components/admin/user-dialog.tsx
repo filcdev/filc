@@ -18,12 +18,14 @@ import {
 import { useForm, useStore } from '@tanstack/react-form';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
-  type User,
   useCohorts,
+  type User,
   useRoles,
   useUpdateUser,
 } from '@/hooks/admin-users';
+
 import type { BaseDialogProps } from './admin.types';
 
 type UserDialogProps = BaseDialogProps & {

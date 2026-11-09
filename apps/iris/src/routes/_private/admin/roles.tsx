@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { RefreshCw, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { RoleDialog } from '@/components/admin/role-dialog';
 import { RolesTable } from '@/components/admin/roles-table';
 import { StatCard } from '@/components/admin/stat-card';
@@ -43,7 +44,7 @@ function AdminRolesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('roles.title')}
         </h1>
         <p className="text-muted-foreground">{t('roles.description')}</p>

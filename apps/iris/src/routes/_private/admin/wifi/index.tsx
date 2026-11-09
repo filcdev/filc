@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { TableHeaderRow } from '@/components/admin/table-header-row';
 import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -84,7 +85,7 @@ function WifiDashboard() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('wifiAdminDashboard.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -160,11 +161,11 @@ function StatCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-medium text-sm">{label}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-sm font-medium">{label}</CardTitle>
+        <Icon className="text-muted-foreground h-4 w-4" />
       </CardHeader>
       <CardContent>
-        <div className="font-bold text-2xl">{value}</div>
+        <div className="text-2xl font-bold">{value}</div>
       </CardContent>
     </Card>
   );
@@ -198,7 +199,7 @@ function WifiAuthLogs() {
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative max-w-sm flex-1">
-            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
             <Input
               className="pl-9"
               onChange={(event) => {
@@ -251,7 +252,7 @@ function WifiAuthLogs() {
               {!logsQuery.isLoading && logs.length === 0 && (
                 <TableRow>
                   <TableCell
-                    className="text-center text-muted-foreground"
+                    className="text-muted-foreground text-center"
                     colSpan={5}
                   >
                     {t('wifiAdminDashboard.noLogs')}
@@ -292,7 +293,7 @@ function WifiAuthLogs() {
                           {log.nasIpAddress ?? '-'}
                         </span>
                         {log.nasMacAddress && (
-                          <span className="font-mono text-muted-foreground text-xs">
+                          <span className="text-muted-foreground font-mono text-xs">
                             {log.nasMacAddress}
                           </span>
                         )}

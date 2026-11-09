@@ -1,7 +1,8 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { FLOOR_GAP } from '../scene/storey-resolver';
 import { FLOOR_HEIGHT } from '../types/three/material-types';
 import { floorPositionOf } from './building-helpers';

@@ -1,9 +1,11 @@
 import { permissions } from '@filcdev/api/permissions';
 import { count, gte, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import { requireWifiEnabled } from '#middleware/wifi';
 import { base } from '#orpc';
+
 import { wifiAuthLog, wifiDevice, wifiUser } from './schema';
 
 const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;

@@ -179,7 +179,7 @@ export function AvatarCropper({
   return (
     <div className="space-y-3">
       <div
-        className="relative mx-auto cursor-grab touch-none overflow-hidden rounded-xl ring-1 ring-border active:cursor-grabbing"
+        className="ring-border relative mx-auto cursor-grab touch-none overflow-hidden rounded-xl ring-1 active:cursor-grabbing"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
           dragRef.current = {
@@ -215,8 +215,8 @@ export function AvatarCropper({
         }}
         style={{ height: rect?.height ?? FRAME, width: rect?.width ?? FRAME }}
       >
-        {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: the load event carries the picture's dimensions; the drag is handled by the frame. */}
-        {/* biome-ignore lint/correctness/useImageSize: the size is computed from the picture and lives in `style`. */}
+        {/* the size is computed from the picture and lives in `style`. */}
+        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the load event carries the picture's dimensions; the drag is handled by the frame. */}
         <img
           alt=""
           className="absolute max-w-none select-none"
@@ -256,10 +256,10 @@ export function AvatarCropper({
       </div>
 
       <div className="flex items-center gap-2">
-        <ZoomOut className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <ZoomOut className="text-muted-foreground h-4 w-4 shrink-0" />
         <input
           aria-label={t('profile.picture.cropSize')}
-          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+          className="bg-muted accent-primary h-2 w-full cursor-pointer appearance-none rounded-full"
           max={max}
           min={min}
           onChange={(event) => setCrop(Number(event.target.value))}
@@ -267,13 +267,13 @@ export function AvatarCropper({
           type="range"
           value={crop}
         />
-        <ZoomIn className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <ZoomIn className="text-muted-foreground h-4 w-4 shrink-0" />
         <Button onClick={reset} size="sm" type="button" variant="ghost">
           {t('profile.picture.reset')}
         </Button>
       </div>
 
-      <p className="text-center text-muted-foreground text-xs">
+      <p className="text-muted-foreground text-center text-xs">
         {t('profile.picture.cropHint')}
       </p>
     </div>

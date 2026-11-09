@@ -3,6 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+
 import { Navbar } from '@/components/navbar';
 
 const errorSearchSchema = z.object({
@@ -22,12 +23,12 @@ function RouteComponent() {
     <>
       <Navbar showLinks={false} showLogo={true} />
       <main className="flex grow flex-col items-center justify-center gap-2">
-        <span className="flex items-center gap-2 font-bold text-2xl">
+        <span className="flex items-center gap-2 text-2xl font-bold">
           <CircleAlert className="text-destructive" />
           {t('auth.error.title')}
         </span>
         {error ? (
-          <p className="text-center text-muted-foreground">
+          <p className="text-muted-foreground text-center">
             {t(`auth.error.${error}`, {
               defaultValue: t('auth.error.genericMessage'),
             })}
@@ -39,7 +40,7 @@ function RouteComponent() {
           <Link to="/">{t('auth.error.returnToHome')}</Link>
         </Button>
       </main>
-      <footer className="p-1 text-center font-mono text-muted-foreground text-sm">
+      <footer className="text-muted-foreground p-1 text-center font-mono text-sm">
         Error code: {error ?? 'none'}
       </footer>
     </>

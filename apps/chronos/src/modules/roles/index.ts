@@ -1,4 +1,5 @@
 import { permissions } from '@filcdev/api/permissions';
+
 import { requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
 import { base } from '#orpc';

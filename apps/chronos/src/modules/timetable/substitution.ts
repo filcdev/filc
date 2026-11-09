@@ -2,6 +2,7 @@ import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import {
@@ -316,7 +317,7 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
           ARRAY[]::text[]
         )`.as('lessonIds'),
         substitution,
-        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        // `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
         teacher: {
           id: teacher.id,
           email: teacher.email,

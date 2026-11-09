@@ -10,6 +10,7 @@ import { CalendarOff, CalendarX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type z from 'zod';
+
 import { FilterBar } from '@/components/timetable/filter-bar';
 import { TimetableGrid } from '@/components/timetable/grid';
 import {
@@ -185,8 +186,8 @@ const renderTimetableBody = (
  */
 function TimetableLoadingPlaceholder() {
   return (
-    <div className="w-full rounded-xl border border-border bg-card">
-      <div className="border-border border-b bg-muted/40 px-4 py-3">
+    <div className="border-border bg-card w-full rounded-xl border">
+      <div className="border-border bg-muted/40 border-b px-4 py-3">
         <Skeleton className="h-4 w-32" />
       </div>
       <div className="grid grid-cols-5 gap-px p-px">
@@ -746,9 +747,9 @@ function useTimetablePageData() {
     selectorLoading || lessonsQuery.isLoading || !activeSelectionId;
   const hasError = Boolean(
     cohortsQuery.error ??
-      teachersQuery.error ??
-      classroomsQuery.error ??
-      lessonsQuery.error
+    teachersQuery.error ??
+    classroomsQuery.error ??
+    lessonsQuery.error
   );
 
   return {
@@ -878,7 +879,7 @@ export function TimetableView() {
 
   return (
     <div className="flex grow flex-col items-center p-4">
-      <div className="flex w-full min-w-0 max-w-7xl flex-col gap-4">
+      <div className="flex w-full max-w-7xl min-w-0 flex-col gap-4">
         <FilterBar
           activeFilter={activeFilter}
           classrooms={classrooms}

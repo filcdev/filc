@@ -1,5 +1,6 @@
 import { getLogger } from '@logtape/logtape';
 import { eq, inArray } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { notification, userPreferences } from '#modules/notifications/schema';

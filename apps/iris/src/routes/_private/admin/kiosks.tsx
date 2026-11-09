@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { KioskDialog } from '@/components/admin/kiosk-dialog';
 import {
   EntityTable,

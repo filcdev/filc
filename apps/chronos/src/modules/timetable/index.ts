@@ -1,6 +1,7 @@
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';

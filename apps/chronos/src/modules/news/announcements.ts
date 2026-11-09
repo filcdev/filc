@@ -3,6 +3,7 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, type SQL, sql } from 'drizzle-orm';
+
 import type { ChronosContext } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
@@ -95,7 +96,7 @@ async function auditAnnouncementUpdate(
   const after = {
     ...(body.cohortIds === undefined ? {} : { cohortIds: body.cohortIds }),
     ...(body.kioskIds === undefined ? {} : { kioskIds: body.kioskIds }),
-    ...(diff?.after ?? {}),
+    ...diff?.after,
   };
   const before = {
     ...(body.cohortIds === undefined
@@ -104,7 +105,7 @@ async function auditAnnouncementUpdate(
     ...(body.kioskIds === undefined
       ? {}
       : { kioskIds: await announcementKioskIds(id) }),
-    ...(diff?.before ?? {}),
+    ...diff?.before,
   };
   if (Object.keys(after).length > 0) {
     await recordActivity(context, {

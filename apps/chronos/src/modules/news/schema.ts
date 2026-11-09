@@ -12,6 +12,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { JSONType } from 'zod';
+
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 import { kiosk } from '#modules/kiosk/schema';

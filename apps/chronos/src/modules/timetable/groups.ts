@@ -1,5 +1,6 @@
 import { deriveDivisionLabel } from '@filcdev/timetable-import/types';
 import { and, eq, inArray } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthentication } from '#middleware/auth';
 import { cohort, cohortGroup, userGroup } from '#modules/timetable/schema';

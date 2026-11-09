@@ -1,6 +1,7 @@
 import { colorSchemeSchema } from '@filcdev/api/domains/theme';
 import { ORPCError } from '@orpc/server';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';

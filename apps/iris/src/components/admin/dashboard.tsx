@@ -28,6 +28,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+
 import { StatCard } from '@/components/admin/stat-card';
 import { type api, orpc } from '@/utils/orpc';
 
@@ -54,7 +55,7 @@ function DashboardStatCards({
 
   if (isError) {
     return (
-      <p className="col-span-full text-destructive text-sm">
+      <p className="text-destructive col-span-full text-sm">
         {t('dashboard.loadError')}
       </p>
     );
@@ -286,7 +287,7 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('dashboard.title')}
         </h1>
         <p className="text-muted-foreground">{t('dashboard.description')}</p>

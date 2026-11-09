@@ -1,5 +1,6 @@
 import { index, jsonb, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import type { JSONType } from 'zod';
+
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 

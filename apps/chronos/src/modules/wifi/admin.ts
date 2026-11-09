@@ -12,6 +12,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
@@ -19,6 +20,7 @@ import { requireWifiEnabled } from '#middleware/wifi';
 import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { badRequest, notFound, serviceUnavailable } from '#utils/http';
+
 import {
   wifiAuthLog,
   wifiDevice,

@@ -1,4 +1,5 @@
 import { getLogger } from '@logtape/logtape';
+
 import { sendPush } from '#utils/notifications/providers/fcm';
 import { sendEmail } from '#utils/notifications/providers/smtp';
 import type { DeliveryJob } from '#utils/notifications/types';

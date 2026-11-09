@@ -1,4 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { userPreferences } from '#modules/notifications/schema';
@@ -11,6 +12,7 @@ import {
   subject,
   teacher,
 } from '#modules/timetable/schema';
+
 import { isHungarianLocale } from './locale';
 import type { AudienceUser, NotificationContent } from './types';
 

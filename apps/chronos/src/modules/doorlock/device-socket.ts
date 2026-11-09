@@ -1,14 +1,15 @@
 import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+
 import { db } from '#database';
 import { server } from '#index';
 import {
   auditLog,
   card,
   cardDevice,
-  deviceHealth,
   device as lockDevice,
+  deviceHealth,
 } from '#modules/doorlock/schema';
 import {
   incomingMessageSchema,

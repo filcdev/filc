@@ -23,6 +23,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { AlertCircle, ArrowLeft, Download, Edit2, Wifi, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { Navbar } from '@/components/navbar';
 import { RelativeTime } from '@/components/util/relative-time';
 import {
@@ -160,7 +161,7 @@ function WifiPage() {
       <Navbar showLogo={true} />
       <div className="container mx-auto max-w-4xl space-y-6 p-6">
         <Link
-          className="flex w-max items-center gap-1 rounded-full px-2 py-1 transition-colors hover:bg-muted/50"
+          className="hover:bg-muted/50 flex w-max items-center gap-1 rounded-full px-2 py-1 transition-colors"
           to="/"
         >
           <ArrowLeft className="size-4" />
@@ -168,9 +169,9 @@ function WifiPage() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Wifi className="size-6 text-primary" />
+          <Wifi className="text-primary size-6" />
           <div>
-            <h1 className="font-semibold text-2xl tracking-tight">
+            <h1 className="text-2xl font-semibold tracking-tight">
               {t('wifi.title')}
             </h1>
             <p className="text-muted-foreground">{t('wifi.description')}</p>
@@ -283,7 +284,7 @@ function SetupAccount({ email, ssid }: { email: string; ssid: string }) {
           >
             {(field) => (
               <div className="space-y-2">
-                <label className="font-medium text-sm" htmlFor={field.name}>
+                <label className="text-sm font-medium" htmlFor={field.name}>
                   {t('wifi.password')}
                 </label>
                 <PasswordInput
@@ -321,7 +322,7 @@ function SetupAccount({ email, ssid }: { email: string; ssid: string }) {
           >
             {(field) => (
               <div className="space-y-2">
-                <label className="font-medium text-sm" htmlFor={field.name}>
+                <label className="text-sm font-medium" htmlFor={field.name}>
                   {t('wifi.confirmPassword')}
                 </label>
                 <PasswordInput
@@ -407,14 +408,14 @@ function AccountSummary({
             <p className="text-muted-foreground text-sm">
               {t('wifi.download')}
             </p>
-            <p className="font-semibold text-lg">
+            <p className="text-lg font-semibold">
               {account.speedLimit.downloadSpeedMbps ?? t('wifi.unlimited')}
               {account.speedLimit.downloadSpeedMbps ? ' Mbps' : ''}
             </p>
           </div>
           <div>
             <p className="text-muted-foreground text-sm">{t('wifi.upload')}</p>
-            <p className="font-semibold text-lg">
+            <p className="text-lg font-semibold">
               {account.speedLimit.uploadSpeedMbps ?? t('wifi.unlimited')}
               {account.speedLimit.uploadSpeedMbps ? ' Mbps' : ''}
             </p>
@@ -487,7 +488,7 @@ function DeviceItem({
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 md:flex-row md:items-center md:justify-between">
+    <div className="bg-muted/30 flex flex-col gap-2 rounded-lg border p-3 md:flex-row md:items-center md:justify-between">
       {isEditing ? (
         <div className="flex-1">
           <Input
@@ -502,7 +503,7 @@ function DeviceItem({
           <p className="font-medium">
             {device.nickname || device.reportedHostname || device.macAddress}
           </p>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             {device.reportedHostname &&
               device.nickname &&
               device.nickname !== device.reportedHostname && (
@@ -545,7 +546,7 @@ function DeviceItem({
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Badge variant={device.banned ? 'destructive' : 'outline'}>
                 {device.banned ? t('wifi.blocked') : t('wifi.active')}
               </Badge>
@@ -643,7 +644,7 @@ function PasswordChangeForm() {
             >
               {(field) => (
                 <div className="space-y-2">
-                  <label className="font-medium text-sm" htmlFor={field.name}>
+                  <label className="text-sm font-medium" htmlFor={field.name}>
                     {t('wifi.newPassword')}
                   </label>
                   <PasswordInput
@@ -681,7 +682,7 @@ function PasswordChangeForm() {
             >
               {(field) => (
                 <div className="space-y-2">
-                  <label className="font-medium text-sm" htmlFor={field.name}>
+                  <label className="text-sm font-medium" htmlFor={field.name}>
                     {t('wifi.confirmPassword')}
                   </label>
                   <PasswordInput

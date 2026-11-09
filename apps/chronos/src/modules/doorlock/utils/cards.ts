@@ -2,6 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import dayjs from 'dayjs';
 import type { SQL } from 'drizzle-orm';
 import { count, desc, eq, lt } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {

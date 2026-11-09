@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noConsole: logger would pull in .env */
+/* oxlint-disable no-console -- logger would pull in .env */
 console.info('Starting Chronos server build...');
 console.time('Built Chronos server');
 

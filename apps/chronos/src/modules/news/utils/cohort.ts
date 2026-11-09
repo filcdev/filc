@@ -1,5 +1,6 @@
 import { type SQL, sql } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
+
 import { db } from '#database';
 import { cohort } from '#modules/timetable/schema';
 import { badRequest } from '#utils/http';

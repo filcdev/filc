@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+
 import { cn } from '../lib/utils';
 
 type EmptyProps = {
@@ -27,21 +28,21 @@ export function Empty({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-xl border border-border border-dashed bg-card p-10 text-center',
+        'border-border bg-card flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-10 text-center',
         className
       )}
       data-slot="empty"
     >
       {icon ? (
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full">
           {icon}
         </div>
       ) : null}
       {title ? (
-        <h3 className="font-semibold text-foreground text-sm">{title}</h3>
+        <h3 className="text-foreground text-sm font-semibold">{title}</h3>
       ) : null}
       {description ? (
-        <p className="max-w-sm text-muted-foreground text-sm">{description}</p>
+        <p className="text-muted-foreground max-w-sm text-sm">{description}</p>
       ) : null}
       {children ? <div className="mt-1">{children}</div> : null}
     </div>

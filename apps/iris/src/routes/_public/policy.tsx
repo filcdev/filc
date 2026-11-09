@@ -39,14 +39,14 @@ function PolicyPage() {
   }, [t]);
 
   return (
-    <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
+    <main className="bg-background min-h-screen px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-8">
         <header className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <ShieldCheck className="h-8 w-8 text-primary" />
+          <div className="bg-primary/10 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
+            <ShieldCheck className="text-primary h-8 w-8" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-bold text-3xl text-foreground sm:text-4xl">
+            <h1 className="text-foreground text-3xl font-bold sm:text-4xl">
               {t('title')}
             </h1>
             <p className="text-muted-foreground">{t('subtitle')}</p>
@@ -62,7 +62,7 @@ function PolicyPage() {
               <CardHeader>
                 <CardTitle className="text-xl">{section.title}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 text-muted-foreground leading-7">
+              <CardContent className="text-muted-foreground space-y-4 leading-7">
                 {section.paragraphs?.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
@@ -78,18 +78,18 @@ function PolicyPage() {
           ))}
         </div>
 
-        <footer className="space-y-2 border-t pt-6 text-center text-muted-foreground text-sm">
+        <footer className="text-muted-foreground space-y-2 border-t pt-6 text-center text-sm">
           <p>{t('lastUpdated')}</p>
           <p>
             <a
-              className="underline transition-colors hover:text-foreground"
+              className="hover:text-foreground underline transition-colors"
               href="mailto:gdpr@petrik.hu"
             >
               gdpr@petrik.hu
             </a>
             {' · '}
             <a
-              className="underline transition-colors hover:text-foreground"
+              className="hover:text-foreground underline transition-colors"
               href="https://www.naih.hu/"
               rel="noreferrer"
               target="_blank"

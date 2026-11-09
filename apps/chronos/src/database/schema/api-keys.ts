@@ -37,7 +37,9 @@ export const apikey = pgTable(
     createdAt: timestamp('created_at').notNull(),
     enabled: boolean('enabled').default(true).notNull(),
     expiresAt: timestamp('expires_at'),
-    id: uuid('id').default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+    id: uuid('id')
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
     key: text('key').notNull(),
     lastRefillAt: timestamp('last_refill_at'),
     lastRequest: timestamp('last_request'),

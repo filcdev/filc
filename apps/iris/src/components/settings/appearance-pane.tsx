@@ -25,6 +25,7 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
@@ -119,7 +120,7 @@ export function AppearancePane({
                   className={cn(
                     'flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition-colors',
                     colorScheme === id
-                      ? 'border-primary ring-1 ring-primary'
+                      ? 'border-primary ring-primary ring-1'
                       : 'hover:border-primary/40'
                   )}
                   key={id}
@@ -133,10 +134,10 @@ export function AppearancePane({
                     {t(`preferences.colorSchemeId.${id}`)}
                   </span>
                   <span className="flex gap-1" data-color-scheme={id}>
-                    <span className="h-3 w-3 rounded-full bg-background ring-1 ring-border" />
-                    <span className="h-3 w-3 rounded-full bg-primary" />
-                    <span className="h-3 w-3 rounded-full bg-accent" />
-                    <span className="h-3 w-3 rounded-full bg-foreground" />
+                    <span className="bg-background ring-border h-3 w-3 rounded-full ring-1" />
+                    <span className="bg-primary h-3 w-3 rounded-full" />
+                    <span className="bg-accent h-3 w-3 rounded-full" />
+                    <span className="bg-foreground h-3 w-3 rounded-full" />
                   </span>
                 </button>
               ))}

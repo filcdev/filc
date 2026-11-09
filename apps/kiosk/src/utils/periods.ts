@@ -1,4 +1,5 @@
 import type { Dayjs } from 'dayjs';
+
 import { dayjs } from '@/utils/dayjs';
 
 /** The fields of a period the ticker filters on. */

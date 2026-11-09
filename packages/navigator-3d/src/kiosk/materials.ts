@@ -1,4 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 
 /** Visual role of a tagged mesh. Drives how the appearance layer blends

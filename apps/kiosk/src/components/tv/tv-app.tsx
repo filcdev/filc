@@ -1,4 +1,5 @@
 import type { DepartureGroup } from '@filcdev/api/domains/kiosk/config';
+
 import { DepartureContainer } from '@/components/tv/departure-container';
 import { Header } from '@/components/tv/header';
 import { RoomSubstitution } from '@/components/tv/room-substitutions';
@@ -20,7 +21,7 @@ export function TvApp({ departures, newsPolicy }: TvAppProps) {
     // Every board inside is `h-full`/`1fr`, so the chain must be bounded here:
     // `.tv main` is zoomed 190%, and without `min-h-0` the grid grows to its
     // content and pushes the ticker off the bottom of the screen.
-    <main className="flex h-full w-full flex-col overflow-hidden bg-radial from-primary to-secondary py-2 text-foreground">
+    <main className="from-primary to-secondary text-foreground flex h-full w-full flex-col overflow-hidden bg-radial py-2">
       <div className="box mx-2 mb-2 flex shrink-0 flex-row justify-between p-1 px-2.5">
         <Header newsPolicy={newsPolicy} />
       </div>

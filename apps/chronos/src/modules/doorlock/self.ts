@@ -1,6 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthentication } from '#middleware/auth';
 import { sendMessage } from '#modules/doorlock/device-socket';

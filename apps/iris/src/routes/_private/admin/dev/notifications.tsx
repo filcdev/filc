@@ -22,6 +22,7 @@ import { Eye, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import { PermissionGuard } from '@/components/util/permission-guard';
 import {
   NOTIFICATION_MOCKS,
@@ -107,7 +108,7 @@ function DevNotificationsPage() {
       form.setFieldValue('subject', mock.title);
       form.setFieldValue('content', mock.content);
     }
-  }, [values.type, values.language, form.setFieldValue]);
+  }, [values.type, values.language, form]);
 
   const handlePreview = async () => {
     try {
@@ -158,7 +159,7 @@ function DevNotificationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('devNotifications.title')}
         </h1>
         <p className="text-muted-foreground">

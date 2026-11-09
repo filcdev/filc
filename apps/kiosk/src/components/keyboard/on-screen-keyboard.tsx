@@ -1,5 +1,6 @@
 import { Button } from '@filcdev/ui/components/button';
 import type { MouseEvent } from 'react';
+
 import type { KeyboardLayout } from '@/components/keyboard/layouts';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 
@@ -46,7 +47,7 @@ export function OnScreenKeyboard({
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[1000] select-none border-border border-t bg-muted p-2 shadow-2xl"
+      className="border-border bg-muted fixed inset-x-0 bottom-0 z-[1000] border-t p-2 shadow-2xl select-none"
       data-kiosk-keyboard={true}
     >
       <div className="mx-auto flex max-w-3xl flex-col gap-1.5">

@@ -6,6 +6,7 @@ import type {
 } from '@tanstack/react-query';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
+
 import { fallbackApiOrigin, requestOrigin } from '@/utils/request';
 
 /** The API base as a URL prefix: image URLs are built from it by hand. */

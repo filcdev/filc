@@ -1,13 +1,10 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
 
 /** What a kiosk node represents. Mirrors the graph entity kinds the
  *  kiosk cares about (floors are synthesized per building+storey). */
 export type KioskNodeKind =
-  | 'floor'
-  | 'classroom'
-  | 'corridor'
-  | 'lift'
-  | 'stairs';
+  'floor' | 'classroom' | 'corridor' | 'lift' | 'stairs';
 
 /** One addressable thing in the kiosk scene. Geometry is built once and
  *  never rebuilt for appearance/selection changes — the appearance layer

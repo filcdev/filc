@@ -1,8 +1,9 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
 import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { ownFillMat, ownLineMat, tagApp } from '../kiosk/materials';
 import { darkenColor, KIOSK_OPACITY, kioskTypeColor } from '../kiosk/palette';
 import type { KioskNode } from '../kiosk/types';

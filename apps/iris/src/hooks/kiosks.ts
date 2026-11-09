@@ -2,7 +2,9 @@ import type { KioskKind } from '@filcdev/api/domains/kiosk/config';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import { type api, orpc } from '@/utils/orpc';
+
 import type { MutationCallbacks } from './types';
 
 type KioskListRow = Awaited<ReturnType<typeof api.kiosk.list>>['items'][number];

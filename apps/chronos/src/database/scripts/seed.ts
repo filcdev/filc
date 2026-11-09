@@ -1,8 +1,9 @@
-/** biome-ignore-all lint/style/noNestedTernary: b-but muh nested ternarey */
+/* oxlint-disable no-nested-ternary -- b-but muh nested ternarey */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+
 import { importTimetable } from '@filcdev/timetable-import/import';
 import { omanTimetableImportAdapter } from '@filcdev/timetable-import/oman';
 import { checkbox, confirm } from '@inquirer/prompts';
@@ -10,6 +11,7 @@ import { getLogger } from '@logtape/logtape';
 import { Presets, SingleBar } from 'cli-progress';
 import dayjs from 'dayjs';
 import { asc, eq, inArray } from 'drizzle-orm';
+
 import { db, prepareDb } from '#database/index';
 import { user } from '#database/schema/authentication';
 import { timetableImportStore } from '#database/timetable-import-store';
@@ -507,14 +509,14 @@ const seedUsers = async (): Promise<
   return created;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: just read the code, brutal
+// just read the code, brutal
 const seedDeviceHealth = async (devices: Array<{ id: string }>) => {
   if (devices.length === 0) {
     logger.warn('No devices to create health records for');
     return;
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: not prod code
+  // oxlint-disable-next-line typescript/no-explicit-any -- not prod code
   const healthRecords: any[] = [];
   const now = dayjs();
   const twoWeeksAgo = now.subtract(14, 'day');
@@ -572,10 +574,7 @@ const seedDeviceHealth = async (devices: Array<{ id: string }>) => {
         deviceMeta: {
           debug: {
             deviceState: deviceState as
-              | 'booting'
-              | 'error'
-              | 'idle'
-              | 'updating',
+              'booting' | 'error' | 'idle' | 'updating',
             errors: {
               db: hasErrors && Math.random() < 0.3,
               nfc: hasErrors && Math.random() < 0.5,

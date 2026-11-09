@@ -1,6 +1,10 @@
 pre-commit:
   jobs:
-    - name: biome
-      glob: "*.{ts,tsx,js,jsx,json,css}"
-      run: bunx biome check --write {staged_files}
+    - name: fmt
+      glob: '*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css,md,yml,yaml}'
+      run: bun fmt {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: '*.{ts,tsx,js,jsx,mjs,cjs}'
+      run: bunx oxlint --fix {staged_files}
       stage_fixed: true

@@ -11,6 +11,7 @@ import {
   or,
   type SQL,
 } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { bugReport } from '#modules/bug-report/schema';

@@ -6,6 +6,7 @@ import {
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { asc, eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import { kiosk } from '#modules/kiosk/schema';

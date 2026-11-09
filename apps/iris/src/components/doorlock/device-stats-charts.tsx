@@ -48,7 +48,7 @@ export default function DeviceStatsCharts({
   return (
     <>
       <div className="space-y-2">
-        <h3 className="font-semibold text-sm">Free RAM (KB)</h3>
+        <h3 className="text-sm font-semibold">Free RAM (KB)</h3>
         <ChartContainer className="h-50 w-full" config={ramChartConfig}>
           <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -67,7 +67,7 @@ export default function DeviceStatsCharts({
       </div>
 
       <div className="space-y-2">
-        <h3 className="font-semibold text-sm">Uptime (Hours)</h3>
+        <h3 className="text-sm font-semibold">Uptime (Hours)</h3>
         <ChartContainer className="h-50 w-full" config={uptimeChartConfig}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />

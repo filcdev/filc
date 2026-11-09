@@ -1,6 +1,8 @@
 import process from 'node:process';
+
 import { getLogger } from '@logtape/logtape';
 import { getTableName, sql } from 'drizzle-orm';
+
 import { db, prepareDb } from '#database/index';
 import { apiKeySchema } from '#database/schema/api-keys';
 import {

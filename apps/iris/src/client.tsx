@@ -2,6 +2,7 @@ import { captureException, reactErrorHandler } from '@sentry/react';
 import { StartClient } from '@tanstack/react-start/client';
 import { StrictMode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
+
 import { initializeTelemetry } from '@/utils/telemetry';
 import { reportWebVitals } from '@/utils/web-vitals';
 

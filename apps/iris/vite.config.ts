@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { fileURLToPath, URL } from 'node:url';
+
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { devtools } from '@tanstack/devtools-vite';

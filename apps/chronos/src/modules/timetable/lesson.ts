@@ -8,6 +8,7 @@ import {
   inArray,
   or,
 } from 'drizzle-orm';
+
 import { db } from '#database';
 import {
   classroom,
@@ -210,16 +211,14 @@ async function buildCandidateLessonsMap(
   const candidateTeacherIdSet = new Set(candidateTeacherIds);
 
   for (const candidateLesson of enrichedCandidateLessons) {
-    if (
-      !(
-        candidateLesson.day &&
-        isMatchingWeekday(
-          weekday,
-          candidateLesson.day.name,
-          candidateLesson.day.short
-        )
+    if (!(
+      candidateLesson.day &&
+      isMatchingWeekday(
+        weekday,
+        candidateLesson.day.name,
+        candidateLesson.day.short
       )
-    ) {
+    )) {
       continue;
     }
 

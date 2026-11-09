@@ -1,4 +1,5 @@
 import { and, eq, notInArray, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import {
   classroom,

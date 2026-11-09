@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { StatCard } from '@/components/admin/stat-card';
 import { TableHeaderRow } from '@/components/admin/table-header-row';
 import { TimetableEditDialog } from '@/components/admin/timetable-edit-dialog';
@@ -109,7 +110,7 @@ function DeletePreviewContent({
 
   if (!data) {
     return (
-      <p className="py-2 text-destructive text-sm">
+      <p className="text-destructive py-2 text-sm">
         {t('timetable.deleteError')}
       </p>
     );
@@ -119,7 +120,7 @@ function DeletePreviewContent({
   const isCurrent = data.isCurrentTimetable as boolean;
   if (!totals) {
     return (
-      <p className="py-2 text-destructive text-sm">
+      <p className="text-destructive py-2 text-sm">
         {t('timetable.deleteError')}
       </p>
     );
@@ -137,7 +138,7 @@ function DeletePreviewContent({
   return (
     <div className="space-y-3 py-2">
       {isCurrent && (
-        <p className="font-semibold text-destructive text-sm">
+        <p className="text-destructive text-sm font-semibold">
           {t('timetable.deletePreview.currentTimetableWarning')}
         </p>
       )}
@@ -199,7 +200,7 @@ function TimetableManagePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('timetable.manage')}
         </h1>
         <p className="text-muted-foreground">
@@ -249,8 +250,8 @@ function TimetableManagePage() {
 
       {timetablesQuery.isLoading ? (
         <div className="space-y-2">
-          {[...new Array(3)].map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton list
+          {Array.from({ length: 3 }).map((_, i) => (
+            // oxlint-disable-next-line react/no-array-index-key -- skeleton list
             <Skeleton className="h-12 w-full" key={i} />
           ))}
         </div>

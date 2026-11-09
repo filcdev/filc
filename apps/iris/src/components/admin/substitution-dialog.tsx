@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Hand, Save } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type {
   CohortItem,
   PeriodItem,
@@ -35,6 +36,7 @@ import {
 import { sortCohorts } from '@/utils/cohort';
 import { getIntlLocale } from '@/utils/date-locale';
 import { type api, orpc } from '@/utils/orpc';
+
 import type { BaseDialogProps } from './admin.types';
 
 type TeacherLesson = Awaited<
@@ -346,19 +348,19 @@ function AutomaticSubstitutionFields({
         <Label>{t('substitution.lessons')}</Label>
         <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-2">
           {!selectedMissingTeacher && (
-            <p className="p-2 text-muted-foreground text-sm">
+            <p className="text-muted-foreground p-2 text-sm">
               {t('substitution.missingTeacherPlaceholder')}
             </p>
           )}
           {selectedMissingTeacher && substituteCandidatesLoading && (
-            <p className="p-2 text-muted-foreground text-sm">
+            <p className="text-muted-foreground p-2 text-sm">
               {t('substitution.loadingLessons')}
             </p>
           )}
           {selectedMissingTeacher &&
             !substituteCandidatesLoading &&
             availableLessons.length === 0 && (
-              <p className="p-2 text-muted-foreground text-sm">
+              <p className="text-muted-foreground p-2 text-sm">
                 {t('substitution.noLessons')}
               </p>
             )}
@@ -374,7 +376,7 @@ function AutomaticSubstitutionFields({
                     )
                     .map((lesson) => (
                       <label
-                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                        className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
                         htmlFor={`sub-lesson-${lesson.id}`}
                         key={lesson.id}
                       >
@@ -471,10 +473,10 @@ function ManualModeToggle({ manual, onToggle }: ManualModeToggleProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="mt-4 flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
-      <Hand className="h-4 w-4 shrink-0 text-muted-foreground" />
+    <div className="bg-muted/40 mt-4 flex items-center gap-2 rounded-lg border p-3">
+      <Hand className="text-muted-foreground h-4 w-4 shrink-0" />
       <div className="flex-1">
-        <p className="font-medium text-sm">{t('substitution.manualMode')}</p>
+        <p className="text-sm font-medium">{t('substitution.manualMode')}</p>
         <p className="text-muted-foreground text-xs">
           {t('substitution.manualModeHint')}
         </p>

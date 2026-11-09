@@ -4,6 +4,7 @@ import {
 } from '@filcdev/ui/components/toggle-group';
 import { Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import type { WeekFilter } from './helpers';
 
 type WeekSelectorProps = {

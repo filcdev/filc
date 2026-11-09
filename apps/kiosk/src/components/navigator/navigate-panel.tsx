@@ -5,6 +5,7 @@ import { Card } from '@filcdev/ui/components/card';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Label } from '@filcdev/ui/components/label';
 import { memo, useId, useMemo, useState } from 'react';
+
 import { SearchableDropdown } from '@/components/searchable-dropdown';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 import { searchClassrooms } from '@/utils/classroom-search';
@@ -83,7 +84,7 @@ export const NavigatePanel = memo(function NavigatePanelImpl({
   );
 
   return (
-    <Card className="gap-3 bg-muted p-3">
+    <Card className="bg-muted gap-3 p-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">{t('ui.navigate.title')}</h2>
         <Button onClick={onBack} size="xs" type="button" variant="ghost">
@@ -150,7 +151,7 @@ export const NavigatePanel = memo(function NavigatePanelImpl({
         </Alert>
       )}
       {noRoute && (
-        <Alert className="py-2 text-warning text-xs">
+        <Alert className="text-warning py-2 text-xs">
           <AlertDescription className="text-warning text-xs">
             {t('ui.navigate.no_route')}
           </AlertDescription>

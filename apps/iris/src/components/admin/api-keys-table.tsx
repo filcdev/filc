@@ -11,6 +11,7 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'react-i18next';
+
 import { useConfirm } from '@/components/confirm-provider';
 import {
   type AdminApiKey,
@@ -126,7 +127,7 @@ export function AdminApiKeysTable({
                   {apiKey.name ?? '—'}
                 </TableCell>
                 <TableCell>
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                  <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
                     {prefix}
                   </code>
                 </TableCell>

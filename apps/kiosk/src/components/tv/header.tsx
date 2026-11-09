@@ -1,4 +1,5 @@
 import { Tv } from 'lucide-react';
+
 import { Marquee } from '@/components/tv/marquee';
 import { Loading, QueryError } from '@/components/tv/query-states';
 import { TV_STRINGS } from '@/components/tv/strings';
@@ -18,11 +19,11 @@ export function Header({ newsPolicy }: HeaderProps) {
   return (
     <>
       <div>
-        <span className="flex items-center gap-1 font-bold text-lg">
+        <span className="flex items-center gap-1 text-lg font-bold">
           <Tv className="size-6" />
           <span>
             {TV_STRINGS.header.brand}
-            <span className="font-light text-sm">{APP_VERSION}</span>
+            <span className="text-sm font-light">{APP_VERSION}</span>
           </span>
         </span>
       </div>

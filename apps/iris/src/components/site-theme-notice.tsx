@@ -11,6 +11,7 @@ import {
 import { DEFAULT_SITE_THEME } from '@filcdev/ui/lib/site-theme';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,

@@ -17,6 +17,7 @@ import {
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { Lazy } from '@/components/lazy';
 import { useDoorlockDeviceStats } from '@/hooks/doorlock-admin';
 
@@ -91,7 +92,7 @@ export function DeviceStatsDialog({
                   <div className="text-muted-foreground text-xs">
                     {t('doorlockDevices.firmware')}
                   </div>
-                  <div className="font-bold font-mono">
+                  <div className="font-mono font-bold">
                     {latestStat?.deviceMeta.fwVersion ?? 'N/A'}
                   </div>
                 </div>
@@ -99,7 +100,7 @@ export function DeviceStatsDialog({
                   <div className="text-muted-foreground text-xs">
                     {t('doorlockDevices.uptime')}
                   </div>
-                  <div className="font-bold font-mono">
+                  <div className="font-mono font-bold">
                     {latestStat
                       ? `${Math.round(latestStat.deviceMeta.uptime / 3_600_000)}h`
                       : 'N/A'}
@@ -109,7 +110,7 @@ export function DeviceStatsDialog({
                   <div className="text-muted-foreground text-xs">
                     {t('doorlockDevices.freeRam')}
                   </div>
-                  <div className="font-bold font-mono">
+                  <div className="font-mono font-bold">
                     {latestStat
                       ? `${Math.round(latestStat.deviceMeta.ramFree / 1024)} KB`
                       : 'N/A'}
@@ -119,7 +120,7 @@ export function DeviceStatsDialog({
                   <div className="text-muted-foreground text-xs">
                     {t('doorlockDevices.storage')}
                   </div>
-                  <div className="font-bold font-mono">
+                  <div className="font-mono font-bold">
                     {latestStat
                       ? `${Math.round(
                           (latestStat.deviceMeta.storage.used /
@@ -144,7 +145,7 @@ export function DeviceStatsDialog({
 
               {/* Recent History Table */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm">
+                <h3 className="text-sm font-semibold">
                   {t('doorlockDevices.recentHistory')}
                 </h3>
                 <div className="rounded-md border">

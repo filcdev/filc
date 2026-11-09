@@ -1,5 +1,6 @@
 import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { eq, inArray } from 'drizzle-orm';
+
 import { db } from '#database';
 import {
   classroom,

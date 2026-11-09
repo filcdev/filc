@@ -1,4 +1,5 @@
 import { oc } from '@orpc/contract';
+
 import { pingResponseSchema, uptimeResponseSchema } from '../domains/ping';
 import { filcRoute } from './route';
 

@@ -20,6 +20,7 @@ import {
 import { Save, Trash, Upload } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useKiosks } from '@/hooks/kiosks';
 import {
   type AnnouncementItem,
@@ -33,6 +34,7 @@ import {
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { getIntlLocale } from '@/utils/date-locale';
 import { apiBaseUrl } from '@/utils/orpc';
+
 import type { BaseDialogProps } from './admin.types';
 
 type AnnouncementsDialogProps = BaseDialogProps & {
@@ -183,7 +185,7 @@ function AnnouncementImageField({
       )}
       <input
         accept="image/png,image/jpeg,image/webp"
-        className="w-full cursor-pointer rounded-lg border-2 border-muted-foreground/25 border-dashed p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1 file:font-medium file:text-secondary-foreground hover:border-muted-foreground/50"
+        className="border-muted-foreground/25 file:bg-secondary file:text-secondary-foreground hover:border-muted-foreground/50 w-full cursor-pointer rounded-lg border-2 border-dashed p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:px-3 file:py-1 file:font-medium"
         id={imageId}
         onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
         ref={inputRef}
@@ -274,7 +276,7 @@ function AudiencePicker({
             }}
           />
           <label
-            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             htmlFor={allId}
           >
             {allLabel}
@@ -288,7 +290,7 @@ function AudiencePicker({
               onCheckedChange={(checked) => onToggle(item.id, Boolean(checked))}
             />
             <label
-              className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               htmlFor={`${idPrefix}-${item.id}`}
             >
               {item.name}
@@ -370,7 +372,7 @@ function AnnouncementFields({
           <div className="space-y-2">
             <Label htmlFor={contentId}>{t('announcements.content')}</Label>
             <textarea
-              className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               id={contentId}
               onChange={(e) =>
                 field.handleChange([{ content: e.target.value, type: 'text' }])
@@ -441,7 +443,7 @@ function AnnouncementFields({
           }}
         />
         <label
-          className="cursor-pointer font-medium text-sm leading-none"
+          className="cursor-pointer text-sm leading-none font-medium"
           htmlFor={dateRangeId}
         >
           {t('announcements.setDateRange')}
@@ -622,7 +624,7 @@ export function AnnouncementsDialog({
                     }
                   />
                   <label
-                    className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     htmlFor={highlightedId}
                   >
                     {t('announcements.highlighted')}
@@ -642,7 +644,7 @@ export function AnnouncementsDialog({
                     }
                   />
                   <label
-                    className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     htmlFor={kioskOnlyId}
                   >
                     {t('announcements.kioskOnly')}

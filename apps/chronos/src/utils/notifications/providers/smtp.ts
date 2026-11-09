@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+
 import {
   createMailTransport,
   type MailTransport,
@@ -7,6 +8,7 @@ import {
 } from '@filcdev/mail';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { env } from '#utils/environment';

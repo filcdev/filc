@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Pen, Trash } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
 import { NewsItemDialog } from '@/components/admin/news-item-dialog';
 import { TableToolbar } from '@/components/admin/table-toolbar';
@@ -118,7 +119,7 @@ function SystemMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('systemMessages.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -150,7 +151,7 @@ function SystemMessagesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    className="w-[30%] cursor-pointer select-none hover:bg-muted/50"
+                    className="hover:bg-muted/50 w-[30%] cursor-pointer select-none"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-2">
@@ -163,7 +164,7 @@ function SystemMessagesPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+                    className="hover:bg-muted/50 w-[15%] cursor-pointer select-none"
                     onClick={() => handleSort('validFrom')}
                   >
                     <div className="flex items-center gap-2">
@@ -176,7 +177,7 @@ function SystemMessagesPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+                    className="hover:bg-muted/50 w-[15%] cursor-pointer select-none"
                     onClick={() => handleSort('validUntil')}
                   >
                     <div className="flex items-center gap-2">
@@ -189,7 +190,7 @@ function SystemMessagesPage() {
                     </div>
                   </TableHead>
                   <TableHead
-                    className="w-[20%] cursor-pointer select-none hover:bg-muted/50"
+                    className="hover:bg-muted/50 w-[20%] cursor-pointer select-none"
                     onClick={() => handleSort('cohorts')}
                   >
                     <div className="flex items-center gap-2">

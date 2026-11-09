@@ -1,5 +1,5 @@
 import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 
 const TICK_SPACING = 3.5;

@@ -9,15 +9,15 @@ reflash when this image changes.
 
 ## What is in here
 
-| Path | Purpose |
-| --- | --- |
-| `build.sh` | Downloads and verifies `alpine-make-vm-image`, then builds `kiosk.img`. |
-| `packages` | Packages installed into the image. |
-| `repositories` | Pinned Alpine branch repositories (`cage` is in `community`). |
-| `setup.sh` | Runs **chrooted inside the image**: kiosk user, service enablement, timezone, `/etc/fstab`. |
-| `skel/` | Files copied into the image root before `setup.sh` runs. |
-| `skel/etc/kiosk/url` | The SPA origin. Edit this file to repoint a box. |
-| `skel/etc/udhcpc/udhcpc.conf` | Points DHCP's resolver file at tmpfs (`/etc` is read-only). |
+| Path                          | Purpose                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `build.sh`                    | Downloads and verifies `alpine-make-vm-image`, then builds `kiosk.img`.                     |
+| `packages`                    | Packages installed into the image.                                                          |
+| `repositories`                | Pinned Alpine branch repositories (`cage` is in `community`).                               |
+| `setup.sh`                    | Runs **chrooted inside the image**: kiosk user, service enablement, timezone, `/etc/fstab`. |
+| `skel/`                       | Files copied into the image root before `setup.sh` runs.                                    |
+| `skel/etc/kiosk/url`          | The SPA origin. Edit this file to repoint a box.                                            |
+| `skel/etc/udhcpc/udhcpc.conf` | Points DHCP's resolver file at tmpfs (`/etc` is read-only).                                 |
 
 Boot chain: `seatd` (seat for DRM/input) → `chronyd` (clock) → `kiosk`
 (`cage -- /usr/local/bin/kiosk-browser`, supervised by OpenRC's

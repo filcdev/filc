@@ -1,4 +1,5 @@
 import { unsubscribeSchema } from '@filcdev/api/domains/notifications';
+
 import { db } from '#database';
 import { userPreferences } from '#modules/notifications/schema';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';

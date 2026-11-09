@@ -1,5 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
 import { and, count, desc, eq, ilike, or, type SQL, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { apikey } from '#database/schema/api-keys';
 import { user } from '#database/schema/authentication';

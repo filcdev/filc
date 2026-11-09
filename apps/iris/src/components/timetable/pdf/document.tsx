@@ -1,4 +1,5 @@
 import { Document, Page, Text, View } from '@react-pdf/renderer';
+
 import { formatCohorts, formatRooms, formatTeachers, toHHMM } from '../helpers';
 import type { FilterType, LessonItem, TimetableViewModel } from '../types';
 import { getPdfSubjectColor, styles } from './styles';
@@ -79,7 +80,7 @@ export function TimetablePDF({
     <Document>
       {pages.map((slots, pageIdx) => (
         <Page
-          // biome-ignore lint/suspicious/noArrayIndexKey: static PDF pages, no reordering
+          // oxlint-disable-next-line react/no-array-index-key -- static PDF pages, no reordering
           key={pageIdx}
           orientation="landscape"
           size="A4"
@@ -158,7 +159,7 @@ export function TimetablePDF({
                             <LessonCard
                               activeFilter={activeFilter}
                               blackAndWhite={blackAndWhite}
-                              // biome-ignore lint/style/noNonNullAssertion: length checked above
+                              // oxlint-disable-next-line typescript/no-non-null-assertion -- length checked above
                               lesson={lessons[0]!}
                             />
                             <View style={{ flex: 1 }} />

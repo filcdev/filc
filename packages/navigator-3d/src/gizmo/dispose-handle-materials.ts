@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
 
 // Per-handle materials are NOT cached, so dispose them when the scene

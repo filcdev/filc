@@ -5,6 +5,7 @@ import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { Lift } from '@filcdev/api/domains/navigator/lift';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
 import type { Stair } from '@filcdev/api/domains/navigator/stair';
+
 import { floorPositionOf } from '../entities/building-helpers';
 import { corridorsIntersect } from '../entities/corridor-helper';
 import { dist, type Vec3 } from '../types/three/vector';
@@ -116,7 +117,7 @@ export class GraphPathBuilder {
    *  its storey (horizontal distance). Mirrors how classrooms hook into
    *  corridors, but the location isn't tied to a building, so any
    *  corridor on the matching storey is a candidate. */
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported graph wiring, kept verbatim
+  // ported graph wiring, kept verbatim
   private connectMyLocation(): void {
     if (!this.myLocation) {
       return;
@@ -201,7 +202,7 @@ export class GraphPathBuilder {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported graph wiring, kept verbatim
+  // ported graph wiring, kept verbatim
   private connectCorridors() {
     const corridors = this.graph.corridors;
     for (let i = 0; i < corridors.length; i++) {
@@ -269,7 +270,7 @@ export class GraphPathBuilder {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported graph wiring, kept verbatim
+  // ported graph wiring, kept verbatim
   private connectClassroomsToCorridors() {
     for (const c of this.graph.classrooms) {
       const classroomPointId = this.classroomIdToPoint.get(c.id);
@@ -321,7 +322,7 @@ export class GraphPathBuilder {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported graph wiring, kept verbatim
+  // ported graph wiring, kept verbatim
   private buildStoreyConnectorPoints() {
     const allConnectors: Connector[] = this.barrierFree
       ? this.graph.lifts.map((l) => ({ ...l, isLift: true }))

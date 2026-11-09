@@ -1,4 +1,5 @@
 import { Button, Text } from '@react-email/components';
+
 import { EmailLayout } from './email-layout';
 import { emailCopy, greetingFor } from './i18n';
 import { renderEmailElement } from './render';

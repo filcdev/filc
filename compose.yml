@@ -26,7 +26,7 @@ services:
     container_name: filc-postgres
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -34,7 +34,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,8 +44,8 @@ services:
     container_name: filc-mailpit
     restart: unless-stopped
     ports:
-      - "127.0.0.1:1025:1025" # SMTP
-      - "127.0.0.1:8025:8025" # Web UI
+      - '127.0.0.1:1025:1025' # SMTP
+      - '127.0.0.1:8025:8025' # Web UI
     environment:
       MP_DATABASE: /data/mailpit.db
     volumes:
@@ -55,11 +55,11 @@ services:
     image: dxflrs/garage:v2.4.1
     container_name: filc-garage
     restart: unless-stopped
-    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    command: ['/garage', 'server', '--single-node', '--default-bucket']
     ports:
-      - "127.0.0.1:3900:3900" # S3 API
-      - "127.0.0.1:3901:3901" # cluster RPC
-      - "127.0.0.1:3903:3903" # admin/metrics API
+      - '127.0.0.1:3900:3900' # S3 API
+      - '127.0.0.1:3901:3901' # cluster RPC
+      - '127.0.0.1:3903:3903' # admin/metrics API
     environment:
       GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_DEFAULT_ACCESS_KEY:?set me}
       GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_DEFAULT_SECRET_KEY:?set me}

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
+
 import { sortCohorts } from '@/utils/cohort';
 import { api, orpc } from '@/utils/orpc';
 
@@ -162,7 +163,7 @@ export function useTimetableLessons(
     ...QUERY_OPTIONS,
     enabled: !!selectionId,
     queryFn: async (): Promise<PublicLesson[]> => {
-      // biome-ignore lint/style/noNonNullAssertion: guarded by `enabled`
+      // oxlint-disable-next-line typescript/no-non-null-assertion -- guarded by `enabled`
       const selection = selectionId!;
       const timetable = timetableId ? { timetableId } : {};
       if (filter === 'class') {

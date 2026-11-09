@@ -1,5 +1,6 @@
 import { permissions } from '@filcdev/api/permissions';
 import { arrayContains, count, desc, eq, ilike, or } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';

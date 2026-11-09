@@ -7,6 +7,7 @@ import {
   primaryKey,
   text,
 } from 'drizzle-orm/pg-core';
+
 import { timestamps } from '#database/helpers';
 import { building } from '#modules/timetable/schema';
 

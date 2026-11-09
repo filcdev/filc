@@ -1,4 +1,5 @@
 import type { DepartureGroup } from '@filcdev/api/domains/kiosk/config';
+
 import { BusDeparture } from '@/components/tv/bus-departure';
 import { useKioskDepartures } from '@/hooks/tv';
 

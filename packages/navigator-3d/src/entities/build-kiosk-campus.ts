@@ -1,6 +1,7 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import type { KioskCampus, KioskNode } from '../kiosk/types';
 import { computeCampusCenter } from '../scene/bounds';
 import { buildStoreyResolver } from '../scene/storey-resolver';
@@ -13,7 +14,7 @@ import { buildLiftNode, buildStairsNode } from './vertical-node';
 /** Build the whole campus once, neutral. Every storey of every building
  *  is present and visible — floor isolation and highlighting are applied
  *  later by the appearance layer without touching geometry. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported campus builder, kept verbatim
+// ported campus builder, kept verbatim
 export function buildKioskCampus(graph: FullGraph): KioskCampus {
   const root = new THREE.Group();
   const nodes: KioskNode[] = [];

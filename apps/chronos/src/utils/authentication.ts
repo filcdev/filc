@@ -1,10 +1,11 @@
 import { apiKey } from '@better-auth/api-key';
 import { userAdditionalFields } from '@filcdev/auth';
 import { getLogger } from '@logtape/logtape';
-import { type BetterAuthOptions, betterAuth } from 'better-auth';
+import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession, oAuthProxy } from 'better-auth/plugins';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { apiKeySchema } from '#database/schema/api-keys';
 import {

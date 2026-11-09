@@ -32,17 +32,18 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import {
   building,
   classroom as classroomTable,
-  cohortGroup as cohortGroupTable,
   cohort as cohortTable,
+  cohortGroup as cohortGroupTable,
   cohortTimetableMtm,
   dayDefinition,
-  lessonCohortMTM,
   lesson as lessonTable,
+  lessonCohortMTM,
   period as periodTable,
   subject as subjectTable,
   teacher as teacherTable,

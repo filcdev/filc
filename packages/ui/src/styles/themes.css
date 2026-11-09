@@ -17,7 +17,7 @@
 
 /* ---------------------------------- Halloween ---------------------------------- */
 
-[data-site-theme="halloween"]:not(.dark) {
+[data-site-theme='halloween']:not(.dark) {
   --background: oklch(0.97 0.02 85);
   --foreground: oklch(0.28 0.02 160);
   --card: oklch(0.985 0.015 85);
@@ -53,7 +53,7 @@
   --sidebar-ring: oklch(0.62 0.18 42);
 }
 
-[data-site-theme="halloween"].dark {
+[data-site-theme='halloween'].dark {
   --background: oklch(0.18 0.03 310);
   --foreground: oklch(0.95 0.02 85);
   --card: oklch(0.22 0.03 310);
@@ -91,7 +91,7 @@
 
 /* ---------------------------------- Christmas ---------------------------------- */
 
-[data-site-theme="christmas"]:not(.dark) {
+[data-site-theme='christmas']:not(.dark) {
   --background: oklch(0.985 0.005 220);
   --foreground: oklch(0.32 0.018 200);
   --card: oklch(0.995 0.003 220);
@@ -127,7 +127,7 @@
   --sidebar-ring: oklch(0.7 0.06 230);
 }
 
-[data-site-theme="christmas"].dark {
+[data-site-theme='christmas'].dark {
   --background: oklch(0.2 0.012 200);
   --foreground: oklch(0.97 0.005 220);
   --card: oklch(0.24 0.014 200);
@@ -165,7 +165,7 @@
 
 /* ---------------------------------- New Year ---------------------------------- */
 
-[data-site-theme="newYear"]:not(.dark) {
+[data-site-theme='newYear']:not(.dark) {
   --background: oklch(0.98 0.012 90);
   --foreground: oklch(0.22 0.03 265);
   --card: oklch(0.995 0.008 90);
@@ -201,7 +201,7 @@
   --sidebar-ring: oklch(0.75 0.12 88);
 }
 
-[data-site-theme="newYear"].dark {
+[data-site-theme='newYear'].dark {
   --background: oklch(0.17 0.03 265);
   --foreground: oklch(0.97 0.01 90);
   --card: oklch(0.21 0.03 265);
@@ -239,7 +239,7 @@
 
 /* ---------------------------------- Valentines ---------------------------------- */
 
-[data-site-theme="valentines"]:not(.dark) {
+[data-site-theme='valentines']:not(.dark) {
   --background: oklch(0.985 0.012 350);
   --foreground: oklch(0.28 0.07 350);
   --card: oklch(0.99 0.01 350);
@@ -275,7 +275,7 @@
   --sidebar-ring: oklch(0.7 0.14 10);
 }
 
-[data-site-theme="valentines"].dark {
+[data-site-theme='valentines'].dark {
   --background: oklch(0.19 0.035 350);
   --foreground: oklch(0.97 0.01 350);
   --card: oklch(0.23 0.04 350);
@@ -313,7 +313,7 @@
 
 /* ---------------------------------- March 15 ---------------------------------- */
 
-[data-site-theme="march15"]:not(.dark) {
+[data-site-theme='march15']:not(.dark) {
   --background: oklch(0.99 0.003 100);
   --foreground: oklch(0.24 0.02 30);
   --card: oklch(1 0 0);
@@ -349,7 +349,7 @@
   --sidebar-ring: oklch(0.6 0.14 25);
 }
 
-[data-site-theme="march15"].dark {
+[data-site-theme='march15'].dark {
   --background: oklch(0.19 0.02 160);
   --foreground: oklch(0.97 0.005 100);
   --card: oklch(0.23 0.02 160);
@@ -387,7 +387,7 @@
 
 /* ---------------------------------- Easter ---------------------------------- */
 
-[data-site-theme="easter"]:not(.dark) {
+[data-site-theme='easter']:not(.dark) {
   --background: oklch(0.985 0.012 300);
   --foreground: oklch(0.3 0.05 300);
   --card: oklch(0.99 0.01 300);
@@ -423,7 +423,7 @@
   --sidebar-ring: oklch(0.7 0.1 300);
 }
 
-[data-site-theme="easter"].dark {
+[data-site-theme='easter'].dark {
   --background: oklch(0.2 0.03 300);
   --foreground: oklch(0.97 0.005 300);
   --card: oklch(0.24 0.035 300);
@@ -461,7 +461,7 @@
 
 /* ---------------------------------- Summer ---------------------------------- */
 
-[data-site-theme="summer"]:not(.dark) {
+[data-site-theme='summer']:not(.dark) {
   --background: oklch(0.99 0.008 200);
   --foreground: oklch(0.26 0.04 220);
   --card: oklch(0.995 0.006 200);
@@ -497,7 +497,7 @@
   --sidebar-ring: oklch(0.7 0.12 200);
 }
 
-[data-site-theme="summer"].dark {
+[data-site-theme='summer'].dark {
   --background: oklch(0.19 0.03 220);
   --foreground: oklch(0.97 0.008 200);
   --card: oklch(0.23 0.035 220);

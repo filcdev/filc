@@ -1,7 +1,9 @@
 import { getLogger } from '@logtape/logtape';
 import { and, lt, notExists, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { env } from '#utils/environment';
+
 import { wifiSpeedProfile, wifiUser } from '../schema';
 import { SPEED_PROFILE_NONE } from './constants';
 import { getWifiController } from './controller';

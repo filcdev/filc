@@ -1,4 +1,5 @@
 import { CloudRain, Wind } from 'lucide-react';
+
 import { Loading, QueryError } from '@/components/tv/query-states';
 import { useKioskWeather } from '@/hooks/tv';
 import { getWindType } from '@/utils/wind-types';
@@ -29,14 +30,14 @@ export function Weather() {
           src={data.icon}
           width={64}
         />
-        <span className="self-center text-nowrap font-bold text-lg">
+        <span className="self-center text-lg font-bold text-nowrap">
           {data.tempC} °C
         </span>
       </div>
       <div className="flex flex-col items-center justify-center gap-2">
         <div className="flex gap-2">
           <Wind className="size-6" />
-          <span className="self-center text-nowrap text-md">
+          <span className="text-md self-center text-nowrap">
             {wind?.name ?? `${data.windKph} km/h`}
           </span>
         </div>

@@ -1,4 +1,5 @@
 import type z from 'zod';
+
 import type {
   cardSchema,
   cardsSchema,
@@ -16,12 +17,12 @@ import type {
   subjectSchema,
   subjectsSchema,
   teacherSchema,
+  teachersSchema,
   teacherSubjectClassesSchema,
   teacherSubjectClassSchema,
-  teachersSchema,
+  timetableExportRootSchema,
   timeTableScheduleSchema,
   timeTableSchedulesSchema,
-  timetableExportRootSchema,
   timetableSchema,
 } from './schema';
 

@@ -2,6 +2,7 @@ import { type ApiKey, type ApiKeyRow, authClient } from '@filcdev/auth/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import type { MutationCallbacks } from './types';
 
 /** One API key as the list endpoint returns it — never the raw secret. */

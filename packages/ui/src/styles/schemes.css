@@ -19,7 +19,7 @@
 /* ---------------------------------- Catppuccin --------------------------------- */
 /* Latte / Mocha — https://catppuccin.com/palette */
 
-[data-color-scheme="catppuccin"]:not(.dark) {
+[data-color-scheme='catppuccin']:not(.dark) {
   --background: #eff1f5;
   --foreground: #4c4f69;
   --card: #ffffff;
@@ -55,7 +55,7 @@
   --sidebar-ring: #8839ef;
 }
 
-[data-color-scheme="catppuccin"].dark {
+[data-color-scheme='catppuccin'].dark {
   --background: #1e1e2e;
   --foreground: #cdd6f4;
   --card: #181825;
@@ -94,7 +94,7 @@
 /* ---------------------------------- Dracula ------------------------------------ */
 /* Dracula / Alucard — https://draculatheme.com/contribute */
 
-[data-color-scheme="dracula"]:not(.dark) {
+[data-color-scheme='dracula']:not(.dark) {
   --background: #f8f8f2;
   --foreground: #282a36;
   --card: #ffffff;
@@ -130,7 +130,7 @@
   --sidebar-ring: #644ac9;
 }
 
-[data-color-scheme="dracula"].dark {
+[data-color-scheme='dracula'].dark {
   --background: #282a36;
   --foreground: #f8f8f2;
   --card: #21222c;
@@ -169,7 +169,7 @@
 /* ---------------------------------- Gruvbox ------------------------------------ */
 /* Gruvbox dark / light (medium contrast) — https://github.com/morhetz/gruvbox */
 
-[data-color-scheme="gruvbox"]:not(.dark) {
+[data-color-scheme='gruvbox']:not(.dark) {
   --background: #fbf1c7;
   --foreground: #3c3836;
   --card: #f2e5bc;
@@ -205,7 +205,7 @@
   --sidebar-ring: #427b58;
 }
 
-[data-color-scheme="gruvbox"].dark {
+[data-color-scheme='gruvbox'].dark {
   --background: #282828;
   --foreground: #ebdbb2;
   --card: #32302f;
@@ -244,7 +244,7 @@
 /* ------------------------------------ Nord ------------------------------------- */
 /* Nordic polar night / snow storm — https://www.nordtheme.com/docs/colors-and-palettes */
 
-[data-color-scheme="nord"]:not(.dark) {
+[data-color-scheme='nord']:not(.dark) {
   --background: #eceff4;
   --foreground: #2e3440;
   --card: #ffffff;
@@ -280,7 +280,7 @@
   --sidebar-ring: #5e81ac;
 }
 
-[data-color-scheme="nord"].dark {
+[data-color-scheme='nord'].dark {
   --background: #2e3440;
   --foreground: #eceff4;
   --card: #3b4252;
@@ -319,7 +319,7 @@
 /* ---------------------------------- Rose Pine ---------------------------------- */
 /* Rosé Pine / Dawn — https://rosepinetheme.com/palette */
 
-[data-color-scheme="rosePine"]:not(.dark) {
+[data-color-scheme='rosePine']:not(.dark) {
   --background: #faf4ed;
   --foreground: #575279;
   --card: #fffaf3;
@@ -355,7 +355,7 @@
   --sidebar-ring: #907aa9;
 }
 
-[data-color-scheme="rosePine"].dark {
+[data-color-scheme='rosePine'].dark {
   --background: #191724;
   --foreground: #e0def4;
   --card: #1f1d2e;
@@ -394,7 +394,7 @@
 /* ---------------------------------- Solarized ---------------------------------- */
 /* Solarized light / dark — https://ethanschoonover.com/solarized */
 
-[data-color-scheme="solarized"]:not(.dark) {
+[data-color-scheme='solarized']:not(.dark) {
   --background: #fdf6e3;
   --foreground: #657b83;
   --card: #eee8d5;
@@ -430,7 +430,7 @@
   --sidebar-ring: #268bd2;
 }
 
-[data-color-scheme="solarized"].dark {
+[data-color-scheme='solarized'].dark {
   --background: #002b36;
   --foreground: #93a1a1;
   --card: #073642;
@@ -469,7 +469,7 @@
 /* --------------------------------- Tokyo Night --------------------------------- */
 /* Night / Day — https://github.com/folke/tokyonight.nvim */
 
-[data-color-scheme="tokyoNight"]:not(.dark) {
+[data-color-scheme='tokyoNight']:not(.dark) {
   --background: #e1e2e7;
   --foreground: #3760bf;
   --card: #ffffff;
@@ -505,7 +505,7 @@
   --sidebar-ring: #2e7de9;
 }
 
-[data-color-scheme="tokyoNight"].dark {
+[data-color-scheme='tokyoNight'].dark {
   --background: #1a1b26;
   --foreground: #c0caf5;
   --card: #16161e;

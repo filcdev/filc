@@ -1,4 +1,6 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
+
 import type {
   DragState,
   HandleSpec,

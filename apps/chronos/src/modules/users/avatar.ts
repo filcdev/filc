@@ -4,6 +4,7 @@ import {
 } from '@filcdev/api/domains/users';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';

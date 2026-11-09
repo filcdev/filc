@@ -2,6 +2,7 @@ import type { ClassroomType } from '@filcdev/api/domains/navigator/classroom-typ
 import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
 import { type Dispatch, memo, type SetStateAction } from 'react';
+
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 
 type TypeHighlighterProps = {
@@ -28,8 +29,8 @@ export const TypeHighlighter = memo(function TypeHighlighterImpl({
   };
 
   return (
-    <Card className="min-h-0 shrink-0 gap-0 overflow-hidden bg-muted p-3">
-      <h2 className="mb-2 font-semibold text-sm">
+    <Card className="bg-muted min-h-0 shrink-0 gap-0 overflow-hidden p-3">
+      <h2 className="mb-2 text-sm font-semibold">
         {t('ui.highlighter.title')}
       </h2>
 

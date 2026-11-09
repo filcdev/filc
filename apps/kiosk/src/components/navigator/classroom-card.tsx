@@ -2,6 +2,7 @@ import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import { Button } from '@filcdev/ui/components/button';
 import { Card } from '@filcdev/ui/components/card';
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react';
+
 import type { ClassroomInfo, Translator } from '@/utils/classroom-search';
 
 type ClassroomCardProps = {
@@ -62,7 +63,7 @@ export function ClassroomCard({
           }}
           type="button"
         >
-          <h2 className="font-bold text-lg">{t(classroom.name)}</h2>
+          <h2 className="text-lg font-bold">{t(classroom.name)}</h2>
 
           <div className="flex items-center gap-1 text-sm opacity-80">
             <span

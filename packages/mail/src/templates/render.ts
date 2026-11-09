@@ -1,5 +1,6 @@
 import { render } from '@react-email/render';
 import type { ReactElement } from 'react';
+
 import type { RenderedEmail } from './types';
 
 export const renderEmailElement = async (

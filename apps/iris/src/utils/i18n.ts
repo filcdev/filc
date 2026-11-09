@@ -4,6 +4,7 @@ import duration from 'dayjs/plugin/duration';
 import i18next, { type i18n as I18nInstance } from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
+
 import enPolicy from '../../public/locales/en/policy.json';
 import enTranslation from '../../public/locales/en/translation.json';
 import huPolicy from '../../public/locales/hu/policy.json';

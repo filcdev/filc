@@ -13,7 +13,9 @@ export const user = pgTable('user', {
   createdAt: timestamp('created_at').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').default(false).notNull(),
-  id: uuid('id').default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+  id: uuid('id')
+    .default(sql`pg_catalog.gen_random_uuid()`)
+    .primaryKey(),
   image: text('image'),
   name: text('name').notNull(),
   nickname: text('nickname'),
@@ -28,7 +30,9 @@ export const session = pgTable(
   {
     createdAt: timestamp('created_at').notNull(),
     expiresAt: timestamp('expires_at').notNull(),
-    id: uuid('id').default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+    id: uuid('id')
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
     ipAddress: text('ip_address'),
     token: text('token').notNull().unique(),
     updatedAt: timestamp('updated_at')
@@ -49,7 +53,9 @@ export const account = pgTable(
     accessTokenExpiresAt: timestamp('access_token_expires_at'),
     accountId: text('account_id').notNull(),
     createdAt: timestamp('created_at').notNull(),
-    id: uuid('id').default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+    id: uuid('id')
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
     idToken: text('id_token'),
     password: text('password'),
     providerId: text('provider_id').notNull(),
@@ -71,7 +77,9 @@ export const verification = pgTable(
   {
     createdAt: timestamp('created_at').notNull(),
     expiresAt: timestamp('expires_at').notNull(),
-    id: uuid('id').default(sql`pg_catalog.gen_random_uuid()`).primaryKey(),
+    id: uuid('id')
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
     identifier: text('identifier').notNull(),
     updatedAt: timestamp('updated_at')
       .$onUpdate(() => new Date())

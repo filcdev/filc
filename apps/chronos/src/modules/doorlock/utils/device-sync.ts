@@ -1,4 +1,5 @@
 import { getLogger } from '@logtape/logtape';
+
 import { syncDatabase } from '#modules/doorlock/device-socket';
 
 const logger = getLogger(['chronos', 'doorlock', 'sync']);

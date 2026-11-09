@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { hasPermission } from '@/hooks/use-has-permission';
 import { useWifiStatus } from '@/hooks/wifi';
 
@@ -420,10 +421,10 @@ export function AdminSidebar() {
     <Sidebar>
       <SidebarHeader className="border-border border-b p-4">
         <Link className="flex items-center gap-3" to="/">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+          <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+            <GraduationCap className="text-primary-foreground h-5 w-5" />
           </div>
-          <span className="font-semibold text-foreground text-xl">filc</span>
+          <span className="text-foreground text-xl font-semibold">filc</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -438,7 +439,7 @@ export function AdminSidebar() {
                   <button
                     aria-controls={contentId}
                     aria-expanded={isOpen}
-                    className="w-full cursor-pointer justify-between text-left hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    className="hover:bg-sidebar-accent/50 hover:text-sidebar-foreground w-full cursor-pointer justify-between text-left"
                     onClick={() => toggleSection(category.id)}
                     type="button"
                   >

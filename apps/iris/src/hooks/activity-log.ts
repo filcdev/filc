@@ -1,9 +1,10 @@
 import type {
-  ActivityLogQueryInput,
   activityLogEntrySchema,
+  ActivityLogQueryInput,
 } from '@filcdev/api/domains/activity-log';
 import { useQuery } from '@tanstack/react-query';
 import type { infer as zInfer } from 'zod';
+
 import { orpc } from '@/utils/orpc';
 
 export type ActivityLogEntry = zInfer<typeof activityLogEntrySchema>;

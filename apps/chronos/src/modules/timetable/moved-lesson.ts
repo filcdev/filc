@@ -425,8 +425,8 @@ const buildCreateMetadata = (input: {
   date: Date;
   lessonIds?: string[];
   manualCohortIds?: string[];
-  manualSourceRoomId?: string;
-  manualSubjectId?: string;
+  manualSourceRoomId?: string | null;
+  manualSubjectId?: string | null;
   manualTeacherIds?: string[];
   room?: string | null;
   startingDay?: string | null;

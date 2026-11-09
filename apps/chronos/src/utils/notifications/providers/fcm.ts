@@ -4,6 +4,7 @@ import type {
   Messaging as FirebaseMessaging,
   MulticastMessage,
 } from 'firebase-admin/messaging';
+
 import { db } from '#database';
 import { fcmToken } from '#modules/notifications/schema';
 import { env } from '#utils/environment';

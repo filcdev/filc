@@ -1,4 +1,5 @@
 import { lookup } from 'node:dns/promises';
+
 import { badRequest } from '#utils/http';
 
 const IPV4_OCTET_RE = /^\d{1,3}$/;

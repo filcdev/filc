@@ -6,13 +6,13 @@ import {
 } from '@filcdev/api/domains/kiosk/config';
 import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
-import type { KioskNode } from '@filcdev/navigator-3d/kiosk/types';
 import type {
   IsolatedFloor,
   KioskHighlight,
   KioskSelection,
 } from '@filcdev/navigator-3d/kiosk-view';
 import KioskView3D from '@filcdev/navigator-3d/kiosk-view';
+import type { KioskNode } from '@filcdev/navigator-3d/kiosk/types';
 import { GraphPathBuilder } from '@filcdev/navigator-3d/path/path-builder';
 import type { Vec3 } from '@filcdev/navigator-3d/types/three/vector';
 import { Alert, AlertDescription } from '@filcdev/ui/components/alert';
@@ -23,6 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { Moon, Sun } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import { VirtualKeyboardProvider } from '@/components/keyboard/virtual-keyboard-context';
 import { NavigatePanel } from '@/components/navigator/navigate-panel';
 import { PetrikNewsOverlay } from '@/components/navigator/petrik-news';
@@ -143,7 +144,7 @@ function CanvasOverlay({
   return (
     <>
       {hoveredName && (
-        <Badge className="absolute bottom-2 left-2 h-7 bg-foreground px-3 text-background md:h-9 md:px-4 md:text-base">
+        <Badge className="bg-foreground text-background absolute bottom-2 left-2 h-7 px-3 md:h-9 md:px-4 md:text-base">
           {hoveredName}
         </Badge>
       )}
@@ -202,7 +203,7 @@ function GraphPlaceholder({ isError, t }: { isError: boolean; t: Translator }) {
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2">
           <Spinner className="size-5" />
           <span>{t('ui.kiosk.loading')}</span>
         </div>
@@ -435,7 +436,7 @@ function NavigatorKioskPage() {
       <div className="flex flex-col md:h-screen">
         <main className="min-h-0 flex-1 overflow-auto p-4 md:overflow-hidden">
           <div className="flex h-full min-h-0 flex-col gap-4 xl:flex-row">
-            <div className="relative min-h-[50%] flex-1 overflow-hidden rounded-xl border border-border md:min-h-0">
+            <div className="border-border relative min-h-[50%] flex-1 overflow-hidden rounded-xl border md:min-h-0">
               <KioskView3D
                 background={canvasBackground}
                 className="h-full w-full"

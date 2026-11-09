@@ -1,4 +1,5 @@
 import type { AuthSession } from '@filcdev/auth';
+
 import type { auth } from '#utils/authentication';
 
 /**

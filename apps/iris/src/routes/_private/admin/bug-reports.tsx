@@ -35,6 +35,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { RefreshCw } from 'lucide-react';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
   DateRangePicker,
   type DateRangeValue,
@@ -185,7 +186,7 @@ function AdminBugReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('bugReports.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -322,25 +323,25 @@ function BugReportDetailsDialog({
 
           <dl className="mt-4 space-y-3 text-sm">
             <div>
-              <dt className="font-medium text-muted-foreground">
+              <dt className="text-muted-foreground font-medium">
                 {t('bugReports.reporter')}
               </dt>
               <dd>{report.reporterEmail ?? t('bugReports.anonymous')}</dd>
             </div>
             <div>
-              <dt className="font-medium text-muted-foreground">
+              <dt className="text-muted-foreground font-medium">
                 {t('bugReports.page')}
               </dt>
               <dd>{report.page ?? '-'}</dd>
             </div>
             <div>
-              <dt className="font-medium text-muted-foreground">
+              <dt className="text-muted-foreground font-medium">
                 {t('bugReports.date')}
               </dt>
               <dd>{formatDate(report.createdAt, i18n.language)}</dd>
             </div>
             <div>
-              <dt className="font-medium text-muted-foreground">
+              <dt className="text-muted-foreground font-medium">
                 {t('bugReports.status')}
               </dt>
               <dd>
@@ -355,7 +356,7 @@ function BugReportDetailsDialog({
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-muted-foreground">
+              <dt className="text-muted-foreground font-medium">
                 {t('bugReports.description')}
               </dt>
               <dd className="wrap-break-word whitespace-pre-wrap">
@@ -574,7 +575,7 @@ function SortableHeader({
   return (
     <TableHead className="select-none">
       <button
-        className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+        className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
         onClick={() => onSort(column)}
         type="button"
       >

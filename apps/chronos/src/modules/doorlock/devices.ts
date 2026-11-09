@@ -3,6 +3,7 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { desc, eq } from 'drizzle-orm';
+
 import type { ChronosContext } from '#_types/globals';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
@@ -47,10 +48,10 @@ async function auditDeviceUpdate(
       entityType: 'device',
       metadata: {
         after: {
-          ...(diff?.after ?? {}),
+          ...diff?.after,
           ...(rotated ? { apiTokenRotated: true } : {}),
         },
-        before: diff?.before ?? {},
+        before: diff?.before,
       },
     });
   }

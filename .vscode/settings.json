@@ -1,14 +1,13 @@
 {
-  // Linting / Style
+  // Formatting / linting
   "editor.tabSize": 2,
-  "editor.defaultFormatter": "biomejs.biome",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.formatOnSave": true,
-  "js/ts.preferences.importModuleSpecifier": "non-relative",
   "editor.formatOnPaste": true,
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
 
   "editor.codeActionsOnSave": {
-    "source.organizeImports.biome": "always",
-    "source.fixAll.biome": "always"
+    "source.fixAll.oxc": "always"
   },
 
   // i18n

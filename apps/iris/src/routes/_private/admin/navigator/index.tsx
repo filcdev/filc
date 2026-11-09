@@ -9,6 +9,7 @@ import {
   Route as RouteIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import { NavigatorPreview } from '@/components/admin/navigator/navigator-preview';
 import { TransferActions } from '@/components/admin/navigator/transfer-actions';
 import { StatCard } from '@/components/admin/stat-card';
@@ -86,7 +87,7 @@ function NavigatorOverviewPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-bold text-3xl tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             {t('navigator.overview.title')}
           </h1>
           <p className="text-muted-foreground">

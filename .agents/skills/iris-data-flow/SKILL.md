@@ -2,6 +2,7 @@
 name: iris-data-flow
 description: Procedures for adding or changing Iris route pages, React Query queries or mutations, permission-gated views, route search params, or frontend API consumption in apps/iris. Use when creating pages under apps/iris/src/routes, wiring useQuery/useMutation, gating UI on permissions, or calling the Chronos API.
 ---
+
 # Iris Data Flow Procedure
 
 - Follow route composition patterns from files like `apps/iris/src/routes/_private/admin/timetable/substitutions.tsx`: `createFileRoute(...)` at the top, then permission gating, then page state (sort/filters/dialogs) fed by domain hooks.

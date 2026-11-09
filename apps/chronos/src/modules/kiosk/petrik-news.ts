@@ -6,13 +6,14 @@ import {
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { eq } from 'drizzle-orm';
+
 import { db } from '#database';
 import { kiosk } from '#modules/kiosk/schema';
 import { fetchAllowedFeedUrl } from '#modules/kiosk/utils/feed-url';
 import {
-  type PetrikNewsItem,
   parseFeaturedImages,
   parsePetrikNewsFeed,
+  type PetrikNewsItem,
   stripTrailingSlash,
 } from '#modules/kiosk/utils/petrik-news';
 import { base } from '#orpc';

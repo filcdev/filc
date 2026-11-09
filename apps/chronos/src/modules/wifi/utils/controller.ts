@@ -1,5 +1,7 @@
 import { getLogger } from '@logtape/logtape';
+
 import { env } from '#utils/environment';
+
 import { createUnifiController } from './unifi-controller';
 
 const logger = getLogger(['chronos', 'wifi', 'controller']);
@@ -41,14 +43,12 @@ export const getWifiController = (): WifiController | null => {
 
   switch (env.wifiControllerProvider) {
     case 'unifi':
-      if (
-        !(
-          env.unifiHost &&
-          env.unifiPort &&
-          env.unifiUsername &&
-          env.unifiPassword
-        )
-      ) {
+      if (!(
+        env.unifiHost &&
+        env.unifiPort &&
+        env.unifiUsername &&
+        env.unifiPassword
+      )) {
         // Without this the controller is just absent: enrichment never runs and
         // every speed-profile call answers a bare 503 with no stated reason.
         const missing = [

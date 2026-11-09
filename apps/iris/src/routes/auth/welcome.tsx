@@ -38,6 +38,7 @@ import {
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import { useCohortSelector } from '@/hooks/timetables-admin';
 import {
   ADMIN_UI_PERMISSIONS,
@@ -101,8 +102,8 @@ const InfoLine = (props: {
   <div className="flex w-full items-center gap-3">
     {props.icon}
     <div className="min-w-0 flex-1">
-      <p className="font-medium text-foreground text-sm">{props.title}</p>
-      <p className="truncate text-muted-foreground text-sm">{props.content}</p>
+      <p className="text-foreground text-sm font-medium">{props.title}</p>
+      <p className="text-muted-foreground truncate text-sm">{props.content}</p>
     </div>
   </div>
 );
@@ -239,11 +240,11 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
         <Step>
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <CircleCheck className="h-8 w-8 text-primary" />
+              <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-full">
+                <CircleCheck className="text-primary h-8 w-8" />
               </div>
               <div className="space-y-1">
-                <h2 className="font-bold text-2xl">{t('welcome.title')}</h2>
+                <h2 className="text-2xl font-bold">{t('welcome.title')}</h2>
                 <p className="text-muted-foreground">{t('welcome.subtitle')}</p>
               </div>
             </div>
@@ -256,12 +257,12 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
               <CardContent className="space-y-3">
                 <InfoLine
                   content={user.email}
-                  icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+                  icon={<Mail className="text-muted-foreground h-4 w-4" />}
                   title={t('account.email')}
                 />
                 <InfoLine
                   content={user.name ?? t('unknown')}
-                  icon={<User className="h-4 w-4 text-muted-foreground" />}
+                  icon={<User className="text-muted-foreground h-4 w-4" />}
                   title={t('account.name')}
                 />
               </CardContent>
@@ -271,7 +272,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
 
         <Step>
           <div className="space-y-4">
-            <h2 className="font-bold text-2xl">{t('account.nickname')}</h2>
+            <h2 className="text-2xl font-bold">{t('account.nickname')}</h2>
             <p className="text-muted-foreground text-sm">
               {t('welcome.nicknameDescription')}
             </p>
@@ -303,7 +304,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
 
         <Step>
           <div className="space-y-4">
-            <h2 className="font-bold text-2xl">{t('cohort.select')}</h2>
+            <h2 className="text-2xl font-bold">{t('cohort.select')}</h2>
             <p className="text-muted-foreground text-sm">
               {t('welcome.cohortDescription')}
             </p>
@@ -320,13 +321,13 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
         {showWifiStep && (
           <Step>
             <div className="space-y-4">
-              <h2 className="font-bold text-2xl">{t('wifi.setup')}</h2>
+              <h2 className="text-2xl font-bold">{t('wifi.setup')}</h2>
               <p className="text-muted-foreground text-sm">
                 {t('welcome.wifiDescription')}
               </p>
               <Card className="mb-1 shadow-sm">
                 <CardContent className="pt-6 text-center">
-                  <Wifi className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <Wifi className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                   <p className="mb-4">{t('welcome.wifiPrompt')}</p>
                   <Button
                     onClick={() => {
@@ -347,7 +348,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10 dark:bg-green-500/20">
               <Check className="h-10 w-10 text-green-500 dark:text-green-400" />
             </div>
-            <h2 className="font-bold text-2xl">{t('welcome.complete')}</h2>
+            <h2 className="text-2xl font-bold">{t('welcome.complete')}</h2>
             <p className="text-muted-foreground">
               {t('welcome.completeDescription')}
             </p>
@@ -368,6 +369,7 @@ const CohortSelectorStep = (props: {
   const { t } = useTranslation();
   const [updating, setIsUpdating] = useState(false);
   const [open, setOpen] = useState(false);
+  const listboxId = useId();
 
   const { activeTimetableQuery, cohortQuery } = useCohortSelector(
     props.userCohortId
@@ -414,6 +416,7 @@ const CohortSelectorStep = (props: {
         <PopoverTrigger
           render={
             <Button
+              aria-controls={listboxId}
               aria-expanded={open}
               className="w-full justify-between"
               disabled={updating}
@@ -429,7 +432,7 @@ const CohortSelectorStep = (props: {
             </Button>
           }
         />
-        <PopoverContent className="p-0">
+        <PopoverContent className="p-0" id={listboxId}>
           <Command>
             <CommandInput
               className="h-9"

@@ -1,0 +1,158 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "import",
+    "jsx-a11y",
+    "node",
+    "oxc",
+    "promise",
+    "react",
+    "typescript",
+    "unicorn"
+  ],
+  "categories": {
+    // `correctness` is the enforceable baseline: every rule in it is on.
+    // The other categories are advisory, so rules are enabled by name below —
+    // same policy the retired `biome.jsonc` carried.
+    "correctness": "error"
+  },
+  "ignorePatterns": [
+    "apps/chronos/src/database/migrations/**",
+    "apps/chronos/openapi/**",
+    "apps/iris/src/routeTree.gen.ts",
+    "apps/kiosk/src/route-tree.gen.ts"
+  ],
+  "rules": {
+    // ---------------------------- React ----------------------------
+    // React 19 uses the automatic JSX runtime; React Compiler rules are not
+    // adopted in this repo (react-doctor covers the project's own set), and
+    // their findings are the compiler's opinion, not a bug.
+    "react/react-in-jsx-scope": "off",
+    "react/purity": "off",
+    "react/set-state-in-effect": "off",
+    "react/immutability": "off",
+    "react/preserve-manual-memoization": "off",
+
+    "react/exhaustive-deps": "error",
+    "react/rules-of-hooks": "error",
+    "react/jsx-key": "error",
+    "react/jsx-no-useless-fragment": "error",
+    "react/no-array-index-key": "error",
+    "react/no-children-prop": "error",
+    "react/no-danger": "error",
+    "react/no-danger-with-children": "error",
+    "react/void-dom-elements-no-children": "error",
+
+    // ---------------------------- A11y -----------------------------
+    // The label/role rules cannot see through the design-system wrappers
+    // (`Label`, Base UI `Combobox`, SVG `role="button"`), where the markup is
+    // deliberate, so they are off — the primitives are covered by tests.
+    "jsx-a11y/label-has-associated-control": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/no-autofocus": "off",
+
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/anchor-is-valid": "error",
+    "jsx-a11y/aria-activedescendant-has-tabindex": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-proptypes": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/autocomplete-valid": "error",
+    "jsx-a11y/click-events-have-key-events": "error",
+    "jsx-a11y/heading-has-content": "error",
+    "jsx-a11y/html-has-lang": "error",
+    "jsx-a11y/iframe-has-title": "error",
+    "jsx-a11y/img-redundant-alt": "error",
+    "jsx-a11y/interactive-supports-focus": "error",
+    "jsx-a11y/lang": "error",
+    "jsx-a11y/media-has-caption": "error",
+    "jsx-a11y/mouse-events-have-key-events": "error",
+    "jsx-a11y/no-access-key": "error",
+    "jsx-a11y/no-aria-hidden-on-focusable": "error",
+    "jsx-a11y/no-distracting-elements": "error",
+    "jsx-a11y/no-interactive-element-to-noninteractive-role": "error",
+    "jsx-a11y/no-noninteractive-element-interactions": "error",
+    "jsx-a11y/no-noninteractive-element-to-interactive-role": "error",
+    "jsx-a11y/no-noninteractive-tabindex": "error",
+    "jsx-a11y/no-redundant-roles": "error",
+    "jsx-a11y/no-static-element-interactions": "error",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/tabindex-no-positive": "error",
+
+    // -------------------------- TypeScript --------------------------
+    "typescript/consistent-type-imports": [
+      "error",
+      { "disallowTypeAnnotations": false }
+    ],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+
+    // ------------------------- Compiler-agnostic --------------------
+    // `no-unused-vars` reports TypeScript files too, so its options apply to
+    // destructured holes and unused parameters alike.
+    "no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "no-console": "error",
+    "eqeqeq": ["error", "smart"],
+    "no-bitwise": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-template": "error",
+    "prefer-regex-literals": "error",
+    "no-regex-spaces": "error",
+    "no-nested-ternary": "error",
+    "no-else-return": "error",
+    "no-sequences": "error",
+    "no-lone-blocks": "error",
+    "curly": ["error", "all"],
+    "no-shadow": "error",
+    "no-param-reassign": ["error", { "props": false }],
+    "no-empty": "error",
+    "no-fallthrough": "error",
+    "no-alert": "error",
+    "no-self-compare": "error",
+    "no-async-promise-executor": "error",
+    "no-constant-binary-expression": "error",
+    "no-prototype-builtins": "error",
+    "no-sparse-arrays": "error",
+    "radix": "error",
+    "no-inner-declarations": "error",
+    "no-nonoctal-decimal-escape": "error",
+
+    // ---------------------------- Imports ---------------------------
+    // `import/no-namespace` is the counterpart of Biome's
+    // `noNamespaceImport`; the three.js modules that import a whole namespace
+    // keep their explanation as a disable comment.
+    "import/no-namespace": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "oxc/no-barrel-file": "error",
+    "oxc/no-const-enum": "error",
+
+    // ---------------------------- Perf ------------------------------
+    "oxc/no-accumulating-spread": "error",
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/no-document-cookie": "error"
+  },
+  "overrides": [
+    {
+      // Browser bundles must not reach for Node built-ins; server code may.
+      "files": [
+        "apps/iris/src/**",
+        "apps/kiosk/src/**",
+        "packages/api/src/**",
+        "packages/navigator-3d/src/**",
+        "packages/ui/src/**"
+      ],
+      "rules": { "import/no-nodejs-modules": "error" }
+    },
+    {
+      // Playwright specs print progress to the console and lean on `any` for
+      // JSON bodies whose schemas do not live in this repo's typegraph.
+      "files": ["apps/e2e/**"],
+      "rules": { "no-console": "off", "typescript/no-explicit-any": "off" }
+    }
+  ]
+}

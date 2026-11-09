@@ -2,6 +2,7 @@ import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/fetch';
 import type { ContractRouterClient } from '@orpc/contract';
 import { createTanstackQueryUtils } from '@orpc/tanstack-query';
+
 // Type-only: the contract carries zod schemas and must stay out of the browser
 // bundle. `verbatimModuleSyntax` erases this import.
 import type { appContract } from '../contract';

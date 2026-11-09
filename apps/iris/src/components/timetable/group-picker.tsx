@@ -4,6 +4,7 @@ import {
   SelectValue,
 } from '@filcdev/ui/components/select';
 import { useTranslation } from 'react-i18next';
+
 import type { GroupItem } from '@/hooks/timetable-groups';
 import { useSelectGroup } from '@/hooks/timetable-groups';
 
@@ -55,7 +56,7 @@ export function DivisionGroupPicker({ groups }: DivisionGroupPickerProps) {
             className="flex items-center justify-between gap-2"
             key={division}
           >
-            <span className="font-medium text-sm">{label}</span>
+            <span className="text-sm font-medium">{label}</span>
             <Select
               items={items}
               onValueChange={(value) => {

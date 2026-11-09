@@ -15,7 +15,7 @@ function AppLayoutComponent() {
 
   if (isPending) {
     return (
-      <div className="flex grow items-center justify-center gap-1 text-primary text-semibold">
+      <div className="text-primary text-semibold flex grow items-center justify-center gap-1">
         <Spinner />
       </div>
     );

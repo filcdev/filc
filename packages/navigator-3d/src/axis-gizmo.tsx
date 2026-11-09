@@ -1,6 +1,8 @@
 import { type RefObject, useCallback, useEffect, useRef } from 'react';
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import { projectAxes, snapCameraToAxis } from './runtime/axis-gizmo-math';
 import { AXES, type Axis } from './types/three/axis-types';
 
@@ -38,7 +40,7 @@ export default function AxisGizmo({ cameraRef, controlsRef }: Props) {
     let attached = false;
     let detach: (() => void) | null = null;
 
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: gizmo RAF update loop, ported verbatim
+    // gizmo RAF update loop, ported verbatim
     const update = (): void => {
       const camera = cameraRef.current;
       const controls = controlsRef.current;
@@ -143,7 +145,7 @@ export default function AxisGizmo({ cameraRef, controlsRef }: Props) {
           );
         })}
         {AXES.map((axis, i) => (
-          // biome-ignore lint/a11y/useSemanticElements: SVG tip group; <button> is invalid inside <svg>
+          // SVG tip group; <button> is invalid inside <svg>
           <g
             aria-label={axis.label}
             key={axis.label}

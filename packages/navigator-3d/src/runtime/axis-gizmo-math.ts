@@ -1,5 +1,6 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { AXES, type Axis } from '../types/three/axis-types';
 
 const SCRATCH_V = new THREE.Vector3();

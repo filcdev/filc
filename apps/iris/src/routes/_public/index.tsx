@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { TimetableView } from '@/components/timetable';
 import {
   type PublicTimetable,

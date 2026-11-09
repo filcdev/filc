@@ -19,7 +19,9 @@ import { Filter } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useWifiSpeedProfiles } from '@/hooks/wifi-admin';
+
 import type { WifiFilterState } from './wifi-filter-state';
 
 type WifiFiltersProps = {
@@ -66,7 +68,7 @@ export function WifiFilters({ filters, onChange }: WifiFiltersProps) {
               {t('wifiAdminUsers.filters')}
             </span>
             {activeFiltersCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+              <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full text-[10px]">
                 {activeFiltersCount}
               </span>
             )}
@@ -129,7 +131,7 @@ export function WifiFilters({ filters, onChange }: WifiFiltersProps) {
         <DropdownMenuSeparator />
         <div className="p-2">
           <label
-            className="mb-1 block font-medium text-muted-foreground text-xs"
+            className="text-muted-foreground mb-1 block text-xs font-medium"
             htmlFor={minDevicesId}
           >
             {t('wifiAdminUsers.minDevices')}

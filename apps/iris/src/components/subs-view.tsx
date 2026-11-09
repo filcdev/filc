@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { FilterCombobox } from '@/components/timetable/filter-combobox';
 import type {
   ClassroomItem,
@@ -34,6 +35,7 @@ import {
 } from '@/hooks/timetable-public';
 import { compareClassNames } from '@/utils/cohort';
 import { formatLocalizedDate, parseDateOnly } from '@/utils/date-locale';
+
 import { SubsV } from './subs';
 
 /** Local calendar day as `YYYY-MM-DD`; the key format used for date sections. */
@@ -653,7 +655,7 @@ export function SubstitutionView() {
             <CalendarDays className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-semibold text-foreground text-lg">
+            <h2 className="text-foreground text-lg font-semibold">
               {formatLocalizedDate(parseDateOnly(date), i18n.language, {
                 day: '2-digit',
                 month: 'long',
@@ -677,10 +679,10 @@ export function SubstitutionView() {
     <div className="flex grow flex-col items-center gap-6 p-6">
       <div className="w-full max-w-5xl">
         <div>
-          <h1 className="font-bold text-3xl text-foreground tracking-tight">
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">
             {t('substitution.title')}
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="text-muted-foreground mt-2">
             {t('substitution.description')}
           </p>
         </div>
@@ -747,11 +749,11 @@ function SubstitutionDays({
         </div>
       )}
       {hasError && (
-        <div className="w-full max-w-5xl rounded-lg border border-destructive/50 bg-destructive/10 p-6">
-          <p className="font-medium text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 w-full max-w-5xl rounded-lg border p-6">
+          <p className="text-destructive font-medium">
             {t('substitution.loadError')}
           </p>
-          <p className="mt-2 text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-2 text-sm">
             {t('substitution.loadErrorMessage')}
           </p>
         </div>
@@ -760,9 +762,9 @@ function SubstitutionDays({
         {ready && hasContent
           ? dates.map((date) => renderDay(date))
           : ready && (
-              <div className="rounded-lg border border-muted-foreground/30 border-dashed bg-muted/30 p-12 text-center">
+              <div className="border-muted-foreground/30 bg-muted/30 rounded-lg border border-dashed p-12 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <p className="font-medium text-foreground text-lg">
+                  <p className="text-foreground text-lg font-medium">
                     {t('substitution.noSubstitutions')}
                   </p>
                   <p className="text-muted-foreground text-sm">

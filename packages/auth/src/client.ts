@@ -8,6 +8,7 @@ import {
   type ReactNode,
   useContext,
 } from 'react';
+
 import type { AuthSession, FilcAuth } from './index';
 
 /**
