@@ -55,7 +55,10 @@ export const AuthSessionProvider = ({
 }: {
   children: ReactNode;
   session: AuthSession | null;
-}) => createElement(AuthSessionContext, { value: session }, children);
+}) => {
+  authClient.hydrateSession(session);
+  return createElement(AuthSessionContext, { value: session }, children);
+};
 
 /**
  * The signed-in session. better-auth's client can only type a custom session by
