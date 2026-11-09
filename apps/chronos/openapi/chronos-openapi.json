@@ -46839,7 +46839,7 @@
     "/timetable/movedLessons": {
       "post": {
         "operationId": "postTimetableMovedLessons",
-        "description": "Create a moved lesson.",
+        "description": "Create a moved lesson: linked to existing lessons, or manual (a subject plus cohorts, with no source lessons).",
         "tags": [
           "Moved Lesson"
         ],
@@ -46867,7 +46867,28 @@
                   },
                   "lessonIds": {
                     "type": "array",
-                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "manualCohortIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "manualSourceRoomId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "manualSubjectId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "manualTeacherIds": {
+                    "type": "array",
                     "items": {
                       "type": "string",
                       "format": "uuid"
@@ -46907,8 +46928,7 @@
                   }
                 },
                 "required": [
-                  "date",
-                  "lessonIds"
+                  "date"
                 ]
               }
             }
@@ -46940,6 +46960,40 @@
                     "id": {
                       "type": "string",
                       "format": "uuid"
+                    },
+                    "manualCohortIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "manualSourceRoomId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manualSubjectId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manualTeacherIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "room": {
                       "anyOf": [
@@ -46978,6 +47032,10 @@
                     "comment",
                     "date",
                     "id",
+                    "manualCohortIds",
+                    "manualSourceRoomId",
+                    "manualSubjectId",
+                    "manualTeacherIds",
                     "room",
                     "startingDay",
                     "startingPeriod"
@@ -47627,6 +47685,133 @@
                               ]
                             }
                           },
+                          "manual": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "cohorts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "subject": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          },
+                                          "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          }
+                                        },
+                                        "required": [
+                                          "createdAt",
+                                          "id",
+                                          "name",
+                                          "short",
+                                          "updatedAt"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "teachers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "cohorts",
+                                  "sourceRoom",
+                                  "subject",
+                                  "teachers"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "movedLesson": {
                             "type": "object",
                             "properties": {
@@ -47648,6 +47833,40 @@
                               "id": {
                                 "type": "string",
                                 "format": "uuid"
+                              },
+                              "manualCohortIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualSubjectId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualTeacherIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
                               },
                               "room": {
                                 "anyOf": [
@@ -47686,6 +47905,10 @@
                               "comment",
                               "date",
                               "id",
+                              "manualCohortIds",
+                              "manualSourceRoomId",
+                              "manualSubjectId",
+                              "manualTeacherIds",
                               "room",
                               "startingDay",
                               "startingPeriod"
@@ -47741,6 +47964,7 @@
                           "classroom",
                           "dayDefinition",
                           "lessons",
+                          "manual",
                           "movedLesson",
                           "period"
                         ]
@@ -48172,7 +48396,7 @@
       },
       "put": {
         "operationId": "putTimetableMovedLessonsById",
-        "description": "Update a moved lesson.",
+        "description": "Update a moved lesson. Every field is optional and an omitted one keeps its stored value. A moved lesson still has exactly one source, so switching sources must clear the other one explicitly: send `lessonIds: []` together with the manual fields to switch to manual, or `manualCohortIds: []` together with `lessonIds` to switch to linked.",
         "tags": [
           "Moved Lesson"
         ],
@@ -48211,7 +48435,35 @@
                   },
                   "lessonIds": {
                     "type": "array",
-                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "manualCohortIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "manualSourceRoomId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "manualSubjectId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "manualTeacherIds": {
+                    "type": "array",
                     "items": {
                       "type": "string",
                       "format": "uuid"
@@ -48267,6 +48519,40 @@
                       "type": "string",
                       "format": "uuid"
                     },
+                    "manualCohortIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "manualSourceRoomId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manualSubjectId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manualTeacherIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "room": {
                       "anyOf": [
                         {
@@ -48304,6 +48590,10 @@
                     "comment",
                     "date",
                     "id",
+                    "manualCohortIds",
+                    "manualSourceRoomId",
+                    "manualSubjectId",
+                    "manualTeacherIds",
                     "room",
                     "startingDay",
                     "startingPeriod"
@@ -49197,6 +49487,133 @@
                               ]
                             }
                           },
+                          "manual": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "cohorts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "subject": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          },
+                                          "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          }
+                                        },
+                                        "required": [
+                                          "createdAt",
+                                          "id",
+                                          "name",
+                                          "short",
+                                          "updatedAt"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "teachers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "cohorts",
+                                  "sourceRoom",
+                                  "subject",
+                                  "teachers"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "movedLesson": {
                             "type": "object",
                             "properties": {
@@ -49218,6 +49635,40 @@
                               "id": {
                                 "type": "string",
                                 "format": "uuid"
+                              },
+                              "manualCohortIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualSubjectId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualTeacherIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
                               },
                               "room": {
                                 "anyOf": [
@@ -49256,6 +49707,10 @@
                               "comment",
                               "date",
                               "id",
+                              "manualCohortIds",
+                              "manualSourceRoomId",
+                              "manualSubjectId",
+                              "manualTeacherIds",
                               "room",
                               "startingDay",
                               "startingPeriod"
@@ -49311,6 +49766,7 @@
                           "classroom",
                           "dayDefinition",
                           "lessons",
+                          "manual",
                           "movedLesson",
                           "period"
                         ]
@@ -49966,6 +50422,133 @@
                               ]
                             }
                           },
+                          "manual": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "cohorts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "subject": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          },
+                                          "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          }
+                                        },
+                                        "required": [
+                                          "createdAt",
+                                          "id",
+                                          "name",
+                                          "short",
+                                          "updatedAt"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "teachers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "cohorts",
+                                  "sourceRoom",
+                                  "subject",
+                                  "teachers"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "movedLesson": {
                             "type": "object",
                             "properties": {
@@ -49987,6 +50570,40 @@
                               "id": {
                                 "type": "string",
                                 "format": "uuid"
+                              },
+                              "manualCohortIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualSubjectId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualTeacherIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
                               },
                               "room": {
                                 "anyOf": [
@@ -50025,6 +50642,10 @@
                               "comment",
                               "date",
                               "id",
+                              "manualCohortIds",
+                              "manualSourceRoomId",
+                              "manualSubjectId",
+                              "manualTeacherIds",
                               "room",
                               "startingDay",
                               "startingPeriod"
@@ -50080,6 +50701,7 @@
                           "classroom",
                           "dayDefinition",
                           "lessons",
+                          "manual",
                           "movedLesson",
                           "period"
                         ]
@@ -50746,6 +51368,133 @@
                               ]
                             }
                           },
+                          "manual": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "cohorts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  },
+                                  "sourceRoom": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "short"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "subject": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "short": {
+                                            "type": "string"
+                                          },
+                                          "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "x-native-type": "date"
+                                          }
+                                        },
+                                        "required": [
+                                          "createdAt",
+                                          "id",
+                                          "name",
+                                          "short",
+                                          "updatedAt"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "teachers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "short": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "short"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "cohorts",
+                                  "sourceRoom",
+                                  "subject",
+                                  "teachers"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "movedLesson": {
                             "type": "object",
                             "properties": {
@@ -50767,6 +51516,40 @@
                               "id": {
                                 "type": "string",
                                 "format": "uuid"
+                              },
+                              "manualCohortIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "manualSourceRoomId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualSubjectId": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "manualTeacherIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
                               },
                               "room": {
                                 "anyOf": [
@@ -50805,6 +51588,10 @@
                               "comment",
                               "date",
                               "id",
+                              "manualCohortIds",
+                              "manualSourceRoomId",
+                              "manualSubjectId",
+                              "manualTeacherIds",
                               "room",
                               "startingDay",
                               "startingPeriod"
@@ -50860,6 +51647,7 @@
                           "classroom",
                           "dayDefinition",
                           "lessons",
+                          "manual",
                           "movedLesson",
                           "period"
                         ]

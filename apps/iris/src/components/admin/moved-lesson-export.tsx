@@ -22,6 +22,9 @@ export function MovedLessonExportButton({
     { header: t('movedLesson.targetRoom'), key: 'target_room' },
     { header: t('export.subjects'), key: 'lessons' },
     { header: t('movedLesson.lessonsCount'), key: 'lesson_count' },
+    { header: t('movedLesson.subject'), key: 'subject' },
+    { header: t('movedLesson.classes'), key: 'classes' },
+    { header: t('movedLesson.fromRoom'), key: 'source_room' },
   ];
 
   const fetchCsv = async (): Promise<string> => {

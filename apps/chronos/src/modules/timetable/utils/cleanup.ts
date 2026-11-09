@@ -7,6 +7,7 @@ import {
   cohortGroup,
   cohortTimetableMtm,
   lesson,
+  movedLesson,
   substitution,
   teacher,
 } from '#modules/timetable/schema';
@@ -26,10 +27,11 @@ export type CleanupOrphanedCohortsResult = {
  * their `cohortId` set to NULL before the cohort row is removed.
  *
  * A teacher counts as "assigned" if its id appears in any `lesson.teacherIds`
- * array (a text-array column with no FK/index), or if it is referenced by a
- * NO-ACTION foreign key from `substitution.substituter`, `cohort.teacherId`,
- * or `cohortGroup.teacherId`.  Teachers referenced by any of those FKs are
- * kept, since deleting them would violate the FK constraint.
+ * array or any `moved_lesson.manualTeacherIds` array (text-array columns with
+ * no FK/index), or if it is referenced by a NO-ACTION foreign key from
+ * `substitution.substituter`, `cohort.teacherId`, or `cohortGroup.teacherId`.
+ * Teachers referenced by any of those FKs are kept, since deleting them would
+ * violate the FK constraint.
  *
  * The destructive part of the operation (user nullification + cohort/teacher
  * deletion) runs inside a single database transaction.  Cohort rows are locked
@@ -101,12 +103,19 @@ export async function cleanupOrphanedCohorts(): Promise<CleanupOrphanedCohortsRe
       .orderBy(asc(teacher.id))
       .for('update');
 
-    // Teachers referenced by any lesson's `teacherIds` array are assigned.
-    const lessonRows = await tx
-      .select({ teacherIds: lesson.teacherIds })
-      .from(lesson);
+    // Teachers referenced by any lesson's `teacherIds` array or by a manual
+    // moved lesson's `manualTeacherIds` array are assigned.
+    const [lessonRows, movedLessonRows] = await Promise.all([
+      tx.select({ teacherIds: lesson.teacherIds }).from(lesson),
+      tx
+        .select({ manualTeacherIds: movedLesson.manualTeacherIds })
+        .from(movedLesson),
+    ]);
     const usedTeacherIds = new Set(
-      lessonRows.flatMap((r) => r.teacherIds ?? []).filter((id) => id !== null)
+      [
+        ...lessonRows.flatMap((r) => r.teacherIds ?? []),
+        ...movedLessonRows.flatMap((r) => r.manualTeacherIds),
+      ].filter((id) => id !== null)
     );
 
     // Teachers referenced by NO-ACTION FKs must be kept.
