@@ -7,6 +7,6 @@
     "compose:test:up": "docker compose -f compose.test.yml up -d --wait"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0"
+    "@playwright/test": "^1.65.0"
   }
 }
