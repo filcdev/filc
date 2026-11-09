@@ -1,5 +1,10 @@
+import { getLogger } from '@logtape/logtape';
 import { S3Client, type S3File } from 'bun';
+
 import { env } from '#utils/environment';
+import { badGateway } from '#utils/http';
+
+const logger = getLogger(['chronos', 'storage', 's3']);
 
 /** Storage is optional: without a full config, uploads are refused and images cannot be served. */
 export const isObjectStorageConfigured = (): boolean =>
@@ -37,7 +42,25 @@ export const putObject = async (
   body: Uint8Array,
   contentType: string
 ): Promise<void> => {
-  await s3().file(key).write(body, { type: contentType });
+  try {
+    await s3().file(key).write(body, { type: contentType });
+  } catch (error) {
+    // Bun's `S3Error` message is generic for a transport failure ("an
+    // unexpected error has occurred") and LogTape keeps only the message and
+    // stack, so the code (`ConnectionRefused`, `NoSuchBucket`,
+    // `AccessDenied`, …) has to be logged as its own property.
+    logger.error('Failed to write an object', {
+      bytes: body.byteLength,
+      code:
+        error instanceof Error && 'code' in error ? String(error.code) : null,
+      contentType,
+      endpoint: env.s3Endpoint,
+      error,
+      key,
+    });
+
+    throw badGateway('Object storage is unavailable', error);
+  }
 };
 
 /** Lazy reference: nothing is requested until the file is read or streamed. */
