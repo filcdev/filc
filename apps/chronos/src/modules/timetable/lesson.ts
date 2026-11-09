@@ -9,7 +9,7 @@ import {
   or,
 } from 'drizzle-orm';
 
-import { db } from '#database';
+import { db } from '@/database';
 import {
   classroom,
   cohort,
@@ -18,18 +18,18 @@ import {
   subject,
   substitutionLessonMTM,
   teacher,
-} from '#modules/timetable/schema';
+} from '@/modules/timetable/schema';
 import {
   getActiveTimetableId,
   getTimetableIdForDate,
-} from '#modules/timetable/utils/active';
-import { enrichLessons } from '#modules/timetable/utils/enrich-lessons';
+} from '@/modules/timetable/utils/active';
+import { enrichLessons } from '@/modules/timetable/utils/enrich-lessons';
 import {
   getWeekdayInBudapest,
   isMatchingWeekday,
-} from '#modules/timetable/utils/weekday';
-import { base } from '#orpc';
-import { notFound } from '#utils/http';
+} from '@/modules/timetable/utils/weekday';
+import { base } from '@/orpc';
+import { notFound } from '@/utils/http';
 
 const logger = getLogger(['chronos', 'lesson']);
 

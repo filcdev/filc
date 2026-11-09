@@ -51,10 +51,5 @@
     "drizzle-kit": "^0.31.11",
     "pg": "^8.23.1",
     "typescript": "catalog:"
-  },
-  "imports": {
-    "#*": "./src/*.ts",
-    "#database": "./src/database/index.ts",
-    "#modules": "./src/modules/index.ts"
   }
 }

@@ -3,12 +3,12 @@ import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, eq, gte, inArray, or, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
+} from '@/modules/activity-log/utils/record';
 import {
   classroom,
   cohort,
@@ -20,18 +20,18 @@ import {
   period,
   subject,
   teacher,
-} from '#modules/timetable/schema';
-import { getActiveTimetableId } from '#modules/timetable/utils/active';
+} from '@/modules/timetable/schema';
+import { getActiveTimetableId } from '@/modules/timetable/utils/active';
 import {
   enrichLessons,
   loadLessonsByIds,
-} from '#modules/timetable/utils/enrich-lessons';
-import { base } from '#orpc';
-import { badRequest, notFound } from '#utils/http';
+} from '@/modules/timetable/utils/enrich-lessons';
+import { base } from '@/orpc';
+import { badRequest, notFound } from '@/utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
-} from '#utils/notifications/engine';
+} from '@/utils/notifications/engine';
 
 const ensurePeriodExists = async (periodId: string) => {
   const [existingPeriod] = await db

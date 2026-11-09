@@ -1,7 +1,7 @@
-import type { Module } from '#modules/module';
-import { cleanUpWifiAuthLogs } from '#modules/wifi/utils/cleanup';
-import { syncSpeedProfiles } from '#modules/wifi/utils/sync';
-import { env } from '#utils/environment';
+import type { Module } from '@/modules/module';
+import { cleanUpWifiAuthLogs } from '@/modules/wifi/utils/cleanup';
+import { syncSpeedProfiles } from '@/modules/wifi/utils/sync';
+import { env } from '@/utils/environment';
 
 /**
  * The WiFi module: its tables live in `schema.ts`, and its scheduled work is

@@ -33,8 +33,8 @@ import {
   sql,
 } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
+import { db } from '@/database';
+import { user as userTable } from '@/database/schema/authentication';
 import {
   building,
   classroom as classroomTable,
@@ -50,7 +50,7 @@ import {
   termDefinition,
   timetable as timetableTable,
   weekDefinition as weekTable,
-} from '#modules/timetable/schema';
+} from '@/modules/timetable/schema';
 
 type Database = typeof db;
 export type TxClient = Parameters<Parameters<Database['transaction']>[0]>[0];

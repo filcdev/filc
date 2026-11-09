@@ -12,12 +12,12 @@ import type { TimetableImportModel } from '@filcdev/timetable-import/types';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 
-import { timetableImportStore } from '#database/timetable-import-store';
-import { requireAuthorization } from '#middleware/auth';
-import { recordActivity } from '#modules/activity-log/utils/record';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { badRequest } from '#utils/http';
+import { timetableImportStore } from '@/database/timetable-import-store';
+import { requireAuthorization } from '@/middleware/auth';
+import { recordActivity } from '@/modules/activity-log/utils/record';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { badRequest } from '@/utils/http';
 
 const logger = getLogger(['chronos', 'timetable']);
 

@@ -6,23 +6,23 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession, oAuthProxy } from 'better-auth/plugins';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { apiKeySchema } from '#database/schema/api-keys';
+import { db } from '@/database';
+import { apiKeySchema } from '@/database/schema/api-keys';
 import {
   authenticationSchema,
   user as userTable,
-} from '#database/schema/authentication';
-import { userPreferences } from '#modules/notifications/schema';
-import { teacher } from '#modules/timetable/schema';
-import { wifiUser } from '#modules/wifi/schema';
-import { getUserPermissions } from '#utils/authorization';
+} from '@/database/schema/authentication';
+import { userPreferences } from '@/modules/notifications/schema';
+import { teacher } from '@/modules/timetable/schema';
+import { wifiUser } from '@/modules/wifi/schema';
+import { getUserPermissions } from '@/utils/authorization';
 import {
   isInlineImage,
   storeInlineImage,
   withStoredImage,
-} from '#utils/avatars';
-import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
-import { env } from '#utils/environment';
+} from '@/utils/avatars';
+import { createEntraIdTokenVerifier } from '@/utils/entra-id-token';
+import { env } from '@/utils/environment';
 
 const logger = getLogger(['chronos', 'auth']);
 

@@ -1,9 +1,14 @@
 import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
 
-import { db } from '#database';
+import { db } from '@/database';
+import {
+  wifiAuthLog,
+  wifiDevice,
+  wifiNas,
+  wifiUser,
+} from '@/modules/wifi/schema';
 
-import { wifiAuthLog, wifiDevice, wifiNas, wifiUser } from '../schema';
 import {
   RADIUS_HEALTH_USERNAME,
   RADIUS_SESSION_TIMEOUT_SECONDS,

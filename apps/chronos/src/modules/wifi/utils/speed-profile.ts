@@ -1,12 +1,12 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
 import {
   wifiRoleSpeedProfile,
   wifiSpeedProfile,
   type wifiUser,
-} from '#modules/wifi/schema';
+} from '@/modules/wifi/schema';
 
 import { SPEED_PROFILE_NONE } from './constants';
 

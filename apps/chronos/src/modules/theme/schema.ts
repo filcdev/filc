@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
-import { user } from '#database/schema/authentication';
+import { user } from '@/database/schema/authentication';
 
 /**
  * The single site-wide seasonal theme, applied on top of each visitor's

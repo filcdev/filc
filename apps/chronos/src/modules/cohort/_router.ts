@@ -1,3 +1,3 @@
-import { listCohorts } from '#modules/cohort/index';
+import { listCohorts } from '@/modules/cohort/index';
 
 export const cohortRouter = { cohort: listCohorts };

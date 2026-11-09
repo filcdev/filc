@@ -3,42 +3,42 @@ import {
   deleteBuildingRoute,
   listBuildingsRoute,
   updateBuildingRoute,
-} from '#modules/navigator/buildings';
+} from '@/modules/navigator/buildings';
 import {
   createClassroomTypeRoute,
   deleteClassroomTypeRoute,
   listClassroomTypesRoute,
   updateClassroomTypeRoute,
-} from '#modules/navigator/classroom-types';
+} from '@/modules/navigator/classroom-types';
 import {
   createClassroomRoute,
   deleteClassroomRoute,
   listClassroomsRoute,
   updateClassroomRoute,
-} from '#modules/navigator/classrooms';
+} from '@/modules/navigator/classrooms';
 import {
   createCorridorRoute,
   deleteCorridorRoute,
   listCorridorsRoute,
   updateCorridorRoute,
-} from '#modules/navigator/corridors';
-import { graphRoute } from '#modules/navigator/graph';
+} from '@/modules/navigator/corridors';
+import { graphRoute } from '@/modules/navigator/graph';
 import {
   createLiftRoute,
   deleteLiftRoute,
   listLiftsRoute,
   updateLiftRoute,
-} from '#modules/navigator/lifts';
+} from '@/modules/navigator/lifts';
 import {
   createStairRoute,
   deleteStairRoute,
   listStairsRoute,
   updateStairRoute,
-} from '#modules/navigator/stairs';
+} from '@/modules/navigator/stairs';
 import {
   exportNavigatorRoute,
   importNavigatorRoute,
-} from '#modules/navigator/transfer';
+} from '@/modules/navigator/transfer';
 import {
   createTranslationRoute,
   deleteTranslationRoute,
@@ -46,7 +46,7 @@ import {
   listTranslationLanguagesRoute,
   listTranslationsRoute,
   updateTranslationRoute,
-} from '#modules/navigator/translations';
+} from '@/modules/navigator/translations';
 
 export const navigatorRouter = {
   buildings: {

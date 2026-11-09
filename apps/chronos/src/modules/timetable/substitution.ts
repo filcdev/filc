@@ -3,12 +3,12 @@ import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
+} from '@/modules/activity-log/utils/record';
 import {
   cohort,
   dayDefinition,
@@ -21,24 +21,24 @@ import {
   teacher,
   termDefinition,
   weekDefinition,
-} from '#modules/timetable/schema';
-import { getActiveTimetableId } from '#modules/timetable/utils/active';
+} from '@/modules/timetable/schema';
+import { getActiveTimetableId } from '@/modules/timetable/utils/active';
 import {
   enrichLessons,
   loadLessonsByIds,
-} from '#modules/timetable/utils/enrich-lessons';
+} from '@/modules/timetable/utils/enrich-lessons';
 import {
   getWeekdayInBudapest,
   isMatchingWeekday,
-} from '#modules/timetable/utils/weekday';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { badRequest, conflict, notFound } from '#utils/http';
+} from '@/modules/timetable/utils/weekday';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { badRequest, conflict, notFound } from '@/utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
-} from '#utils/notifications/engine';
-import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
+} from '@/utils/notifications/engine';
+import { loadSubstitutionTeacherPayload } from '@/utils/notifications/substitution-teacher';
 
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];

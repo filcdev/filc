@@ -1,8 +1,8 @@
 import { asc, eq, inArray } from 'drizzle-orm';
 
-import { db } from '#database';
-import { lesson, period } from '#modules/timetable/schema';
-import { base } from '#orpc';
+import { db } from '@/database';
+import { lesson, period } from '@/modules/timetable/schema';
+import { base } from '@/orpc';
 
 export const getPeriodsForTimetable = base.timetable.periods.getAll.handler(
   async ({ input }) => {

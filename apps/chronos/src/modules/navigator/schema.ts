@@ -8,8 +8,8 @@ import {
   text,
 } from 'drizzle-orm/pg-core';
 
-import { timestamps } from '#database/helpers';
-import { building } from '#modules/timetable/schema';
+import { timestamps } from '@/database/helpers';
+import { building } from '@/modules/timetable/schema';
 
 // Entities in this file keep upstream Navigator's snake_case field names as
 // their TypeScript property names, so selected rows are already the wire shape

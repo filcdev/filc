@@ -2,21 +2,21 @@ import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from '#database';
-import { server } from '#index';
+import { db } from '@/database';
+import { server } from '@/index';
 import {
   auditLog,
   card,
   cardDevice,
   device as lockDevice,
   deviceHealth,
-} from '#modules/doorlock/schema';
+} from '@/modules/doorlock/schema';
 import {
   incomingMessageSchema,
   type OutgoingMessage,
   outgoingMessageSchema,
-} from '#modules/doorlock/utils/schemas';
-import { dispatchImmediateNotification } from '#utils/notifications/engine';
+} from '@/modules/doorlock/utils/schemas';
+import { dispatchImmediateNotification } from '@/utils/notifications/engine';
 
 const logger = getLogger(['chronos', 'doorlock', 'websocket']);
 

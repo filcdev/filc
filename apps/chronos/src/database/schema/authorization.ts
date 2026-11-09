@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core';
 
-import { timestamps } from '#database/helpers';
+import { timestamps } from '@/database/helpers';
 
 export const role = pgTable('role', {
   can: text('can')

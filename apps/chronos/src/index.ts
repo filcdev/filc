@@ -12,31 +12,31 @@ import type {
 import { RPCHandler } from '@orpc/server/fetch';
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4';
 
-import type { ChronosContext } from '#_types/globals';
-import { prepareDb } from '#database';
-import { resolveCaller } from '#middleware/auth';
+import type { ChronosContext } from '@/_types/globals';
+import { prepareDb } from '@/database';
+import { resolveCaller } from '@/middleware/auth';
 import {
   type DeviceSocketData,
   DOORLOCK_SOCKET_PATH,
   handlers as deviceSocketHandlers,
   upgrade as upgradeDeviceSocket,
-} from '#modules/doorlock/device-socket';
-import { handleUnsubscribe } from '#modules/notifications/unsubscribe-html';
-import { appRouter } from '#router';
-import { auth } from '#utils/authentication';
-import { initializeRBAC } from '#utils/authorization';
-import { setupCronJobs } from '#utils/cron';
-import { env } from '#utils/environment';
-import { configureLogger } from '#utils/logger';
-import { initializeNotificationEngine } from '#utils/notifications/initialize';
-import { openApiSpecOptions } from '#utils/openapi-spec';
+} from '@/modules/doorlock/device-socket';
+import { handleUnsubscribe } from '@/modules/notifications/unsubscribe-html';
+import { appRouter } from '@/router';
+import { auth } from '@/utils/authentication';
+import { initializeRBAC } from '@/utils/authorization';
+import { setupCronJobs } from '@/utils/cron';
+import { env } from '@/utils/environment';
+import { configureLogger } from '@/utils/logger';
+import { initializeNotificationEngine } from '@/utils/notifications/initialize';
+import { openApiSpecOptions } from '@/utils/openapi-spec';
 import {
   corsPlugins,
   MAX_REQUEST_BODY_BYTES,
   resolveClientIp,
   withSecurityHeaders,
-} from '#utils/security';
-import { initSentry } from '#utils/telemetry';
+} from '@/utils/security';
+import { initSentry } from '@/utils/telemetry';
 
 await configureLogger('chronos');
 const logger = getLogger(['chronos', 'server']);

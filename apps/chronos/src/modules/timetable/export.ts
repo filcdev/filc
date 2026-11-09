@@ -2,8 +2,8 @@ import type { DateRangeQueryInput } from '@filcdev/api/domains/timetable/export'
 import { permissions } from '@filcdev/api/permissions';
 import { desc, eq, gte, inArray, lte, type SQL } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+import { db } from '@/database';
+import { requireAuthentication, requireAuthorization } from '@/middleware/auth';
 import {
   classroom,
   cohort,
@@ -17,9 +17,9 @@ import {
   substitution,
   substitutionLessonMTM,
   teacher,
-} from '#modules/timetable/schema';
-import { base } from '#orpc';
-import { andAll } from '#utils/drizzle';
+} from '@/modules/timetable/schema';
+import { base } from '@/orpc';
+import { andAll } from '@/utils/drizzle';
 
 const buildDateFilters = (
   filters: SQL<unknown>[],

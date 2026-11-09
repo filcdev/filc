@@ -1,7 +1,7 @@
 import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { eq, inArray } from 'drizzle-orm';
 
-import { db } from '#database';
+import { db } from '@/database';
 import {
   classroom,
   cohort,
@@ -13,8 +13,8 @@ import {
   subject,
   teacher,
   weekDefinition,
-} from '#modules/timetable/schema';
-import { distinctIds } from '#utils/collections';
+} from '@/modules/timetable/schema';
+import { distinctIds } from '@/utils/collections';
 
 /** Load lesson rows by id. Ids that no longer exist are simply absent. */
 export function loadLessonsByIds(

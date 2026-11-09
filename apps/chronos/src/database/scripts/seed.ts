@@ -12,22 +12,22 @@ import { Presets, SingleBar } from 'cli-progress';
 import dayjs from 'dayjs';
 import { asc, eq, inArray } from 'drizzle-orm';
 
-import { db, prepareDb } from '#database/index';
-import { user } from '#database/schema/authentication';
-import { timetableImportStore } from '#database/timetable-import-store';
+import { db, prepareDb } from '@/database/index';
+import { user } from '@/database/schema/authentication';
+import { timetableImportStore } from '@/database/timetable-import-store';
 import {
   auditLog,
   card,
   cardDevice,
   device,
   deviceHealth,
-} from '#modules/doorlock/schema';
+} from '@/modules/doorlock/schema';
 import {
   announcement,
   announcementCohortMtm,
   blogPost,
   systemMessage,
-} from '#modules/news/schema';
+} from '@/modules/news/schema';
 import {
   classroom,
   cohort,
@@ -40,10 +40,10 @@ import {
   substitution,
   substitutionLessonMTM,
   teacher,
-} from '#modules/timetable/schema';
-import { getActiveTimetableId } from '#modules/timetable/utils/active';
-import { env } from '#utils/environment';
-import { configureLogger } from '#utils/logger';
+} from '@/modules/timetable/schema';
+import { getActiveTimetableId } from '@/modules/timetable/utils/active';
+import { env } from '@/utils/environment';
+import { configureLogger } from '@/utils/logger';
 
 const CANCELLATION_PROBABILITY = 0.3;
 /** Rows of PetrikTV demo data: one substitution and one moved lesson each. */

@@ -2,11 +2,11 @@ import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, asc, eq, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
-import { navigatorTranslation } from '#modules/navigator/schema';
-import { base } from '#orpc';
-import { badRequest, notFound } from '#utils/http';
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
+import { navigatorTranslation } from '@/modules/navigator/schema';
+import { base } from '@/orpc';
+import { badRequest, notFound } from '@/utils/http';
 
 export const listTranslationLanguagesRoute =
   base.navigator.translations.available.handler(async () => {

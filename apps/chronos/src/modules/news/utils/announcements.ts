@@ -1,6 +1,6 @@
 import { gte, lte, type SQL } from 'drizzle-orm';
 
-import { announcement } from '#modules/news/schema';
+import { announcement } from '@/modules/news/schema';
 
 /** How far in advance (days) a future announcement should be visible. */
 export const ANNOUNCEMENT_LEAD_DAYS = 7;

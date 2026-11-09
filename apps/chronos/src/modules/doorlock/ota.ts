@@ -2,12 +2,12 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
-import { sendMessage } from '#modules/doorlock/device-socket';
-import { device as lockDevice } from '#modules/doorlock/schema';
-import { base } from '#orpc';
-import { notFound } from '#utils/http';
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
+import { sendMessage } from '@/modules/doorlock/device-socket';
+import { device as lockDevice } from '@/modules/doorlock/schema';
+import { base } from '@/orpc';
+import { notFound } from '@/utils/http';
 
 const logger = getLogger(['chronos', 'doorlock', 'ota']);
 

@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 import { getLogger } from '@logtape/logtape';
 
-import { configureLogger } from '#utils/logger';
+import { configureLogger } from '@/utils/logger';
 
 import {
   buildOpenApiDocument,

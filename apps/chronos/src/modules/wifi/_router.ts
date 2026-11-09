@@ -20,17 +20,17 @@ import {
   updateWifiRoleProfile,
   updateWifiSpeedProfile,
   updateWifiUser,
-} from '#modules/wifi/admin';
-import { authorizeRadiusHandler } from '#modules/wifi/radius';
+} from '@/modules/wifi/admin';
+import { authorizeRadiusHandler } from '@/modules/wifi/radius';
 import {
   createSelfWifi,
   getSelfWifi,
   getSelfWifiCertificate,
   updateSelfWifiDevice,
   updateSelfWifiPassword,
-} from '#modules/wifi/self';
-import { wifiStats } from '#modules/wifi/stats';
-import { wifiStatus } from '#modules/wifi/status';
+} from '@/modules/wifi/self';
+import { wifiStats } from '@/modules/wifi/stats';
+import { wifiStatus } from '@/modules/wifi/status';
 
 export const wifiRouter = {
   authLogs: { list: listWifiAuthLogs },

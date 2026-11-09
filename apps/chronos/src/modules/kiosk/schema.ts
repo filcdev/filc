@@ -9,7 +9,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import type { JSONType } from 'zod';
 
-import { timestamps } from '#database/helpers';
+import { timestamps } from '@/database/helpers';
 
 /**
  * A managed kiosk box. `machineId` is the box's own identity (DMI product

@@ -1,12 +1,12 @@
 import { and, count, desc, gte, isNotNull, lte } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { role } from '#database/schema/authorization';
-import { cohort, movedLesson, substitution } from '#modules/timetable/schema';
-import { getActiveTimetableId } from '#modules/timetable/utils/active';
-import { base } from '#orpc';
-import { toDateOnlyString } from '#utils/date';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { role } from '@/database/schema/authorization';
+import { cohort, movedLesson, substitution } from '@/modules/timetable/schema';
+import { getActiveTimetableId } from '@/modules/timetable/utils/active';
+import { base } from '@/orpc';
+import { toDateOnlyString } from '@/utils/date';
 
 export const getDashboardStats = base.dashboard.stats.handler(
   async ({ input }) => {

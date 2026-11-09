@@ -41,7 +41,7 @@ External consumers get plain HTTP: every procedure also appears in the OpenAPI d
 - **Non-RPC surfaces**: `GET /api/auth/*` (better-auth), the `/api/notifications/unsubscribe` HTML pages, and the aegis door-lock WebSocket (`GET /api/doorlock/ws`, a hand-rolled JSON protocol the firmware speaks) are dispatched from `src/index.ts` before the oRPC handlers — deliberately outside the contract.
 - **Auth**: `requireAuthentication` and `requireAuthorization(permissions.<name>)` oRPC middlewares; permission strings are canonical constants from `@filcdev/api/permissions` (never inline `'resource:action'` literals).
 - **Database**: Drizzle schema sources sit next to the feature that owns them (`apps/chronos/src/modules/<feature>/schema.ts`), with only the shared identity and RBAC tables in `apps/chronos/src/database/schema`; `drizzle.config.ts` globs both. Migrations are generated (`bun run db:generate`) and never hand-edited. The repo root [`compose.yml`](../compose.yml) runs a local Postgres 18 instance (Alpine) as the dev database; run `docker compose up -d` and see CONTRIBUTING.md for the alternative `pg-dispo` flow.
-- **Success/errors**: a handler returns its payload and the route's `successStatus` supplies the status; failures throw `ORPCError`s built by the `#utils/http` helpers, all of whose codes and statuses come from the shared error map installed with `oc.errors(apiErrors)`.
+- **Success/errors**: a handler returns its payload and the route's `successStatus` supplies the status; failures throw `ORPCError`s built by the `@/utils/http` helpers, all of whose codes and statuses come from the shared error map installed with `oc.errors(apiErrors)`.
 
 ## Observability
 

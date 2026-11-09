@@ -1,12 +1,12 @@
 import { permissions } from '@filcdev/api/permissions';
 import { count, desc, eq, gte, ilike, lte, or, type SQL } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
-import { activityLog } from '#modules/activity-log/schema';
-import { base } from '#orpc';
-import { andAll } from '#utils/drizzle';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
+import { activityLog } from '@/modules/activity-log/schema';
+import { base } from '@/orpc';
+import { andAll } from '@/utils/drizzle';
 
 export type ActivityLogEntry = typeof activityLog.$inferSelect & {
   actor: {

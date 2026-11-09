@@ -2,7 +2,7 @@ import { appContract } from '@filcdev/api/contract';
 import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4';
 
-import { openApiSpecOptions } from '#utils/openapi-spec';
+import { openApiSpecOptions } from '@/utils/openapi-spec';
 
 /**
  * Builds the Chronos OpenAPI document in memory. Shared by

@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { S3Client, type S3File } from 'bun';
 
-import { env } from '#utils/environment';
-import { badGateway } from '#utils/http';
+import { env } from '@/utils/environment';
+import { badGateway } from '@/utils/http';
 
 const logger = getLogger(['chronos', 'storage', 's3']);
 

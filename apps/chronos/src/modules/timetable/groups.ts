@@ -1,11 +1,11 @@
 import { deriveDivisionLabel } from '@filcdev/timetable-import/types';
 import { and, eq, inArray } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthentication } from '#middleware/auth';
-import { cohort, cohortGroup, userGroup } from '#modules/timetable/schema';
-import { base } from '#orpc';
-import { badRequest, forbidden, notFound } from '#utils/http';
+import { db } from '@/database';
+import { requireAuthentication } from '@/middleware/auth';
+import { cohort, cohortGroup, userGroup } from '@/modules/timetable/schema';
+import { base } from '@/orpc';
+import { badRequest, forbidden, notFound } from '@/utils/http';
 
 export const getGroupsForCohort = base.timetable.groups.getForCohort.handler(
   async ({ input, context }) => {

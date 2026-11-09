@@ -2,7 +2,7 @@ import { getLogger } from '@logtape/logtape';
 import { init, setUser } from '@sentry/bun';
 import type { Session, User } from 'better-auth';
 
-import { env } from '#utils/environment';
+import { env } from '@/utils/environment';
 
 const logger = getLogger(['chronos', 'telemetry']);
 

@@ -2,12 +2,12 @@ import type { TeacherListItem } from '@filcdev/api/domains/timetable/teacher';
 import { permissions } from '@filcdev/api/permissions';
 import { eq } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { teacher } from '#modules/timetable/schema';
-import { base } from '#orpc';
-import { badRequest, notFound } from '#utils/http';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthentication, requireAuthorization } from '@/middleware/auth';
+import { teacher } from '@/modules/timetable/schema';
+import { base } from '@/orpc';
+import { badRequest, notFound } from '@/utils/http';
 
 /**
  * Public teacher list used by the timetable filter bars and substitution

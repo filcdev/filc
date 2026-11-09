@@ -1,11 +1,11 @@
 import { eq, inArray } from 'drizzle-orm';
 
-import type { db } from '#database';
+import type { db } from '@/database';
 import {
   lesson,
   lessonCohortMTM,
   substitutionLessonMTM,
-} from '#modules/timetable/schema';
+} from '@/modules/timetable/schema';
 
 type TxClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

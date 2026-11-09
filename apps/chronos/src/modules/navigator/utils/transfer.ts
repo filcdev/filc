@@ -8,7 +8,7 @@ import {
   liftSelectSchema,
   stairSelectSchema,
   translationSelectSchema,
-} from '#modules/navigator/utils/schemas';
+} from '@/modules/navigator/utils/schemas';
 
 /**
  * Transfer schemas for navigator export/import. Each strips the audit

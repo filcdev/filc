@@ -1,6 +1,6 @@
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { serviceUnavailable } from '#utils/http';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { serviceUnavailable } from '@/utils/http';
 
 /**
  * Every WiFi procedure except `status` is unavailable while the module is off.

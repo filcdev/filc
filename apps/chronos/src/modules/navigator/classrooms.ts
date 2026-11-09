@@ -2,16 +2,16 @@ import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { asc, eq, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   classroom as classroomTable,
   cohort,
   lesson,
   movedLesson,
-} from '#modules/timetable/schema';
-import { base } from '#orpc';
-import { conflict, notFound } from '#utils/http';
+} from '@/modules/timetable/schema';
+import { base } from '@/orpc';
+import { conflict, notFound } from '@/utils/http';
 
 export const listClassroomsRoute = base.navigator.classrooms.list.handler(
   async () => {

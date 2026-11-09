@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { asc, inArray } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
 import {
   cohort,
   cohortGroup,
@@ -11,7 +11,7 @@ import {
   movedLesson,
   substitution,
   teacher,
-} from '#modules/timetable/schema';
+} from '@/modules/timetable/schema';
 
 const logger = getLogger(['chronos', 'timetable', 'cleanup']);
 

@@ -1,19 +1,19 @@
 import { getLogger } from '@logtape/logtape';
 import { eq, inArray } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
-import { notification, userPreferences } from '#modules/notifications/schema';
-import { lessonCohortMTM } from '#modules/timetable/schema';
-import { enqueue } from '#utils/notifications/queue';
+import { db } from '@/database';
+import { user as userTable } from '@/database/schema/authentication';
+import { notification, userPreferences } from '@/modules/notifications/schema';
+import { lessonCohortMTM } from '@/modules/timetable/schema';
+import { enqueue } from '@/utils/notifications/queue';
 import type {
   AudienceUser,
   NotificationContent,
   NotificationHandler,
   NotificationPreferences,
   NotificationType,
-} from '#utils/notifications/types';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
+} from '@/utils/notifications/types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 

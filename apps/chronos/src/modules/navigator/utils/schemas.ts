@@ -3,9 +3,9 @@ import {
   navigatorLift,
   navigatorStair,
   navigatorTranslation,
-} from '#modules/navigator/schema';
-import { building, classroom, classroomType } from '#modules/timetable/schema';
-import { createSelectSchema } from '#utils/zod';
+} from '@/modules/navigator/schema';
+import { building, classroom, classroomType } from '@/modules/timetable/schema';
+import { createSelectSchema } from '@/utils/zod';
 
 /** Row schemas derived from the tables, so the docs always match the wire. */
 export const buildingSelectSchema = createSelectSchema(building);

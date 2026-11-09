@@ -1,9 +1,9 @@
 import { kioskKindSchema } from '@filcdev/api/domains/kiosk/config';
 import { eq } from 'drizzle-orm';
 
-import { db } from '#database';
-import { kiosk } from '#modules/kiosk/schema';
-import { base } from '#orpc';
+import { db } from '@/database';
+import { kiosk } from '@/modules/kiosk/schema';
+import { base } from '@/orpc';
 
 export const heartbeat = base.kiosk.heartbeat.handler(
   async ({ context, input }) => {

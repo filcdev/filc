@@ -2,24 +2,24 @@ import { colorSchemeSchema } from '@filcdev/api/domains/theme';
 import { ORPCError } from '@orpc/server';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
-import { requireAuthentication } from '#middleware/auth';
+import { db } from '@/database';
+import { user as userTable } from '@/database/schema/authentication';
+import { requireAuthentication } from '@/middleware/auth';
 import {
   fcmToken,
   notification,
   userPreferences,
-} from '#modules/notifications/schema';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { forbidden, notFound } from '#utils/http';
-import { sendPush } from '#utils/notifications/providers/fcm';
+} from '@/modules/notifications/schema';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { forbidden, notFound } from '@/utils/http';
+import { sendPush } from '@/utils/notifications/providers/fcm';
 import {
   renderPreviewEmail,
   sendEmail,
-} from '#utils/notifications/providers/smtp';
-import { enqueue } from '#utils/notifications/queue';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
+} from '@/utils/notifications/providers/smtp';
+import { enqueue } from '@/utils/notifications/queue';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/utils/notifications/types';
 
 export const listNotifications = base.notifications.list
   .use(requireAuthentication)

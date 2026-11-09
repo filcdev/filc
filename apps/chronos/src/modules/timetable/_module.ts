@@ -1,6 +1,6 @@
-import type { Module } from '#modules/module';
-import { timetableNotifications } from '#modules/timetable/_notifications';
-import { cleanupOrphanedCohorts } from '#modules/timetable/utils/cleanup';
+import type { Module } from '@/modules/module';
+import { timetableNotifications } from '@/modules/timetable/_notifications';
+import { cleanupOrphanedCohorts } from '@/modules/timetable/utils/cleanup';
 
 /**
  * The timetable: lessons, substitutions and moved lessons, the daily trim of

@@ -1,9 +1,9 @@
 import { ORPCError } from '@orpc/server';
 
-import { requireWifiEnabled } from '#middleware/wifi';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { forbidden, notFound } from '#utils/http';
+import { requireWifiEnabled } from '@/middleware/wifi';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { forbidden, notFound } from '@/utils/http';
 
 import { getWifiController } from './utils/controller';
 import { authorizeRadius } from './utils/radius';

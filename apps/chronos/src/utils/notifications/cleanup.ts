@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { lt } from 'drizzle-orm';
 
-import { db } from '#database';
-import { notification } from '#modules/notifications/schema';
+import { db } from '@/database';
+import { notification } from '@/modules/notifications/schema';
 
 const logger = getLogger(['chronos', 'notifications', 'cleanup']);
 

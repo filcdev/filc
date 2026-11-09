@@ -1,4 +1,4 @@
-import { getSiteTheme, updateSiteTheme } from '#modules/theme/index';
+import { getSiteTheme, updateSiteTheme } from '@/modules/theme/index';
 
 export const themeRouter = {
   get: getSiteTheme,

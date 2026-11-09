@@ -20,13 +20,13 @@
 
 ## Conventions
 
-- Use the correct path alias for the app you are editing: `#...` in Chronos and `@/...` in Iris.
+- Every app's `src` is reachable as `@/...` (`@/utils/http`), declared once per app in its `tsconfig.json` `paths` — Vite apps also alias it in `vite.config.ts` because Vite does not read `paths`. Nothing declares an alias in `package.json`: Chronos' old `#...` subpath imports are gone.
 - An app never imports another app. Shared code lives in a package (`@filcdev/api`, `@filcdev/auth`, `@filcdev/ui`, …) or stays in the app that needs it.
 - Do not hand-edit generated files such as [apps/iris/src/routeTree.gen.ts](apps/iris/src/routeTree.gen.ts), the SQL files under [apps/chronos/src/database/migrations](apps/chronos/src/database/migrations), or the OpenAPI documents under [apps/chronos/openapi](apps/chronos/openapi) (regenerate them with `bun run openapi:generate`).
 - Backend commands that need auth or database configuration rely on [apps/chronos/.env.example](apps/chronos/.env.example).
 - If a change crosses backend and frontend, keep the API contract and client usage aligned before finishing.
 - Bun 1.4.0 ignores `[run] bun = true` from bunfig.toml when spawning package binaries. Scripts that need the Bun runtime (vite, drizzle-kit) must invoke them via `bun --bun <binary>`; see the `dev`, `build`, and `db:*` scripts.
-- Every API error response carries a machine-readable `code` from the shared error map in [packages/api/src/errors.ts](packages/api/src/errors.ts), installed on the whole contract with `oc.errors(apiErrors)`. The map is what gives a code its HTTP status, its default message and its documented error response, so a new code is added there and nowhere else. Throw through the helpers in Chronos' `#utils/http` (`notFound`, `conflict`, `badRequest`, `forbidden`, `unauthorized`, `badGateway`, `serviceUnavailable`) or the `errors.<CODE>(...)` factories a handler receives; clients read the code off the thrown `ORPCError`.
+- Every API error response carries a machine-readable `code` from the shared error map in [packages/api/src/errors.ts](packages/api/src/errors.ts), installed on the whole contract with `oc.errors(apiErrors)`. The map is what gives a code its HTTP status, its default message and its documented error response, so a new code is added there and nowhere else. Throw through the helpers in Chronos' `@/utils/http` (`notFound`, `conflict`, `badRequest`, `forbidden`, `unauthorized`, `badGateway`, `serviceUnavailable`) or the `errors.<CODE>(...)` factories a handler receives; clients read the code off the thrown `ORPCError`.
 
 ## Logging And Observability
 
@@ -65,7 +65,7 @@ The app log is the first place to look when tracking a bug, and the record we le
 - What a notification says, who receives it and which preference gates it live in the module's `_notifications.ts`, as one `NotificationHandler` object per type. The engine in [apps/chronos/src/utils/notifications/engine.ts](apps/chronos/src/utils/notifications/engine.ts) holds no per-type bookkeeping; it only exports the audience resolvers a handler calls.
 - Handler shape: `handler(async ({ input, context }) => payload)`; read `input` (the flat object), `context.user`/`context.session` (non-null after a guard), `context.reqHeaders.get(...)`, `context.clientIp`, and add response headers with `context.resHeaders?.set(...)`.
 - Reuse `requireAuthentication` and `requireAuthorization(permissions.<name>)` from [apps/chronos/src/middleware/auth.ts](apps/chronos/src/middleware/auth.ts) instead of inline permission checks.
-- Success is `return payload` (the status comes from the route's `successStatus`); errors are thrown `ORPCError`s — the `#utils/http` helpers, or the `errors.<CODE>(...)` factories a handler/middleware receives.
+- Success is `return payload` (the status comes from the route's `successStatus`); errors are thrown `ORPCError`s — the `@/utils/http` helpers, or the `errors.<CODE>(...)` factories a handler/middleware receives.
 - The transport lives in [apps/chronos/src/index.ts](apps/chronos/src/index.ts): `/api/rpc/*` answers the typed client, `/api/*` serves OpenAPI (`/api/doc/openapi.json`) and Swagger UI (`/api/doc/swagger`). Three surfaces are deliberately outside the contract and dispatched before the handlers: `GET /api/auth/*` (better-auth), the `/api/notifications/unsubscribe` HTML pages, and the aegis door-lock WebSocket at `GET /api/doorlock/ws`.
 
 ### Database Schema

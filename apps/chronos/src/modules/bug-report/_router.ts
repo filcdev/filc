@@ -3,7 +3,7 @@ import {
   deleteBugReport,
   listBugReports,
   updateBugReportStatus,
-} from '#modules/bug-report/index';
+} from '@/modules/bug-report/index';
 
 export const bugReportRouter = {
   create: createBugReport,

@@ -1,4 +1,4 @@
-import type { auth } from '#utils/authentication';
+import type { auth } from '@/utils/authentication';
 
 /**
  * Everything the transport knows before a procedure runs, built once per

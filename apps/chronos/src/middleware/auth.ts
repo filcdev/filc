@@ -2,12 +2,12 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { getLogger } from '@logtape/logtape';
 
-import type { ChronosContext } from '#_types/globals';
-import { base } from '#orpc';
-import { auth } from '#utils/authentication';
-import { rbac, userHasPermission } from '#utils/authorization';
-import { env } from '#utils/environment';
-import { setSentryUser } from '#utils/telemetry';
+import type { ChronosContext } from '@/_types/globals';
+import { base } from '@/orpc';
+import { auth } from '@/utils/authentication';
+import { rbac, userHasPermission } from '@/utils/authorization';
+import { env } from '@/utils/environment';
+import { setSentryUser } from '@/utils/telemetry';
 
 const logger = getLogger(['chronos', 'auth']);
 

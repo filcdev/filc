@@ -1,6 +1,6 @@
 import { getLogger } from '@logtape/logtape';
 
-import { env } from '#utils/environment';
+import { env } from '@/utils/environment';
 
 import { createUnifiController } from './unifi-controller';
 

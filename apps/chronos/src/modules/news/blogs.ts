@@ -3,21 +3,21 @@ import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
-import { blogPost } from '#modules/news/schema';
-import { ensureUniqueSlug, generateSlug } from '#modules/news/utils/schemas';
-import { base } from '#orpc';
-import { badRequest, notFound } from '#utils/http';
+} from '@/modules/activity-log/utils/record';
+import { blogPost } from '@/modules/news/schema';
+import { ensureUniqueSlug, generateSlug } from '@/modules/news/utils/schemas';
+import { base } from '@/orpc';
+import { badRequest, notFound } from '@/utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
-} from '#utils/notifications/engine';
+} from '@/utils/notifications/engine';
 
 const authorSelect = {
   id: user.id,

@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { kiosk } from '#modules/kiosk/schema';
-import { badRequest } from '#utils/http';
+import { db } from '@/database';
+import { kiosk } from '@/modules/kiosk/schema';
+import { badRequest } from '@/utils/http';
 
 /** Throw 400 if any of the provided kiosk IDs do not exist. */
 export const validateKioskIds = async (kioskIds: string[]) => {

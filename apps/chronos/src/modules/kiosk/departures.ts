@@ -1,8 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { badGateway } from '#utils/http';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { badGateway } from '@/utils/http';
 
 const logger = getLogger(['chronos', 'kiosk', 'departures']);
 

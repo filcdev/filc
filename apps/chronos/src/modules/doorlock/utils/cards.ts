@@ -3,15 +3,15 @@ import dayjs from 'dayjs';
 import type { SQL } from 'drizzle-orm';
 import { count, desc, eq, lt } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
 import {
   auditLog,
   card,
   cardDevice,
   device,
   deviceHealth,
-} from '#modules/doorlock/schema';
+} from '@/modules/doorlock/schema';
 
 const logger = getLogger(['chronos', 'doorlock', 'cards']);
 

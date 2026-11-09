@@ -6,17 +6,17 @@ import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthentication } from '#middleware/auth';
-import { requireWifiEnabled } from '#middleware/wifi';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
+import { db } from '@/database';
+import { requireAuthentication } from '@/middleware/auth';
+import { requireWifiEnabled } from '@/middleware/wifi';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
 import {
   badRequest,
   conflict,
   notFound,
   serviceUnavailable,
-} from '#utils/http';
+} from '@/utils/http';
 
 import { wifiDevice, wifiUser } from './schema';
 import { encryptPassword } from './utils/encryptor';

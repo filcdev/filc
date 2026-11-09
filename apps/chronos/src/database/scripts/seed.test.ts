@@ -3,15 +3,15 @@ import process from 'node:process';
 import { getLogger } from '@logtape/logtape';
 import { getTableName, sql } from 'drizzle-orm';
 
-import { db, prepareDb } from '#database/index';
-import { apiKeySchema } from '#database/schema/api-keys';
+import { db, prepareDb } from '@/database/index';
+import { apiKeySchema } from '@/database/schema/api-keys';
 import {
   authenticationSchema,
   session,
   user,
-} from '#database/schema/authentication';
-import { authorizationSchema, role } from '#database/schema/authorization';
-import { doorlockSchema } from '#modules/doorlock/schema';
+} from '@/database/schema/authentication';
+import { authorizationSchema, role } from '@/database/schema/authorization';
+import { doorlockSchema } from '@/modules/doorlock/schema';
 import {
   cohort,
   dayDefinition,
@@ -25,9 +25,9 @@ import {
   timetable,
   timetableSchema,
   weekDefinition,
-} from '#modules/timetable/schema';
-import { wifiSchema } from '#modules/wifi/schema';
-import { configureLogger } from '#utils/logger';
+} from '@/modules/timetable/schema';
+import { wifiSchema } from '@/modules/wifi/schema';
+import { configureLogger } from '@/utils/logger';
 
 /**
  * Deterministic, non-interactive world for the E2E suite (issue #263).

@@ -9,10 +9,10 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { timestamps } from '#database/helpers';
-import { user } from '#database/schema/authentication';
-import type { NotificationPreferences } from '#utils/notifications/types';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
+import { timestamps } from '@/database/helpers';
+import { user } from '@/database/schema/authentication';
+import type { NotificationPreferences } from '@/utils/notifications/types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/utils/notifications/types';
 
 export const userPreferences = pgTable('user_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),

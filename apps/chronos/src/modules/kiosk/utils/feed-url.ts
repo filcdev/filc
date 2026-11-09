@@ -1,6 +1,6 @@
 import { lookup } from 'node:dns/promises';
 
-import { badRequest } from '#utils/http';
+import { badRequest } from '@/utils/http';
 
 const IPV4_OCTET_RE = /^\d{1,3}$/;
 const IPV6_HEXTET_RE = /^[0-9a-f]{1,4}$/;

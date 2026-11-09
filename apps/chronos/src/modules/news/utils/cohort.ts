@@ -1,9 +1,9 @@
 import { type SQL, sql } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 
-import { db } from '#database';
-import { cohort } from '#modules/timetable/schema';
-import { badRequest } from '#utils/http';
+import { db } from '@/database';
+import { cohort } from '@/modules/timetable/schema';
+import { badRequest } from '@/utils/http';
 
 /** Throw 400 if any of the provided cohort IDs do not exist. */
 export const validateCohortIds = async (cohortIds: string[]) => {

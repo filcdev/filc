@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 
-import { db } from '#database';
-import { base } from '#orpc';
-import { serviceUnavailable } from '#utils/http';
+import { db } from '@/database';
+import { base } from '@/orpc';
+import { serviceUnavailable } from '@/utils/http';
 
 export const health = base.health.health.handler(async () => {
   try {

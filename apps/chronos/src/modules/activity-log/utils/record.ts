@@ -1,9 +1,9 @@
 import { getLogger } from '@logtape/logtape';
 
-import type { ChronosContext } from '#_types/globals';
-import type { db as Db } from '#database';
-import { db } from '#database';
-import { activityLog } from '#modules/activity-log/schema';
+import type { ChronosContext } from '@/_types/globals';
+import type { db as Db } from '@/database';
+import { db } from '@/database';
+import { activityLog } from '@/modules/activity-log/schema';
 
 type TxOrDb =
   typeof db | Parameters<Parameters<(typeof Db)['transaction']>[0]>[0];

@@ -9,7 +9,7 @@ import {
   getObjectFile,
   isObjectStorageConfigured,
   putObject,
-} from '#utils/storage/s3';
+} from '@/utils/storage/s3';
 
 const logger = getLogger(['chronos', 'avatars']);
 

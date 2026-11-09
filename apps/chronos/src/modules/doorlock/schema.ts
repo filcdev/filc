@@ -9,8 +9,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import { timestamps } from '#database/helpers';
-import { user } from '#database/schema/authentication';
+import { timestamps } from '@/database/helpers';
+import { user } from '@/database/schema/authentication';
 
 export const device = pgTable('device', {
   apiToken: text('api_token').notNull().unique(),

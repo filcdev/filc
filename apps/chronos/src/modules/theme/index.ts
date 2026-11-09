@@ -3,11 +3,11 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
-import { recordActivity } from '#modules/activity-log/utils/record';
-import { siteTheme } from '#modules/theme/schema';
-import { base } from '#orpc';
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
+import { recordActivity } from '@/modules/activity-log/utils/record';
+import { siteTheme } from '@/modules/theme/schema';
+import { base } from '@/orpc';
 
 const logger = getLogger(['chronos', 'theme']);
 

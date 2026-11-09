@@ -1,6 +1,6 @@
-import { resolveAudienceForUser } from '#utils/notifications/engine';
-import { isHungarianLocale } from '#utils/notifications/locale';
-import type { NotificationHandler } from '#utils/notifications/types';
+import { resolveAudienceForUser } from '@/utils/notifications/engine';
+import { isHungarianLocale } from '@/utils/notifications/locale';
+import type { NotificationHandler } from '@/utils/notifications/types';
 
 /**
  * The notification the door lock owns: a card was used, told to the user the

@@ -9,10 +9,10 @@ import {
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 
-import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
-import { env } from '#utils/environment';
-import type { NotificationType } from '#utils/notifications/types';
+import { db } from '@/database';
+import { user as userTable } from '@/database/schema/authentication';
+import { env } from '@/utils/environment';
+import type { NotificationType } from '@/utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'smtp']);
 
