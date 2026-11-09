@@ -2,6 +2,7 @@ import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, eq, gte, inArray, or, sql } from 'drizzle-orm';
+
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import {
@@ -814,7 +815,9 @@ export const createMovedLesson = base.timetable.movedLessons.create
           action: 'create',
           entityId: row.id,
           entityType: 'movedLesson',
-          metadata: buildCreateMetadata(body),
+          // The stored values, not the raw body: a linked create discards any
+          // manual ids the client sent, so the audit must not record them.
+          metadata: buildCreateMetadata({ ...body, ...manualValues }),
         },
         tx
       );
