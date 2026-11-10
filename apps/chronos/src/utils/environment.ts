@@ -1,6 +1,6 @@
 import { camelKeys, replaceKeys } from 'string-ts';
 import z from 'zod';
-import { DEFAULT_TIME_ZONE } from '#utils/date';
+import { DEFAULT_TIME_ZONE, isTimeZone } from '#utils/time-zone';
 
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
@@ -13,18 +13,6 @@ const boolean = z.preprocess((v) => {
   }
   return Boolean(v);
 }, z.boolean());
-
-// Probing the ICU time-zone database is the only way to validate an IANA name.
-// An unknown zone is a configuration error, not a recoverable case, so it must
-// fail the env parse rather than silently fall back.
-const isTimeZone = (value: string): boolean => {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: value });
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 const envShape = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),
@@ -166,3 +154,4 @@ const makeTypedEnvironment =
 const getEnv = makeTypedEnvironment((v) => envSchema.parse(v));
 
 export const env = getEnv(Bun.env);
+export const parseEnv = getEnv;
