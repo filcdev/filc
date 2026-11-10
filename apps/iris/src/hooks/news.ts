@@ -30,7 +30,7 @@ type CohortsResponse = Awaited<ReturnType<typeof api.cohort.cohort>>['items'];
 export type Cohort = CohortsResponse[number];
 
 /** Full announcement list including expired entries. */
-export function useAnnouncements() {
+export function useAnnouncements(enabled = true) {
   return useQuery({
     ...orpc.news.announcements.list.queryOptions({
       // The admin table is the one place kiosk-only items stay visible.
@@ -40,6 +40,7 @@ export function useAnnouncements() {
         includeKioskOnly: 'true',
       },
     }),
+    enabled,
     select: (payload) => payload.items,
   });
 }

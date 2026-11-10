@@ -1,12 +1,18 @@
 import { notificationTypeValues } from '@filcdev/api/domains/notifications';
 import { ERROR_CODE } from '@filcdev/api/errors';
 import { isDefinedError } from '@orpc/client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { useMovedLessons } from '@/hooks/moved-lessons';
+import { useAdminSystemMessages, useAnnouncements } from '@/hooks/news';
+import { useSubstitutions } from '@/hooks/substitutions';
+import { getLocalizedWeekdayName, parseDateOnly } from '@/utils/date-locale';
 import { api, orpc } from '@/utils/orpc';
 
 export const NOTIFICATION_TYPES = notificationTypeValues;
+
+type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 type MockText = { content: string; title: string };
 
@@ -144,6 +150,128 @@ export const describeTestNotificationError = <T>(
   isDefinedError(error) && error.code === ERROR_CODE.FORBIDDEN
     ? message.disabled
     : message.fallback;
+
+/** Date-only ISO label for the record picker; the API sends a local midnight. */
+function formatRecordDate(value: Date | string): string {
+  const date = parseDateOnly(value);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** "3. óra" / "Period 3", mirroring the backend's notification period label. */
+function formatPeriodNumber(
+  period: number,
+  language: string,
+  periodWord: string
+): string {
+  return language.toLowerCase().startsWith('hu')
+    ? `${period}. ${periodWord.toLocaleLowerCase()}`
+    : `${periodWord} ${period}`;
+}
+
+/**
+ * Pickable real records for the dev preview, one short label per record. Every
+ * list is gated on the selected type so the page only fetches what it shows.
+ * Types the preview endpoint cannot render return an empty list.
+ */
+export function useTestNotificationRecordOptions(
+  type: NotificationType
+): { id: string; label: string }[] {
+  const { i18n, t } = useTranslation();
+  const substitutions = useSubstitutions(type === 'substitution');
+  const movedLessons = useMovedLessons(type === 'moved_lesson');
+  const announcements = useAnnouncements(type === 'announcement');
+  const systemMessages = useAdminSystemMessages(type === 'system_message');
+  const blogPosts = useQuery({
+    ...orpc.news.blogs.list.queryOptions({
+      input: { limit: 50, offset: 0 },
+    }),
+    enabled: type === 'blog_post',
+    select: (payload) => payload.items,
+  });
+
+  switch (type) {
+    case 'substitution':
+      return (substitutions.data ?? []).map((item) => {
+        const lesson = item.lessons[0];
+        const cohort = lesson?.cohorts[0]?.name;
+        const subject = lesson?.subject?.name;
+        const period = lesson?.period?.period;
+        const parts = [formatRecordDate(item.substitution.date)];
+        if (cohort) {
+          parts.push(cohort);
+        }
+        if (subject) {
+          parts.push(subject);
+        }
+        if (period != null) {
+          parts.push(
+            formatPeriodNumber(period, i18n.language, t('substitution.period'))
+          );
+        }
+        if (!(cohort || subject || period != null)) {
+          parts.push(
+            t('devNotifications.recordLessonCount', {
+              count: item.lessons.length,
+            })
+          );
+        }
+        return { id: item.substitution.id, label: parts.join(' · ') };
+      });
+    case 'moved_lesson':
+      return (movedLessons.data ?? []).map((item) => {
+        const subject =
+          item.manual?.subject?.name ?? item.lessons[0]?.subject?.name;
+        const day = item.dayDefinition
+          ? getLocalizedWeekdayName(
+              item.dayDefinition.name,
+              item.dayDefinition.short,
+              i18n.language,
+              'long'
+            )
+          : null;
+        const period = item.period?.period;
+        const target = [
+          day,
+          period == null
+            ? null
+            : formatPeriodNumber(
+                period,
+                i18n.language,
+                t('substitution.period')
+              ),
+        ]
+          .filter(Boolean)
+          .join(', ');
+        const parts = [formatRecordDate(item.movedLesson.date)];
+        if (subject) {
+          parts.push(subject);
+        }
+        if (target) {
+          parts.push(`→ ${target}`);
+        }
+        return { id: item.movedLesson.id, label: parts.join(' · ') };
+      });
+    case 'announcement':
+      return (announcements.data ?? []).map((item) => ({
+        id: item.id,
+        label: `${formatRecordDate(item.validFrom)} · ${item.title ?? t('announcements.untitled')}`,
+      }));
+    case 'system_message':
+      return (systemMessages.data ?? []).map((item) => ({
+        id: item.id,
+        label: `${formatRecordDate(item.validFrom)} · ${item.title}`,
+      }));
+    case 'blog_post':
+      return (blogPosts.data ?? []).map((item) => ({
+        id: item.id,
+        label: `${formatRecordDate(item.publishedAt ?? item.createdAt)} · ${item.title}`,
+      }));
+    default:
+      return [];
+  }
+}
 
 /** Send a dev-only test notification with granular channel options. */
 export function useSendTestNotification({
