@@ -1,5 +1,6 @@
 import { camelKeys, replaceKeys } from 'string-ts';
 import z from 'zod';
+import { DEFAULT_TIME_ZONE, isTimeZone } from '#utils/time-zone';
 
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
@@ -94,6 +95,12 @@ const envShape = z.object({
   CHRONOS_SMTP_PORT: z.coerce.number().default(587),
   CHRONOS_SMTP_SECURE: boolean.default(false),
   CHRONOS_SMTP_USER: z.string().optional(),
+  CHRONOS_TIME_ZONE: z
+    .string()
+    .refine(isTimeZone, { message: 'Must be a valid IANA time zone' })
+    // `prefault` (not `default`) so the fallback itself runs the refine: a
+    // typo'd default must fail the env parse instead of shipping an unknown zone.
+    .prefault(DEFAULT_TIME_ZONE),
   CHRONOS_TRUSTED_ORIGINS: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()
@@ -147,3 +154,4 @@ const makeTypedEnvironment =
 const getEnv = makeTypedEnvironment((v) => envSchema.parse(v));
 
 export const env = getEnv(Bun.env);
+export const parseEnv = getEnv;
