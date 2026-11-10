@@ -261,6 +261,7 @@ async function fireNotification(
         enqueue({
           channelsEnabled,
           content: content.content,
+          details: content.details,
           email: user.email,
           language: user.language,
           notificationId: notif.id,

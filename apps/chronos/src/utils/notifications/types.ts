@@ -1,3 +1,5 @@
+import type { EmailDetail } from '@filcdev/mail';
+
 export type NotificationType =
   | 'substitution'
   | 'substitution_teacher'
@@ -45,6 +47,7 @@ export type AudienceUser = {
 export type NotificationContent = {
   title: string;
   content: string;
+  details?: EmailDetail[];
   metadata?: Record<string, unknown>;
 };
 
@@ -70,6 +73,7 @@ export type DeliveryJob = {
   type: NotificationType;
   title: string;
   content: string;
+  details?: EmailDetail[];
   channelsEnabled: boolean;
   /** Locale the recipient's `buildContent` ran with; the email wrapper uses it too. */
   language: string;

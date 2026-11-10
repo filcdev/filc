@@ -1,5 +1,8 @@
 export type Locale = 'en' | 'hu';
 
+/** One label/value row in the optional details block of a notification email. */
+export type EmailDetail = { label: string; value: string };
+
 export type Branding = {
   appName: string;
   appUrl: string;
@@ -13,6 +16,7 @@ export type RenderedEmail = {
 
 export type NotificationEmailData = {
   content: string;
+  details?: EmailDetail[];
   locale: Locale;
   recipientName?: string | null;
   title: string;

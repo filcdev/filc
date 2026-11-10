@@ -9,6 +9,7 @@ import type {
 
 export type {
   Branding,
+  EmailDetail,
   Locale,
   NotificationEmailData,
   RenderedEmail,

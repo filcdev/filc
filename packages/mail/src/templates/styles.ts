@@ -70,6 +70,39 @@ export const textStyle: CSSProperties = {
   margin: '0 0 16px',
 };
 
+export const detailsSectionStyle: CSSProperties = {
+  borderTop: '1px solid #f0f0f2',
+  margin: '4px 0 0',
+  padding: '18px 0 0',
+};
+
+export const detailLabelStyle: CSSProperties = {
+  color: '#71717a',
+  fontSize: '11px',
+  letterSpacing: '0.04em',
+  margin: 0,
+  paddingBottom: 2,
+  textTransform: 'uppercase',
+};
+
+export const detailValueStyle: CSSProperties = {
+  color: '#18181b',
+  fontSize: '14px',
+  lineHeight: 1.45,
+  margin: 0,
+};
+
+export const detailLabelCellStyle: CSSProperties = {
+  padding: '0 12px 8px 0',
+  verticalAlign: 'top',
+  width: '38%',
+};
+
+export const detailValueCellStyle: CSSProperties = {
+  padding: '0 0 8px',
+  verticalAlign: 'top',
+};
+
 export const buttonStyle: CSSProperties = {
   backgroundColor: '#0d9488',
   borderRadius: '26px',

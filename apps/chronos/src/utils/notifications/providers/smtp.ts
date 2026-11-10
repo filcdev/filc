@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import {
   createMailTransport,
+  type EmailDetail,
   type MailTransport,
   renderEmail,
   type SmtpAuth,
@@ -97,7 +98,7 @@ export async function sendEmail(
   to: string,
   type: NotificationType,
   locale: string,
-  body: { content: string; title: string },
+  body: { content: string; details?: EmailDetail[]; title: string },
   userId: string
 ): Promise<boolean> {
   const tp = getMailer();
@@ -121,6 +122,7 @@ export async function sendEmail(
       'notification',
       {
         content: body.content,
+        details: body.details,
         locale: lang,
         recipientName: recipient?.name,
         title: body.title,
@@ -155,13 +157,14 @@ export async function sendEmail(
 export async function renderPreviewEmail(
   type: NotificationType,
   locale: string,
-  body: { content: string; title: string }
+  body: { content: string; details?: EmailDetail[]; title: string }
 ): Promise<string> {
   const lang = locale === 'en' ? 'en' : 'hu';
   const { html } = await renderEmail(
     'notification',
     {
       content: body.content,
+      details: body.details,
       locale: lang,
       recipientName: lang === 'en' ? 'John Doe' : 'Minta Felhasználó',
       title: body.title,
