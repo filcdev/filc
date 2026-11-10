@@ -1,3 +1,5 @@
+import { env } from '#utils/environment';
+
 /** Normalize a day name for accent/case-insensitive matching. */
 const normalizeDayText = (value: string): string =>
   value
@@ -5,10 +7,10 @@ const normalizeDayText = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
-/** Weekday index (0 = Sunday … 6 = Saturday) for a date in Europe/Budapest. */
-export const getWeekdayInBudapest = (value: Date): number => {
+/** Weekday index (0 = Sunday … 6 = Saturday) for a date in the configured school timezone. */
+export const getWeekdayInSchoolTimeZone = (value: Date): number => {
   const weekdayName = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Budapest',
+    timeZone: env.timeZone,
     weekday: 'short',
   }).format(value);
   const weekdayIndex = {

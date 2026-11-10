@@ -1,4 +1,11 @@
 /**
+ * The school's wall-clock timezone: the school's own clock, used as the fallback
+ * when `CHRONOS_TIME_ZONE` is unset. Runtime code reads the configured zone from
+ * `env.timeZone`; this constant only supplies the default.
+ */
+export const DEFAULT_TIME_ZONE = 'Europe/Budapest' as const;
+
+/**
  * A `Date` as `YYYY-MM-DD` in the server's local timezone.
  *
  * Used wherever a `date` column is compared against "today": the value must be

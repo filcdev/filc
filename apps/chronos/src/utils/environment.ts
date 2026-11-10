@@ -1,5 +1,6 @@
 import { camelKeys, replaceKeys } from 'string-ts';
 import z from 'zod';
+import { DEFAULT_TIME_ZONE } from '#utils/date';
 
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
@@ -12,6 +13,18 @@ const boolean = z.preprocess((v) => {
   }
   return Boolean(v);
 }, z.boolean());
+
+// Probing the ICU time-zone database is the only way to validate an IANA name.
+// An unknown zone is a configuration error, not a recoverable case, so it must
+// fail the env parse rather than silently fall back.
+const isTimeZone = (value: string): boolean => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const envShape = z.object({
   CHRONOS_ADMIN_EMAIL: z.email(),
@@ -94,6 +107,12 @@ const envShape = z.object({
   CHRONOS_SMTP_PORT: z.coerce.number().default(587),
   CHRONOS_SMTP_SECURE: boolean.default(false),
   CHRONOS_SMTP_USER: z.string().optional(),
+  CHRONOS_TIME_ZONE: z
+    .string()
+    .refine(isTimeZone, { message: 'Must be a valid IANA time zone' })
+    // `prefault` (not `default`) so the fallback itself runs the refine: a
+    // typo'd default must fail the env parse instead of shipping an unknown zone.
+    .prefault(DEFAULT_TIME_ZONE),
   CHRONOS_TRUSTED_ORIGINS: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()
