@@ -398,7 +398,7 @@ function DevNotificationsPage() {
         }}
         open={previewOpen}
       >
-        <DialogContent className="flex h-[85vh] max-w-[calc(100%-2rem)] flex-col gap-3 p-3 sm:max-w-5xl">
+        <DialogContent className="flex h-[85dvh] max-w-[calc(100%-2rem)] flex-col gap-3 p-3 sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle>{t('devNotifications.previewTitle')}</DialogTitle>
             <DialogDescription>
@@ -437,7 +437,7 @@ function DevNotificationsPage() {
                   title={t('devNotifications.previewTitle')}
                 />
               ) : (
-                <div className="mx-auto h-full max-h-[844px] w-[390px] overflow-hidden rounded-[2rem] border-4 border-foreground/10">
+                <div className="mx-auto h-full max-h-[844px] w-full max-w-[390px] overflow-hidden rounded-[2rem] border-4 border-foreground/10">
                   <iframe
                     className="h-full w-full"
                     sandbox=""

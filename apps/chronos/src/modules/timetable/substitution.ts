@@ -1,5 +1,6 @@
 import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
+import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '#database';
@@ -38,6 +39,8 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
+
+const logger = getLogger(['chronos', 'timetable', 'substitution']);
 
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -529,6 +532,11 @@ export const createSubstitution = base.timetable.substitutions.create
     if (payload) {
       dispatchPendingNotification(result.id, 'substitution', payload);
       dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    } else {
+      logger.warning('substitution notification skipped', {
+        requestId: context.requestId,
+        substitutionId: result.id,
+      });
     }
 
     return result;
@@ -817,6 +825,11 @@ export const createManualSubstitution = base.timetable.substitutions.manual
     if (payload) {
       dispatchPendingNotification(result.id, 'substitution', payload);
       dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    } else {
+      logger.warning('substitution notification skipped', {
+        requestId: context.requestId,
+        substitutionId: result.id,
+      });
     }
 
     return result;
@@ -938,6 +951,11 @@ export const updateSubstitution = base.timetable.substitutions.update
     if (payload) {
       dispatchPendingNotification(id, 'substitution', payload);
       dispatchPendingNotification(id, 'substitution_teacher', payload);
+    } else {
+      logger.warning('substitution notification skipped', {
+        requestId: context.requestId,
+        substitutionId: id,
+      });
     }
 
     return updatedSubstitution;
