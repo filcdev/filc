@@ -26,6 +26,7 @@ import {
   enrichLessons,
   loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
+import { loadSubstitutionNotificationPayload } from '#modules/timetable/utils/substitution-notifications';
 import {
   getWeekdayInSchoolTimeZone,
   isMatchingWeekday,
@@ -37,7 +38,6 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
-import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
 
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -525,19 +525,11 @@ export const createSubstitution = base.timetable.substitutions.create
       { isolationLevel: 'serializable' }
     );
 
-    const payload = {
-      ...(await loadSubstitutionTeacherPayload({
-        comment,
-        date: result.date,
-        lessonIds,
-        substituter,
-      })),
-      comment,
-      lessonIds,
-    };
-
-    dispatchPendingNotification(result.id, 'substitution', payload);
-    dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    const payload = await loadSubstitutionNotificationPayload(result.id);
+    if (payload) {
+      dispatchPendingNotification(result.id, 'substitution', payload);
+      dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    }
 
     return result;
   });
@@ -755,7 +747,6 @@ export const createManualSubstitution = base.timetable.substitutions.manual
       });
     }
 
-    let manualLessonId = '';
     const result = await db.transaction(
       async (tx) => {
         await lockAndValidateTeachers(tx, teacherId, substituter);
@@ -770,8 +761,6 @@ export const createManualSubstitution = base.timetable.substitutions.manual
           timetableId,
           weeksDefinitionId: weekDef.id,
         });
-
-        manualLessonId = lessonId;
 
         await checkTeacherSubstitutionConflict(tx, date, substituter, [
           lessonId,
@@ -824,19 +813,11 @@ export const createManualSubstitution = base.timetable.substitutions.manual
       { isolationLevel: 'serializable' }
     );
 
-    const payload = {
-      ...(await loadSubstitutionTeacherPayload({
-        comment,
-        date: result.date,
-        lessonIds: [manualLessonId],
-        substituter,
-      })),
-      comment,
-      lessonIds: [manualLessonId],
-    };
-
-    dispatchPendingNotification(result.id, 'substitution', payload);
-    dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    const payload = await loadSubstitutionNotificationPayload(result.id);
+    if (payload) {
+      dispatchPendingNotification(result.id, 'substitution', payload);
+      dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    }
 
     return result;
   });
@@ -953,32 +934,11 @@ export const updateSubstitution = base.timetable.substitutions.update
     cancelPendingNotification(id, 'substitution');
     cancelPendingNotification(id, 'substitution_teacher');
 
-    // Fetch existing lesson IDs for notification fallback
-    const existingLessonRecords = await db
-      .select({ lessonId: substitutionLessonMTM.lessonId })
-      .from(substitutionLessonMTM)
-      .where(eq(substitutionLessonMTM.substitutionId, id));
-    const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
-
-    const updatedLessonIds =
-      body.lessonIds == null ? existingLessonIds : body.lessonIds;
-    const updatedSubstituter =
-      'substituter' in body ? body.substituter : existing.substituter;
-    const updatedDate = body.date ?? existing.date;
-
-    const payload = {
-      ...(await loadSubstitutionTeacherPayload({
-        comment: updatedSubstitution.comment,
-        date: updatedDate,
-        lessonIds: updatedLessonIds,
-        substituter: updatedSubstituter,
-      })),
-      comment: updatedSubstitution.comment,
-      lessonIds: updatedLessonIds,
-    };
-
-    dispatchPendingNotification(id, 'substitution', payload);
-    dispatchPendingNotification(id, 'substitution_teacher', payload);
+    const payload = await loadSubstitutionNotificationPayload(id);
+    if (payload) {
+      dispatchPendingNotification(id, 'substitution', payload);
+      dispatchPendingNotification(id, 'substitution_teacher', payload);
+    }
 
     return updatedSubstitution;
   });

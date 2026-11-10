@@ -21,8 +21,8 @@ import {
   buildMovedLessonNotificationContent,
   buildSubstitutionNotificationContent,
 } from '#modules/timetable/_notifications';
-import { loadMovedLessonNotificationPayload } from '#modules/timetable/moved-lesson';
-import { substitution, substitutionLessonMTM } from '#modules/timetable/schema';
+import { loadMovedLessonNotificationPayload } from '#modules/timetable/utils/moved-lesson-notifications';
+import { loadSubstitutionNotificationPayload } from '#modules/timetable/utils/substitution-notifications';
 import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { badRequest, forbidden, notFound } from '#utils/http';
@@ -32,7 +32,6 @@ import {
   sendEmail,
 } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
-import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationContent,
@@ -476,31 +475,10 @@ async function resolvePreviewContent(
 ): Promise<NotificationContent> {
   switch (type) {
     case 'substitution': {
-      const [row] = await db
-        .select()
-        .from(substitution)
-        .where(eq(substitution.id, entityId))
-        .limit(1);
-
-      if (!row) {
+      const payload = await loadSubstitutionNotificationPayload(entityId);
+      if (!payload) {
         throw notFound('Substitution not found');
       }
-
-      const lessonRows = await db
-        .select({ lessonId: substitutionLessonMTM.lessonId })
-        .from(substitutionLessonMTM)
-        .where(eq(substitutionLessonMTM.substitutionId, entityId));
-      const lessonIds = lessonRows.map((link) => link.lessonId);
-
-      const payload = {
-        ...(await loadSubstitutionTeacherPayload({
-          comment: row.comment,
-          date: row.date,
-          lessonIds,
-          substituter: row.substituter,
-        })),
-        lessonIds,
-      };
 
       return buildSubstitutionNotificationContent(payload, locale);
     }
