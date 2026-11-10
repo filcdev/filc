@@ -606,7 +606,8 @@
     "sendAllSuccess": "Minden típushoz elküldve a minta",
     "sendSuccess": "Teszt elküldve: {{channels}}",
     "sendError": "Nem sikerült elküldeni a teszt értesítést",
-    "previewError": "Nem sikerült renderelni az előnézetet"
+    "previewError": "Nem sikerült renderelni az előnézetet",
+    "disabled": "A teszt értesítések ki vannak kapcsolva ezen a szerveren (állítsd be: CHRONOS_ENABLE_TEST_NOTIFICATIONS=true, és indítsd újra a Chronost)"
   },
   "teachers": {
     "title": "Tanárok",

@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import {
+  describeTestNotificationError,
   NOTIFICATION_MOCKS,
   NOTIFICATION_TYPES,
   usePreviewTestNotification,
@@ -145,8 +146,13 @@ function DevNotificationsPage() {
         })
       );
       toast.success(t('devNotifications.sendAllSuccess'));
-    } catch {
-      toast.error(t('devNotifications.sendError'));
+    } catch (error) {
+      toast.error(
+        describeTestNotificationError(error, {
+          disabled: t('devNotifications.disabled'),
+          fallback: t('devNotifications.sendError'),
+        })
+      );
     }
   };
 

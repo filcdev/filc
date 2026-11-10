@@ -606,7 +606,8 @@
     "sendAllSuccess": "Sample sent for every type",
     "sendSuccess": "Test sent via: {{channels}}",
     "sendError": "Failed to send test notification",
-    "previewError": "Failed to render preview"
+    "previewError": "Failed to render preview",
+    "disabled": "Test notifications are disabled on this server (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true and restart Chronos)"
   },
   "teachers": {
     "title": "Teachers",

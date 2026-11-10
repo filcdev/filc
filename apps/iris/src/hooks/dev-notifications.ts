@@ -1,5 +1,6 @@
 import { notificationTypeValues } from '@filcdev/api/domains/notifications';
-
+import { ERROR_CODE } from '@filcdev/api/errors';
+import { isDefinedError } from '@orpc/client';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -128,6 +129,22 @@ type PreviewTestPayload = Parameters<typeof api.notifications.previewTest>[0];
 
 type MutationCallbacks = { silent?: boolean };
 
+/**
+ * `sendTest`/`previewTest` answer 403 when the server has
+ * `CHRONOS_ENABLE_TEST_NOTIFICATIONS` off. Report that instead of a generic
+ * send/render failure, which reads like a bug in the template.
+ *
+ * Generic so a typed mutation error and an `unknown` catch variable both fit:
+ * `isDefinedError` only narrows a known error union.
+ */
+export const describeTestNotificationError = <T>(
+  error: T,
+  message: { disabled: string; fallback: string }
+) =>
+  isDefinedError(error) && error.code === ERROR_CODE.FORBIDDEN
+    ? message.disabled
+    : message.fallback;
+
 /** Send a dev-only test notification with granular channel options. */
 export function useSendTestNotification({
   silent = false,
@@ -135,9 +152,14 @@ export function useSendTestNotification({
   const { t } = useTranslation();
   return useMutation(
     orpc.notifications.sendTest.mutationOptions({
-      onError: () => {
+      onError: (error) => {
         if (!silent) {
-          toast.error(t('devNotifications.sendError'));
+          toast.error(
+            describeTestNotificationError(error, {
+              disabled: t('devNotifications.disabled'),
+              fallback: t('devNotifications.sendError'),
+            })
+          );
         }
       },
       onSuccess: (data) => {
@@ -168,8 +190,13 @@ export function usePreviewTestNotification() {
   return useMutation({
     mutationFn: async (payload: PreviewTestPayload) =>
       (await api.notifications.previewTest(payload)).html,
-    onError: () => {
-      toast.error(t('devNotifications.previewError'));
+    onError: (error) => {
+      toast.error(
+        describeTestNotificationError(error, {
+          disabled: t('devNotifications.disabled'),
+          fallback: t('devNotifications.previewError'),
+        })
+      );
     },
   });
 }
