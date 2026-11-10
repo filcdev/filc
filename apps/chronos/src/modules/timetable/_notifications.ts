@@ -1,4 +1,5 @@
 import type { EmailDetail } from '@filcdev/mail';
+import { isMatchingWeekday } from '#modules/timetable/utils/weekday';
 import { env } from '#utils/environment';
 import {
   resolveAudienceForLessonChange,
@@ -43,6 +44,19 @@ function dayName(day: string, locale: string): string {
   if (num >= 1 && num <= names.length) {
     return names[num - 1] ?? day;
   }
+
+  // Day definitions store a localized name ("Szerda", "Hétfő"), not a number.
+  // Match it against the shared weekday aliases and translate it for the
+  // recipient's locale, so the EN email says "Wednesday" rather than "Szerda".
+  for (let index = 0; index < WEEKDAY_NAMES_EN.length; index++) {
+    if (isMatchingWeekday(index, day)) {
+      const weekday = isHungarianLocale(locale)
+        ? WEEKDAY_NAMES_HU[index]
+        : WEEKDAY_NAMES_EN[index];
+      return weekday ?? day;
+    }
+  }
+
   return day;
 }
 
@@ -98,12 +112,12 @@ function substitutionContentEn(
 }
 
 export function buildSubstitutionContent(
-  p: { date?: Date; substituter?: string | null; lessonIds?: string[] },
+  p: { date?: Date; lessonIds?: string[]; substituterName?: string | null },
   locale: string
 ): string {
   const date = p.date ? new Date(p.date) : null;
   const dateStr = date ? formatDate(date, locale) : '';
-  const subName = p.substituter ?? '';
+  const subName = p.substituterName ?? '';
   const lessonCount = p.lessonIds?.length ?? 0;
   return isHungarianLocale(locale)
     ? substitutionContentHu(dateStr, subName, lessonCount)
