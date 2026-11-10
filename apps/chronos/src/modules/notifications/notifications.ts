@@ -1,24 +1,45 @@
 import { colorSchemeSchema } from '@filcdev/api/domains/theme';
+import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';
 import {
+  buildAnnouncementContent,
+  buildBlogPostContent,
+  buildSystemMessageContent,
+} from '#modules/news/_notifications';
+import { announcement, blogPost, systemMessage } from '#modules/news/schema';
+import { resolveTitle } from '#modules/news/utils/shared';
+import {
   fcmToken,
   notification,
   userPreferences,
 } from '#modules/notifications/schema';
+import {
+  buildMovedLessonNotificationContent,
+  buildSubstitutionNotificationContent,
+} from '#modules/timetable/_notifications';
+import { loadMovedLessonNotificationPayload } from '#modules/timetable/moved-lesson';
+import { substitution, substitutionLessonMTM } from '#modules/timetable/schema';
 import { base } from '#orpc';
 import { env } from '#utils/environment';
-import { forbidden, notFound } from '#utils/http';
+import { badRequest, forbidden, notFound } from '#utils/http';
 import { sendPush } from '#utils/notifications/providers/fcm';
 import {
   renderPreviewEmail,
   sendEmail,
 } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
+import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  type NotificationContent,
+  type NotificationType,
+} from '#utils/notifications/types';
+
+const logger = getLogger(['chronos', 'notifications', 'preview']);
 
 export const listNotifications = base.notifications.list
   .use(requireAuthentication)
@@ -443,6 +464,101 @@ export const sendTestNotification = base.notifications.sendTest
     return results;
   });
 
+/**
+ * Resolve the content, details and title of a real record for the preview
+ * endpoint, through the same builders the live pipeline uses. A type with no
+ * loadable record (or an unsupported one) is refused rather than faked.
+ */
+async function resolvePreviewContent(
+  type: NotificationType,
+  entityId: string,
+  locale: string
+): Promise<NotificationContent> {
+  switch (type) {
+    case 'substitution': {
+      const [row] = await db
+        .select()
+        .from(substitution)
+        .where(eq(substitution.id, entityId))
+        .limit(1);
+
+      if (!row) {
+        throw notFound('Substitution not found');
+      }
+
+      const lessonRows = await db
+        .select({ lessonId: substitutionLessonMTM.lessonId })
+        .from(substitutionLessonMTM)
+        .where(eq(substitutionLessonMTM.substitutionId, entityId));
+      const lessonIds = lessonRows.map((link) => link.lessonId);
+
+      const payload = {
+        ...(await loadSubstitutionTeacherPayload({
+          comment: row.comment,
+          date: row.date,
+          lessonIds,
+          substituter: row.substituter,
+        })),
+        lessonIds,
+      };
+
+      return buildSubstitutionNotificationContent(payload, locale);
+    }
+    case 'moved_lesson': {
+      const payload = await loadMovedLessonNotificationPayload(entityId);
+      if (!payload) {
+        throw notFound('Moved lesson not found');
+      }
+
+      return buildMovedLessonNotificationContent(payload, locale);
+    }
+    case 'announcement': {
+      const [row] = await db
+        .select()
+        .from(announcement)
+        .where(eq(announcement.id, entityId))
+        .limit(1);
+
+      if (!row) {
+        throw notFound('Announcement not found');
+      }
+
+      return buildAnnouncementContent(
+        { title: resolveTitle(row.title) },
+        locale
+      );
+    }
+    case 'system_message': {
+      const [row] = await db
+        .select()
+        .from(systemMessage)
+        .where(eq(systemMessage.id, entityId))
+        .limit(1);
+
+      if (!row) {
+        throw notFound('System message not found');
+      }
+
+      return buildSystemMessageContent({ title: row.title }, locale);
+    }
+    case 'blog_post': {
+      const [row] = await db
+        .select()
+        .from(blogPost)
+        .where(eq(blogPost.id, entityId))
+        .limit(1);
+
+      if (!row) {
+        throw notFound('Blog post not found');
+      }
+
+      return buildBlogPostContent({ slug: row.slug, title: row.title }, locale);
+    }
+    default:
+      throw badRequest('No records to preview for this notification type');
+  }
+}
+
 export const previewTestNotification = base.notifications.previewTest
   .use(requireAuthentication)
   .handler(async ({ input }) => {
@@ -450,6 +566,22 @@ export const previewTestNotification = base.notifications.previewTest
       throw forbidden(
         'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
       );
+    }
+
+    const locale = input.language ?? 'hu';
+
+    if (input.entityId) {
+      logger.debug('Rendering preview of {type} record {entityId}', {
+        entityId: input.entityId,
+        type: input.type,
+      });
+      const rendered = await resolvePreviewContent(
+        input.type,
+        input.entityId,
+        locale
+      );
+      const html = await renderPreviewEmail(input.type, locale, rendered);
+      return { html };
     }
 
     const body = input;

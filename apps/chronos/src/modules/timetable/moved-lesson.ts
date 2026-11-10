@@ -576,6 +576,139 @@ async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   });
 }
 
+/** Everything the moved-lesson email builders read off one moved lesson. */
+export type MovedLessonNotificationPayload = {
+  cohortIds: string[];
+  cohortNames: string[];
+  comment: string | null;
+  date: Date;
+  lessonIds: string[];
+  original: {
+    day: string | null;
+    period: number | null;
+    room: string | null;
+    subject: string | null;
+    teacherNames: string[];
+  };
+  room: string | null;
+  startingDay: string | null;
+  startingPeriod: string | null;
+  subjectNames: string[];
+  target: {
+    day: string | null;
+    period: number | null;
+    room: string | null;
+  };
+};
+
+const uniqueNames = (values: (string | null | undefined)[]): string[] => [
+  ...new Set(values.filter((value): value is string => !!value)),
+];
+
+type EnrichedMovedLesson = Awaited<
+  ReturnType<typeof attachEnrichedLessons>
+>[number];
+
+/** The audience cohort ids and their display names for one moved lesson. */
+function movedLessonCohorts(enriched: EnrichedMovedLesson): {
+  cohortIds: string[];
+  cohortNames: string[];
+} {
+  if (enriched.manual) {
+    return {
+      cohortIds: enriched.movedLesson.manualCohortIds,
+      cohortNames: uniqueNames(enriched.manual.cohorts.map((c) => c.name)),
+    };
+  }
+
+  return {
+    cohortIds: enriched.lessons.flatMap((l) => l.cohorts.map((c) => c.id)),
+    cohortNames: uniqueNames(
+      enriched.lessons.flatMap((l) => l.cohorts.map((c) => c.name))
+    ),
+  };
+}
+
+/**
+ * Load one moved lesson with the same enriched relations the list endpoint
+ * uses, shaped for the notification builders. Returns null when the row no
+ * longer exists.
+ */
+export async function loadMovedLessonNotificationPayload(
+  movedLessonId: string
+): Promise<MovedLessonNotificationPayload | null> {
+  const [row] = await db
+    .select({
+      classroom,
+      dayDefinition,
+      lessons: sql<string[]>`COALESCE(
+          ARRAY_AGG(DISTINCT ${movedLessonLessonMTM.lessonId}) FILTER (WHERE ${movedLessonLessonMTM.lessonId} IS NOT NULL),
+          ARRAY[]::text[]
+        )`.as('lessons'),
+      movedLesson,
+      period,
+    })
+    .from(movedLesson)
+    .leftJoin(period, eq(movedLesson.startingPeriod, period.id))
+    .leftJoin(dayDefinition, eq(movedLesson.startingDay, dayDefinition.id))
+    .leftJoin(classroom, eq(movedLesson.room, classroom.id))
+    .leftJoin(
+      movedLessonLessonMTM,
+      eq(movedLesson.id, movedLessonLessonMTM.movedLessonId)
+    )
+    .where(eq(movedLesson.id, movedLessonId))
+    .groupBy(movedLesson.id, period.id, dayDefinition.id, classroom.id);
+
+  if (!row) {
+    return null;
+  }
+
+  const [enriched] = await attachEnrichedLessons([row]);
+  if (!enriched) {
+    return null;
+  }
+
+  const lessonRow = enriched.movedLesson;
+  const lessons = enriched.lessons;
+  const manual = enriched.manual;
+  const firstLesson = lessons[0];
+
+  const { cohortIds, cohortNames } = movedLessonCohorts(enriched);
+  const subjectNames = manual
+    ? uniqueNames([manual.subject?.name])
+    : uniqueNames(lessons.map((l) => l.subject?.name));
+  const teacherNames = manual
+    ? uniqueNames(manual.teachers.map((t) => t.name))
+    : uniqueNames(lessons.flatMap((l) => l.teachers.map((t) => t.name)));
+  const originalRooms = manual
+    ? uniqueNames([manual.sourceRoom?.name])
+    : uniqueNames(lessons.flatMap((l) => l.classrooms.map((c) => c.name)));
+
+  return {
+    cohortIds,
+    cohortNames,
+    comment: lessonRow.comment,
+    date: lessonRow.date,
+    lessonIds: lessons.map((l) => l.id),
+    original: {
+      day: manual ? null : (firstLesson?.day?.name ?? null),
+      period: manual ? null : (firstLesson?.period?.period ?? null),
+      room: originalRooms.join(', ') || null,
+      subject: subjectNames.join(', ') || null,
+      teacherNames,
+    },
+    room: lessonRow.room,
+    startingDay: lessonRow.startingDay,
+    startingPeriod: lessonRow.startingPeriod,
+    subjectNames,
+    target: {
+      day: enriched.dayDefinition?.name ?? null,
+      period: enriched.period?.period ?? null,
+      room: enriched.classroom?.name ?? null,
+    },
+  };
+}
+
 export const getAllMovedLessons = base.timetable.movedLessons.list.handler(
   async () => {
     const movedLessons = await db
@@ -822,14 +955,16 @@ export const createMovedLesson = base.timetable.movedLessons.create
       return row;
     });
 
-    dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
-      cohortIds: manualValues.manualCohortIds,
-      date: newMovedLesson.date,
-      lessonIds: lessonIds ?? [],
-      room: newMovedLesson.room,
-      startingDay: newMovedLesson.startingDay,
-      startingPeriod: newMovedLesson.startingPeriod,
-    });
+    const notificationPayload = await loadMovedLessonNotificationPayload(
+      newMovedLesson.id
+    );
+    if (notificationPayload) {
+      dispatchPendingNotification(
+        newMovedLesson.id,
+        'moved_lesson',
+        notificationPayload
+      );
+    }
 
     return newMovedLesson;
   });
@@ -884,7 +1019,6 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     ).map(({ lessonId }) => lessonId);
 
     const {
-      effectiveLessonIds,
       effectiveManualCohortIds,
       effectiveManualSourceRoomId,
       effectiveManualSubjectId,
@@ -968,16 +1102,10 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     // deleted via ON DELETE SET NULL leaves `manualSubjectId` null while the
     // cohorts (and therefore the audience) remain. `createMovedLesson` passes
     // `manualCohortIds` unconditionally for the same reason.
-    dispatchPendingNotification(id, 'moved_lesson', {
-      cohortIds: hasManualFields(updatedMovedLesson)
-        ? updatedMovedLesson.manualCohortIds
-        : [],
-      date: updatedMovedLesson.date,
-      lessonIds: effectiveLessonIds,
-      room: updatedMovedLesson.room,
-      startingDay: updatedMovedLesson.startingDay,
-      startingPeriod: updatedMovedLesson.startingPeriod,
-    });
+    const notificationPayload = await loadMovedLessonNotificationPayload(id);
+    if (notificationPayload) {
+      dispatchPendingNotification(id, 'moved_lesson', notificationPayload);
+    }
 
     return updatedMovedLesson;
   });

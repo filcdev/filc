@@ -1,3 +1,4 @@
+import type { EmailDetail } from '@filcdev/mail';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
@@ -31,10 +32,14 @@ export type SubstitutionTeacherLesson = {
 
 /** Payload carrying everything needed to notify the substitute teacher. */
 export type SubstitutionTeacherPayload = {
+  /** Optional note the substitution was created with. */
+  comment?: string | null;
   date: Date;
   lessons: SubstitutionTeacherLesson[];
   /** The substitute teacher id. */
   substituter: string | null;
+  /** The substitute teacher's display name, resolved by the loader. */
+  substituterName: string | null;
 };
 
 /** "07:10:00" -> "07:10"; anything else -> null. */
@@ -63,19 +68,17 @@ const periodLabel = (periodNo: number | null, hu: boolean): string => {
  * and replaced teacher(s).
  */
 export async function loadSubstitutionTeacherPayload(args: {
+  comment?: string | null;
   date: Date;
   lessonIds: string[];
   substituter: string | null | undefined;
 }): Promise<SubstitutionTeacherPayload> {
-  const { date, lessonIds, substituter } = args;
+  const { comment, date, lessonIds, substituter } = args;
+  const substituterId = substituter ?? null;
 
   const lessons = lessonIds.length
     ? await db.select().from(lesson).where(inArray(lesson.id, lessonIds))
     : [];
-
-  if (lessons.length === 0) {
-    return { date, lessons: [], substituter: substituter ?? null };
-  }
 
   const subjectIds = [...new Set(lessons.map((l) => l.subjectId))].filter(
     (id): id is string => id != null
@@ -89,9 +92,12 @@ export async function loadSubstitutionTeacherPayload(args: {
   ];
   const periodIds = [...new Set(lessons.map((l) => l.periodId))];
   const teacherIds = [
-    ...new Set(
-      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
-    ),
+    ...new Set([
+      ...lessons.flatMap((l) =>
+        Array.isArray(l.teacherIds) ? l.teacherIds : []
+      ),
+      ...(substituterId ? [substituterId] : []),
+    ]),
   ];
 
   const [subjects, classrooms, periods, teachers, cohortRows] =
@@ -150,7 +156,15 @@ export async function loadSubstitutionTeacherPayload(args: {
     };
   });
 
-  return { date, lessons: lessonDetails, substituter: substituter ?? null };
+  return {
+    comment: comment ?? null,
+    date,
+    lessons: lessonDetails,
+    substituter: substituterId,
+    substituterName: substituterId
+      ? (teacherMap.get(substituterId) ?? null)
+      : null,
+  };
 }
 
 /** Resolve the linked user (and thus email) of the substitute teacher. */
@@ -291,4 +305,76 @@ export function buildSubstitutionTeacherContent(
     content: `${label.intro}\n\n${body}`,
     title,
   };
+}
+
+const uniqueStrings = (values: (string | null | undefined)[]): string[] => [
+  ...new Set(values.filter((value): value is string => !!value)),
+];
+
+/**
+ * Build the structured label/value rows for the student-facing `substitution`
+ * email. Every row is optional: a row whose value is empty is omitted.
+ */
+export function buildSubstitutionDetails(
+  payload: SubstitutionTeacherPayload,
+  locale: string
+): EmailDetail[] {
+  const hu = isHungarianLocale(locale);
+  const { comment, date, lessons, substituter, substituterName } = payload;
+
+  const label = {
+    cancelled: hu ? 'Lemarad' : 'Cancelled',
+    class: hu ? 'Osztály' : 'Class',
+    comment: hu ? 'Megjegyzés' : 'Comment',
+    date: hu ? 'Dátum' : 'Date',
+    lesson: hu ? 'Óra' : 'Lesson',
+    room: hu ? 'Terem' : 'Room',
+    subject: hu ? 'Tantárgy' : 'Subject',
+    substitute: hu ? 'Helyettesítő' : 'Substitute',
+    substituted: hu ? 'Helyettesített tanár' : 'Substituted teacher',
+  };
+
+  const lessonLabels = lessons
+    .map((entry) => {
+      let timeRange = '';
+      if (entry.startTime) {
+        timeRange = entry.endTime
+          ? ` (${entry.startTime} - ${entry.endTime})`
+          : ` (${entry.startTime})`;
+      }
+      return `${periodLabel(entry.period, hu)}${timeRange}`.trim();
+    })
+    .filter((value) => value.length > 0);
+
+  const rows: EmailDetail[] = [
+    { label: label.date, value: formatDate(date, hu) },
+    {
+      label: label.class,
+      value: uniqueStrings(lessons.map((entry) => entry.cohortName)).join(', '),
+    },
+    {
+      label: label.subject,
+      value: uniqueStrings(lessons.map((entry) => entry.subjectName)).join(
+        ', '
+      ),
+    },
+    { label: label.lesson, value: lessonLabels.join(' · ') },
+    {
+      label: label.room,
+      value: uniqueStrings(lessons.flatMap((entry) => entry.rooms)).join(', '),
+    },
+    {
+      label: label.substituted,
+      value: uniqueStrings(
+        lessons.flatMap((entry) => entry.substitutedTeachers)
+      ).join(', '),
+    },
+    {
+      label: label.substitute,
+      value: substituter ? (substituterName ?? '') : label.cancelled,
+    },
+    { label: label.comment, value: comment?.trim() ?? '' },
+  ];
+
+  return rows.filter((row) => row.value.length > 0);
 }

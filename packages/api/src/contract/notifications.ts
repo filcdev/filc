@@ -106,7 +106,7 @@ export const notificationsContract = {
       filcRoute({
         auth: true,
         description:
-          'Development helper: render a notification template without sending it (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS)',
+          'Development helper: render a notification template without sending it (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). When entityId is given, the real substitution, moved lesson or news record is rendered through the same builders as the live pipeline instead of the supplied text.',
         method: 'POST',
         operationId: 'postNotificationsTestPreview',
         path: '/notifications/test/preview',

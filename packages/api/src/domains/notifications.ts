@@ -124,6 +124,7 @@ export type SendTestNotificationInput = z.infer<
 
 export const previewTestNotificationSchema = z.object({
   content: z.string().optional(),
+  entityId: z.uuid().optional(),
   language: z.enum(['en', 'hu']).optional(),
   subject: z.string().optional(),
   type: notificationTypeSchema,
