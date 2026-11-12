@@ -5,14 +5,16 @@ export const emailCopy = {
     autoMessage: 'This is an automated message from Filc.',
     greeting: 'Dear Filc user,',
     greetingNamed: 'Dear {name},',
-    unsubscribeLabel: 'Unsubscribe from notifications',
+    manageLabel: 'Manage your notifications',
+    unsubscribeLabel: 'Unsubscribe from emails',
     viewLabel: 'View in Filc',
   },
   hu: {
     autoMessage: 'Ez az email a Filc rendszer automatikus üzenete.',
     greeting: 'Kedves Filc felhasználó!',
     greetingNamed: 'Kedves {name}!',
-    unsubscribeLabel: 'Leiratkozás az értesítésekről',
+    manageLabel: 'Értesítések kezelése',
+    unsubscribeLabel: 'Leiratkozás az e-mailekről',
     viewLabel: 'Megtekintés a Filcben',
   },
 } as const;

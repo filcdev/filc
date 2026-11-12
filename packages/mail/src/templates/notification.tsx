@@ -68,6 +68,7 @@ export const renderNotification = (
       appName={branding.appName}
       hero={hero}
       lang={data.locale}
+      manageUrl={data.manageUrl}
       preview={data.content}
       title={data.title}
       typeLabel={data.typeLabel}

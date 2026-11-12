@@ -42,6 +42,7 @@ export type EmailLayoutProps = {
   title: string;
   typeLabel: string;
   unsubscribeUrl?: string;
+  manageUrl?: string;
 };
 
 export const EmailLayout = ({
@@ -54,6 +55,7 @@ export const EmailLayout = ({
   title,
   typeLabel,
   unsubscribeUrl,
+  manageUrl,
 }: EmailLayoutProps) => {
   return (
     <Html lang={lang}>
@@ -86,11 +88,19 @@ export const EmailLayout = ({
           <Section style={footerStyle(accent)}>
             <Text style={footerBrandStyle(accent)}>{appName}</Text>
             <Text style={footerTextStyle}>{emailCopy[lang].autoMessage}</Text>
-            {unsubscribeUrl ? (
+            {manageUrl || unsubscribeUrl ? (
               <Text style={{ ...footerTextStyle, margin: 0 }}>
-                <Link href={unsubscribeUrl} style={footerLinkStyle(accent)}>
-                  {emailCopy[lang].unsubscribeLabel}
-                </Link>
+                {manageUrl ? (
+                  <Link href={manageUrl} style={footerLinkStyle(accent)}>
+                    {emailCopy[lang].manageLabel}
+                  </Link>
+                ) : undefined}
+                {manageUrl && unsubscribeUrl ? ' · ' : undefined}
+                {unsubscribeUrl ? (
+                  <Link href={unsubscribeUrl} style={footerLinkStyle(accent)}>
+                    {emailCopy[lang].unsubscribeLabel}
+                  </Link>
+                ) : undefined}
               </Text>
             ) : undefined}
           </Section>

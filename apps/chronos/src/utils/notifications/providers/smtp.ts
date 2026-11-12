@@ -251,6 +251,10 @@ export async function sendEmail(
         details: body.details,
         highlights: body.highlights,
         locale: lang,
+        // Authenticated, so no token: the page reads the session.
+        manageUrl: userId
+          ? `${env.baseUrl}/settings/notifications?channel=email`
+          : undefined,
         recipientName: recipient?.name,
         title: body.title,
         typeLabel: typeLabels[type][lang],

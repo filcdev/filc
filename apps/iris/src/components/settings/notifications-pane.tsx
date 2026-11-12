@@ -9,12 +9,42 @@ import {
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
-import { useEffect, useId, useState } from 'react';
+import { cn } from '@filcdev/ui/lib/utils';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/hooks/notifications';
+
+type ChannelId = 'email' | 'push' | 'inApp';
+type ChannelPrefKey = 'emailEnabled' | 'pushEnabled' | 'inAppEnabled';
+
+const NOTIFICATION_CHANNELS: Array<{
+  channel: ChannelId;
+  descriptionKey: string;
+  key: ChannelPrefKey;
+  labelKey: string;
+}> = [
+  {
+    channel: 'email',
+    descriptionKey: 'preferences.emailEnabledDescription',
+    key: 'emailEnabled',
+    labelKey: 'preferences.emailEnabled',
+  },
+  {
+    channel: 'push',
+    descriptionKey: 'preferences.pushEnabledDescription',
+    key: 'pushEnabled',
+    labelKey: 'preferences.pushEnabled',
+  },
+  {
+    channel: 'inApp',
+    descriptionKey: 'preferences.inAppEnabledDescription',
+    key: 'inAppEnabled',
+    labelKey: 'preferences.inAppEnabled',
+  },
+];
 
 const NOTIFICATION_TYPES = [
   {
@@ -42,21 +72,26 @@ const DEFAULT_PREFS = {
   blogPost: false,
   channelsEnabled: true,
   doorlockCardUsed: false,
+  emailEnabled: true,
+  inAppEnabled: true,
   movedLesson: true,
+  pushEnabled: true,
   substitution: true,
   systemMessage: true,
 };
 
-/** Channel toggle plus the per-type preference checkboxes. */
+/** Where the three channel toggles sit, then the per-type preferences. */
 export function NotificationsPane({
   active,
   onClose,
+  highlightChannel,
 }: {
   active: boolean;
-  onClose: () => void;
+  onClose?: () => void;
+  /** Channel to visually call out, e.g. the one an email footer linked to. */
+  highlightChannel?: ChannelId;
 }) {
   const { t } = useTranslation();
-  const channelsId = useId();
   const [prefs, setPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS);
 
   const settingsQuery = useNotificationSettings(active);
@@ -86,18 +121,47 @@ export function NotificationsPane({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <label
-              className="cursor-pointer font-medium text-sm leading-none"
-              htmlFor={channelsId}
-            >
-              {t('preferences.channelsEnabled')}
-            </label>
-            <Checkbox
-              checked={prefs.channelsEnabled}
-              id={channelsId}
-              onCheckedChange={() => togglePref('channelsEnabled')}
-            />
+          <div className="space-y-1">
+            <p className="font-medium text-sm">{t('preferences.channels')}</p>
+            <p className="text-muted-foreground text-xs">
+              {t('preferences.channelsDescription')}
+            </p>
+          </div>
+          {NOTIFICATION_CHANNELS.map(
+            ({ channel, descriptionKey, key, labelKey }) => (
+              <div
+                className={cn(
+                  'flex items-start justify-between gap-4 rounded-lg',
+                  highlightChannel === channel &&
+                    'bg-primary/5 p-2 ring-2 ring-primary/40'
+                )}
+                key={key}
+              >
+                <div className="space-y-0.5">
+                  <label
+                    className="cursor-pointer font-medium text-sm leading-none"
+                    htmlFor={`channel-${key}`}
+                  >
+                    {t(labelKey)}
+                  </label>
+                  <p className="text-muted-foreground text-xs">
+                    {t(descriptionKey)}
+                  </p>
+                </div>
+                <Checkbox
+                  checked={prefs[key]}
+                  id={`channel-${key}`}
+                  onCheckedChange={() => togglePref(key)}
+                />
+              </div>
+            )
+          )}
+
+          <div className="space-y-1 border-t pt-4">
+            <p className="font-medium text-sm">{t('preferences.types')}</p>
+            <p className="text-muted-foreground text-xs">
+              {t('preferences.typesDescription')}
+            </p>
           </div>
           {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
             <div className="flex items-center justify-between gap-4" key={key}>

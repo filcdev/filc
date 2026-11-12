@@ -12,14 +12,21 @@ import { FingerprintPattern, Shield } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+const searchSchema = z.object({
+  redirect: z.string().optional(),
+});
 
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,
+  validateSearch: searchSchema,
 });
 
 function RouteComponent() {
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
+  const { redirect } = Route.useSearch();
 
   const handleMicrosoftSignIn = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,9 +36,14 @@ function RouteComponent() {
 
     setIsLoading(true);
 
+    // Only a same-origin path is honoured; anything else would make the login
+    // page an open redirect through the OAuth callback.
+    const returnTo =
+      redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : '/';
+
     try {
       await authClient.signIn.social({
-        callbackURL: new URL('/', window.location.origin).href,
+        callbackURL: new URL(returnTo, window.location.origin).href,
         errorCallbackURL: new URL('/auth/error', window.location.origin).href,
         newUserCallbackURL: new URL('/auth/welcome', window.location.origin)
           .href,

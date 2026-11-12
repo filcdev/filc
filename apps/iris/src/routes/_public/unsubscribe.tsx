@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUnsubscribe } from '@/hooks/notifications';
 
 export const Route = createFileRoute('/_public/unsubscribe')({
@@ -7,6 +8,7 @@ export const Route = createFileRoute('/_public/unsubscribe')({
 });
 
 function UnsubscribePage() {
+  const { t } = useTranslation();
   const unsubscribeMutation = useUnsubscribe();
   const [status, setStatus] = useState<'loading' | 'error' | 'done'>('loading');
   const [message, setMessage] = useState('');
@@ -15,17 +17,17 @@ function UnsubscribePage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const t = params.get('token');
-    const u = params.get('userId');
-    if (!(t && u)) {
+    const nextToken = params.get('token');
+    const nextUserId = params.get('userId');
+    if (!(nextToken && nextUserId)) {
       setStatus('error');
-      setMessage('Invalid or expired unsubscribe link');
+      setMessage(t('unsubscribe.invalidToken'));
       return;
     }
-    setToken(t);
-    setUserId(u);
+    setToken(nextToken);
+    setUserId(nextUserId);
     setStatus('done');
-  }, []);
+  }, [t]);
 
   const handleUnsubscribe = () => {
     setStatus('loading');
@@ -35,20 +37,20 @@ function UnsubscribePage() {
       {
         onError: () => {
           setStatus('error');
-          setMessage('Failed to update preferences');
+          setMessage(t('unsubscribe.error'));
         },
         onSuccess: () => {
           setStatus('done');
-          setMessage('Preferences updated successfully');
+          setMessage(t('unsubscribe.success'));
         },
       }
     );
   };
 
   const titleMap: Record<string, string> = {
-    done: 'Notification Preferences',
-    error: 'Error',
-    loading: 'Loading...',
+    done: t('unsubscribe.title'),
+    error: t('unsubscribe.title'),
+    loading: t('common.loading'),
   };
 
   return (
@@ -57,8 +59,8 @@ function UnsubscribePage() {
         <h1 className="font-bold text-2xl">{titleMap[status]}</h1>
         <p className="mt-4 text-muted-foreground">
           {status === 'loading'
-            ? 'Loading...'
-            : message || 'Manage your notification preferences'}
+            ? t('common.loading')
+            : message || t('unsubscribe.description')}
         </p>
         {status === 'done' && token && userId && !message && (
           <button
@@ -66,7 +68,7 @@ function UnsubscribePage() {
             onClick={handleUnsubscribe}
             type="button"
           >
-            Unsubscribe from all notifications
+            {t('unsubscribe.action')}
           </button>
         )}
       </div>

@@ -784,7 +784,16 @@
     "groupDisplayHide": "Más csoportok elrejtése",
     "notifications": "Értesítések",
     "notificationsDescription": "Válaszd ki, mely értesítéseket szeretnéd megkapni",
-    "channelsEnabled": "Értesítések engedélyezése",
+    "channels": "Értesítések küldése ide",
+    "channelsDescription": "Válaszd ki, hol érjenek el az értesítések.",
+    "types": "Értesítés típusai",
+    "typesDescription": "Válaszd ki, mely eseményekről kérsz értesítést.",
+    "emailEnabled": "E-mail",
+    "emailEnabledDescription": "Az iskolai e-mail címedre küldjük.",
+    "pushEnabled": "Push értesítés eszközön",
+    "pushEnabledDescription": "Push értesítés azokon az eszközökön, ahol engedélyezted.",
+    "inAppEnabled": "Az alkalmazásban",
+    "inAppEnabledDescription": "A Filc harangmenüjében jelenik meg.",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",
@@ -835,7 +844,8 @@
     "description": "Értesítési beállítások kezelése",
     "success": "Beállítások sikeresen frissítve",
     "error": "Nem sikerült frissíteni a beállításokat",
-    "invalidToken": "Érvénytelen vagy lejárt leiratkozási link"
+    "invalidToken": "Érvénytelen vagy lejárt leiratkozási link",
+    "action": "Leiratkozás az e-mailekről"
   },
   "activityLog": {
     "title": "Tevékenységi napló",

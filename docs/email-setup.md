@@ -116,7 +116,7 @@ CHRONOS_BASE_URL=https://filc.petrik.hu
 
 - Under `graph`, the SMTP host, port, user, password and auth mode are not read. Only the two `CHRONOS_SMTP_FROM_*` values (the MIME `From`) and the mailbox fallback are.
 - No inbound port, relay container, connector or SMTP AUTH toggle is involved. The container needs outbound HTTPS 443 to `login.microsoftonline.com` (token) and `graph.microsoft.com` (send), nothing else.
-- `CHRONOS_BASE_URL` must be the public Iris origin in production. The template's CTA button href is `CHRONOS_BASE_URL`, and the footer's unsubscribe link is `${CHRONOS_BASE_URL}/unsubscribe?userId=…&token=…`, so a `localhost` value ships dead links to real recipients.
+- `CHRONOS_BASE_URL` must be the public Iris origin in production. The template's CTA button href is `CHRONOS_BASE_URL`, and the footer's two links are `${CHRONOS_BASE_URL}/unsubscribe?userId=…&token=…` and the authenticated `${CHRONOS_BASE_URL}/settings/notifications?channel=email`, so a `localhost` value ships dead links to real recipients.
 - Configuration is read when the process starts and the transport is cached after the first send, so a changed value needs a restart.
 - `smtp` is the default, so a production deployment that forgets `CHRONOS_MAIL_TRANSPORT=graph` falls back to SMTP; with no SMTP host set it disables email delivery with a warning instead of sending anything.
 
@@ -166,5 +166,5 @@ Graph's own `error.code` and message are carried into `GraphMailError` and logge
 
 - The delivery queue is in memory (`apps/chronos/src/utils/notifications/queue.ts`): concurrency 5, 50 ms between batches, at most 3 attempts with exponential backoff capped at 30 s, and a channel that already succeeded is never repeated. A restart drops whatever is queued, and the dead-letter is a single `warning` log line (`Job … failed after 3 retries, dead-lettering`) naming the channels that did not deliver, not a stored record.
 - There is no bounce or NDR ingestion. Graph's `202` ends Chronos' knowledge of the message; a later delivery failure is visible only in Exchange message trace.
-- No `List-Unsubscribe` header is sent. The unsubscribe path is the template footer link (`/unsubscribe?userId=…&token=…`, an HMAC-SHA-256 of the user id), and it is only present when the send has a user behind it.
+- No `List-Unsubscribe` header is sent. The template footer carries two links, both present only when the send has a user behind it: the authenticated management page (`/settings/notifications?channel=email`, no token) and `/unsubscribe?userId=…&token=…` (an HMAC-SHA-256 of the user id), which turns email off only — push, in-app and the per-type choices stay as the user set them.
 - No DKIM or SPF configuration lives in this repository. Sender authentication is the tenant's and the transport's; the repo only asks Graph to send.

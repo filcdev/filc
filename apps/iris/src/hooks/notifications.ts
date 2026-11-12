@@ -161,7 +161,7 @@ export function useUpdateNotificationSettings({
 }
 
 /**
- * Opt out of every notification channel via an unsubscribe token. The backend
+ * Opt out of notification emails via an unsubscribe token. The backend
  * answers an HTML page (not an oRPC procedure), so this hook posts the form
  * directly and emits no toast: the public page renders its own result panel.
  */

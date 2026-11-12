@@ -39,4 +39,6 @@ export type NotificationEmailData = {
   typeLabel: string;
   /** Absent only in the dev-only styling preview. */
   unsubscribeUrl?: string;
+  /** Authenticated page where the recipient can change their own channels. */
+  manageUrl?: string;
 };
