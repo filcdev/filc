@@ -77,6 +77,11 @@ export type DeliveryJob = {
   details?: EmailDetail[];
   highlights?: string[];
   channelsEnabled: boolean;
+  /**
+   * Delivery bookkeeping owned by the queue: a channel marked `true` has been
+   * delivered and is not attempted again when the job is retried.
+   */
+  delivered?: { email: boolean; push: boolean };
   /** Locale the recipient's `buildContent` ran with; the email wrapper uses it too. */
   language: string;
 };

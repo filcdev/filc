@@ -19,58 +19,90 @@ function backoffMs(attempt: number): number {
   return Math.min(1000 * 2 ** attempt + Math.random() * 1000, 30_000);
 }
 
-async function processJob(job: DeliveryJob): Promise<boolean> {
+/**
+ * The outcome of one delivery attempt. `done` is false while a channel that
+ * should deliver has not; `retryAfterMs` is the email transport's rate-limit
+ * hint, when it gave one.
+ */
+type JobOutcome = {
+  done: boolean;
+  retryAfterMs?: number;
+};
+
+/**
+ * Attempts every channel the job has not delivered yet. A channel that
+ * succeeds is recorded on the job, so a later attempt never repeats it.
+ */
+async function processJob(job: DeliveryJob): Promise<JobOutcome> {
   if (!job.channelsEnabled) {
     logger.debug('Channels disabled for user {userId}, skipping delivery', {
       userId: job.userId,
     });
-    return true;
+    return { done: true };
   }
 
-  let emailSuccess = false;
-  let pushSuccess = false;
+  job.delivered ??= { email: false, push: false };
+  const { delivered } = job;
+  let retryAfterMs: number | undefined;
 
-  const emailPromise = sendEmail(
-    job.email,
-    job.type,
-    job.language,
-    {
-      content: job.content,
-      details: job.details,
-      highlights: job.highlights,
-      title: job.title,
-    },
-    job.userId
-  )
-    .then((ok) => {
-      emailSuccess = ok;
-    })
-    .catch(() => {
-      emailSuccess = false;
-    });
+  const emailPromise = delivered.email
+    ? Promise.resolve()
+    : sendEmail(
+        job.email,
+        job.type,
+        job.language,
+        {
+          content: job.content,
+          details: job.details,
+          highlights: job.highlights,
+          title: job.title,
+        },
+        job.userId
+      )
+        .then((result) => {
+          retryAfterMs = result.retryAfterMs;
+          delivered.email = result.ok;
+        })
+        .catch((error: unknown) => {
+          logger.warning('Email delivery attempt failed for {notificationId}', {
+            error,
+            notificationId: job.notificationId,
+          });
+        });
 
-  const pushPromise = sendPush(job.userId, job.title, job.content)
-    .then((ok) => {
-      pushSuccess = ok;
-    })
-    .catch(() => {
-      pushSuccess = false;
-    });
+  const pushPromise = delivered.push
+    ? Promise.resolve()
+    : sendPush(job.userId, job.title, job.content)
+        .then((ok) => {
+          delivered.push = ok;
+        })
+        .catch((error: unknown) => {
+          logger.warning('Push delivery attempt failed for {notificationId}', {
+            error,
+            notificationId: job.notificationId,
+          });
+        });
 
   await Promise.all([emailPromise, pushPromise]);
 
-  return emailSuccess || pushSuccess;
+  return delivered.email && delivered.push
+    ? { done: true }
+    : { done: false, retryAfterMs };
 }
 
 async function tryProcessJob(job: DeliveryJob): Promise<void> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    let retryAfterMs = 0;
     try {
-      const ok = await processJob(job);
-      if (ok) {
+      const outcome = await processJob(job);
+      if (outcome.done) {
         return;
       }
+      retryAfterMs = outcome.retryAfterMs ?? 0;
     } catch (error) {
-      logger.debug('Job attempt {attempt} failed for {notificationId}', {
+      // Defensive only: each channel handles its own failure above, so this
+      // fires on a bug rather than on a delivery failure.
+      logger.debug('Job attempt {attempt} threw for {notificationId}', {
         attempt: attempt + 1,
         error,
         notificationId: job.notificationId,
@@ -78,7 +110,7 @@ async function tryProcessJob(job: DeliveryJob): Promise<void> {
     }
 
     if (attempt < MAX_RETRIES - 1) {
-      const delay = backoffMs(attempt + 1);
+      const delay = Math.max(backoffMs(attempt + 1), retryAfterMs);
       logger.debug(
         'Retrying job {notificationId} in {delay}ms (attempt {attempt}/{max})',
         {
@@ -92,9 +124,14 @@ async function tryProcessJob(job: DeliveryJob): Promise<void> {
     }
   }
 
-  logger.error(
+  const delivered = job.delivered ?? { email: false, push: false };
+  logger.warning(
     'Job {notificationId} failed after {max} retries, dead-lettering',
     {
+      channels: [
+        ...(delivered.email ? [] : ['email']),
+        ...(delivered.push ? [] : ['push']),
+      ],
       max: MAX_RETRIES,
       notificationId: job.notificationId,
     }
@@ -126,5 +163,9 @@ export function enqueue(job: DeliveryJob): void {
   logger.debug('Enqueued delivery job {notificationId}', {
     notificationId: job.notificationId,
   });
-  processLoop();
+  // Fire and forget: a crash in the loop must be logged, not left as an
+  // unhandled rejection.
+  processLoop().catch((error: unknown) => {
+    logger.error('Delivery loop crashed', { error });
+  });
 }

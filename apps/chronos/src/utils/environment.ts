@@ -37,12 +37,24 @@ const envShape = z.object({
   CHRONOS_FCM_PROJECT_ID: z.string().optional(),
   CHRONOS_FREERADIUS_IP: z.string().optional(),
   CHRONOS_FREERADIUS_SHARED_SECRET: z.string().optional(),
+  // The mailbox Graph sends as; defaults to CHRONOS_SMTP_FROM_EMAIL.
+  CHRONOS_GRAPH_MAILBOX: z.email().optional(),
   CHRONOS_KIOSK_WEATHER_LOCATION: z
     .string()
     .default('47.50535837979173,19.090123083749727'),
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
+  // A dedicated Entra app for mail, used by both transports: SMTP XOAUTH2
+  // ("Office 365 Exchange Online", application permission SMTP.SendAsApp) and
+  // Graph (Mail.Send). Unset, each field falls back to the sign-in app's
+  // CHRONOS_ENTRA_* value, so one registration keeps working.
+  CHRONOS_MAIL_ENTRA_CLIENT_ID: z.string().optional(),
+  CHRONOS_MAIL_ENTRA_CLIENT_SECRET: z.string().optional(),
+  CHRONOS_MAIL_ENTRA_TENANT_ID: z.string().optional(),
+  // Which transport delivers notification email: "smtp" (Mailpit in
+  // development) or "graph" (Microsoft Graph app-only Mail.Send).
+  CHRONOS_MAIL_TRANSPORT: z.enum(['smtp', 'graph']).default('smtp'),
   // Bun's request-head cap (16 KiB by default) answers 431 before any route
   // runs; the OAuth proxy hands a preview its whole login payload in a query
   // string. An empty or whitespace-only value keeps the default, the way the
@@ -104,13 +116,6 @@ const envShape = z.object({
     .max(1)
     .default(0.1),
   CHRONOS_SMTP_AUTH: z.enum(['basic', 'oauth2']).default('basic'),
-  // Dedicated Entra app for SMTP XOAUTH2 ("Office 365 Exchange Online",
-  // application permission SMTP.SendAsApp). Unset, the mail transport falls back
-  // to the sign-in app's CHRONOS_ENTRA_* values, so one registration keeps
-  // working. See docs/entra-setup.md.
-  CHRONOS_SMTP_ENTRA_CLIENT_ID: z.string().optional(),
-  CHRONOS_SMTP_ENTRA_CLIENT_SECRET: z.string().optional(),
-  CHRONOS_SMTP_ENTRA_TENANT_ID: z.string().optional(),
   CHRONOS_SMTP_FROM_EMAIL: z.string().optional(),
   CHRONOS_SMTP_FROM_NAME: z.string().optional(),
 

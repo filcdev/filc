@@ -2,6 +2,8 @@
 
 Sign-in via Microsoft Entra ID (formerly Azure Active Directory) is the app's social login provider, backed by better-auth.
 
+Notification email is a separate integration, with its own Entra app and Exchange mailbox scope: see [email-setup.md](email-setup.md).
+
 ## 1. Register an application
 
 Follow only the **Register an application** section of the [Microsoft Entra ID quickstart](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app) — sign in with the organization's Microsoft account.

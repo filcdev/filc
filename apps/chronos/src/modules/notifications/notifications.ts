@@ -449,13 +449,14 @@ export const sendTestNotification = base.notifications.sendTest
       results.inApp = Boolean(notif);
     }
     if (body.channels.email) {
-      results.email = await sendEmail(
+      const email = await sendEmail(
         target.email,
         body.type,
         target.language,
         { content, title: subject },
         target.id
       );
+      results.email = email.ok;
     }
     if (target.isUser && body.channels.push) {
       results.push = await sendPush(target.id, subject, content);
