@@ -104,9 +104,11 @@ enough on its own; the tokens alone are most of the payload.
 
 Bun only accepts that cap as a runtime flag (`Bun.serve({ maxHeaderSize })` and
 `NODE_OPTIONS` are both ignored), so it is set where the process is launched:
-the image entrypoint and the `dev` script pass
-`--max-http-header-size=${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}`. Set
-`CHRONOS_MAX_HTTP_HEADER_SIZE` to override it — 65536 covers the payloads
+the image entrypoint passes
+`--max-http-header-size=${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}`, and the `dev`
+script (`apps/chronos/scripts/dev.ts`) passes the same flag with the same
+default, computed in JS because Windows runs package.json scripts in Bun Shell.
+Set `CHRONOS_MAX_HTTP_HEADER_SIZE` to override it — 65536 covers the payloads
 measured above with room to spare; drop it to `16384` to return to Bun's
 default, which nothing in the API needs except this flow. An environment with
 its own launch command has to pass the same flag itself.
