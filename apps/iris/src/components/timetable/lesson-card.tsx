@@ -10,6 +10,7 @@ import {
   formatCohorts,
   formatRooms,
   formatTeachers,
+  getSplitGroups,
   getSubjectColor,
   toHHMM,
 } from './helpers';
@@ -22,13 +23,8 @@ import { WeekBadge } from './week-badge';
  * "Egész osztály" group name, which is useless, so the actual classes
  * (cohorts) are shown instead. A single whole-class lesson shows nothing.
  */
-const WHOLE_CLASS_GROUP_NAMES = new Set(['Egész osztály', 'Egesz osztaly']);
-
 function formatGroupLabel(lesson: LessonItem): string {
-  const groups = lesson.groups ?? [];
-  const isWholeClass = (group: LessonItem['groups'][number]): boolean =>
-    group.entireClass === true || WHOLE_CLASS_GROUP_NAMES.has(group.name);
-  const splitGroups = groups.filter((group) => !isWholeClass(group));
+  const splitGroups = getSplitGroups(lesson);
   if (splitGroups.length > 0) {
     return Array.from(
       new Set(splitGroups.map((group) => group.name).filter(Boolean))
