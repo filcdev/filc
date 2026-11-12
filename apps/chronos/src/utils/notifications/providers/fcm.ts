@@ -11,6 +11,13 @@ import { env } from '#utils/environment';
 const logger = getLogger(['chronos', 'notifications', 'fcm']);
 
 let fcmMessaging: FirebaseMessaging | null = null;
+/**
+ * Set when `initializeFcm` threw: credentials exist but the app could not be
+ * built. That is an infrastructure failure, not "no device to send to", so
+ * `sendPush` must let the queue retry instead of reporting the delivery as
+ * satisfied.
+ */
+let fcmInitFailed = false;
 
 export async function initializeFcm(): Promise<boolean> {
   if (!env.fcmCredentials) {
@@ -33,10 +40,15 @@ export async function initializeFcm(): Promise<boolean> {
     }
 
     fcmMessaging = getMessaging();
+    fcmInitFailed = false;
     logger.info('FCM initialized successfully');
     return true;
   } catch (error) {
-    logger.error('Failed to initialize FCM', { error });
+    fcmInitFailed = true;
+    logger.error(
+      'Failed to initialize FCM; push delivery will fail and be retried',
+      { error }
+    );
     return false;
   }
 }
@@ -44,7 +56,8 @@ export async function initializeFcm(): Promise<boolean> {
 /**
  * Outcome of one push attempt. `skipped` distinguishes "there was nothing to
  * send to" (no registered device, FCM not configured) from a real delivery
- * failure, so the queue can treat it as satisfied instead of retrying.
+ * failure, so the queue can treat a skip as satisfied instead of retrying. A
+ * broken FCM initialization is *not* skipped: it is retryable and dead-letters.
  */
 export type PushResult = {
   ok: boolean;
@@ -56,8 +69,16 @@ export async function sendPush(
   title: string,
   body: string
 ): Promise<PushResult> {
+  if (fcmInitFailed) {
+    logger.error(
+      'FCM initialization failed earlier, push for user {userId} is a failed delivery',
+      { userId }
+    );
+    return { ok: false };
+  }
+
   if (!fcmMessaging) {
-    logger.debug('FCM not available, skipping push for user {userId}', {
+    logger.debug('FCM not configured, skipping push for user {userId}', {
       userId,
     });
     return { ok: false, skipped: true };

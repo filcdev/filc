@@ -84,6 +84,56 @@ export function resolveChannelFlags(
   };
 }
 
+/**
+ * The single read shape of a stored preferences row: defaults merged over the
+ * stored value, then the channel flags replaced by their *effective* values
+ * with `channelsEnabled` raised.
+ *
+ * A legacy row (`channelsEnabled: false`, no per-channel keys) therefore reads
+ * back as every channel off, which is what the user chose, instead of the
+ * defaults' `true`s. Everything that reads a row — the settings endpoint, the
+ * delivery engine, the dev helpers — goes through this so the write path and
+ * the read path agree on what the row means.
+ */
+export function completePreferences(
+  stored?: Partial<NotificationPreferences> | null
+): NotificationPreferences {
+  const base = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...stored };
+  const channels = resolveChannelFlags(base);
+  return {
+    ...base,
+    channelsEnabled: true,
+    emailEnabled: channels.email,
+    inAppEnabled: channels.inApp,
+    pushEnabled: channels.push,
+  };
+}
+
+/**
+ * Apply a preference patch over a stored record and return the complete value
+ * to persist.
+ *
+ * The base is resolved first, so a legacy `channelsEnabled: false` row reads as
+ * every channel off; a patch that names only a type flag then leaves them off
+ * rather than reviving the defaults. A patch that names a channel sets that
+ * channel explicitly, and the stored record always ends up in the current
+ * shape (`channelsEnabled: true`, every key present).
+ */
+export function applyPreferencesPatch(
+  base: NotificationPreferences,
+  patch: Partial<NotificationPreferences>
+): NotificationPreferences {
+  const next = completePreferences(base);
+  for (const key of Object.keys(patch) as (keyof NotificationPreferences)[]) {
+    const value = patch[key];
+    if (value !== undefined) {
+      next[key] = value;
+    }
+  }
+  next.channelsEnabled = true;
+  return next;
+}
+
 export type AudienceUser = {
   id: string;
   email: string;

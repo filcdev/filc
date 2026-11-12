@@ -309,6 +309,8 @@ export async function renderPreviewEmail(
       details: body.details,
       highlights: body.highlights,
       locale: lang,
+      // Sample target so the preview shows the footer's manage link too.
+      manageUrl: `${env.baseUrl}/settings/notifications?channel=email`,
       recipientName: lang === 'en' ? 'John Doe' : 'Minta Felhasználó',
       title: body.title,
       typeLabel: typeLabels[type][lang],

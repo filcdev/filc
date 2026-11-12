@@ -34,10 +34,11 @@ import {
 import { enqueue } from '#utils/notifications/queue';
 import { buildSubstitutionTeacherContent } from '#utils/notifications/substitution-teacher';
 import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
+  applyPreferencesPatch,
+  completePreferences,
   type NotificationContent,
+  type NotificationPreferences,
   type NotificationType,
-  resolveChannelFlags,
 } from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'preview']);
@@ -138,7 +139,9 @@ export const markAllAsRead = base.notifications.markAllAsRead
  *
  * Rows written before the update path merged a partial patch can be missing
  * keys, and the response schema requires all of them — without this a user
- * whose row was written that way could never open their settings again.
+ * whose row was written that way could never open their settings again. A
+ * legacy `channelsEnabled: false` row resolves to its effective channels (all
+ * off) rather than the defaults, so it reads back as what the user chose.
  */
 const withCompletePreferences = <
   T extends { colorScheme: string; notificationPreferences: unknown },
@@ -152,12 +155,9 @@ const withCompletePreferences = <
    * with it the app's first paint) over one bad row.
    */
   colorScheme: colorSchemeSchema.catch('default').parse(row.colorScheme),
-  notificationPreferences: {
-    ...DEFAULT_NOTIFICATION_PREFERENCES,
-    ...(row.notificationPreferences as Partial<
-      typeof DEFAULT_NOTIFICATION_PREFERENCES
-    >),
-  },
+  notificationPreferences: completePreferences(
+    row.notificationPreferences as Partial<NotificationPreferences>
+  ),
 });
 
 export const getNotificationSettings = base.notifications.settings
@@ -223,8 +223,10 @@ export const updateNotificationSettings = base.notifications.updateSettings
 
     // A patch may name a subset of the toggles, but the column has to hold a
     // complete record: a stored object missing a key reads as `undefined`
-    // downstream, which the engine treats as an opt-out (and fails the
-    // response schema on read). Merge over what is stored, or the defaults.
+    // downstream, and the response schema fails on read. Resolve what is
+    // stored first, then apply the patch — a legacy row's
+    // `channelsEnabled: false` reads as every channel off, so a patch naming
+    // only a type flag does not silently switch push and in-app back on.
     const [existing] = await db
       .select({
         notificationPreferences: userPreferences.notificationPreferences,
@@ -234,24 +236,14 @@ export const updateNotificationSettings = base.notifications.updateSettings
       .limit(1);
 
     if (body.notificationPreferences !== undefined) {
-      const patch = body.notificationPreferences;
-      const mergedPreferences = {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...existing?.notificationPreferences,
-        ...patch,
-      };
-
-      // Migration on write: a legacy row's `channelsEnabled: false` must not
-      // override a choice made on one of the new per-channel switches.
-      if (
-        patch.emailEnabled !== undefined ||
-        patch.pushEnabled !== undefined ||
-        patch.inAppEnabled !== undefined
-      ) {
-        mergedPreferences.channelsEnabled = true;
-      }
-
-      values.notificationPreferences = mergedPreferences;
+      values.notificationPreferences = applyPreferencesPatch(
+        completePreferences(
+          existing?.notificationPreferences as
+            | Partial<NotificationPreferences>
+            | undefined
+        ),
+        body.notificationPreferences
+      );
     }
 
     const [updated] = await db
@@ -313,6 +305,29 @@ export const testNotification = base.notifications.test
 
     const userId = context.session.userId;
 
+    const [prefs] = await db
+      .select()
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, userId))
+      .limit(1);
+
+    const preferences = completePreferences(prefs?.notificationPreferences);
+    const flags = {
+      email: preferences.emailEnabled,
+      inApp: preferences.inAppEnabled,
+      push: preferences.pushEnabled,
+    };
+
+    // Same rule as the engine: no in-app preference, no inbox row. The endpoint
+    // exists to drop a row into the caller's inbox, so it cannot answer the
+    // notification it would not create.
+    if (!flags.inApp) {
+      logger.debug('Test notification refused: in-app disabled for {userId}', {
+        userId,
+      });
+      throw badRequest('In-app notifications are disabled in your preferences');
+    }
+
     const [notif] = await db
       .insert(notification)
       .values({
@@ -330,34 +345,25 @@ export const testNotification = base.notifications.test
       });
     }
 
-    const [prefs] = await db
-      .select()
-      .from(userPreferences)
-      .where(eq(userPreferences.userId, userId))
-      .limit(1);
-
     const userRecords = await db
       .select({ email: userTable.email })
       .from(userTable)
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    const flags = resolveChannelFlags({
-      ...DEFAULT_NOTIFICATION_PREFERENCES,
-      ...prefs?.notificationPreferences,
-    });
-
-    enqueue({
-      content: notif.content,
-      email: userRecords[0]?.email ?? '',
-      emailEnabled: flags.email,
-      language: prefs?.language ?? 'hu',
-      notificationId: notif.id,
-      pushEnabled: flags.push,
-      title: notif.title,
-      type: 'test',
-      userId,
-    });
+    if (flags.email || flags.push) {
+      enqueue({
+        content: notif.content,
+        email: userRecords[0]?.email ?? '',
+        emailEnabled: flags.email,
+        language: prefs?.language ?? 'hu',
+        notificationId: notif.id,
+        pushEnabled: flags.push,
+        title: notif.title,
+        type: 'test',
+        userId,
+      });
+    }
 
     return notif;
   });
