@@ -47,6 +47,32 @@ describe('completePreferences', () => {
 
     expect(completePreferences(stored)).toEqual(stored);
   });
+
+  it('applies the role default only to a channel the row does not name', () => {
+    const prefs = completePreferences(undefined, { email: false });
+
+    expect(prefs.emailEnabled).toBe(false);
+    expect(prefs.pushEnabled).toBe(true);
+    expect(prefs.inAppEnabled).toBe(true);
+  });
+
+  it('lets an explicit channel value beat the role default', () => {
+    const prefs = completePreferences({ emailEnabled: true }, { email: false });
+
+    expect(prefs.emailEnabled).toBe(true);
+  });
+
+  it('lets the legacy channelsEnabled:false master switch beat every role default', () => {
+    const prefs = completePreferences(LEGACY_OFF, {
+      email: true,
+      inApp: true,
+      push: true,
+    });
+
+    expect(prefs.emailEnabled).toBe(false);
+    expect(prefs.pushEnabled).toBe(false);
+    expect(prefs.inAppEnabled).toBe(false);
+  });
 });
 
 describe('applyPreferencesPatch', () => {
@@ -98,6 +124,18 @@ describe('applyPreferencesPatch', () => {
     expect(next.pushEnabled).toBe(true);
     expect(next.inAppEnabled).toBe(true);
     expect(next.channelsEnabled).toBe(true);
+  });
+
+  it('keeps the role defaults for channels the patch does not name', () => {
+    const defaults = { email: false };
+    const base = completePreferences(undefined, defaults);
+
+    const next = applyPreferencesPatch(base, { substitution: false }, defaults);
+
+    expect(next.substitution).toBe(false);
+    expect(next.emailEnabled).toBe(false);
+    expect(next.pushEnabled).toBe(true);
+    expect(next.inAppEnabled).toBe(true);
   });
 
   // The unsubscribe page writes exactly this: the stored row completed, then

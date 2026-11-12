@@ -112,7 +112,15 @@ export function TeacherDialog({
                 <FieldLabel>{t('teachers.assignedUser')}</FieldLabel>
                 <Combobox
                   emptyMessage={t('teachers.noUsersFound')}
-                  onValueChange={(value) => field.handleChange(value)}
+                  onValueChange={(value) => {
+                    field.handleChange(value);
+                    const selected = usersQuery.data?.find(
+                      (user) => user.id === value
+                    );
+                    if (selected && !form.getFieldValue('email')) {
+                      form.setFieldValue('email', selected.email);
+                    }
+                  }}
                   options={userOptions}
                   placeholder={t('teachers.assignedUserPlaceholder')}
                   searchPlaceholder={t('search')}

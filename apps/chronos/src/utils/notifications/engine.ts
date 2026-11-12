@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@logtape/logtape';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { notification, userPreferences } from '#modules/notifications/schema';
-import { lessonCohortMTM } from '#modules/timetable/schema';
+import { lessonCohortMTM, teacher } from '#modules/timetable/schema';
 import { enqueue } from '#utils/notifications/queue';
 import type {
   AudienceUser,
@@ -207,10 +207,16 @@ async function deliverToUser(
   handler: NotificationHandler,
   user: AudienceUser
 ): Promise<void> {
-  const [prefs] = await db
-    .select()
-    .from(userPreferences)
-    .where(eq(userPreferences.userId, user.id))
+  // One row per recipient: the stored preferences and whether a teacher row
+  // links this user, so the role-aware defaults below cost no extra query.
+  const [row] = await db
+    .select({
+      hasTeacher: sql<boolean>`exists (select 1 from ${teacher} where ${teacher.userId} = ${user.id})`,
+      notificationPreferences: userPreferences.notificationPreferences,
+    })
+    .from(userTable)
+    .leftJoin(userPreferences, eq(userPreferences.userId, userTable.id))
+    .where(eq(userTable.id, user.id))
     .limit(1);
 
   // A user who never opened their settings has no row, and a row written
@@ -219,7 +225,8 @@ async function deliverToUser(
   // opt-out. The helper also resolves the legacy `channelsEnabled` switch, so
   // the per-channel flags read here are already the effective ones.
   const preferences: NotificationPreferences = completePreferences(
-    prefs?.notificationPreferences
+    row?.notificationPreferences,
+    { email: row?.hasTeacher ?? false }
   );
 
   const prefKey = handler.preferenceKey;

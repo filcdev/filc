@@ -22,6 +22,7 @@ import {
 } from '#utils/avatars';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
+import { getUserEmail } from '#utils/teacher-email';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -99,7 +100,10 @@ const authOptions = {
             if (userEmail) {
               await db
                 .update(teacher)
-                .set({ userId: session.userId })
+                .set({
+                  email: sql`coalesce(${teacher.email}, ${userEmail})`,
+                  userId: session.userId,
+                })
                 .where(
                   and(
                     eq(sql`lower(${teacher.email})`, userEmail),
@@ -157,9 +161,15 @@ const authOptions = {
                 );
               const [candidate] = candidates;
               if (candidates.length === 1 && candidate) {
+                const email = await getUserEmail(session.userId);
                 await db
                   .update(teacher)
-                  .set({ userId: session.userId })
+                  .set({
+                    ...(email
+                      ? { email: sql`coalesce(${teacher.email}, ${email})` }
+                      : {}),
+                    userId: session.userId,
+                  })
                   .where(
                     and(
                       eq(teacher.id, candidate.id),

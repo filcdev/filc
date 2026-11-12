@@ -2,6 +2,7 @@ import { unsubscribeSchema } from '@filcdev/api/domains/notifications';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { userPreferences } from '#modules/notifications/schema';
+import { channelDefaultsForUser } from '#utils/notifications/channel-defaults';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
 import {
   applyPreferencesPatch,
@@ -111,9 +112,11 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
     .where(eq(userPreferences.userId, userId))
     .limit(1);
 
+  const defaults = await channelDefaultsForUser(userId);
   const notificationPreferences = applyPreferencesPatch(
-    completePreferences(existing?.notificationPreferences),
-    { emailEnabled: false }
+    completePreferences(existing?.notificationPreferences, defaults),
+    { emailEnabled: false },
+    defaults
   );
 
   await db

@@ -45,6 +45,17 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
 };
 
 /**
+ * Role-aware fallbacks for the channel flags, used when the stored row does
+ * not name a channel. Teachers get email by default; everyone else keeps
+ * in-app and push and has to opt into email.
+ */
+export type ChannelDefaults = {
+  email?: boolean;
+  inApp?: boolean;
+  push?: boolean;
+};
+
+/**
  * The literal baked into the `user_preferences.notification_preferences`
  * column default. Kept in the pre-split shape on purpose: changing a column
  * default is a schema migration, while every reader merges
@@ -66,21 +77,25 @@ export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT = {
  *
  * `channelsEnabled === false` is the pre-split "everything off" state left by
  * an old unsubscribe, so it wins over the per-channel flags. Otherwise a flag
- * that is missing (a row written before the split) reads as enabled.
+ * that is missing (a row written before the split) falls back to the caller's
+ * role defaults, then to the global defaults.
  */
 export function resolveChannelFlags(
-  prefs: Pick<
-    NotificationPreferences,
-    'channelsEnabled' | 'emailEnabled' | 'pushEnabled' | 'inAppEnabled'
-  >
+  prefs: Partial<
+    Pick<
+      NotificationPreferences,
+      'channelsEnabled' | 'emailEnabled' | 'pushEnabled' | 'inAppEnabled'
+    >
+  >,
+  defaults?: ChannelDefaults
 ): { email: boolean; push: boolean; inApp: boolean } {
   if (prefs.channelsEnabled === false) {
     return { email: false, inApp: false, push: false };
   }
   return {
-    email: prefs.emailEnabled !== false,
-    inApp: prefs.inAppEnabled !== false,
-    push: prefs.pushEnabled !== false,
+    email: prefs.emailEnabled ?? defaults?.email ?? true,
+    inApp: prefs.inAppEnabled ?? defaults?.inApp ?? true,
+    push: prefs.pushEnabled ?? defaults?.push ?? true,
   };
 }
 
@@ -91,15 +106,18 @@ export function resolveChannelFlags(
  *
  * A legacy row (`channelsEnabled: false`, no per-channel keys) therefore reads
  * back as every channel off, which is what the user chose, instead of the
- * defaults' `true`s. Everything that reads a row — the settings endpoint, the
- * delivery engine, the dev helpers — goes through this so the write path and
- * the read path agree on what the row means.
+ * defaults' `true`s. A channel the row does not name falls back to the
+ * caller-supplied role defaults, then to the global defaults. Everything that
+ * reads a row — the settings endpoint, the delivery engine, the dev helpers —
+ * goes through this so the write path and the read path agree on what the row
+ * means.
  */
 export function completePreferences(
-  stored?: Partial<NotificationPreferences> | null
+  stored?: Partial<NotificationPreferences> | null,
+  defaults?: ChannelDefaults
 ): NotificationPreferences {
   const base = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...stored };
-  const channels = resolveChannelFlags(base);
+  const channels = resolveChannelFlags(stored ?? {}, defaults);
   return {
     ...base,
     channelsEnabled: true,
@@ -121,9 +139,10 @@ export function completePreferences(
  */
 export function applyPreferencesPatch(
   base: NotificationPreferences,
-  patch: Partial<NotificationPreferences>
+  patch: Partial<NotificationPreferences>,
+  defaults?: ChannelDefaults
 ): NotificationPreferences {
-  const next = completePreferences(base);
+  const next = completePreferences(base, defaults);
   for (const key of Object.keys(patch) as (keyof NotificationPreferences)[]) {
     const value = patch[key];
     if (value !== undefined) {

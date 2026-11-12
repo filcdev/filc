@@ -7,6 +7,7 @@ import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { teacher } from '#modules/timetable/schema';
 import { base } from '#orpc';
 import { badRequest, notFound } from '#utils/http';
+import { getUserEmail } from '#utils/teacher-email';
 
 /**
  * Public teacher list used by the timetable filter bars and substitution
@@ -88,6 +89,23 @@ export const listTeachersAdmin = base.timetable.teachers.list
     return { items: data, total: data.length };
   });
 
+/**
+ * The email an update should store: an explicit value always wins, and a
+ * fresh link seeds the address from the user only when the teacher has none.
+ */
+async function resolveTeacherEmail(
+  body: { email?: string | null; userId?: string | null },
+  existing: { email: string | null }
+): Promise<string | null | undefined> {
+  if (body.email !== undefined) {
+    return body.email === null ? null : body.email.toLowerCase();
+  }
+  if (body.userId && existing.email === null) {
+    return (await getUserEmail(body.userId)) ?? undefined;
+  }
+  return undefined;
+}
+
 /** Manually set a teacher's email and/or linked user. */
 export const updateTeacher = base.timetable.teachers.update
   .use(requireAuthorization(permissions.teacherManage))
@@ -95,7 +113,7 @@ export const updateTeacher = base.timetable.teachers.update
     const { id, ...body } = input;
 
     const [existing] = await db
-      .select({ id: teacher.id })
+      .select({ email: teacher.email, id: teacher.id })
       .from(teacher)
       .where(eq(teacher.id, id))
       .limit(1);
@@ -114,14 +132,7 @@ export const updateTeacher = base.timetable.teachers.update
       }
     }
 
-    let email: string | null | undefined;
-    if (body.email === undefined) {
-      email = undefined;
-    } else if (body.email === null) {
-      email = null;
-    } else {
-      email = body.email.toLowerCase();
-    }
+    const email = await resolveTeacherEmail(body, existing);
 
     await db
       .update(teacher)

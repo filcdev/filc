@@ -26,6 +26,7 @@ import { loadSubstitutionNotificationPayload } from '#modules/timetable/utils/su
 import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { badRequest, forbidden, notFound } from '#utils/http';
+import { channelDefaultsForUser } from '#utils/notifications/channel-defaults';
 import { sendPush } from '#utils/notifications/providers/fcm';
 import {
   renderPreviewEmail,
@@ -35,6 +36,7 @@ import { enqueue } from '#utils/notifications/queue';
 import { buildSubstitutionTeacherContent } from '#utils/notifications/substitution-teacher';
 import {
   applyPreferencesPatch,
+  type ChannelDefaults,
   completePreferences,
   type NotificationContent,
   type NotificationPreferences,
@@ -146,7 +148,8 @@ export const markAllAsRead = base.notifications.markAllAsRead
 const withCompletePreferences = <
   T extends { colorScheme: string; notificationPreferences: unknown },
 >(
-  row: T
+  row: T,
+  defaults?: ChannelDefaults
 ) => ({
   ...row,
   /**
@@ -156,7 +159,8 @@ const withCompletePreferences = <
    */
   colorScheme: colorSchemeSchema.catch('default').parse(row.colorScheme),
   notificationPreferences: completePreferences(
-    row.notificationPreferences as Partial<NotificationPreferences>
+    row.notificationPreferences as Partial<NotificationPreferences>,
+    defaults
   ),
 });
 
@@ -164,6 +168,7 @@ export const getNotificationSettings = base.notifications.settings
   .use(requireAuthentication)
   .handler(async ({ context }) => {
     const userId = context.session.userId;
+    const defaults = await channelDefaultsForUser(userId);
 
     const [prefs] = await db
       .select()
@@ -171,7 +176,7 @@ export const getNotificationSettings = base.notifications.settings
       .where(eq(userPreferences.userId, userId));
 
     if (prefs) {
-      return withCompletePreferences(prefs);
+      return withCompletePreferences(prefs, defaults);
     }
 
     const [created] = await db
@@ -185,7 +190,7 @@ export const getNotificationSettings = base.notifications.settings
       });
     }
 
-    return withCompletePreferences(created);
+    return withCompletePreferences(created, defaults);
   });
 
 export const updateNotificationSettings = base.notifications.updateSettings
@@ -193,6 +198,7 @@ export const updateNotificationSettings = base.notifications.updateSettings
   .handler(async ({ context, input }) => {
     const userId = context.session.userId;
     const body = input;
+    const defaults = await channelDefaultsForUser(userId);
 
     const values: Record<string, unknown> = {};
 
@@ -240,9 +246,11 @@ export const updateNotificationSettings = base.notifications.updateSettings
         completePreferences(
           existing?.notificationPreferences as
             | Partial<NotificationPreferences>
-            | undefined
+            | undefined,
+          defaults
         ),
-        body.notificationPreferences
+        body.notificationPreferences,
+        defaults
       );
     }
 
@@ -253,7 +261,7 @@ export const updateNotificationSettings = base.notifications.updateSettings
       .returning();
 
     if (updated) {
-      return withCompletePreferences(updated);
+      return withCompletePreferences(updated, defaults);
     }
 
     const [created] = await db
@@ -267,7 +275,7 @@ export const updateNotificationSettings = base.notifications.updateSettings
       });
     }
 
-    return withCompletePreferences(created);
+    return withCompletePreferences(created, defaults);
   });
 
 export const registerFcmToken = base.notifications.fcmTokens.register
@@ -304,6 +312,7 @@ export const testNotification = base.notifications.test
     }
 
     const userId = context.session.userId;
+    const defaults = await channelDefaultsForUser(userId);
 
     const [prefs] = await db
       .select()
@@ -311,7 +320,10 @@ export const testNotification = base.notifications.test
       .where(eq(userPreferences.userId, userId))
       .limit(1);
 
-    const preferences = completePreferences(prefs?.notificationPreferences);
+    const preferences = completePreferences(
+      prefs?.notificationPreferences,
+      defaults
+    );
     const flags = {
       email: preferences.emailEnabled,
       inApp: preferences.inAppEnabled,

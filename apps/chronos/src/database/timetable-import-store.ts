@@ -50,6 +50,7 @@ import {
   timetable as timetableTable,
   weekDefinition as weekTable,
 } from '#modules/timetable/schema';
+import { getUserEmail } from '#utils/teacher-email';
 
 type Database = typeof db;
 export type TxClient = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -441,9 +442,15 @@ export const timetableImportStore: TimetableImportStore<TxClient> = {
   },
 
   async linkTeacherToUser(tx, teacherId, userId) {
+    const email = await getUserEmail(userId, tx);
     await tx
       .update(teacherTable)
-      .set({ userId })
+      .set({
+        ...(email
+          ? { email: sql`coalesce(${teacherTable.email}, ${email})` }
+          : {}),
+        userId,
+      })
       .where(and(eq(teacherTable.id, teacherId), isNull(teacherTable.userId)));
   },
   async transaction<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {

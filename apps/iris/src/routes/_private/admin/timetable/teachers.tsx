@@ -43,7 +43,7 @@ function getSortValue(teacher: AdminTeacher, column: SortColumn): string {
     case 'short':
       return teacher.short;
     case 'email':
-      return teacher.email ?? '';
+      return teacher.email ?? teacher.user?.email ?? '';
     case 'user':
       return teacher.user ? `${teacher.user.name} ${teacher.user.email}` : '';
     default:
@@ -203,9 +203,9 @@ function TeachersPage() {
                     <TableCell>{teacher.short}</TableCell>
                     <TableCell
                       className="max-w-56 truncate"
-                      title={teacher.email ?? ''}
+                      title={teacher.email ?? teacher.user?.email ?? ''}
                     >
-                      {teacher.email ?? '-'}
+                      {teacher.email ?? teacher.user?.email ?? '-'}
                     </TableCell>
                     <TableCell
                       className="max-w-64 truncate"
