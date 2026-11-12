@@ -99,4 +99,30 @@ describe('applyPreferencesPatch', () => {
     expect(next.inAppEnabled).toBe(true);
     expect(next.channelsEnabled).toBe(true);
   });
+
+  // The unsubscribe page writes exactly this: the stored row completed, then
+  // only email turned off.
+  it('turns only email off for the unsubscribe write', () => {
+    const fromLegacy = applyPreferencesPatch(completePreferences(LEGACY_OFF), {
+      emailEnabled: false,
+    });
+
+    expect(fromLegacy.emailEnabled).toBe(false);
+    expect(fromLegacy.pushEnabled).toBe(false);
+    expect(fromLegacy.inAppEnabled).toBe(false);
+    expect(fromLegacy.channelsEnabled).toBe(true);
+
+    const fromModern = applyPreferencesPatch(
+      completePreferences({
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        inAppEnabled: true,
+        pushEnabled: true,
+      }),
+      { emailEnabled: false }
+    );
+
+    expect(fromModern.emailEnabled).toBe(false);
+    expect(fromModern.pushEnabled).toBe(true);
+    expect(fromModern.inAppEnabled).toBe(true);
+  });
 });

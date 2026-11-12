@@ -11,7 +11,11 @@ import { colorSchemeSchema } from './theme';
 export const notificationPreferencesSchema = z.object({
   announcement: z.boolean(),
   blogPost: z.boolean(),
-  channelsEnabled: z.boolean(),
+  channelsEnabled: z
+    .boolean()
+    .describe(
+      'Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled'
+    ),
   doorlockCardUsed: z.boolean(),
   emailEnabled: z.boolean(),
   inAppEnabled: z.boolean(),

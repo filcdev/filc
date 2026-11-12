@@ -32207,7 +32207,8 @@
                           "type": "boolean"
                         },
                         "channelsEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
@@ -32532,7 +32533,8 @@
                         "type": "boolean"
                       },
                       "channelsEnabled": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled"
                       },
                       "doorlockCardUsed": {
                         "type": "boolean"
@@ -32640,7 +32642,8 @@
                           "type": "boolean"
                         },
                         "channelsEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
@@ -32930,7 +32933,7 @@
     "/notifications/test": {
       "post": {
         "operationId": "postNotificationsTest",
-        "description": "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS)",
+        "description": "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). Answers BAD_REQUEST when the caller has in-app notifications disabled in their preferences.",
         "tags": [
           "Notifications"
         ],

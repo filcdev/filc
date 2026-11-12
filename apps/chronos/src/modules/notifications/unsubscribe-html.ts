@@ -4,8 +4,8 @@ import { db } from '#database';
 import { userPreferences } from '#modules/notifications/schema';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
 import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  resolveChannelFlags,
+  applyPreferencesPatch,
+  completePreferences,
 } from '#utils/notifications/types';
 
 /**
@@ -99,10 +99,10 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
   }
 
   // Unsubscribing turns email off only: push, in-app and the per-type flags
-  // are the user's other choices and stay as they are. A legacy row's
-  // `channelsEnabled: false` is resolved rather than simply raised, so an old
-  // "everything off" row stays off for push and in-app instead of being
-  // silently switched back on by the unsubscribe link.
+  // are the user's other choices and stay as they are. `applyPreferencesPatch`
+  // resolves a legacy row's `channelsEnabled: false` rather than simply
+  // raising it, so an old "everything off" row stays off for push and in-app
+  // instead of being silently switched back on by the unsubscribe link.
   const [existing] = await db
     .select({
       notificationPreferences: userPreferences.notificationPreferences,
@@ -111,19 +111,10 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
     .where(eq(userPreferences.userId, userId))
     .limit(1);
 
-  const base = {
-    ...DEFAULT_NOTIFICATION_PREFERENCES,
-    ...existing?.notificationPreferences,
-  };
-  const resolved = resolveChannelFlags(base);
-
-  const notificationPreferences = {
-    ...base,
-    channelsEnabled: true,
-    emailEnabled: false,
-    inAppEnabled: resolved.inApp,
-    pushEnabled: resolved.push,
-  };
+  const notificationPreferences = applyPreferencesPatch(
+    completePreferences(existing?.notificationPreferences),
+    { emailEnabled: false }
+  );
 
   await db
     .insert(userPreferences)

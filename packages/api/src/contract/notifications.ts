@@ -146,7 +146,7 @@ export const notificationsContract = {
       filcRoute({
         auth: true,
         description:
-          "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS)",
+          "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). Answers BAD_REQUEST when the caller has in-app notifications disabled in their preferences.",
         method: 'POST',
         operationId: 'postNotificationsTest',
         path: '/notifications/test',

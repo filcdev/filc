@@ -13,10 +13,7 @@ import type {
   NotificationPreferences,
   NotificationType,
 } from '#utils/notifications/types';
-import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  resolveChannelFlags,
-} from '#utils/notifications/types';
+import { completePreferences } from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 
@@ -219,11 +216,11 @@ async function deliverToUser(
   // A user who never opened their settings has no row, and a row written
   // before a toggle existed lacks that key; both fall back per key rather
   // than reading `undefined`, which the gate below would treat as an
-  // opt-out.
-  const preferences: NotificationPreferences = {
-    ...DEFAULT_NOTIFICATION_PREFERENCES,
-    ...prefs?.notificationPreferences,
-  };
+  // opt-out. The helper also resolves the legacy `channelsEnabled` switch, so
+  // the per-channel flags read here are already the effective ones.
+  const preferences: NotificationPreferences = completePreferences(
+    prefs?.notificationPreferences
+  );
 
   const prefKey = handler.preferenceKey;
   if (prefKey && !preferences[prefKey]) {
@@ -234,7 +231,11 @@ async function deliverToUser(
     return;
   }
 
-  const flags = resolveChannelFlags(preferences);
+  const flags = {
+    email: preferences.emailEnabled,
+    inApp: preferences.inAppEnabled,
+    push: preferences.pushEnabled,
+  };
   if (!(flags.email || flags.push || flags.inApp)) {
     logger.debug('User {userId} disabled every channel for {type}', {
       type,
