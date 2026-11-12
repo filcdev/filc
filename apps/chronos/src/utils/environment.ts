@@ -6,6 +6,7 @@ const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
 const MAX_PORT = 65_535;
 const DEFAULT_PORT = 3001;
+const DEFAULT_MAX_HTTP_HEADER_SIZE = 65_536;
 
 const boolean = z.preprocess((v) => {
   if (typeof v === 'string') {
@@ -42,6 +43,22 @@ const envShape = z.object({
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
+  // Bun's request-head cap (16 KiB by default) answers 431 before any route
+  // runs; the OAuth proxy hands a preview its whole login payload in a query
+  // string. An empty or whitespace-only value keeps the default, the way the
+  // old `${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}` shell default did. The value
+  // is digits only: Bun's `--max-http-header-size` flag (which the image passes
+  // first) rejects `1e3`, `0x1000`, trailing spaces and the like, and the app
+  // takes the narrower digits-only form.
+  CHRONOS_MAX_HTTP_HEADER_SIZE: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z
+      .string()
+      .regex(/^\d+$/)
+      .transform(Number)
+      .pipe(z.number().int().positive())
+      .default(DEFAULT_MAX_HTTP_HEADER_SIZE)
+  ),
   // Defaults to production: the development branch opens the test-notification
   // endpoints to every signed-in user, echoes internal error messages to
   // clients and reflects any CORS origin. Making it explicit opt-in means a
