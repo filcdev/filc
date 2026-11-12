@@ -137,7 +137,9 @@ export const updateTeacher = base.timetable.teachers.update
     await db
       .update(teacher)
       .set({
-        email,
+        // `undefined` here means "keep the stored address", spelled out rather
+        // than leaning on Drizzle dropping undefined keys.
+        ...(email === undefined ? {} : { email }),
         userId: body.userId,
       })
       .where(eq(teacher.id, id));

@@ -786,6 +786,7 @@
     "notificationsDescription": "Choose which notifications you want to receive",
     "channels": "Send notifications to",
     "channelsDescription": "Choose where notifications reach you.",
+    "channelDefaults": "Teachers get email by default; students can switch it on here.",
     "types": "Notify me about",
     "typesDescription": "Choose which events are worth an alert.",
     "emailEnabled": "Email",

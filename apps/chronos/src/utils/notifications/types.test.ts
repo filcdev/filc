@@ -126,16 +126,32 @@ describe('applyPreferencesPatch', () => {
     expect(next.channelsEnabled).toBe(true);
   });
 
-  it('keeps the role defaults for channels the patch does not name', () => {
-    const defaults = { email: false };
-    const base = completePreferences(undefined, defaults);
+  // `defaults` decides a channel only when the base does not name it, so these
+  // use raw rows with no channel keys: the suite fails if the argument stops
+  // being forwarded and email falls back to the global `true` instead. The
+  // inverse case carries `inApp: false` too, so it is not satisfied by the
+  // global default either.
+  it('forwards the role defaults for a base that names no channel key', () => {
+    const student = applyPreferencesPatch(
+      { announcement: true },
+      { announcement: false },
+      { email: false }
+    );
 
-    const next = applyPreferencesPatch(base, { substitution: false }, defaults);
+    expect(student.announcement).toBe(false);
+    expect(student.emailEnabled).toBe(false);
+    expect(student.pushEnabled).toBe(true);
+    expect(student.inAppEnabled).toBe(true);
 
-    expect(next.substitution).toBe(false);
-    expect(next.emailEnabled).toBe(false);
-    expect(next.pushEnabled).toBe(true);
-    expect(next.inAppEnabled).toBe(true);
+    const teacher = applyPreferencesPatch(
+      { pushEnabled: true },
+      { announcement: false },
+      { email: true, inApp: false }
+    );
+
+    expect(teacher.emailEnabled).toBe(true);
+    expect(teacher.pushEnabled).toBe(true);
+    expect(teacher.inAppEnabled).toBe(false);
   });
 
   // The unsubscribe page writes exactly this: the stored row completed, then

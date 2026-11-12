@@ -786,6 +786,7 @@
     "notificationsDescription": "Válaszd ki, mely értesítéseket szeretnéd megkapni",
     "channels": "Értesítések küldése ide",
     "channelsDescription": "Válaszd ki, hol érjenek el az értesítések.",
+    "channelDefaults": "A tanárok alapból e-mailben is megkapják az értesítéseket, a diákok itt kapcsolhatják be.",
     "types": "Értesítés típusai",
     "typesDescription": "Válaszd ki, mely eseményekről kérsz értesítést.",
     "emailEnabled": "E-mail",

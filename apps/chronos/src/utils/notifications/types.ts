@@ -131,14 +131,17 @@ export function completePreferences(
  * Apply a preference patch over a stored record and return the complete value
  * to persist.
  *
- * The base is resolved first, so a legacy `channelsEnabled: false` row reads as
- * every channel off; a patch that names only a type flag then leaves them off
- * rather than reviving the defaults. A patch that names a channel sets that
+ * `base` may be a raw/partial row, the same shape `completePreferences` takes:
+ * it is completed first, so a legacy `channelsEnabled: false` row reads as
+ * every channel off and a patch that names only a type flag leaves them off
+ * rather than reviving the defaults. A channel the base does not name falls
+ * back to `defaults` — which is why the role defaults have to be forwarded
+ * here, not only to the read path. A patch that names a channel sets that
  * channel explicitly, and the stored record always ends up in the current
  * shape (`channelsEnabled: true`, every key present).
  */
 export function applyPreferencesPatch(
-  base: NotificationPreferences,
+  base: Partial<NotificationPreferences>,
   patch: Partial<NotificationPreferences>,
   defaults?: ChannelDefaults
 ): NotificationPreferences {

@@ -67,19 +67,6 @@ const NOTIFICATION_TYPES = [
   },
 ];
 
-const DEFAULT_PREFS = {
-  announcement: true,
-  blogPost: false,
-  channelsEnabled: true,
-  doorlockCardUsed: false,
-  emailEnabled: true,
-  inAppEnabled: true,
-  movedLesson: true,
-  pushEnabled: true,
-  substitution: true,
-  systemMessage: true,
-};
-
 /** Where the three channel toggles sit, then the per-type preferences. */
 export function NotificationsPane({
   active,
@@ -92,7 +79,9 @@ export function NotificationsPane({
   highlightChannel?: ChannelId;
 }) {
   const { t } = useTranslation();
-  const [prefs, setPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS);
+  // Seeded from the response only. The channel defaults differ per role, so a
+  // local fallback would assert an email state the server may not return.
+  const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
 
   const settingsQuery = useNotificationSettings(active);
   const saveSettings = useUpdateNotificationSettings({ onSaved: onClose });
@@ -103,13 +92,15 @@ export function NotificationsPane({
     }
   }, [settingsQuery.data]);
 
-  const togglePref = (key: string) => {
-    setPrefs((previous) => ({ ...previous, [key]: !previous[key] }));
-  };
-
-  if (settingsQuery.isLoading) {
+  if (!prefs) {
     return <Skeleton className="h-64 w-full" />;
   }
+
+  const togglePref = (key: string) => {
+    setPrefs((previous) =>
+      previous ? { ...previous, [key]: !previous[key] } : previous
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -156,6 +147,9 @@ export function NotificationsPane({
               </div>
             )
           )}
+          <p className="text-muted-foreground text-xs">
+            {t('preferences.channelDefaults')}
+          </p>
 
           <div className="space-y-1 border-t pt-4">
             <p className="font-medium text-sm">{t('preferences.types')}</p>

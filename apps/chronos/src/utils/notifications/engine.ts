@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@logtape/logtape';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { notification, userPreferences } from '#modules/notifications/schema';
-import { lessonCohortMTM, teacher } from '#modules/timetable/schema';
+import { lessonCohortMTM } from '#modules/timetable/schema';
+import { linkedTeacherExists } from '#utils/notifications/channel-defaults';
 import { enqueue } from '#utils/notifications/queue';
 import type {
   AudienceUser,
@@ -211,7 +212,7 @@ async function deliverToUser(
   // links this user, so the role-aware defaults below cost no extra query.
   const [row] = await db
     .select({
-      hasTeacher: sql<boolean>`exists (select 1 from ${teacher} where ${teacher.userId} = ${user.id})`,
+      hasTeacher: linkedTeacherExists(userTable.id),
       notificationPreferences: userPreferences.notificationPreferences,
     })
     .from(userTable)
