@@ -37,6 +37,7 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationContent,
   type NotificationType,
+  resolveChannelFlags,
 } from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'preview']);
@@ -233,11 +234,24 @@ export const updateNotificationSettings = base.notifications.updateSettings
       .limit(1);
 
     if (body.notificationPreferences !== undefined) {
-      values.notificationPreferences = {
+      const patch = body.notificationPreferences;
+      const mergedPreferences = {
         ...DEFAULT_NOTIFICATION_PREFERENCES,
         ...existing?.notificationPreferences,
-        ...body.notificationPreferences,
+        ...patch,
       };
+
+      // Migration on write: a legacy row's `channelsEnabled: false` must not
+      // override a choice made on one of the new per-channel switches.
+      if (
+        patch.emailEnabled !== undefined ||
+        patch.pushEnabled !== undefined ||
+        patch.inAppEnabled !== undefined
+      ) {
+        mergedPreferences.channelsEnabled = true;
+      }
+
+      values.notificationPreferences = mergedPreferences;
     }
 
     const [updated] = await db
@@ -328,12 +342,18 @@ export const testNotification = base.notifications.test
       .where(eq(userTable.id, userId))
       .limit(1);
 
+    const flags = resolveChannelFlags({
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...prefs?.notificationPreferences,
+    });
+
     enqueue({
-      channelsEnabled: prefs?.notificationPreferences?.channelsEnabled ?? true,
       content: notif.content,
       email: userRecords[0]?.email ?? '',
+      emailEnabled: flags.email,
       language: prefs?.language ?? 'hu',
       notificationId: notif.id,
+      pushEnabled: flags.push,
       title: notif.title,
       type: 'test',
       userId,
@@ -459,7 +479,7 @@ export const sendTestNotification = base.notifications.sendTest
       results.email = email.ok;
     }
     if (target.isUser && body.channels.push) {
-      results.push = await sendPush(target.id, subject, content);
+      results.push = (await sendPush(target.id, subject, content)).ok;
     }
 
     return results;

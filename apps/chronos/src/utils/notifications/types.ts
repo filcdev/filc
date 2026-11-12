@@ -18,7 +18,11 @@ export type NotificationPreferences = {
   systemMessage: boolean;
   blogPost: boolean;
   doorlockCardUsed: boolean;
+  /** Legacy master switch, read-only since the channel split. */
   channelsEnabled: boolean;
+  emailEnabled: boolean;
+  pushEnabled: boolean;
+  inAppEnabled: boolean;
 };
 
 /**
@@ -32,10 +36,53 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   blogPost: false,
   channelsEnabled: true,
   doorlockCardUsed: false,
+  emailEnabled: true,
+  inAppEnabled: true,
   movedLesson: true,
+  pushEnabled: true,
   substitution: true,
   systemMessage: true,
 };
+
+/**
+ * The literal baked into the `user_preferences.notification_preferences`
+ * column default. Kept in the pre-split shape on purpose: changing a column
+ * default is a schema migration, while every reader merges
+ * `DEFAULT_NOTIFICATION_PREFERENCES` over the stored row — so a row created
+ * with this default still resolves the three channels as enabled.
+ */
+export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT = {
+  announcement: true,
+  blogPost: false,
+  channelsEnabled: true,
+  doorlockCardUsed: false,
+  movedLesson: true,
+  substitution: true,
+  systemMessage: true,
+} as NotificationPreferences;
+
+/**
+ * Which delivery channels a user's preferences allow.
+ *
+ * `channelsEnabled === false` is the pre-split "everything off" state left by
+ * an old unsubscribe, so it wins over the per-channel flags. Otherwise a flag
+ * that is missing (a row written before the split) reads as enabled.
+ */
+export function resolveChannelFlags(
+  prefs: Pick<
+    NotificationPreferences,
+    'channelsEnabled' | 'emailEnabled' | 'pushEnabled' | 'inAppEnabled'
+  >
+): { email: boolean; push: boolean; inApp: boolean } {
+  if (prefs.channelsEnabled === false) {
+    return { email: false, inApp: false, push: false };
+  }
+  return {
+    email: prefs.emailEnabled !== false,
+    inApp: prefs.inAppEnabled !== false,
+    push: prefs.pushEnabled !== false,
+  };
+}
 
 export type AudienceUser = {
   id: string;
@@ -76,7 +123,8 @@ export type DeliveryJob = {
   content: string;
   details?: EmailDetail[];
   highlights?: string[];
-  channelsEnabled: boolean;
+  emailEnabled: boolean;
+  pushEnabled: boolean;
   /**
    * Delivery bookkeeping owned by the queue: a channel marked `true` has been
    * delivered and is not attempted again when the job is retried.

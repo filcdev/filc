@@ -32212,7 +32212,16 @@
                         "doorlockCardUsed": {
                           "type": "boolean"
                         },
+                        "emailEnabled": {
+                          "type": "boolean"
+                        },
+                        "inAppEnabled": {
+                          "type": "boolean"
+                        },
                         "movedLesson": {
+                          "type": "boolean"
+                        },
+                        "pushEnabled": {
                           "type": "boolean"
                         },
                         "substitution": {
@@ -32227,7 +32236,10 @@
                         "blogPost",
                         "channelsEnabled",
                         "doorlockCardUsed",
+                        "emailEnabled",
+                        "inAppEnabled",
                         "movedLesson",
+                        "pushEnabled",
                         "substitution",
                         "systemMessage"
                       ]
@@ -32525,7 +32537,16 @@
                       "doorlockCardUsed": {
                         "type": "boolean"
                       },
+                      "emailEnabled": {
+                        "type": "boolean"
+                      },
+                      "inAppEnabled": {
+                        "type": "boolean"
+                      },
                       "movedLesson": {
+                        "type": "boolean"
+                      },
+                      "pushEnabled": {
                         "type": "boolean"
                       },
                       "substitution": {
@@ -32624,7 +32645,16 @@
                         "doorlockCardUsed": {
                           "type": "boolean"
                         },
+                        "emailEnabled": {
+                          "type": "boolean"
+                        },
+                        "inAppEnabled": {
+                          "type": "boolean"
+                        },
                         "movedLesson": {
+                          "type": "boolean"
+                        },
+                        "pushEnabled": {
                           "type": "boolean"
                         },
                         "substitution": {
@@ -32639,7 +32669,10 @@
                         "blogPost",
                         "channelsEnabled",
                         "doorlockCardUsed",
+                        "emailEnabled",
+                        "inAppEnabled",
                         "movedLesson",
+                        "pushEnabled",
                         "substitution",
                         "systemMessage"
                       ]

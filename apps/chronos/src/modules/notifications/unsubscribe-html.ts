@@ -1,7 +1,9 @@
 import { unsubscribeSchema } from '@filcdev/api/domains/notifications';
+import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { userPreferences } from '#modules/notifications/schema';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
 
 /**
  * `GET|POST /api/notifications/unsubscribe`: the two HTML pages the
@@ -69,8 +71,8 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
 </head>
 <body>
   <div class="card">
-    <h1>Leiratkozás az értesítésekről</h1>
-    <p>Szeretnéd lemondani az összes email értesítést a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
+    <h1>Leiratkozás az e-mailekről</h1>
+    <p>Szeretnéd lemondani az email értesítéseket a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
     <form method="POST" action="/api/notifications/unsubscribe">
       <input type="hidden" name="userId" value="${escapeHtml(userId)}">
       <input type="hidden" name="token" value="${escapeHtml(token)}">
@@ -93,21 +95,29 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
     });
   }
 
-  const allDisabled = {
-    announcement: false,
-    blogPost: false,
-    channelsEnabled: false,
-    doorlockCardUsed: false,
-    movedLesson: false,
-    substitution: false,
-    systemMessage: false,
+  // Unsubscribing turns email off only: push, in-app and the per-type flags
+  // are the user's other choices and stay as they are. `channelsEnabled` is
+  // raised so a legacy `false` cannot keep the other channels disabled.
+  const [existing] = await db
+    .select({
+      notificationPreferences: userPreferences.notificationPreferences,
+    })
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, userId))
+    .limit(1);
+
+  const notificationPreferences = {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...existing?.notificationPreferences,
+    channelsEnabled: true,
+    emailEnabled: false,
   };
 
   await db
     .insert(userPreferences)
-    .values({ notificationPreferences: allDisabled, userId })
+    .values({ notificationPreferences, userId })
     .onConflictDoUpdate({
-      set: { notificationPreferences: allDisabled },
+      set: { notificationPreferences },
       target: userPreferences.userId,
     });
 

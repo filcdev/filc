@@ -13,7 +13,10 @@ export const notificationPreferencesSchema = z.object({
   blogPost: z.boolean(),
   channelsEnabled: z.boolean(),
   doorlockCardUsed: z.boolean(),
+  emailEnabled: z.boolean(),
+  inAppEnabled: z.boolean(),
   movedLesson: z.boolean(),
+  pushEnabled: z.boolean(),
   substitution: z.boolean(),
   systemMessage: z.boolean(),
 });

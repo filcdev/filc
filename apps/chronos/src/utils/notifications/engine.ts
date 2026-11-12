@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { getLogger } from '@logtape/logtape';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
@@ -12,7 +13,10 @@ import type {
   NotificationPreferences,
   NotificationType,
 } from '#utils/notifications/types';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  resolveChannelFlags,
+} from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 
@@ -195,6 +199,89 @@ async function enrichUsersWithLanguage(
   });
 }
 
+/**
+ * Preferences, channel flags and the actual write for one recipient. A
+ * skipped user (type opted out, or every channel off) is a normal outcome,
+ * not an error.
+ */
+async function deliverToUser(
+  type: NotificationType,
+  payload: unknown,
+  handler: NotificationHandler,
+  user: AudienceUser
+): Promise<void> {
+  const [prefs] = await db
+    .select()
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, user.id))
+    .limit(1);
+
+  // A user who never opened their settings has no row, and a row written
+  // before a toggle existed lacks that key; both fall back per key rather
+  // than reading `undefined`, which the gate below would treat as an
+  // opt-out.
+  const preferences: NotificationPreferences = {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...prefs?.notificationPreferences,
+  };
+
+  const prefKey = handler.preferenceKey;
+  if (prefKey && !preferences[prefKey]) {
+    logger.debug('User {userId} opted out of notification type {type}', {
+      type,
+      userId: user.id,
+    });
+    return;
+  }
+
+  const flags = resolveChannelFlags(preferences);
+  if (!(flags.email || flags.push || flags.inApp)) {
+    logger.debug('User {userId} disabled every channel for {type}', {
+      type,
+      userId: user.id,
+    });
+    return;
+  }
+
+  const content: NotificationContent = handler.buildContent(
+    payload,
+    user.language
+  );
+
+  let notificationId: string | undefined;
+  if (flags.inApp) {
+    const [notif] = await db
+      .insert(notification)
+      .values({
+        content: content.content,
+        metadata: content.metadata ?? null,
+        title: content.title,
+        type,
+        userId: user.id,
+      })
+      .returning();
+    notificationId = notif?.id;
+  }
+
+  // Email/push can be on while in-app is off, in which case there is no
+  // inbox row; the id then only correlates the delivery's log lines.
+  if (flags.email || flags.push) {
+    enqueue({
+      content: content.content,
+      details: content.details,
+      email: user.email,
+      emailEnabled: flags.email,
+      highlights: content.highlights,
+      language: user.language,
+      notificationId: notificationId ?? randomUUID(),
+      pushEnabled: flags.push,
+      title: content.title,
+      type,
+      userId: user.id,
+    });
+  }
+}
+
 async function fireNotification(
   type: NotificationType,
   payload: unknown
@@ -216,61 +303,7 @@ async function fireNotification(
     }
 
     for (const user of audience) {
-      const [prefs] = await db
-        .select()
-        .from(userPreferences)
-        .where(eq(userPreferences.userId, user.id))
-        .limit(1);
-
-      // A user who never opened their settings has no row, and a row written
-      // before a toggle existed lacks that key; both fall back per key rather
-      // than reading `undefined`, which the gate below would treat as an
-      // opt-out.
-      const preferences: NotificationPreferences = {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...prefs?.notificationPreferences,
-      };
-
-      const prefKey = handler.preferenceKey;
-      if (prefKey && !preferences[prefKey]) {
-        logger.debug('User {userId} opted out of notification type {type}', {
-          type,
-          userId: user.id,
-        });
-        continue;
-      }
-
-      const channelsEnabled = preferences.channelsEnabled;
-      const content: NotificationContent = handler.buildContent(
-        payload,
-        user.language
-      );
-
-      const [notif] = await db
-        .insert(notification)
-        .values({
-          content: content.content,
-          metadata: content.metadata ?? null,
-          title: content.title,
-          type,
-          userId: user.id,
-        })
-        .returning();
-
-      if (notif) {
-        enqueue({
-          channelsEnabled,
-          content: content.content,
-          details: content.details,
-          email: user.email,
-          highlights: content.highlights,
-          language: user.language,
-          notificationId: notif.id,
-          title: content.title,
-          type,
-          userId: user.id,
-        });
-      }
+      await deliverToUser(type, payload, handler, user);
     }
 
     logger.info('Dispatched notification type {type} to {count} users', {

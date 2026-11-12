@@ -41,16 +41,26 @@ export async function initializeFcm(): Promise<boolean> {
   }
 }
 
+/**
+ * Outcome of one push attempt. `skipped` distinguishes "there was nothing to
+ * send to" (no registered device, FCM not configured) from a real delivery
+ * failure, so the queue can treat it as satisfied instead of retrying.
+ */
+export type PushResult = {
+  ok: boolean;
+  skipped?: boolean;
+};
+
 export async function sendPush(
   userId: string,
   title: string,
   body: string
-): Promise<boolean> {
+): Promise<PushResult> {
   if (!fcmMessaging) {
     logger.debug('FCM not available, skipping push for user {userId}', {
       userId,
     });
-    return false;
+    return { ok: false, skipped: true };
   }
 
   try {
@@ -63,7 +73,7 @@ export async function sendPush(
 
     if (tokenValues.length === 0) {
       logger.debug('No FCM tokens for user {userId}', { userId });
-      return false;
+      return { ok: false, skipped: true };
     }
 
     const message: MulticastMessage = {
@@ -109,9 +119,9 @@ export async function sendPush(
       count: tokenValues.length,
       userId,
     });
-    return true;
+    return { ok: true };
   } catch (error) {
     logger.error('Failed to send FCM push to user {userId}', { error, userId });
-    return false;
+    return { ok: false };
   }
 }

@@ -31,17 +31,15 @@ type JobOutcome = {
 
 /**
  * Attempts every channel the job has not delivered yet. A channel that
- * succeeds is recorded on the job, so a later attempt never repeats it.
+ * succeeds is recorded on the job, so a later attempt never repeats it. A
+ * channel the user disabled starts out delivered: it is satisfied, never a
+ * failure to retry or to name in the dead-letter.
  */
 async function processJob(job: DeliveryJob): Promise<JobOutcome> {
-  if (!job.channelsEnabled) {
-    logger.debug('Channels disabled for user {userId}, skipping delivery', {
-      userId: job.userId,
-    });
-    return { done: true };
-  }
-
-  job.delivered ??= { email: false, push: false };
+  job.delivered ??= {
+    email: !job.emailEnabled,
+    push: !job.pushEnabled,
+  };
   const { delivered } = job;
   let retryAfterMs: number | undefined;
 
@@ -73,8 +71,10 @@ async function processJob(job: DeliveryJob): Promise<JobOutcome> {
   const pushPromise = delivered.push
     ? Promise.resolve()
     : sendPush(job.userId, job.title, job.content)
-        .then((ok) => {
-          delivered.push = ok;
+        .then((result) => {
+          // No registered device is not a failed push: the channel is
+          // satisfied without delivering anything.
+          delivered.push = result.ok || result.skipped === true;
         })
         .catch((error: unknown) => {
           logger.warning('Push delivery attempt failed for {notificationId}', {
