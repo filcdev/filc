@@ -1,5 +1,16 @@
 export type Locale = 'en' | 'hu';
 
+/** Accent identity of a notification email. */
+export type EmailAccent =
+  | 'teal'
+  | 'indigo'
+  | 'amber'
+  | 'violet'
+  | 'blue'
+  | 'slate'
+  | 'rose'
+  | 'orange';
+
 /** One label/value row in the optional details block of a notification email. */
 export type EmailDetail = { label: string; value: string };
 
@@ -15,8 +26,12 @@ export type RenderedEmail = {
 };
 
 export type NotificationEmailData = {
+  /** Accent identity of the email; defaults to `teal`. */
+  accent?: EmailAccent;
   content: string;
   details?: EmailDetail[];
+  /** Short, already-localized pill values rendered as chips in the hero. */
+  highlights?: string[];
   locale: Locale;
   recipientName?: string | null;
   title: string;

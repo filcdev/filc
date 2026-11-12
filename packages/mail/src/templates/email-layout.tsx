@@ -1,11 +1,13 @@
 import {
   Body,
+  Column,
   Container,
   Head,
   Heading,
   Html,
   Link,
   Preview,
+  Row,
   Section,
   Text,
 } from '@react-email/components';
@@ -14,18 +16,27 @@ import { emailCopy } from './i18n';
 import {
   bodyContentStyle,
   bodyStyle,
+  brandMarkCellStyle,
+  brandWordmarkCellStyle,
   cardStyle,
+  footerBrandStyle,
   footerLinkStyle,
   footerStyle,
   footerTextStyle,
   headerStyle,
+  monogramStyle,
   titleStyle,
   typePillStyle,
+  wordmarkStyle,
 } from './styles';
-import type { Locale } from './types';
+import type { EmailAccent, Locale } from './types';
 
 export type EmailLayoutProps = {
+  accent?: EmailAccent;
+  appName: string;
   children: ReactNode;
+  /** Hero panel rendered above the body content. */
+  hero?: ReactNode;
   lang: Locale;
   preview: string;
   title: string;
@@ -34,7 +45,10 @@ export type EmailLayoutProps = {
 };
 
 export const EmailLayout = ({
+  accent = 'teal',
+  appName,
   children,
+  hero,
   lang,
   preview,
   title,
@@ -51,16 +65,30 @@ export const EmailLayout = ({
       <Preview>{preview}</Preview>
       <Body style={bodyStyle}>
         <Container style={cardStyle}>
-          <Section style={headerStyle}>
+          <Section style={headerStyle(accent)}>
+            <Row>
+              <Column style={brandMarkCellStyle}>
+                <Text aria-hidden="true" style={monogramStyle}>
+                  F
+                </Text>
+              </Column>
+              <Column style={brandWordmarkCellStyle}>
+                <Text style={wordmarkStyle}>FILC</Text>
+              </Column>
+            </Row>
             <Text style={typePillStyle}>{typeLabel}</Text>
             <Heading style={titleStyle}>{title}</Heading>
           </Section>
-          <Section style={bodyContentStyle}>{children}</Section>
-          <Section style={footerStyle}>
+          <Section style={bodyContentStyle}>
+            {hero}
+            {children}
+          </Section>
+          <Section style={footerStyle(accent)}>
+            <Text style={footerBrandStyle(accent)}>{appName}</Text>
             <Text style={footerTextStyle}>{emailCopy[lang].autoMessage}</Text>
             {unsubscribeUrl ? (
               <Text style={{ ...footerTextStyle, margin: 0 }}>
-                <Link href={unsubscribeUrl} style={footerLinkStyle}>
+                <Link href={unsubscribeUrl} style={footerLinkStyle(accent)}>
                   {emailCopy[lang].unsubscribeLabel}
                 </Link>
               </Text>

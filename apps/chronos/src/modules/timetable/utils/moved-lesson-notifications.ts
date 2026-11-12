@@ -151,7 +151,12 @@ export async function attachEnrichedLessons(rows: MovedLessonRow[]) {
   });
 }
 
-/** Everything the moved-lesson email builders read off one moved lesson. */
+/**
+ * Everything the moved-lesson email builders read off one moved lesson. The
+ * payload carries display values, never foreign keys: `startingDay` is the day
+ * name, `startingPeriod` the period number as a string and `room` the room
+ * name, all already resolved from the row's joins.
+ */
 export type MovedLessonNotificationPayload = {
   cohortIds: string[];
   cohortNames: string[];
@@ -164,8 +169,11 @@ export type MovedLessonNotificationPayload = {
     room: string | null;
     teacherNames: string[];
   };
+  /** Resolved room name of the new slot. */
   room: string | null;
+  /** Resolved name of the new slot's day. */
   startingDay: string | null;
+  /** Resolved period number of the new slot, as a string. */
   startingPeriod: string | null;
   subjectNames: string[];
   target: {
@@ -178,6 +186,17 @@ export type MovedLessonNotificationPayload = {
 type EnrichedMovedLesson = Awaited<
   ReturnType<typeof attachEnrichedLessons>
 >[number];
+
+/** The resolved display values of one moved lesson's new slot. */
+function movedLessonTarget(enriched: EnrichedMovedLesson) {
+  const periodNumber = enriched.period?.period ?? null;
+  return {
+    day: enriched.dayDefinition?.name ?? null,
+    period: periodNumber,
+    periodText: periodNumber == null ? null : String(periodNumber),
+    room: enriched.classroom?.name ?? null,
+  };
+}
 
 /** The audience cohort ids and their display names for one moved lesson. */
 function movedLessonCohorts(enriched: EnrichedMovedLesson): {
@@ -244,6 +263,7 @@ export async function loadMovedLessonNotificationPayload(
   const firstLesson = lessons[0];
 
   const { cohortIds, cohortNames } = movedLessonCohorts(enriched);
+  const target = movedLessonTarget(enriched);
   const subjectNames = manual
     ? uniqueStrings([manual.subject?.name])
     : uniqueStrings(lessons.map((l) => l.subject?.name));
@@ -266,14 +286,14 @@ export async function loadMovedLessonNotificationPayload(
       room: originalRooms.join(', ') || null,
       teacherNames,
     },
-    room: lessonRow.room,
-    startingDay: lessonRow.startingDay,
-    startingPeriod: lessonRow.startingPeriod,
+    room: target.room,
+    startingDay: target.day,
+    startingPeriod: target.periodText,
     subjectNames,
     target: {
-      day: enriched.dayDefinition?.name ?? null,
-      period: enriched.period?.period ?? null,
-      room: enriched.classroom?.name ?? null,
+      day: target.day,
+      period: target.period,
+      room: target.room,
     },
   };
 }

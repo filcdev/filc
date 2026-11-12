@@ -48,6 +48,7 @@ export type NotificationContent = {
   title: string;
   content: string;
   details?: EmailDetail[];
+  highlights?: string[];
   metadata?: Record<string, unknown>;
 };
 
@@ -74,6 +75,7 @@ export type DeliveryJob = {
   title: string;
   content: string;
   details?: EmailDetail[];
+  highlights?: string[];
   channelsEnabled: boolean;
   /** Locale the recipient's `buildContent` ran with; the email wrapper uses it too. */
   language: string;

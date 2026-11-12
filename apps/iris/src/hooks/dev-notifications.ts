@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useMovedLessons } from '@/hooks/moved-lessons';
 import { useAdminSystemMessages, useAnnouncements } from '@/hooks/news';
-import { useSubstitutions } from '@/hooks/substitutions';
+import { type SubstitutionItem, useSubstitutions } from '@/hooks/substitutions';
 import { getLocalizedWeekdayName, parseDateOnly } from '@/utils/date-locale';
 import { api, orpc } from '@/utils/orpc';
 
@@ -179,7 +179,9 @@ export function useTestNotificationRecordOptions(
   type: NotificationType
 ): { id: string; label: string }[] {
   const { i18n, t } = useTranslation();
-  const substitutions = useSubstitutions(type === 'substitution');
+  const substitutions = useSubstitutions(
+    type === 'substitution' || type === 'substitution_teacher'
+  );
   const movedLessons = useMovedLessons(type === 'moved_lesson');
   const announcements = useAnnouncements(type === 'announcement');
   const systemMessages = useAdminSystemMessages(type === 'system_message');
@@ -191,34 +193,59 @@ export function useTestNotificationRecordOptions(
     select: (payload) => payload.items,
   });
 
+  /**
+   * One record label for the substitution pickers: date, class, subject and
+   * period, plus the substitute teacher's name when the preview targets them.
+   */
+  const substitutionLabel = (
+    item: SubstitutionItem,
+    substituteName?: string
+  ) => {
+    const lesson = item.lessons[0];
+    const cohort = lesson?.cohorts[0]?.name;
+    const subject = lesson?.subject?.name;
+    const period = lesson?.period?.period;
+    const parts = [formatRecordDate(item.substitution.date)];
+    if (cohort) {
+      parts.push(cohort);
+    }
+    if (subject) {
+      parts.push(subject);
+    }
+    if (period != null) {
+      parts.push(
+        formatPeriodNumber(period, i18n.language, t('substitution.period'))
+      );
+    }
+    if (substituteName) {
+      parts.push(substituteName);
+    }
+    if (!(cohort || subject || period != null)) {
+      parts.push(
+        t('devNotifications.recordLessonCount', {
+          count: item.lessons.length,
+        })
+      );
+    }
+    return parts.join(' · ');
+  };
+
   switch (type) {
     case 'substitution':
-      return (substitutions.data ?? []).map((item) => {
-        const lesson = item.lessons[0];
-        const cohort = lesson?.cohorts[0]?.name;
-        const subject = lesson?.subject?.name;
-        const period = lesson?.period?.period;
-        const parts = [formatRecordDate(item.substitution.date)];
-        if (cohort) {
-          parts.push(cohort);
-        }
-        if (subject) {
-          parts.push(subject);
-        }
-        if (period != null) {
-          parts.push(
-            formatPeriodNumber(period, i18n.language, t('substitution.period'))
-          );
-        }
-        if (!(cohort || subject || period != null)) {
-          parts.push(
-            t('devNotifications.recordLessonCount', {
-              count: item.lessons.length,
-            })
-          );
-        }
-        return { id: item.substitution.id, label: parts.join(' · ') };
-      });
+      return (substitutions.data ?? []).map((item) => ({
+        id: item.substitution.id,
+        label: substitutionLabel(item),
+      }));
+    case 'substitution_teacher':
+      return (substitutions.data ?? []).map((item) => ({
+        id: item.substitution.id,
+        label: substitutionLabel(
+          item,
+          item.teacher
+            ? `${item.teacher.firstName} ${item.teacher.lastName}`.trim()
+            : undefined
+        ),
+      }));
     case 'moved_lesson':
       return (movedLessons.data ?? []).map((item) => {
         const subject =

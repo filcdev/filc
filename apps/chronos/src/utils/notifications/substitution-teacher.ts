@@ -216,6 +216,77 @@ export async function resolveSubstituteTeacherAudience(
   ];
 }
 
+/** The "(07:10 - 07:55)" suffix for a lesson, or an empty string when it has no start. */
+const timeRangeLabel = (entry: SubstitutionTeacherLesson): string => {
+  if (!entry.startTime) {
+    return '';
+  }
+  return entry.endTime
+    ? `(${entry.startTime} - ${entry.endTime})`
+    : `(${entry.startTime})`;
+};
+
+/** Hero chips for the substitute-teacher email: first lesson and first class. */
+const buildSubstitutionTeacherHighlights = (
+  payload: SubstitutionTeacherPayload,
+  hu: boolean
+): string[] => {
+  const first = payload.lessons[0];
+  if (!first) {
+    return [];
+  }
+  return [
+    `${periodLabel(first.period, hu)} ${timeRangeLabel(first)}`.trim(),
+    first.cohortName ?? '',
+  ]
+    .filter(Boolean)
+    .slice(0, 4);
+};
+
+/**
+ * The single-lesson details card, using the same labels as the student-facing
+ * `buildSubstitutionDetails` so the two substitution emails match.
+ */
+const buildSubstitutionTeacherDetails = (
+  payload: SubstitutionTeacherPayload,
+  hu: boolean
+): EmailDetail[] => {
+  const [first] = payload.lessons;
+  if (!first) {
+    return [];
+  }
+
+  const label = {
+    class: hu ? 'Osztály' : 'Class',
+    comment: hu ? 'Megjegyzés' : 'Comment',
+    date: hu ? 'Dátum' : 'Date',
+    lesson: hu ? 'Óra' : 'Lesson',
+    room: hu ? 'Terem' : 'Room',
+    subject: hu ? 'Tantárgy' : 'Subject',
+    substituted: hu ? 'Helyettesített tanár' : 'Substituted teacher',
+  };
+
+  const rows: EmailDetail[] = [
+    { label: label.date, value: formatDate(payload.date, hu) },
+    { label: label.class, value: first.cohortName ?? '' },
+    { label: label.subject, value: first.subjectName ?? '' },
+    {
+      label: label.lesson,
+      value: [periodLabel(first.period, hu), timeRangeLabel(first)]
+        .filter(Boolean)
+        .join(' '),
+    },
+    { label: label.room, value: uniqueStrings(first.rooms).join(', ') },
+    {
+      label: label.substituted,
+      value: uniqueStrings(first.substitutedTeachers).join(', '),
+    },
+    { label: label.comment, value: payload.comment?.trim() ?? '' },
+  ];
+
+  return rows.filter((row) => row.value.length > 0);
+};
+
 /** Build the teacher-facing notification content for a substitution. */
 export function buildSubstitutionTeacherContent(
   payload: SubstitutionTeacherPayload,
@@ -253,15 +324,20 @@ export function buildSubstitutionTeacherContent(
     return { content: '', title };
   }
 
+  const highlights = buildSubstitutionTeacherHighlights(payload, hu);
+
+  if (lessons.length === 1) {
+    return {
+      content: label.intro,
+      details: buildSubstitutionTeacherDetails(payload, hu),
+      highlights,
+      title,
+    };
+  }
+
   const lessonLines = (entry: SubstitutionTeacherLesson): string[] => {
     const result: string[] = [];
-    let timeRange = '';
-    if (entry.startTime) {
-      timeRange = entry.endTime
-        ? ` (${entry.startTime} - ${entry.endTime})`
-        : ` (${entry.startTime})`;
-    }
-    const lessonLabel = [periodLabel(entry.period, hu), timeRange]
+    const lessonLabel = [periodLabel(entry.period, hu), timeRangeLabel(entry)]
       .filter(Boolean)
       .join(' ');
     if (lessonLabel) {
@@ -283,26 +359,21 @@ export function buildSubstitutionTeacherContent(
   };
 
   const dateLine = `${label.date}: ${formatDate(date, hu)}`;
-  const body =
-    lessons.length === 1
-      ? [
-          dateLine,
-          ...lessonLines(lessons[0] as SubstitutionTeacherLesson),
-        ].join('\n')
-      : [
-          dateLine,
-          '',
-          ...lessons.flatMap((entry, i) => [
-            `${label.lessons} (${i + 1}):`,
-            ...lessonLines(entry),
-            '',
-          ]),
-        ]
-          .join('\n')
-          .replace(TRAILING_NEWLINES, '');
+  const body = [
+    dateLine,
+    '',
+    ...lessons.flatMap((entry, i) => [
+      `${label.lessons} (${i + 1}):`,
+      ...lessonLines(entry),
+      '',
+    ]),
+  ]
+    .join('\n')
+    .replace(TRAILING_NEWLINES, '');
 
   return {
     content: `${label.intro}\n\n${body}`,
+    highlights,
     title,
   };
 }

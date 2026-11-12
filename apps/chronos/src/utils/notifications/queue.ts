@@ -37,6 +37,7 @@ async function processJob(job: DeliveryJob): Promise<boolean> {
     {
       content: job.content,
       details: job.details,
+      highlights: job.highlights,
       title: job.title,
     },
     job.userId

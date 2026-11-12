@@ -263,6 +263,7 @@ async function fireNotification(
           content: content.content,
           details: content.details,
           email: user.email,
+          highlights: content.highlights,
           language: user.language,
           notificationId: notif.id,
           title: content.title,

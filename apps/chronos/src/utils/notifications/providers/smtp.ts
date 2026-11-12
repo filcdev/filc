@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import {
   createMailTransport,
+  type EmailAccent,
   type EmailDetail,
   type MailTransport,
   renderEmail,
@@ -29,20 +30,32 @@ function getMailer(): MailTransport | null {
     return null;
   }
 
-  if (env.smtpAuth === 'oauth2' && !env.entraClientSecret) {
+  // A dedicated Entra app keeps the mail-sending role off the app users sign in
+  // through; unset, both fall back to the sign-in registration.
+  const smtpEntra = {
+    clientId: env.smtpEntraClientId ?? env.entraClientId,
+    clientSecret: env.smtpEntraClientSecret ?? env.entraClientSecret,
+    tenantId: env.smtpEntraTenantId ?? env.entraTenantId,
+  };
+
+  if (env.smtpAuth === 'oauth2' && !smtpEntra.clientSecret) {
     logger.warn(
-      'SMTP OAuth2 needs a CHRONOS_ENTRA_CLIENT_SECRET, email delivery disabled'
+      'SMTP OAuth2 needs a client secret: set CHRONOS_SMTP_ENTRA_CLIENT_SECRET (or CHRONOS_ENTRA_CLIENT_SECRET), email delivery disabled',
+      { dedicatedApp: Boolean(env.smtpEntraClientId) }
     );
     return null;
   }
 
   let auth: SmtpAuth | undefined;
   if (env.smtpAuth === 'oauth2') {
+    logger.debug('SMTP OAuth2 credentials resolved', {
+      dedicatedApp: Boolean(env.smtpEntraClientId),
+    });
     auth = {
       entra: {
-        clientId: env.entraClientId,
-        clientSecret: env.entraClientSecret ?? '',
-        tenantId: env.entraTenantId,
+        clientId: smtpEntra.clientId,
+        clientSecret: smtpEntra.clientSecret ?? '',
+        tenantId: smtpEntra.tenantId,
       },
       type: 'oauth2',
       user: env.smtpUser ?? env.smtpFromEmail,
@@ -90,6 +103,18 @@ const typeLabels: Record<NotificationType, { en: string; hu: string }> = {
   test: { en: 'Test notification', hu: 'Teszt értesítés' },
 };
 
+const typeAccents: Record<NotificationType, EmailAccent> = {
+  announcement: 'violet',
+  blog_post: 'blue',
+  cohort_reselection_required: 'orange',
+  doorlock_card_used: 'rose',
+  moved_lesson: 'amber',
+  substitution: 'teal',
+  substitution_teacher: 'indigo',
+  system_message: 'slate',
+  test: 'teal',
+};
+
 export function generateUnsubscribeToken(userId: string): string {
   return createHmac('sha256', env.authSecret).update(userId).digest('hex');
 }
@@ -98,7 +123,12 @@ export async function sendEmail(
   to: string,
   type: NotificationType,
   locale: string,
-  body: { content: string; details?: EmailDetail[]; title: string },
+  body: {
+    content: string;
+    details?: EmailDetail[];
+    highlights?: string[];
+    title: string;
+  },
   userId: string
 ): Promise<boolean> {
   const tp = getMailer();
@@ -121,8 +151,10 @@ export async function sendEmail(
     const rendered = await renderEmail(
       'notification',
       {
+        accent: typeAccents[type],
         content: body.content,
         details: body.details,
+        highlights: body.highlights,
         locale: lang,
         recipientName: recipient?.name,
         title: body.title,
@@ -157,14 +189,21 @@ export async function sendEmail(
 export async function renderPreviewEmail(
   type: NotificationType,
   locale: string,
-  body: { content: string; details?: EmailDetail[]; title: string }
+  body: {
+    content: string;
+    details?: EmailDetail[];
+    highlights?: string[];
+    title: string;
+  }
 ): Promise<string> {
   const lang = locale === 'en' ? 'en' : 'hu';
   const { html } = await renderEmail(
     'notification',
     {
+      accent: typeAccents[type],
       content: body.content,
       details: body.details,
+      highlights: body.highlights,
       locale: lang,
       recipientName: lang === 'en' ? 'John Doe' : 'Minta Felhasználó',
       title: body.title,

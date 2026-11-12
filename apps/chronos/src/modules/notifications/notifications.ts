@@ -32,6 +32,7 @@ import {
   sendEmail,
 } from '#utils/notifications/providers/smtp';
 import { enqueue } from '#utils/notifications/queue';
+import { buildSubstitutionTeacherContent } from '#utils/notifications/substitution-teacher';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationContent,
@@ -474,13 +475,16 @@ async function resolvePreviewContent(
   locale: string
 ): Promise<NotificationContent> {
   switch (type) {
-    case 'substitution': {
+    case 'substitution':
+    case 'substitution_teacher': {
       const payload = await loadSubstitutionNotificationPayload(entityId);
       if (!payload) {
         throw notFound('Substitution not found');
       }
 
-      return buildSubstitutionNotificationContent(payload, locale);
+      return type === 'substitution'
+        ? buildSubstitutionNotificationContent(payload, locale)
+        : buildSubstitutionTeacherContent(payload, locale);
     }
     case 'moved_lesson': {
       const payload = await loadMovedLessonNotificationPayload(entityId);

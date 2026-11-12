@@ -104,6 +104,13 @@ const envShape = z.object({
     .max(1)
     .default(0.1),
   CHRONOS_SMTP_AUTH: z.enum(['basic', 'oauth2']).default('basic'),
+  // Dedicated Entra app for SMTP XOAUTH2 ("Office 365 Exchange Online",
+  // application permission SMTP.SendAsApp). Unset, the mail transport falls back
+  // to the sign-in app's CHRONOS_ENTRA_* values, so one registration keeps
+  // working. See docs/entra-setup.md.
+  CHRONOS_SMTP_ENTRA_CLIENT_ID: z.string().optional(),
+  CHRONOS_SMTP_ENTRA_CLIENT_SECRET: z.string().optional(),
+  CHRONOS_SMTP_ENTRA_TENANT_ID: z.string().optional(),
   CHRONOS_SMTP_FROM_EMAIL: z.string().optional(),
   CHRONOS_SMTP_FROM_NAME: z.string().optional(),
 

@@ -11,6 +11,7 @@ import {
   buildSubstitutionTeacherContent,
   resolveSubstituteTeacherAudience,
   type SubstitutionTeacherPayload,
+  uniqueStrings,
 } from '#utils/notifications/substitution-teacher';
 import type {
   NotificationContent,
@@ -133,9 +134,20 @@ export function buildSubstitutionNotificationContent(
   payload: SubstitutionTeacherPayload & { lessonIds?: string[] },
   locale: string
 ): NotificationContent {
+  const { lessons } = payload;
+  const highlights = [
+    ...uniqueStrings(
+      lessons.map((entry) =>
+        entry.period == null ? null : periodLabel(String(entry.period), locale)
+      )
+    ),
+    ...uniqueStrings(lessons.flatMap((entry) => entry.rooms)),
+  ].slice(0, 4);
+
   return {
     content: buildSubstitutionContent(payload, locale),
     details: buildSubstitutionDetails(payload, locale),
+    highlights,
     title: isHungarianLocale(locale) ? 'Új helyettesítés' : 'New Substitution',
   };
 }
@@ -282,9 +294,19 @@ export function buildMovedLessonNotificationContent(
     MovedLessonDetailsPayload & { lessonIds?: string[] },
   locale: string
 ): NotificationContent {
+  const { target } = payload;
+  const highlights = [
+    target.day ? dayName(target.day, locale) : '',
+    target.period == null ? '' : periodLabel(String(target.period), locale),
+    target.room ?? '',
+  ]
+    .filter(Boolean)
+    .slice(0, 4);
+
   return {
     content: buildMovedLessonContent(payload, locale),
     details: buildMovedLessonDetails(payload, locale),
+    highlights,
     title: isHungarianLocale(locale) ? 'Áthelyezett óra' : 'Moved Lesson',
   };
 }
