@@ -32,7 +32,11 @@ function AppLayoutComponent() {
   // authentication is enforced here. Without it those routes would sit on
   // their loading skeleton forever for an anonymous visitor.
   if (!(data?.session && data?.user)) {
-    return <Navigate search={{ redirect: location.href }} to="/auth/login" />;
+    // This router version drops the origin from `location.href`, so the login
+    // page receives a path it can compare against its own origin.
+    return (
+      <Navigate replace search={{ redirect: location.href }} to="/auth/login" />
+    );
   }
 
   return <Outlet />;

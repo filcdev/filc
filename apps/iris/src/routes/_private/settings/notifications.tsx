@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { NotificationsPane } from '@/components/settings/notifications-pane';
+import { orpc, prefetch } from '@/utils/orpc';
 
 const searchSchema = z.object({
   // Unknown values are ignored rather than failing the whole route.
@@ -9,8 +10,10 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute('/_private/settings/notifications')({
-  validateSearch: searchSchema,
   component: NotificationSettingsPage,
+  validateSearch: searchSchema,
+  loader: ({ context }) =>
+    prefetch(context.queryClient, orpc.notifications.settings.queryOptions()),
 });
 
 function NotificationSettingsPage() {

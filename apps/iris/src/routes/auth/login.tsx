@@ -15,8 +15,32 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 const searchSchema = z.object({
-  redirect: z.string().optional(),
+  // Coerced: `?redirect=1` (or any non-string) must not throw the route.
+  redirect: z.coerce.string().optional(),
 });
+
+/**
+ * A same-origin path to return to, or `/`.
+ *
+ * Compared by origin rather than by prefix: the URL parser normalises
+ * backslashes and strips tabs/newlines, so `/\evil.com` and the same path with
+ * a literal tab collapse into a different origin and are rejected here, while
+ * the naive `startsWith('/') && !startsWith('//')` check let them through.
+ */
+function resolveReturnTo(redirect: string | undefined): string {
+  if (!redirect) {
+    return '/';
+  }
+  try {
+    const target = new URL(redirect, window.location.origin);
+    if (target.origin !== window.location.origin) {
+      return '/';
+    }
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return '/';
+  }
+}
 
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,
@@ -38,8 +62,7 @@ function RouteComponent() {
 
     // Only a same-origin path is honoured; anything else would make the login
     // page an open redirect through the OAuth callback.
-    const returnTo =
-      redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : '/';
+    const returnTo = resolveReturnTo(redirect);
 
     try {
       await authClient.signIn.social({
