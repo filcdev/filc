@@ -31,7 +31,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 # The OAuth proxy hands the whole encrypted login payload (claims, tokens,
 # state) to a preview in a query string, which real Entra logins push past Bun's
 # 16 KiB request-head default — the preview then answers 431 before any route
-# runs. The cap is a Bun CLI flag, not a `Bun.serve` option, so it can only be
-# set here; the shell form is what lets CHRONOS_MAX_HTTP_HEADER_SIZE reach it.
-# See docs/entra-setup.md §6.
+# runs. The API sets the same cap from CHRONOS_MAX_HTTP_HEADER_SIZE at startup;
+# this flag stays as a launch-level default (the in-code value wins), and the
+# shell form is what lets the variable reach it. See docs/entra-setup.md §6.
 ENTRYPOINT [ "sh", "-c", "exec bun --max-http-header-size=\"${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}\" --bun run dist/index.js" ]
