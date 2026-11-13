@@ -12,6 +12,7 @@ import {
 } from '@filcdev/api/domains/kiosk/config';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+
 import {
   DEFAULT_NEWS_SLIDE_SECONDS,
   DEFAULT_NEWS_TICKER_SECONDS,

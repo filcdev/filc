@@ -35,27 +35,25 @@ export function QueryBoundary<T>({
   children,
 }: QueryBoundaryProps<T>) {
   if (query.isLoading) {
-    return <>{loading ?? <Skeleton className="h-64 w-full" />}</>;
+    return loading ?? <Skeleton className="h-64 w-full" />;
   }
 
   if (query.isError) {
     const message =
       query.error instanceof Error ? query.error.message : 'An error occurred';
     return (
-      <>
-        {error?.(message) ?? (
-          <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
-        )}
-      </>
+      error?.(message) ?? (
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )
     );
   }
 
   if (data === undefined) {
-    return <>{loading ?? <Skeleton className="h-64 w-full" />}</>;
+    return loading ?? <Skeleton className="h-64 w-full" />;
   }
 
-  return <>{children(data)}</>;
+  return children(data);
 }

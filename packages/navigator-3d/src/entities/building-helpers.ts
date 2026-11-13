@@ -1,6 +1,7 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
 import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
+
 import { FLOOR_GAP } from '../scene/storey-resolver';
 
 export function getClassroomsInBuilding(

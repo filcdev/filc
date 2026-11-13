@@ -1,9 +1,10 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
 import { useEffect, useRef } from 'react';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import AxisGizmo from './axis-gizmo';
 import { buildAxes } from './blueprint/axes-builder';
 import {
@@ -201,7 +202,7 @@ export default function EditorView3D({
       )}
 
       {!graph && (
-        <div className="absolute inset-0 grid place-items-center text-cyan-300 text-sm">
+        <div className="absolute inset-0 grid place-items-center text-sm text-cyan-300">
           {emptyLabel ?? ''}
         </div>
       )}

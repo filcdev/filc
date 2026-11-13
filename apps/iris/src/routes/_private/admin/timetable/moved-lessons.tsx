@@ -23,6 +23,7 @@ import dayjs from 'dayjs';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
 import {
   MovedLessonDialog,
@@ -45,12 +46,12 @@ import {
   useDeleteMovedLesson,
   useMovedLessonClassrooms,
   useMovedLessonCohorts,
-  useMovedLessonSubstitutions,
   useMovedLessons,
+  useMovedLessonSubstitutions,
 } from '@/hooks/moved-lessons';
 import type { SubstitutionItem } from '@/hooks/substitutions';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
+import { useSortable, type UseSortableResult } from '@/hooks/use-sortable';
 import { formatLocalizedDate, getDayOrder } from '@/utils/date-locale';
 import { orpc, prefetch } from '@/utils/orpc';
 import { formatPeriodLabel } from '@/utils/period';
@@ -316,7 +317,7 @@ function MovedLessonsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('movedLesson.title')}
         </h1>
         <p className="text-muted-foreground">{t('movedLesson.description')}</p>
@@ -336,7 +337,7 @@ function MovedLessonsPage() {
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
-            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             htmlFor={showPastId}
           >
             {t('movedLesson.showPast')}
@@ -471,7 +472,7 @@ function MovedLessonsTable({
   const header = (column: MovedLessonSortColumn, label: string) => (
     <TableHead
       aria-sort={ariaSort(column)}
-      className="cursor-pointer select-none hover:bg-muted/50"
+      className="hover:bg-muted/50 cursor-pointer select-none"
       onClick={() => toggle(column)}
     >
       <div className="flex items-center gap-2">
@@ -560,7 +561,7 @@ function MovedLessonsTable({
               </TableCell>
               <TableCell>
                 {ml.movedLesson.comment ? (
-                  <span className="whitespace-pre-wrap text-sm">
+                  <span className="text-sm whitespace-pre-wrap">
                     {ml.movedLesson.comment}
                   </span>
                 ) : (

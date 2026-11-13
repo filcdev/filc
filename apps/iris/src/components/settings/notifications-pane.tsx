@@ -11,6 +11,7 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
   useNotificationSettings,
   useUpdateNotificationSettings,
@@ -88,7 +89,7 @@ export function NotificationsPane({
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <label
-              className="cursor-pointer font-medium text-sm leading-none"
+              className="cursor-pointer text-sm leading-none font-medium"
               htmlFor={channelsId}
             >
               {t('preferences.channelsEnabled')}
@@ -102,7 +103,7 @@ export function NotificationsPane({
           {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
             <div className="flex items-center justify-between gap-4" key={key}>
               <label
-                className="cursor-pointer font-medium text-sm leading-none"
+                className="cursor-pointer text-sm leading-none font-medium"
                 htmlFor={`pref-${key}`}
               >
                 {t(labelKey)}

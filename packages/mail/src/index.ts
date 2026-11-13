@@ -1,5 +1,6 @@
 import { createTransport } from 'nodemailer';
 import { z } from 'zod';
+
 import { renderNotification } from './templates/notification';
 import type {
   Branding,
@@ -57,6 +58,9 @@ export const createMailTransport = (config: SmtpConfig): MailTransport => {
       auth?.type === 'oauth2'
         ? {
             provisionCallback: (_user, _renew, callback) => {
+              // nodemailer's OAuth2 `provisionCallback` is callback-based, so
+              // the callback can only ever be called from inside the promise.
+              /* oxlint-disable promise/no-callback-in-promise */
               fetchEntraAccessToken(auth.entra).then(
                 ({ expires, token }) => callback(null, token, expires),
                 (error: unknown) =>
@@ -64,6 +68,7 @@ export const createMailTransport = (config: SmtpConfig): MailTransport => {
                     error instanceof Error ? error : new Error(String(error))
                   )
               );
+              /* oxlint-enable promise/no-callback-in-promise */
             },
             type: 'OAuth2',
             user: auth.user,

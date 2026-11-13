@@ -1,13 +1,13 @@
-import { activityLogSchema } from '#modules/activity-log/schema';
-import { bugReportSchema } from '#modules/bug-report/schema';
-import { doorlockSchema } from '#modules/doorlock/schema';
-import { kioskSchema } from '#modules/kiosk/schema';
-import { navigatorSchema } from '#modules/navigator/schema';
-import { newsSchema } from '#modules/news/schema';
-import { notificationsSchema } from '#modules/notifications/schema';
-import { themeSchema } from '#modules/theme/schema';
-import { timetableSchema } from '#modules/timetable/schema';
-import { wifiSchema } from '#modules/wifi/schema';
+import { activityLogSchema } from '@/modules/activity-log/schema';
+import { bugReportSchema } from '@/modules/bug-report/schema';
+import { doorlockSchema } from '@/modules/doorlock/schema';
+import { kioskSchema } from '@/modules/kiosk/schema';
+import { navigatorSchema } from '@/modules/navigator/schema';
+import { newsSchema } from '@/modules/news/schema';
+import { notificationsSchema } from '@/modules/notifications/schema';
+import { themeSchema } from '@/modules/theme/schema';
+import { timetableSchema } from '@/modules/timetable/schema';
+import { wifiSchema } from '@/modules/wifi/schema';
 
 /**
  * Every module's tables, merged into the one schema map Drizzle is built from.

@@ -14,6 +14,7 @@ import dayjs from 'dayjs';
 import { Ban, CreditCard, Lock } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { RowActions } from '@/components/admin/row-actions';
 import { StatCard } from '@/components/admin/stat-card';
 import { TableToolbar } from '@/components/admin/table-toolbar';
@@ -33,7 +34,7 @@ import {
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
+import { useSortable, type UseSortableResult } from '@/hooks/use-sortable';
 import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/doorlock/cards')({
@@ -134,7 +135,7 @@ function CardsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('doorlockCards.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -233,7 +234,7 @@ const CardsTable = ({
 
   const header = (column: CardSortColumn, label: string) => (
     <TableHead
-      className="cursor-pointer select-none hover:bg-muted/50"
+      className="hover:bg-muted/50 cursor-pointer select-none"
       onClick={() => toggle(column)}
     >
       <div className="flex items-center gap-2">

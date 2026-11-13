@@ -1,6 +1,7 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { computeCorridorEndpoints } from '../entities/corridor-geometry';
 import { computeShaftBounds } from '../entities/vertical-asset-common';
 import type {
@@ -23,7 +24,7 @@ import type { MergedEntity } from './merge';
  *  This is the `attachHighlightAnchor` logic that used to live inside the
  *  old per-entity mesh builders, lifted out so geometry comes from the
  *  kiosk layer instead. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported per-kind anchor builder, kept verbatim
+// ported per-kind anchor builder, kept verbatim
 export function buildEditAnchor(
   merged: MergedEntity,
   graph: FullGraph,

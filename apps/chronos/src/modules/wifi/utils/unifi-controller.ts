@@ -1,4 +1,5 @@
 import { getLogger } from '@logtape/logtape';
+
 import type {
   WifiController,
   WifiSpeedProfile,

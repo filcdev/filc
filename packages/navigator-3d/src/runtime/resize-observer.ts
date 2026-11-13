@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
 
 // Re-sizes the renderer + updates camera aspect on container resize.

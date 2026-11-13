@@ -1,6 +1,7 @@
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { cn } from '@filcdev/ui/lib/utils';
 import { useTranslation } from 'react-i18next';
+
 import { Lazy } from '@/components/lazy';
 import { useNavigatorGraph } from '@/hooks/navigator';
 

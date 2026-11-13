@@ -1,14 +1,15 @@
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, eq } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthentication } from '#middleware/auth';
-import { sendMessage } from '#modules/doorlock/device-socket';
-import { auditLog, card } from '#modules/doorlock/schema';
-import { fetchCardById, fetchCards } from '#modules/doorlock/utils/cards';
-import { syncDevicesByIds } from '#modules/doorlock/utils/device-sync';
-import { base } from '#orpc';
-import { badRequest, conflict, forbidden, notFound } from '#utils/http';
+
+import { db } from '@/database';
+import { requireAuthentication } from '@/middleware/auth';
+import { sendMessage } from '@/modules/doorlock/device-socket';
+import { auditLog, card } from '@/modules/doorlock/schema';
+import { fetchCardById, fetchCards } from '@/modules/doorlock/utils/cards';
+import { syncDevicesByIds } from '@/modules/doorlock/utils/device-sync';
+import { base } from '@/orpc';
+import { badRequest, conflict, forbidden, notFound } from '@/utils/http';
 
 const logger = getLogger(['chronos', 'doorlock', 'self']);
 

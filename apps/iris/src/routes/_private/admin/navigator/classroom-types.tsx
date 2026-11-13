@@ -14,6 +14,7 @@ import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type { BaseDialogProps } from '@/components/admin/admin.types';
 import {
   EntityTable,
@@ -90,7 +91,7 @@ function ClassroomTypeDialog({
         name: classroomType?.name ?? '',
       });
     }
-  }, [open, classroomType, form.reset]);
+  }, [open, classroomType, form]);
 
   const colorhex = useStore(form.store, (state) => state.values.colorhex);
   const name = useStore(form.store, (state) => state.values.name);

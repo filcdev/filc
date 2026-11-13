@@ -1,4 +1,5 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
+
 import { COLORS, STOREY_PALETTE } from '../types/three/color-types';
 
 /** Kiosk accent colors. Selection endpoints reuse the path overlay's
@@ -50,13 +51,13 @@ export function kioskTypeColor(
 
 /** Darken a packed 24-bit `0xRRGGBB` color. */
 export function darkenColor(hex: number, factor = 0.8) {
-  // biome-ignore lint/suspicious/noBitwiseOperators: packed 24-bit RGB channel maths
+  // oxlint-disable-next-line no-bitwise -- packed 24-bit RGB channel maths
   const r = ((hex >> 16) & 255) * factor;
-  // biome-ignore lint/suspicious/noBitwiseOperators: packed 24-bit RGB channel maths
+  // oxlint-disable-next-line no-bitwise -- packed 24-bit RGB channel maths
   const g = ((hex >> 8) & 255) * factor;
-  // biome-ignore lint/suspicious/noBitwiseOperators: packed 24-bit RGB channel maths
+  // oxlint-disable-next-line no-bitwise -- packed 24-bit RGB channel maths
   const b = (hex & 255) * factor;
 
-  // biome-ignore lint/suspicious/noBitwiseOperators: packed 24-bit RGB channel maths
+  // oxlint-disable-next-line no-bitwise -- packed 24-bit RGB channel maths
   return (Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b);
 }

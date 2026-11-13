@@ -1,7 +1,8 @@
 import { getLogger } from '@logtape/logtape';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { formatDateInTimeZone, offsetMinutesAt } from '#utils/time-zone';
+
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { formatDateInTimeZone, offsetMinutesAt } from '@/utils/time-zone';
 
 const logger = getLogger(['chronos', 'ping', 'time']);
 

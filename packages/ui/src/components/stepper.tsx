@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+
 import { cn } from '../lib/utils';
 import { Button } from './button';
 import { Spinner } from './spinner';
@@ -34,7 +35,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   }) => ReactNode;
 }
 
-// biome-ignore lint/suspicious/noEmptyBlockStatements: this is intentional
+// oxlint-disable-next-line no-empty -- this is intentional
 const noop = () => {};
 
 export default function Stepper({
@@ -97,7 +98,7 @@ export default function Stepper({
     >
       <div
         className={cn(
-          'mx-auto w-full max-w-md rounded-4xl border-border bg-card shadow-xl',
+          'border-border bg-card mx-auto w-full max-w-md rounded-4xl shadow-xl',
           stepCircleContainerClassName
         )}
       >
@@ -332,10 +333,10 @@ function StepIndicator({
         }}
       >
         {status === 'complete' && (
-          <CheckIcon className="h-4 w-4 text-primary" />
+          <CheckIcon className="text-primary h-4 w-4" />
         )}
         {status === 'active' && (
-          <div className="h-3 w-3 rounded-full bg-primary" />
+          <div className="bg-primary h-3 w-3 rounded-full" />
         )}
         {status === 'inactive' && <span className="text-sm">{step}</span>}
       </motion.div>
@@ -354,7 +355,7 @@ function StepConnector({ isComplete }: StepConnectorProps) {
   };
 
   return (
-    <div className="relative mx-2 h-0.5 flex-1 overflow-hidden rounded bg-border">
+    <div className="bg-border relative mx-2 h-0.5 flex-1 overflow-hidden rounded">
       <motion.div
         animate={isComplete ? 'complete' : 'incomplete'}
         className="absolute top-0 left-0 h-full"

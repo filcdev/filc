@@ -1,5 +1,6 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { COLORS } from '../types/three/color-types';
 
 // Create the WebGLRenderer, attach to the container, set sane defaults.

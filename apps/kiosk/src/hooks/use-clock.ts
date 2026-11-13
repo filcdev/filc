@@ -1,5 +1,6 @@
 import type { Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
+
 import { dayjs } from '@/utils/dayjs';
 
 /** Ticking wall clock for the ticker header: [date, time]. */

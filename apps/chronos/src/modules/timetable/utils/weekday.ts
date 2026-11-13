@@ -1,5 +1,5 @@
-import { env } from '#utils/environment';
-import { getWeekdayInTimeZone } from '#utils/time-zone';
+import { env } from '@/utils/environment';
+import { getWeekdayInTimeZone } from '@/utils/time-zone';
 
 /** Normalize a day name for accent/case-insensitive matching. */
 const normalizeDayText = (value: string): string =>

@@ -14,11 +14,12 @@ import {
 } from '@filcdev/ui/components/select';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
-import { type UseQueryResult, useQuery } from '@tanstack/react-query';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import type { CohortItem } from '@/components/timetable/types';
 import {
   useNotificationSettings,

@@ -1,13 +1,14 @@
 import { and, eq, notInArray, sql } from 'drizzle-orm';
-import { db } from '#database';
+
+import { db } from '@/database';
 import {
   classroom,
   lesson,
   movedLesson,
   movedLessonLessonMTM,
-} from '#modules/timetable/schema';
-import { getTimetableIdForDate } from '#modules/timetable/utils/active';
-import { base } from '#orpc';
+} from '@/modules/timetable/schema';
+import { getTimetableIdForDate } from '@/modules/timetable/utils/active';
+import { base } from '@/orpc';
 
 /**
  * Legacy room rows carry an empty `short` and duplicate a room that has one, so

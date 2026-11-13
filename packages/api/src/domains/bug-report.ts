@@ -1,4 +1,5 @@
 import z from 'zod';
+
 import { listResponse } from './list';
 
 /** Payload for `POST /api/bug-report`. */

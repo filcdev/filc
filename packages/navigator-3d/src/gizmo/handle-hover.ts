@@ -1,4 +1,6 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
+
 import { HANDLE_COLOR, HANDLE_HOVER_COLOR } from './handle-colors';
 
 // Collect every Mesh under `target` that carries a gizmoHandle userData tag.

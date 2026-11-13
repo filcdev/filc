@@ -1,4 +1,5 @@
 import { createFileRoute, Navigate } from '@tanstack/react-router';
+
 import { useKioskHeartbeat } from '@/hooks/kiosk';
 import { kioskSearchSchema } from '@/routes/_kiosk/route';
 

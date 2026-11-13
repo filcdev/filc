@@ -6,12 +6,13 @@ import {
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { asc, eq } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
-import { kiosk } from '#modules/kiosk/schema';
-import { base } from '#orpc';
-import { badRequest, conflict, notFound } from '#utils/http';
-import { someErrorCause, UNIQUE_VIOLATION } from '#utils/postgres';
+
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
+import { kiosk } from '@/modules/kiosk/schema';
+import { base } from '@/orpc';
+import { badRequest, conflict, notFound } from '@/utils/http';
+import { someErrorCause, UNIQUE_VIOLATION } from '@/utils/postgres';
 
 const logger = getLogger(['chronos', 'kiosk']);
 

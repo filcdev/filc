@@ -6,7 +6,7 @@ import {
   listAnnouncements,
   updateAnnouncement,
   uploadAnnouncementImage,
-} from '#modules/news/announcements';
+} from '@/modules/news/announcements';
 import {
   createBlog,
   deleteBlog,
@@ -17,14 +17,14 @@ import {
   publishBlog,
   unpublishBlog,
   updateBlog,
-} from '#modules/news/blogs';
+} from '@/modules/news/blogs';
 import {
   createSystemMessage,
   deleteSystemMessage,
   getSystemMessage,
   listSystemMessages,
   updateSystemMessage,
-} from '#modules/news/system-messages';
+} from '@/modules/news/system-messages';
 
 export const newsRouter = {
   announcements: {

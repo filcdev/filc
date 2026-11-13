@@ -14,6 +14,7 @@ import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import {
   type AnnouncementItem,
   type AnnouncementPayload,
@@ -27,6 +28,7 @@ import {
 } from '@/hooks/news';
 import { getIntlLocale } from '@/utils/date-locale';
 import { newsItemSchema } from '@/utils/form-schemas';
+
 import type { BaseDialogProps } from './admin.types';
 
 type NewsItemLike = AnnouncementItem | SystemMessageItem;
@@ -234,7 +236,7 @@ export function NewsItemDialog({
                       }
                     />
                     <label
-                      className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       htmlFor={`cohort-${cohort.id}`}
                     >
                       {cohort.name}

@@ -1,15 +1,15 @@
-import { env } from '#utils/environment';
+import { env } from '@/utils/environment';
 import {
   resolveAudienceForLessonChange,
   resolveAudienceForUser,
-} from '#utils/notifications/engine';
-import { isHungarianLocale } from '#utils/notifications/locale';
+} from '@/utils/notifications/engine';
+import { isHungarianLocale } from '@/utils/notifications/locale';
 import {
   buildSubstitutionTeacherContent,
   resolveSubstituteTeacherAudience,
   type SubstitutionTeacherPayload,
-} from '#utils/notifications/substitution-teacher';
-import type { NotificationHandler } from '#utils/notifications/types';
+} from '@/utils/notifications/substitution-teacher';
+import type { NotificationHandler } from '@/utils/notifications/types';
 
 const DAY_NAMES_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const DAY_NAMES_HU = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek'];

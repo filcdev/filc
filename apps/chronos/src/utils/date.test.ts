@@ -1,9 +1,10 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import process from 'node:process';
-import { formatDateInTimeZone } from '#utils/time-zone';
+
+import { formatDateInTimeZone } from '@/utils/time-zone';
 
 // The env schema parses at import time, so the required variables must exist
-// before `#utils/date` (which pulls in `#utils/environment`) is evaluated.
+// before `@/utils/date` (which pulls in `@/utils/environment`) is evaluated.
 // Static imports hoist, hence the dynamic import inside `beforeAll`.
 // Deliberately not the default and not a CET host: proves env is consulted.
 Object.assign(process.env, {
@@ -23,10 +24,10 @@ let toDateOnlyString: (date: Date) => string;
 let parseEnv: (args: Record<string, unknown>) => { timeZone: string };
 
 beforeAll(async () => {
-  // Importing `#utils/environment` only loads zod, string-ts and the time-zone
+  // Importing `@/utils/environment` only loads zod, string-ts and the time-zone
   // leaf: no database connection and no network request is made.
-  ({ toDateOnlyString } = await import('#utils/date'));
-  ({ parseEnv } = await import('#utils/environment'));
+  ({ toDateOnlyString } = await import('@/utils/date'));
+  ({ parseEnv } = await import('@/utils/environment'));
 });
 
 describe('toDateOnlyString', () => {

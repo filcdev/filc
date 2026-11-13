@@ -10,7 +10,7 @@ import {
   testNotification,
   unregisterFcmToken,
   updateNotificationSettings,
-} from '#modules/notifications/notifications';
+} from '@/modules/notifications/notifications';
 
 /**
  * Mirrors `notificationsContract`. `GET|POST /api/notifications/unsubscribe`

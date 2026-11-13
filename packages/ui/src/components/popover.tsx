@@ -1,5 +1,6 @@
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import type { ComponentProps } from 'react';
+
 import { cn } from '../lib/utils';
 
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {
@@ -33,7 +34,7 @@ function PopoverContent({
       >
         <PopoverPrimitive.Popup
           className={cn(
-            'data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 flex w-72 origin-(--transform-origin) flex-col gap-4 rounded-2xl bg-popover p-4 text-popover-foreground text-sm shadow-2xl outline-hidden ring-1 ring-foreground/5 duration-100 data-closed:animate-out data-open:animate-in',
+            'data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 bg-popover text-popover-foreground ring-foreground/5 data-closed:animate-out data-open:animate-in z-50 flex w-72 origin-(--transform-origin) flex-col gap-4 rounded-2xl p-4 text-sm shadow-2xl ring-1 outline-hidden duration-100',
             className
           )}
           data-slot="popover-content"
@@ -57,7 +58,7 @@ function PopoverHeader({ className, ...props }: ComponentProps<'div'>) {
 function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
   return (
     <PopoverPrimitive.Title
-      className={cn('font-medium text-base', className)}
+      className={cn('text-base font-medium', className)}
       data-slot="popover-title"
       {...props}
     />

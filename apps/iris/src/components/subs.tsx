@@ -17,6 +17,7 @@ import { cn } from '@filcdev/ui/lib/utils';
 import { ArrowRightLeft, type LucideIcon, UserRoundCheck } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type { MovedLessonItem } from '@/hooks/moved-lessons';
 import type { SubstitutionItem as Subs } from '@/hooks/substitutions';
 import {
@@ -269,7 +270,7 @@ function SubstituterCell({ substituter }: { substituter: string }) {
 
 function CommentCell({ comment }: { comment?: string | null }) {
   if (comment) {
-    return <span className="whitespace-pre-wrap text-sm">{comment}</span>;
+    return <span className="text-sm whitespace-pre-wrap">{comment}</span>;
   }
   return <span className="text-muted-foreground">—</span>;
 }
@@ -327,7 +328,7 @@ function MovedRoomCell({
       )}
       {targetRoom && (
         <Badge
-          className="border-warning/40 bg-transparent text-amber-700 text-xs dark:text-amber-300"
+          className="border-warning/40 bg-transparent text-xs text-amber-700 dark:text-amber-300"
           variant="outline"
         >
           {targetRoom.short || targetRoom.name}
@@ -342,7 +343,7 @@ function MovedRoomCell({
 function SubstitutionTableRow({ row }: { row: SubstitutionRow }) {
   const { lesson, sub } = row;
   return (
-    <TableRow className="border-accent/10 transition-colors hover:bg-accent/5">
+    <TableRow className="border-accent/10 hover:bg-accent/5 transition-colors">
       <TableCell className="font-medium">
         <Subject
           subjectLabel={lesson.subject?.short ?? lesson.subject?.name ?? null}
@@ -378,7 +379,7 @@ function MovedTableRow({ row }: { row: MovedLessonRow }) {
     period: row.ml.period,
   };
   return (
-    <TableRow className="border-accent/10 transition-colors hover:bg-accent/5">
+    <TableRow className="border-accent/10 hover:bg-accent/5 transition-colors">
       <TableCell className="font-medium">
         <div className="flex items-center gap-1.5">
           <Subject subjectLabel={row.subjectLabel} />
@@ -460,7 +461,7 @@ function SubstitutionMobileRow({ row }: { row: SubstitutionRow }) {
           subjectLabel={lesson.subject?.short ?? lesson.subject?.name ?? null}
         />
         <SubstitutionTime
-          className="shrink-0 text-muted-foreground"
+          className="text-muted-foreground shrink-0"
           lesson={lesson}
         />
       </div>
@@ -481,7 +482,7 @@ function SubstitutionMobileRow({ row }: { row: SubstitutionRow }) {
         </Field>
       </dl>
       {sub.substitution.comment && (
-        <p className="mt-2 whitespace-pre-wrap text-xs">
+        <p className="mt-2 text-xs whitespace-pre-wrap">
           {sub.substitution.comment}
         </p>
       )}
@@ -514,7 +515,7 @@ function MovedMobileRow({ row }: { row: MovedLessonRow }) {
     <MobileRow className={cn(accent.rail, accent.soft, accent.border)}>
       <div className="flex items-start justify-between gap-2">
         <Subject className="font-semibold" subjectLabel={row.subjectLabel} />
-        <span className="shrink-0 text-muted-foreground">{topPeriodLabel}</span>
+        <span className="text-muted-foreground shrink-0">{topPeriodLabel}</span>
       </div>
       {row.cohorts.length > 0 && (
         <div className="mt-1">
@@ -558,7 +559,7 @@ function MovedMobileRow({ row }: { row: MovedLessonRow }) {
           )}
       </dl>
       {row.ml.movedLesson.comment && (
-        <p className="mt-2 whitespace-pre-wrap text-xs">
+        <p className="mt-2 text-xs whitespace-pre-wrap">
           {row.ml.movedLesson.comment}
         </p>
       )}
@@ -589,7 +590,7 @@ function SectionHeader({
       )}
     >
       <Icon className={cn('h-4 w-4', accent.text)} />
-      <span className={cn('font-semibold text-sm', accent.text)}>{title}</span>
+      <span className={cn('text-sm font-semibold', accent.text)}>{title}</span>
       <Badge className={cn('ml-auto', accent.badge)}>{count}</Badge>
     </div>
   );
@@ -663,7 +664,7 @@ export function SubsV({
   );
 
   return (
-    <Card className="w-full overflow-hidden border-accent/50 shadow-sm">
+    <Card className="border-accent/50 w-full overflow-hidden shadow-sm">
       <SubsCardHeader
         cohortFilter={cohortFilter}
         dateLabel={dateLabel}
@@ -697,7 +698,7 @@ function SubsCardHeader({
 
   return (
     <CardHeader className="border-accent/20 border-b pb-4">
-      <CardTitle className="font-semibold text-foreground text-lg">
+      <CardTitle className="text-foreground text-lg font-semibold">
         {cohortFilter ?? dateLabel}
       </CardTitle>
       {cohortFilter && (
@@ -735,7 +736,7 @@ function SubsCardBody({
 
   if (subsCount === 0 && movedCount === 0) {
     return (
-      <p className="p-6 text-center text-muted-foreground text-sm">
+      <p className="text-muted-foreground p-6 text-center text-sm">
         {t('substitution.noLessons')}
       </p>
     );

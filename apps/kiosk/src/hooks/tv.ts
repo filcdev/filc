@@ -3,6 +3,7 @@ import type { MovedLessonWithRelations } from '@filcdev/api/domains/timetable/mo
 import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
+
 import { TV_STRINGS } from '@/components/tv/strings';
 import { useNowTick } from '@/hooks/use-clock';
 import { REFETCH_INTERVALS } from '@/utils/constants';
@@ -294,7 +295,7 @@ export function useNewsSlideshow(
   const [index, setIndex] = useState(0);
   const [isTickerTime, setIsTickerTime] = useState(false);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the length is the trigger, not a value the effect reads
+  // oxlint-disable-next-line react/exhaustive-deps -- the length is the trigger, not a value the effect reads
   useEffect(() => {
     setIndex(0);
     setIsTickerTime(false);

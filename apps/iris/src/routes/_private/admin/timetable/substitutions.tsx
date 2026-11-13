@@ -23,6 +23,7 @@ import dayjs from 'dayjs';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
 import { RowActions } from '@/components/admin/row-actions';
 import { SubstitutionDialog } from '@/components/admin/substitution-dialog';
@@ -169,7 +170,7 @@ function SubstitutionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('substitution.title')}
         </h1>
         <p className="text-muted-foreground">{t('substitution.description')}</p>
@@ -189,7 +190,7 @@ function SubstitutionsPage() {
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
-            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             htmlFor={showPastId}
           >
             {t('substitution.showPast')}
@@ -297,11 +298,7 @@ function SubstitutionsPage() {
 }
 
 type SubstitutionSortColumn =
-  | 'date'
-  | 'teacher'
-  | 'lessons'
-  | 'cohorts'
-  | 'replacedTeacher';
+  'date' | 'teacher' | 'lessons' | 'cohorts' | 'replacedTeacher';
 
 type SubstitutionsTableProps = {
   hasError: boolean;
@@ -337,7 +334,7 @@ function SubstitutionsTable({
         <TableHeader>
           <TableRow>
             <TableHead
-              className="cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 cursor-pointer select-none"
               onClick={() => onSort('date')}
             >
               <div className="flex items-center gap-2">
@@ -350,7 +347,7 @@ function SubstitutionsTable({
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 cursor-pointer select-none"
               onClick={() => onSort('replacedTeacher')}
             >
               <div className="flex items-center gap-2">
@@ -363,7 +360,7 @@ function SubstitutionsTable({
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 cursor-pointer select-none"
               onClick={() => onSort('teacher')}
             >
               <div className="flex items-center gap-2">
@@ -376,7 +373,7 @@ function SubstitutionsTable({
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 cursor-pointer select-none"
               onClick={() => onSort('lessons')}
             >
               <div className="flex items-center gap-2">
@@ -389,7 +386,7 @@ function SubstitutionsTable({
               </div>
             </TableHead>
             <TableHead
-              className="cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 cursor-pointer select-none"
               onClick={() => onSort('cohorts')}
             >
               <div className="flex items-center gap-2">

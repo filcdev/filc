@@ -1,6 +1,6 @@
-import { base } from '#orpc';
-import { env } from '#utils/environment';
-import { badGateway } from '#utils/http';
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
+import { badGateway } from '@/utils/http';
 
 const WEATHER_URL = 'https://api.weatherapi.com/v1/current.json';
 const WEATHER_CACHE_TTL_MS = 10 * 60 * 1000;

@@ -6,6 +6,7 @@ import {
   PopoverTrigger,
 } from '@filcdev/ui/components/popover';
 import { useState } from 'react';
+
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 
 type SearchableDropdownProps<T> = {
@@ -93,7 +94,7 @@ export function SearchableDropdown<T>({
 
         <ul className="max-h-64 overflow-y-auto">
           {items.length === 0 ? (
-            <li className="px-2 py-1.5 text-muted-foreground text-sm">
+            <li className="text-muted-foreground px-2 py-1.5 text-sm">
               {isLoading ? t('ui.common.loading') : t('ui.common.no_results')}
             </li>
           ) : (

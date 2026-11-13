@@ -177,9 +177,8 @@ export function ExportButton({
     try {
       // Deliberately dynamic: keeps the spreadsheet writer out of the entry
       // chunk until the user actually requests an export.
-      const { default: writeXlsxFile } = await import(
-        'write-excel-file/browser'
-      );
+      const { default: writeXlsxFile } =
+        await import('write-excel-file/browser');
       const text = await fetchCsv();
       const rows = parseCsv(text);
 

@@ -2,25 +2,26 @@ import type { DateRangeUpdateBodyInput } from '@filcdev/api/domains/news/system-
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
-import { systemMessage, systemMessageCohortMtm } from '#modules/news/schema';
+} from '@/modules/activity-log/utils/record';
+import { systemMessage, systemMessageCohortMtm } from '@/modules/news/schema';
 import {
   cohortVisibilityCondition,
   validateCohortIds,
-} from '#modules/news/utils/cohort';
-import { authorSelect } from '#modules/news/utils/shared';
-import { base } from '#orpc';
-import { badRequest, notFound } from '#utils/http';
+} from '@/modules/news/utils/cohort';
+import { authorSelect } from '@/modules/news/utils/shared';
+import { base } from '@/orpc';
+import { badRequest, notFound } from '@/utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
-} from '#utils/notifications/engine';
+} from '@/utils/notifications/engine';
 
 export const listSystemMessages = base.news.systemMessages.list.handler(
   async ({ context, input }) => {

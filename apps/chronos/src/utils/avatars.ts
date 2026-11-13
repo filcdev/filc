@@ -4,11 +4,12 @@ import {
   MAX_AVATAR_BYTES,
 } from '@filcdev/api/domains/users';
 import { getLogger } from '@logtape/logtape';
+
 import {
   getObjectFile,
   isObjectStorageConfigured,
   putObject,
-} from '#utils/storage/s3';
+} from '@/utils/storage/s3';
 
 const logger = getLogger(['chronos', 'avatars']);
 

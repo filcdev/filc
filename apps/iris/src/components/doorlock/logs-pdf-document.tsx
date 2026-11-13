@@ -1,4 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+
 import type { LogRow } from './export-logs';
 
 const pdfStyles = StyleSheet.create({
@@ -36,7 +37,7 @@ export function LogsPdfDocument({
           <Text style={pdfStyles.cell}>Result</Text>
         </View>
         {rows.map((row, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: static PDF rows, no reordering
+          // oxlint-disable-next-line react/no-array-index-key -- static PDF rows, no reordering
           <View key={index} style={pdfStyles.row}>
             <Text style={pdfStyles.cell}>{row.timestamp}</Text>
             <Text style={pdfStyles.cell}>{row.device?.name ?? ''}</Text>

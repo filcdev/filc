@@ -40,16 +40,16 @@ export function NewsTakeover({ dwellMs, policy, tickerMs }: NewsTakeoverProps) {
       : null;
 
   return (
-    <div className="fixed inset-0 z-[1100] flex flex-col bg-background text-foreground">
+    <div className="bg-background text-foreground fixed inset-0 z-[1100] flex flex-col">
       {/* Top-of-screen progress bar: how long this item still stays. Keyed by
           the item so each one starts its own fill. */}
       <div
-        className="takeover-progress h-2 w-full shrink-0 bg-primary"
+        className="takeover-progress bg-primary h-2 w-full shrink-0"
         key={`${current.id}:${current.imageVersion ?? ''}`}
         style={{ animationDuration: `${dwellMs}ms` }}
       />
       {imageUrl ? (
-        // biome-ignore lint/a11y/noNoninteractiveElementInteractions: a broken image is skipped by the rotation
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- a broken image is skipped by the rotation
         <img
           alt=""
           className="min-h-0 w-full flex-1 object-contain"
@@ -60,7 +60,7 @@ export function NewsTakeover({ dwellMs, policy, tickerMs }: NewsTakeoverProps) {
         />
       ) : (
         <div className="flex h-full flex-col items-center justify-center p-12 text-center">
-          <p className="max-w-5xl text-4xl text-shadow">{current.body}</p>
+          <p className="text-shadow max-w-5xl text-4xl">{current.body}</p>
         </div>
       )}
     </div>

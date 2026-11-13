@@ -10,9 +10,11 @@ import {
 } from '@filcdev/ui/components/table';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { SortIcon } from '@/components/util/sort-icon';
 import type { User } from '@/hooks/admin-users';
 import { useSortable } from '@/hooks/use-sortable';
+
 import type { PaginationProps } from './admin.types';
 import { UserDialog } from './user-dialog';
 
@@ -60,7 +62,7 @@ export function UsersTable({
             <TableRow>
               <TableHead aria-sort={ariaSort('name')} className="select-none">
                 <button
-                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                   onClick={() => handleSort('name')}
                   type="button"
                 >
@@ -74,7 +76,7 @@ export function UsersTable({
               </TableHead>
               <TableHead aria-sort={ariaSort('email')} className="select-none">
                 <button
-                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                   onClick={() => handleSort('email')}
                   type="button"
                 >
@@ -88,7 +90,7 @@ export function UsersTable({
               </TableHead>
               <TableHead aria-sort={ariaSort('cohort')} className="select-none">
                 <button
-                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                   onClick={() => handleSort('cohort')}
                   type="button"
                 >
@@ -102,7 +104,7 @@ export function UsersTable({
               </TableHead>
               <TableHead aria-sort={ariaSort('roles')} className="select-none">
                 <button
-                  className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+                  className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
                   onClick={() => handleSort('roles')}
                   type="button"
                 >

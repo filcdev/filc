@@ -12,12 +12,14 @@ import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import {
   type TimetableRow,
   useUpdateTimetable,
 } from '@/hooks/timetables-admin';
 import { getIntlLocale } from '@/utils/date-locale';
 import { timetableEditSchema } from '@/utils/form-schemas';
+
 import type { BaseDialogProps } from './admin.types';
 
 type TimetableEditDialogProps = BaseDialogProps & {

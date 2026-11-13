@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Pencil, Plus, RefreshCw, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { TableHeaderRow } from '@/components/admin/table-header-row';
 import { useConfirm } from '@/components/confirm-provider';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -74,7 +75,7 @@ function WifiSpeedProfilesPage() {
     <div className="flex h-full flex-col gap-8 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-bold text-3xl tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             {t('wifiAdminProfiles.title')}
           </h1>
           <p className="text-muted-foreground">
@@ -105,7 +106,7 @@ function WifiSpeedProfilesPage() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-xl tracking-tight">
+          <h2 className="text-xl font-semibold tracking-tight">
             {t('wifiAdminProfiles.speedProfilesSection')}
           </h2>
           <Button
@@ -148,7 +149,7 @@ function WifiSpeedProfilesPage() {
               {!profilesQuery.isLoading && visibleProfiles.length === 0 && (
                 <TableRow>
                   <TableCell
-                    className="h-24 text-center text-muted-foreground"
+                    className="text-muted-foreground h-24 text-center"
                     colSpan={4}
                   >
                     {t('wifiAdminProfiles.noProfilesFound')}
@@ -284,7 +285,7 @@ function RoleMappingsSection({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           {t('wifiAdminProfiles.roleMappingsSection')}
         </h2>
         <Button className="gap-2" onClick={onAdd} size="sm">
@@ -320,7 +321,7 @@ function RoleMappingsSection({
             {!isLoading && mappings.length === 0 && (
               <TableRow>
                 <TableCell
-                  className="h-24 text-center text-muted-foreground"
+                  className="text-muted-foreground h-24 text-center"
                   colSpan={6}
                 >
                   {t('wifiAdminProfiles.noMappingsFound')}
@@ -335,7 +336,7 @@ function RoleMappingsSection({
 
                 return (
                   <TableRow key={mapping.roleName}>
-                    <TableCell className="font-medium text-muted-foreground">
+                    <TableCell className="text-muted-foreground font-medium">
                       {mapping.priority}
                     </TableCell>
                     <TableCell className="font-medium">

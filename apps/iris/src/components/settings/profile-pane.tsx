@@ -18,7 +18,9 @@ import { useForm, useStore } from '@tanstack/react-form';
 import { Trash, Upload } from 'lucide-react';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useRemoveAvatar, useUploadAvatar } from '@/hooks/profile';
+
 import { AvatarCropper, type AvatarCropperHandle } from './avatar-cropper';
 
 /** The content types the file picker offers; the server enforces the same list. */
@@ -114,7 +116,7 @@ export function ProfilePane() {
             <Label htmlFor={inputId}>{t('profile.picture.choose')}</Label>
             <input
               accept={ACCEPTED_TYPES}
-              className="w-full cursor-pointer rounded-lg border-2 border-muted-foreground/25 border-dashed p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1 file:font-medium file:text-secondary-foreground hover:border-muted-foreground/50"
+              className="border-muted-foreground/25 file:bg-secondary file:text-secondary-foreground hover:border-muted-foreground/50 w-full cursor-pointer rounded-lg border-2 border-dashed p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:px-3 file:py-1 file:font-medium"
               id={inputId}
               onChange={(event) =>
                 form.setFieldValue('file', event.target.files?.[0] ?? null)
@@ -130,7 +132,7 @@ export function ProfilePane() {
           <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
             {(error) =>
               error ? (
-                <p className="mt-4 text-destructive text-xs">{String(error)}</p>
+                <p className="text-destructive mt-4 text-xs">{String(error)}</p>
               ) : null
             }
           </form.Subscribe>

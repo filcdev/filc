@@ -1,5 +1,5 @@
-import type { Module } from '#modules/module';
-import { cleanUpOldNotifications } from '#utils/notifications/cleanup';
+import type { Module } from '@/modules/module';
+import { cleanUpOldNotifications } from '@/utils/notifications/cleanup';
 
 /**
  * The notification log itself: the table, the preference column and the daily

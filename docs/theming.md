@@ -6,20 +6,20 @@ three calls, and owns no palette of its own.
 
 ## The layers, and which one wins
 
-| layer | file | keyed on | set by |
-| --- | --- | --- | --- |
-| everyday light/dark | `packages/ui/src/styles/globals.css` | `:root` / `.dark` | next-themes |
-| the visitor's palette | `packages/ui/src/styles/schemes.css` | `data-color-scheme="<id>"` | the visitor, in Settings → Appearance |
-| the seasonal skin | `packages/ui/src/styles/themes.css` | `data-site-theme="<id>"` | an admin, site-wide |
-| seasonal motifs (emoji) | `lib/site-theme-art.ts` + `components/site-theme-art.tsx` | same ids | the active skin |
+| layer                   | file                                                      | keyed on                   | set by                                |
+| ----------------------- | --------------------------------------------------------- | -------------------------- | ------------------------------------- |
+| everyday light/dark     | `packages/ui/src/styles/globals.css`                      | `:root` / `.dark`          | next-themes                           |
+| the visitor's palette   | `packages/ui/src/styles/schemes.css`                      | `data-color-scheme="<id>"` | the visitor, in Settings → Appearance |
+| the seasonal skin       | `packages/ui/src/styles/themes.css`                       | `data-site-theme="<id>"`   | an admin, site-wide                   |
+| seasonal motifs (emoji) | `lib/site-theme-art.ts` + `components/site-theme-art.tsx` | same ids                   | the active skin                       |
 
 Every layer declares the same ~32 token names at the same specificity
 (`[attr]:not(.dark)` and `[attr].dark`), so **precedence is import order**:
 
 ```css
-@import "@filcdev/ui/globals.css";   /* everyday */
-@import "@filcdev/ui/schemes.css";   /* the visitor's palette */
-@import "@filcdev/ui/themes.css";    /* the seasonal skin */
+@import '@filcdev/ui/globals.css'; /* everyday */
+@import '@filcdev/ui/schemes.css'; /* the visitor's palette */
+@import '@filcdev/ui/themes.css'; /* the seasonal skin */
 ```
 
 An imported stylesheet that reverses these loses the whole precedence model, so
@@ -72,12 +72,12 @@ stored slot index to `bg-[var(--class-N)]`; the picker shares that one list.
 
 ## Unknown ids degrade, they don't break
 
-| where | behaviour |
-| --- | --- |
-| `GET /theme` | `siteThemeSchema.catch('default')` + a `warning` log with the stored value: the endpoint is in every first paint and must not 500 over one bad row |
-| settings read | `colorSchemeSchema.catch('default')` in `withCompletePreferences` |
-| `siteThemeArtFor(id)` | falls back to the everyday spec (no motifs) |
-| attribute with no matching block | inherits `:root` / `.dark` |
+| where                            | behaviour                                                                                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /theme`                     | `siteThemeSchema.catch('default')` + a `warning` log with the stored value: the endpoint is in every first paint and must not 500 over one bad row |
+| settings read                    | `colorSchemeSchema.catch('default')` in `withCompletePreferences`                                                                                  |
+| `siteThemeArtFor(id)`            | falls back to the everyday spec (no motifs)                                                                                                        |
+| attribute with no matching block | inherits `:root` / `.dark`                                                                                                                         |
 
 ## What admin-defined (custom) themes would still need
 
@@ -87,7 +87,7 @@ current design fights them:
 1. **A palette becomes data.** Today the values live in CSS files, which a
    runtime-defined palette cannot reach. The change that needs no new asset
    pipeline: store tokens as JSON (a table, admin CRUD, one migration), and have
-   the server render the *active* palette as a scoped style block —
+   the server render the _active_ palette as a scoped style block —
    `[data-site-theme="<id>"]{…}` / `[data-color-scheme="<id>"]{…}`. The cascade,
    the precedence and every helper keep working unchanged, because the token
    names are the whole contract.

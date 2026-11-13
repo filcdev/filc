@@ -1,6 +1,7 @@
 import { index, jsonb, pgTable, serial, text, uuid } from 'drizzle-orm/pg-core';
-import { timestamps } from '#database/helpers';
-import { user } from '#database/schema/authentication';
+
+import { timestamps } from '@/database/helpers';
+import { user } from '@/database/schema/authentication';
 
 /**
  * Generic audit trail for admin mutations. Rows are best-effort: a failed

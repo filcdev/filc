@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
-    "@react-email/render": "^2.1.1",
-    "nodemailer": "^10.1.7",
+    "@react-email/render": "^2.2.0",
+    "nodemailer": "^10.4.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:"

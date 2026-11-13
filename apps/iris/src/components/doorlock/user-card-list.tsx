@@ -9,6 +9,7 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { Ban, DoorOpen, IdCard, MapPin, Snowflake } from 'lucide-react';
+
 import type { DoorlockCard } from '@/hooks/doorlock-admin';
 
 dayjs.extend(relativeTime);
@@ -26,7 +27,7 @@ export function UserCardList({
 }: UserCardListProps) {
   if (!cards.length) {
     return (
-      <p className="text-center text-muted-foreground">
+      <p className="text-muted-foreground text-center">
         You do not have any cards yet.
       </p>
     );
@@ -51,7 +52,7 @@ export function UserCardList({
                 <span>{card.name}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-muted-foreground text-sm">
+            <CardContent className="text-muted-foreground space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <MapPin />
                 <span>{deviceNames || 'No authorized devices'}</span>
@@ -63,7 +64,7 @@ export function UserCardList({
             </CardContent>
             <CardFooter className="flex flex-wrap items-center justify-end gap-3">
               {!card.enabled && (
-                <span className="flex items-center gap-1 font-semibold text-destructive">
+                <span className="text-destructive flex items-center gap-1 font-semibold">
                   <Ban /> Disabled
                 </span>
               )}

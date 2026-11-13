@@ -18,6 +18,7 @@ import {
 import { useForm, useStore } from '@tanstack/react-form';
 import { useId, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type { BaseDialogProps } from '@/components/admin/admin.types';
 import { useRoles } from '@/hooks/admin-users';
 import {
@@ -170,7 +171,7 @@ export function WifiUserDialog({
             {(field) => (
               <Field>
                 <FieldLabel>{t('wifiAdminUsers.comment')}</FieldLabel>
-                <p className="mt-1 text-muted-foreground text-xs">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {t('wifiAdminUsers.commentHint')}
                 </p>
                 <Input
@@ -214,7 +215,7 @@ export function WifiUserDialog({
                     }
                   />
                   <label
-                    className="font-medium text-sm leading-none"
+                    className="text-sm leading-none font-medium"
                     htmlFor={bannedId}
                   >
                     {t('wifiAdminUsers.banned')}
@@ -314,7 +315,7 @@ export function WifiDeviceDialog({
             {(field) => (
               <Field>
                 <FieldLabel>{t('wifiAdminUsers.deviceNickname')}</FieldLabel>
-                <p className="mt-1 text-muted-foreground text-xs">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {t('wifiAdminUsers.nicknameHint')}
                 </p>
                 <Input
@@ -330,7 +331,7 @@ export function WifiDeviceDialog({
             {(field) => (
               <Field>
                 <FieldLabel>{t('wifiAdminUsers.comment')}</FieldLabel>
-                <p className="mt-1 text-muted-foreground text-xs">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {t('wifiAdminUsers.commentHint')}
                 </p>
                 <Input
@@ -353,7 +354,7 @@ export function WifiDeviceDialog({
                   }
                 />
                 <label
-                  className="font-medium text-sm leading-none"
+                  className="text-sm leading-none font-medium"
                   htmlFor={bannedId}
                 >
                   {t('wifiAdminUsers.bannedDevice')}
@@ -567,7 +568,7 @@ export function WifiSpeedProfileDialog({
                   type="number"
                   value={field.state.value}
                 />
-                <p className="mt-1 text-muted-foreground text-xs">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {t('wifiAdminProfiles.unlimitedHint')}
                 </p>
                 <FieldError errors={field.state.meta.errors} />
@@ -588,7 +589,7 @@ export function WifiSpeedProfileDialog({
                   type="number"
                   value={field.state.value}
                 />
-                <p className="mt-1 text-muted-foreground text-xs">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {t('wifiAdminProfiles.unlimitedHint')}
                 </p>
                 <FieldError errors={field.state.meta.errors} />

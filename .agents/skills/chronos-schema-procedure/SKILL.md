@@ -2,6 +2,7 @@
 name: chronos-schema-procedure
 description: Procedures for editing Chronos Drizzle schema tables, columns, relations, indexes, or generating database migrations. Use when adding or altering tables or columns in module schemas, changing relations, or preparing migrations with the db:* scripts.
 ---
+
 # Chronos Schema Procedure
 
 - Feature tables live in `apps/chronos/src/modules/<feature>/schema.ts`; only the shared identity and RBAC tables stay in `apps/chronos/src/database/schema` (`authentication.ts`, `authorization.ts`, `api-keys.ts` — every other table has a foreign key to them). Never hand-edit generated SQL under `apps/chronos/src/database/migrations`.

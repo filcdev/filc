@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useDeferredValue, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import type { ActivityLogEntry } from '@/hooks/activity-log';
@@ -262,7 +263,7 @@ function ActivityLogRow({ entry }: { entry: ActivityLogEntry }) {
           <TableCell colSpan={6}>
             <pre
               className={cn(
-                'max-h-64 overflow-auto rounded-md bg-muted p-3 font-mono text-xs'
+                'bg-muted max-h-64 overflow-auto rounded-md p-3 font-mono text-xs'
               )}
             >
               {JSON.stringify(entry.metadata, null, 2)}

@@ -1,5 +1,6 @@
 import type { AuthSession } from '@filcdev/auth';
-import type { auth } from '#utils/authentication';
+
+import type { auth } from '@/utils/authentication';
 
 /**
  * Compile-time proof that `@filcdev/auth` still describes this better-auth

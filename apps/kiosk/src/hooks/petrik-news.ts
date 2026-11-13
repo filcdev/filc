@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+
 import { REFETCH_INTERVALS } from '@/utils/constants';
 import { type api, orpc } from '@/utils/orpc';
 
@@ -28,7 +29,7 @@ export function usePetrikNewsSlideshow(
 ): { advance: () => void; current: PetrikNewsItem | null } {
   const [index, setIndex] = useState(0);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the length is the trigger, not a value the effect reads
+  // oxlint-disable-next-line react/exhaustive-deps -- the length is the trigger, not a value the effect reads
   useEffect(() => {
     setIndex(0);
   }, [items.length]);

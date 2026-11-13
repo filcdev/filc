@@ -20,16 +20,17 @@ import {
 } from 'lucide-react';
 import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import {
+  type SettingsSection,
+  useSettingsDialog,
+} from '@/components/settings-dialog-store';
 import { ApiKeysPane } from '@/components/settings/api-keys-pane';
 import { AppearancePane } from '@/components/settings/appearance-pane';
 import { GeneralPane } from '@/components/settings/general-pane';
 import { GroupsPane } from '@/components/settings/groups-pane';
 import { NotificationsPane } from '@/components/settings/notifications-pane';
 import { ProfilePane } from '@/components/settings/profile-pane';
-import {
-  type SettingsSection,
-  useSettingsDialog,
-} from '@/components/settings-dialog-store';
 
 const NAV: {
   icon: LucideIcon;
@@ -127,7 +128,7 @@ export function SettingsDialog() {
             <nav
               aria-label={t('preferences.title')}
               className={cn(
-                'flex flex-col overflow-y-auto border-sidebar-border p-3',
+                'border-sidebar-border flex flex-col overflow-y-auto p-3',
                 // A fixed rail beside the pane, a full-width list on a phone.
                 isMobile ? 'w-full p-4' : 'w-52 shrink-0 border-r'
               )}
@@ -139,9 +140,9 @@ export function SettingsDialog() {
                       className={cn(
                         'flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-sm transition-colors',
                         'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                        'focus-visible:ring-sidebar-ring focus-visible:ring-2 focus-visible:outline-hidden',
                         item.section === section &&
-                          'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                          'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                       )}
                       onClick={() => goToSection(item.section)}
                       type="button"
@@ -168,7 +169,7 @@ export function SettingsDialog() {
                     <ChevronLeft />
                   </Button>
                 )}
-                <h2 className="font-medium text-base">
+                <h2 className="text-base font-medium">
                   {t(activeNav.labelKey)}
                 </h2>
               </header>

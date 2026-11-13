@@ -7,6 +7,7 @@ import {
 import { Building2, GraduationCap, Printer, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { FilterCombobox } from './filter-combobox';
 import type { WeekFilter } from './helpers';
 import { TimetableSelector } from './timetable-selector';
@@ -209,7 +210,7 @@ export function FilterBar({
 
     return (
       <FilterCombobox
-        className="w-full min-w-0 font-medium text-sm"
+        className="w-full min-w-0 text-sm font-medium"
         emptyMessage={getEmptyMessage(activeFilter, t)}
         id={`filter-${activeFilter}`}
         onOpenChange={setComboboxOpen}

@@ -1,6 +1,6 @@
-import { doorlockNotifications } from '#modules/doorlock/_notifications';
-import { cleanUpOldDeviceAuditLogs } from '#modules/doorlock/utils/cards';
-import type { Module } from '#modules/module';
+import { doorlockNotifications } from '@/modules/doorlock/_notifications';
+import { cleanUpOldDeviceAuditLogs } from '@/modules/doorlock/utils/cards';
+import type { Module } from '@/modules/module';
 
 /**
  * The aegis door lock: its tables, the monthly audit-log trim, and the

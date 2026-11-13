@@ -5,6 +5,7 @@ import {
 } from '@filcdev/ui/components/popover';
 import { cn } from '@filcdev/ui/lib/utils';
 import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
+
 import { ColorPicker } from './color-picker';
 import {
   formatCohorts,
@@ -93,9 +94,7 @@ export function LessonCard({
             <WeekBadge className="absolute top-1 left-1" lesson={lesson} />
 
             {onColorChange && subject !== '—' && (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: positioning wrapper; stops click from reaching the popover trigger
-              // biome-ignore lint/a11y/noStaticElementInteractions: positioning wrapper; stops click from reaching the popover trigger
-              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: positioning wrapper; stops click from reaching the popover trigger
+              // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions -- positioning wrapper; stops click from reaching the popover trigger
               <div
                 className="absolute top-0.5 right-0.5 z-10"
                 onClick={(event) => event.stopPropagation()}
@@ -106,24 +105,24 @@ export function LessonCard({
                 />
               </div>
             )}
-            <div className="font-semibold text-sm leading-none">{short}</div>
+            <div className="text-sm leading-none font-semibold">{short}</div>
             {cohort && (
-              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+              <div className="text-muted-foreground mt-0.5 w-full truncate text-center text-xs">
                 {cohort}
               </div>
             )}
             {groupLabel && (
-              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+              <div className="text-muted-foreground mt-0.5 w-full truncate text-center text-xs">
                 {groupLabel}
               </div>
             )}
             {teacher && (
-              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+              <div className="text-muted-foreground mt-0.5 w-full truncate text-center text-xs">
                 {teacher}
               </div>
             )}
             {room && (
-              <div className="w-full truncate text-center text-muted-foreground text-xs">
+              <div className="text-muted-foreground w-full truncate text-center text-xs">
                 {room}
               </div>
             )}
@@ -132,48 +131,48 @@ export function LessonCard({
       />
       <PopoverContent
         className={cn(
-          'w-72 border bg-card p-0 text-foreground shadow-2xl',
+          'bg-card text-foreground w-72 border p-0 shadow-2xl',
           color.border
         )}
         side="bottom"
       >
         <div className="p-4">
           <div className="mb-2 flex items-start justify-between">
-            <h5 className="font-bold text-accent-foreground text-base leading-tight">
+            <h5 className="text-accent-foreground text-base leading-tight font-bold">
               {subject}
             </h5>
           </div>
 
-          <div className="mb-3 flex items-center gap-2 border-b pb-3 text-muted-foreground text-xs">
+          <div className="text-muted-foreground mb-3 flex items-center gap-2 border-b pb-3 text-xs">
             <Clock className="h-4 w-4" />
-            <span className="font-medium text-foreground">{timeRange}</span>
+            <span className="text-foreground font-medium">{timeRange}</span>
           </div>
 
           <div className="space-y-2 text-xs">
             {cohort && (
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
+                <span className="text-accent-foreground font-medium">
                   <GraduationCap />
                 </span>
-                <span className="font-bold text-foreground">{cohort}</span>
+                <span className="text-foreground font-bold">{cohort}</span>
               </div>
             )}
             {teacher && (
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
+                <span className="text-accent-foreground font-medium">
                   <UserIcon />
                 </span>
-                <span className="font-bold text-foreground">
+                <span className="text-foreground font-bold">
                   {lesson.teachers.map((t) => t.name).join(', ')}
                 </span>
               </div>
             )}
             {room && (
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
+                <span className="text-accent-foreground font-medium">
                   <MapPinIcon />
                 </span>
-                <span className="font-bold text-foreground">{room}</span>
+                <span className="text-foreground font-bold">{room}</span>
               </div>
             )}
           </div>

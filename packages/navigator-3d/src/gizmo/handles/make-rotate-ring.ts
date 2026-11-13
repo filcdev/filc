@@ -1,5 +1,6 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import type { RotateHandleSpec } from '../../types/three/gizmo-types';
 import { ROTATE_COLOR, ROTATE_HOVER_COLOR } from '../handle-colors';
 

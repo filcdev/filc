@@ -3,42 +3,43 @@ import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, type SQL, sql } from 'drizzle-orm';
-import type { ChronosContext } from '#_types/globals';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
+
+import type { ChronosContext } from '@/_types/globals';
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthentication, requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
+} from '@/modules/activity-log/utils/record';
 import {
   announcement,
   announcementCohortMtm,
   announcementKioskMtm,
-} from '#modules/news/schema';
-import { activeAnnouncementConditions } from '#modules/news/utils/announcements';
+} from '@/modules/news/schema';
+import { activeAnnouncementConditions } from '@/modules/news/utils/announcements';
 import {
   cohortVisibilityCondition,
   validateCohortIds,
-} from '#modules/news/utils/cohort';
-import { validateKioskIds } from '#modules/news/utils/kiosks';
+} from '@/modules/news/utils/cohort';
+import { validateKioskIds } from '@/modules/news/utils/kiosks';
 import {
   announcementSelect,
   authorSelect,
   resolveTitle,
-} from '#modules/news/utils/shared';
-import { base } from '#orpc';
-import { badRequest, notFound, serviceUnavailable } from '#utils/http';
+} from '@/modules/news/utils/shared';
+import { base } from '@/orpc';
+import { badRequest, notFound, serviceUnavailable } from '@/utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
-} from '#utils/notifications/engine';
+} from '@/utils/notifications/engine';
 import {
   announcementImageKey,
   deleteObject,
   isObjectStorageConfigured,
   putObject,
-} from '#utils/storage/s3';
+} from '@/utils/storage/s3';
 
 const logger = getLogger(['chronos', 'news']);
 
@@ -95,7 +96,7 @@ async function auditAnnouncementUpdate(
   const after = {
     ...(body.cohortIds === undefined ? {} : { cohortIds: body.cohortIds }),
     ...(body.kioskIds === undefined ? {} : { kioskIds: body.kioskIds }),
-    ...(diff?.after ?? {}),
+    ...diff?.after,
   };
   const before = {
     ...(body.cohortIds === undefined
@@ -104,7 +105,7 @@ async function auditAnnouncementUpdate(
     ...(body.kioskIds === undefined
       ? {}
       : { kioskIds: await announcementKioskIds(id) }),
-    ...(diff?.before ?? {}),
+    ...diff?.before,
   };
   if (Object.keys(after).length > 0) {
     await recordActivity(context, {

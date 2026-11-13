@@ -1,5 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
+
 import { usePetrikNews, usePetrikNewsSlideshow } from '@/hooks/petrik-news';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 
@@ -30,7 +31,7 @@ export function PetrikNewsOverlay({
   // failures cannot dismiss a freshly loaded overlay. This is a convenience
   // reset only: the dismissal check below keys on the current items' URLs, so
   // any leftover entries are harmless regardless.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the length is the trigger, not a value the effect reads
+  // oxlint-disable-next-line react/exhaustive-deps -- the length is the trigger, not a value the effect reads
   useEffect(() => {
     setFailedUrls(new Set());
   }, [items.length]);
@@ -80,16 +81,16 @@ export function PetrikNewsOverlay({
   };
 
   return (
-    <div className="fixed inset-0 z-[1100] flex flex-col bg-background text-foreground">
+    <div className="bg-background text-foreground fixed inset-0 z-[1100] flex flex-col">
       {/* Top-of-screen progress bar: how long this item still stays. Keyed by
           the item so each one starts its own fill. */}
       <div
-        className="takeover-progress h-2 w-full shrink-0 bg-primary"
+        className="takeover-progress bg-primary h-2 w-full shrink-0"
         key={current.url}
         style={{ animationDuration: `${dwellMs}ms` }}
       />
       {current.imageUrl ? (
-        // biome-ignore lint/a11y/noNoninteractiveElementInteractions: a broken image is skipped by the rotation
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- a broken image is skipped by the rotation
         <img
           alt=""
           className="min-h-0 w-full flex-1 object-contain"
@@ -106,11 +107,11 @@ export function PetrikNewsOverlay({
       >
         <div className="flex items-start gap-8">
           <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-5xl leading-tight md:text-6xl">
+            <h2 className="text-5xl leading-tight font-bold md:text-6xl">
               {current.title}
             </h2>
             {current.body && (
-              <p className="mt-4 text-2xl text-muted-foreground leading-snug md:text-3xl">
+              <p className="text-muted-foreground mt-4 text-2xl leading-snug md:text-3xl">
                 {current.body}
               </p>
             )}
@@ -125,7 +126,7 @@ export function PetrikNewsOverlay({
                   value={current.url}
                 />
               </div>
-              <p className="mt-2 text-lg text-muted-foreground">
+              <p className="text-muted-foreground mt-2 text-lg">
                 {t('ui.kiosk.scan_to_open')}
               </p>
             </div>

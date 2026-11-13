@@ -1,5 +1,5 @@
-import { deleteAvatar, getAvatar, uploadAvatar } from '#modules/users/avatar';
-import { listUsers, updateUser } from '#modules/users/index';
+import { deleteAvatar, getAvatar, uploadAvatar } from '@/modules/users/avatar';
+import { listUsers, updateUser } from '@/modules/users/index';
 
 export const usersRouter = {
   avatar: {

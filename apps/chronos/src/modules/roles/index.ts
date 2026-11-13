@@ -1,10 +1,11 @@
 import { permissions } from '@filcdev/api/permissions';
-import { requireAuthorization } from '#middleware/auth';
-import { recordActivity } from '#modules/activity-log/utils/record';
-import { base } from '#orpc';
-import { rbac } from '#utils/authorization';
-import { badRequest, conflict, notFound } from '#utils/http';
-import { isUniqueViolation } from '#utils/postgres';
+
+import { requireAuthorization } from '@/middleware/auth';
+import { recordActivity } from '@/modules/activity-log/utils/record';
+import { base } from '@/orpc';
+import { rbac } from '@/utils/authorization';
+import { badRequest, conflict, notFound } from '@/utils/http';
+import { isUniqueViolation } from '@/utils/postgres';
 
 export const listPermissions = base.roles.permissions
   .use(requireAuthorization(permissions.rolesRead))

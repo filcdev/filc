@@ -12,6 +12,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { LogIn, ShieldCheck } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { NewsPanel } from '@/components/news-panel';
 import { orpc, prefetch } from '@/utils/orpc';
 
@@ -45,15 +46,15 @@ function NewsPage() {
 
   if (!session?.user) {
     return (
-      <main className="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md border-border/50 shadow-sm">
+      <main className="bg-background flex min-h-[calc(100dvh-4rem)] items-center justify-center p-4">
+        <Card className="border-border/50 w-full max-w-md shadow-sm">
           <CardHeader className="items-center space-y-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <ShieldCheck className="h-8 w-8 text-primary" />
+            <div className="bg-primary/10 flex h-16 w-16 items-center justify-center rounded-full">
+              <ShieldCheck className="text-primary h-8 w-8" />
             </div>
             <div className="space-y-2">
               <CardTitle className="text-2xl">{t('sign_in')}</CardTitle>
-              <CardDescription className="text-balance text-base leading-relaxed">
+              <CardDescription className="text-base leading-relaxed text-balance">
                 {t('microsoft.signInSubtitle')}
               </CardDescription>
             </div>
@@ -66,7 +67,7 @@ function NewsPage() {
               <LogIn className="h-4 w-4" />
               {t('sign_in')}
             </Button>
-            <p className="text-center text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-center text-xs">
               {t('microsoft.cardSubtitle')}
             </p>
           </CardContent>
@@ -78,7 +79,7 @@ function NewsPage() {
   return (
     <main className="flex grow flex-col items-center gap-6 p-6">
       <div className="w-full max-w-5xl">
-        <h1 className="font-bold text-3xl text-foreground tracking-tight">
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">
           {t('news.title')}
         </h1>
         <div className="mt-4">

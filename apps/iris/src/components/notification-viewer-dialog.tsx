@@ -10,6 +10,7 @@ import {
 import { MailCheck, MailX } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useSettingsDialog } from '@/components/settings-dialog-store';
 import {
   type NotificationItem,
@@ -32,12 +33,15 @@ export function NotificationViewerDialog({
   const { i18n, t } = useTranslation();
   const { openSettings } = useSettingsDialog();
   const markReadMutation = useMarkNotificationRead();
+  // `mutate` is stable (TanStack Query memoizes it), while the mutation object
+  // itself is new every render.
+  const markRead = markReadMutation.mutate;
 
   useEffect(() => {
     if (open && notification && !notification.read) {
-      markReadMutation.mutate({ id: notification.id });
+      markRead({ id: notification.id });
     }
-  }, [open, notification, markReadMutation.mutate]);
+  }, [open, notification, markRead]);
 
   if (!notification) {
     return null;
@@ -55,7 +59,7 @@ export function NotificationViewerDialog({
           </div>
         </DialogHeader>
 
-        <p className="whitespace-pre-wrap text-sm">{notification.content}</p>
+        <p className="text-sm whitespace-pre-wrap">{notification.content}</p>
         <p className="text-muted-foreground text-xs">
           {formatLocalizedDate(notification.createdAt, i18n.language, {
             dateStyle: 'short',

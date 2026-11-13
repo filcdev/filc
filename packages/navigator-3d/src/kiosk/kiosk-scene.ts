@@ -1,6 +1,8 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
+
 import { buildKioskCampus } from '../entities/build-kiosk-campus';
 import { buildLocationMarker } from '../entities/location-marker';
 import type { Vec3 } from '../types/three/vector';

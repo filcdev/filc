@@ -6,6 +6,7 @@ import { CalendarClock, CircleCheck, KeyRound, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+
 import { AdminApiKeysTable } from '@/components/admin/api-keys-table';
 import { StatCard } from '@/components/admin/stat-card';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -29,7 +30,8 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_private/admin/api-keys')({
   component: AdminApiKeysPage,
   // Params come off the location rather than `loaderDeps`, matching the admin
-  // users page; see the routes override in biome.jsonc for why the order matters.
+  // users page; `validateSearch` must stay before `loader`, which reads the
+  // search type it declares.
   validateSearch: searchSchema,
   loader: ({ context, location }) => {
     const params = new URLSearchParams(location.searchStr);
@@ -111,7 +113,7 @@ function AdminApiKeysContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('adminApiKeys.title')}
         </h1>
         <p className="text-muted-foreground">{t('adminApiKeys.description')}</p>

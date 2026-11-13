@@ -7,6 +7,7 @@ import { cn } from '@filcdev/ui/lib/utils';
 import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import { type CSSProperties, Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { getSubjectColor, toHHMM } from '../helpers';
 import type { LessonItem, PeriodItem } from '../types';
 import { WeekBadge } from '../week-badge';
@@ -90,21 +91,21 @@ function LessonEntry({
               variant="plain"
             />
 
-            <span className="max-w-full truncate font-semibold text-foreground leading-tight">
+            <span className="text-foreground max-w-full truncate leading-tight font-semibold">
               {subjectShort}
             </span>
             {half && groupCode && (
-              <span className="absolute top-0.5 right-1 text-[9px] text-muted-foreground leading-none">
+              <span className="text-muted-foreground absolute top-0.5 right-1 text-[9px] leading-none">
                 {groupCode}
               </span>
             )}
             {roomCode && (
-              <span className="absolute bottom-0.5 left-1 text-[9px] text-muted-foreground leading-none">
+              <span className="text-muted-foreground absolute bottom-0.5 left-1 text-[9px] leading-none">
                 {roomCode}
               </span>
             )}
             {teacherSurname && (
-              <span className="absolute right-1 bottom-0.5 text-[9px] text-muted-foreground leading-none">
+              <span className="text-muted-foreground absolute right-1 bottom-0.5 text-[9px] leading-none">
                 {teacherSurname}
               </span>
             )}
@@ -113,44 +114,44 @@ function LessonEntry({
       />
       <PopoverContent
         className={cn(
-          'w-72 border bg-card p-0 text-foreground shadow-2xl',
+          'bg-card text-foreground w-72 border p-0 shadow-2xl',
           color.border
         )}
         side="bottom"
       >
         <div className="p-4">
           <div className="mb-2 flex items-start justify-between">
-            <h5 className="font-bold text-accent-foreground text-base leading-tight">
+            <h5 className="text-accent-foreground text-base leading-tight font-bold">
               {subject}
             </h5>
           </div>
-          <div className="mb-3 flex items-center gap-2 border-b pb-3 text-muted-foreground text-xs">
+          <div className="text-muted-foreground mb-3 flex items-center gap-2 border-b pb-3 text-xs">
             <Clock className="h-4 w-4" />
-            <span className="font-medium text-foreground">{timeRange}</span>
+            <span className="text-foreground font-medium">{timeRange}</span>
           </div>
           <div className="space-y-2 text-xs">
             {groupCode && (
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
+                <span className="text-accent-foreground font-medium">
                   <GraduationCap />
                 </span>
-                <span className="font-bold text-foreground">{groupCode}</span>
+                <span className="text-foreground font-bold">{groupCode}</span>
               </div>
             )}
             {teachers && (
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
+                <span className="text-accent-foreground font-medium">
                   <UserIcon />
                 </span>
-                <span className="font-bold text-foreground">{teachers}</span>
+                <span className="text-foreground font-bold">{teachers}</span>
               </div>
             )}
             {rooms && (
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
+                <span className="text-accent-foreground font-medium">
                   <MapPinIcon />
                 </span>
-                <span className="font-bold text-foreground">{rooms}</span>
+                <span className="text-foreground font-bold">{rooms}</span>
               </div>
             )}
           </div>
@@ -201,7 +202,7 @@ function SlotCell({
       {lessons.map((lesson, idx) => (
         <Fragment key={lesson.id}>
           {idx > 0 && (
-            <div className="shrink-0 border-border border-t border-dashed" />
+            <div className="border-border shrink-0 border-t border-dashed" />
           )}
           <div className="min-h-0 flex-1">
             <LessonEntry cohortShort={cohortShort} half lesson={lesson} />
@@ -240,7 +241,7 @@ export function TimetableCardView({
 
   if (model.periods.length === 0) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-border bg-card py-16 text-muted-foreground text-sm">
+      <div className="border-border bg-card text-muted-foreground flex items-center justify-center rounded-xl border py-16 text-sm">
         {t('timetable.noLessonsOnThisDay')}
       </div>
     );
@@ -249,17 +250,17 @@ export function TimetableCardView({
   return (
     <div className="w-full overflow-x-auto overscroll-x-contain">
       <div
-        className="mx-auto w-fit overflow-hidden rounded-xl border border-border bg-card"
+        className="border-border bg-card mx-auto w-fit overflow-hidden rounded-xl border"
         style={{ minWidth: gridWidth }}
       >
         {/* Grid */}
         <div className="grid" style={{ gridTemplateColumns, gridTemplateRows }}>
           {/* Top-left corner: class code */}
           <div
-            className="flex items-center justify-center border-border border-r-2 border-b-2 bg-muted/95 px-1.5"
+            className="border-border bg-muted/95 flex items-center justify-center border-r-2 border-b-2 px-1.5"
             style={{ gridColumn: 1, gridRow: 1 }}
           >
-            <span className="font-bold text-foreground text-lg leading-tight">
+            <span className="text-foreground text-lg leading-tight font-bold">
               {header.classCode}
             </span>
           </div>
@@ -268,16 +269,16 @@ export function TimetableCardView({
           {model.periods.map((period, i) => (
             <div
               className={cn(
-                'flex flex-col items-center justify-center border-border border-b-2 bg-muted/95 px-1',
+                'border-border bg-muted/95 flex flex-col items-center justify-center border-b-2 px-1',
                 i > 0 && 'border-border border-l'
               )}
               key={period.id}
               style={{ gridColumn: i + 2, gridRow: 1 }}
             >
-              <span className="font-bold text-foreground text-sm">
+              <span className="text-foreground text-sm font-bold">
                 {period.index}
               </span>
-              <span className="text-[10px] text-muted-foreground leading-tight">
+              <span className="text-muted-foreground text-[10px] leading-tight">
                 {[period.startLabel, period.endLabel]
                   .filter(Boolean)
                   .join(' - ')}
@@ -290,7 +291,7 @@ export function TimetableCardView({
             <Fragment key={day.key}>
               <div
                 className={cn(
-                  'flex items-center justify-center border-border border-r-2 bg-muted/95 font-bold text-foreground text-lg',
+                  'border-border bg-muted/95 text-foreground flex items-center justify-center border-r-2 text-lg font-bold',
                   r > 0 && 'border-border border-t'
                 )}
                 style={{ gridColumn: 1, gridRow: r + 2 }}

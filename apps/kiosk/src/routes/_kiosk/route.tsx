@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import z from 'zod';
+
 import { DisabledScreen, EnrolmentScreen } from '@/components/kiosk-screens';
 import { useKioskHeartbeat } from '@/hooks/kiosk';
 
@@ -53,7 +54,7 @@ function KioskLayout() {
 function MissingMachineId() {
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="font-bold text-2xl">Hiányzó gépazonosító</h1>
+      <h1 className="text-2xl font-bold">Hiányzó gépazonosító</h1>
       <p className="max-w-xl">
         A kijelzőt a <code>?machine=&lt;gépazonosító&gt;</code> paraméterrel
         kell megnyitni.

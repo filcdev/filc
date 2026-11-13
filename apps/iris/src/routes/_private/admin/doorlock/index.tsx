@@ -14,6 +14,7 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { createFileRoute } from '@tanstack/react-router';
 import { DoorOpen, IdCard, Microchip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
 import { StatCard } from '@/components/admin/stat-card';
 import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -49,7 +50,7 @@ function DoorlockDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('doorlockDashboard.title')}
         </h1>
         <p className="text-muted-foreground">

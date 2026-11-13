@@ -1,9 +1,10 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
 import { useEffect, useRef } from 'react';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import { type CameraRig, createCameraRig } from './kiosk/camera-rig';
 import { attachKioskInteraction } from './kiosk/interaction';
 import {
@@ -258,7 +259,7 @@ export default function KioskView3D({
       <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
 
       {!graph && (
-        <div className="absolute inset-0 grid place-items-center text-cyan-300 text-sm">
+        <div className="absolute inset-0 grid place-items-center text-sm text-cyan-300">
           {emptyLabel ?? ''}
         </div>
       )}

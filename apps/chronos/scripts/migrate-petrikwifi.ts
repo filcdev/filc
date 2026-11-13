@@ -1,6 +1,8 @@
 import { Database } from 'bun:sqlite';
 import process from 'node:process';
+
 import { getLogger } from '@logtape/logtape';
+
 import type { db as database } from '../src/database';
 import { db } from '../src/database';
 import { user as systemUser } from '../src/database/schema/authentication';

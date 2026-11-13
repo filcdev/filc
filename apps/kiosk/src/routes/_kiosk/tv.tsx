@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
+
 import { NewsTakeover } from '@/components/tv/news-takeover';
 import { Loading } from '@/components/tv/query-states';
 import { TvApp } from '@/components/tv/tv-app';

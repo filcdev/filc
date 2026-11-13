@@ -21,13 +21,14 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { KeyRound, MoreHorizontal, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog';
 import { RenameApiKeyDialog } from '@/components/api-keys/rename-api-key-dialog';
 import { useConfirm } from '@/components/confirm-provider';
 import {
-  type UserApiKey,
   useApiKeys,
   useDeleteApiKey,
+  type UserApiKey,
   useUpdateApiKey,
 } from '@/hooks/api-keys';
 import { formatLocalizedDate } from '@/utils/date-locale';
@@ -74,7 +75,7 @@ function ApiKeyRow({
   const { t, i18n } = useTranslation();
 
   return (
-    <li className="flex items-start justify-between gap-3 rounded-xl border border-border p-3">
+    <li className="border-border flex items-start justify-between gap-3 rounded-xl border p-3">
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-medium">
@@ -84,7 +85,7 @@ function ApiKeyRow({
             {t(apiKey.enabled ? 'apiKeys.enabled' : 'apiKeys.disabled')}
           </Badge>
         </div>
-        <span className="truncate font-mono text-muted-foreground text-xs">
+        <span className="text-muted-foreground truncate font-mono text-xs">
           {apiKey.start ?? apiKey.prefix ?? t('apiKeys.unknownKey')}
         </span>
         <span className="text-muted-foreground text-xs">

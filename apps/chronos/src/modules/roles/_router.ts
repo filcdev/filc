@@ -4,7 +4,7 @@ import {
   listPermissions,
   listRoles,
   updateRole,
-} from '#modules/roles/index';
+} from '@/modules/roles/index';
 
 export const rolesRouter = {
   create: createRole,

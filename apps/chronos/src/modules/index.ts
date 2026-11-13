@@ -1,9 +1,9 @@
-import { doorlockModule } from '#modules/doorlock/_module';
-import type { Module } from '#modules/module';
-import { newsModule } from '#modules/news/_module';
-import { notificationsModule } from '#modules/notifications/_module';
-import { timetableModule } from '#modules/timetable/_module';
-import { wifiModule } from '#modules/wifi/_module';
+import { doorlockModule } from '@/modules/doorlock/_module';
+import type { Module } from '@/modules/module';
+import { newsModule } from '@/modules/news/_module';
+import { notificationsModule } from '@/modules/notifications/_module';
+import { timetableModule } from '@/modules/timetable/_module';
+import { wifiModule } from '@/modules/wifi/_module';
 
 /**
  * Every module that contributes scheduled work or notifications.

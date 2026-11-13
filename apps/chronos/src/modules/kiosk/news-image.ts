@@ -1,9 +1,10 @@
 import { eq } from 'drizzle-orm';
-import { db } from '#database';
-import { announcement } from '#modules/news/schema';
-import { base } from '#orpc';
-import { notFound, serviceUnavailable } from '#utils/http';
-import { getObjectFile, isObjectStorageConfigured } from '#utils/storage/s3';
+
+import { db } from '@/database';
+import { announcement } from '@/modules/news/schema';
+import { base } from '@/orpc';
+import { notFound, serviceUnavailable } from '@/utils/http';
+import { getObjectFile, isObjectStorageConfigured } from '@/utils/storage/s3';
 
 export const newsImage = base.kiosk.news.image.handler(
   async ({ context, input }) => {

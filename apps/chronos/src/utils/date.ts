@@ -1,5 +1,5 @@
-import { env } from '#utils/environment';
-import { formatDateInTimeZone } from '#utils/time-zone';
+import { env } from '@/utils/environment';
+import { formatDateInTimeZone } from '@/utils/time-zone';
 
 /**
  * A `Date` as `YYYY-MM-DD` in the configured school timezone

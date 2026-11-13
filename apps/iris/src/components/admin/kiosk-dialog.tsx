@@ -37,6 +37,7 @@ import {
 import { Plus, Trash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import type { BaseDialogProps } from '@/components/admin/admin.types';
 import { Lazy } from '@/components/lazy';
 import { type KioskRow, useCreateKiosk, useUpdateKiosk } from '@/hooks/kiosks';
@@ -229,7 +230,7 @@ function DeparturesField({ form }: { form: KioskFormApi }) {
                   type="button"
                   variant="ghost"
                 >
-                  <Trash className="h-4 w-4 text-destructive" />
+                  <Trash className="text-destructive h-4 w-4" />
                 </Button>
               </div>
 
@@ -281,7 +282,7 @@ function DeparturesField({ form }: { form: KioskFormApi }) {
                           type="button"
                           variant="ghost"
                         >
-                          <Trash className="h-4 w-4 text-destructive" />
+                          <Trash className="text-destructive h-4 w-4" />
                         </Button>
                       </div>
                     ))}

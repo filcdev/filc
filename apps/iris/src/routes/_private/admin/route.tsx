@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Lazy } from '@/components/lazy';
 import { Navbar } from '@/components/navbar';

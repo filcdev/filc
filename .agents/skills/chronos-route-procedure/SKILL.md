@@ -2,6 +2,7 @@
 name: chronos-route-procedure
 description: Procedures for adding or changing Chronos API endpoints — oRPC contract procedures, module handlers, router registration, error responses, authentication or authorization middleware, or OpenAPI metadata. Use when creating endpoints in the oRPC stack, wiring validation schemas, or exposing a new feature on the API.
 ---
+
 # Chronos Route Procedure
 
 - Endpoints are oRPC procedures, not Hono routes. The contract is the single source of truth: declare one procedure per endpoint in `packages/api/src/contract/<feature>.ts` as `oc.route(filcRoute({...})).input(...).output(...)`. `filcRoute` carries `method`, `path`, `operationId`, `tags`, `successStatus` and `auth` — copy the pattern from `packages/api/src/contract/users.ts`. There are no `x-filc_*` extensions to fill in: authentication is the document's `sessionAuth` scheme, and the client derives everything else from the schemas.

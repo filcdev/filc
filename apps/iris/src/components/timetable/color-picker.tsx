@@ -7,6 +7,7 @@ import {
 } from '@filcdev/ui/components/dropdown-menu';
 import { cn } from '@filcdev/ui/lib/utils';
 import { Palette } from 'lucide-react';
+
 import { CLASS_COLORS } from './helpers';
 
 type ColorPickerProps = {
@@ -42,7 +43,7 @@ export function ColorPicker({ currentIndex, onSelect }: ColorPickerProps) {
                 'h-7 w-7 cursor-pointer rounded-md border-2 transition-all',
                 swatch.bg,
                 swatch.border,
-                idx === currentIndex && 'ring-2 ring-foreground ring-offset-1'
+                idx === currentIndex && 'ring-foreground ring-2 ring-offset-1'
               )}
               key={swatch.bg}
               onClick={() => onSelect(idx)}

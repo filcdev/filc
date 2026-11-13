@@ -2,6 +2,7 @@
 name: iris-dialog-form
 description: Procedures for building or editing Iris dialogs, admin forms, doorlock forms, TanStack Form usage, or submit flows in apps/iris/src/components. Use when creating *dialog.tsx components, form validation schemas, or mutation-driven submit flows.
 ---
+
 # Iris Dialog Form Procedure
 
 - Follow the dialog structure used in `apps/iris/src/components/admin/user-dialog.tsx`: create the form near the top of the component, derive reactive slices with `useStore(form.store, selector)`, and render fields with `<form.Field>{(field) => ...}</form.Field>`.

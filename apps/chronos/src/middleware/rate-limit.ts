@@ -1,7 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { MemoryRatelimiter } from '@orpc/experimental-ratelimit/memory';
-import { base } from '#orpc';
-import { env } from '#utils/environment';
+
+import { base } from '@/orpc';
+import { env } from '@/utils/environment';
 
 const logger = getLogger(['chronos', 'server']);
 

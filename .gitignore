@@ -53,3 +53,6 @@ thoughts
 .opencode
 .codegraph
 graphify-out/
+
+# Agent config (holds local MCP credentials)
+.omp/

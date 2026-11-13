@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, Save } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type {
   ClassroomItem,
   PeriodItem,
@@ -32,6 +33,7 @@ import {
 import { getIntlLocale, isMatchingWeekday } from '@/utils/date-locale';
 import { type api, orpc } from '@/utils/orpc';
 import { formatPeriodLabel } from '@/utils/period';
+
 import type { BaseDialogProps } from './admin.types';
 
 export type MoveMode = 'room' | 'day';
@@ -402,10 +404,10 @@ function MoveModeToggle({ mode, onChange }: MoveModeToggleProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="mt-4 space-y-2 rounded-lg border bg-muted/40 p-3">
+    <div className="bg-muted/40 mt-4 space-y-2 rounded-lg border p-3">
       <div className="flex items-center gap-2">
-        <ArrowRightLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <p className="font-medium text-sm">{t('movedLesson.moveMode')}</p>
+        <ArrowRightLeft className="text-muted-foreground h-4 w-4 shrink-0" />
+        <p className="text-sm font-medium">{t('movedLesson.moveMode')}</p>
       </div>
       <div className="flex gap-2">
         <Button
@@ -444,8 +446,8 @@ function SourceToggle({ disabled, onChange, source }: SourceToggleProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
-      <p className="font-medium text-sm">{t('movedLesson.source')}</p>
+    <div className="bg-muted/40 space-y-2 rounded-lg border p-3">
+      <p className="text-sm font-medium">{t('movedLesson.source')}</p>
       <div className="flex gap-2">
         <Button
           disabled={disabled}
@@ -524,13 +526,13 @@ function CheckboxList<T extends { id: string }>({
       <div className="max-h-48 overflow-y-auto rounded-lg border">
         <div className="space-y-1 p-2">
           {items.length === 0 && (
-            <p className="p-2 text-muted-foreground text-sm">{emptyMessage}</p>
+            <p className="text-muted-foreground p-2 text-sm">{emptyMessage}</p>
           )}
           {items.map((item) => {
             const checked = selectedIds.includes(item.id);
             return (
               <label
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
                 htmlFor={htmlFor(item.id)}
                 key={item.id}
               >
@@ -689,12 +691,12 @@ function LessonList({
       <div className="max-h-48 overflow-y-auto rounded-lg border">
         <div className="space-y-1 p-2">
           {!hasSlotContext && (
-            <p className="p-2 text-muted-foreground text-sm">
+            <p className="text-muted-foreground p-2 text-sm">
               {t(slotHintKey(mode))}
             </p>
           )}
           {hasSlotContext && lessons.length === 0 && (
-            <p className="p-2 text-muted-foreground text-sm">
+            <p className="text-muted-foreground p-2 text-sm">
               {t('movedLesson.noLessons')}
             </p>
           )}
@@ -709,7 +711,7 @@ function LessonList({
 
             return (
               <label
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                className="hover:bg-accent flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
                 htmlFor={`ml-lesson-${lesson.id}`}
                 key={lesson.id}
               >

@@ -1,4 +1,6 @@
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import type * as THREE from 'three';
+
 import type { AppData } from '../kiosk/materials';
 import { KIOSK_COLORS } from '../kiosk/palette';
 import type { KioskNode, KioskNodeKind } from '../kiosk/types';
@@ -13,9 +15,7 @@ function paint(
   opacity: number
 ): void {
   const mat = (mesh as THREE.Mesh).material as
-    | THREE.MeshBasicMaterial
-    | THREE.LineBasicMaterial
-    | undefined;
+    THREE.MeshBasicMaterial | THREE.LineBasicMaterial | undefined;
   if (!mat) {
     return;
   }
@@ -31,7 +31,7 @@ function has(arr: string[] | number[] | null | undefined): boolean {
 
 /** Whether a node survives the visibility filter. Each axis restricts
  *  only when populated; lift/stairs match a storey if their span covers it. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported filter logic, kept verbatim
+// ported filter logic, kept verbatim
 function passesFilter(
   node: KioskNode,
   filter: EditorFilter | undefined

@@ -1,4 +1,5 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
+
 import { buildClassroomNode } from '../entities/classroom-node';
 import { buildCorridorNode } from '../entities/corridor-node';
 import { buildLiftNode, buildStairsNode } from '../entities/vertical-node';

@@ -1,12 +1,13 @@
 import { and, asc, eq, getTableColumns } from 'drizzle-orm';
-import { db } from '#database';
+
+import { db } from '@/database';
 import {
   navigatorCorridor,
   navigatorLift,
   navigatorStair,
-} from '#modules/navigator/schema';
-import { building, classroom, classroomType } from '#modules/timetable/schema';
-import { base } from '#orpc';
+} from '@/modules/navigator/schema';
+import { building, classroom, classroomType } from '@/modules/timetable/schema';
+import { base } from '@/orpc';
 
 export const graphRoute = base.navigator.graph.handler(async () => {
   const [buildings, classroomTypes, classrooms, corridors, lifts, stairs] =

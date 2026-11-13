@@ -21,6 +21,7 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { MailCheck, MailX } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
 import {
   useMarkAllNotificationsRead,
@@ -140,7 +141,7 @@ export function NotificationHistoryDialog({
             )}
 
             {ready && items.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
+              <div className="text-muted-foreground py-12 text-center">
                 {t('notifications.history.noNotifications')}
               </div>
             ) : null}
@@ -149,7 +150,7 @@ export function NotificationHistoryDialog({
               <div className="space-y-2">
                 {items.map((notif) => (
                   <Card
-                    className="cursor-pointer transition-colors hover:bg-muted/50"
+                    className="hover:bg-muted/50 cursor-pointer transition-colors"
                     key={notif.id}
                     onClick={() => setSelectedId(notif.id)}
                   >
@@ -159,8 +160,8 @@ export function NotificationHistoryDialog({
                           <span
                             className={
                               notif.read
-                                ? 'font-normal text-sm'
-                                : 'font-medium text-sm'
+                                ? 'text-sm font-normal'
+                                : 'text-sm font-medium'
                             }
                           >
                             {notif.title}
@@ -169,10 +170,10 @@ export function NotificationHistoryDialog({
                             {typeLabel(notif.type, t)}
                           </Badge>
                         </div>
-                        <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
+                        <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
                           {notif.content}
                         </p>
-                        <p className="mt-1 text-muted-foreground text-xs">
+                        <p className="text-muted-foreground mt-1 text-xs">
                           {formatLocalizedDate(notif.createdAt, i18n.language, {
                             dateStyle: 'short',
                             timeStyle: 'short',

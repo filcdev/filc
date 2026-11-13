@@ -45,6 +45,7 @@ import {
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { CardDialog } from '@/components/doorlock/card-dialog';
 import { ExportLogsButton } from '@/components/doorlock/export-logs';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -60,7 +61,7 @@ import {
   useDoorlockLogs,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
+import { useSortable, type UseSortableResult } from '@/hooks/use-sortable';
 import { orpc, prefetch } from '@/utils/orpc';
 
 type EventFilter = 'all' | 'virtual' | 'physical';
@@ -452,7 +453,7 @@ function DateRangePicker({
 
   return (
     <div className="space-y-2">
-      <span className="font-medium text-muted-foreground text-sm">
+      <span className="text-muted-foreground text-sm font-medium">
         {t('doorlockLogs.dateRange')}
       </span>
       <Popover>
@@ -539,13 +540,13 @@ function StatCard({ helper, icon, label, value }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex items-center justify-between space-y-0 pb-2">
-        <CardTitle className="font-medium text-muted-foreground text-sm">
+        <CardTitle className="text-muted-foreground text-sm font-medium">
           {label}
         </CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
-        <div className="font-semibold text-3xl">{value}</div>
+        <div className="text-3xl font-semibold">{value}</div>
         {helper && <p className="text-muted-foreground text-xs">{helper}</p>}
       </CardContent>
     </Card>
@@ -634,7 +635,7 @@ function LogsTable({
 
   const header = (column: LogSortColumn, label: string) => (
     <TableHead
-      className="cursor-pointer select-none hover:bg-muted/50"
+      className="hover:bg-muted/50 cursor-pointer select-none"
       onClick={() => toggle(column)}
     >
       <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 
 // Reusable scratch shared across drag handlers — avoids per-frame allocs.

@@ -14,6 +14,7 @@ import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
   type SystemMessageItem,
   type SystemMessagePayload,
@@ -22,6 +23,7 @@ import {
   useUpdateSystemMessage,
 } from '@/hooks/news';
 import { getIntlLocale } from '@/utils/date-locale';
+
 import type { BaseDialogProps } from './admin.types';
 
 type SystemMessagesDialogProps = BaseDialogProps & {
@@ -163,7 +165,7 @@ export function SystemMessagesDialog({
                     {t('systemMessages.content')}
                   </Label>
                   <textarea
-                    className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                    className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                     id={contentId}
                     onChange={(e) =>
                       field.handleChange([
@@ -224,7 +226,7 @@ export function SystemMessagesDialog({
                       }
                     />
                     <label
-                      className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       htmlFor={`cohort-${cohort.id}`}
                     >
                       {cohort.name}

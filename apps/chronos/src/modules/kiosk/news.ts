@@ -1,15 +1,16 @@
 import { and, asc, isNotNull, sql } from 'drizzle-orm';
-import { db } from '#database';
+
+import { db } from '@/database';
 import {
   announcement,
   announcementCohortMtm,
   announcementKioskMtm,
-} from '#modules/news/schema';
+} from '@/modules/news/schema';
 import {
   activeAnnouncementConditions,
   flattenAnnouncementContent,
-} from '#modules/news/utils/announcements';
-import { base } from '#orpc';
+} from '@/modules/news/utils/announcements';
+import { base } from '@/orpc';
 
 export const listNews = base.kiosk.news.list.handler(async () => {
   const now = new Date();

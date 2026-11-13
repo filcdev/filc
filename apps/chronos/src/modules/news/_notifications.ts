@@ -1,7 +1,7 @@
-import { env } from '#utils/environment';
-import { resolveAudienceByCohortOrAll } from '#utils/notifications/engine';
-import { isHungarianLocale } from '#utils/notifications/locale';
-import type { NotificationHandler } from '#utils/notifications/types';
+import { env } from '@/utils/environment';
+import { resolveAudienceByCohortOrAll } from '@/utils/notifications/engine';
+import { isHungarianLocale } from '@/utils/notifications/locale';
+import type { NotificationHandler } from '@/utils/notifications/types';
 
 /** The payload is the record this module's own handlers dispatch with. */
 function byCohortOrAll(payload: unknown) {

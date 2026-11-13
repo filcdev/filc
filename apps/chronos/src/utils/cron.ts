@@ -1,6 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import Baker from 'cronbake';
-import { modules } from '#modules';
+
+import { modules } from '@/modules';
 
 const logger = getLogger(['chronos', 'cron']);
 

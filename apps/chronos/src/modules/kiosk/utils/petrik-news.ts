@@ -93,7 +93,9 @@ function decodeEntities(text: string): string {
       return NAMED_ENTITIES[body.toLowerCase()] ?? match;
     }
     const hex = body[1] === 'x' || body[1] === 'X';
-    const codePoint = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+    const codePoint = hex
+      ? Number.parseInt(body.slice(2), 16)
+      : Number.parseInt(body.slice(1), 10);
     return Number.isFinite(codePoint) && codePoint <= 0x10_ff_ff
       ? String.fromCodePoint(codePoint)
       : match;
@@ -155,8 +157,7 @@ export function parsePetrikNewsFeed(xml: string): PetrikNewsItem[] {
   }
 
   const channel = (parsed as { rss?: unknown })?.rss as
-    | { channel?: unknown }
-    | undefined;
+    { channel?: unknown } | undefined;
   if (!channel?.channel || typeof channel.channel !== 'object') {
     return [];
   }

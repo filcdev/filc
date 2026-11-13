@@ -9,6 +9,7 @@ import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { CalendarDays, XIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { FilterCombobox } from '@/components/timetable/filter-combobox';
 import { type AnnouncementItem, useAnnouncementsPanel } from '@/hooks/news';
 import {
@@ -115,7 +116,7 @@ export function NewsPanel({
   const timetableId =
     latestTimetableQuery.data?.id ?? timetablesQuery.data?.[0]?.id ?? null;
   const cohortsQuery = useTimetableCohorts(timetableId);
-  const cohorts = cohortsQuery.data ?? [];
+  const cohorts = useMemo(() => cohortsQuery.data ?? [], [cohortsQuery.data]);
   const [selectedClassId, setSelectedClassId] = useState<
     string | null | undefined
   >(undefined);
@@ -194,10 +195,10 @@ export function NewsPanel({
         newsDays.map(({ date, items }) => (
           <section className="space-y-3" key={date}>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <div className="bg-muted text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
                 <CalendarDays className="h-5 w-5" />
               </div>
-              <h2 className="font-semibold text-foreground text-lg">
+              <h2 className="text-foreground text-lg font-semibold">
                 {formatLocalizedDate(parseDateOnly(date), i18n.language, {
                   day: '2-digit',
                   month: 'long',
@@ -218,7 +219,7 @@ export function NewsPanel({
                   >
                     {renderBlockContent(item.content)}
                   </AlertDescription>
-                  <div className="mt-2 text-muted-foreground text-xs">
+                  <div className="text-muted-foreground mt-2 text-xs">
                     {(() => {
                       const from = formatLocalizedDate(
                         parseDateOnly(new Date(item.validFrom)),
@@ -237,7 +238,7 @@ export function NewsPanel({
           </section>
         ))}
       {!isLoading && newsDays.length === 0 && emptyMessage && (
-        <p className="rounded-lg border border-dashed p-6 text-center text-muted-foreground text-sm">
+        <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
           {emptyMessage}
         </p>
       )}

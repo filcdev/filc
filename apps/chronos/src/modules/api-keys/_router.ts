@@ -2,7 +2,7 @@ import {
   deleteAdminApiKey,
   listAdminApiKeys,
   updateAdminApiKey,
-} from '#modules/api-keys/index';
+} from '@/modules/api-keys/index';
 
 export const apiKeysRouter = {
   delete: deleteAdminApiKey,

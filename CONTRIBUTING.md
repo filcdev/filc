@@ -52,8 +52,8 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 
 4. **Optional** - Apply migrations:
 
-    > [!tip]
-    > Chronos applies migrations on startup, and seeding should not be necessary to log in.
+   > [!tip]
+   > Chronos applies migrations on startup, and seeding should not be necessary to log in.
 
    ```bash
    cd apps/chronos
@@ -82,7 +82,8 @@ This guide gets you from a fresh clone to a running dev environment, then covers
 - Validation order before opening a PR:
 
   ```bash
-  bun run lint       # biome check --write (auto-fixes)
+  bun fmt                              # rewrite files with Bun's formatter
+  bun run lint                         # oxlint --fix (auto-fixes)
   bun run typecheck  # tsc across all workspaces
   bun run build      # required if you touched bundler config, routers, or server entrypoints
 

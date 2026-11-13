@@ -16,6 +16,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ImageIcon, Plus, RefreshCw } from 'lucide-react';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { AnnouncementsDialog } from '@/components/admin/announcements-dialog';
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
 import { RowActions } from '@/components/admin/row-actions';
@@ -136,7 +137,7 @@ function AnnouncementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('announcements.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -158,7 +159,7 @@ function AnnouncementsPage() {
             onCheckedChange={(checked) => setShowPast(checked === true)}
           />
           <label
-            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             htmlFor={showPastId}
           >
             {t('announcements.showPast')}
@@ -280,7 +281,7 @@ function AnnouncementsTable({
         <TableHeader>
           <TableRow>
             <TableHead
-              className="w-[25%] cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 w-[25%] cursor-pointer select-none"
               onClick={() => onSort('title')}
             >
               <div className="flex items-center gap-2">
@@ -293,7 +294,7 @@ function AnnouncementsTable({
               </div>
             </TableHead>
             <TableHead
-              className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 w-[15%] cursor-pointer select-none"
               onClick={() => onSort('validFrom')}
             >
               <div className="flex items-center gap-2">
@@ -306,7 +307,7 @@ function AnnouncementsTable({
               </div>
             </TableHead>
             <TableHead
-              className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 w-[15%] cursor-pointer select-none"
               onClick={() => onSort('validUntil')}
             >
               <div className="flex items-center gap-2">
@@ -319,7 +320,7 @@ function AnnouncementsTable({
               </div>
             </TableHead>
             <TableHead
-              className="w-[15%] cursor-pointer select-none hover:bg-muted/50"
+              className="hover:bg-muted/50 w-[15%] cursor-pointer select-none"
               onClick={() => onSort('cohorts')}
             >
               <div className="flex items-center gap-2">

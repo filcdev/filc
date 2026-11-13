@@ -1,7 +1,8 @@
 import { getLogger } from '@logtape/logtape';
 import { asc, inArray } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
 import {
   cohort,
   cohortGroup,
@@ -10,7 +11,7 @@ import {
   movedLesson,
   substitution,
   teacher,
-} from '#modules/timetable/schema';
+} from '@/modules/timetable/schema';
 
 const logger = getLogger(['chronos', 'timetable', 'cleanup']);
 
@@ -22,9 +23,15 @@ export type CleanupOrphanedCohortsResult = {
 
 /**
  * Find and delete cohorts that are not linked to any timetable via the
- * `cohort_timetable_mtm` table, plus teachers that are not assigned to any
- * lesson.  For each orphaned cohort, any user referencing that cohort has
- * their `cohortId` set to NULL before the cohort row is removed.
+ * `cohort_timetable_mtm` table and not targeted by a manual moved lesson, plus
+ * teachers that are not assigned to any lesson.  For each orphaned cohort, any
+ * user referencing that cohort has their `cohortId` set to NULL before the
+ * cohort row is removed.
+ *
+ * A cohort counts as "assigned" if it is referenced by `cohort_timetable_mtm`
+ * or by a manual moved lesson's `manualCohortIds` array (a text-array column
+ * with no FK), so a manual move never loses its class or its notification
+ * audience.
  *
  * A teacher counts as "assigned" if its id appears in any `lesson.teacherIds`
  * array or any `moved_lesson.manualTeacherIds` array (text-array columns with
@@ -51,14 +58,24 @@ export async function cleanupOrphanedCohorts(): Promise<CleanupOrphanedCohortsRe
       .from(cohort)
       .for('update');
 
-    // Find all cohort IDs that are referenced in the MTM table
-    const linkedRows = await tx
-      .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
-      .from(cohortTimetableMtm);
+    // Find all cohort IDs that are referenced in the MTM table, plus the ones
+    // a manual moved lesson targets (`manualCohortIds` is a text-array column
+    // with no FK/index, so the database does not protect them).
+    const [linkedRows, movedLessonCohortRows] = await Promise.all([
+      tx
+        .selectDistinct({ cohortId: cohortTimetableMtm.cohortId })
+        .from(cohortTimetableMtm),
+      tx
+        .select({ manualCohortIds: movedLesson.manualCohortIds })
+        .from(movedLesson),
+    ]);
 
-    const linkedSet = new Set(linkedRows.map((r) => r.cohortId));
+    const linkedSet = new Set([
+      ...linkedRows.map((r) => r.cohortId),
+      ...movedLessonCohortRows.flatMap((r) => r.manualCohortIds),
+    ]);
 
-    // Cohorts whose ID does not appear in the MTM table are orphaned
+    // Cohorts whose ID appears in neither are orphaned
     const orphanedCohortIds = allCohortRows
       .map((r) => r.id)
       .filter((id) => !linkedSet.has(id));

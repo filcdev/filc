@@ -1,3 +1,3 @@
-import { health } from '#modules/health/index';
+import { health } from '@/modules/health/index';
 
 export const healthRouter = { health };

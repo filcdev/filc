@@ -1,8 +1,8 @@
-@import "@filcdev/ui/globals.css";
-@import "@fontsource-variable/host-grotesk/wght.css";
+@import '@filcdev/ui/globals.css';
+@import '@fontsource-variable/host-grotesk/wght.css';
 
 /* The shared UI package ships its own utility classes. */
-@source "../../../packages/ui/src";
+@source '../../../packages/ui/src';
 
 html,
 body,
@@ -16,13 +16,13 @@ body,
    Scoped to the TV shell: the navigator kiosk is an interactive touch UI and
    must keep the browser's 1:1 scale. */
 .tv main {
-  font-family: "Host Grotesk Variable", sans-serif;
+  font-family: 'Host Grotesk Variable', sans-serif;
   zoom: 190%;
 }
 
 /* Ticker panels: the card surface, translucent over the board's gradient. */
 .box {
-  @apply rounded-lg bg-card/30 shadow-lg;
+  @apply bg-card/30 rounded-lg shadow-lg;
 }
 
 .text-shadow {

@@ -9,6 +9,7 @@ import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { useSiteTheme, useUpdateSiteTheme } from '@/hooks/site-theme';
 import { orpc, prefetch } from '@/utils/orpc';
@@ -86,20 +87,20 @@ function ThemePage() {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      <div className="from-primary/10 via-background to-accent/10 relative overflow-hidden rounded-2xl border bg-gradient-to-br">
         <SiteThemeArt
           className="absolute inset-0 h-full w-full"
           theme={selected}
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent"
+          className="from-background via-background/80 absolute inset-0 bg-gradient-to-r to-transparent"
         />
         <div className="relative space-y-2 p-8">
-          <h1 className="font-bold text-3xl tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             {t('siteTheme.heroTitle')}
           </h1>
-          <p className="max-w-xl text-muted-foreground">
+          <p className="text-muted-foreground max-w-xl">
             {t('siteTheme.heroDescription')}
           </p>
         </div>
@@ -125,7 +126,7 @@ function ThemePage() {
             ))}
           </div>
 
-          <div className="sticky bottom-0 flex items-center justify-end gap-3 rounded-2xl border bg-card/95 p-4 backdrop-blur">
+          <div className="bg-card/95 sticky bottom-0 flex items-center justify-end gap-3 rounded-2xl border p-4 backdrop-blur">
             <span className="text-muted-foreground text-sm">
               {t('siteTheme.currentTheme')}: {t(activeOption.nameKey)}
             </span>
@@ -162,7 +163,7 @@ function ThemeCard({ active, option, selected, onSelect }: ThemeCardProps) {
         'group flex flex-col overflow-hidden rounded-2xl border text-left transition-all',
         'hover:-translate-y-0.5 hover:shadow-lg',
         selected
-          ? 'ring-2 ring-ring ring-offset-2 ring-offset-background'
+          ? 'ring-ring ring-offset-background ring-2 ring-offset-2'
           : 'hover:border-primary/40'
       )}
       onClick={onSelect}
@@ -206,34 +207,34 @@ function MiniUi({ dark, themeId }: { dark: boolean; themeId: SiteTheme }) {
   return (
     <div
       className={cn(
-        'space-y-1.5 rounded-lg border border-border bg-background p-2 text-foreground',
+        'border-border bg-background text-foreground space-y-1.5 rounded-lg border p-2',
         dark && 'dark'
       )}
       data-site-theme={themeId}
     >
       {/* palette swatches, driven by this card's own tokens */}
       <div aria-hidden="true" className="flex gap-1">
-        <span className="h-3 w-3 rounded-full bg-primary" />
-        <span className="h-3 w-3 rounded-full bg-accent" />
-        <span className="h-3 w-3 rounded-full border border-border bg-background" />
-        <span className="h-3 w-3 rounded-full bg-foreground" />
+        <span className="bg-primary h-3 w-3 rounded-full" />
+        <span className="bg-accent h-3 w-3 rounded-full" />
+        <span className="border-border bg-background h-3 w-3 rounded-full border" />
+        <span className="bg-foreground h-3 w-3 rounded-full" />
       </div>
       {/* top bar */}
-      <div className="flex items-center justify-between rounded-md bg-card px-1.5 py-1">
-        <span className="h-1.5 w-8 rounded-full bg-primary" />
-        <span className="h-2 w-2 rounded-full bg-muted" />
+      <div className="bg-card flex items-center justify-between rounded-md px-1.5 py-1">
+        <span className="bg-primary h-1.5 w-8 rounded-full" />
+        <span className="bg-muted h-2 w-2 rounded-full" />
       </div>
       {/* two text lines */}
-      <div className="h-1.5 w-full rounded-full bg-muted" />
-      <div className="h-1.5 w-2/3 rounded-full bg-muted" />
+      <div className="bg-muted h-1.5 w-full rounded-full" />
+      <div className="bg-muted h-1.5 w-2/3 rounded-full" />
       {/* primary button */}
-      <div className="inline-flex h-4 items-center rounded bg-primary px-1.5">
-        <span className="h-1 w-6 rounded-full bg-primary-foreground" />
+      <div className="bg-primary inline-flex h-4 items-center rounded px-1.5">
+        <span className="bg-primary-foreground h-1 w-6 rounded-full" />
       </div>
       {/* muted row */}
-      <div className="flex items-center gap-1 rounded bg-muted px-1.5 py-1">
-        <span className="h-1 w-1 rounded-full bg-muted-foreground" />
-        <span className="h-1.5 flex-1 rounded-full bg-muted-foreground/40" />
+      <div className="bg-muted flex items-center gap-1 rounded px-1.5 py-1">
+        <span className="bg-muted-foreground h-1 w-1 rounded-full" />
+        <span className="bg-muted-foreground/40 h-1.5 flex-1 rounded-full" />
       </div>
     </div>
   );

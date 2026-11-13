@@ -103,7 +103,7 @@ export function EntityTable<T>({
                       size="icon-sm"
                       variant="ghost"
                     >
-                      <Trash className="h-4 w-4 text-destructive" />
+                      <Trash className="text-destructive h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -112,7 +112,7 @@ export function EntityTable<T>({
             {rows.length === 0 && (
               <TableRow>
                 <TableCell
-                  className="text-center text-muted-foreground"
+                  className="text-muted-foreground text-center"
                   colSpan={columns.length + 1}
                 >
                   {t('ui.common.no_data')}

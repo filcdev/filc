@@ -1,8 +1,8 @@
 import { notificationTypeValues } from '@filcdev/api/domains/notifications';
-
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import { api, orpc } from '@/utils/orpc';
 
 export const NOTIFICATION_TYPES = notificationTypeValues;

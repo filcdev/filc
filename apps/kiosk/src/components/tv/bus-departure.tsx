@@ -1,4 +1,5 @@
 import { TriangleAlert } from 'lucide-react';
+
 import {
   DepartureCard,
   type DepartureInfo,
@@ -23,8 +24,8 @@ type BusDepartureProps = {
 function NoDeparture() {
   return (
     <div className="flex items-center gap-1.5">
-      <TriangleAlert className="size-4.5 text-destructive" />
-      <span className="font-bold text-sm">
+      <TriangleAlert className="text-destructive size-4.5" />
+      <span className="text-sm font-bold">
         {TV_STRINGS.departures.noDeparture}
       </span>
     </div>

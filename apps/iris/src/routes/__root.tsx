@@ -17,6 +17,7 @@ import { ThemeProvider } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { I18nextProvider } from 'react-i18next';
+
 import { ConfirmProvider } from '@/components/confirm-provider';
 import { SettingsDialog } from '@/components/settings-dialog';
 import { SettingsDialogProvider } from '@/components/settings-dialog-store';

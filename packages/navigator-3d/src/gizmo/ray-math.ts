@@ -1,4 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 
 // Closest point on line P + t·dir to the ray O + s·rayDir.

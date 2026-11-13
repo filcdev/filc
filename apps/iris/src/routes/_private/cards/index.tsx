@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
   type DoorlockCard,
   useActivateSelfCard,
@@ -73,7 +74,7 @@ function CardsPage() {
 
   if (cardsQuery.isError || !cards) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+      <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 py-20">
         <ShieldOff className="size-10" />
         <p>{t('doorlock.selfCards.loadError')}</p>
       </div>
@@ -82,7 +83,7 @@ function CardsPage() {
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+      <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 py-20">
         <CreditCard className="size-10" />
         <p>{t('doorlock.selfCards.noCards')}</p>
       </div>
@@ -92,7 +93,7 @@ function CardsPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <Link
-        className="flex w-max items-center gap-1 rounded-full px-2 py-1 transition-colors hover:bg-muted/50"
+        className="hover:bg-muted/50 flex w-max items-center gap-1 rounded-full px-2 py-1 transition-colors"
         to="/"
       >
         <ArrowLeft className="size-4" />
@@ -100,8 +101,8 @@ function CardsPage() {
       </Link>
 
       <div className="flex items-center gap-3">
-        <Shield className="size-6 text-primary" />
-        <h1 className="font-semibold text-2xl tracking-tight">
+        <Shield className="text-primary size-6" />
+        <h1 className="text-2xl font-semibold tracking-tight">
           {t('doorlock.selfCards.title')}
         </h1>
       </div>
@@ -186,7 +187,7 @@ function CardItem({
 
   return (
     <Card
-      className={cn('min-w-sm max-w-lg', {
+      className={cn('max-w-lg min-w-sm', {
         'bg-muted/40': isInactive,
       })}
     >
@@ -202,7 +203,7 @@ function CardItem({
       </CardHeader>
 
       <CardContent className="space-y-3">
-        <div className="flex items-start gap-2 text-muted-foreground text-sm">
+        <div className="text-muted-foreground flex items-start gap-2 text-sm">
           <MapPin className="mt-0.5 size-4 shrink-0" />
           {deviceNames.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -280,7 +281,7 @@ function ActivateDoorDialog({
         </DialogHeader>
 
         {devices.length === 0 ? (
-          <p className="py-4 text-center text-muted-foreground text-sm">
+          <p className="text-muted-foreground py-4 text-center text-sm">
             {t('doorlock.selfCards.dialogNoDevices')}
           </p>
         ) : (
@@ -300,7 +301,7 @@ function ActivateDoorDialog({
                   ) : (
                     <DoorOpen className="size-5 shrink-0" />
                   )}
-                  <span className="font-medium text-sm">{device.name}</span>
+                  <span className="text-sm font-medium">{device.name}</span>
                 </Button>
               );
             })}

@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from '@react-pdf/renderer';
+
 import type { ExportColumn } from './export-button';
 
 // The built-in PDF fonts are standard-14 Helvetica, encoded as WinAnsi, which
@@ -92,7 +93,7 @@ export function ExportPdfDocument({
           ))}
         </View>
         {rows.map((row, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: static PDF rows, no reordering
+          // oxlint-disable-next-line react/no-array-index-key -- static PDF rows, no reordering
           <View key={index} style={pdfStyles.row}>
             {columns.map((col) => (
               <Text key={col.key} style={pdfStyles.cell}>

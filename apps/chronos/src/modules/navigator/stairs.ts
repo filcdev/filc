@@ -1,11 +1,12 @@
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { asc, eq } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
-import { navigatorStair } from '#modules/navigator/schema';
-import { base } from '#orpc';
-import { notFound } from '#utils/http';
+
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
+import { navigatorStair } from '@/modules/navigator/schema';
+import { base } from '@/orpc';
+import { notFound } from '@/utils/http';
 
 export const listStairsRoute = base.navigator.stairs.list.handler(async () => {
   const stairs = await db

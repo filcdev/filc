@@ -1,9 +1,10 @@
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, count, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   cohort,
   cohortTimetableMtm,
@@ -13,14 +14,14 @@ import {
   substitution,
   substitutionLessonMTM,
   timetable,
-} from '#modules/timetable/schema';
-import { getActiveTimetableId } from '#modules/timetable/utils/active';
-import { cleanupOrphanedCohorts } from '#modules/timetable/utils/cleanup';
-import { remapSubstitutionLessonsToTimetable } from '#modules/timetable/utils/remap-substitutions';
-import { base } from '#orpc';
-import { toDateOnlyString } from '#utils/date';
-import { badRequest, notFound } from '#utils/http';
-import { dispatchImmediateNotification } from '#utils/notifications/engine';
+} from '@/modules/timetable/schema';
+import { getActiveTimetableId } from '@/modules/timetable/utils/active';
+import { cleanupOrphanedCohorts } from '@/modules/timetable/utils/cleanup';
+import { remapSubstitutionLessonsToTimetable } from '@/modules/timetable/utils/remap-substitutions';
+import { base } from '@/orpc';
+import { toDateOnlyString } from '@/utils/date';
+import { badRequest, notFound } from '@/utils/http';
+import { dispatchImmediateNotification } from '@/utils/notifications/engine';
 
 export const getAllTimetables = base.timetable.timetables.list.handler(
   async () => {

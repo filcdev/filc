@@ -35,6 +35,7 @@ import {
 import type { ElementType, ReactNode } from 'react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { Lazy } from '@/components/lazy';
 import { NotificationBell } from '@/components/notification-bell';
 import { useSettingsDialog } from '@/components/settings-dialog-store';
@@ -106,7 +107,7 @@ export function Navbar({
 
   return (
     <>
-      <nav className="border-border border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+      <nav className="border-border bg-background/95 supports-backdrop-filter:bg-background/60 border-b backdrop-blur">
         <div className="flex h-16 min-w-0 items-center px-6">
           <div className="flex min-w-0 items-center gap-3">
             {children}
@@ -119,10 +120,10 @@ export function Navbar({
             )}
             {showLogo && (
               <>
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                  <GraduationCap className="h-5 w-5 text-primary-foreground" />
+                <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+                  <GraduationCap className="text-primary-foreground h-5 w-5" />
                 </div>
-                <span className="truncate font-semibold text-foreground text-xl">
+                <span className="text-foreground truncate text-xl font-semibold">
                   filc
                 </span>
               </>
@@ -262,7 +263,6 @@ function NavbarAccount() {
     data.user.email ||
     'U';
   const initials = initialsSource
-    // biome-ignore lint/performance/useTopLevelRegex: not needed
     .split(/\s+/)
     .filter(Boolean)
     .map((segment) => segment[0])
@@ -289,10 +289,10 @@ function NavbarAccount() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <div className="flex flex-row gap-1">
-                <p className="font-medium text-sm leading-none">
+                <p className="text-sm leading-none font-medium">
                   {displayNickname}
                 </p>
-                <p className="font-medium text-muted-foreground text-sm leading-none">
+                <p className="text-muted-foreground text-sm leading-none font-medium">
                   {displayName === displayNickname ? null : `(${displayName})`}
                 </p>
               </div>
@@ -352,7 +352,7 @@ function MobileNav({
   return (
     <div
       className={cn(
-        'grid border-border border-b bg-background/95 backdrop-blur transition-all duration-200 ease-in-out md:hidden',
+        'border-border bg-background/95 grid border-b backdrop-blur transition-all duration-200 ease-in-out md:hidden',
         open ? 'grid-rows-[1fr] border-b' : 'grid-rows-[0fr] border-b-0'
       )}
       id={id}

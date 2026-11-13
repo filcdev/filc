@@ -1,4 +1,5 @@
 import type { ClassroomRow } from '@filcdev/api/domains/navigator/classroom';
+
 import type { StoreyResolver } from '../types/three/storey-types';
 
 export const FLOOR_GAP = 30;

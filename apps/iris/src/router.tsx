@@ -58,7 +58,6 @@ export function getRouter() {
 export type IrisRouter = ReturnType<typeof getRouter>;
 
 declare module '@tanstack/react-router' {
-  // biome-ignore lint/style/useConsistentTypeDefinitions: fine here
   interface Register {
     router: IrisRouter;
   }

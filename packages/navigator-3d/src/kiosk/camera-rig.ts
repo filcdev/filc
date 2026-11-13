@@ -1,6 +1,7 @@
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import type { IsolatedFloor, KioskNode } from './types';
 
 const _box = new THREE.Box3();

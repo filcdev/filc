@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSearch } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
+
 import type { Resolver, Translator } from '@/utils/classroom-search';
 import { orpc } from '@/utils/orpc';
 import { UI_STRINGS } from '@/utils/ui-strings';

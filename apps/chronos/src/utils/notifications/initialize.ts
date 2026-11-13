@@ -1,7 +1,8 @@
 import { getLogger } from '@logtape/logtape';
-import { modules } from '#modules';
-import { registerHandler } from '#utils/notifications/engine';
-import { initializeFcm } from '#utils/notifications/providers/fcm';
+
+import { modules } from '@/modules';
+import { registerHandler } from '@/utils/notifications/engine';
+import { initializeFcm } from '@/utils/notifications/providers/fcm';
 
 const logger = getLogger(['chronos', 'notifications', 'initialize']);
 

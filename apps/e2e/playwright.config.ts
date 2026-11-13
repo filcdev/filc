@@ -1,5 +1,7 @@
 import process from 'node:process';
+
 import { defineConfig, devices } from '@playwright/test';
+
 import { CHRONOS_PORT, chronosEnv, chronosUrl, IRIS_PORT } from './test-env';
 
 export default defineConfig({

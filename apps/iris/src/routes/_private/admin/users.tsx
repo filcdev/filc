@@ -10,13 +10,14 @@ import { BookOpen, RefreshCw, UserCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+
 import { StatCard } from '@/components/admin/stat-card';
 import { UsersTable } from '@/components/admin/users-table';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
-  USERS_PAGE_SIZE,
   useCohorts,
   useRoles,
+  USERS_PAGE_SIZE,
   useUsers,
 } from '@/hooks/admin-users';
 import { orpc, prefetch } from '@/utils/orpc';
@@ -29,9 +30,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/_private/admin/users')({
   component: AdminUsersPage,
-  // The params come off the location rather than `loaderDeps`; either is valid
-  // now that `validateSearch` comes first (see the routes override in
-  // biome.jsonc), and this predates that change.
+  // The params come off the location rather than `loaderDeps`. Either is valid
+  // as long as `validateSearch` comes first, because `loader` reads the search
+  // type it declares.
   validateSearch: searchSchema,
   loader: ({ context, location }) => {
     const params = new URLSearchParams(location.searchStr);
@@ -97,7 +98,7 @@ function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('users.title')}
         </h1>
         <p className="text-muted-foreground">{t('users.description')}</p>

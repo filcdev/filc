@@ -1,6 +1,7 @@
 import { Badge } from '@filcdev/ui/components/badge';
 import { Bus } from 'lucide-react';
 import type { ReactNode } from 'react';
+
 import { TV_STRINGS } from '@/components/tv/strings';
 import { dayjs } from '@/utils/dayjs';
 
@@ -42,14 +43,14 @@ export function DepartureCard({ data, displayName }: DepartureCardProps) {
   return (
     <DepartureRow displayName={displayName}>
       <div className="flex gap-1">
-        <span className="self-center font-bold text-sm">
+        <span className="self-center text-sm font-bold">
           {predicted
             ? dayjs(predicted * 1000).fromNow()
             : TV_STRINGS.departures.unknownRoute}
         </span>
-        <Badge className="h-6 gap-1 bg-primary pr-1.5 pl-0 text-primary-foreground">
+        <Badge className="bg-primary text-primary-foreground h-6 gap-1 pr-1.5 pl-0">
           {/* Wrapped so the badge's `> svg` sizing rule does not shrink it. */}
-          <span className="flex items-center rounded-full bg-primary-foreground p-0.5 text-primary">
+          <span className="bg-primary-foreground text-primary flex items-center rounded-full p-0.5">
             <Bus className="size-4.5" />
           </span>
           <span className="font-bold">

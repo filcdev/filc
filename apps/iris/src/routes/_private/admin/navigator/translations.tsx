@@ -14,6 +14,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import type { BaseDialogProps } from '@/components/admin/admin.types';
 import {
   EntityTable,
@@ -113,7 +114,7 @@ function TranslationDialog({
         ) as Record<string, string>,
       });
     }
-  }, [open, group, languages, form.reset]);
+  }, [open, group, languages, form]);
 
   const isPending = saveTranslation.isPending || updateTranslation.isPending;
   // Subscribed, not read off `form.state` in render: the codename arrives with
@@ -268,7 +269,7 @@ function TranslationsPage() {
       />
 
       <div className="relative max-w-sm">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
         <Input
           className="pl-9"
           onChange={(event) => setSearch(event.target.value)}

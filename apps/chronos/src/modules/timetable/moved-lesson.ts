@@ -2,12 +2,13 @@ import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, eq, gte, inArray, or, sql } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
+
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
+} from '@/modules/activity-log/utils/record';
 import {
   classroom,
   cohort,
@@ -19,18 +20,18 @@ import {
   period,
   subject,
   teacher,
-} from '#modules/timetable/schema';
-import { getActiveTimetableId } from '#modules/timetable/utils/active';
+} from '@/modules/timetable/schema';
+import { getActiveTimetableId } from '@/modules/timetable/utils/active';
 import {
   enrichLessons,
   loadLessonsByIds,
-} from '#modules/timetable/utils/enrich-lessons';
-import { base } from '#orpc';
-import { badRequest, notFound } from '#utils/http';
+} from '@/modules/timetable/utils/enrich-lessons';
+import { base } from '@/orpc';
+import { badRequest, notFound } from '@/utils/http';
 import {
   cancelPendingNotification,
   dispatchPendingNotification,
-} from '#utils/notifications/engine';
+} from '@/utils/notifications/engine';
 
 const ensurePeriodExists = async (periodId: string) => {
   const [existingPeriod] = await db
@@ -424,8 +425,8 @@ const buildCreateMetadata = (input: {
   date: Date;
   lessonIds?: string[];
   manualCohortIds?: string[];
-  manualSourceRoomId?: string;
-  manualSubjectId?: string;
+  manualSourceRoomId?: string | null;
+  manualSubjectId?: string | null;
   manualTeacherIds?: string[];
   room?: string | null;
   startingDay?: string | null;
@@ -814,7 +815,9 @@ export const createMovedLesson = base.timetable.movedLessons.create
           action: 'create',
           entityId: row.id,
           entityType: 'movedLesson',
-          metadata: buildCreateMetadata(body),
+          // The stored values, not the raw body: a linked create discards any
+          // manual ids the client sent, so the audit must not record them.
+          metadata: buildCreateMetadata({ ...body, ...manualValues }),
         },
         tx
       );

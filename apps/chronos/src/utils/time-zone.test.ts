@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'bun:test';
+
 import {
   formatDateInTimeZone,
   getWeekdayInTimeZone,
   isTimeZone,
   offsetMinutesAt,
-} from '#utils/time-zone';
+} from '@/utils/time-zone';
 
 const BUDAPEST = 'Europe/Budapest';
 

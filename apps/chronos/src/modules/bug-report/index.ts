@@ -11,11 +11,12 @@ import {
   or,
   type SQL,
 } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import { bugReport } from '#modules/bug-report/schema';
-import { base } from '#orpc';
-import { notFound } from '#utils/http';
+
+import { db } from '@/database';
+import { requireAuthentication, requireAuthorization } from '@/middleware/auth';
+import { bugReport } from '@/modules/bug-report/schema';
+import { base } from '@/orpc';
+import { notFound } from '@/utils/http';
 
 export const createBugReport = base.bugReport.create
   .use(requireAuthentication)

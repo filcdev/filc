@@ -1,15 +1,16 @@
 import { permissions } from '@filcdev/api/permissions';
 import { arrayContains, count, desc, eq, ilike, or } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
-import { base } from '#orpc';
-import { getUserPermissionsBulk } from '#utils/authorization';
-import { notFound } from '#utils/http';
+} from '@/modules/activity-log/utils/record';
+import { base } from '@/orpc';
+import { getUserPermissionsBulk } from '@/utils/authorization';
+import { notFound } from '@/utils/http';
 
 export const listUsers = base.users.list
   .use(requireAuthorization(permissions.usersRead))

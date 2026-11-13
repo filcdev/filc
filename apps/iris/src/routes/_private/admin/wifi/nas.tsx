@@ -11,6 +11,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Plus, RefreshCw, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { TableHeaderRow } from '@/components/admin/table-header-row';
 import { useConfirm } from '@/components/confirm-provider';
 import { PermissionGuard } from '@/components/util/permission-guard';
@@ -50,7 +51,7 @@ function WifiNasPage() {
     <div className="flex h-full flex-col gap-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-bold text-3xl tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             {t('wifiAdminNas.title')}
           </h1>
           <p className="text-muted-foreground">
@@ -84,7 +85,7 @@ function WifiNasPage() {
 
       <div className="flex max-w-sm items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
           <Input
             className="pl-9"
             onChange={(event) => setSearch(event.target.value)}
@@ -119,7 +120,7 @@ function WifiNasPage() {
             {!query.isLoading && filteredNas.length === 0 && (
               <TableRow>
                 <TableCell
-                  className="text-center text-muted-foreground"
+                  className="text-muted-foreground text-center"
                   colSpan={4}
                 >
                   {t('wifiAdminNas.noNasFound')}

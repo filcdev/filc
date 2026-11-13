@@ -1,4 +1,4 @@
-import type { NotificationHandler } from '#utils/notifications/types';
+import type { NotificationHandler } from '@/utils/notifications/types';
 
 /**
  * A cron entry a module contributes to the shared baker. Matches the shape

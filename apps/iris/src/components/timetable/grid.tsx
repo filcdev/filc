@@ -1,11 +1,13 @@
 import { cn } from '@filcdev/ui/lib/utils';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { usePinchZoom } from '@/hooks/use-pinch-zoom';
+
 import {
   filterLessonsForGroupDisplay,
-  type GroupDisplay,
   getLessonGroupEmphasis,
+  type GroupDisplay,
 } from './helpers';
 import { LessonCard } from './lesson-card';
 import type {
@@ -47,7 +49,7 @@ function DayHeaderCell({ day, isEmpty, showBorder }: DayHeaderCellProps) {
     >
       <span
         className={cn(
-          'font-bold text-[11px] uppercase tracking-widest',
+          'text-[11px] font-bold tracking-widest uppercase',
           isEmpty ? 'text-muted-foreground/40' : 'text-foreground'
         )}
       >
@@ -59,14 +61,14 @@ function DayHeaderCell({ day, isEmpty, showBorder }: DayHeaderCellProps) {
 
 function TimeCell({ slot }: { slot: TimeSlot }) {
   return (
-    <div className="flex flex-col items-center justify-center border-border border-r bg-muted/30 py-2">
-      <span className="font-medium text-[10px] text-muted-foreground">
+    <div className="border-border bg-muted/30 flex flex-col items-center justify-center border-r py-2">
+      <span className="text-muted-foreground text-[10px] font-medium">
         {slot.start.format('HH:mm')}
       </span>
-      <span className="font-bold text-muted-foreground text-xs">
+      <span className="text-muted-foreground text-xs font-bold">
         {slot.index}.
       </span>
-      <span className="font-medium text-[10px] text-muted-foreground">
+      <span className="text-muted-foreground text-[10px] font-medium">
         {slot.end.format('HH:mm')}
       </span>
     </div>
@@ -96,7 +98,7 @@ function SplitLessons({
     <div className={cn('min-h-24 p-0.5', borderClass)}>
       <div
         className={cn(
-          'h-full gap-0.5 overflow-hidden rounded-md bg-muted',
+          'bg-muted h-full gap-0.5 overflow-hidden rounded-md',
           getSplitGridClass(lessons.length)
         )}
       >
@@ -156,13 +158,13 @@ function DayCell({
     return (
       <div
         className={cn(
-          'min-h-24 bg-muted/20',
+          'bg-muted/20 min-h-24',
           borderClass,
           slotIndex === midSlot && 'flex items-center justify-center p-2'
         )}
       >
         {slotIndex === midSlot && (
-          <span className="text-center text-[11px] text-muted-foreground/50 leading-tight">
+          <span className="text-muted-foreground/50 text-center text-[11px] leading-tight">
             {noLessonsLabel}
           </span>
         )}
@@ -258,12 +260,12 @@ export function TimetableGrid({
       style={{ touchAction: 'pan-x pan-y' }}
     >
       <div
-        className="rounded-xl border border-border bg-card"
+        className="border-border bg-card rounded-xl border"
         style={{ minWidth, zoom: scale }}
       >
         {/* Sticky header */}
         <div
-          className="sticky top-0 z-10 grid border-border border-b bg-muted/95 backdrop-blur"
+          className="border-border bg-muted/95 sticky top-0 z-10 grid border-b backdrop-blur"
           style={{ gridTemplateColumns: colTemplate }}
         >
           <div className="p-2" />
@@ -279,11 +281,11 @@ export function TimetableGrid({
 
         {/* Body */}
         {timeSlots.length === 0 ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex items-center justify-center py-16 text-sm">
             {noLessonsLabel}
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-border divide-y">
             {timeSlots.map((slot, slotIndex) => (
               <div
                 className="grid"

@@ -1,6 +1,7 @@
 import { appContract } from '@filcdev/api/contract';
 import { implement } from '@orpc/server';
-import type { ChronosContext } from '#_types/globals';
+
+import type { ChronosContext } from '@/_types/globals';
 
 /**
  * The implementer every Chronos procedure is built from. Because it is bound

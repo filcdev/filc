@@ -1,12 +1,13 @@
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { asc, eq } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
-import { isReferencedRowError } from '#modules/navigator/utils/errors';
-import { classroomType as classroomTypeTable } from '#modules/timetable/schema';
-import { base } from '#orpc';
-import { conflict, notFound } from '#utils/http';
+
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
+import { isReferencedRowError } from '@/modules/navigator/utils/errors';
+import { classroomType as classroomTypeTable } from '@/modules/timetable/schema';
+import { base } from '@/orpc';
+import { conflict, notFound } from '@/utils/http';
 
 export const listClassroomTypesRoute =
   base.navigator.classroomTypes.list.handler(async () => {

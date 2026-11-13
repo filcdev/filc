@@ -1,5 +1,6 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
 import type { Corridor } from '@filcdev/api/domains/navigator/corridor';
+
 import { Vec2 } from '../types/three/vector';
 
 function getCorners(cor: Corridor, building?: Building): Vec2[] {

@@ -1,24 +1,25 @@
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { eq, sql } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   diffActivity,
   recordActivity,
-} from '#modules/activity-log/utils/record';
-import { card } from '#modules/doorlock/schema';
+} from '@/modules/activity-log/utils/record';
+import { card } from '@/modules/doorlock/schema';
 import {
   type DoorlockCardWithRelations,
   fetchCardById,
   fetchCards,
   migrateAuditLogsForNewCard,
   replaceCardDevices,
-} from '#modules/doorlock/utils/cards';
-import { syncDevicesByIds } from '#modules/doorlock/utils/device-sync';
-import { base } from '#orpc';
-import { notFound } from '#utils/http';
+} from '@/modules/doorlock/utils/cards';
+import { syncDevicesByIds } from '@/modules/doorlock/utils/device-sync';
+import { base } from '@/orpc';
+import { notFound } from '@/utils/http';
 
 const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
   if (!cardRecord) {

@@ -1,4 +1,5 @@
 import z from 'zod';
+
 import {
   buildingSelectSchema,
   classroomSelectSchema,
@@ -7,7 +8,7 @@ import {
   liftSelectSchema,
   stairSelectSchema,
   translationSelectSchema,
-} from '#modules/navigator/utils/schemas';
+} from '@/modules/navigator/utils/schemas';
 
 /**
  * Transfer schemas for navigator export/import. Each strips the audit
@@ -47,7 +48,7 @@ export const stairTransferSchema = stairSelectSchema.omit({
 /** `navigator_translation` has no timestamps, so it transfers as-is. */
 export const translationTransferSchema = translationSelectSchema;
 
-// biome-ignore assist/source/useSortedKeys: canonical transfer field order (version first)
+// canonical transfer field order (version first)
 export const navigatorTransferSchema = z.object({
   version: z.literal(1),
   exportedAt: z.string(),

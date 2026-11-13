@@ -1,6 +1,7 @@
 import { useSession } from '@filcdev/auth/client';
 import { Navigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+
 import { useHasPermission } from '@/hooks/use-has-permission';
 
 type PermissionGuardProps = {
@@ -24,5 +25,5 @@ export function PermissionGuard({
     return <Navigate search={{ error: 'unauthorized' }} to="/auth/error" />;
   }
 
-  return <>{children}</>;
+  return children;
 }

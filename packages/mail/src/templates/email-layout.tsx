@@ -10,6 +10,7 @@ import {
   Text,
 } from '@react-email/components';
 import type { ReactNode } from 'react';
+
 import { emailCopy } from './i18n';
 import {
   bodyContentStyle,

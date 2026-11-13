@@ -9,6 +9,7 @@ import {
 } from '@filcdev/ui/components/card';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { useTranslation } from 'react-i18next';
+
 import { DivisionGroupPicker } from '@/components/timetable/group-picker';
 import { useGroupsForCohort } from '@/hooks/timetable-groups';
 

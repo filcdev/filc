@@ -1,7 +1,8 @@
 import type { FullGraph } from '@filcdev/api/domains/navigator/graph';
 import type { MyLocation } from '@filcdev/api/domains/navigator/my-location';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { buildKioskCampus } from '../entities/build-kiosk-campus';
 import { floorPositionOf } from '../entities/building-helpers';
 import { buildLocationMarker } from '../entities/location-marker';
@@ -203,7 +204,7 @@ export function createEditorScene(scene: THREE.Scene): EditorSceneController {
     }
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ported edit-state machine, kept verbatim
+  // ported edit-state machine, kept verbatim
   const setEdit = (target: EditTarget | null): void => {
     clearEdit();
     if (!(target && root && graphRef && storeys)) {

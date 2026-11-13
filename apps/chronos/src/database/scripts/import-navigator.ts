@@ -31,24 +31,26 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import process from 'node:process';
+
 import { fullGraphSchema } from '@filcdev/api/domains/navigator/graph';
 import { translationSchema } from '@filcdev/api/domains/navigator/translation';
 import { getLogger } from '@logtape/logtape';
 import { and, notInArray, sql } from 'drizzle-orm';
 import z from 'zod';
-import { db, prepareDb } from '#database';
+
+import { db, prepareDb } from '@/database';
 import {
   navigatorCorridor,
   navigatorLift,
   navigatorStair,
   navigatorTranslation,
-} from '#modules/navigator/schema';
+} from '@/modules/navigator/schema';
 import {
   building as buildingTable,
   classroom as classroomTable,
   classroomType as classroomTypeTable,
-} from '#modules/timetable/schema';
-import { configureLogger } from '#utils/logger';
+} from '@/modules/timetable/schema';
+import { configureLogger } from '@/utils/logger';
 
 await configureLogger('chronos');
 

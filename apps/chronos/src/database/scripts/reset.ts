@@ -1,15 +1,17 @@
 import process from 'node:process';
+
 import { confirm } from '@inquirer/prompts';
 import { getLogger } from '@logtape/logtape';
 import { getTableName, sql } from 'drizzle-orm';
-import { db } from '#database/index';
-import { apiKeySchema } from '#database/schema/api-keys';
-import { authenticationSchema } from '#database/schema/authentication';
-import { authorizationSchema } from '#database/schema/authorization';
-import { doorlockSchema } from '#modules/doorlock/schema';
-import { timetableSchema } from '#modules/timetable/schema';
-import { wifiSchema } from '#modules/wifi/schema';
-import { configureLogger } from '#utils/logger';
+
+import { db } from '@/database/index';
+import { apiKeySchema } from '@/database/schema/api-keys';
+import { authenticationSchema } from '@/database/schema/authentication';
+import { authorizationSchema } from '@/database/schema/authorization';
+import { doorlockSchema } from '@/modules/doorlock/schema';
+import { timetableSchema } from '@/modules/timetable/schema';
+import { wifiSchema } from '@/modules/wifi/schema';
+import { configureLogger } from '@/utils/logger';
 
 await configureLogger('chronos');
 

@@ -26,7 +26,7 @@ apps/radius/
 ## Deployment (Coolify & Docker Compose)
 
 When setting up via Coolify or standard Docker Compose:
+
 - Deploy using the provided `docker-compose.yml` under `apps/radius`.
 - The system expects the backend to be resolvable at `chronos:3000`. If your backend internal DNS is named differently, update `connect_uri` in `apps/radius/freeradius/rest`.
 - FreeRADIUS exposes UDP ports `1812` (auth) and `1813` (acct). You must map these externally on your server so that your Access Points can reach them.
-

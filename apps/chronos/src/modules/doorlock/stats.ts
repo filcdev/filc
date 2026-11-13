@@ -4,11 +4,17 @@ import type {
 } from '@filcdev/api/domains/doorlock/stats';
 import { permissions } from '@filcdev/api/permissions';
 import { and, count, desc, eq, gte, sql } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
-import { auditLog, card, device, deviceHealth } from '#modules/doorlock/schema';
-import { base } from '#orpc';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthorization } from '@/middleware/auth';
+import {
+  auditLog,
+  card,
+  device,
+  deviceHealth,
+} from '@/modules/doorlock/schema';
+import { base } from '@/orpc';
 
 const sevenDaysAgo = () => {
   const date = new Date();

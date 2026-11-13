@@ -1,5 +1,5 @@
-import { user } from '#database/schema/authentication';
-import { announcement } from '#modules/news/schema';
+import { user } from '@/database/schema/authentication';
+import { announcement } from '@/modules/news/schema';
 
 /** Shared `author` projection used by announcement/system-message list & detail. */
 export const authorSelect = {

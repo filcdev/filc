@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useConfirm } from '@/components/confirm-provider';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { RelativeTime } from '@/components/util/relative-time';
@@ -288,8 +289,8 @@ function WifiUsersPage() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[200px] max-w-sm flex-1">
-          <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative max-w-sm min-w-[200px] flex-1">
+          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
           <Input
             className="pl-9"
             onChange={(event) => setSearch(event.target.value)}
@@ -361,7 +362,7 @@ function WifiUsersHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('wifiAdminUsers.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -426,9 +427,9 @@ function WifiUsersTable({
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="bg-card rounded-md border">
       {rows.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground">
+        <div className="text-muted-foreground p-8 text-center">
           {isLoading ? t('common.loading') : t('wifiAdminUsers.noUsersFound')}
         </div>
       ) : (
@@ -460,7 +461,7 @@ function WifiUserBadges({ user }: { user: WifiUserRow }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Users className="h-4 w-4 text-muted-foreground" />
+      <Users className="text-muted-foreground h-4 w-4" />
       <span className="font-semibold">{user.username}</span>
       {user.banned && (
         <Badge variant="destructive">{t('wifiAdminUsers.banned')}</Badge>
@@ -472,7 +473,7 @@ function WifiUserBadges({ user }: { user: WifiUserRow }) {
       )}
       {!user.isOrphan && user.createdBy === null && (
         <Badge
-          className="border-destructive/50 font-normal text-destructive"
+          className="border-destructive/50 text-destructive font-normal"
           variant="secondary"
         >
           {t('wifiAdminUsers.createdByDeletedAdmin')}
@@ -502,9 +503,9 @@ function WifiUserMeta({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center gap-4 font-normal text-sm">
+    <div className="flex items-center gap-4 text-sm font-normal">
       {!user.isOrphan && user.speedProfileId && (
-        <div className="hidden items-center gap-1 text-muted-foreground sm:flex">
+        <div className="text-muted-foreground hidden items-center gap-1 sm:flex">
           <Badge className="h-5 px-1.5 text-[10px]" variant="secondary">
             {profiles.find((profile) => profile.id === user.speedProfileId)
               ?.name ?? user.speedProfileId}
@@ -512,7 +513,7 @@ function WifiUserMeta({
         </div>
       )}
       {!user.isOrphan && (
-        <div className="hidden text-muted-foreground sm:flex">
+        <div className="text-muted-foreground hidden sm:flex">
           {user.filteredDevices.length} {t('wifiAdminUsers.devices')}
         </div>
       )}
@@ -561,7 +562,7 @@ function WifiUserRowItem({
         <div className="flex w-full items-center justify-between pr-4">
           <div className="flex items-center gap-4 text-left">
             <WifiUserBadges user={user} />
-            <div className="hidden text-muted-foreground text-sm md:flex">
+            <div className="text-muted-foreground hidden text-sm md:flex">
               {user.comment && (
                 <span className="max-w-[200px] truncate">{user.comment}</span>
               )}
@@ -575,7 +576,7 @@ function WifiUserRowItem({
         <div className="flex flex-col gap-4 py-2">
           {!user.isOrphan && (
             <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-4 text-muted-foreground text-sm">
+              <div className="text-muted-foreground flex gap-4 text-sm">
                 {user.speedProfileId && (
                   <span>
                     {t('wifiAdminUsers.speedProfile')}:{' '}
@@ -626,7 +627,7 @@ function WifiUserRowItem({
               onEditDevice={onEditDevice}
             />
           ) : (
-            <div className="py-4 text-center text-muted-foreground text-sm">
+            <div className="text-muted-foreground py-4 text-center text-sm">
               {t('wifiAdminUsers.noDevicesFound')}
             </div>
           )}
@@ -691,7 +692,7 @@ function WifiUserDevicesTable({
                       )}
                     </div>
                     {device.adminNotes && (
-                      <span className="max-w-[150px] truncate text-muted-foreground text-xs">
+                      <span className="text-muted-foreground max-w-[150px] truncate text-xs">
                         {device.adminNotes}
                       </span>
                     )}
@@ -713,7 +714,7 @@ function WifiUserDevicesTable({
                     )}
                     {macCount > 1 && (
                       <Badge
-                        className="h-4 border-amber-500 py-1 text-[10px] text-amber-500 leading-none"
+                        className="h-4 border-amber-500 py-1 text-[10px] leading-none text-amber-500"
                         title={t('wifiAdminUsers.macUsedMultipleTimes')}
                         variant="outline"
                       >

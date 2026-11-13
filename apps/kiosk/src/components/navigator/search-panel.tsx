@@ -7,6 +7,7 @@ import {
   InputGroupInput,
 } from '@filcdev/ui/components/input-group';
 import { memo, useEffect, useId, useMemo, useRef, useState } from 'react';
+
 import { ClassroomCard } from '@/components/navigator/classroom-card';
 import { useKioskTranslations } from '@/hooks/use-kiosk-translations';
 import { classroomInfo, searchClassrooms } from '@/utils/classroom-search';

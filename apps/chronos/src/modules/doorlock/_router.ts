@@ -4,22 +4,22 @@ import {
   listCards,
   listDoorlockUsers,
   updateCard,
-} from '#modules/doorlock/cards';
+} from '@/modules/doorlock/cards';
 import {
   createDevice,
   deleteDevice,
   listDevices,
   updateDevice,
-} from '#modules/doorlock/devices';
-import { exportLogs } from '#modules/doorlock/export';
-import { listLogs } from '#modules/doorlock/logs';
-import { triggerBulkOta, triggerDeviceOta } from '#modules/doorlock/ota';
+} from '@/modules/doorlock/devices';
+import { exportLogs } from '@/modules/doorlock/export';
+import { listLogs } from '@/modules/doorlock/logs';
+import { triggerBulkOta, triggerDeviceOta } from '@/modules/doorlock/ota';
 import {
   activateVirtualCard,
   listSelfCards,
   updateSelfCardFrozen,
-} from '#modules/doorlock/self';
-import { deviceStats, doorlockStats } from '#modules/doorlock/stats';
+} from '@/modules/doorlock/self';
+import { deviceStats, doorlockStats } from '@/modules/doorlock/stats';
 
 export const doorlockRouter = {
   cards: {

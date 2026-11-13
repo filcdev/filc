@@ -2,8 +2,8 @@ import {
   createCipheriv,
   createDecipheriv,
   randomBytes,
-  type ScryptOptions,
   scrypt,
+  type ScryptOptions,
 } from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';

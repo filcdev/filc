@@ -1,4 +1,5 @@
 import z from 'zod';
+
 import { listResponse } from '../list';
 
 /** Path parameter for routes addressing a single doorlock device or card by id. */

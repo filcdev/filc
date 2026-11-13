@@ -4,19 +4,20 @@ import {
 } from '@filcdev/api/domains/users';
 import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
-import { db } from '#database';
-import { user } from '#database/schema/authentication';
-import { requireAuthentication } from '#middleware/auth';
-import { recordActivity } from '#modules/activity-log/utils/record';
-import { base } from '#orpc';
-import { readStoredAvatar, storeAvatar } from '#utils/avatars';
+
+import { db } from '@/database';
+import { user } from '@/database/schema/authentication';
+import { requireAuthentication } from '@/middleware/auth';
+import { recordActivity } from '@/modules/activity-log/utils/record';
+import { base } from '@/orpc';
+import { readStoredAvatar, storeAvatar } from '@/utils/avatars';
 import {
   badGateway,
   badRequest,
   notFound,
   serviceUnavailable,
-} from '#utils/http';
-import { isObjectStorageConfigured } from '#utils/storage/s3';
+} from '@/utils/http';
+import { isObjectStorageConfigured } from '@/utils/storage/s3';
 
 const logger = getLogger(['chronos', 'users', 'avatar']);
 

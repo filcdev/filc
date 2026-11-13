@@ -10,7 +10,9 @@ import {
 } from '@filcdev/ui/components/table';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { type Role, useDeleteRole } from '@/hooks/admin-users';
+
 import { RoleDialog } from './role-dialog';
 
 type RolesTableProps = {

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { StatCard } from '@/components/admin/stat-card';
 import { useConfirm } from '@/components/confirm-provider';
 import { DeviceDialog } from '@/components/doorlock/device-dialog';
@@ -39,7 +40,7 @@ import {
   useDoorlockDevices,
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
-import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
+import { useSortable, type UseSortableResult } from '@/hooks/use-sortable';
 import { orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/doorlock/devices')({
@@ -125,7 +126,7 @@ function DevicesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {t('doorlockDevices.title')}
         </h1>
         <p className="text-muted-foreground">
@@ -280,7 +281,7 @@ const DevicesTable = ({
   const header = (column: DeviceSortColumn, label: string) => (
     <TableHead aria-sort={ariaSort(column)} className="select-none">
       <button
-        className="flex w-full cursor-pointer items-center gap-2 hover:text-foreground"
+        className="hover:text-foreground flex w-full cursor-pointer items-center gap-2"
         onClick={() => toggle(column)}
         type="button"
       >

@@ -1,6 +1,7 @@
 import { camelKeys, replaceKeys } from 'string-ts';
 import z from 'zod';
-import { DEFAULT_TIME_ZONE, isTimeZone } from '#utils/time-zone';
+
+import { DEFAULT_TIME_ZONE, isTimeZone } from '@/utils/time-zone';
 
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;

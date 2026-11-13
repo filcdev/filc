@@ -1,8 +1,9 @@
 import type { Building } from '@filcdev/api/domains/navigator/building';
 import type { Lift } from '@filcdev/api/domains/navigator/lift';
 import type { Stair } from '@filcdev/api/domains/navigator/stair';
-// biome-ignore lint/performance/noNamespaceImport: three.js namespace is its public API
+// oxlint-disable-next-line import/no-namespace -- three.js namespace is its public API
 import * as THREE from 'three';
+
 import { ownLineMat, tagApp } from '../kiosk/materials';
 import { KIOSK_COLORS, KIOSK_OPACITY } from '../kiosk/palette';
 import type { KioskNode } from '../kiosk/types';

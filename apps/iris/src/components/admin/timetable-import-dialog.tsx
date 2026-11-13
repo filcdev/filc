@@ -19,6 +19,7 @@ import { Calendar, CircleAlert, CircleCheck, FileUp, X } from 'lucide-react';
 import { type ChangeEvent, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+
 import { useImportTimetable } from '@/hooks/timetables-admin';
 import { getIntlLocale } from '@/utils/date-locale';
 import { timetableImportSchema } from '@/utils/form-schemas';
@@ -184,9 +185,9 @@ export function TimetableImportDialog({
             )}
           </form.Field>
 
-          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: the drop zone has to be a <label> — clicking it opens the native file picker through `htmlFor`, and a <button> must not contain the file input or the remove button. */}
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the drop zone has to be a <label> — clicking it opens the native file picker through `htmlFor`, and a <button> must not contain the file input or the remove button. */}
           <label
-            className="relative flex min-h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-muted-foreground/25 border-dashed bg-transparent p-6 text-center transition-colors hover:border-muted-foreground/50"
+            className="border-muted-foreground/25 hover:border-muted-foreground/50 relative flex min-h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-transparent p-6 text-center transition-colors"
             htmlFor={fileInputId}
             onDragLeave={(e) => {
               e.preventDefault();
@@ -215,11 +216,11 @@ export function TimetableImportDialog({
             />
 
             {selectedFile ? (
-              <div className="flex w-full items-center justify-between rounded-md bg-muted p-3">
+              <div className="bg-muted flex w-full items-center justify-between rounded-md p-3">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-primary" />
+                  <Calendar className="text-primary h-5 w-5" />
                   <div className="flex flex-col text-left">
-                    <span className="font-medium text-sm">
+                    <span className="text-sm font-medium">
                       {selectedFile.name}
                     </span>
                     <span className="text-muted-foreground text-xs">
@@ -244,8 +245,8 @@ export function TimetableImportDialog({
               </div>
             ) : (
               <>
-                <FileUp className="mb-3 h-10 w-10 text-muted-foreground" />
-                <p className="mb-1 font-semibold text-sm">
+                <FileUp className="text-muted-foreground mb-3 h-10 w-10" />
+                <p className="mb-1 text-sm font-semibold">
                   {t('timetable.clickToUpload')}
                 </p>
                 <p className="text-muted-foreground text-xs">

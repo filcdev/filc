@@ -1,27 +1,28 @@
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { asc, sql } from 'drizzle-orm';
-import { db } from '#database';
-import { requireAuthorization } from '#middleware/auth';
+
+import { db } from '@/database';
+import { requireAuthorization } from '@/middleware/auth';
 import {
   navigatorCorridor,
   navigatorLift,
   navigatorStair,
   navigatorTranslation,
-} from '#modules/navigator/schema';
-import { isIntegrityViolation } from '#modules/navigator/utils/errors';
+} from '@/modules/navigator/schema';
+import { isIntegrityViolation } from '@/modules/navigator/utils/errors';
 import {
-  type NavigatorTransfer,
   navigatorImportSchema,
+  type NavigatorTransfer,
   navigatorTransferSchema,
-} from '#modules/navigator/utils/transfer';
+} from '@/modules/navigator/utils/transfer';
 import {
   building as buildingTable,
   classroom as classroomTable,
   classroomType as classroomTypeTable,
-} from '#modules/timetable/schema';
-import { base } from '#orpc';
-import { badRequest } from '#utils/http';
+} from '@/modules/timetable/schema';
+import { base } from '@/orpc';
+import { badRequest } from '@/utils/http';
 
 /** Matches the timetable importer's ceiling; the payload is parsed as one JSON string. */
 const MAX_NAVIGATOR_IMPORT_BYTES = 20 * 1024 * 1024;
