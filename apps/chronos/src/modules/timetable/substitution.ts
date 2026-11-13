@@ -28,7 +28,7 @@ import {
   loadLessonsByIds,
 } from '@/modules/timetable/utils/enrich-lessons';
 import {
-  getWeekdayInBudapest,
+  getWeekdayInSchoolTimeZone,
   isMatchingWeekday,
 } from '@/modules/timetable/utils/weekday';
 import { base } from '@/orpc';
@@ -657,7 +657,7 @@ async function lockAndValidateTeachers(
 // Manual substitution only takes a date; resolve the matching day definition
 // from the standalone day-definition table via the date's weekday.
 async function getDayDefinitionIdForDate(date: Date): Promise<string | null> {
-  const weekday = getWeekdayInBudapest(date);
+  const weekday = getWeekdayInSchoolTimeZone(date);
   const rows = await db
     .select({
       id: dayDefinition.id,

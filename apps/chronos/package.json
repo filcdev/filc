@@ -2,7 +2,7 @@
   "name": "@filcdev/chronos",
   "type": "module",
   "scripts": {
-    "dev": "bun --max-http-header-size=${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536} run --hot src/index.ts",
+    "dev": "bun run --hot src/index.ts",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun --bun drizzle-kit migrate",
     "db:studio": "bun --bun drizzle-kit studio",
@@ -11,6 +11,7 @@
     "db:import-navigator": "bun --bun src/database/scripts/import-navigator.ts",
     "db:reset": "bun run ./src/database/scripts/reset.ts",
     "openapi:check": "bun run scripts/check-openapi.ts",
+    "test": "bun test ./src/utils/time-zone.test.ts ./src/utils/date.test.ts",
     "openapi:generate": "bun run scripts/generate-openapi.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"

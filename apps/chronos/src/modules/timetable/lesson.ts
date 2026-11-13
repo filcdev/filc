@@ -25,7 +25,7 @@ import {
 } from '@/modules/timetable/utils/active';
 import { enrichLessons } from '@/modules/timetable/utils/enrich-lessons';
 import {
-  getWeekdayInBudapest,
+  getWeekdayInSchoolTimeZone,
   isMatchingWeekday,
 } from '@/modules/timetable/utils/weekday';
 import { base } from '@/orpc';
@@ -390,7 +390,7 @@ export const getSubstitutionCandidates =
         throw notFound('Teacher not found');
       }
 
-      const weekday = getWeekdayInBudapest(date);
+      const weekday = getWeekdayInSchoolTimeZone(date);
       const timetableId = await getTimetableIdForDate(date);
 
       if (!timetableId) {

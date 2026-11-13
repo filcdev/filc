@@ -17,6 +17,7 @@
     },
     "dev": {
       "cache": false,
+      "passThroughEnv": ["CHRONOS_MAX_HTTP_HEADER_SIZE"],
       "persistent": true
     }
   }

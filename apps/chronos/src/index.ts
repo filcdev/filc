@@ -1,3 +1,4 @@
+import http from 'node:http';
 import process from 'node:process';
 
 import { apiErrors } from '@filcdev/api/errors';
@@ -178,6 +179,17 @@ const buildContext = async (
   // Echoed on the response as `x-request-id`, so a client can name the exact
   // request it is reporting and the line can be found in the log stream.
   requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
+});
+
+// Bun caps the whole request head at 16 KiB and answers 431 before routing, but
+// the OAuth proxy hands a preview its entire login payload in the query string.
+// Bun takes a bigger cap only as a launch flag or through node:http's setter
+// (`Bun.serve({ maxHeaderSize })` and NODE_OPTIONS are ignored; the setter is
+// undocumented — verified on Bun 1.4.4 — so if a future Bun drops it the 431s
+// come back quietly). Setting it here keeps `bun dev` free of shell syntax.
+Object.assign(http, { maxHeaderSize: env.maxHttpHeaderSize });
+logger.debug('request head cap applied', {
+  maxHeaderSize: http.maxHeaderSize,
 });
 
 export const server = Bun.serve<DeviceSocketData>({

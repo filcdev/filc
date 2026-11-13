@@ -102,11 +102,14 @@ route ever runs — which is what a preview deployment hits when the browser
 follows production's redirect back to it. Removing the profile photo is not
 enough on its own; the tokens alone are most of the payload.
 
-Bun only accepts that cap as a runtime flag (`Bun.serve({ maxHeaderSize })` and
-`NODE_OPTIONS` are both ignored), so it is set where the process is launched:
-the image entrypoint and the `dev` script pass
-`--max-http-header-size=${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}`. Set
-`CHRONOS_MAX_HTTP_HEADER_SIZE` to override it — 65536 covers the payloads
-measured above with room to spare; drop it to `16384` to return to Bun's
-default, which nothing in the API needs except this flow. An environment with
-its own launch command has to pass the same flag itself.
+The API raises that cap in code: at startup it sets node:http's `maxHeaderSize`
+from `CHRONOS_MAX_HTTP_HEADER_SIZE` (see `apps/chronos/src/index.ts`),
+defaulting to 65536. That setter is undocumented and verified on Bun 1.4.4; the
+image pins `oven/bun:1.4.3`. If a future Bun drops it, the 431s come back and
+the only trace is the startup `request head cap applied` debug line and the
+`maxHeaderSize` it reads back. 65536 covers the payloads measured above with
+room to spare; drop it to `16384` to return to Bun's default, which nothing in
+the API needs except this flow. The image entrypoint also passes
+`--max-http-header-size=${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}` as a
+launch-level default; the value set in code wins. An environment with its own
+launch command needs nothing special beyond running the app.

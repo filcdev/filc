@@ -1,3 +1,6 @@
+import { env } from '@/utils/environment';
+import { getWeekdayInTimeZone } from '@/utils/time-zone';
+
 /** Normalize a day name for accent/case-insensitive matching. */
 const normalizeDayText = (value: string): string =>
   value
@@ -5,26 +8,9 @@ const normalizeDayText = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
-/** Weekday index (0 = Sunday … 6 = Saturday) for a date in Europe/Budapest. */
-export const getWeekdayInBudapest = (value: Date): number => {
-  const weekdayName = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Budapest',
-    weekday: 'short',
-  }).format(value);
-  const weekdayIndex = {
-    Fri: 5,
-    Mon: 1,
-    Sat: 6,
-    Sun: 0,
-    Thu: 4,
-    Tue: 2,
-    Wed: 3,
-  }[weekdayName];
-  if (weekdayIndex === undefined) {
-    throw new Error(`Unsupported weekday value: ${weekdayName}`);
-  }
-  return weekdayIndex;
-};
+/** Weekday index (0 = Sunday … 6 = Saturday) for a date in the configured school timezone. */
+export const getWeekdayInSchoolTimeZone = (value: Date): number =>
+  getWeekdayInTimeZone(value, env.timeZone);
 
 const weekdayAliases: Record<number, string[]> = {
   0: ['vasarnap', 'va', 'v', 'sunday', 'sun'],
