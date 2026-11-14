@@ -237,7 +237,11 @@ export function GeneralPane({
     if (typeof document !== 'undefined') {
       document.documentElement.lang = value;
     }
-    saveLanguage.mutate({ language: value });
+    // Both fields, not just the language: the save invalidates the settings
+    // query, and the refetch seeds every field from the response — sending
+    // only the language would let the server's group display overwrite an
+    // unsaved change here before the next Save reads it back.
+    saveLanguage.mutate({ language: value, timetableGroupDisplay });
   };
 
   if (settingsQuery.isLoading) {

@@ -35,6 +35,33 @@ type NotificationHistoryDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+/** Highlights shown per row before the rest collapse into a `+N` chip. */
+const MAX_ROW_HIGHLIGHTS = 3;
+
+const CHIP_CLASS =
+  'rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs';
+
+function RowHighlights({ highlights }: { highlights: string[] }) {
+  const unique = [...new Set(highlights)];
+  if (unique.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {unique.slice(0, MAX_ROW_HIGHLIGHTS).map((highlight) => (
+        <span className={CHIP_CLASS} key={highlight}>
+          {highlight}
+        </span>
+      ))}
+      {unique.length > MAX_ROW_HIGHLIGHTS ? (
+        <span className={CHIP_CLASS}>
+          +{unique.length - MAX_ROW_HIGHLIGHTS}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function NotificationHistoryDialog({
   open,
   onOpenChange,
@@ -169,20 +196,9 @@ export function NotificationHistoryDialog({
                             {typeLabel(notif.type, t)}
                           </Badge>
                         </div>
-                        {notif.metadata?.highlights?.length ? (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {[...new Set(notif.metadata.highlights)]
-                              .slice(0, 3)
-                              .map((highlight) => (
-                                <span
-                                  className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs"
-                                  key={highlight}
-                                >
-                                  {highlight}
-                                </span>
-                              ))}
-                          </div>
-                        ) : null}
+                        <RowHighlights
+                          highlights={notif.metadata?.highlights ?? []}
+                        />
                         <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
                           {notif.content}
                         </p>
@@ -195,6 +211,11 @@ export function NotificationHistoryDialog({
                         </p>
                       </div>
                       <Button
+                        aria-label={
+                          notif.read
+                            ? t('notifications.history.markUnread')
+                            : t('notifications.history.markRead')
+                        }
                         onClick={(e) => {
                           e.stopPropagation();
                           markReadMutation.mutate({ id: notif.id });

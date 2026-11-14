@@ -31,6 +31,7 @@ import {
   useSendTestNotification,
   useTestNotificationRecordOptions,
 } from '@/hooks/dev-notifications';
+import { typeLabel } from '@/utils/notification-labels';
 
 type ChannelKey = 'channelEmail' | 'channelInApp' | 'channelPush';
 
@@ -190,7 +191,7 @@ function DevNotificationsPage() {
   };
 
   const typeOptions = NOTIFICATION_TYPES.map((type) => ({
-    label: type,
+    label: typeLabel(type, t),
     value: type,
   }));
 

@@ -75,15 +75,18 @@ export function NotificationViewerDialog({
 
         {details.length > 0 && (
           <dl className="divide-y rounded-md border text-xs">
-            {details.map((detail) => (
+            {details.map((detail, index) => (
               <div
                 className="flex items-start justify-between gap-4 px-3 py-1.5"
-                key={detail.label}
+                // biome-ignore lint/suspicious/noArrayIndexKey: two rows can carry the same label, so the position is part of the identity
+                key={`${detail.label}-${index}`}
               >
                 <dt className="text-muted-foreground uppercase tracking-wide">
                   {detail.label}
                 </dt>
-                <dd className="text-right">{detail.value}</dd>
+                <dd className="min-w-0 break-words text-right">
+                  {detail.value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -99,6 +102,11 @@ export function NotificationViewerDialog({
 
         <DialogFooter>
           <Button
+            aria-label={
+              notification.read
+                ? t('notifications.history.markUnread')
+                : t('notifications.history.markRead')
+            }
             onClick={() => markReadMutation.mutate({ id: notification.id })}
             size="sm"
             variant="ghost"

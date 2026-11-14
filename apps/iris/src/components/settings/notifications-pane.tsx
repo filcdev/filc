@@ -1,3 +1,4 @@
+import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
 import { Button } from '@filcdev/ui/components/button';
 import {
   Card,
@@ -68,6 +69,10 @@ export function NotificationsPane({
 }) {
   const { t } = useTranslation();
   const announcementEmailId = useId();
+  // Prefixes the channel and per-type ids: the settings dialog and the
+  // standalone /settings/notifications route can render a pane at the same
+  // time, so the same `channel-email` in both would collide.
+  const idPrefix = useId();
   // Seeded from the response only. The email default differs per role, so a
   // local fallback would assert a state the server may not return.
   const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
@@ -76,10 +81,21 @@ export function NotificationsPane({
   const saveSettings = useUpdateNotificationSettings({ onSaved: onClose });
 
   useEffect(() => {
-    if (settingsQuery.data) {
-      setPrefs(settingsQuery.data.notificationPreferences);
+    // Seeded once: a background refetch must not overwrite the toggles the
+    // user has already changed but not saved yet.
+    const seed = settingsQuery.data?.notificationPreferences;
+    if (seed) {
+      setPrefs((current) => current ?? seed);
     }
   }, [settingsQuery.data]);
+
+  if (settingsQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>{t('preferences.loadError')}</AlertTitle>
+      </Alert>
+    );
+  }
 
   if (!prefs) {
     return <Skeleton className="h-64 w-full" />;
@@ -102,39 +118,44 @@ export function NotificationsPane({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1">
-            <p className="font-medium text-sm">{t('preferences.channels')}</p>
+            <h3 className="font-medium text-sm">{t('preferences.channels')}</h3>
             <p className="text-muted-foreground text-xs">
               {t('preferences.channelsDescription')}
             </p>
           </div>
           {NOTIFICATION_CHANNELS.map(
-            ({ channel, descriptionKey, key, labelKey }) => (
-              <div
-                className={cn(
-                  'flex items-start justify-between gap-4 rounded-lg',
-                  highlightChannel === channel &&
-                    'bg-primary/5 p-2 ring-2 ring-primary/40'
-                )}
-                key={key}
-              >
-                <div className="space-y-0.5">
-                  <label
-                    className="cursor-pointer font-medium text-sm leading-none"
-                    htmlFor={`channel-${key}`}
-                  >
-                    {t(labelKey)}
-                  </label>
-                  <p className="text-muted-foreground text-xs">
-                    {t(descriptionKey)}
-                  </p>
+            ({ channel, descriptionKey, key, labelKey }) => {
+              const inputId = `${idPrefix}-channel-${key}`;
+              return (
+                <div
+                  className={cn(
+                    // Padded and outdented either way, so the highlight only
+                    // paints and the row never changes size or alignment.
+                    '-mx-2 flex items-start justify-between gap-4 rounded-lg px-2 py-2',
+                    highlightChannel === channel &&
+                      'bg-primary/5 ring-2 ring-primary/40'
+                  )}
+                  key={key}
+                >
+                  <div className="space-y-0.5">
+                    <label
+                      className="cursor-pointer font-medium text-sm leading-none"
+                      htmlFor={inputId}
+                    >
+                      {t(labelKey)}
+                    </label>
+                    <p className="text-muted-foreground text-xs">
+                      {t(descriptionKey)}
+                    </p>
+                  </div>
+                  <Checkbox
+                    checked={prefs[key]}
+                    id={inputId}
+                    onCheckedChange={() => togglePref(key)}
+                  />
                 </div>
-                <Checkbox
-                  checked={prefs[key]}
-                  id={`channel-${key}`}
-                  onCheckedChange={() => togglePref(key)}
-                />
-              </div>
-            )
+              );
+            }
           )}
           <div className="ml-6 flex items-start justify-between gap-4">
             <div className="space-y-0.5">
@@ -156,26 +177,32 @@ export function NotificationsPane({
             />
           </div>
           <div className="space-y-1 border-t pt-4">
-            <p className="font-medium text-sm">{t('preferences.types')}</p>
+            <h3 className="font-medium text-sm">{t('preferences.types')}</h3>
             <p className="text-muted-foreground text-xs">
               {t('preferences.typesDescription')}
             </p>
           </div>
-          {NOTIFICATION_TYPES.map(({ key, labelKey }) => (
-            <div className="flex items-center justify-between gap-4" key={key}>
-              <label
-                className="cursor-pointer font-medium text-sm leading-none"
-                htmlFor={`pref-${key}`}
+          {NOTIFICATION_TYPES.map(({ key, labelKey }) => {
+            const inputId = `${idPrefix}-pref-${key}`;
+            return (
+              <div
+                className="flex items-center justify-between gap-4"
+                key={key}
               >
-                {t(labelKey)}
-              </label>
-              <Checkbox
-                checked={prefs[key]}
-                id={`pref-${key}`}
-                onCheckedChange={() => togglePref(key)}
-              />
-            </div>
-          ))}
+                <label
+                  className="cursor-pointer font-medium text-sm leading-none"
+                  htmlFor={inputId}
+                >
+                  {t(labelKey)}
+                </label>
+                <Checkbox
+                  checked={prefs[key]}
+                  id={inputId}
+                  onCheckedChange={() => togglePref(key)}
+                />
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 

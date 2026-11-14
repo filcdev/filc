@@ -38,6 +38,7 @@ import {
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { useCohortSelector } from '@/hooks/timetables-admin';
 import {
   ADMIN_UI_PERMISSIONS,
@@ -45,28 +46,43 @@ import {
 } from '@/hooks/use-has-permission';
 import { useWifiStatus } from '@/hooks/wifi';
 import {
+  callbackUrlWithRedirect,
+  resolveReturnTo,
+} from '@/utils/auth-redirect';
+import {
   NICKNAME_MAX_LENGTH,
   NICKNAME_MIN_LENGTH,
   nicknamePattern,
 } from '@/utils/form-schemas';
 
+const searchSchema = z.object({
+  // Carried from /auth/login so a new user still lands where they were going.
+  redirect: z.coerce.string().optional(),
+});
+
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
+  validateSearch: searchSchema,
 });
 
 function RouteComponent() {
   const { data, error, isPending } = useSession();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { redirect } = Route.useSearch();
 
   useEffect(() => {
     if (isPending) {
       return;
     }
     if (!(data?.session && data?.user)) {
-      navigate({ replace: true, to: '/auth/login' });
+      // The return path survives the detour back to the sign-in page.
+      navigate({
+        href: callbackUrlWithRedirect('/auth/login', resolveReturnTo(redirect)),
+        replace: true,
+      });
     }
-  }, [data, isPending, navigate]);
+  }, [data, isPending, navigate, redirect]);
 
   if (error) {
     return (
@@ -114,6 +130,7 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const { t } = useTranslation();
   const nicknameId = useId();
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(user.nickname ?? '');
@@ -196,7 +213,8 @@ const WelcomeStepper = ({ user }: { user: UserType }) => {
   const handleFinalStepCompleted = async () => {
     setIsSubmitting(true);
     try {
-      await navigate({ replace: true, to: '/' });
+      // Where the sign-in was headed, when a return path was carried through.
+      await navigate({ href: resolveReturnTo(redirect), replace: true });
     } finally {
       setIsSubmitting(false);
     }

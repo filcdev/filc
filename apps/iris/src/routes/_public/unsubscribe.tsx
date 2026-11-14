@@ -1,3 +1,4 @@
+import { Button } from '@filcdev/ui/components/button';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,9 @@ function UnsubscribePage() {
   const [userId, setUserId] = useState('');
 
   useEffect(() => {
+    // Read the raw query string rather than the route's search params: this
+    // link comes from an email footer and its token is a bare number, which a
+    // typed search schema would coerce (or reject) before it reaches us.
     const params = new URLSearchParams(window.location.search);
     const nextToken = params.get('token');
     const nextUserId = params.get('userId');
@@ -49,7 +53,7 @@ function UnsubscribePage() {
 
   const titleMap: Record<string, string> = {
     done: t('unsubscribe.title'),
-    error: t('unsubscribe.title'),
+    error: t('unsubscribe.errorTitle'),
     loading: t('common.loading'),
   };
 
@@ -63,13 +67,14 @@ function UnsubscribePage() {
             : message || t('unsubscribe.description')}
         </p>
         {status === 'done' && token && userId && !message && (
-          <button
-            className="mt-6 rounded-lg bg-destructive px-6 py-2 text-destructive-foreground hover:opacity-90"
+          <Button
+            className="mt-6"
             onClick={handleUnsubscribe}
             type="button"
+            variant="destructive"
           >
             {t('unsubscribe.action')}
-          </button>
+          </Button>
         )}
       </div>
     </div>

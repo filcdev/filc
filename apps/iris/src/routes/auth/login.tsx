@@ -13,34 +13,15 @@ import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import {
+  callbackUrlWithRedirect,
+  resolveReturnTo,
+} from '@/utils/auth-redirect';
 
 const searchSchema = z.object({
   // Coerced: `?redirect=1` (or any non-string) must not throw the route.
   redirect: z.coerce.string().optional(),
 });
-
-/**
- * A same-origin path to return to, or `/`.
- *
- * Compared by origin rather than by prefix: the URL parser normalises
- * backslashes and strips tabs/newlines, so `/\evil.com` and the same path with
- * a literal tab collapse into a different origin and are rejected here, while
- * the naive `startsWith('/') && !startsWith('//')` check let them through.
- */
-function resolveReturnTo(redirect: string | undefined): string {
-  if (!redirect) {
-    return '/';
-  }
-  try {
-    const target = new URL(redirect, window.location.origin);
-    if (target.origin !== window.location.origin) {
-      return '/';
-    }
-    return `${target.pathname}${target.search}${target.hash}`;
-  } catch {
-    return '/';
-  }
-}
 
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,
@@ -63,13 +44,16 @@ function RouteComponent() {
     // Only a same-origin path is honoured; anything else would make the login
     // page an open redirect through the OAuth callback.
     const returnTo = resolveReturnTo(redirect);
+    // OAuth forbids a fragment in its redirect URLs, so the hash stays behind
+    // and everything else (path and query) comes back after the round trip.
+    const callbackUrl = new URL(returnTo, window.location.origin);
+    callbackUrl.hash = '';
 
     try {
       await authClient.signIn.social({
-        callbackURL: new URL(returnTo, window.location.origin).href,
-        errorCallbackURL: new URL('/auth/error', window.location.origin).href,
-        newUserCallbackURL: new URL('/auth/welcome', window.location.origin)
-          .href,
+        callbackURL: callbackUrl.href,
+        errorCallbackURL: callbackUrlWithRedirect('/auth/error', returnTo),
+        newUserCallbackURL: callbackUrlWithRedirect('/auth/welcome', returnTo),
         provider: 'microsoft',
       });
     } catch (err) {

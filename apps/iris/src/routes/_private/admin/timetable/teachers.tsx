@@ -36,6 +36,11 @@ export const Route = createFileRoute('/_private/admin/timetable/teachers')({
 
 type SortColumn = 'name' | 'short' | 'email' | 'user';
 
+/** The teacher's own address, falling back to the assigned account's. */
+function teacherEmail(teacher: AdminTeacher): string {
+  return teacher.email ?? teacher.user?.email ?? '';
+}
+
 function getSortValue(teacher: AdminTeacher, column: SortColumn): string {
   switch (column) {
     case 'name':
@@ -43,7 +48,7 @@ function getSortValue(teacher: AdminTeacher, column: SortColumn): string {
     case 'short':
       return teacher.short;
     case 'email':
-      return teacher.email ?? teacher.user?.email ?? '';
+      return teacherEmail(teacher);
     case 'user':
       return teacher.user ? `${teacher.user.name} ${teacher.user.email}` : '';
     default:
@@ -75,7 +80,7 @@ function TeachersPage() {
           .toLowerCase()
           .includes(term) ||
         teacher.short.toLowerCase().includes(term) ||
-        (teacher.email ?? '').toLowerCase().includes(term) ||
+        teacherEmail(teacher).toLowerCase().includes(term) ||
         (teacher.user
           ? `${teacher.user.name} ${teacher.user.email}`
               .toLowerCase()
@@ -203,9 +208,9 @@ function TeachersPage() {
                     <TableCell>{teacher.short}</TableCell>
                     <TableCell
                       className="max-w-56 truncate"
-                      title={teacher.email ?? teacher.user?.email ?? ''}
+                      title={teacherEmail(teacher)}
                     >
-                      {teacher.email ?? teacher.user?.email ?? '-'}
+                      {teacherEmail(teacher) || '-'}
                     </TableCell>
                     <TableCell
                       className="max-w-64 truncate"
