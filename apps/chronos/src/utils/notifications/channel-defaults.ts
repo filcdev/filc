@@ -38,8 +38,7 @@ export async function isTeacherUser(userId: string): Promise<boolean> {
 
 /**
  * The fallbacks a user gets when their stored preferences do not name a
- * channel. Teachers keep email on; everyone else starts with email off and
- * push on.
+ * channel. Teachers keep email on; everyone else starts with email off.
  */
 export async function channelDefaultsForUser(
   userId: string

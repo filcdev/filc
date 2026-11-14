@@ -3,7 +3,7 @@ import { listResponse } from './list';
 import { colorSchemeSchema } from './theme';
 
 /**
- * The per-type email/push toggles stored in
+ * The per-type toggles and the email channel switch stored in
  * `user_preferences.notification_preferences`. Declared first because
  * `updateSettingsSchema` narrows it with `.partial()`: the column has to hold
  * a complete record, so a caller may patch a subset but never store one.
@@ -14,12 +14,11 @@ export const notificationPreferencesSchema = z.object({
   channelsEnabled: z
     .boolean()
     .describe(
-      'Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled'
+      'Legacy master switch; ignored since the channel split — use emailEnabled'
     ),
   doorlockCardUsed: z.boolean(),
   emailEnabled: z.boolean(),
   movedLesson: z.boolean(),
-  pushEnabled: z.boolean(),
   substitution: z.boolean(),
   systemMessage: z.boolean(),
 });

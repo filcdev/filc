@@ -32208,7 +32208,7 @@
                         },
                         "channelsEnabled": {
                           "type": "boolean",
-                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled"
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
@@ -32217,9 +32217,6 @@
                           "type": "boolean"
                         },
                         "movedLesson": {
-                          "type": "boolean"
-                        },
-                        "pushEnabled": {
                           "type": "boolean"
                         },
                         "substitution": {
@@ -32236,7 +32233,6 @@
                         "doorlockCardUsed",
                         "emailEnabled",
                         "movedLesson",
-                        "pushEnabled",
                         "substitution",
                         "systemMessage"
                       ]
@@ -32530,7 +32526,7 @@
                       },
                       "channelsEnabled": {
                         "type": "boolean",
-                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled"
+                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled"
                       },
                       "doorlockCardUsed": {
                         "type": "boolean"
@@ -32539,9 +32535,6 @@
                         "type": "boolean"
                       },
                       "movedLesson": {
-                        "type": "boolean"
-                      },
-                      "pushEnabled": {
                         "type": "boolean"
                       },
                       "substitution": {
@@ -32636,7 +32629,7 @@
                         },
                         "channelsEnabled": {
                           "type": "boolean",
-                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled"
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
@@ -32645,9 +32638,6 @@
                           "type": "boolean"
                         },
                         "movedLesson": {
-                          "type": "boolean"
-                        },
-                        "pushEnabled": {
                           "type": "boolean"
                         },
                         "substitution": {
@@ -32664,7 +32654,6 @@
                         "doorlockCardUsed",
                         "emailEnabled",
                         "movedLesson",
-                        "pushEnabled",
                         "substitution",
                         "systemMessage"
                       ]

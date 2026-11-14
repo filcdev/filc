@@ -6,15 +6,14 @@ import {
   type NotificationPreferences,
 } from '#utils/notifications/types';
 
-/** The pre-split unsubscribe state: the master switch off, no channel keys. */
+/** The pre-split unsubscribe state: the master switch off, no email flag. */
 const LEGACY_OFF = { channelsEnabled: false };
 
 describe('completePreferences', () => {
-  it('reads a legacy channelsEnabled:false row as every channel off', () => {
+  it('reads a legacy channelsEnabled:false row as email off', () => {
     const prefs = completePreferences(LEGACY_OFF);
 
     expect(prefs.emailEnabled).toBe(false);
-    expect(prefs.pushEnabled).toBe(false);
     // The legacy switch is migrated on read; the per-type flags keep their
     // defaults.
     expect(prefs.channelsEnabled).toBe(true);
@@ -31,41 +30,34 @@ describe('completePreferences', () => {
     const partial = completePreferences({ announcement: false });
     expect(partial.announcement).toBe(false);
     expect(partial.emailEnabled).toBe(true);
-    expect(partial.pushEnabled).toBe(true);
   });
 
   it('keeps a modern row as stored', () => {
     const stored: NotificationPreferences = {
       ...DEFAULT_NOTIFICATION_PREFERENCES,
       emailEnabled: false,
-      pushEnabled: true,
       substitution: false,
     };
 
     expect(completePreferences(stored)).toEqual(stored);
   });
 
-  it('applies the role default only to a channel the row does not name', () => {
+  it('applies the role default only to a row that does not name email', () => {
     const prefs = completePreferences(undefined, { email: false });
 
     expect(prefs.emailEnabled).toBe(false);
-    expect(prefs.pushEnabled).toBe(true);
   });
 
-  it('lets an explicit channel value beat the role default', () => {
+  it('lets an explicit email value beat the role default', () => {
     const prefs = completePreferences({ emailEnabled: true }, { email: false });
 
     expect(prefs.emailEnabled).toBe(true);
   });
 
-  it('lets the legacy channelsEnabled:false master switch beat every role default', () => {
-    const prefs = completePreferences(LEGACY_OFF, {
-      email: true,
-      push: true,
-    });
+  it('lets the legacy channelsEnabled:false master switch beat the role default', () => {
+    const prefs = completePreferences(LEGACY_OFF, { email: true });
 
     expect(prefs.emailEnabled).toBe(false);
-    expect(prefs.pushEnabled).toBe(false);
   });
 });
 
@@ -77,47 +69,42 @@ describe('applyPreferencesPatch', () => {
 
     expect(next.substitution).toBe(false);
     expect(next.emailEnabled).toBe(false);
-    expect(next.pushEnabled).toBe(false);
     expect(next.channelsEnabled).toBe(true);
   });
 
-  it('turns only the channel the patch names on', () => {
+  it('turns email on when the patch names it', () => {
     const next = applyPreferencesPatch(legacyOff, { emailEnabled: true });
 
     expect(next.emailEnabled).toBe(true);
-    expect(next.pushEnabled).toBe(false);
     expect(next.announcement).toBe(true);
   });
 
-  it('keeps the channels a modern row already had', () => {
+  it('keeps the email state a modern row already had', () => {
     const modern = completePreferences({
       ...DEFAULT_NOTIFICATION_PREFERENCES,
       emailEnabled: false,
-      pushEnabled: false,
     });
 
     const next = applyPreferencesPatch(modern, { blogPost: true });
 
     expect(next.blogPost).toBe(true);
     expect(next.emailEnabled).toBe(false);
-    expect(next.pushEnabled).toBe(false);
   });
 
-  it('honours an explicit channel value over the resolved base', () => {
-    const next = applyPreferencesPatch(legacyOff, {
-      emailEnabled: false,
-      pushEnabled: true,
-    });
+  it('honours an explicit email value over the role default', () => {
+    const next = applyPreferencesPatch(
+      { announcement: true },
+      { emailEnabled: false },
+      { email: true }
+    );
 
     expect(next.emailEnabled).toBe(false);
-    expect(next.pushEnabled).toBe(true);
     expect(next.channelsEnabled).toBe(true);
   });
 
-  // `defaults` decides a channel only when the base does not name it, so this
-  // uses a raw row with no channel keys and a role default of `email: false`:
-  // the assertion fails if the argument stops being forwarded and email falls
-  // back to the global `true` instead.
+  // `defaults` decides email only when the base does not name it, so this uses
+  // a raw row with no email key: the suite fails if the argument stops being
+  // forwarded and email falls back to the global `true` instead.
   it('forwards the role defaults for a base that names no channel key', () => {
     const student = applyPreferencesPatch(
       { announcement: true },
@@ -127,7 +114,15 @@ describe('applyPreferencesPatch', () => {
 
     expect(student.announcement).toBe(false);
     expect(student.emailEnabled).toBe(false);
-    expect(student.pushEnabled).toBe(true);
+
+    // An explicit value in the base beats a contradicting default.
+    const teacher = applyPreferencesPatch(
+      { emailEnabled: true },
+      { announcement: false },
+      { email: false }
+    );
+
+    expect(teacher.emailEnabled).toBe(true);
   });
 
   // The unsubscribe page writes exactly this: the stored row completed, then
@@ -138,18 +133,13 @@ describe('applyPreferencesPatch', () => {
     });
 
     expect(fromLegacy.emailEnabled).toBe(false);
-    expect(fromLegacy.pushEnabled).toBe(false);
     expect(fromLegacy.channelsEnabled).toBe(true);
 
     const fromModern = applyPreferencesPatch(
-      completePreferences({
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        pushEnabled: true,
-      }),
+      completePreferences({ ...DEFAULT_NOTIFICATION_PREFERENCES }),
       { emailEnabled: false }
     );
 
     expect(fromModern.emailEnabled).toBe(false);
-    expect(fromModern.pushEnabled).toBe(true);
   });
 });

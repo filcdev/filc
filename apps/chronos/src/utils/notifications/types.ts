@@ -21,7 +21,6 @@ export type NotificationPreferences = {
   /** Legacy master switch, read-only since the channel split. */
   channelsEnabled: boolean;
   emailEnabled: boolean;
-  pushEnabled: boolean;
 };
 
 /**
@@ -37,20 +36,16 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   doorlockCardUsed: false,
   emailEnabled: true,
   movedLesson: true,
-  pushEnabled: true,
   substitution: true,
   systemMessage: true,
 };
 
 /**
- * Role-aware fallbacks for the channel flags, used when the stored row does
- * not name a channel. Teachers get email by default; everyone else has to opt
- * into email. Push defaults on. In-app notifications are always recorded and
- * are not a preference.
+ * Role-aware fallback for the email flag, used when the stored row does not
+ * name it. Teachers get email by default; everyone else has to opt in.
  */
 export type ChannelDefaults = {
   email?: boolean;
-  push?: boolean;
 };
 
 /**
@@ -58,8 +53,7 @@ export type ChannelDefaults = {
  * column default. Kept in the pre-split shape on purpose: changing a column
  * default is a schema migration, while every reader merges
  * `DEFAULT_NOTIFICATION_PREFERENCES` over the stored row — so a row created
- * with this default still resolves its channel flags through the role
- * defaults.
+ * with this default still resolves email as enabled.
  */
 export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT = {
   announcement: true,
@@ -72,40 +66,34 @@ export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT = {
 } as NotificationPreferences;
 
 /**
- * Which delivery channels a user's preferences allow.
+ * Whether the user's preferences allow email.
  *
  * `channelsEnabled === false` is the pre-split "everything off" state left by
- * an old unsubscribe, so it wins over the per-channel flags. Otherwise a flag
- * that is missing (a row written before the split) falls back to the caller's
- * role defaults, then to the global defaults.
+ * an old unsubscribe, so it wins over the per-channel flag. Otherwise an
+ * explicit `emailEnabled` (or, for a row written before the split, the
+ * caller's role default) decides, and `true` is the last fallback.
  */
-export function resolveChannelFlags(
+export function resolveEmailEnabled(
   prefs: Partial<
-    Pick<
-      NotificationPreferences,
-      'channelsEnabled' | 'emailEnabled' | 'pushEnabled'
-    >
+    Pick<NotificationPreferences, 'channelsEnabled' | 'emailEnabled'>
   >,
   defaults?: ChannelDefaults
-): { email: boolean; push: boolean } {
+): boolean {
   if (prefs.channelsEnabled === false) {
-    return { email: false, push: false };
+    return false;
   }
-  return {
-    email: prefs.emailEnabled ?? defaults?.email ?? true,
-    push: prefs.pushEnabled ?? defaults?.push ?? true,
-  };
+  return prefs.emailEnabled ?? defaults?.email ?? true;
 }
 
 /**
  * The single read shape of a stored preferences row: defaults merged over the
- * stored value, then the channel flags replaced by their *effective* values
- * with `channelsEnabled` raised.
+ * stored value, then the email flag replaced by its *effective* value with
+ * `channelsEnabled` raised.
  *
- * A legacy row (`channelsEnabled: false`, no per-channel keys) therefore reads
- * back as both channels off, which is what the user chose, instead of the
- * defaults' `true`s. A channel the row does not name falls back to the
- * caller-supplied role defaults, then to the global defaults. Everything that
+ * A legacy row (`channelsEnabled: false`, no `emailEnabled` key) therefore
+ * reads back as email off, which is what the user chose, instead of the
+ * defaults' `true`. An email flag the row does not name falls back to the
+ * caller-supplied role default, then to the global default. Everything that
  * reads a row — the settings endpoint, the delivery engine, the dev helpers —
  * goes through this so the write path and the read path agree on what the row
  * means.
@@ -114,13 +102,11 @@ export function completePreferences(
   stored?: Partial<NotificationPreferences> | null,
   defaults?: ChannelDefaults
 ): NotificationPreferences {
-  const base = { ...DEFAULT_NOTIFICATION_PREFERENCES, ...stored };
-  const channels = resolveChannelFlags(stored ?? {}, defaults);
   return {
-    ...base,
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...stored,
     channelsEnabled: true,
-    emailEnabled: channels.email,
-    pushEnabled: channels.push,
+    emailEnabled: resolveEmailEnabled(stored ?? {}, defaults),
   };
 }
 
@@ -130,12 +116,12 @@ export function completePreferences(
  *
  * `base` may be a raw/partial row, the same shape `completePreferences` takes:
  * it is completed first, so a legacy `channelsEnabled: false` row reads as
- * every channel off and a patch that names only a type flag leaves them off
- * rather than reviving the defaults. A channel the base does not name falls
- * back to `defaults` — which is why the role defaults have to be forwarded
- * here, not only to the read path. A patch that names a channel sets that
- * channel explicitly, and the stored record always ends up in the current
- * shape (`channelsEnabled: true`, every key present).
+ * email off and a patch that names only a type flag leaves it off rather than
+ * reviving the defaults. An email flag the base does not name falls back to
+ * `defaults` — which is why the role defaults have to be forwarded here, not
+ * only to the read path. A patch that names the email flag sets it
+ * explicitly, and the stored record always ends up in the current shape
+ * (`channelsEnabled: true`, every key present).
  */
 export function applyPreferencesPatch(
   base: Partial<NotificationPreferences>,
@@ -193,7 +179,6 @@ export type DeliveryJob = {
   details?: EmailDetail[];
   highlights?: string[];
   emailEnabled: boolean;
-  pushEnabled: boolean;
   /**
    * Delivery bookkeeping owned by the queue: a channel marked `true` has been
    * delivered and is not attempted again when the job is retried.

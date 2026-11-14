@@ -142,8 +142,8 @@ export const markAllAsRead = base.notifications.markAllAsRead
  * Rows written before the update path merged a partial patch can be missing
  * keys, and the response schema requires all of them — without this a user
  * whose row was written that way could never open their settings again. A
- * legacy `channelsEnabled: false` row resolves to its effective channels (all
- * off) rather than the defaults, so it reads back as what the user chose.
+ * legacy `channelsEnabled: false` row resolves to its effective email flag
+ * (off) rather than the defaults, so it reads back as what the user chose.
  */
 const withCompletePreferences = <
   T extends { colorScheme: string; notificationPreferences: unknown },
@@ -231,8 +231,8 @@ export const updateNotificationSettings = base.notifications.updateSettings
     // complete record: a stored object missing a key reads as `undefined`
     // downstream, and the response schema fails on read. Resolve what is
     // stored first, then apply the patch — a legacy row's
-    // `channelsEnabled: false` reads as email and push off, so a patch naming
-    // only a type flag does not silently switch push back on.
+    // `channelsEnabled: false` reads as email off, so a patch naming only a
+    // type flag does not silently switch email back on.
     const [existing] = await db
       .select({
         notificationPreferences: userPreferences.notificationPreferences,
@@ -348,19 +348,19 @@ export const testNotification = base.notifications.test
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    if (preferences.emailEnabled || preferences.pushEnabled) {
-      enqueue({
-        content: notif.content,
-        email: userRecords[0]?.email ?? '',
-        emailEnabled: preferences.emailEnabled,
-        language: prefs?.language ?? 'hu',
-        notificationId: notif.id,
-        pushEnabled: preferences.pushEnabled,
-        title: notif.title,
-        type: 'test',
-        userId,
-      });
-    }
+    // The dev send is a real delivery: the inbox row is always written and the
+    // job is always queued, with email gated by the caller's preference and
+    // push attempted by the queue like any other notification.
+    enqueue({
+      content: notif.content,
+      email: userRecords[0]?.email ?? '',
+      emailEnabled: preferences.emailEnabled,
+      language: prefs?.language ?? 'hu',
+      notificationId: notif.id,
+      title: notif.title,
+      type: 'test',
+      userId,
+    });
 
     return notif;
   });

@@ -17,8 +17,8 @@ import {
   useUpdateNotificationSettings,
 } from '@/hooks/notifications';
 
-type ChannelId = 'email' | 'push';
-type ChannelPrefKey = 'emailEnabled' | 'pushEnabled';
+type ChannelId = 'email';
+type ChannelPrefKey = 'emailEnabled';
 
 const NOTIFICATION_CHANNELS: Array<{
   channel: ChannelId;
@@ -31,12 +31,6 @@ const NOTIFICATION_CHANNELS: Array<{
     descriptionKey: 'preferences.emailEnabledDescription',
     key: 'emailEnabled',
     labelKey: 'preferences.emailEnabled',
-  },
-  {
-    channel: 'push',
-    descriptionKey: 'preferences.pushEnabledDescription',
-    key: 'pushEnabled',
-    labelKey: 'preferences.pushEnabled',
   },
 ];
 
@@ -61,7 +55,7 @@ const NOTIFICATION_TYPES = [
   },
 ];
 
-/** Where the channel toggles sit, then the per-type preferences. */
+/** Where the email toggle sits, then the per-type preferences. */
 export function NotificationsPane({
   active,
   onClose,
@@ -73,8 +67,8 @@ export function NotificationsPane({
   highlightChannel?: ChannelId;
 }) {
   const { t } = useTranslation();
-  // Seeded from the response only. The channel defaults differ per role, so a
-  // local fallback would assert an email state the server may not return.
+  // Seeded from the response only. The email default differs per role, so a
+  // local fallback would assert a state the server may not return.
   const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
 
   const settingsQuery = useNotificationSettings(active);

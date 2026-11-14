@@ -32,13 +32,15 @@ type JobOutcome = {
 /**
  * Attempts every channel the job has not delivered yet. A channel that
  * succeeds is recorded on the job, so a later attempt never repeats it. A
- * channel the user disabled starts out delivered: it is satisfied, never a
- * failure to retry or to name in the dead-letter.
+ * disabled email starts out delivered: it is satisfied, never a failure to
+ * retry or to name in the dead-letter. Push has no user-facing switch, so it
+ * is always attempted; a user without a registered device is satisfied by the
+ * provider's `skipped` answer.
  */
 async function processJob(job: DeliveryJob): Promise<JobOutcome> {
   job.delivered ??= {
     email: !job.emailEnabled,
-    push: !job.pushEnabled,
+    push: false,
   };
   const { delivered } = job;
   let retryAfterMs: number | undefined;

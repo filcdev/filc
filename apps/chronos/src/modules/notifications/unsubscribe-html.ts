@@ -99,12 +99,11 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
     });
   }
 
-  // Unsubscribing turns email off only: push and the per-type flags are the
-  // user's other choices and stay as they are. In-app notifications have no
-  // preference and are always recorded. `applyPreferencesPatch` resolves a
+  // Unsubscribing turns email off only: the per-type flags are the user's
+  // other choices and stay as they are. `applyPreferencesPatch` resolves a
   // legacy row's `channelsEnabled: false` rather than simply raising it, so an
-  // old "everything off" row stays off for push instead of being silently
-  // switched back on by the unsubscribe link.
+  // old "everything off" row stays off instead of being silently switched back
+  // on by the unsubscribe link.
   const [existing] = await db
     .select({
       notificationPreferences: userPreferences.notificationPreferences,

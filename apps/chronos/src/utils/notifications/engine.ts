@@ -198,8 +198,8 @@ async function enrichUsersWithLanguage(
 }
 
 /**
- * Preferences, channel flags and the actual write for one recipient. A user
- * who opted out of the type is a normal outcome, not an error.
+ * Preferences and the actual write for one recipient. A user who opted out of
+ * the type is a normal outcome, not an error.
  */
 async function deliverToUser(
   type: NotificationType,
@@ -223,7 +223,7 @@ async function deliverToUser(
   // before a toggle existed lacks that key; both fall back per key rather
   // than reading `undefined`, which the gate below would treat as an
   // opt-out. The helper also resolves the legacy `channelsEnabled` switch, so
-  // the per-channel flags read here are already the effective ones.
+  // the email flag read here is already the effective one.
   const preferences: NotificationPreferences = completePreferences(
     row?.notificationPreferences,
     { email: row?.hasTeacher ?? false }
@@ -243,8 +243,9 @@ async function deliverToUser(
     user.language
   );
 
-  // In-app is always recorded (managed separately from these preferences);
-  // email and push are queued only when the user allows them.
+  // The inbox row is always written. Push has no user-facing switch and is
+  // attempted for every notification, so the delivery is always queued;
+  // only email is gated, and the queue reads that flag.
   const [notif] = await db
     .insert(notification)
     .values({
@@ -256,21 +257,18 @@ async function deliverToUser(
     })
     .returning();
 
-  if (preferences.emailEnabled || preferences.pushEnabled) {
-    enqueue({
-      content: content.content,
-      details: content.details,
-      email: user.email,
-      emailEnabled: preferences.emailEnabled,
-      highlights: content.highlights,
-      language: user.language,
-      notificationId: notif?.id ?? randomUUID(),
-      pushEnabled: preferences.pushEnabled,
-      title: content.title,
-      type,
-      userId: user.id,
-    });
-  }
+  enqueue({
+    content: content.content,
+    details: content.details,
+    email: user.email,
+    emailEnabled: preferences.emailEnabled,
+    highlights: content.highlights,
+    language: user.language,
+    notificationId: notif?.id ?? randomUUID(),
+    title: content.title,
+    type,
+    userId: user.id,
+  });
 }
 
 async function fireNotification(
