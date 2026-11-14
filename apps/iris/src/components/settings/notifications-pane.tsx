@@ -135,10 +135,6 @@ export function NotificationsPane({
               </div>
             )
           )}
-          <p className="text-muted-foreground text-xs">
-            {t('preferences.channelDefaults')}
-          </p>
-
           <div className="space-y-1 border-t pt-4">
             <p className="font-medium text-sm">{t('preferences.types')}</p>
             <p className="text-muted-foreground text-xs">
