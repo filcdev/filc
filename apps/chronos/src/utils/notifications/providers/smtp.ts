@@ -11,9 +11,6 @@ import {
   type SmtpAuth,
 } from '@filcdev/mail';
 import { getLogger } from '@logtape/logtape';
-import { eq } from 'drizzle-orm';
-import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
 import { env } from '#utils/environment';
 import { mailLocale } from '#utils/notifications/locale';
 import type { NotificationType } from '#utils/notifications/types';
@@ -158,7 +155,7 @@ function createGraphMailTransport(): MailTransport | null {
 }
 
 const typeLabels: Record<NotificationType, { en: string; hu: string }> = {
-  announcement: { en: 'Announcement', hu: 'Közlemény' },
+  announcement: { en: 'News item', hu: 'Hír' },
   blog_post: { en: 'Blog post', hu: 'Blogbejegyzés' },
   cohort_reselection_required: {
     en: 'Group selection',
@@ -199,9 +196,13 @@ export function generateUnsubscribeToken(userId: string): string {
 /**
  * What a send attempt produced. `retryAfterMs` is set only when a transport
  * was rate limited and told us how long to wait (Graph's 429 `Retry-After`).
+ * `skipped` means the channel had nothing to deliver — no mail transport is
+ * configured — which is not a delivery failure and must not be retried or
+ * dead-lettered; the queue treats it as satisfied.
  */
 export type SendEmailResult = {
   ok: boolean;
+  skipped?: boolean;
   retryAfterMs?: number;
 };
 
@@ -228,27 +229,20 @@ export async function sendEmail(
     highlights?: string[];
     title: string;
   },
-  userId: string
+  userId: string,
+  recipientName?: string
 ): Promise<SendEmailResult> {
   const tp = getTransport();
   if (!tp) {
     logger.debug('Mail transport not available, skipping email to {to}', {
       to,
     });
-    return { ok: false };
+    return { ok: false, skipped: true };
   }
   try {
     const lang = mailLocale(locale);
     // The id is a uuid column: the pure SMTP delivery test passes an empty id,
-    // and querying with it would abort the whole send.
-    const [recipient] = userId
-      ? await db
-          .select({ name: userTable.name })
-          .from(userTable)
-          .where(eq(userTable.id, userId))
-          .limit(1)
-      : [];
-
+    // so the authenticated links below are only built for a real user.
     const rendered = await renderEmail(
       'notification',
       {
@@ -261,7 +255,9 @@ export async function sendEmail(
         manageUrl: userId
           ? `${env.baseUrl}/settings/notifications?channel=email`
           : undefined,
-        recipientName: recipient?.name,
+        // Carried on the delivery job with the audience, so rendering a mail
+        // costs no per-recipient `user.name` query.
+        recipientName,
         title: body.title,
         typeLabel: typeLabels[type][lang],
         // A pure SMTP delivery test has no user behind it to unsubscribe.

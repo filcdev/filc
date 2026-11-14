@@ -61,16 +61,21 @@ export type ChannelDefaults = {
  * default is a schema migration, while every reader merges
  * `DEFAULT_NOTIFICATION_PREFERENCES` over the stored row — so a row created
  * with this default still resolves email as enabled.
+ *
+ * `Partial`: the column is jsonb and holds whatever was written to it, so the
+ * type must not promise every key (this literal carries neither `emailEnabled`
+ * nor `announcementEmail`).
  */
-export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT = {
-  announcement: true,
-  blogPost: false,
-  channelsEnabled: true,
-  doorlockCardUsed: false,
-  movedLesson: true,
-  substitution: true,
-  systemMessage: true,
-} as NotificationPreferences;
+export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT: Partial<NotificationPreferences> =
+  {
+    announcement: true,
+    blogPost: false,
+    channelsEnabled: true,
+    doorlockCardUsed: false,
+    movedLesson: true,
+    substitution: true,
+    systemMessage: true,
+  };
 
 /**
  * Whether the user's preferences allow email.
@@ -151,6 +156,12 @@ export type AudienceUser = {
   email: string;
   cohortId: string | null;
   language: string;
+  /**
+   * Display name for the mail's greeting. Carried on the audience so the
+   * per-recipient row is already loaded and the email provider does not
+   * re-select `user.name` for every mail it sends.
+   */
+  name: string;
 };
 
 export type NotificationContent = {
@@ -180,6 +191,8 @@ export type DeliveryJob = {
   notificationId: string;
   userId: string;
   email: string;
+  /** Recipient's display name for the mail greeting, resolved with the audience. */
+  recipientName: string;
   type: NotificationType;
   title: string;
   content: string;

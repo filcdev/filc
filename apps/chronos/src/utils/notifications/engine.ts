@@ -101,6 +101,7 @@ async function resolveAudienceByCohortIds(
       cohortId: userTable.cohortId,
       email: userTable.email,
       id: userTable.id,
+      name: userTable.name,
     })
     .from(userTable)
     .where(and(inArray(userTable.cohortId, cohortIds), ...roleFilter));
@@ -111,13 +112,14 @@ async function resolveAudienceByCohortIds(
 export async function resolveAudienceByCohortOrAll(
   cohortIds?: string[]
 ): Promise<AudienceUser[]> {
-  let users: { id: string; email: string; cohortId: string | null }[];
+  let users: AudienceUserSource[];
   if (!cohortIds || cohortIds.length === 0) {
     users = await db
       .select({
         cohortId: userTable.cohortId,
         email: userTable.email,
         id: userTable.id,
+        name: userTable.name,
       })
       .from(userTable);
   } else {
@@ -126,6 +128,7 @@ export async function resolveAudienceByCohortOrAll(
         cohortId: userTable.cohortId,
         email: userTable.email,
         id: userTable.id,
+        name: userTable.name,
       })
       .from(userTable)
       .where(inArray(userTable.cohortId, cohortIds));
@@ -140,6 +143,7 @@ export async function resolveAudienceForBlogPost(): Promise<AudienceUser[]> {
       cohortId: userTable.cohortId,
       email: userTable.email,
       id: userTable.id,
+      name: userTable.name,
     })
     .from(userTable);
 
@@ -161,6 +165,7 @@ export async function resolveAudienceForUser(
       cohortId: userTable.cohortId,
       email: userTable.email,
       id: userTable.id,
+      name: userTable.name,
     })
     .from(userTable)
     .where(eq(userTable.id, userId))
@@ -182,12 +187,21 @@ export async function resolveAudienceForUser(
       email: target.email,
       id: target.id,
       language: prefs?.language ?? 'hu',
+      name: target.name,
     },
   ];
 }
 
+/** The columns an audience query selects; the language is merged in after. */
+type AudienceUserSource = {
+  cohortId: string | null;
+  email: string;
+  id: string;
+  name: string;
+};
+
 async function enrichUsersWithLanguage(
-  users: { id: string; email: string; cohortId: string | null }[]
+  users: AudienceUserSource[]
 ): Promise<AudienceUser[]> {
   if (users.length === 0) {
     return [];
@@ -212,6 +226,7 @@ async function enrichUsersWithLanguage(
       email: u.email,
       id: u.id,
       language: prefs?.language ?? 'hu',
+      name: u.name,
     };
   });
 }
@@ -302,6 +317,7 @@ async function deliverToUser(
     highlights: content.highlights,
     language: user.language,
     notificationId: notif?.id ?? randomUUID(),
+    recipientName: user.name,
     title: content.title,
     type,
     userId: user.id,
@@ -328,14 +344,29 @@ async function fireNotification(
       return;
     }
 
+    // One recipient's failure must not cost the rest their notification: log it
+    // with the ids needed to investigate and carry on with the audience.
+    let delivered = 0;
     for (const user of audience) {
-      await deliverToUser(type, payload, handler, user);
+      try {
+        await deliverToUser(type, payload, handler, user);
+        delivered += 1;
+      } catch (error) {
+        logger.error(
+          'Failed to deliver notification type {type} to user {userId}',
+          { error, type, userId: user.id }
+        );
+      }
     }
 
-    logger.info('Dispatched notification type {type} to {count} users', {
-      count: audience.length,
-      type,
-    });
+    logger.info(
+      'Dispatched notification type {type} to {delivered} of {audience} recipients',
+      {
+        audience: audience.length,
+        delivered,
+        type,
+      }
+    );
   } catch (error) {
     logger.error('Failed to dispatch notification type {type}', {
       error,

@@ -1,4 +1,6 @@
+import { timingSafeEqual } from 'node:crypto';
 import { unsubscribeSchema } from '@filcdev/api/domains/notifications';
+import { getLogger } from '@logtape/logtape';
 import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { userPreferences } from '#modules/notifications/schema';
@@ -8,6 +10,8 @@ import {
   applyPreferencesPatch,
   completePreferences,
 } from '#utils/notifications/types';
+
+const logger = getLogger(['chronos', 'notifications', 'unsubscribe']);
 
 /**
  * `GET|POST /api/notifications/unsubscribe`: the two HTML pages the
@@ -34,7 +38,10 @@ const escapeHtml = (value: string): string =>
     }
   });
 
-export async function handleUnsubscribe(request: Request): Promise<Response> {
+export async function handleUnsubscribe(
+  request: Request,
+  requestId: string
+): Promise<Response> {
   const params =
     request.method === 'POST'
       ? new URLSearchParams(await request.text())
@@ -92,7 +99,17 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
   }
 
   const expected = generateUnsubscribeToken(userId);
-  if (expected !== token) {
+  const given = Buffer.from(token);
+  const wanted = Buffer.from(expected);
+  // Length first: `timingSafeEqual` throws on a length mismatch, and the
+  // schema already pins the token to 64 hex characters.
+  const tokenValid =
+    given.length === wanted.length && timingSafeEqual(given, wanted);
+  if (!tokenValid) {
+    logger.warning('Rejected unsubscribe token for user {userId}', {
+      requestId,
+      userId,
+    });
     return new Response(invalidTokenHtml, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
       status: 400,
@@ -100,10 +117,13 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
   }
 
   // Unsubscribing turns email off only: the per-type flags are the user's
-  // other choices and stay as they are. `applyPreferencesPatch` resolves a
-  // legacy row's `channelsEnabled: false` rather than simply raising it, so an
-  // old "everything off" row stays off instead of being silently switched back
-  // on by the unsubscribe link.
+  // other choices and stay as they are. The patch is applied over the
+  // *resolved* row, so the value written is the one the row already reads as:
+  // a legacy `channelsEnabled: false` row resolves to `emailEnabled: false`
+  // and a row that never named the flag resolves to the role default, and
+  // `applyPreferencesPatch` raises `channelsEnabled` back to the current shape
+  // only after that resolution. A legacy "everything off" row therefore stays
+  // off instead of the link silently switching it back on.
   const [existing] = await db
     .select({
       notificationPreferences: userPreferences.notificationPreferences,
@@ -126,6 +146,11 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
       set: { notificationPreferences },
       target: userPreferences.userId,
     });
+
+  logger.info('User {userId} unsubscribed from notification email', {
+    requestId,
+    userId,
+  });
 
   const html = `<!DOCTYPE html>
 <html lang="hu">

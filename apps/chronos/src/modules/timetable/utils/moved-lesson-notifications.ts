@@ -1,8 +1,6 @@
 import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
-import { userPreferences } from '#modules/notifications/schema';
 import {
   classroom,
   cohort,
@@ -18,6 +16,7 @@ import {
   loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
 import { uniqueStrings } from '#utils/notifications/substitution-teacher';
+import { resolveTeacherUserAudience } from '#utils/notifications/teacher-audience';
 import type { AudienceUser } from '#utils/notifications/types';
 
 // Shared by every moved-lesson list endpoint: rows carry the target joins and
@@ -324,52 +323,11 @@ export async function loadMovedLessonNotificationPayload(
 }
 
 /**
- * The teachers of a moved lesson as notification recipients. A `teacher` row
- * is the only link between a lesson and a user account, so a teacher without a
- * `userId` has nobody to notify and is dropped.
+ * The teachers of a moved lesson as notification recipients, resolved through
+ * the same `teacher`-row-to-user lookup the substitution mail uses.
  */
 export async function resolveMovedLessonTeacherAudience(
   payload: MovedLessonNotificationPayload
 ): Promise<AudienceUser[]> {
-  if (payload.teacherIds.length === 0) {
-    return [];
-  }
-
-  const teacherRows = await db
-    .select({ userId: teacher.userId })
-    .from(teacher)
-    .where(inArray(teacher.id, payload.teacherIds));
-
-  const userIds = uniqueStrings(teacherRows.map((row) => row.userId));
-
-  if (userIds.length === 0) {
-    return [];
-  }
-
-  const [users, prefs] = await Promise.all([
-    db
-      .select({
-        cohortId: userTable.cohortId,
-        email: userTable.email,
-        id: userTable.id,
-      })
-      .from(userTable)
-      .where(inArray(userTable.id, userIds)),
-    db
-      .select({
-        language: userPreferences.language,
-        userId: userPreferences.userId,
-      })
-      .from(userPreferences)
-      .where(inArray(userPreferences.userId, userIds)),
-  ]);
-
-  const languageMap = new Map(prefs.map((p) => [p.userId, p.language]));
-
-  return users.map((user) => ({
-    cohortId: user.cohortId,
-    email: user.email,
-    id: user.id,
-    language: languageMap.get(user.id) ?? 'hu',
-  }));
+  return await resolveTeacherUserAudience(payload.teacherIds);
 }

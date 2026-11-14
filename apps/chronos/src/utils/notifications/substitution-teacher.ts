@@ -1,8 +1,6 @@
 import type { EmailDetail } from '@filcdev/mail';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
-import { userPreferences } from '#modules/notifications/schema';
 import {
   classroom,
   cohort,
@@ -13,6 +11,7 @@ import {
   teacher,
 } from '#modules/timetable/schema';
 import { isHungarianLocale } from './locale';
+import { resolveTeacherUserAudience } from './teacher-audience';
 import type { AudienceUser, NotificationContent } from './types';
 
 /** One affected lesson, with the details a substitute teacher needs. */
@@ -202,44 +201,8 @@ export async function resolveSubstituteTeacherAudience(
     return [];
   }
 
-  const [teacherRow] = await db
-    .select({ userId: teacher.userId })
-    .from(teacher)
-    .where(eq(teacher.id, substituter))
-    .limit(1);
-
-  if (!teacherRow?.userId) {
-    return [];
-  }
-
-  const [userRow] = await db
-    .select({
-      cohortId: userTable.cohortId,
-      email: userTable.email,
-      id: userTable.id,
-    })
-    .from(userTable)
-    .where(eq(userTable.id, teacherRow.userId))
-    .limit(1);
-
-  if (!userRow) {
-    return [];
-  }
-
-  const [prefs] = await db
-    .select()
-    .from(userPreferences)
-    .where(eq(userPreferences.userId, userRow.id))
-    .limit(1);
-
-  return [
-    {
-      cohortId: userRow.cohortId,
-      email: userRow.email,
-      id: userRow.id,
-      language: prefs?.language ?? 'hu',
-    },
-  ];
+  // Shared with the moved-lesson mail: a `teacher` row -> its linked user.
+  return await resolveTeacherUserAudience([substituter]);
 }
 
 /** The "(07:10 - 07:55)" suffix for a lesson, or an empty string when it has no start. */

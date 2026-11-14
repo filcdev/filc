@@ -88,12 +88,24 @@ export const listNotifications = base.notifications.list
       );
     }
     if (dateFrom) {
-      conditions.push(sql`${notification.createdAt} >= ${new Date(dateFrom)}`);
+      // Same school-timezone day boundary as the unread cutoff above, so the
+      // range filter and "unread means today" agree on where a day starts.
+      conditions.push(
+        sql`${notification.createdAt} >= ${startOfDayInTimeZone(new Date(dateFrom), env.timeZone)}`
+      );
     }
     if (dateTo) {
-      const endDate = new Date(dateTo);
-      endDate.setHours(23, 59, 59, 999);
-      conditions.push(sql`${notification.createdAt} <= ${endDate}`);
+      // Inclusive end of the chosen day: everything before the next day starts
+      // in the school timezone. Midday + one day keeps a DST shift from moving
+      // the calendar day the helper then resolves.
+      const noon =
+        startOfDayInTimeZone(new Date(dateTo), env.timeZone).getTime() +
+        12 * 60 * 60 * 1000;
+      const exclusiveEnd = startOfDayInTimeZone(
+        new Date(noon + 24 * 60 * 60 * 1000),
+        env.timeZone
+      );
+      conditions.push(sql`${notification.createdAt} < ${exclusiveEnd}`);
     }
 
     const [items, totalResult] = await Promise.all([
@@ -383,7 +395,7 @@ export const testNotification = base.notifications.test
     }
 
     const userRecords = await db
-      .select({ email: userTable.email })
+      .select({ email: userTable.email, name: userTable.name })
       .from(userTable)
       .where(eq(userTable.id, userId))
       .limit(1);
@@ -397,6 +409,7 @@ export const testNotification = base.notifications.test
       emailEnabled: preferences.emailEnabled,
       language: lang,
       notificationId: notif.id,
+      recipientName: userRecords[0]?.name ?? '',
       title: notif.title,
       type: 'test',
       userId,
@@ -425,6 +438,7 @@ type TestTarget = {
   id: string;
   isUser: boolean;
   language: string;
+  name?: string;
 };
 
 async function resolveTestTarget(
@@ -441,7 +455,11 @@ async function resolveTestTarget(
 
   if (email) {
     const [byEmail] = await db
-      .select({ email: userTable.email, id: userTable.id })
+      .select({
+        email: userTable.email,
+        id: userTable.id,
+        name: userTable.name,
+      })
       .from(userTable)
       .where(sql`lower(${userTable.email}) = ${email.toLowerCase()}`)
       .limit(1);
@@ -451,6 +469,7 @@ async function resolveTestTarget(
         id: byEmail.id,
         isUser: true,
         language: 'hu',
+        name: byEmail.name,
       };
     } else {
       // Unmatched address: a pure SMTP delivery test. Keep the caller out of
@@ -464,11 +483,12 @@ async function resolveTestTarget(
     }
   } else {
     const [me] = await db
-      .select({ email: userTable.email })
+      .select({ email: userTable.email, name: userTable.name })
       .from(userTable)
       .where(eq(userTable.id, currentUserId))
       .limit(1);
     target.email = me?.email ?? '';
+    target.name = me?.name;
   }
 
   // A non-user target has no row to read (and no uuid to read it with), so the
@@ -543,7 +563,8 @@ export const sendTestNotification = base.notifications.sendTest
           highlights: body.highlights,
           title: subject,
         },
-        target.id
+        target.id,
+        target.name
       );
       results.email = email.ok;
     }

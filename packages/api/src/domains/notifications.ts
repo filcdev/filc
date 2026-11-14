@@ -174,12 +174,25 @@ export const notificationMetadataSchema = z
 
 export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
 
+/**
+ * Read shape of `notification.metadata`.
+ *
+ * The column is handler-owned jsonb, so a row written by an older handler (or
+ * by hand) may not match the typed shape above; one such row must not fail the
+ * whole inbox response. A value that does not parse reads as `null` — no
+ * detail block — the same way `colorSchemeSchema.catch(...)` tolerates a bad
+ * `color_scheme`.
+ */
+const notificationMetadataReadSchema = notificationMetadataSchema
+  .nullable()
+  .catch(null);
+
 /** One `notification` row: a single inbox entry. */
 export const notificationRowSchema = z.object({
   content: z.string(),
   createdAt: z.date(),
   id: z.uuid(),
-  metadata: notificationMetadataSchema.nullable(),
+  metadata: notificationMetadataReadSchema,
   read: z.boolean(),
   title: z.string(),
   type: z.string(),

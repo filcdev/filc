@@ -77,11 +77,16 @@ const envShape = z.object({
   // deployment that forgets to set it fails safe. Set CHRONOS_MODE=development
   // to get the pretty logs and the test endpoints.
   CHRONOS_MODE: z.enum(['development', 'production']).default('production'),
-  CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce.number().default(60),
-  CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce.number().default(60),
-  CHRONOS_NOTIFICATION_DELAY_COHORT_RESELECTION_REQUIRED: z.coerce
+  CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce
     .number()
-    .default(0),
+    .int()
+    .min(0)
+    .default(60),
+  CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(60),
   // Debounced types: an edit inside the window cancels and re-arms the timer,
   // so the window has to be at least one second. Zero would fire on the next
   // timer tick and defeat the debounce entirely.
@@ -96,7 +101,11 @@ const envShape = z.object({
     .int()
     .min(1)
     .default(60),
-  CHRONOS_NOTIFICATION_DELAY_SYSTEM_MESSAGE: z.coerce.number().default(60),
+  CHRONOS_NOTIFICATION_DELAY_SYSTEM_MESSAGE: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(60),
   CHRONOS_OAUTH_PROXY_SECRET: z.string().optional(),
   // OAuth proxy: lets preview deployments sign in through the production
   // origin, because Entra rejects wildcard redirect URIs. Both must be set for

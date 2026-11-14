@@ -169,14 +169,15 @@ export const openApiHandler = new OpenAPIHandler<ChronosContext>(appRouter, {
 
 const buildContext = async (
   request: Request,
-  srv: Bun.Server<DeviceSocketData>
+  srv: Bun.Server<DeviceSocketData>,
+  requestId: string
 ): Promise<ChronosContext> => ({
   ...(await resolveCaller(request.headers)),
   clientIp: resolveClientIp(request, srv),
   reqHeaders: request.headers,
   // Echoed on the response as `x-request-id`, so a client can name the exact
   // request it is reporting and the line can be found in the log stream.
-  requestId: request.headers.get('x-request-id') ?? crypto.randomUUID(),
+  requestId,
 });
 
 // Bun caps the whole request head at 16 KiB and answers 431 before routing, but
@@ -194,6 +195,12 @@ export const server = Bun.serve<DeviceSocketData>({
   fetch: async (request, srv) => {
     const url = new URL(request.url);
 
+    // Minted before any dispatch so the unsubscribe pages, which are outside
+    // oRPC, can log it and echo it too — and so the context and the echoed
+    // header are always the same id.
+    const requestId =
+      request.headers.get('x-request-id') ?? crypto.randomUUID();
+
     // The aegis firmware speaks a hand-rolled JSON protocol over this socket,
     // not oRPC, so it is handled before either handler.
     if (url.pathname === DOORLOCK_SOCKET_PATH) {
@@ -208,15 +215,15 @@ export const server = Bun.serve<DeviceSocketData>({
     // The unsubscribe pages are HTML forms and links from emails: no envelope,
     // no oRPC.
     if (url.pathname === '/api/notifications/unsubscribe') {
-      return withSecurityHeaders(
-        await handleUnsubscribe(request),
+      const response = withSecurityHeaders(
+        await handleUnsubscribe(request, requestId),
         url.pathname
       );
+      response.headers.set('x-request-id', requestId);
+      return response;
     }
 
-    const requestId =
-      request.headers.get('x-request-id') ?? crypto.randomUUID();
-    const context = await buildContext(request, srv);
+    const context = await buildContext(request, srv, requestId);
     const { matched, response } = url.pathname.startsWith('/api/rpc/')
       ? await rpcHandler.handle(request, { context, prefix: '/api/rpc' })
       : await openApiHandler.handle(request, { context, prefix: '/api' });
