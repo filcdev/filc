@@ -319,15 +319,16 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
           ARRAY[]::text[]
         )`.as('lessonIds'),
         substitution,
-        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        // Public shape: these responses are unauthenticated and the substituter
+        // is only ever displayed by name, so the email and linked user account
+        // stay in the database. `id` must stay first — drizzle nulls a
+        // left-joined nested object whose first selected column is NULL.
+        // biome-ignore assist/source/useSortedKeys: see above
         teacher: {
           id: teacher.id,
-          email: teacher.email,
           firstName: teacher.firstName,
-          gender: teacher.gender,
           lastName: teacher.lastName,
           short: teacher.short,
-          userId: teacher.userId,
         },
       })
       .from(substitution)
@@ -339,12 +340,9 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
       .groupBy(
         substitution.id,
         teacher.id,
-        teacher.email,
         teacher.firstName,
         teacher.lastName,
-        teacher.short,
-        teacher.gender,
-        teacher.userId
+        teacher.short
       );
 
     // Collect all unique lesson IDs
@@ -404,7 +402,14 @@ export const getRelevantSubstitutions =
           ARRAY[]::text[]
         )`.as('lessons'),
         substitution,
-        teacher,
+        // Public shape: unauthenticated response, name only (see `list`).
+        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        teacher: {
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          short: teacher.short,
+        },
       })
       .from(substitution)
       .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -435,7 +440,14 @@ export const getRelevantSubstitutionsForCohort =
           ARRAY[]::text[]
         )`.as('lessons'),
         substitution,
-        teacher,
+        // Public shape: unauthenticated response, name only (see `list`).
+        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        teacher: {
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          short: teacher.short,
+        },
       })
       .from(substitution)
       .leftJoin(teacher, eq(substitution.substituter, teacher.id))

@@ -45201,30 +45201,8 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "email": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "firstName": {
                                     "type": "string"
-                                  },
-                                  "gender": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 1,
-                                        "pattern": "^[01]+$"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   },
                                   "id": {
                                     "type": "string",
@@ -45235,27 +45213,13 @@
                                   },
                                   "short": {
                                     "type": "string"
-                                  },
-                                  "userId": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   }
                                 },
                                 "required": [
-                                  "email",
                                   "firstName",
-                                  "gender",
                                   "id",
                                   "lastName",
-                                  "short",
-                                  "userId"
+                                  "short"
                                 ]
                               },
                               {
@@ -46625,30 +46589,8 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "email": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "firstName": {
                                     "type": "string"
-                                  },
-                                  "gender": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 1,
-                                        "pattern": "^[01]+$"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   },
                                   "id": {
                                     "type": "string",
@@ -46659,27 +46601,13 @@
                                   },
                                   "short": {
                                     "type": "string"
-                                  },
-                                  "userId": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   }
                                 },
                                 "required": [
-                                  "email",
                                   "firstName",
-                                  "gender",
                                   "id",
                                   "lastName",
-                                  "short",
-                                  "userId"
+                                  "short"
                                 ]
                               },
                               {
@@ -46980,30 +46908,8 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "email": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "firstName": {
                                     "type": "string"
-                                  },
-                                  "gender": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 1,
-                                        "pattern": "^[01]+$"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   },
                                   "id": {
                                     "type": "string",
@@ -47014,27 +46920,13 @@
                                   },
                                   "short": {
                                     "type": "string"
-                                  },
-                                  "userId": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   }
                                 },
                                 "required": [
-                                  "email",
                                   "firstName",
-                                  "gender",
                                   "id",
                                   "lastName",
-                                  "short",
-                                  "userId"
+                                  "short"
                                 ]
                               },
                               {
