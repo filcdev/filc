@@ -166,6 +166,10 @@ const typeLabels: Record<NotificationType, { en: string; hu: string }> = {
   },
   doorlock_card_used: { en: 'Door lock', hu: 'Ajtózár' },
   moved_lesson: { en: 'Lesson moved', hu: 'Óra áthelyezve' },
+  moved_lesson_teacher: {
+    en: 'Your moved lesson',
+    hu: 'A te áthelyezett órád',
+  },
   substitution: { en: 'Substitution', hu: 'Helyettesítés' },
   substitution_teacher: {
     en: 'Teacher substitution',
@@ -181,6 +185,7 @@ const typeAccents: Record<NotificationType, EmailAccent> = {
   cohort_reselection_required: 'orange',
   doorlock_card_used: 'rose',
   moved_lesson: 'amber',
+  moved_lesson_teacher: 'amber',
   substitution: 'teal',
   substitution_teacher: 'indigo',
   system_message: 'slate',

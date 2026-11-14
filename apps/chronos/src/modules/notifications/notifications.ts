@@ -19,6 +19,7 @@ import {
 } from '#modules/notifications/schema';
 import {
   buildMovedLessonNotificationContent,
+  buildMovedLessonTeacherContent,
   buildSubstitutionNotificationContent,
 } from '#modules/timetable/_notifications';
 import { loadMovedLessonNotificationPayload } from '#modules/timetable/utils/moved-lesson-notifications';
@@ -540,13 +541,16 @@ async function resolvePreviewContent(
         ? buildSubstitutionNotificationContent(payload, locale)
         : buildSubstitutionTeacherContent(payload, locale);
     }
-    case 'moved_lesson': {
+    case 'moved_lesson':
+    case 'moved_lesson_teacher': {
       const payload = await loadMovedLessonNotificationPayload(entityId);
       if (!payload) {
         throw notFound('Moved lesson not found');
       }
 
-      return buildMovedLessonNotificationContent(payload, locale);
+      return type === 'moved_lesson'
+        ? buildMovedLessonNotificationContent(payload, locale)
+        : buildMovedLessonTeacherContent(payload, locale);
     }
     case 'announcement': {
       const [row] = await db

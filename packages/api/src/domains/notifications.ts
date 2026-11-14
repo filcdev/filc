@@ -100,6 +100,7 @@ export const notificationTypeValues = [
   'substitution',
   'substitution_teacher',
   'moved_lesson',
+  'moved_lesson_teacher',
   'announcement',
   'system_message',
   'blog_post',

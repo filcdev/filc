@@ -1,4 +1,8 @@
 import type { EmailDetail } from '@filcdev/mail';
+import {
+  type MovedLessonNotificationPayload,
+  resolveMovedLessonTeacherAudience,
+} from '#modules/timetable/utils/moved-lesson-notifications';
 import { isMatchingWeekday } from '#modules/timetable/utils/weekday';
 import { env } from '#utils/environment';
 import {
@@ -156,6 +160,43 @@ function periodLabel(period: string, locale: string): string {
   return isHungarianLocale(locale) ? `${period}. óra` : `Period ${period}`;
 }
 
+/**
+ * The prose form of a moved lesson's new slot: "csütörtök, 2. óra, 201 terem"
+ * / "Thursday, Period 2, room 201". Unlike `movedLessonLocation` (the
+ * detail-row format) the room reads as a room, not a bare number.
+ */
+function movedLessonProseLocation(
+  p: {
+    day?: string | null;
+    period?: number | string | null;
+    room?: string | null;
+  },
+  locale: string
+): string {
+  const hu = isHungarianLocale(locale);
+  let roomPart = '';
+  if (p.room) {
+    roomPart = hu ? `, ${p.room} terem` : ` in room ${p.room}`;
+  }
+  const dayPart = p.day ? dayName(p.day, locale) : '';
+  const periodPart =
+    p.period == null ? '' : periodLabel(String(p.period), locale);
+  const timePart = [dayPart, periodPart].filter(Boolean).join(', ');
+  if (timePart) {
+    return `${timePart}${roomPart}`;
+  }
+  return hu
+    ? `másik időpontra${roomPart ? ` (${roomPart.slice(2)})` : ''}`
+    : `a new time slot${roomPart ? ` (${roomPart.slice(1)})` : ''}`;
+}
+
+/** "Check your timetable" sentence for a move that changed more than one slot. */
+function movedLessonMultipleSuffix(locale: string): string {
+  return isHungarianLocale(locale)
+    ? ' Nézd meg az órárendedben a további változásokat!'
+    : ' Check your timetable for all updates.';
+}
+
 function movedLessonContentHu(
   p: {
     room?: string | null;
@@ -164,18 +205,11 @@ function movedLessonContentHu(
   },
   multiple: boolean
 ): string {
-  const roomPart = p.room ? `, ${p.room} terem` : '';
-  const dayPart = p.startingDay ? dayName(p.startingDay, 'hu') : '';
-  const periodPart = p.startingPeriod
-    ? periodLabel(p.startingPeriod, 'hu')
-    : '';
-  const timePart = [dayPart, periodPart].filter(Boolean).join(', ');
-  const suffix = multiple
-    ? ' Nézd meg az órarendedben a további változásokat!'
-    : '';
-  const location = timePart
-    ? `${timePart}${roomPart}`
-    : `másik időpontra${roomPart ? ` (${roomPart.slice(2)})` : ''}`;
+  const location = movedLessonProseLocation(
+    { day: p.startingDay, period: p.startingPeriod, room: p.room },
+    'hu'
+  );
+  const suffix = multiple ? movedLessonMultipleSuffix('hu') : '';
   return `Az órád át lett helyezve: ${location}.${suffix}`;
 }
 
@@ -187,17 +221,11 @@ function movedLessonContentEn(
   },
   multiple: boolean
 ): string {
-  const roomPart = p.room ? ` in room ${p.room}` : '';
-  const dayPart = p.startingDay ? dayName(p.startingDay, 'en') : '';
-  const periodPart = p.startingPeriod
-    ? periodLabel(p.startingPeriod, 'en')
-    : '';
-  const atPart =
-    dayPart && periodPart ? `${dayPart}, ${periodPart}` : dayPart || periodPart;
-  const suffix = multiple ? ' Check your timetable for all updates.' : '';
-  const location = atPart
-    ? `${atPart}${roomPart}`
-    : `a new time slot${roomPart ? ` (${roomPart.slice(1)})` : ''}`;
+  const location = movedLessonProseLocation(
+    { day: p.startingDay, period: p.startingPeriod, room: p.room },
+    'en'
+  );
+  const suffix = multiple ? movedLessonMultipleSuffix('en') : '';
   return `Your lesson has been moved to ${location}.${suffix}`;
 }
 
@@ -218,13 +246,15 @@ export function buildMovedLessonContent(
     : movedLessonContentEn(payload, multiple);
 }
 
-/** Everything `buildMovedLessonDetails` reads off a moved lesson. */
+/** Everything the moved-lesson email builders read off a moved lesson. */
 export type MovedLessonDetailsPayload = {
   cohortNames: string[];
   comment?: string | null;
   date: Date;
   original: {
     day?: string | null;
+    /** The lessons started in more than one slot, so there is no single original. */
+    hasMultipleSlots?: boolean;
     period?: number | null;
     room?: string | null;
     teacherNames: string[];
@@ -237,10 +267,15 @@ export type MovedLessonDetailsPayload = {
   };
 };
 
-/** Structured label/value rows for the `moved_lesson` email. */
-export function buildMovedLessonDetails(
+/**
+ * The shared detail rows of the moved-lesson emails. The teacher-facing mail
+ * renders the same card minus the teacher row: the recipient is one of those
+ * teachers, so the names say nothing new.
+ */
+function movedLessonDetails(
   payload: MovedLessonDetailsPayload,
-  locale: string
+  locale: string,
+  includeTeacher: boolean
 ): EmailDetail[] {
   const hu = isHungarianLocale(locale);
   const { cohortNames, comment, date, original, subjectNames, target } =
@@ -256,36 +291,72 @@ export function buildMovedLessonDetails(
     teacher: hu ? 'Tanár' : 'Teacher',
   };
 
-  const location = (
-    day: string | null | undefined,
-    period: number | null | undefined,
-    room: string | null | undefined
-  ): string =>
-    [
-      day ? dayName(day, locale) : '',
-      period == null ? '' : periodLabel(String(period), locale),
-      room ?? '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-
   const rows: EmailDetail[] = [
     { label: label.date, value: formatDate(date, locale) },
     { label: label.class, value: cohortNames.join(', ') },
     { label: label.subject, value: subjectNames.join(', ') },
-    {
-      label: label.original,
-      value: location(original.day, original.period, original.room),
-    },
-    {
-      label: label.target,
-      value: location(target.day, target.period, target.room),
-    },
-    { label: label.teacher, value: original.teacherNames.join(', ') },
-    { label: label.comment, value: comment?.trim() ?? '' },
   ];
 
+  // Only a day or a period makes an original slot worth showing: a manual move
+  // knows at most a source room, and a multi-lesson move whose lessons started
+  // in different slots has no single truthful one.
+  if (original.day || original.period != null) {
+    rows.push({
+      label: label.original,
+      value: movedLessonLocation(
+        original.day,
+        original.period,
+        original.room,
+        locale
+      ),
+    });
+  }
+
+  rows.push({
+    label: label.target,
+    value: movedLessonLocation(target.day, target.period, target.room, locale),
+  });
+
+  if (includeTeacher) {
+    rows.push({
+      label: label.teacher,
+      value: original.teacherNames.join(', '),
+    });
+  }
+
+  rows.push({ label: label.comment, value: comment?.trim() ?? '' });
+
   return rows.filter((row) => row.value.length > 0);
+}
+
+/** "csütörtök, 2. óra, 201" / "Thursday, Period 2, 201", omitting empty parts. */
+function movedLessonLocation(
+  day: string | null | undefined,
+  period: number | null | undefined,
+  room: string | null | undefined,
+  locale: string
+): string {
+  return [
+    day ? dayName(day, locale) : '',
+    period == null ? '' : periodLabel(String(period), locale),
+    room ?? '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
+/** The hero chips of a moved lesson: the new day, period and room. */
+function movedLessonTargetHighlights(
+  target: MovedLessonDetailsPayload['target'],
+  locale: string
+): string[] {
+  return [
+    target.day ? dayName(target.day, locale) : '',
+    target.period == null ? '' : periodLabel(String(target.period), locale),
+    target.room ?? '',
+  ]
+    .filter(Boolean)
+    .slice(0, 4);
 }
 
 /** The complete moved-lesson notification, shared by the pipeline and preview. */
@@ -295,28 +366,75 @@ export function buildMovedLessonNotificationContent(
   locale: string
 ): NotificationContent {
   const { target } = payload;
-  const highlights = [
-    target.day ? dayName(target.day, locale) : '',
-    target.period == null ? '' : periodLabel(String(target.period), locale),
-    target.room ?? '',
-  ]
-    .filter(Boolean)
-    .slice(0, 4);
 
   return {
     content: buildMovedLessonContent(payload, locale),
-    details: buildMovedLessonDetails(payload, locale),
-    highlights,
+    details: movedLessonDetails(payload, locale, true),
+    highlights: movedLessonTargetHighlights(target, locale),
     title: isHungarianLocale(locale) ? 'Áthelyezett óra' : 'Moved Lesson',
+  };
+}
+
+/**
+ * The teacher-facing moved-lesson body: names the class and subject so a
+ * teacher recognises which of their lessons moved, then the new slot. The
+ * student body is written for a cohort ("your lesson has been moved") and
+ * cannot be reused for the teacher.
+ */
+function buildMovedLessonTeacherContentText(
+  payload: MovedLessonDetailsPayload,
+  locale: string
+): string {
+  const hu = isHungarianLocale(locale);
+  const className = payload.cohortNames.join(', ');
+  const subject = payload.subjectNames.join(', ');
+  const { target } = payload;
+  const hasTarget =
+    target.day != null || target.period != null || target.room != null;
+  const location = movedLessonProseLocation(target, locale);
+  const suffix = payload.original.hasMultipleSlots
+    ? movedLessonMultipleSuffix(locale)
+    : '';
+
+  if (hu) {
+    const who = [className ? `${className} osztály` : '', subject]
+      .filter(Boolean)
+      .join(' ');
+    const lesson = who ? `A ${who} órád` : 'Az órád';
+    const movedTo = hasTarget ? `: ${location}` : '';
+    return `${lesson} áthelyezésre került${movedTo}.${suffix}`;
+  }
+
+  const who = [className, subject].filter(Boolean).join(' ');
+  const lesson = who ? `Your ${who} lesson` : 'Your lesson';
+  const movedTo = hasTarget ? ` to ${location}` : '';
+  return `${lesson} was moved${movedTo}.${suffix}`;
+}
+
+/** The complete teacher-facing moved-lesson notification. */
+export function buildMovedLessonTeacherContent(
+  payload: MovedLessonDetailsPayload,
+  locale: string
+): NotificationContent {
+  const hu = isHungarianLocale(locale);
+  const className = payload.cohortNames.join(', ');
+  const title = hu ? 'Az órád áthelyezve' : 'Your lesson was moved';
+
+  return {
+    content: buildMovedLessonTeacherContentText(payload, locale),
+    details: movedLessonDetails(payload, locale, false),
+    highlights: movedLessonTargetHighlights(payload.target, locale),
+    title: className ? `${title} – ${className}` : title,
   };
 }
 
 /**
  * The notifications the timetable owns. A substitution or a moved lesson goes
  * to the cohorts that own the affected lessons, the substitute is told what
- * they now cover, and a user whose cohort disappeared is asked to pick a new
- * one — that last one reaches a single addressed user and is not gated on a
- * notification preference.
+ * they now cover, the teachers of a moved lesson are told the same lesson
+ * moved, and a user whose cohort disappeared is asked to pick a new one — that
+ * last one reaches a single addressed user and is not gated on a notification
+ * preference.
  */
 export const timetableNotifications: readonly NotificationHandler[] = [
   {
@@ -353,6 +471,20 @@ export const timetableNotifications: readonly NotificationHandler[] = [
     getDelay: () => env.notificationDelayMovedLesson,
     preferenceKey: 'movedLesson',
     type: 'moved_lesson',
+  },
+  {
+    buildContent: (payload, locale) =>
+      buildMovedLessonTeacherContent(
+        payload as MovedLessonDetailsPayload,
+        locale
+      ),
+    getAudience: (payload) =>
+      resolveMovedLessonTeacherAudience(
+        payload as MovedLessonNotificationPayload
+      ),
+    getDelay: () => env.notificationDelayMovedLesson,
+    preferenceKey: 'movedLesson',
+    type: 'moved_lesson_teacher',
   },
   {
     buildContent: (payload, locale) => {

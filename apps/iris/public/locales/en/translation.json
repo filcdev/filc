@@ -756,6 +756,7 @@
       "substitution": "Substitution",
       "substitutionTeacher": "Your substitution",
       "movedLesson": "Moved lesson",
+      "movedLessonTeacher": "Your moved lesson",
       "announcement": "News item",
       "systemMessage": "System message",
       "blogPost": "Blog post",

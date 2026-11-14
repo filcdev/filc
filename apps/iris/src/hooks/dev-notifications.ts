@@ -107,6 +107,33 @@ export const NOTIFICATION_MOCKS: Record<
       title: 'Óra áthelyezve',
     },
   },
+  moved_lesson_teacher: {
+    en: {
+      content: 'Your 10.C Biology lesson was moved to Thursday, Period 2, 201.',
+      details: [
+        { label: 'Date', value: '2026-09-03' },
+        { label: 'Class', value: '10.C' },
+        { label: 'Subject', value: 'Biology' },
+        { label: 'Original', value: 'Tuesday, Period 6, 201' },
+        { label: 'New', value: 'Thursday, Period 2, 201' },
+      ],
+      highlights: ['Thursday', 'Period 2', '201'],
+      title: 'Your lesson was moved – 10.C',
+    },
+    hu: {
+      content:
+        'A 10.C osztály Biológia órája áthelyezésre került: csütörtök, 2. óra, 201. terem.',
+      details: [
+        { label: 'Dátum', value: '2026. 09. 03.' },
+        { label: 'Osztály', value: '10.C' },
+        { label: 'Tantárgy', value: 'Biológia' },
+        { label: 'Eredeti', value: 'Kedd, 6. óra, 201' },
+        { label: 'Új', value: 'Csütörtök, 2. óra, 201' },
+      ],
+      highlights: ['Csütörtök', '2. óra', '201'],
+      title: 'Az órád áthelyezve – 10.C',
+    },
+  },
   substitution: {
     en: {
       content:
@@ -240,7 +267,9 @@ export function useTestNotificationRecordOptions(
   const substitutions = useSubstitutions(
     type === 'substitution' || type === 'substitution_teacher'
   );
-  const movedLessons = useMovedLessons(type === 'moved_lesson');
+  const movedLessons = useMovedLessons(
+    type === 'moved_lesson' || type === 'moved_lesson_teacher'
+  );
   const announcements = useAnnouncements(type === 'announcement');
   const systemMessages = useAdminSystemMessages(type === 'system_message');
   const blogPosts = useQuery({
@@ -305,6 +334,7 @@ export function useTestNotificationRecordOptions(
         ),
       }));
     case 'moved_lesson':
+    case 'moved_lesson_teacher':
       return (movedLessons.data ?? []).map((item) => {
         const subject =
           item.manual?.subject?.name ?? item.lessons[0]?.subject?.name;

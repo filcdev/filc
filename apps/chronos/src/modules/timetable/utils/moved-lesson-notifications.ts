@@ -1,6 +1,8 @@
 import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { db } from '#database';
+import { user as userTable } from '#database/schema/authentication';
+import { userPreferences } from '#modules/notifications/schema';
 import {
   classroom,
   cohort,
@@ -16,6 +18,7 @@ import {
   loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
 import { uniqueStrings } from '#utils/notifications/substitution-teacher';
+import type { AudienceUser } from '#utils/notifications/types';
 
 // Shared by every moved-lesson list endpoint: rows carry the target joins and
 // their linked lessons already enriched.
@@ -153,9 +156,10 @@ export async function attachEnrichedLessons(rows: MovedLessonRow[]) {
 
 /**
  * Everything the moved-lesson email builders read off one moved lesson. The
- * payload carries display values, never foreign keys: `startingDay` is the day
- * name, `startingPeriod` the period number as a string and `room` the room
- * name, all already resolved from the row's joins.
+ * payload carries display values: `startingDay` is the day name,
+ * `startingPeriod` the period number as a string and `room` the room name, all
+ * already resolved from the row's joins. `teacherIds` is the exception — the
+ * teacher-facing audience needs the ids to resolve their user accounts.
  */
 export type MovedLessonNotificationPayload = {
   cohortIds: string[];
@@ -165,6 +169,8 @@ export type MovedLessonNotificationPayload = {
   lessonIds: string[];
   original: {
     day: string | null;
+    /** True when the linked lessons started in more than one distinct slot. */
+    hasMultipleSlots: boolean;
     period: number | null;
     room: string | null;
     teacherNames: string[];
@@ -181,6 +187,8 @@ export type MovedLessonNotificationPayload = {
     period: number | null;
     room: string | null;
   };
+  /** Ids of the teachers whose lesson moved; the teacher notification audience. */
+  teacherIds: string[];
 };
 
 type EnrichedMovedLesson = Awaited<
@@ -260,7 +268,6 @@ export async function loadMovedLessonNotificationPayload(
   const lessonRow = enriched.movedLesson;
   const lessons = enriched.lessons;
   const manual = enriched.manual;
-  const firstLesson = lessons[0];
 
   const { cohortIds, cohortNames } = movedLessonCohorts(enriched);
   const target = movedLessonTarget(enriched);
@@ -270,9 +277,25 @@ export async function loadMovedLessonNotificationPayload(
   const teacherNames = manual
     ? uniqueStrings(manual.teachers.map((t) => t.name))
     : uniqueStrings(lessons.flatMap((l) => l.teachers.map((t) => t.name)));
+  const teacherIds = manual
+    ? uniqueStrings(manual.teachers.map((t) => t.id))
+    : uniqueStrings(lessons.flatMap((l) => l.teachers.map((t) => t.id)));
   const originalRooms = manual
     ? uniqueStrings([manual.sourceRoom?.name])
     : uniqueStrings(lessons.flatMap((l) => l.classrooms.map((c) => c.name)));
+  // A linked move can carry lessons from different original slots; only a
+  // single distinct day/period pair can be shown as "the" original slot.
+  const originalSlots = manual
+    ? []
+    : Array.from(
+        new Map(
+          lessons.map((l) => [
+            `${l.day?.name ?? ''}\u0000${l.period?.period ?? ''}`,
+            { day: l.day?.name ?? null, period: l.period?.period ?? null },
+          ])
+        ).values()
+      );
+  const [originalSlot] = originalSlots;
 
   return {
     cohortIds,
@@ -281,8 +304,9 @@ export async function loadMovedLessonNotificationPayload(
     date: lessonRow.date,
     lessonIds: lessons.map((l) => l.id),
     original: {
-      day: manual ? null : (firstLesson?.day?.name ?? null),
-      period: manual ? null : (firstLesson?.period?.period ?? null),
+      day: originalSlot?.day ?? null,
+      hasMultipleSlots: originalSlots.length > 1,
+      period: originalSlot?.period ?? null,
       room: originalRooms.join(', ') || null,
       teacherNames,
     },
@@ -295,5 +319,57 @@ export async function loadMovedLessonNotificationPayload(
       period: target.period,
       room: target.room,
     },
+    teacherIds,
   };
+}
+
+/**
+ * The teachers of a moved lesson as notification recipients. A `teacher` row
+ * is the only link between a lesson and a user account, so a teacher without a
+ * `userId` has nobody to notify and is dropped.
+ */
+export async function resolveMovedLessonTeacherAudience(
+  payload: MovedLessonNotificationPayload
+): Promise<AudienceUser[]> {
+  if (payload.teacherIds.length === 0) {
+    return [];
+  }
+
+  const teacherRows = await db
+    .select({ userId: teacher.userId })
+    .from(teacher)
+    .where(inArray(teacher.id, payload.teacherIds));
+
+  const userIds = uniqueStrings(teacherRows.map((row) => row.userId));
+
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const [users, prefs] = await Promise.all([
+    db
+      .select({
+        cohortId: userTable.cohortId,
+        email: userTable.email,
+        id: userTable.id,
+      })
+      .from(userTable)
+      .where(inArray(userTable.id, userIds)),
+    db
+      .select({
+        language: userPreferences.language,
+        userId: userPreferences.userId,
+      })
+      .from(userPreferences)
+      .where(inArray(userPreferences.userId, userIds)),
+  ]);
+
+  const languageMap = new Map(prefs.map((p) => [p.userId, p.language]));
+
+  return users.map((user) => ({
+    cohortId: user.cohortId,
+    email: user.email,
+    id: user.id,
+    language: languageMap.get(user.id) ?? 'hu',
+  }));
 }

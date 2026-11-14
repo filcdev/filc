@@ -696,6 +696,11 @@ export const createMovedLesson = base.timetable.movedLessons.create
         'moved_lesson',
         notificationPayload
       );
+      dispatchPendingNotification(
+        newMovedLesson.id,
+        'moved_lesson_teacher',
+        notificationPayload
+      );
     }
 
     return newMovedLesson;
@@ -839,6 +844,11 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     const notificationPayload = await loadMovedLessonNotificationPayload(id);
     if (notificationPayload) {
       dispatchPendingNotification(id, 'moved_lesson', notificationPayload);
+      dispatchPendingNotification(
+        id,
+        'moved_lesson_teacher',
+        notificationPayload
+      );
     }
 
     return updatedMovedLesson;
@@ -865,6 +875,7 @@ export const deleteMovedLesson = base.timetable.movedLessons.delete
     });
 
     cancelPendingNotification(id, 'moved_lesson');
+    cancelPendingNotification(id, 'moved_lesson_teacher');
 
     return { id: deletedMovedLesson.id };
   });
