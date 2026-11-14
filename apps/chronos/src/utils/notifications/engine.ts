@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getLogger } from '@logtape/logtape';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, not } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { notification, userPreferences } from '#modules/notifications/schema';
@@ -75,12 +75,27 @@ export async function resolveAudienceForLessonChange(
     return [];
   }
 
-  return resolveAudienceByCohortIds(cohortIds);
+  return resolveAudienceByCohortIds(cohortIds, { excludeTeachers: true });
 }
 
+type CohortAudienceOptions = {
+  /**
+   * Drop every teacher-linked account from the audience. The lesson-change
+   * copy is written for a student ("your lesson is cancelled"), so a teacher
+   * who still carries a `cohort_id` must not receive it; teachers get the
+   * `*_teacher` variants instead.
+   */
+  excludeTeachers?: boolean;
+};
+
 async function resolveAudienceByCohortIds(
-  cohortIds: string[]
+  cohortIds: string[],
+  { excludeTeachers = false }: CohortAudienceOptions = {}
 ): Promise<AudienceUser[]> {
+  const roleFilter = excludeTeachers
+    ? [not(linkedTeacherExists(userTable.id))]
+    : [];
+
   const users = await db
     .select({
       cohortId: userTable.cohortId,
@@ -88,7 +103,7 @@ async function resolveAudienceByCohortIds(
       id: userTable.id,
     })
     .from(userTable)
-    .where(inArray(userTable.cohortId, cohortIds));
+    .where(and(inArray(userTable.cohortId, cohortIds), ...roleFilter));
 
   return enrichUsersWithLanguage(users);
 }
