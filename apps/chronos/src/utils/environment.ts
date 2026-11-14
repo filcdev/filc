@@ -82,9 +82,20 @@ const envShape = z.object({
   CHRONOS_NOTIFICATION_DELAY_COHORT_RESELECTION_REQUIRED: z.coerce
     .number()
     .default(0),
-  CHRONOS_NOTIFICATION_DELAY_MOVED_LESSON: z.coerce.number().default(60),
+  // Debounced types: an edit inside the window cancels and re-arms the timer,
+  // so the window has to be at least one second. Zero would fire on the next
+  // timer tick and defeat the debounce entirely.
+  CHRONOS_NOTIFICATION_DELAY_MOVED_LESSON: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(60),
 
-  CHRONOS_NOTIFICATION_DELAY_SUBSTITUTION: z.coerce.number().default(60),
+  CHRONOS_NOTIFICATION_DELAY_SUBSTITUTION: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(60),
   CHRONOS_NOTIFICATION_DELAY_SYSTEM_MESSAGE: z.coerce.number().default(60),
   CHRONOS_OAUTH_PROXY_SECRET: z.string().optional(),
   // OAuth proxy: lets preview deployments sign in through the production

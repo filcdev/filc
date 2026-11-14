@@ -19,6 +19,10 @@ import { completePreferences } from '#utils/notifications/types';
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 
 const registry = new Map<NotificationType, NotificationHandler>();
+// Known limit: the debounce state is process-local and in-memory. A restart
+// inside a delay window (deploy, crash, container recreate) loses every pending
+// timer for good and those notifications are never delivered. A durable queue
+// for pending dispatches is separate work.
 const timers = new Map<string, Timer>();
 
 function timerKey(entityId: string, type: NotificationType): string {

@@ -741,8 +741,10 @@ export const updateMovedLesson = base.timetable.movedLessons.update
       ),
     });
 
-    cancelPendingNotification(id, 'moved_lesson');
-
+    // The pending timer is left alone until the write succeeds: a failed edit
+    // (a rejected reference, a transaction rollback) must not drop the
+    // notification for the move that is still stored. The dispatch below
+    // cancels and re-arms it, so the debounce window restarts on success.
     const storedLessonIds = (
       await db
         .select({ lessonId: movedLessonLessonMTM.lessonId })
