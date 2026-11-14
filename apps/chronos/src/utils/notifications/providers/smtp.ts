@@ -15,6 +15,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { env } from '#utils/environment';
+import { mailLocale } from '#utils/notifications/locale';
 import type { NotificationType } from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'smtp']);
@@ -232,7 +233,7 @@ export async function sendEmail(
     return { ok: false };
   }
   try {
-    const lang = locale === 'en' ? 'en' : 'hu';
+    const lang = mailLocale(locale);
     // The id is a uuid column: the pure SMTP delivery test passes an empty id,
     // and querying with it would abort the whole send.
     const [recipient] = userId
@@ -300,7 +301,7 @@ export async function renderPreviewEmail(
     title: string;
   }
 ): Promise<string> {
-  const lang = locale === 'en' ? 'en' : 'hu';
+  const lang = mailLocale(locale);
   const { html } = await renderEmail(
     'notification',
     {

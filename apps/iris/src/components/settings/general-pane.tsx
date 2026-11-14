@@ -180,6 +180,10 @@ export function GeneralPane({
 
   const settingsQuery = useNotificationSettings(active);
 
+  // The language is a live preference: the select writes it right away, so its
+  // save stays silent and never closes the dialog or touches other fields.
+  const saveLanguage = useUpdateNotificationSettings({ silent: true });
+
   const cohortQuery = useQuery({
     ...orpc.cohort.cohort.queryOptions(),
     enabled: active,
@@ -233,6 +237,7 @@ export function GeneralPane({
     if (typeof document !== 'undefined') {
       document.documentElement.lang = value;
     }
+    saveLanguage.mutate({ language: value });
   };
 
   if (settingsQuery.isLoading) {

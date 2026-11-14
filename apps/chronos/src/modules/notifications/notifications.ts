@@ -27,6 +27,7 @@ import { base } from '#orpc';
 import { env } from '#utils/environment';
 import { badRequest, forbidden, notFound } from '#utils/http';
 import { channelDefaultsForUser } from '#utils/notifications/channel-defaults';
+import { mailLocale } from '#utils/notifications/locale';
 import { sendPush } from '#utils/notifications/providers/fcm';
 import {
   renderPreviewEmail,
@@ -324,13 +325,16 @@ export const testNotification = base.notifications.test
       prefs?.notificationPreferences,
       defaults
     );
+    const lang = mailLocale(prefs?.language);
 
     const [notif] = await db
       .insert(notification)
       .values({
         content:
-          'This is a test notification. If you received this, everything works.',
-        title: 'Test Notification',
+          lang === 'en'
+            ? 'This is a test notification. If you received this, everything works.'
+            : 'Ez egy teszt értesítés. Ha megkaptad, minden működik.',
+        title: lang === 'en' ? 'Test Notification' : 'Teszt értesítés',
         type: 'test',
         userId,
       })
@@ -355,7 +359,7 @@ export const testNotification = base.notifications.test
       content: notif.content,
       email: userRecords[0]?.email ?? '',
       emailEnabled: preferences.emailEnabled,
-      language: prefs?.language ?? 'hu',
+      language: lang,
       notificationId: notif.id,
       title: notif.title,
       type: 'test',
@@ -431,12 +435,18 @@ async function resolveTestTarget(
     target.email = me?.email ?? '';
   }
 
-  const [prefs] = await db
-    .select({ language: userPreferences.language })
-    .from(userPreferences)
-    .where(eq(userPreferences.userId, target.id))
-    .limit(1);
-  target.language = language ?? prefs?.language ?? 'hu';
+  // A non-user target has no row to read (and no uuid to read it with), so the
+  // requested language — or the column default — is the answer.
+  if (target.isUser) {
+    const [prefs] = await db
+      .select({ language: userPreferences.language })
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, target.id))
+      .limit(1);
+    target.language = language ?? prefs?.language ?? 'hu';
+  } else {
+    target.language = language ?? 'hu';
+  }
   return target;
 }
 
@@ -457,10 +467,15 @@ export const sendTestNotification = base.notifications.sendTest
       body.language,
       currentUserId
     );
-    const subject = body.subject ?? 'Filc test message';
+    const lang = mailLocale(target.language);
+    const subject =
+      body.subject ??
+      (lang === 'en' ? 'Filc test message' : 'Filc teszt üzenet');
     const content =
       body.content ??
-      'This is a development test message. If you received this, everything works.';
+      (lang === 'en'
+        ? 'This is a development test message. If you received this, everything works.'
+        : 'Ez egy fejlesztési teszt üzenet. Ha megkaptad, minden rendben működik.');
 
     const results = { email: false, inApp: false, push: false };
     const metadata = {
@@ -589,7 +604,7 @@ export const previewTestNotification = base.notifications.previewTest
       );
     }
 
-    const locale = input.language ?? 'hu';
+    const locale = mailLocale(input.language);
 
     if (input.entityId) {
       logger.debug('Rendering preview of {type} record {entityId}', {
@@ -606,12 +621,16 @@ export const previewTestNotification = base.notifications.previewTest
     }
 
     const body = input;
-    const subject = body.subject ?? 'Filc test message';
+    const subject =
+      body.subject ??
+      (locale === 'en' ? 'Filc test message' : 'Filc teszt üzenet');
     const content =
       body.content ??
-      'This is a development test message. If you received this, everything works.';
+      (locale === 'en'
+        ? 'This is a development test message. If you received this, everything works.'
+        : 'Ez egy fejlesztési teszt üzenet. Ha megkaptad, minden rendben működik.');
 
-    const html = await renderPreviewEmail(body.type, body.language ?? 'hu', {
+    const html = await renderPreviewEmail(body.type, locale, {
       content,
       details: body.details,
       highlights: body.highlights,

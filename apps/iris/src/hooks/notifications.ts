@@ -84,6 +84,8 @@ type UpdateSettingsCallbacks = {
   updateCohort?: () => Promise<void>;
   /** Called after the settings are saved successfully. */
   onSaved?: () => void;
+  /** Skip the success toast for a field that saves as it changes. */
+  silent?: boolean;
 };
 
 /** Unread notification count for the badge; polls every 30s while signed in. */
@@ -124,6 +126,7 @@ export function useNotificationSettings(enabled: boolean) {
 /** Save notification preference settings. */
 export function useUpdateNotificationSettings({
   onSaved,
+  silent = false,
   updateCohort,
 }: UpdateSettingsCallbacks = {}) {
   const queryClient = useQueryClient();
@@ -154,7 +157,9 @@ export function useUpdateNotificationSettings({
       queryClient.invalidateQueries({
         queryKey: orpc.notifications.settings.key(),
       });
-      toast.success(t('preferences.saveSuccess'));
+      if (!silent) {
+        toast.success(t('preferences.saveSuccess'));
+      }
       onSaved?.();
     },
   });
