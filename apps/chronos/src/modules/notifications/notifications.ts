@@ -463,11 +463,21 @@ export const sendTestNotification = base.notifications.sendTest
       'This is a development test message. If you received this, everything works.';
 
     const results = { email: false, inApp: false, push: false };
+    const metadata = {
+      ...(body.details?.length ? { details: body.details } : {}),
+      ...(body.highlights?.length ? { highlights: body.highlights } : {}),
+    };
 
     if (target.isUser && body.channels.inApp) {
       const [notif] = await db
         .insert(notification)
-        .values({ content, title: subject, type: body.type, userId: target.id })
+        .values({
+          content,
+          metadata: Object.keys(metadata).length > 0 ? metadata : null,
+          title: subject,
+          type: body.type,
+          userId: target.id,
+        })
         .returning();
       results.inApp = Boolean(notif);
     }
@@ -476,7 +486,12 @@ export const sendTestNotification = base.notifications.sendTest
         target.email,
         body.type,
         target.language,
-        { content, title: subject },
+        {
+          content,
+          details: body.details,
+          highlights: body.highlights,
+          title: subject,
+        },
         target.id
       );
       results.email = email.ok;
@@ -598,6 +613,8 @@ export const previewTestNotification = base.notifications.previewTest
 
     const html = await renderPreviewEmail(body.type, body.language ?? 'hu', {
       content,
+      details: body.details,
+      highlights: body.highlights,
       title: subject,
     });
 

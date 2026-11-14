@@ -243,6 +243,15 @@ async function deliverToUser(
     user.language
   );
 
+  // Details and highlights are what the email renders below the hero; the
+  // inbox has no room for a parallel schema, so they ride along in the row's
+  // metadata next to the action/slug keys a handler may already set.
+  const metadata = {
+    ...content.metadata,
+    ...(content.details?.length ? { details: content.details } : {}),
+    ...(content.highlights?.length ? { highlights: content.highlights } : {}),
+  };
+
   // The inbox row is always written. Push has no user-facing switch and is
   // attempted for every notification, so the delivery is always queued;
   // only email is gated, and the queue reads that flag.
@@ -250,7 +259,7 @@ async function deliverToUser(
     .insert(notification)
     .values({
       content: content.content,
-      metadata: content.metadata ?? null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
       title: content.title,
       type,
       userId: user.id,

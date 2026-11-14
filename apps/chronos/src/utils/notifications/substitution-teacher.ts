@@ -15,8 +15,6 @@ import {
 import { isHungarianLocale } from './locale';
 import type { AudienceUser, NotificationContent } from './types';
 
-const TRAILING_NEWLINES = /\n+$/;
-
 /** One affected lesson, with the details a substitute teacher needs. */
 export type SubstitutionTeacherLesson = {
   cohortName: string | null;
@@ -54,6 +52,34 @@ const formatDate = (value: Date, hu: boolean): string => {
   const year = value.getFullYear();
   return hu ? `${year}. ${month}. ${day}.` : `${year}-${month}-${day}`;
 };
+
+/**
+ * The weekday of a date as it reads inside a sentence: English keeps the plain
+ * name, Hungarian needs the "-on/-en/-ön" form ("szerdán", "pénteken"), which
+ * `Intl` does not produce.
+ */
+const WEEKDAYS_EN = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+
+const WEEKDAYS_HU_ON = [
+  'vasárnap',
+  'hétfőn',
+  'kedden',
+  'szerdán',
+  'csütörtökön',
+  'pénteken',
+  'szombaton',
+];
+
+const weekdayOn = (value: Date, hu: boolean): string =>
+  (hu ? WEEKDAYS_HU_ON : WEEKDAYS_EN)[value.getDay()] ?? '';
 
 const periodLabel = (periodNo: number | null, hu: boolean): string => {
   if (periodNo == null) {
@@ -287,6 +313,50 @@ const buildSubstitutionTeacherDetails = (
   return rows.filter((row) => row.value.length > 0);
 };
 
+/**
+ * The multi-lesson details card: the date, then one row per affected lesson.
+ * The label carries the period and the class so the rows stay readable without
+ * a header, and a duplicate label gets a numeric suffix because the mail
+ * template keys its rows by label.
+ */
+export const buildSubstitutionMultiLessonDetails = (
+  payload: SubstitutionTeacherPayload,
+  hu: boolean
+): EmailDetail[] => {
+  const seen = new Map<string, number>();
+  const lessonFallback = hu ? 'Óra' : 'Lesson';
+
+  const rows: EmailDetail[] = [
+    { label: hu ? 'Dátum' : 'Date', value: formatDate(payload.date, hu) },
+    ...payload.lessons.map((entry) => {
+      const base =
+        [periodLabel(entry.period, hu), entry.cohortName]
+          .filter(Boolean)
+          .join(' · ') || lessonFallback;
+      const count = (seen.get(base) ?? 0) + 1;
+      seen.set(base, count);
+
+      return {
+        label: count > 1 ? `${base} · ${count}` : base,
+        value: uniqueStrings([
+          entry.subjectName,
+          entry.rooms.length > 0 ? entry.rooms.join(', ') : null,
+          entry.substitutedTeachers.length > 0
+            ? entry.substitutedTeachers.join(', ')
+            : null,
+        ]).join(' · '),
+      };
+    }),
+  ];
+
+  const comment = payload.comment?.trim();
+  if (comment) {
+    rows.push({ label: hu ? 'Megjegyzés' : 'Comment', value: comment });
+  }
+
+  return rows.filter((row) => row.value.length > 0);
+};
+
 /** Build the teacher-facing notification content for a substitution. */
 export function buildSubstitutionTeacherContent(
   payload: SubstitutionTeacherPayload,
@@ -296,16 +366,9 @@ export function buildSubstitutionTeacherContent(
   const { date, lessons } = payload;
 
   const label = {
-    cohort: hu ? 'Osztály' : 'Class',
-    date: hu ? 'Dátum' : 'Date',
     intro: hu
       ? 'Új helyettesítést jelöltek ki hozzád.'
       : 'You have been assigned a new substitution.',
-    lessons: hu ? 'Órák' : 'Lessons',
-    period: hu ? 'Óra' : 'Lesson',
-    replaced: hu ? 'Helyettesített tanár' : 'Substituted teacher',
-    room: hu ? 'Terem' : 'Room',
-    subject: hu ? 'Tárgy' : 'Subject',
     title: hu ? 'Új helyettesítés' : 'New substitution',
   };
 
@@ -335,44 +398,15 @@ export function buildSubstitutionTeacherContent(
     };
   }
 
-  const lessonLines = (entry: SubstitutionTeacherLesson): string[] => {
-    const result: string[] = [];
-    const lessonLabel = [periodLabel(entry.period, hu), timeRangeLabel(entry)]
-      .filter(Boolean)
-      .join(' ');
-    if (lessonLabel) {
-      result.push(`${label.period}: ${lessonLabel}`);
-    }
-    if (entry.cohortName) {
-      result.push(`${label.cohort}: ${entry.cohortName}`);
-    }
-    if (entry.subjectName) {
-      result.push(`${label.subject}: ${entry.subjectName}`);
-    }
-    if (entry.rooms.length > 0) {
-      result.push(`${label.room}: ${entry.rooms.join(', ')}`);
-    }
-    if (entry.substitutedTeachers.length > 0) {
-      result.push(`${label.replaced}: ${entry.substitutedTeachers.join(', ')}`);
-    }
-    return result;
-  };
-
-  const dateLine = `${label.date}: ${formatDate(date, hu)}`;
-  const body = [
-    dateLine,
-    '',
-    ...lessons.flatMap((entry, i) => [
-      `${label.lessons} (${i + 1}):`,
-      ...lessonLines(entry),
-      '',
-    ]),
-  ]
-    .join('\n')
-    .replace(TRAILING_NEWLINES, '');
+  // The rows carry the per-lesson information, so the body stays one sentence:
+  // the mail template renders the hero, then the detail rows below it.
+  const content = hu
+    ? `${lessons.length} órára jelöltek ki helyettesítésre ${weekdayOn(date, hu)}.`
+    : `You were assigned to substitute ${lessons.length} lessons on ${weekdayOn(date, hu)}.`;
 
   return {
-    content: `${label.intro}\n\n${body}`,
+    content,
+    details: buildSubstitutionMultiLessonDetails(payload, hu),
     highlights,
     title,
   };

@@ -169,6 +169,20 @@ export function NotificationHistoryDialog({
                             {typeLabel(notif.type, t)}
                           </Badge>
                         </div>
+                        {notif.metadata?.highlights?.length ? (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {[...new Set(notif.metadata.highlights)]
+                              .slice(0, 3)
+                              .map((highlight) => (
+                                <span
+                                  className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs"
+                                  key={highlight}
+                                >
+                                  {highlight}
+                                </span>
+                              ))}
+                          </div>
+                        ) : null}
                         <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
                           {notif.content}
                         </p>

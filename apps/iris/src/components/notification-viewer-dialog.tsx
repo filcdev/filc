@@ -43,6 +43,9 @@ export function NotificationViewerDialog({
     return null;
   }
 
+  const highlights = [...new Set(notification.metadata?.highlights ?? [])];
+  const details = notification.metadata?.details ?? [];
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-2xl">
@@ -56,6 +59,36 @@ export function NotificationViewerDialog({
         </DialogHeader>
 
         <p className="whitespace-pre-wrap text-sm">{notification.content}</p>
+
+        {highlights.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {highlights.map((highlight) => (
+              <span
+                className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs"
+                key={highlight}
+              >
+                {highlight}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {details.length > 0 && (
+          <dl className="divide-y rounded-md border text-xs">
+            {details.map((detail) => (
+              <div
+                className="flex items-start justify-between gap-4 px-3 py-1.5"
+                key={detail.label}
+              >
+                <dt className="text-muted-foreground uppercase tracking-wide">
+                  {detail.label}
+                </dt>
+                <dd className="text-right">{detail.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
         <p className="text-muted-foreground text-xs">
           {formatLocalizedDate(notification.createdAt, i18n.language, {
             dateStyle: 'short',

@@ -92,6 +92,7 @@ function DevNotificationsPage() {
   const form = useForm({
     defaultValues,
     onSubmit: ({ value }) => {
+      const mock = NOTIFICATION_MOCKS[value.type]?.[value.language];
       sendNotification.mutate({
         channels: {
           email: value.channelEmail,
@@ -99,7 +100,9 @@ function DevNotificationsPage() {
           push: value.channelPush,
         },
         content: value.content || undefined,
+        details: mock?.details,
         email: value.email || undefined,
+        highlights: mock?.highlights,
         language: value.language,
         subject: value.subject || undefined,
         type: value.type,
@@ -128,6 +131,7 @@ function DevNotificationsPage() {
   }, [values.type, values.language, form.setFieldValue]);
 
   const handlePreview = async () => {
+    const mock = NOTIFICATION_MOCKS[values.type]?.[values.language];
     try {
       const html = await previewNotification.mutateAsync(
         recordSelected
@@ -138,6 +142,8 @@ function DevNotificationsPage() {
             }
           : {
               content: values.content || undefined,
+              details: mock?.details,
+              highlights: mock?.highlights,
               language: values.language,
               subject: values.subject || undefined,
               type: values.type,
@@ -163,7 +169,9 @@ function DevNotificationsPage() {
           return sendAllNotification.mutateAsync({
             channels,
             content: mock.content,
+            details: mock.details,
             email: values.email || undefined,
+            highlights: mock.highlights,
             language: values.language,
             subject: mock.title,
             type,

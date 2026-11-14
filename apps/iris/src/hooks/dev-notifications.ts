@@ -1,4 +1,7 @@
-import { notificationTypeValues } from '@filcdev/api/domains/notifications';
+import {
+  type NotificationDetail,
+  notificationTypeValues,
+} from '@filcdev/api/domains/notifications';
 import { ERROR_CODE } from '@filcdev/api/errors';
 import { isDefinedError } from '@orpc/client';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -14,7 +17,12 @@ export const NOTIFICATION_TYPES = notificationTypeValues;
 
 type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
-type MockText = { content: string; title: string };
+type MockText = {
+  content: string;
+  details?: NotificationDetail[];
+  highlights?: string[];
+  title: string;
+};
 
 /** Realistic sample content per notification type, localized. */
 export const NOTIFICATION_MOCKS: Record<
@@ -73,11 +81,29 @@ export const NOTIFICATION_MOCKS: Record<
     en: {
       content:
         'Class 10.C Biology (Peter Kovacs) moved from Tue period 6 to Thu period 2, room 201.',
+      details: [
+        { label: 'Date', value: '2026-09-03' },
+        { label: 'Class', value: '10.C' },
+        { label: 'Subject', value: 'Biology' },
+        { label: 'Original', value: 'Tuesday, Period 6, 201' },
+        { label: 'New', value: 'Thursday, Period 2, 201' },
+        { label: 'Teacher', value: 'Peter Kovacs' },
+      ],
+      highlights: ['Thursday', 'Period 2', '201'],
       title: 'Lesson moved',
     },
     hu: {
       content:
         'A 10.C osztály Biológia órája (Kovács Péter) a kedd 6. óráról csütörtök 2. órára lett áthelyezve, 201. terem.',
+      details: [
+        { label: 'Dátum', value: '2026. 09. 03.' },
+        { label: 'Osztály', value: '10.C' },
+        { label: 'Tantárgy', value: 'Biológia' },
+        { label: 'Eredeti', value: 'Kedd, 6. óra, 201' },
+        { label: 'Új', value: 'Csütörtök, 2. óra, 201' },
+        { label: 'Tanár', value: 'Kovács Péter' },
+      ],
+      highlights: ['Csütörtök', '2. óra', '201'],
       title: 'Óra áthelyezve',
     },
   },
@@ -85,23 +111,55 @@ export const NOTIFICATION_MOCKS: Record<
     en: {
       content:
         'Lesson 3 (Math – Peter Kovacs) for class 11.A is cancelled today. Replacement: period 5, room 204.',
+      details: [
+        { label: 'Date', value: '2026-09-03' },
+        { label: 'Class', value: '11.A' },
+        { label: 'Subject', value: 'Math' },
+        { label: 'Lesson', value: 'Period 3 (8:00 - 8:45)' },
+        { label: 'Room', value: '204' },
+        { label: 'Substituted teacher', value: 'Peter Kovacs' },
+        { label: 'Substitute', value: 'Anna Szabo' },
+      ],
+      highlights: ['Period 3', '11.A', '204'],
       title: 'Substitution – 2026-09-03',
     },
     hu: {
       content:
         'A mai napon a 11.A osztály 3. órája (Matematika – Kovács Péter) elmarad. Helyettesítés: 5. óra, 204. terem.',
+      details: [
+        { label: 'Dátum', value: '2026. 09. 03.' },
+        { label: 'Osztály', value: '11.A' },
+        { label: 'Tantárgy', value: 'Matematika' },
+        { label: 'Óra', value: '3. óra (8:00 - 8:45)' },
+        { label: 'Terem', value: '204' },
+        { label: 'Helyettesített tanár', value: 'Kovács Péter' },
+        { label: 'Helyettesítő', value: 'Szabó Anna' },
+      ],
+      highlights: ['3. óra', '11.A', '204'],
       title: 'Órarendcsere – 2026-09-03',
     },
   },
   substitution_teacher: {
     en: {
-      content:
-        'Peter Kovacs will substitute Edit Nagy tomorrow in period 2 for class 11.B (Physics). Please prepare the material.',
+      content: 'You were assigned to substitute two lessons on Thursday.',
+      details: [
+        { label: 'Date', value: '2026-09-04' },
+        { label: 'Period 2 · 11. B', value: 'Physics · 105 · Edit Nagy' },
+        { label: 'Period 5 · 11. C', value: 'Physics · 106 · Edit Nagy' },
+        { label: 'Comment', value: 'Bring the lab sheets.' },
+      ],
+      highlights: ['Period 2 · 11. B', 'Period 5 · 11. C'],
       title: 'Substitution for your lesson',
     },
     hu: {
-      content:
-        'Kovács Péter helyettesíti Nagy Editet holnap 2. órában a 11.B osztályban (Fizika). Kérjük, készülj fel az anyagból.',
+      content: 'Két órára jelöltek ki helyettesítésre csütörtökön.',
+      details: [
+        { label: 'Dátum', value: '2026. 09. 04.' },
+        { label: '2. óra · 11. B', value: 'Fizika · 105 · Nagy Edit' },
+        { label: '5. óra · 11. C', value: 'Fizika · 106 · Nagy Edit' },
+        { label: 'Megjegyzés', value: 'Hozd a mérőlapokat.' },
+      ],
+      highlights: ['2. óra · 11. B', '5. óra · 11. C'],
       title: 'Helyettesítés a mai órádra',
     },
   },
