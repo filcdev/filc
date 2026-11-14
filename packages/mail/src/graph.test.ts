@@ -52,13 +52,17 @@ describe('createGraphTransport', () => {
     globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input);
       const call = {
-        body: typeof init?.body === 'string' ? init.body : undefined,
+        body:
+          init?.body === undefined || init.body === null
+            ? undefined
+            : String(init.body),
         headers: new Headers(init?.headers),
         signal: init?.signal,
         url,
       };
       calls.push(call);
-      return Promise.resolve(respond(call));
+      // Inside a promise so a throwing stub rejects like a real fetch.
+      return Promise.resolve().then(() => respond(call));
     }) as typeof fetch;
   };
 
@@ -207,6 +211,9 @@ describe('createGraphTransport', () => {
     expect(error).toBeInstanceOf(GraphMailError);
     expect((error as GraphMailError).retryAfterMs).toBe(2000);
     expect((error as GraphMailError).status).toBe(429);
+    // A retry belongs to the queue, which honours Retry-After; sendMail itself
+    // must not hammer a throttled mailbox with an immediate second attempt.
+    expect(sendCalls()).toHaveLength(1);
   });
 
   test('falls back to 1000 ms when Retry-After is absent', async () => {
@@ -273,6 +280,8 @@ describe('createGraphTransport', () => {
     expect((error as GraphMailError).message).toContain('ErrorSendAsDenied');
     expect((error as GraphMailError).message).toContain('SendAs permission');
     expect((error as GraphMailError).status).toBe(403);
+    // Only a 401 is worth a second attempt: the token is not the problem here.
+    expect(sendCalls()).toHaveLength(1);
   });
 
   test('reports the status when the error body is not JSON', async () => {
@@ -290,5 +299,143 @@ describe('createGraphTransport', () => {
     expect(error).toBeInstanceOf(GraphMailError);
     expect((error as GraphMailError).status).toBe(502);
     expect((error as GraphMailError).message).toContain('502');
+    expect(sendCalls()).toHaveLength(1);
+  });
+
+  test('does not reuse a token that expires inside the skew window', async () => {
+    // 30 s of life is inside the 60 s skew, so the first send's token is already
+    // treated as stale for the second send.
+    stubFetch((call) =>
+      isTokenCall(call)
+        ? Response.json({ access_token: 'token-1', expires_in: 30 })
+        : new Response(null, { status: 202 })
+    );
+
+    const transport = createGraphTransport(config);
+    await transport.send(message);
+    await transport.send(message);
+
+    expect(calls.filter(isTokenCall)).toHaveLength(2);
+    expect(sendCalls()).toHaveLength(2);
+  });
+
+  test('shares one in-flight mint between concurrent sends', async () => {
+    stubFetch((call) =>
+      isTokenCall(call) ? tokenResponse() : new Response(null, { status: 202 })
+    );
+
+    const transport = createGraphTransport(config);
+    await Promise.all([transport.send(message), transport.send(message)]);
+
+    expect(calls.filter(isTokenCall)).toHaveLength(1);
+    expect(sendCalls()).toHaveLength(2);
+  });
+
+  test('mints again after a failed mint instead of caching the failure', async () => {
+    let mintAttempts = 0;
+    stubFetch((call) => {
+      if (!isTokenCall(call)) {
+        return new Response(null, { status: 202 });
+      }
+      mintAttempts += 1;
+      if (mintAttempts === 1) {
+        throw new Error('token endpoint unreachable');
+      }
+      return tokenResponse();
+    });
+
+    const transport = createGraphTransport(config);
+    const first = await transport.send(message).catch((e: unknown) => e);
+    expect(first).toBeInstanceOf(Error);
+
+    await transport.send(message);
+
+    expect(mintAttempts).toBe(2);
+    expect(sendCalls()).toHaveLength(1);
+  });
+
+  test('reports a transport-level failure with status 0', async () => {
+    stubFetch((call) => {
+      if (isTokenCall(call)) {
+        return tokenResponse();
+      }
+      throw new TypeError('fetch failed');
+    });
+
+    const error = await sendAndCatch();
+
+    expect(error).toBeInstanceOf(GraphMailError);
+    expect((error as GraphMailError).status).toBe(0);
+    expect((error as GraphMailError).message).toContain('fetch failed');
+  });
+
+  test('gives the retry its own abort signal', async () => {
+    let sends = 0;
+    stubFetch((call) => {
+      if (isTokenCall(call)) {
+        return tokenResponse();
+      }
+      sends += 1;
+      return new Response(null, { status: sends === 1 ? 401 : 202 });
+    });
+
+    await createGraphTransport(config).send(message);
+
+    const [first, retry] = sendCalls();
+    expect(first?.signal).toBeInstanceOf(AbortSignal);
+    expect(retry?.signal).toBeInstanceOf(AbortSignal);
+    // A shared signal would already be counting down the first attempt's 30 s.
+    expect(first?.signal).not.toBe(retry?.signal);
+  });
+
+  test('requests the Graph scope for its token', async () => {
+    stubFetch((call) =>
+      isTokenCall(call) ? tokenResponse() : new Response(null, { status: 202 })
+    );
+
+    await createGraphTransport(config).send(message);
+
+    const tokenCall = calls.find(isTokenCall);
+    expect(new URLSearchParams(tokenCall?.body).get('scope')).toBe(
+      'https://graph.microsoft.com/.default'
+    );
+  });
+
+  test('refuses a header carrying CR or LF', async () => {
+    stubFetch((call) =>
+      isTokenCall(call) ? tokenResponse() : new Response(null, { status: 202 })
+    );
+
+    const error = (await createGraphTransport(config)
+      .send({
+        ...message,
+        headers: {
+          'List-Unsubscribe': '<https://filc.hu/u>\r\nBcc: evil@x.test',
+        },
+      })
+      .catch((thrown: unknown) => thrown)) as Error;
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toContain('CR or LF');
+    // Rejected before anything reaches the network.
+    expect(calls).toHaveLength(0);
+  });
+
+  test('refuses a message whose encoded MIME is over Graph’s request limit', async () => {
+    stubFetch((call) =>
+      isTokenCall(call) ? tokenResponse() : new Response(null, { status: 202 })
+    );
+
+    const error = (await createGraphTransport(config)
+      .send({
+        ...message,
+        // base64 inflates by 4/3, so this compiles past the 4 MiB ceiling.
+        html: `<p>${'x'.repeat(3_300_000)}</p>`,
+      })
+      .catch((thrown: unknown) => thrown)) as Error;
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toContain('over Graph');
+    expect(calls).toHaveLength(0);
   });
 });
