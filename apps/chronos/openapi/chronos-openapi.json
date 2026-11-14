@@ -32319,6 +32319,10 @@
                         "announcement": {
                           "type": "boolean"
                         },
+                        "announcementEmail": {
+                          "type": "boolean",
+                          "description": "Email me about announcements; in-app announcements are unaffected"
+                        },
                         "blogPost": {
                           "type": "boolean"
                         },
@@ -32344,6 +32348,7 @@
                       },
                       "required": [
                         "announcement",
+                        "announcementEmail",
                         "blogPost",
                         "channelsEnabled",
                         "doorlockCardUsed",
@@ -32637,6 +32642,10 @@
                       "announcement": {
                         "type": "boolean"
                       },
+                      "announcementEmail": {
+                        "type": "boolean",
+                        "description": "Email me about announcements; in-app announcements are unaffected"
+                      },
                       "blogPost": {
                         "type": "boolean"
                       },
@@ -32740,6 +32749,10 @@
                         "announcement": {
                           "type": "boolean"
                         },
+                        "announcementEmail": {
+                          "type": "boolean",
+                          "description": "Email me about announcements; in-app announcements are unaffected"
+                        },
                         "blogPost": {
                           "type": "boolean"
                         },
@@ -32765,6 +32778,7 @@
                       },
                       "required": [
                         "announcement",
+                        "announcementEmail",
                         "blogPost",
                         "channelsEnabled",
                         "doorlockCardUsed",

@@ -180,3 +180,5 @@ Email is the only notification channel a user can switch off. It is resolved per
 A default applies only where the stored record does not name the channel. An explicit user choice always wins, so a student who ticks email in the settings keeps it on, and a teacher who unsubscribes keeps it off.
 
 The same resolution covers accounts that never saved a channel preference. Rows exist from the first settings read, and any row written before the channel split carries no `emailEnabled` key, so a student's pre-existing row now silently resolves to email off and a teacher's to email on, with no data migration. The legacy `channelsEnabled: false` master switch still forces email off, beating the role default.
+
+Announcement email is the one exception to the channel default: it is a separate `announcementEmail` switch that is off by default — including for a stored row written before the key existed — so an announcement is always recorded in-app while the mail leg runs only for users who opted in.

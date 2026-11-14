@@ -9,6 +9,18 @@ import {
 /** The pre-split unsubscribe state: the master switch off, no email flag. */
 const LEGACY_OFF = { channelsEnabled: false };
 
+/** A row written before `announcementEmail` existed: the key is absent. */
+const LEGACY_ROW: Omit<NotificationPreferences, 'announcementEmail'> = {
+  announcement: true,
+  blogPost: false,
+  channelsEnabled: true,
+  doorlockCardUsed: false,
+  emailEnabled: true,
+  movedLesson: true,
+  substitution: true,
+  systemMessage: true,
+};
+
 describe('completePreferences', () => {
   it('reads a legacy channelsEnabled:false row as email off', () => {
     const prefs = completePreferences(LEGACY_OFF);
@@ -58,6 +70,35 @@ describe('completePreferences', () => {
     const prefs = completePreferences(LEGACY_OFF, { email: true });
 
     expect(prefs.emailEnabled).toBe(false);
+  });
+});
+
+describe('announcementEmail', () => {
+  it('resolves a row without the key to off', () => {
+    const prefs = completePreferences(LEGACY_ROW);
+
+    expect(prefs.announcementEmail).toBe(false);
+    // The rest of the row is untouched: the type itself stays on.
+    expect(prefs.announcement).toBe(true);
+  });
+
+  it('keeps an explicit opt-in through a patch that does not name it', () => {
+    const next = applyPreferencesPatch(
+      { ...LEGACY_ROW, announcementEmail: true },
+      { substitution: false }
+    );
+
+    expect(next.announcementEmail).toBe(true);
+    expect(next.substitution).toBe(false);
+  });
+
+  it('turns on when the patch names it', () => {
+    const next = applyPreferencesPatch(LEGACY_ROW, {
+      announcementEmail: true,
+    });
+
+    expect(next.announcementEmail).toBe(true);
+    expect(next.announcement).toBe(true);
   });
 });
 

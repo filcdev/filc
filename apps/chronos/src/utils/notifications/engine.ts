@@ -274,6 +274,15 @@ async function deliverToUser(
   // The inbox row is always written. Push has no user-facing switch and is
   // attempted for every notification, so the delivery is always queued;
   // only email is gated, and the queue reads that flag.
+  //
+  // Announcement mail is opt-in and off by default: the `announcement` flag
+  // above gates the notification as a whole, while this extra key is needed
+  // before the mail leg runs. Every other type keeps the channel switch as its
+  // only email gate.
+  const emailEnabled =
+    preferences.emailEnabled &&
+    (type !== 'announcement' || preferences.announcementEmail);
+
   const [notif] = await db
     .insert(notification)
     .values({
@@ -289,7 +298,7 @@ async function deliverToUser(
     content: content.content,
     details: content.details,
     email: user.email,
-    emailEnabled: preferences.emailEnabled,
+    emailEnabled,
     highlights: content.highlights,
     language: user.language,
     notificationId: notif?.id ?? randomUUID(),

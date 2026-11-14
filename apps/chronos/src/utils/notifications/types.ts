@@ -16,6 +16,11 @@ export type NotificationPreferences = {
   substitution: boolean;
   movedLesson: boolean;
   announcement: boolean;
+  /**
+   * Email for `announcement` only; in-app announcements are unaffected. Off by
+   * default, and a stored row that predates the key must not start mailing.
+   */
+  announcementEmail: boolean;
   systemMessage: boolean;
   blogPost: boolean;
   doorlockCardUsed: boolean;
@@ -32,6 +37,7 @@ export type NotificationPreferences = {
  */
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   announcement: true,
+  announcementEmail: false,
   blogPost: false,
   channelsEnabled: true,
   doorlockCardUsed: false,

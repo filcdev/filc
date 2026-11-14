@@ -791,6 +791,8 @@
     "typesDescription": "Choose which events are worth an alert.",
     "emailEnabled": "Email",
     "emailEnabledDescription": "Sent to your school email address.",
+    "announcementEmail": "Email me about announcements",
+    "announcementEmailDescription": "In-app announcements are always shown",
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
     "loadError": "Failed to load preferences",

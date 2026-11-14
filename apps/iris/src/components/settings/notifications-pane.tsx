@@ -10,7 +10,7 @@ import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { cn } from '@filcdev/ui/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useNotificationSettings,
@@ -67,6 +67,7 @@ export function NotificationsPane({
   highlightChannel?: ChannelId;
 }) {
   const { t } = useTranslation();
+  const announcementEmailId = useId();
   // Seeded from the response only. The email default differs per role, so a
   // local fallback would assert a state the server may not return.
   const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
@@ -135,6 +136,25 @@ export function NotificationsPane({
               </div>
             )
           )}
+          <div className="ml-6 flex items-start justify-between gap-4">
+            <div className="space-y-0.5">
+              <label
+                className="cursor-pointer font-medium text-sm leading-none"
+                htmlFor={announcementEmailId}
+              >
+                {t('preferences.announcementEmail')}
+              </label>
+              <p className="text-muted-foreground text-xs">
+                {t('preferences.announcementEmailDescription')}
+              </p>
+            </div>
+            <Checkbox
+              checked={Boolean(prefs.announcementEmail)}
+              disabled={!prefs.emailEnabled}
+              id={announcementEmailId}
+              onCheckedChange={() => togglePref('announcementEmail')}
+            />
+          </div>
           <div className="space-y-1 border-t pt-4">
             <p className="font-medium text-sm">{t('preferences.types')}</p>
             <p className="text-muted-foreground text-xs">

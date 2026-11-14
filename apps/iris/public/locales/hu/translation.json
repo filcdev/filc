@@ -791,6 +791,8 @@
     "typesDescription": "Válaszd ki, mely eseményekről kérsz értesítést.",
     "emailEnabled": "E-mail",
     "emailEnabledDescription": "Az iskolai e-mail címedre küldjük.",
+    "announcementEmail": "Kérjek e-mailt a közleményekről",
+    "announcementEmailDescription": "Az alkalmazásban a közlemények mindig megjelennek.",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",

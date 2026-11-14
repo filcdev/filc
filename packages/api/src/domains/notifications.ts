@@ -10,6 +10,11 @@ import { colorSchemeSchema } from './theme';
  */
 export const notificationPreferencesSchema = z.object({
   announcement: z.boolean(),
+  announcementEmail: z
+    .boolean()
+    .describe(
+      'Email me about announcements; in-app announcements are unaffected'
+    ),
   blogPost: z.boolean(),
   channelsEnabled: z
     .boolean()
