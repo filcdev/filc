@@ -19,10 +19,14 @@ export const notificationPreferencesSchema = z.object({
   channelsEnabled: z
     .boolean()
     .describe(
-      'Legacy master switch; ignored since the channel split — use emailEnabled'
+      'Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default'
     ),
   doorlockCardUsed: z.boolean(),
-  emailEnabled: z.boolean(),
+  emailEnabled: z
+    .boolean()
+    .describe(
+      'Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher'
+    ),
   movedLesson: z.boolean(),
   substitution: z.boolean(),
   systemMessage: z.boolean(),
@@ -32,7 +36,15 @@ export type NotificationPreferences = z.infer<
   typeof notificationPreferencesSchema
 >;
 
-/** One label/value row of a notification's structured detail block. */
+/**
+ * One label/value row of a notification's structured detail block.
+ *
+ * The same shape as `EmailDetail` in `packages/mail` (`templates/types.ts`):
+ * one row of the detail table, rendered by the in-app inbox and the email
+ * template alike. The two are declared separately on purpose — the mail
+ * package must not depend on the API contract and the contract must stay free
+ * of React — so change both together.
+ */
 export const notificationDetailSchema = z.object({
   label: z.string(),
   value: z.string(),
@@ -146,7 +158,12 @@ export type SendTestNotificationInput = z.infer<
 export const previewTestNotificationSchema = z.object({
   content: z.string().optional(),
   details: z.array(notificationDetailSchema).optional(),
-  entityId: z.uuid().optional(),
+  entityId: z
+    .uuid()
+    .optional()
+    .describe(
+      'Id of a real record to render instead of the supplied text; only the types previewTest resolves accept one'
+    ),
   highlights: z.array(z.string()).optional(),
   language: z.enum(['en', 'hu']).optional(),
   subject: z.string().optional(),

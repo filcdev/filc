@@ -31676,7 +31676,7 @@
     "/notifications/test/preview": {
       "post": {
         "operationId": "postNotificationsTestPreview",
-        "description": "Development helper: render a notification template without sending it (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). When entityId is given, the real substitution, moved lesson or news record is rendered through the same builders as the live pipeline instead of the supplied text.",
+        "description": "Development helper: render a notification template without sending it (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). When entityId is given, a real record is rendered through the same builders as the live pipeline instead of the supplied text: substitution, substitution_teacher, moved_lesson, moved_lesson_teacher, announcement, system_message and blog_post; every other type answers 400.",
         "tags": [
           "Notifications"
         ],
@@ -31710,7 +31710,8 @@
                   },
                   "entityId": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "description": "Id of a real record to render instead of the supplied text; only the types previewTest resolves accept one"
                   },
                   "highlights": {
                     "type": "array",
@@ -32328,13 +32329,14 @@
                         },
                         "channelsEnabled": {
                           "type": "boolean",
-                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled"
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
                         },
                         "emailEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher"
                         },
                         "movedLesson": {
                           "type": "boolean"
@@ -32651,13 +32653,14 @@
                       },
                       "channelsEnabled": {
                         "type": "boolean",
-                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled"
+                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default"
                       },
                       "doorlockCardUsed": {
                         "type": "boolean"
                       },
                       "emailEnabled": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher"
                       },
                       "movedLesson": {
                         "type": "boolean"
@@ -32758,13 +32761,14 @@
                         },
                         "channelsEnabled": {
                           "type": "boolean",
-                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled"
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
                         },
                         "emailEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher"
                         },
                         "movedLesson": {
                           "type": "boolean"
