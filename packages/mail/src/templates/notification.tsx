@@ -7,7 +7,7 @@ import {
   Text,
 } from '@react-email/components';
 import { EmailLayout } from './email-layout';
-import { emailCopy, greetingFor } from './i18n';
+import { copyFor, greetingFor } from './i18n';
 import { renderEmailElement } from './render';
 import {
   buttonStyle,
@@ -38,10 +38,13 @@ export const renderNotification = (
     .split(PARAGRAPH_BREAK)
     .filter((paragraph) => paragraph.trim().length > 0);
   const [lead, ...bodyParagraphs] = paragraphs;
-  const highlights = [...new Set(data.highlights ?? [])].slice(
-    0,
-    MAX_HIGHLIGHTS
-  );
+  const highlights = [
+    ...new Set(
+      (data.highlights ?? [])
+        .map((highlight) => highlight.trim())
+        .filter((highlight) => highlight.length > 0)
+    ),
+  ].slice(0, MAX_HIGHLIGHTS);
 
   const hero = (
     <Section style={heroStyle(accent)}>
@@ -52,7 +55,7 @@ export const renderNotification = (
       {highlights.length > 0 ? (
         <Section style={chipRowStyle}>
           {highlights.map((highlight, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: highlights are deduplicated above, so the index is stable and unique.
+            // biome-ignore lint/suspicious/noArrayIndexKey: highlights are trimmed and deduplicated above, so the index is stable and unique.
             <Text key={index} style={chipStyle(accent)}>
               {highlight}
             </Text>
@@ -74,8 +77,9 @@ export const renderNotification = (
       typeLabel={data.typeLabel}
       unsubscribeUrl={data.unsubscribeUrl}
     >
-      {bodyParagraphs.map((paragraph) => (
-        <Text key={paragraph} style={textStyle}>
+      {bodyParagraphs.map((paragraph, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: paragraphs are split from one string, so the index is the position in the message and no two are the same text by construction.
+        <Text key={index} style={textStyle}>
           {paragraph}
         </Text>
       ))}
@@ -84,7 +88,8 @@ export const renderNotification = (
           <Hr style={dividerStyle(accent)} />
           <Section style={detailsSectionStyle(accent)}>
             {data.details.map((detail, index) => (
-              <Row key={detail.label}>
+              // biome-ignore lint/suspicious/noArrayIndexKey: a detail's label repeats in real payloads, so it cannot key the row; the index is the row's position in the block.
+              <Row key={index}>
                 <Column style={detailLabelCellStyle(accent, index)}>
                   <Text style={detailLabelStyle}>{detail.label}</Text>
                 </Column>
@@ -97,7 +102,7 @@ export const renderNotification = (
         </>
       ) : undefined}
       <Button href={branding.appUrl} style={buttonStyle(accent)}>
-        {emailCopy[data.locale].viewLabel}
+        {copyFor(data.locale).viewLabel}
       </Button>
     </EmailLayout>
   );

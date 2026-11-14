@@ -19,12 +19,27 @@ export const emailCopy = {
   },
 } as const;
 
+type EmailCopy = (typeof emailCopy)[Locale];
+
+const fallbackCopy: EmailCopy = emailCopy.en;
+
+/**
+ * Copy for a locale. `Locale` is a closed union, but a caller of this package
+ * can pass a value it only knows at runtime, and an unknown locale has to
+ * render English rather than dereference `undefined`.
+ */
+export const copyFor = (locale: Locale): EmailCopy =>
+  emailCopy[locale] ?? fallbackCopy;
+
 export const greetingFor = (
   locale: Locale,
   recipientName?: string | null
 ): string => {
+  const copy = copyFor(locale);
   const name = recipientName?.trim();
+  // The replacer is a function so `$&`, ``$` `` or `$'` in a name stay literal
+  // text instead of being read as replacement patterns.
   return name
-    ? emailCopy[locale].greetingNamed.replace('{name}', name)
-    : emailCopy[locale].greeting;
+    ? copy.greetingNamed.replace('{name}', () => name)
+    : copy.greeting;
 };

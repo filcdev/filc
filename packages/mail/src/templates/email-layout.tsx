@@ -12,7 +12,7 @@ import {
   Text,
 } from '@react-email/components';
 import type { ReactNode } from 'react';
-import { emailCopy } from './i18n';
+import { copyFor } from './i18n';
 import {
   bodyContentStyle,
   bodyStyle,
@@ -87,18 +87,18 @@ export const EmailLayout = ({
           </Section>
           <Section style={footerStyle(accent)}>
             <Text style={footerBrandStyle(accent)}>{appName}</Text>
-            <Text style={footerTextStyle}>{emailCopy[lang].autoMessage}</Text>
+            <Text style={footerTextStyle}>{copyFor(lang).autoMessage}</Text>
             {manageUrl || unsubscribeUrl ? (
               <Text style={{ ...footerTextStyle, margin: 0 }}>
                 {manageUrl ? (
                   <Link href={manageUrl} style={footerLinkStyle(accent)}>
-                    {emailCopy[lang].manageLabel}
+                    {copyFor(lang).manageLabel}
                   </Link>
                 ) : undefined}
                 {manageUrl && unsubscribeUrl ? ' · ' : undefined}
                 {unsubscribeUrl ? (
                   <Link href={unsubscribeUrl} style={footerLinkStyle(accent)}>
-                    {emailCopy[lang].unsubscribeLabel}
+                    {copyFor(lang).unsubscribeLabel}
                   </Link>
                 ) : undefined}
               </Text>
