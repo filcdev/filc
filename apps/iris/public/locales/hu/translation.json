@@ -573,6 +573,7 @@
   "auth": {
     "error": {
       "returnToHome": "Vissza a kezdőlapra",
+      "retrySignIn": "Újra bejelentkezés",
       "title": "Hiba történt",
       "invalid_code": "Hiba történt a hitelesítés során.",
       "unauthorized": "Nincs jogosultságod az oldal megtekintéséhez.",
@@ -590,7 +591,7 @@
     "record": "Valódi rekord",
     "recordNone": "A beírt szöveg használata",
     "recordPlaceholder": "Válassz rekordot",
-    "recordHint": "A rekord saját tartalma jelenik meg a fenti tárgy és tartalom helyett.",
+    "recordHint": "Csak az előnézetre vonatkozik: az előnézet a rekord saját tartalmát jeleníti meg a fenti tárgy és tartalom helyett. A küldés a beírt szöveget használja.",
     "recordLessonCount_one": "{{count}} óra",
     "recordLessonCount_other": "{{count}} óra",
     "language": "Nyelv",
@@ -792,7 +793,7 @@
     "emailEnabled": "E-mail",
     "emailEnabledDescription": "Az iskolai e-mail címedre küldjük.",
     "announcementEmail": "Kérjek e-mailt a hírekről",
-    "announcementEmailDescription": "Az alkalmazásban a hírek mindig megjelennek.",
+    "announcementEmailDescription": "Az alkalmazásban a hírek megjelenését ez a beállítás nem érinti.",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",
@@ -843,6 +844,7 @@
     "description": "Értesítési beállítások kezelése",
     "success": "Beállítások sikeresen frissítve",
     "error": "Nem sikerült frissíteni a beállításokat",
+    "errorTitle": "Nem sikerült a leiratkozás",
     "invalidToken": "Érvénytelen vagy lejárt leiratkozási link",
     "action": "Leiratkozás az e-mailekről"
   },

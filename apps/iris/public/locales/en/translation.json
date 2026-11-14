@@ -573,6 +573,7 @@
   "auth": {
     "error": {
       "returnToHome": "Return to home",
+      "retrySignIn": "Sign in again",
       "title": "Something went wrong",
       "invalid_code": "An error occurred during authentication.",
       "unauthorized": "You are not authorized to view this page.",
@@ -590,7 +591,7 @@
     "record": "Real record",
     "recordNone": "Use the typed text",
     "recordPlaceholder": "Choose a record",
-    "recordHint": "This record's own content is used instead of the subject and content above.",
+    "recordHint": "Applies to the preview only: the preview renders this record's own content instead of the subject and content above. Sending still uses the typed text.",
     "recordLessonCount_one": "{{count}} lesson",
     "recordLessonCount_other": "{{count}} lessons",
     "language": "Language",
@@ -792,7 +793,7 @@
     "emailEnabled": "Email",
     "emailEnabledDescription": "Sent to your school email address.",
     "announcementEmail": "Email me about announcements",
-    "announcementEmailDescription": "In-app announcements are always shown",
+    "announcementEmailDescription": "In-app news items are not affected by this setting.",
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
     "loadError": "Failed to load preferences",
@@ -843,6 +844,7 @@
     "description": "Manage your notification preferences",
     "success": "Preferences updated successfully",
     "error": "Failed to update preferences",
+    "errorTitle": "Unsubscribe failed",
     "invalidToken": "Invalid or expired unsubscribe link",
     "action": "Unsubscribe from emails"
   },
