@@ -5,7 +5,11 @@
  */
 
 export type OutboundMessage = {
-  /** Extra RFC 5322 headers, e.g. `List-Unsubscribe`. */
+  /**
+   * Extra RFC 5322 headers. Chronos sets `List-Unsubscribe` for a recipient
+   * with an unsubscribe link; both transports reject a name or value carrying
+   * CR or LF, so a value built from data cannot inject another header.
+   */
   headers?: Record<string, string>;
   html: string;
   subject: string;

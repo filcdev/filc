@@ -11,13 +11,35 @@ export const GRAPH_SCOPE = 'https://graph.microsoft.com/.default';
 
 const entraTokenSchema = z.object({
   access_token: z.string().optional(),
-  expires_in: z.coerce.number().optional(),
+  /** Entra sends this as a string; a value that is not a number is dropped, not fatal. */
+  expires_in: z.coerce.number().finite().optional().catch(undefined),
 });
 
 const entraErrorSchema = z.object({
   error: z.string().optional(),
   error_description: z.string().optional(),
 });
+
+/**
+ * A failed token request, always framed the same way so the status and Entra's
+ * own code reach the log line: a raw `ZodError` or `SyntaxError` from parsing
+ * the body would name neither.
+ */
+const tokenError = (response: Response, detail: string): Error =>
+  new Error(`Entra token request failed (${response.status}): ${detail}`);
+
+/**
+ * Reads the body as JSON without throwing: Entra answers with JSON, but a proxy
+ * page or an empty body is possible and the HTTP status alone is still worth
+ * reporting. An unreadable body reads as `undefined`.
+ */
+const readJson = async (response: Response): Promise<unknown> => {
+  try {
+    return JSON.parse(await response.text());
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * Mints a bearer token via the Entra client-credentials grant. The scope picks
@@ -45,31 +67,23 @@ export const fetchEntraAccessToken = async (
   );
 
   if (!response.ok) {
-    // An error body is not guaranteed to be JSON (a proxy page, an empty
-    // body); the status alone still has to reach the caller.
-    const json = await response.json().catch(() => undefined);
-    const parsed = entraErrorSchema.safeParse(json);
-    const detail = [
-      parsed.success ? parsed.data.error : undefined,
-      parsed.success ? parsed.data.error_description : undefined,
-    ]
-      .filter(Boolean)
-      .join(': ');
-    throw new Error(
-      `Entra token request failed (${response.status}): ${detail || response.statusText || 'no detail'}`
-    );
+    const parsed = entraErrorSchema.safeParse(await readJson(response));
+    const error = parsed.success ? parsed.data : undefined;
+    const detail =
+      [error?.error, error?.error_description].filter(Boolean).join(': ') ||
+      response.statusText ||
+      'no detail';
+    throw tokenError(response, detail);
   }
 
-  const payload = entraTokenSchema.parse(await response.json());
-  if (!payload.access_token) {
-    throw new Error(
-      `Entra token request failed (${response.status}): no access_token in the response`
-    );
+  const payload = entraTokenSchema.safeParse(await readJson(response));
+  const accessToken = payload.success ? payload.data.access_token : undefined;
+  if (!accessToken) {
+    throw tokenError(response, 'no access_token in the response');
   }
+  const expiresIn = payload.success ? payload.data.expires_in : undefined;
   return {
-    expires: payload.expires_in
-      ? Date.now() + payload.expires_in * 1000
-      : undefined,
-    token: payload.access_token,
+    expires: expiresIn ? Date.now() + expiresIn * 1000 : undefined,
+    token: accessToken,
   };
 };

@@ -3,6 +3,7 @@
 // template surface can be reached from.
 import { createTransport } from 'nodemailer';
 import { fetchEntraAccessToken } from './entra';
+import { assertSafeHeaders } from './headers';
 import { renderNotification } from './templates/notification';
 import type {
   Branding,
@@ -11,7 +12,7 @@ import type {
 } from './templates/types';
 import type { MailTransport, OutboundMessage, SmtpConfig } from './types';
 
-export { fetchEntraAccessToken, GRAPH_SCOPE } from './entra';
+export { fetchEntraAccessToken, GRAPH_SCOPE, OUTLOOK_SCOPE } from './entra';
 export type { GraphConfig } from './graph';
 export { createGraphTransport, GraphMailError } from './graph';
 export type {
@@ -58,7 +59,7 @@ export const createMailTransport = (config: SmtpConfig): MailTransport => {
     send: async (message: OutboundMessage): Promise<void> => {
       await transport.sendMail({
         from: config.from,
-        headers: message.headers,
+        headers: assertSafeHeaders(message.headers),
         html: message.html,
         subject: message.subject,
         text: message.text,

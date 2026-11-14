@@ -1,6 +1,7 @@
 import MailComposer from 'nodemailer/lib/mail-composer';
 import { z } from 'zod';
 import { fetchEntraAccessToken, GRAPH_SCOPE } from './entra';
+import { assertSafeHeaders } from './headers';
 import type {
   AccessToken,
   EntraCredentials,
@@ -17,6 +18,13 @@ const TOKEN_EXPIRY_SKEW_MS = 60_000;
 const DEFAULT_RETRY_AFTER_MS = 1000;
 /** A longer wait than this is a misconfigured proxy header, not a hint. */
 const MAX_RETRY_AFTER_MS = 60_000;
+/**
+ * Graph caps a write request's body at 4 MB and `/sendMail` posts the base64 of
+ * the compiled MIME as that body, so the encoded size is what has to fit. A
+ * message over it is refused here with its real size instead of as a 413 whose
+ * text names the limit but not the message.
+ */
+const MAX_MIME_BYTES = 4 * 1024 * 1024;
 
 export type GraphConfig = {
   entra: EntraCredentials;
@@ -53,7 +61,7 @@ const compileMessage = async (
 ): Promise<string> => {
   const mime = await new MailComposer({
     from,
-    headers: message.headers,
+    headers: assertSafeHeaders(message.headers),
     html: message.html,
     subject: message.subject,
     text: message.text,
@@ -61,7 +69,13 @@ const compileMessage = async (
   })
     .compile()
     .build();
-  return mime.toString('base64');
+  const body = mime.toString('base64');
+  if (body.length > MAX_MIME_BYTES) {
+    throw new Error(
+      `Refusing to send: the compiled message is ${body.length} bytes, over Graph's ${MAX_MIME_BYTES} byte request limit`
+    );
+  }
+  return body;
 };
 
 const clampRetryAfterMs = (value: number): number =>
@@ -151,16 +165,28 @@ export const createGraphTransport = (config: GraphConfig): MailTransport => {
     return cached.token;
   };
 
-  const post = (token: string, body: string): Promise<Response> =>
-    fetch(sendMailUrl, {
-      body,
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'text/plain',
-      },
-      method: 'POST',
-      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
-    });
+  /**
+   * A transport-level failure (DNS, TLS, timeout, abort) rejects instead of
+   * answering, so it is turned into a `GraphMailError` too: a caller switching
+   * on `status` would otherwise meet a `TypeError`/`DOMException`. `status: 0`
+   * means "no response" and is retryable.
+   */
+  const post = async (token: string, body: string): Promise<Response> => {
+    try {
+      return await fetch(sendMailUrl, {
+        body,
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'text/plain',
+        },
+        method: 'POST',
+        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new GraphMailError(`Graph sendMail did not complete: ${detail}`, 0);
+    }
+  };
 
   return {
     send: async (message: OutboundMessage): Promise<void> => {
