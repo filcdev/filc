@@ -1,7 +1,7 @@
 import { colorSchemeSchema } from '@filcdev/api/domains/theme';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';
@@ -44,8 +44,24 @@ import {
   type NotificationPreferences,
   type NotificationType,
 } from '#utils/notifications/types';
+import { startOfDayInTimeZone } from '#utils/time-zone';
 
 const logger = getLogger(['chronos', 'notifications', 'preview']);
+
+/**
+ * Start of today in the school timezone, as the UTC wall clock `YYYY-MM-DD
+ * HH:MM:SS` a `timestamp without time zone` comparison understands.
+ *
+ * `notification.created_at` stores UTC (Drizzle writes `toISOString()`), and a
+ * bound `Date` reaches Postgres as a timestamp string whose zone marker a
+ * `timestamp` comparison silently discards — pinning the instant as an explicit
+ * UTC literal here is what keeps the cutoff independent of the server's zone.
+ */
+const todayStartUtcLiteral = (): string =>
+  startOfDayInTimeZone(new Date(), env.timeZone)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
 
 export const listNotifications = base.notifications.list
   .use(requireAuthentication)
@@ -53,13 +69,23 @@ export const listNotifications = base.notifications.list
     const userId = context.session.userId;
     const { limit, offset, type, unread, dateFrom, dateTo } = input;
 
+    // Unread means "today": once a notification's day has passed in the school
+    // timezone it reads as read everywhere, without any job writing the column.
+    const startOfToday = sql`${todayStartUtcLiteral()}::timestamp`;
+    const createdToday = sql`${notification.createdAt} >= ${startOfToday}`;
+    const createdBeforeToday = sql`${notification.createdAt} < ${startOfToday}`;
+
     const conditions = [eq(notification.userId, userId)];
 
     if (type) {
       conditions.push(eq(notification.type, type));
     }
     if (unread !== undefined) {
-      conditions.push(eq(notification.read, !unread));
+      conditions.push(
+        unread
+          ? sql`(${notification.read} = false AND ${createdToday})`
+          : sql`(${notification.read} = true OR ${createdBeforeToday})`
+      );
     }
     if (dateFrom) {
       conditions.push(sql`${notification.createdAt} >= ${new Date(dateFrom)}`);
@@ -72,7 +98,12 @@ export const listNotifications = base.notifications.list
 
     const [items, totalResult] = await Promise.all([
       db
-        .select()
+        .select({
+          ...getTableColumns(notification),
+          // Computed, not stored: the row's own `read` flag only turns a
+          // past-day notification into a read one for display.
+          read: sql<boolean>`(${notification.read} OR ${createdBeforeToday})`,
+        })
         .from(notification)
         .where(and(...conditions))
         .orderBy(desc(notification.createdAt))
@@ -96,7 +127,11 @@ export const getUnreadCount = base.notifications.unreadCount
       .select({ count: count() })
       .from(notification)
       .where(
-        sql`${notification.userId} = ${userId} AND ${notification.read} = false`
+        and(
+          eq(notification.userId, userId),
+          // Same "unread means today" rule as `listNotifications`.
+          sql`${notification.read} = false AND ${notification.createdAt} >= ${todayStartUtcLiteral()}::timestamp`
+        )
       );
 
     return { count: result?.count ?? 0 };
