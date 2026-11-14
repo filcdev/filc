@@ -159,6 +159,7 @@ Never enable `CHRONOS_ENABLE_TEST_NOTIFICATIONS` in production: `sendTest` accep
 | `202` | Graph accepted the message for delivery. This is not proof that it was delivered. | Confirm with Exchange `Get-MessageTrace`; do not resend from Chronos. |
 | Mail stops with no obvious error | The client secret reached its expiry (24 months at most). The token request fails with `Entra token request failed (401)`. | Renew the secret, update the environment, restart. |
 | Correct sender, wrong display name | Recipients see `CHRONOS_SMTP_FROM_NAME`, compiled into the MIME `From`; the Entra app name and the mailbox display name play no part. | Set `CHRONOS_SMTP_FROM_NAME`. |
+| `Graph sendMail did not complete: …` | The request never got an answer — DNS, TLS, the 30 s per-attempt timeout or an abort. It surfaces as a `GraphMailError` with `status: 0` so a caller switching on the status still sees a number. | Check outbound HTTPS from the host; the queue retries it like any other failure. |
 
 Graph's own `error.code` and message are carried into `GraphMailError` and logged by the `chronos.notifications.smtp` category as `Failed to send email to {to}`. The one `Mail transport created` line at `info` is emitted when the transport is built on the first send and names the transport (and, under Graph, the mailbox), which is the quickest way to tell which configuration a running process actually holds.
 
@@ -166,8 +167,9 @@ Graph's own `error.code` and message are carried into `GraphMailError` and logge
 
 - The delivery queue is in memory (`apps/chronos/src/utils/notifications/queue.ts`): concurrency 5, 50 ms between batches, at most 3 attempts with exponential backoff capped at 30 s, and a channel that already succeeded is never repeated. A restart drops whatever is queued, and the dead-letter is a single `warning` log line (`Job … failed after 3 retries, dead-lettering`) naming the channels that did not deliver, not a stored record.
 - There is no bounce or NDR ingestion. Graph's `202` ends Chronos' knowledge of the message; a later delivery failure is visible only in Exchange message trace.
-- No `List-Unsubscribe` header is sent. The template footer carries two links, both present only when the send has a user behind it: the authenticated management page (`/settings/notifications?channel=email`, no token) and `/unsubscribe?userId=…&token=…` (an HMAC-SHA-256 of the user id), which turns email off only — the per-type choices stay as the user set them.
+- Unsubscribe is a link, not one-click. A send with a user behind it carries `List-Unsubscribe: <$CHRONOS_BASE_URL/unsubscribe?userId=…&token=…>` and deliberately no `List-Unsubscribe-Post`: the handler reads the HMAC from the POST body, so a one-click request would have nothing to verify. Both transports refuse a header name or value containing CR or LF, so the header cannot become header injection. The template footer carries two links, both present only when the send has a user behind it: the authenticated management page (`/settings/notifications?channel=email`, no token) and `/unsubscribe?userId=…&token=…` (an HMAC-SHA-256 of the user id), which turns email off only — the per-type choices stay as the user set them.
 - No DKIM or SPF configuration lives in this repository. Sender authentication is the tenant's and the transport's; the repo only asks Graph to send.
+- Graph accepts at most 4 MB in a write request's body, and `/sendMail` posts the base64-compiled MIME as that body. `MAX_MIME_BYTES` in `packages/mail/src/graph.ts` refuses a larger message before the request and names the real size, instead of surfacing Graph's `413`.
 
 ## 9. Channel defaults by role
 

@@ -243,6 +243,16 @@ export async function sendEmail(
     const lang = mailLocale(locale);
     // The id is a uuid column: the pure SMTP delivery test passes an empty id,
     // so the authenticated links below are only built for a real user.
+    const manageUrl = userId
+      ? `${env.baseUrl}/settings/notifications?channel=email`
+      : undefined;
+    // Carries the token in the query, so the mailbox provider can only offer a
+    // link, not one-click: a one-click POST would have no token in its body.
+    const unsubscribeUrl = userId
+      ? `${env.baseUrl}/unsubscribe?userId=${userId}&token=${generateUnsubscribeToken(
+          userId
+        )}`
+      : undefined;
     const rendered = await renderEmail(
       'notification',
       {
@@ -252,25 +262,27 @@ export async function sendEmail(
         highlights: body.highlights,
         locale: lang,
         // Authenticated, so no token: the page reads the session.
-        manageUrl: userId
-          ? `${env.baseUrl}/settings/notifications?channel=email`
-          : undefined,
+        manageUrl,
         // Carried on the delivery job with the audience, so rendering a mail
         // costs no per-recipient `user.name` query.
         recipientName,
         title: body.title,
         typeLabel: typeLabels[type][lang],
         // A pure SMTP delivery test has no user behind it to unsubscribe.
-        unsubscribeUrl: userId
-          ? `${env.baseUrl}/unsubscribe?userId=${userId}&token=${generateUnsubscribeToken(
-              userId
-            )}`
-          : undefined,
+        unsubscribeUrl,
       },
       branding
     );
 
-    await tp.send({ ...rendered, to });
+    await tp.send({
+      ...rendered,
+      // No `List-Unsubscribe-Post`: the handler needs the token from the body,
+      // so advertising one-click unsubscribe would be a promise we cannot keep.
+      headers: unsubscribeUrl
+        ? { 'List-Unsubscribe': `<${unsubscribeUrl}>` }
+        : undefined,
+      to,
+    });
 
     logger.debug('Email sent to {to} for notification type {type}', {
       to,
