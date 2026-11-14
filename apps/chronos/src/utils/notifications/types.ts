@@ -22,7 +22,6 @@ export type NotificationPreferences = {
   channelsEnabled: boolean;
   emailEnabled: boolean;
   pushEnabled: boolean;
-  inAppEnabled: boolean;
 };
 
 /**
@@ -37,7 +36,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   channelsEnabled: true,
   doorlockCardUsed: false,
   emailEnabled: true,
-  inAppEnabled: true,
   movedLesson: true,
   pushEnabled: true,
   substitution: true,
@@ -46,12 +44,12 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
 
 /**
  * Role-aware fallbacks for the channel flags, used when the stored row does
- * not name a channel. Teachers get email by default; everyone else keeps
- * in-app and push and has to opt into email.
+ * not name a channel. Teachers get email by default; everyone else has to opt
+ * into email. Push defaults on. In-app notifications are always recorded and
+ * are not a preference.
  */
 export type ChannelDefaults = {
   email?: boolean;
-  inApp?: boolean;
   push?: boolean;
 };
 
@@ -60,7 +58,8 @@ export type ChannelDefaults = {
  * column default. Kept in the pre-split shape on purpose: changing a column
  * default is a schema migration, while every reader merges
  * `DEFAULT_NOTIFICATION_PREFERENCES` over the stored row — so a row created
- * with this default still resolves the three channels as enabled.
+ * with this default still resolves its channel flags through the role
+ * defaults.
  */
 export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT = {
   announcement: true,
@@ -84,17 +83,16 @@ export function resolveChannelFlags(
   prefs: Partial<
     Pick<
       NotificationPreferences,
-      'channelsEnabled' | 'emailEnabled' | 'pushEnabled' | 'inAppEnabled'
+      'channelsEnabled' | 'emailEnabled' | 'pushEnabled'
     >
   >,
   defaults?: ChannelDefaults
-): { email: boolean; push: boolean; inApp: boolean } {
+): { email: boolean; push: boolean } {
   if (prefs.channelsEnabled === false) {
-    return { email: false, inApp: false, push: false };
+    return { email: false, push: false };
   }
   return {
     email: prefs.emailEnabled ?? defaults?.email ?? true,
-    inApp: prefs.inAppEnabled ?? defaults?.inApp ?? true,
     push: prefs.pushEnabled ?? defaults?.push ?? true,
   };
 }
@@ -105,7 +103,7 @@ export function resolveChannelFlags(
  * with `channelsEnabled` raised.
  *
  * A legacy row (`channelsEnabled: false`, no per-channel keys) therefore reads
- * back as every channel off, which is what the user chose, instead of the
+ * back as both channels off, which is what the user chose, instead of the
  * defaults' `true`s. A channel the row does not name falls back to the
  * caller-supplied role defaults, then to the global defaults. Everything that
  * reads a row — the settings endpoint, the delivery engine, the dev helpers —
@@ -122,7 +120,6 @@ export function completePreferences(
     ...base,
     channelsEnabled: true,
     emailEnabled: channels.email,
-    inAppEnabled: channels.inApp,
     pushEnabled: channels.push,
   };
 }

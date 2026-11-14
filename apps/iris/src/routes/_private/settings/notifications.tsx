@@ -6,7 +6,7 @@ import { orpc, prefetch } from '@/utils/orpc';
 
 const searchSchema = z.object({
   // Unknown values are ignored rather than failing the whole route.
-  channel: z.enum(['email', 'push', 'inApp']).optional().catch(undefined),
+  channel: z.enum(['email', 'push']).optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/_private/settings/notifications')({

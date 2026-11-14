@@ -793,8 +793,6 @@
     "emailEnabledDescription": "Sent to your school email address.",
     "pushEnabled": "Push on devices",
     "pushEnabledDescription": "Push notification on the devices where you enabled it.",
-    "inAppEnabled": "In-app",
-    "inAppEnabledDescription": "Shown in the bell menu inside Filc.",
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
     "loadError": "Failed to load preferences",

@@ -17,8 +17,8 @@ import {
   useUpdateNotificationSettings,
 } from '@/hooks/notifications';
 
-type ChannelId = 'email' | 'push' | 'inApp';
-type ChannelPrefKey = 'emailEnabled' | 'pushEnabled' | 'inAppEnabled';
+type ChannelId = 'email' | 'push';
+type ChannelPrefKey = 'emailEnabled' | 'pushEnabled';
 
 const NOTIFICATION_CHANNELS: Array<{
   channel: ChannelId;
@@ -37,12 +37,6 @@ const NOTIFICATION_CHANNELS: Array<{
     descriptionKey: 'preferences.pushEnabledDescription',
     key: 'pushEnabled',
     labelKey: 'preferences.pushEnabled',
-  },
-  {
-    channel: 'inApp',
-    descriptionKey: 'preferences.inAppEnabledDescription',
-    key: 'inAppEnabled',
-    labelKey: 'preferences.inAppEnabled',
   },
 ];
 
@@ -67,7 +61,7 @@ const NOTIFICATION_TYPES = [
   },
 ];
 
-/** Where the three channel toggles sit, then the per-type preferences. */
+/** Where the channel toggles sit, then the per-type preferences. */
 export function NotificationsPane({
   active,
   onClose,

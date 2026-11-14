@@ -14,11 +14,10 @@ export const notificationPreferencesSchema = z.object({
   channelsEnabled: z
     .boolean()
     .describe(
-      'Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled'
+      'Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled'
     ),
   doorlockCardUsed: z.boolean(),
   emailEnabled: z.boolean(),
-  inAppEnabled: z.boolean(),
   movedLesson: z.boolean(),
   pushEnabled: z.boolean(),
   substitution: z.boolean(),

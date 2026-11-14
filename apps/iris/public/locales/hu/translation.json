@@ -793,8 +793,6 @@
     "emailEnabledDescription": "Az iskolai e-mail címedre küldjük.",
     "pushEnabled": "Push értesítés eszközön",
     "pushEnabledDescription": "Push értesítés azokon az eszközökön, ahol engedélyezted.",
-    "inAppEnabled": "Az alkalmazásban",
-    "inAppEnabledDescription": "A Filc harangmenüjében jelenik meg.",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",

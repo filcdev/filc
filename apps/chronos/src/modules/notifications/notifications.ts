@@ -231,8 +231,8 @@ export const updateNotificationSettings = base.notifications.updateSettings
     // complete record: a stored object missing a key reads as `undefined`
     // downstream, and the response schema fails on read. Resolve what is
     // stored first, then apply the patch — a legacy row's
-    // `channelsEnabled: false` reads as every channel off, so a patch naming
-    // only a type flag does not silently switch push and in-app back on.
+    // `channelsEnabled: false` reads as email and push off, so a patch naming
+    // only a type flag does not silently switch push back on.
     const [existing] = await db
       .select({
         notificationPreferences: userPreferences.notificationPreferences,
@@ -324,21 +324,6 @@ export const testNotification = base.notifications.test
       prefs?.notificationPreferences,
       defaults
     );
-    const flags = {
-      email: preferences.emailEnabled,
-      inApp: preferences.inAppEnabled,
-      push: preferences.pushEnabled,
-    };
-
-    // Same rule as the engine: no in-app preference, no inbox row. The endpoint
-    // exists to drop a row into the caller's inbox, so it cannot answer the
-    // notification it would not create.
-    if (!flags.inApp) {
-      logger.debug('Test notification refused: in-app disabled for {userId}', {
-        userId,
-      });
-      throw badRequest('In-app notifications are disabled in your preferences');
-    }
 
     const [notif] = await db
       .insert(notification)
@@ -363,14 +348,14 @@ export const testNotification = base.notifications.test
       .where(eq(userTable.id, userId))
       .limit(1);
 
-    if (flags.email || flags.push) {
+    if (preferences.emailEnabled || preferences.pushEnabled) {
       enqueue({
         content: notif.content,
         email: userRecords[0]?.email ?? '',
-        emailEnabled: flags.email,
+        emailEnabled: preferences.emailEnabled,
         language: prefs?.language ?? 'hu',
         notificationId: notif.id,
-        pushEnabled: flags.push,
+        pushEnabled: preferences.pushEnabled,
         title: notif.title,
         type: 'test',
         userId,

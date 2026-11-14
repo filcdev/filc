@@ -166,17 +166,18 @@ Graph's own `error.code` and message are carried into `GraphMailError` and logge
 
 - The delivery queue is in memory (`apps/chronos/src/utils/notifications/queue.ts`): concurrency 5, 50 ms between batches, at most 3 attempts with exponential backoff capped at 30 s, and a channel that already succeeded is never repeated. A restart drops whatever is queued, and the dead-letter is a single `warning` log line (`Job … failed after 3 retries, dead-lettering`) naming the channels that did not deliver, not a stored record.
 - There is no bounce or NDR ingestion. Graph's `202` ends Chronos' knowledge of the message; a later delivery failure is visible only in Exchange message trace.
-- No `List-Unsubscribe` header is sent. The template footer carries two links, both present only when the send has a user behind it: the authenticated management page (`/settings/notifications?channel=email`, no token) and `/unsubscribe?userId=…&token=…` (an HMAC-SHA-256 of the user id), which turns email off only — push, in-app and the per-type choices stay as the user set them.
+- No `List-Unsubscribe` header is sent. The template footer carries two links, both present only when the send has a user behind it: the authenticated management page (`/settings/notifications?channel=email`, no token) and `/unsubscribe?userId=…&token=…` (an HMAC-SHA-256 of the user id), which turns email off only — push and the per-type choices stay as the user set them.
 - No DKIM or SPF configuration lives in this repository. Sender authentication is the tenant's and the transport's; the repo only asks Graph to send.
 
 ## 9. Channel defaults by role
 
-The three delivery channels are resolved per user by `completePreferences` and `applyPreferencesPatch` (`apps/chronos/src/utils/notifications/types.ts`) from the stored `notification_preferences` record plus a role default from `channelDefaultsForUser` (`apps/chronos/src/utils/notifications/channel-defaults.ts`):
+The delivery channels are resolved per user by `completePreferences` and `applyPreferencesPatch` (`apps/chronos/src/utils/notifications/types.ts`) from the stored `notification_preferences` record plus a role default from `channelDefaultsForUser` (`apps/chronos/src/utils/notifications/channel-defaults.ts`):
 
 - A user linked to a `teacher` row (`teacher.user_id`) gets **email on** by default.
 - Everyone else — students, and admins who have no teacher row — gets **email off** by default.
-- **Push and in-app stay on** for everyone.
+- **Push is on** by default for everyone.
+- **In-app notifications are always recorded**, with no preference to turn them off; that channel is managed separately.
 
 A default applies only where the stored record does not name the channel. An explicit user choice always wins, so a student who ticks email in the settings keeps it on, and a teacher who unsubscribes keeps it off.
 
-The same resolution covers accounts that never saved a channel preference. Rows exist from the first settings read, and any row written before the channel split carries no `emailEnabled`/`pushEnabled`/`inAppEnabled` keys, so a student's pre-existing row now silently resolves to email off and a teacher's to email on, with no data migration. The legacy `channelsEnabled: false` master switch still forces every channel off, beating the role default.
+The same resolution covers accounts that never saved a channel preference. Rows exist from the first settings read, and any row written before the channel split carries no `emailEnabled`/`pushEnabled` keys, so a student's pre-existing row now silently resolves to email off and a teacher's to email on, with no data migration. The legacy `channelsEnabled: false` master switch still forces both channels off, beating the role default.

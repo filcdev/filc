@@ -198,9 +198,8 @@ async function enrichUsersWithLanguage(
 }
 
 /**
- * Preferences, channel flags and the actual write for one recipient. A
- * skipped user (type opted out, or every channel off) is a normal outcome,
- * not an error.
+ * Preferences, channel flags and the actual write for one recipient. A user
+ * who opted out of the type is a normal outcome, not an error.
  */
 async function deliverToUser(
   type: NotificationType,
@@ -239,51 +238,34 @@ async function deliverToUser(
     return;
   }
 
-  const flags = {
-    email: preferences.emailEnabled,
-    inApp: preferences.inAppEnabled,
-    push: preferences.pushEnabled,
-  };
-  if (!(flags.email || flags.push || flags.inApp)) {
-    logger.debug('User {userId} disabled every channel for {type}', {
-      type,
-      userId: user.id,
-    });
-    return;
-  }
-
   const content: NotificationContent = handler.buildContent(
     payload,
     user.language
   );
 
-  let notificationId: string | undefined;
-  if (flags.inApp) {
-    const [notif] = await db
-      .insert(notification)
-      .values({
-        content: content.content,
-        metadata: content.metadata ?? null,
-        title: content.title,
-        type,
-        userId: user.id,
-      })
-      .returning();
-    notificationId = notif?.id;
-  }
+  // In-app is always recorded (managed separately from these preferences);
+  // email and push are queued only when the user allows them.
+  const [notif] = await db
+    .insert(notification)
+    .values({
+      content: content.content,
+      metadata: content.metadata ?? null,
+      title: content.title,
+      type,
+      userId: user.id,
+    })
+    .returning();
 
-  // Email/push can be on while in-app is off, in which case there is no
-  // inbox row; the id then only correlates the delivery's log lines.
-  if (flags.email || flags.push) {
+  if (preferences.emailEnabled || preferences.pushEnabled) {
     enqueue({
       content: content.content,
       details: content.details,
       email: user.email,
-      emailEnabled: flags.email,
+      emailEnabled: preferences.emailEnabled,
       highlights: content.highlights,
       language: user.language,
-      notificationId: notificationId ?? randomUUID(),
-      pushEnabled: flags.push,
+      notificationId: notif?.id ?? randomUUID(),
+      pushEnabled: preferences.pushEnabled,
       title: content.title,
       type,
       userId: user.id,

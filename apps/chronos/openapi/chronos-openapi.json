@@ -32208,15 +32208,12 @@
                         },
                         "channelsEnabled": {
                           "type": "boolean",
-                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled"
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
                         },
                         "emailEnabled": {
-                          "type": "boolean"
-                        },
-                        "inAppEnabled": {
                           "type": "boolean"
                         },
                         "movedLesson": {
@@ -32238,7 +32235,6 @@
                         "channelsEnabled",
                         "doorlockCardUsed",
                         "emailEnabled",
-                        "inAppEnabled",
                         "movedLesson",
                         "pushEnabled",
                         "substitution",
@@ -32534,15 +32530,12 @@
                       },
                       "channelsEnabled": {
                         "type": "boolean",
-                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled"
+                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled"
                       },
                       "doorlockCardUsed": {
                         "type": "boolean"
                       },
                       "emailEnabled": {
-                        "type": "boolean"
-                      },
-                      "inAppEnabled": {
                         "type": "boolean"
                       },
                       "movedLesson": {
@@ -32643,15 +32636,12 @@
                         },
                         "channelsEnabled": {
                           "type": "boolean",
-                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled/inAppEnabled"
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled/pushEnabled"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
                         },
                         "emailEnabled": {
-                          "type": "boolean"
-                        },
-                        "inAppEnabled": {
                           "type": "boolean"
                         },
                         "movedLesson": {
@@ -32673,7 +32663,6 @@
                         "channelsEnabled",
                         "doorlockCardUsed",
                         "emailEnabled",
-                        "inAppEnabled",
                         "movedLesson",
                         "pushEnabled",
                         "substitution",
@@ -32933,7 +32922,7 @@
     "/notifications/test": {
       "post": {
         "operationId": "postNotificationsTest",
-        "description": "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). Answers BAD_REQUEST when the caller has in-app notifications disabled in their preferences.",
+        "description": "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS).",
         "tags": [
           "Notifications"
         ],

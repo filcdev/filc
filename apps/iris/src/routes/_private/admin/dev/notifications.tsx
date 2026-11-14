@@ -32,14 +32,14 @@ import {
   useTestNotificationRecordOptions,
 } from '@/hooks/dev-notifications';
 
-type ChannelKey = 'emailEnabled' | 'inAppEnabled' | 'pushEnabled';
+type ChannelKey = 'channelEmail' | 'channelInApp' | 'channelPush';
 
 type PreviewMode = 'desktop' | 'phone';
 
 const CHANNELS: Array<{ key: ChannelKey; label: string }> = [
-  { key: 'inAppEnabled', label: 'devNotifications.channelInApp' },
-  { key: 'emailEnabled', label: 'devNotifications.channelEmail' },
-  { key: 'pushEnabled', label: 'devNotifications.channelPush' },
+  { key: 'channelInApp', label: 'devNotifications.channelInApp' },
+  { key: 'channelEmail', label: 'devNotifications.channelEmail' },
+  { key: 'channelPush', label: 'devNotifications.channelPush' },
 ];
 
 type FormValues = {
@@ -51,12 +51,12 @@ type FormValues = {
 } & Record<ChannelKey, boolean>;
 
 const defaultValues: FormValues = {
+  channelEmail: true,
+  channelInApp: true,
+  channelPush: false,
   content: '',
   email: '',
-  emailEnabled: true,
-  inAppEnabled: true,
   language: 'hu',
-  pushEnabled: false,
   subject: '',
   type: 'test',
 };
@@ -94,9 +94,9 @@ function DevNotificationsPage() {
     onSubmit: ({ value }) => {
       sendNotification.mutate({
         channels: {
-          email: value.emailEnabled,
-          inApp: value.inAppEnabled,
-          push: value.pushEnabled,
+          email: value.channelEmail,
+          inApp: value.channelInApp,
+          push: value.channelPush,
         },
         content: value.content || undefined,
         email: value.email || undefined,
@@ -152,9 +152,9 @@ function DevNotificationsPage() {
 
   const handleSendAll = async () => {
     const channels = {
-      email: values.emailEnabled,
-      inApp: values.inAppEnabled,
-      push: values.pushEnabled,
+      email: values.channelEmail,
+      inApp: values.channelInApp,
+      push: values.channelPush,
     };
     try {
       await Promise.all(

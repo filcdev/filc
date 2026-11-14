@@ -184,9 +184,9 @@ export function useUnsubscribe() {
         throw new Error('Failed to update preferences');
       }
     },
-    // Unsubscribing turns email off only: push, in-app and the per-type flags
-    // are untouched server-side, so the settings query (the same preferences
-    // row) is stale.
+    // Unsubscribing turns email off only: push and the per-type flags are
+    // untouched server-side, so the settings query (the same preferences row)
+    // is stale.
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: orpc.notifications.settings.key(),
