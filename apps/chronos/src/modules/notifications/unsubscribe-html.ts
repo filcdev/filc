@@ -83,7 +83,7 @@ export async function handleUnsubscribe(
 <body>
   <div class="card">
     <h1>Leiratkozás az e-mailekről</h1>
-    <p>Szeretnéd lemondani az email értesítéseket a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
+    <p>Szeretnéd lemondani az e-mail értesítéseket a Filc rendszertől? A rendszerüzeneteket ezután is megkapod.</p>
     <form method="POST" action="/api/notifications/unsubscribe">
       <input type="hidden" name="userId" value="${escapeHtml(userId)}">
       <input type="hidden" name="token" value="${escapeHtml(token)}">
@@ -168,7 +168,7 @@ export async function handleUnsubscribe(
 <body>
   <div class="card">
     <h1>Sikeres leiratkozás</h1>
-    <p>Innentől nem fogsz email értesítéseket kapni a Filc rendszertől.</p>
+    <p>Innentől nem fogsz e-mail értesítéseket kapni a Filc rendszertől. A rendszerüzeneteket továbbra is megkapod.</p>
   </div>
 </body>
 </html>`;

@@ -32345,7 +32345,8 @@
                           "type": "boolean"
                         },
                         "systemMessage": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Ignored: system messages are always delivered"
                         }
                       },
                       "required": [
@@ -32669,7 +32670,8 @@
                         "type": "boolean"
                       },
                       "systemMessage": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Ignored: system messages are always delivered"
                       }
                     }
                   },
@@ -32777,7 +32779,8 @@
                           "type": "boolean"
                         },
                         "systemMessage": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Ignored: system messages are always delivered"
                         }
                       },
                       "required": [

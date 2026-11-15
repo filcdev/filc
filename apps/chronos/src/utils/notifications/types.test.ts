@@ -3,7 +3,9 @@ import {
   applyPreferencesPatch,
   completePreferences,
   DEFAULT_NOTIFICATION_PREFERENCES,
+  isNotificationAllowed,
   type NotificationPreferences,
+  resolveEmailAllowed,
 } from '#utils/notifications/types';
 
 /** The pre-split unsubscribe state: the master switch off, no email flag. */
@@ -99,6 +101,89 @@ describe('announcementEmail', () => {
 
     expect(next.announcementEmail).toBe(true);
     expect(next.announcement).toBe(true);
+  });
+});
+
+/** Every switch off, including the legacy master switch. */
+const ALL_OFF: NotificationPreferences = {
+  announcement: false,
+  announcementEmail: false,
+  blogPost: false,
+  channelsEnabled: false,
+  doorlockCardUsed: false,
+  emailEnabled: false,
+  movedLesson: false,
+  substitution: false,
+  systemMessage: false,
+};
+
+describe('isNotificationAllowed', () => {
+  it('always allows a system message, whatever the preferences say', () => {
+    expect(
+      isNotificationAllowed('system_message', 'systemMessage', ALL_OFF)
+    ).toBe(true);
+  });
+
+  it('allows a system message from a legacy channelsEnabled:false row', () => {
+    const legacy = completePreferences(LEGACY_OFF);
+
+    expect(legacy.emailEnabled).toBe(false);
+    expect(
+      isNotificationAllowed('system_message', 'systemMessage', legacy)
+    ).toBe(true);
+  });
+
+  it('rejects a type the user opted out of', () => {
+    expect(isNotificationAllowed('substitution', 'substitution', ALL_OFF)).toBe(
+      false
+    );
+  });
+
+  it('allows a type the user kept on', () => {
+    expect(
+      isNotificationAllowed(
+        'substitution',
+        'substitution',
+        completePreferences(undefined)
+      )
+    ).toBe(true);
+  });
+
+  it('does not gate a type without a preference key', () => {
+    expect(isNotificationAllowed('test', undefined, ALL_OFF)).toBe(true);
+  });
+});
+
+describe('resolveEmailAllowed', () => {
+  it('always mails a system message, whatever the preferences say', () => {
+    expect(resolveEmailAllowed('system_message', ALL_OFF)).toBe(true);
+  });
+
+  it('mails a system message from a legacy channelsEnabled:false row', () => {
+    const legacy = completePreferences(LEGACY_OFF);
+
+    expect(legacy.emailEnabled).toBe(false);
+    expect(resolveEmailAllowed('system_message', legacy)).toBe(true);
+  });
+
+  it('keeps a normal type off when emailEnabled is false', () => {
+    expect(resolveEmailAllowed('substitution', ALL_OFF)).toBe(false);
+    expect(
+      resolveEmailAllowed('blog_post', { ...ALL_OFF, emailEnabled: true })
+    ).toBe(true);
+  });
+
+  it('needs the announcement opt-in before an announcement mails', () => {
+    const prefs = {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      announcementEmail: false,
+      emailEnabled: true,
+    };
+
+    expect(resolveEmailAllowed('announcement', prefs)).toBe(false);
+    expect(
+      resolveEmailAllowed('announcement', { ...prefs, announcementEmail: true })
+    ).toBe(true);
   });
 });
 

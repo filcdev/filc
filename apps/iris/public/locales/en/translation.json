@@ -794,6 +794,7 @@
     "emailEnabledDescription": "Sent to your school email address.",
     "announcementEmail": "Email me about announcements",
     "announcementEmailDescription": "In-app news items are not affected by this setting.",
+    "systemMessageAlwaysOn": "System messages are always delivered.",
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
     "loadError": "Failed to load preferences",
@@ -846,7 +847,8 @@
     "error": "Failed to update preferences",
     "errorTitle": "Unsubscribe failed",
     "invalidToken": "Invalid or expired unsubscribe link",
-    "action": "Unsubscribe from emails"
+    "action": "Unsubscribe from emails",
+    "systemMessageNote": "System messages from the school are still delivered after you unsubscribe."
   },
   "activityLog": {
     "title": "Activity Log",

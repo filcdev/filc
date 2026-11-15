@@ -35,24 +35,35 @@ const NOTIFICATION_CHANNELS: Array<{
   },
 ];
 
-const NOTIFICATION_TYPES = [
+/**
+ * One per-type preference row. `alwaysOnKey` marks a type the engine always
+ * delivers: the row then renders checked and disabled with that description.
+ */
+type NotificationTypeRow = {
+  key: string;
+  labelKey: `notifications.types.${string}`;
+  alwaysOnKey?: 'preferences.systemMessageAlwaysOn';
+};
+
+const NOTIFICATION_TYPES: NotificationTypeRow[] = [
   {
     key: 'substitution',
-    labelKey: 'notifications.types.substitution' as const,
+    labelKey: 'notifications.types.substitution',
   },
-  { key: 'movedLesson', labelKey: 'notifications.types.movedLesson' as const },
+  { key: 'movedLesson', labelKey: 'notifications.types.movedLesson' },
   {
     key: 'announcement',
-    labelKey: 'notifications.types.announcement' as const,
+    labelKey: 'notifications.types.announcement',
   },
   {
+    alwaysOnKey: 'preferences.systemMessageAlwaysOn',
     key: 'systemMessage',
-    labelKey: 'notifications.types.systemMessage' as const,
+    labelKey: 'notifications.types.systemMessage',
   },
-  { key: 'blogPost', labelKey: 'notifications.types.blogPost' as const },
+  { key: 'blogPost', labelKey: 'notifications.types.blogPost' },
   {
     key: 'doorlockCardUsed',
-    labelKey: 'notifications.types.doorlockCardUsed' as const,
+    labelKey: 'notifications.types.doorlockCardUsed',
   },
 ];
 
@@ -182,23 +193,35 @@ export function NotificationsPane({
               {t('preferences.typesDescription')}
             </p>
           </div>
-          {NOTIFICATION_TYPES.map(({ key, labelKey }) => {
+          {NOTIFICATION_TYPES.map(({ alwaysOnKey, key, labelKey }) => {
             const inputId = `${idPrefix}-pref-${key}`;
             return (
-              <div
-                className="flex items-center justify-between gap-4"
-                key={key}
-              >
-                <label
-                  className="cursor-pointer font-medium text-sm leading-none"
-                  htmlFor={inputId}
-                >
-                  {t(labelKey)}
-                </label>
+              <div className="flex items-start justify-between gap-4" key={key}>
+                <div className="space-y-0.5">
+                  <label
+                    className={cn(
+                      'font-medium text-sm leading-none',
+                      // A disabled row is not a control the user can operate,
+                      // so it does not offer a pointer either.
+                      alwaysOnKey ? undefined : 'cursor-pointer'
+                    )}
+                    htmlFor={inputId}
+                  >
+                    {t(labelKey)}
+                  </label>
+                  {alwaysOnKey ? (
+                    <p className="text-muted-foreground text-xs">
+                      {t(alwaysOnKey)}
+                    </p>
+                  ) : undefined}
+                </div>
                 <Checkbox
-                  checked={prefs[key]}
+                  checked={alwaysOnKey ? true : prefs[key]}
+                  disabled={Boolean(alwaysOnKey)}
                   id={inputId}
-                  onCheckedChange={() => togglePref(key)}
+                  onCheckedChange={
+                    alwaysOnKey ? undefined : () => togglePref(key)
+                  }
                 />
               </div>
             );

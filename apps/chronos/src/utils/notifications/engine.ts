@@ -14,7 +14,11 @@ import type {
   NotificationPreferences,
   NotificationType,
 } from '#utils/notifications/types';
-import { completePreferences } from '#utils/notifications/types';
+import {
+  completePreferences,
+  isNotificationAllowed,
+  resolveEmailAllowed,
+} from '#utils/notifications/types';
 
 const logger = getLogger(['chronos', 'notifications', 'engine']);
 
@@ -264,7 +268,9 @@ async function deliverToUser(
   );
 
   const prefKey = handler.preferenceKey;
-  if (prefKey && !preferences[prefKey]) {
+  // `system_message` is exempt from the per-type gate: the school may always
+  // reach a recipient in-app, whatever their stored flags say.
+  if (!isNotificationAllowed(type, prefKey, preferences)) {
     logger.debug('User {userId} opted out of notification type {type}', {
       type,
       userId: user.id,
@@ -290,13 +296,13 @@ async function deliverToUser(
   // attempted for every notification, so the delivery is always queued;
   // only email is gated, and the queue reads that flag.
   //
+  // `system_message` mails every recipient too: the type cannot be opted out
+  // of, so neither the channel switch nor a legacy unsubscribe drops it.
   // Announcement mail is opt-in and off by default: the `announcement` flag
   // above gates the notification as a whole, while this extra key is needed
   // before the mail leg runs. Every other type keeps the channel switch as its
   // only email gate.
-  const emailEnabled =
-    preferences.emailEnabled &&
-    (type !== 'announcement' || preferences.announcementEmail);
+  const emailEnabled = resolveEmailAllowed(type, preferences);
 
   const [notif] = await db
     .insert(notification)

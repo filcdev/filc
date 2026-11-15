@@ -88,6 +88,11 @@ export const EmailLayout = ({
           <Section style={footerStyle(accent)}>
             <Text style={footerBrandStyle(accent)}>{appName}</Text>
             <Text style={footerTextStyle}>{copyFor(lang).autoMessage}</Text>
+            {unsubscribeUrl ? (
+              <Text style={footerTextStyle}>
+                {copyFor(lang).unsubscribeNote}
+              </Text>
+            ) : undefined}
             {manageUrl || unsubscribeUrl ? (
               <Text style={{ ...footerTextStyle, margin: 0 }}>
                 {manageUrl ? (

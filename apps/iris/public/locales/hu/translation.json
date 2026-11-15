@@ -794,6 +794,7 @@
     "emailEnabledDescription": "Az iskolai e-mail címedre küldjük.",
     "announcementEmail": "Kérjek e-mailt a hírekről",
     "announcementEmailDescription": "Az alkalmazásban a hírek megjelenését ez a beállítás nem érinti.",
+    "systemMessageAlwaysOn": "A rendszerüzeneteket mindig megkapod.",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",
@@ -846,7 +847,8 @@
     "error": "Nem sikerült frissíteni a beállításokat",
     "errorTitle": "Nem sikerült a leiratkozás",
     "invalidToken": "Érvénytelen vagy lejárt leiratkozási link",
-    "action": "Leiratkozás az e-mailekről"
+    "action": "Leiratkozás az e-mailekről",
+    "systemMessageNote": "Az iskola rendszerüzeneteit leiratkozás után is megkapod."
   },
   "activityLog": {
     "title": "Tevékenységi napló",

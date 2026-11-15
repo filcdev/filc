@@ -29,7 +29,9 @@ export const notificationPreferencesSchema = z.object({
     ),
   movedLesson: z.boolean(),
   substitution: z.boolean(),
-  systemMessage: z.boolean(),
+  systemMessage: z
+    .boolean()
+    .describe('Ignored: system messages are always delivered'),
 });
 
 export type NotificationPreferences = z.infer<

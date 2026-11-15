@@ -123,6 +123,54 @@ export function completePreferences(
 }
 
 /**
+ * Whether the user's preferences allow this notification at all.
+ *
+ * `system_message` is policy, not a user choice: a message the school addresses
+ * to a class has to reach every recipient, so it bypasses the per-type gate —
+ * a stored `systemMessage: false` and a legacy `channelsEnabled: false` row
+ * included. Every other type is gated on its handler's `preferenceKey`, and a
+ * handler without one is never gated.
+ *
+ * Pure on purpose: the engine passes the row it already completed, so this
+ * decision is unit-testable without a database or the environment.
+ */
+export function isNotificationAllowed(
+  type: NotificationType,
+  preferenceKey: keyof NotificationPreferences | undefined,
+  preferences: NotificationPreferences
+): boolean {
+  if (type === 'system_message' || !preferenceKey) {
+    return true;
+  }
+  return preferences[preferenceKey];
+}
+
+/**
+ * Whether the notification's email leg runs, given the completed preferences.
+ *
+ * `system_message` forces email on, exactly like its in-app row: the type is
+ * not opt-out-able, so neither the channel switch nor the legacy master switch
+ * (already folded into `emailEnabled` by `completePreferences`) may drop the
+ * mail. Every other type keeps the channel switch as its gate, and
+ * `announcement` needs its own opt-in on top of it.
+ */
+export function resolveEmailAllowed(
+  type: NotificationType,
+  preferences: Pick<
+    NotificationPreferences,
+    'announcementEmail' | 'emailEnabled'
+  >
+): boolean {
+  if (type === 'system_message') {
+    return true;
+  }
+  return (
+    preferences.emailEnabled &&
+    (type !== 'announcement' || preferences.announcementEmail)
+  );
+}
+
+/**
  * Apply a preference patch over a stored record and return the complete value
  * to persist.
  *

@@ -66,6 +66,9 @@ function UnsubscribePage() {
             ? t('common.loading')
             : message || t('unsubscribe.description')}
         </p>
+        <p className="mt-2 text-muted-foreground text-xs">
+          {t('unsubscribe.systemMessageNote')}
+        </p>
         {status === 'done' && token && userId && !message && (
           <Button
             className="mt-6"

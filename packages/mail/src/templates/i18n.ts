@@ -7,6 +7,7 @@ export const emailCopy = {
     greetingNamed: 'Dear {name},',
     manageLabel: 'Manage your notifications',
     unsubscribeLabel: 'Unsubscribe from emails',
+    unsubscribeNote: 'System messages from the school are still delivered.',
     viewLabel: 'View in Filc',
   },
   hu: {
@@ -15,6 +16,8 @@ export const emailCopy = {
     greetingNamed: 'Kedves {name}!',
     manageLabel: 'Értesítések kezelése',
     unsubscribeLabel: 'Leiratkozás az e-mailekről',
+    unsubscribeNote:
+      'Az iskola rendszerüzeneteit leiratkozás után is megkapod.',
     viewLabel: 'Megtekintés a Filcben',
   },
 } as const;
