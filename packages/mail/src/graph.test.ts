@@ -240,8 +240,8 @@ describe('createGraphTransport', () => {
 
   test('parses the HTTP-date form of Retry-After', async () => {
     // 30 s ahead: far enough that a slow machine cannot shrink the parsed
-    // delta into the fallback's 1000 ms, and short enough to stay under the
-    // 60 s clamp.
+    // delta into the fallback's 1000 ms, and the assertion allows clock slack
+    // rather than holding the header to a ceiling.
     const retryAt = new Date(Date.now() + 30_000).toUTCString();
     stubFetch((call) =>
       isTokenCall(call)
@@ -255,8 +255,38 @@ describe('createGraphTransport', () => {
     const error = await sendAndCatch();
     const retryAfterMs = (error as GraphMailError).retryAfterMs ?? -1;
 
-    expect(retryAfterMs).toBeGreaterThan(20_000);
-    expect(retryAfterMs).toBeLessThanOrEqual(60_000);
+    expect(retryAfterMs).toBeGreaterThanOrEqual(25_000);
+    expect(retryAfterMs).toBeLessThanOrEqual(35_000);
+  });
+
+  test('honours a Retry-After longer than a minute', async () => {
+    stubFetch((call) =>
+      isTokenCall(call)
+        ? tokenResponse()
+        : new Response('', { headers: { 'retry-after': '300' }, status: 429 })
+    );
+
+    const error = await sendAndCatch();
+
+    // Graph asks for 5 minutes; resending before then only earns another 429.
+    expect((error as GraphMailError).retryAfterMs).toBe(300_000);
+  });
+
+  test('honours an HTTP-date Retry-After beyond a minute', async () => {
+    const retryAt = new Date(Date.now() + 120_000).toUTCString();
+    stubFetch((call) =>
+      isTokenCall(call)
+        ? tokenResponse()
+        : new Response('', {
+            headers: { 'retry-after': retryAt },
+            status: 429,
+          })
+    );
+
+    const error = await sendAndCatch();
+    const retryAfterMs = (error as GraphMailError).retryAfterMs ?? -1;
+
+    expect(retryAfterMs).toBeGreaterThan(110_000);
   });
 
   test("surfaces Graph's error code on a 403", async () => {

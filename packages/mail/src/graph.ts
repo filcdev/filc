@@ -16,8 +16,6 @@ const SEND_TIMEOUT_MS = 30_000;
 const TOKEN_EXPIRY_SKEW_MS = 60_000;
 /** Used when a 429 carries no usable `Retry-After` header. */
 const DEFAULT_RETRY_AFTER_MS = 1000;
-/** A longer wait than this is a misconfigured proxy header, not a hint. */
-const MAX_RETRY_AFTER_MS = 60_000;
 /**
  * Graph caps a write request's body at 4 MB and `/sendMail` posts the base64 of
  * the compiled MIME as that body, so the encoded size is what has to fit. A
@@ -78,14 +76,16 @@ const compileMessage = async (
   return body;
 };
 
-const clampRetryAfterMs = (value: number): number =>
-  Math.min(Math.max(value, 0), MAX_RETRY_AFTER_MS);
-
 /**
  * `Retry-After` carries either delay seconds or an HTTP date; both forms are
  * accepted. A missing or unparseable header falls back to the default, while
  * an empty or zero value parses as 0 — callers treat anything `> 0` as a hint
  * and otherwise use their own backoff.
+ *
+ * The parsed value is reported verbatim, with only a lower bound of 0: a hint
+ * is the server telling us when it will accept mail again, so shortening it
+ * buys an earlier 429 and a spent retry. How long a caller is willing to wait
+ * is the caller's policy, not this parser's.
  */
 const retryAfterMsOf = (response: Response): number => {
   const header = response.headers.get('retry-after');
@@ -95,12 +95,12 @@ const retryAfterMsOf = (response: Response): number => {
 
   const seconds = Number(header);
   if (Number.isFinite(seconds)) {
-    return clampRetryAfterMs(seconds * 1000);
+    return Math.max(seconds * 1000, 0);
   }
 
   const date = Date.parse(header);
   if (Number.isFinite(date)) {
-    return clampRetryAfterMs(date - Date.now());
+    return Math.max(date - Date.now(), 0);
   }
 
   return DEFAULT_RETRY_AFTER_MS;

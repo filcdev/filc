@@ -38,6 +38,12 @@ type JobOutcome = {
 };
 
 /**
+ * How many attempts a job has had. The job object is re-enqueued, so its
+ * `delivered` state — and this count — survive the wait for a retry.
+ */
+const attempts = new WeakMap<DeliveryJob, number>();
+
+/**
  * Attempts every channel the job has not delivered yet. A channel that
  * succeeds — or that had nothing to deliver — is recorded on the job, so a
  * later attempt never repeats it. A disabled email starts out satisfied (see
@@ -95,38 +101,47 @@ async function processJob(job: DeliveryJob): Promise<JobOutcome> {
   return isJobDone(delivered) ? { done: true } : { done: false, retryAfterMs };
 }
 
-async function tryProcessJob(job: DeliveryJob): Promise<void> {
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    let retryAfterMs = 0;
-    try {
-      const outcome = await processJob(job);
-      if (outcome.done) {
-        return;
-      }
-      retryAfterMs = outcome.retryAfterMs ?? 0;
-    } catch (error) {
-      // Defensive only: each channel handles its own failure above, so this
-      // fires on a bug rather than on a delivery failure.
-      logger.debug('Job attempt {attempt} threw for {notificationId}', {
-        attempt: attempt + 1,
-        error,
-        notificationId: job.notificationId,
-      });
-    }
+async function attemptJob(job: DeliveryJob): Promise<void> {
+  const attempt = (attempts.get(job) ?? 0) + 1;
+  attempts.set(job, attempt);
 
-    if (attempt < MAX_RETRIES - 1) {
-      const delay = retryDelayMs(backoffMs(attempt + 1), retryAfterMs);
-      logger.debug(
-        'Retrying job {notificationId} in {delay}ms (attempt {attempt}/{max})',
-        {
-          attempt: attempt + 2,
-          delay,
-          max: MAX_RETRIES,
-          notificationId: job.notificationId,
-        }
-      );
-      await sleep(delay);
+  let retryAfterMs = 0;
+  try {
+    const outcome = await processJob(job);
+    if (outcome.done) {
+      return;
     }
+    retryAfterMs = outcome.retryAfterMs ?? 0;
+  } catch (error) {
+    // Defensive only: each channel handles its own failure above, so this
+    // fires on a bug rather than on a delivery failure.
+    logger.debug('Job attempt {attempt} threw for {notificationId}', {
+      attempt,
+      error,
+      notificationId: job.notificationId,
+    });
+  }
+
+  if (attempt < MAX_RETRIES) {
+    const delay = retryDelayMs(backoffMs(attempt), retryAfterMs);
+    logger.debug(
+      'Retrying job {notificationId} in {delay}ms (attempt {attempt}/{max})',
+      {
+        attempt: attempt + 1,
+        delay,
+        max: MAX_RETRIES,
+        notificationId: job.notificationId,
+      }
+    );
+    // ponytail: the retry is a `setTimeout` on an in-memory schedule — the
+    // queue has no durable store — so a process restart inside the delay window
+    // loses this attempt, the same ceiling as the engine's delayed
+    // notifications. No worker is held while it waits.
+    setTimeout(() => {
+      queue.push(job);
+      pump();
+    }, delay);
+    return;
   }
 
   const delivered = job.delivered ?? initialChannelState(job.emailEnabled);
@@ -160,7 +175,7 @@ async function processLoop(): Promise<void> {
   try {
     while (queue.length > 0) {
       const batch = queue.splice(0, CONCURRENCY);
-      await Promise.all(batch.map(tryProcessJob));
+      await Promise.all(batch.map(attemptJob));
 
       if (queue.length > 0) {
         await sleep(RATE_LIMIT_MS);
@@ -171,14 +186,20 @@ async function processLoop(): Promise<void> {
   }
 }
 
+/**
+ * Starts the loop without awaiting it: a crash in the loop must be logged, not
+ * left as an unhandled rejection. Used by `enqueue` and by a scheduled retry.
+ */
+function pump(): void {
+  processLoop().catch((error: unknown) => {
+    logger.error('Delivery loop crashed', { error });
+  });
+}
+
 export function enqueue(job: DeliveryJob): void {
   queue.push(job);
   logger.debug('Enqueued delivery job {notificationId}', {
     notificationId: job.notificationId,
   });
-  // Fire and forget: a crash in the loop must be logged, not left as an
-  // unhandled rejection.
-  processLoop().catch((error: unknown) => {
-    logger.error('Delivery loop crashed', { error });
-  });
+  pump();
 }
