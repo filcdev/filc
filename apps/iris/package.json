@@ -36,7 +36,7 @@
     "react": "catalog:",
     "react-cookie": "^8.1.2",
     "react-dom": "catalog:",
-    "react-i18next": "^17.1.0",
+    "react-i18next": "^18.0.1",
     "recharts": "catalog:",
     "sonner": "catalog:",
     "srvx": "^1.0.6",
