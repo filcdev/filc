@@ -1,3 +1,4 @@
+import type { NotificationPreferences } from '@filcdev/api/domains/notifications';
 import { Alert, AlertTitle } from '@filcdev/ui/components/alert';
 import { Button } from '@filcdev/ui/components/button';
 import {
@@ -11,7 +12,7 @@ import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { cn } from '@filcdev/ui/lib/utils';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useNotificationSettings,
@@ -40,7 +41,7 @@ const NOTIFICATION_CHANNELS: Array<{
  * delivers: the row then renders checked and disabled with that description.
  */
 type NotificationTypeRow = {
-  key: string;
+  key: keyof NotificationPreferences;
   labelKey: `notifications.types.${string}`;
   alwaysOnKey?: 'preferences.systemMessageAlwaysOn';
 };
@@ -86,7 +87,19 @@ export function NotificationsPane({
   const idPrefix = useId();
   // Seeded from the response only. The email default differs per role, so a
   // local fallback would assert a state the server may not return.
-  const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
+  // Keys the user touched: Save sends only these, so a stale panel cannot
+  // overwrite a preference changed elsewhere. `systemMessage` never lands here
+  // (its row is disabled and the engine ignores the flag).
+  const [dirty, setDirty] = useState<Set<keyof NotificationPreferences>>(
+    new Set()
+  );
+  // Synchronous mirrors of the two pieces of state above. The save settles
+  // after the user may have toggled again, so the success handler reads the
+  // refs rather than the values its closure captured; every writer below sets
+  // both the state and its ref so the pair never diverges.
+  const prefsRef = useRef<NotificationPreferences | null>(null);
+  const dirtyRef = useRef<Set<keyof NotificationPreferences>>(new Set());
 
   const settingsQuery = useNotificationSettings(active);
   const saveSettings = useUpdateNotificationSettings({ onSaved: onClose });
@@ -95,8 +108,9 @@ export function NotificationsPane({
     // Seeded once: a background refetch must not overwrite the toggles the
     // user has already changed but not saved yet.
     const seed = settingsQuery.data?.notificationPreferences;
-    if (seed) {
-      setPrefs((current) => current ?? seed);
+    if (seed && prefsRef.current === null) {
+      prefsRef.current = seed;
+      setPrefs(seed);
     }
   }, [settingsQuery.data]);
 
@@ -112,9 +126,63 @@ export function NotificationsPane({
     return <Skeleton className="h-64 w-full" />;
   }
 
-  const togglePref = (key: string) => {
-    setPrefs((previous) =>
-      previous ? { ...previous, [key]: !previous[key] } : previous
+  const togglePref = (key: keyof NotificationPreferences) => {
+    const current = prefsRef.current;
+    if (!current) {
+      return;
+    }
+    const nextPrefs = { ...current };
+    nextPrefs[key] = !nextPrefs[key];
+    const nextDirty = new Set(dirtyRef.current).add(key);
+    prefsRef.current = nextPrefs;
+    dirtyRef.current = nextDirty;
+    setPrefs(nextPrefs);
+    setDirty(nextDirty);
+  };
+
+  const savePreferences = () => {
+    const current = prefsRef.current;
+    if (!current || dirtyRef.current.size === 0) {
+      return;
+    }
+    // Snapshot what this request carries: a toggle made after the click must
+    // not be treated as saved. The values matter as much as the keys, because
+    // a key can be re-toggled (back to its sent value or away from it) before
+    // the response lands.
+    const sentKeys = [...dirtyRef.current];
+    const sentValues: Partial<NotificationPreferences> = {};
+    for (const key of sentKeys) {
+      sentValues[key] = current[key];
+    }
+    saveSettings.mutate(
+      { notificationPreferences: sentValues },
+      {
+        onSuccess: (settings) => {
+          // A sent key whose local value still equals what this request
+          // carried is saved: it leaves `dirty` and takes the server value.
+          // A sent key that changed while the request was in flight, and any
+          // key this request did not carry, keep their local value and stay
+          // dirty. Everything else adopts the server's merged record, so a
+          // preference changed on another device still shows up here.
+          const live = prefsRef.current ?? current;
+          const sent = new Set(sentKeys);
+          const remaining = new Set(
+            [...dirtyRef.current].filter(
+              (key) => !sent.has(key) || live[key] !== sentValues[key]
+            )
+          );
+          const merged: NotificationPreferences = {
+            ...settings.notificationPreferences,
+          };
+          for (const key of remaining) {
+            merged[key] = live[key];
+          }
+          dirtyRef.current = remaining;
+          prefsRef.current = merged;
+          setDirty(remaining);
+          setPrefs(merged);
+        },
+      }
     );
   };
 
@@ -231,8 +299,8 @@ export function NotificationsPane({
 
       <Button
         className="w-full"
-        disabled={saveSettings.isPending}
-        onClick={() => saveSettings.mutate({ notificationPreferences: prefs })}
+        disabled={saveSettings.isPending || dirty.size === 0}
+        onClick={savePreferences}
       >
         {saveSettings.isPending && <Spinner className="mr-2 h-4 w-4" />}
         {t('common.save')}
