@@ -10,10 +10,12 @@ export type ChannelState = { email: boolean; push: boolean };
 export type ChannelName = keyof ChannelState;
 
 /**
- * What one provider attempt reported. `skipped` distinguishes "there was
- * nothing to deliver to" (no mail transport configured, no registered device)
- * from a real failure, which is the only outcome that leaves the channel
- * unsatisfied and retries it.
+ * What one provider attempt reported. `skipped` marks an outcome that retrying
+ * cannot improve — as opposed to a real failure, which is the only outcome
+ * that leaves the channel unsatisfied and retries it. It covers two cases:
+ * there was nothing to deliver to (no mail transport configured, no registered
+ * device), and there was something to deliver to but it can never succeed
+ * (every device's token is dead, so a retry would fail identically).
  */
 export type ChannelAttemptResult = {
   ok: boolean;
