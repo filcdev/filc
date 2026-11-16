@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
-import { MailCheck, MailX } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsDialog } from '@/components/settings-dialog-store';
@@ -100,24 +99,8 @@ export function NotificationViewerDialog({
           })}
         </p>
 
-        <DialogFooter>
-          <Button
-            aria-label={
-              notification.read
-                ? t('notifications.history.markUnread')
-                : t('notifications.history.markRead')
-            }
-            onClick={() => markReadMutation.mutate({ id: notification.id })}
-            size="sm"
-            variant="ghost"
-          >
-            {notification.read ? (
-              <MailX className="h-4 w-4" />
-            ) : (
-              <MailCheck className="h-4 w-4" />
-            )}
-          </Button>
-          {notification.metadata?.action === 'cohort_reselection' && (
+        {notification.metadata?.action === 'cohort_reselection' && (
+          <DialogFooter>
             <Button
               onClick={() => {
                 onOpenChange(false);
@@ -128,8 +111,8 @@ export function NotificationViewerDialog({
             >
               {t('notifications.viewer.changeCohort')}
             </Button>
-          )}
-        </DialogFooter>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

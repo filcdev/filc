@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@filcdev/ui/components/select';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
-import { MailCheck, MailX } from 'lucide-react';
+import { MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
@@ -210,25 +210,19 @@ export function NotificationHistoryDialog({
                           })}
                         </p>
                       </div>
-                      <Button
-                        aria-label={
-                          notif.read
-                            ? t('notifications.history.markUnread')
-                            : t('notifications.history.markRead')
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markReadMutation.mutate({ id: notif.id });
-                        }}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {notif.read ? (
-                          <MailX className="h-4 w-4" />
-                        ) : (
+                      {notif.read ? null : (
+                        <Button
+                          aria-label={t('notifications.history.markRead')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markReadMutation.mutate({ id: notif.id });
+                          }}
+                          size="sm"
+                          variant="ghost"
+                        >
                           <MailCheck className="h-4 w-4" />
-                        )}
-                      </Button>
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

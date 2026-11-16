@@ -741,7 +741,6 @@
       "filterAll": "Minden típus",
       "noNotifications": "Nincsenek értesítések",
       "markRead": "Olvasottnak jelölés",
-      "markUnread": "Olvasatlannak jelölés",
       "loadError": "Nem sikerült betölteni az értesítéseket",
       "loadErrorMessage": "Kérlek próbáld újra később.",
       "deleteConfirm": "Értesítés törlése?",

@@ -741,7 +741,6 @@
       "filterAll": "All types",
       "noNotifications": "No notifications found",
       "markRead": "Mark as read",
-      "markUnread": "Mark as unread",
       "loadError": "Failed to load notifications",
       "loadErrorMessage": "Please try again later.",
       "deleteConfirm": "Delete notification?",
