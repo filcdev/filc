@@ -80,10 +80,15 @@ edits them.
 3. **The manual pick** in `site_theme.theme` — the behaviour that predates the
    schedule.
 
-A window may wrap the year end (`12-28 → 01-02`), and a one-day window
-(`03-15 → 03-15`) is legal. Two rows may never share a day: create and update
-answer `409 CONFLICT`, and the dialog only offers days the chosen month actually
-has. Easter is not checked against rows — it is code, and it always wins.
+A window may wrap the year end (`12-28 → 01-02`) and a single-day window
+(`03-15 → 03-15`) is legal. **29 February is not offered**: an annual window
+cannot express a leap day consistently — the same row would cover a day that
+exists in one year in four — so February stops at the 28th in the API and in the
+dialog alike. Two rows may never share a day: create and update check the
+overlap and write the row inside one transaction that holds a table lock, answer
+`409 CONFLICT` when it fails, and the dialog only offers days the chosen month
+actually has. Easter is not checked against rows — it is code, and it always
+wins.
 
 There is **no cron job and no stored "current skin"**. Resolution happens inside
 `GET /theme`, so a schedule edit applies on the next request and a window
