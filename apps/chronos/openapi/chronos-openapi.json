@@ -35696,7 +35696,8 @@
                   "endDay": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 31
+                    "maximum": 31,
+                    "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                   },
                   "endMonth": {
                     "type": "integer",
@@ -35706,7 +35707,8 @@
                   "startDay": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 31
+                    "maximum": 31,
+                    "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                   },
                   "startMonth": {
                     "type": "integer",
@@ -35753,7 +35755,8 @@
                     "endDay": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 31
+                      "maximum": 31,
+                      "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                     },
                     "endMonth": {
                       "type": "integer",
@@ -35767,7 +35770,8 @@
                     "startDay": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 31
+                      "maximum": 31,
+                      "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                     },
                     "startMonth": {
                       "type": "integer",
@@ -36016,7 +36020,8 @@
                           "endDay": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 31
+                            "maximum": 31,
+                            "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                           },
                           "endMonth": {
                             "type": "integer",
@@ -36030,7 +36035,8 @@
                           "startDay": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 31
+                            "maximum": 31,
+                            "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                           },
                           "startMonth": {
                             "type": "integer",
@@ -36518,7 +36524,8 @@
                   "endDay": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 31
+                    "maximum": 31,
+                    "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                   },
                   "endMonth": {
                     "type": "integer",
@@ -36528,7 +36535,8 @@
                   "startDay": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 31
+                    "maximum": 31,
+                    "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                   },
                   "startMonth": {
                     "type": "integer",
@@ -36568,7 +36576,8 @@
                     "endDay": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 31
+                      "maximum": 31,
+                      "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                     },
                     "endMonth": {
                       "type": "integer",
@@ -36582,7 +36591,8 @@
                     "startDay": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 31
+                      "maximum": 31,
+                      "description": "Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day."
                     },
                     "startMonth": {
                       "type": "integer",

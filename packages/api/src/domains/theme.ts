@@ -56,9 +56,17 @@ export const siteThemeResponseSchema = z.object({ theme: siteThemeSchema });
 export const updateSiteThemeSchema = z.object({ theme: siteThemeSchema });
 
 /** An annual schedule window is a month/day pair without a year, so 1–12 and
- *  1–31 are the wire bounds; the backend rejects impossible pairs (31 April). */
+ *  1–31 are the wire bounds. The pair is validated server-side: impossible days
+ *  (31 April) and 29 February are rejected with `VALIDATION`. */
 export const monthSchema = z.number().int().min(1).max(12);
-export const daySchema = z.number().int().min(1).max(31);
+export const daySchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(31)
+  .describe(
+    'Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day.'
+  );
 
 /**
  * A row of the admin-editable annual schedule: while the window is in season,

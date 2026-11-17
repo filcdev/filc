@@ -54,8 +54,10 @@ export const THEMES = siteThemeIds.map((id) => ({ id, ...THEME_COPY[id] }));
 export type ThemeOption = (typeof THEMES)[number];
 
 /**
- * One month/day in the reader's language. A leap year keeps 29 February
- * representable, since a window may legitimately end there.
+ * One month/day in the reader's language. The date is built in a leap year so a
+ * hand-edited 29 February renders as "Feb 29" instead of rolling over to
+ * 1 March — such a row is never a valid window day (the API rejects it), but the
+ * admin list must still be able to show what is stored.
  */
 const formatMonthDay = (
   month: number,
