@@ -1,0 +1,99 @@
+{
+  "substitution": {
+    "title": "New Substitution",
+    "cta": "Check your timetable for details.",
+    "teacherTitle": "New substitution",
+    "teacherIntro": "You have been assigned a new substitution.",
+    "teacherMulti_one": "You were assigned to substitute {{count}} lesson on {{weekday}}.",
+    "teacherMulti_other": "You were assigned to substitute {{count}} lessons on {{weekday}}.",
+    "coveringLessons_one": "{{name}} is covering {{count}} of your lesson on {{date}}.",
+    "coveringLessons_other": "{{name}} is covering {{count}} of your lessons on {{date}}.",
+    "coveringYourLessons": "{{name}} will be covering your lesson(s) on {{date}}.",
+    "affectedLessons_one": "A substitution on {{date}} affects {{count}} of your lesson.",
+    "affectedLessons_other": "A substitution on {{date}} affects {{count}} of your lessons.",
+    "newSubstitution": "A new substitution has been posted for {{date}}."
+  },
+  "movedLesson": {
+    "title": "Moved Lesson",
+    "teacherTitle": "Your lesson was moved",
+    "body": "Your lesson has been moved to {{location}}.",
+    "teacherBody": "Your lesson was moved.",
+    "teacherBodyTo": "Your lesson was moved to {{location}}.",
+    "teacherBodyNamed": "Your {{who}} lesson was moved.",
+    "teacherBodyNamedTo": "Your {{who}} lesson was moved to {{location}}.",
+    "teacherWhoClass": "{{className}}",
+    "teacherWhoClassSubject": "{{className}} {{subject}}",
+    "inRoom": "in room {{room}}",
+    "proseLocation": "{{time}} {{room}}",
+    "newTimeSlot": "a new time slot",
+    "newTimeSlotInRoom": "a new time slot (in room {{room}})",
+    "multipleSuffix": "Check your timetable for all updates."
+  },
+  "cohortReselection": {
+    "title": "Cohort Reselection Required",
+    "body": "Your cohort is no longer available. Please go to Settings to select a new cohort."
+  },
+  "announcement": {
+    "prefix": "New announcement",
+    "title": "New Announcement",
+    "content": "{{prefix}}: {{title}}"
+  },
+  "systemMessage": {
+    "prefix": "System notice",
+    "title": "System Message",
+    "content": "{{prefix}}: {{title}}"
+  },
+  "blogPost": {
+    "prefix": "New post",
+    "title": "New Blog Post",
+    "cta": "tap to read",
+    "content": "{{prefix}}: {{title}} — {{cta}}"
+  },
+  "doorlock": {
+    "title": "Card Used",
+    "withDevice": "Your access card was just used at {{device}}.",
+    "withoutDevice": "Your access card was just used."
+  },
+  "test": {
+    "notificationTitle": "Test Notification",
+    "notificationBody": "This is a test notification. If you received this, everything works.",
+    "messageSubject": "Filc test message",
+    "messageBody": "This is a development test message. If you received this, everything works.",
+    "sampleRecipientName": "John Doe"
+  },
+  "types": {
+    "announcement": "News item",
+    "blog_post": "Blog post",
+    "cohort_reselection_required": "Group selection",
+    "doorlock_card_used": "Door lock",
+    "moved_lesson": "Lesson moved",
+    "moved_lesson_teacher": "Your moved lesson",
+    "substitution": "Substitution",
+    "substitution_teacher": "Teacher substitution",
+    "system_message": "System message",
+    "test": "Test notification"
+  },
+  "labels": {
+    "class": "Class",
+    "comment": "Comment",
+    "date": "Date",
+    "lesson": "Lesson",
+    "room": "Room",
+    "subject": "Subject",
+    "substitutedTeacher": "Substituted teacher",
+    "cancelled": "Cancelled",
+    "substitute": "Substitute",
+    "original": "Original",
+    "new": "New",
+    "teacher": "Teacher"
+  },
+  "mail": {
+    "autoMessage": "This is an automated message from Filc.",
+    "greeting": "Dear Filc user,",
+    "greetingNamed": "Dear {{name}},",
+    "manageLabel": "Manage your notifications",
+    "unsubscribeLabel": "Unsubscribe from emails",
+    "unsubscribeNote": "System messages from the school are still delivered.",
+    "viewLabel": "View in Filc"
+  }
+}
