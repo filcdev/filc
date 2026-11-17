@@ -1,4 +1,3 @@
-import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
 import { ORPCError } from '@orpc/server';
 import { and, eq, gte, inArray, or, sql } from 'drizzle-orm';
@@ -22,9 +21,9 @@ import {
 } from '#modules/timetable/schema';
 import { getActiveTimetableId } from '#modules/timetable/utils/active';
 import {
-  enrichLessons,
-  loadLessonsByIds,
-} from '#modules/timetable/utils/enrich-lessons';
+  attachEnrichedLessons,
+  loadMovedLessonNotificationPayload,
+} from '#modules/timetable/utils/moved-lesson-notifications';
 import { base } from '#orpc';
 import { badRequest, notFound } from '#utils/http';
 import {
@@ -442,140 +441,6 @@ const buildCreateMetadata = (input: {
   startingPeriod: input.startingPeriod ?? null,
 });
 
-// Shared by every moved-lesson list endpoint: rows carry the target joins and
-// their linked lessons already enriched.
-// Row shape returned by each moved-lesson query before lesson enrichment.
-type MovedLessonRow = {
-  classroom: typeof classroom.$inferSelect | null;
-  dayDefinition: typeof dayDefinition.$inferSelect | null;
-  lessons: string[];
-  movedLesson: typeof movedLesson.$inferSelect;
-  period: typeof period.$inferSelect | null;
-};
-
-// A manual move is recognised by any manual field, not just the subject: a
-// subject deleted via ON DELETE SET NULL leaves `manualSubjectId` null while
-// the cohort/teacher/source-room ids remain, and that must still render as a
-// manual row (with a null subject) rather than a linked row with no lessons.
-const hasManualFields = (row: typeof movedLesson.$inferSelect): boolean =>
-  row.manualSubjectId !== null ||
-  row.manualCohortIds.length > 0 ||
-  row.manualTeacherIds.length > 0 ||
-  row.manualSourceRoomId !== null;
-
-// Enrich the linked lesson ids of a batch of moved-lesson rows, preserving the
-// target joins and the per-moved-lesson lesson order. A moved lesson keeps
-// pointing at the lesson it was created for, even after that lesson's timetable
-// is retired, so this must not be scoped to the active timetable. For manual
-// moves it also resolves the manual subject, cohorts and teachers (two batched
-// lookups across the whole batch, preserving the stored id order).
-async function attachEnrichedLessons(rows: MovedLessonRow[]) {
-  const allLessonIds = Array.from(new Set(rows.flatMap((r) => r.lessons)));
-  const enriched = await enrichLessons(await loadLessonsByIds(allLessonIds));
-  const lessonMap = new Map(enriched.map((l) => [l.id, l]));
-
-  const manualSubjectIds = Array.from(
-    new Set(
-      rows
-        .map((r) => r.movedLesson.manualSubjectId)
-        .filter((id): id is string => id !== null)
-    )
-  );
-  const manualCohortIds = Array.from(
-    new Set(rows.flatMap((r) => r.movedLesson.manualCohortIds))
-  );
-  const manualTeacherIds = Array.from(
-    new Set(rows.flatMap((r) => r.movedLesson.manualTeacherIds))
-  );
-  const manualSourceRoomIds = Array.from(
-    new Set(
-      rows
-        .map((r) => r.movedLesson.manualSourceRoomId)
-        .filter((id): id is string => id !== null)
-    )
-  );
-
-  const [subjects, cohorts, teachers, sourceRooms] = await Promise.all([
-    manualSubjectIds.length
-      ? db.select().from(subject).where(inArray(subject.id, manualSubjectIds))
-      : Promise.resolve([] as (typeof subject.$inferSelect)[]),
-    manualCohortIds.length
-      ? db
-          .select({ id: cohort.id, name: cohort.name, short: cohort.short })
-          .from(cohort)
-          .where(inArray(cohort.id, manualCohortIds))
-      : Promise.resolve([] as { id: string; name: string; short: string }[]),
-    manualTeacherIds.length
-      ? db
-          .select({
-            firstName: teacher.firstName,
-            id: teacher.id,
-            lastName: teacher.lastName,
-            short: teacher.short,
-          })
-          .from(teacher)
-          .where(inArray(teacher.id, manualTeacherIds))
-      : Promise.resolve(
-          [] as {
-            firstName: string;
-            id: string;
-            lastName: string;
-            short: string;
-          }[]
-        ),
-    manualSourceRoomIds.length
-      ? db
-          .select({
-            id: classroom.id,
-            name: classroom.name,
-            short: classroom.short,
-          })
-          .from(classroom)
-          .where(inArray(classroom.id, manualSourceRoomIds))
-      : Promise.resolve([] as { id: string; name: string; short: string }[]),
-  ]);
-
-  const subjectMap = new Map(subjects.map((s) => [s.id, s]));
-  const cohortMap = new Map(cohorts.map((c) => [c.id, c]));
-  const teacherMap = new Map(
-    teachers.map((t) => [
-      t.id,
-      { id: t.id, name: `${t.firstName} ${t.lastName}`.trim(), short: t.short },
-    ])
-  );
-  const sourceRoomMap = new Map(sourceRooms.map((cr) => [cr.id, cr]));
-
-  return rows.map((r) => {
-    const manual = hasManualFields(r.movedLesson)
-      ? {
-          cohorts: r.movedLesson.manualCohortIds
-            .map((id) => cohortMap.get(id))
-            .filter((c): c is NonNullable<typeof c> => c !== undefined),
-          sourceRoom: r.movedLesson.manualSourceRoomId
-            ? (sourceRoomMap.get(r.movedLesson.manualSourceRoomId) ?? null)
-            : null,
-          subject: r.movedLesson.manualSubjectId
-            ? (subjectMap.get(r.movedLesson.manualSubjectId) ?? null)
-            : null,
-          teachers: r.movedLesson.manualTeacherIds
-            .map((id) => teacherMap.get(id))
-            .filter((t): t is NonNullable<typeof t> => t !== undefined),
-        }
-      : null;
-
-    return {
-      classroom: r.classroom,
-      dayDefinition: r.dayDefinition,
-      lessons: r.lessons
-        .map((id) => lessonMap.get(id))
-        .filter((l): l is Lesson => l !== undefined),
-      manual,
-      movedLesson: r.movedLesson,
-      period: r.period,
-    };
-  });
-}
-
 export const getAllMovedLessons = base.timetable.movedLessons.list.handler(
   async () => {
     const movedLessons = await db
@@ -822,14 +687,21 @@ export const createMovedLesson = base.timetable.movedLessons.create
       return row;
     });
 
-    dispatchPendingNotification(newMovedLesson.id, 'moved_lesson', {
-      cohortIds: manualValues.manualCohortIds,
-      date: newMovedLesson.date,
-      lessonIds: lessonIds ?? [],
-      room: newMovedLesson.room,
-      startingDay: newMovedLesson.startingDay,
-      startingPeriod: newMovedLesson.startingPeriod,
-    });
+    const notificationPayload = await loadMovedLessonNotificationPayload(
+      newMovedLesson.id
+    );
+    if (notificationPayload) {
+      dispatchPendingNotification(
+        newMovedLesson.id,
+        'moved_lesson',
+        notificationPayload
+      );
+      dispatchPendingNotification(
+        newMovedLesson.id,
+        'moved_lesson_teacher',
+        notificationPayload
+      );
+    }
 
     return newMovedLesson;
   });
@@ -874,8 +746,10 @@ export const updateMovedLesson = base.timetable.movedLessons.update
       ),
     });
 
-    cancelPendingNotification(id, 'moved_lesson');
-
+    // The pending timer is left alone until the write succeeds: a failed edit
+    // (a rejected reference, a transaction rollback) must not drop the
+    // notification for the move that is still stored. The dispatch below
+    // cancels and re-arms it, so the debounce window restarts on success.
     const storedLessonIds = (
       await db
         .select({ lessonId: movedLessonLessonMTM.lessonId })
@@ -884,7 +758,6 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     ).map(({ lessonId }) => lessonId);
 
     const {
-      effectiveLessonIds,
       effectiveManualCohortIds,
       effectiveManualSourceRoomId,
       effectiveManualSubjectId,
@@ -968,16 +841,15 @@ export const updateMovedLesson = base.timetable.movedLessons.update
     // deleted via ON DELETE SET NULL leaves `manualSubjectId` null while the
     // cohorts (and therefore the audience) remain. `createMovedLesson` passes
     // `manualCohortIds` unconditionally for the same reason.
-    dispatchPendingNotification(id, 'moved_lesson', {
-      cohortIds: hasManualFields(updatedMovedLesson)
-        ? updatedMovedLesson.manualCohortIds
-        : [],
-      date: updatedMovedLesson.date,
-      lessonIds: effectiveLessonIds,
-      room: updatedMovedLesson.room,
-      startingDay: updatedMovedLesson.startingDay,
-      startingPeriod: updatedMovedLesson.startingPeriod,
-    });
+    const notificationPayload = await loadMovedLessonNotificationPayload(id);
+    if (notificationPayload) {
+      dispatchPendingNotification(id, 'moved_lesson', notificationPayload);
+      dispatchPendingNotification(
+        id,
+        'moved_lesson_teacher',
+        notificationPayload
+      );
+    }
 
     return updatedMovedLesson;
   });
@@ -1003,6 +875,7 @@ export const deleteMovedLesson = base.timetable.movedLessons.delete
     });
 
     cancelPendingNotification(id, 'moved_lesson');
+    cancelPendingNotification(id, 'moved_lesson_teacher');
 
     return { id: deletedMovedLesson.id };
   });

@@ -14,8 +14,12 @@ import {
 } from '@filcdev/ui/components/select';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import { Spinner } from '@filcdev/ui/components/spinner';
-import { type UseQueryResult, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import {
+  type UseQueryResult,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -170,6 +174,7 @@ export function GeneralPane({
   onClose: () => void;
 }) {
   const { i18n, t } = useTranslation();
+  const queryClient = useQueryClient();
   const [, setCookie] = useCookies(['filc.language']);
   const { data: session } = useSession();
   const [language, setLanguage] = useState('hu');
@@ -177,8 +182,15 @@ export function GeneralPane({
     'highlight' | 'hide'
   >('highlight');
   const [selectedCohortId, setSelectedCohortId] = useState<string | null>(null);
+  // The group display is only written by the Save button, so it is local until
+  // then: a background refetch must not overwrite an unsaved choice.
+  const groupDisplayDirty = useRef(false);
 
   const settingsQuery = useNotificationSettings(active);
+
+  // The language is a live preference: the select writes it right away, so its
+  // save stays silent and never closes the dialog or touches other fields.
+  const saveLanguage = useUpdateNotificationSettings({ silent: true });
 
   const cohortQuery = useQuery({
     ...orpc.cohort.cohort.queryOptions(),
@@ -192,9 +204,14 @@ export function GeneralPane({
       return;
     }
     setLanguage(settings.language);
-    setTimetableGroupDisplay(
-      settings.timetableGroupDisplay === 'hide' ? 'hide' : 'highlight'
-    );
+    // Skipped while the field is dirty: the language autosave refetches this
+    // same record, and the refetch must not pull back the stored group display
+    // over a choice the user has not pressed Save on.
+    if (!groupDisplayDirty.current) {
+      setTimetableGroupDisplay(
+        settings.timetableGroupDisplay === 'hide' ? 'hide' : 'highlight'
+      );
+    }
   }, [settingsQuery.data]);
 
   useEffect(() => {
@@ -205,7 +222,12 @@ export function GeneralPane({
   }, [active, session?.user?.cohortId]);
 
   const saveSettings = useUpdateNotificationSettings({
-    onSaved: onClose,
+    onSaved: () => {
+      // The Save button just persisted the group display, so a refetch may seed
+      // it again from the server record.
+      groupDisplayDirty.current = false;
+      onClose();
+    },
     updateCohort: async () => {
       const currentCohortId = session?.user?.cohortId ?? null;
       const newCohortId =
@@ -233,6 +255,18 @@ export function GeneralPane({
     if (typeof document !== 'undefined') {
       document.documentElement.lang = value;
     }
+    // Only the language: the group display is not saved until the Save button
+    // is pressed, and sending it here would persist a choice the user has not
+    // committed. The returned record goes straight into the cache the hook
+    // invalidates, so the follow-up refetch resolves to what the server stored.
+    saveLanguage.mutate(
+      { language: value },
+      {
+        onSuccess: (settings) => {
+          queryClient.setQueryData(orpc.notifications.settings.key(), settings);
+        },
+      }
+    );
   };
 
   if (settingsQuery.isLoading) {
@@ -258,7 +292,10 @@ export function GeneralPane({
       <GeneralSettingsCard
         cohortQuery={cohortQuery}
         language={language}
-        onGroupDisplayChange={setTimetableGroupDisplay}
+        onGroupDisplayChange={(value) => {
+          groupDisplayDirty.current = true;
+          setTimetableGroupDisplay(value);
+        }}
         onLanguageChange={handleLanguageChange}
         onSelectedCohortIdChange={setSelectedCohortId}
         selectedCohortId={selectedCohortId}

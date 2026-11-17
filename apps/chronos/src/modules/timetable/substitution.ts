@@ -1,5 +1,6 @@
 import type { Lesson } from '@filcdev/api/domains/timetable/lesson';
 import { permissions } from '@filcdev/api/permissions';
+import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '#database';
@@ -26,6 +27,7 @@ import {
   enrichLessons,
   loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
+import { loadSubstitutionNotificationPayload } from '#modules/timetable/utils/substitution-notifications';
 import {
   getWeekdayInSchoolTimeZone,
   isMatchingWeekday,
@@ -37,7 +39,8 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
-import { loadSubstitutionTeacherPayload } from '#utils/notifications/substitution-teacher';
+
+const logger = getLogger(['chronos', 'timetable', 'substitution']);
 
 // Type for both database and transaction instances used by helpers
 type TxOrDb = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -316,15 +319,16 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
           ARRAY[]::text[]
         )`.as('lessonIds'),
         substitution,
-        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        // Public shape: these responses are unauthenticated and the substituter
+        // is only ever displayed by name, so the email and linked user account
+        // stay in the database. `id` must stay first — drizzle nulls a
+        // left-joined nested object whose first selected column is NULL.
+        // biome-ignore assist/source/useSortedKeys: see above
         teacher: {
           id: teacher.id,
-          email: teacher.email,
           firstName: teacher.firstName,
-          gender: teacher.gender,
           lastName: teacher.lastName,
           short: teacher.short,
-          userId: teacher.userId,
         },
       })
       .from(substitution)
@@ -336,12 +340,9 @@ export const getAllSubstitutions = base.timetable.substitutions.list.handler(
       .groupBy(
         substitution.id,
         teacher.id,
-        teacher.email,
         teacher.firstName,
         teacher.lastName,
-        teacher.short,
-        teacher.gender,
-        teacher.userId
+        teacher.short
       );
 
     // Collect all unique lesson IDs
@@ -401,7 +402,14 @@ export const getRelevantSubstitutions =
           ARRAY[]::text[]
         )`.as('lessons'),
         substitution,
-        teacher,
+        // Public shape: unauthenticated response, name only (see `list`).
+        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        teacher: {
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          short: teacher.short,
+        },
       })
       .from(substitution)
       .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -432,7 +440,14 @@ export const getRelevantSubstitutionsForCohort =
           ARRAY[]::text[]
         )`.as('lessons'),
         substitution,
-        teacher,
+        // Public shape: unauthenticated response, name only (see `list`).
+        // biome-ignore assist/source/useSortedKeys: `id` must be first — drizzle nulls a left-joined nested object whose first selected column is NULL
+        teacher: {
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          short: teacher.short,
+        },
       })
       .from(substitution)
       .leftJoin(teacher, eq(substitution.substituter, teacher.id))
@@ -525,21 +540,16 @@ export const createSubstitution = base.timetable.substitutions.create
       { isolationLevel: 'serializable' }
     );
 
-    dispatchPendingNotification(result.id, 'substitution', {
-      date: result.date,
-      lessonIds,
-      substituter,
-    });
-
-    dispatchPendingNotification(
-      result.id,
-      'substitution_teacher',
-      await loadSubstitutionTeacherPayload({
-        date: result.date,
-        lessonIds,
-        substituter,
-      })
-    );
+    const payload = await loadSubstitutionNotificationPayload(result.id);
+    if (payload) {
+      dispatchPendingNotification(result.id, 'substitution', payload);
+      dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    } else {
+      logger.warning('substitution notification skipped', {
+        requestId: context.requestId,
+        substitutionId: result.id,
+      });
+    }
 
     return result;
   });
@@ -757,7 +767,6 @@ export const createManualSubstitution = base.timetable.substitutions.manual
       });
     }
 
-    let manualLessonId = '';
     const result = await db.transaction(
       async (tx) => {
         await lockAndValidateTeachers(tx, teacherId, substituter);
@@ -772,8 +781,6 @@ export const createManualSubstitution = base.timetable.substitutions.manual
           timetableId,
           weeksDefinitionId: weekDef.id,
         });
-
-        manualLessonId = lessonId;
 
         await checkTeacherSubstitutionConflict(tx, date, substituter, [
           lessonId,
@@ -826,21 +833,16 @@ export const createManualSubstitution = base.timetable.substitutions.manual
       { isolationLevel: 'serializable' }
     );
 
-    dispatchPendingNotification(result.id, 'substitution', {
-      date: result.date,
-      lessonIds: [manualLessonId],
-      substituter,
-    });
-
-    dispatchPendingNotification(
-      result.id,
-      'substitution_teacher',
-      await loadSubstitutionTeacherPayload({
-        date: result.date,
-        lessonIds: [manualLessonId],
-        substituter,
-      })
-    );
+    const payload = await loadSubstitutionNotificationPayload(result.id);
+    if (payload) {
+      dispatchPendingNotification(result.id, 'substitution', payload);
+      dispatchPendingNotification(result.id, 'substitution_teacher', payload);
+    } else {
+      logger.warning('substitution notification skipped', {
+        requestId: context.requestId,
+        substitutionId: result.id,
+      });
+    }
 
     return result;
   });
@@ -957,34 +959,16 @@ export const updateSubstitution = base.timetable.substitutions.update
     cancelPendingNotification(id, 'substitution');
     cancelPendingNotification(id, 'substitution_teacher');
 
-    // Fetch existing lesson IDs for notification fallback
-    const existingLessonRecords = await db
-      .select({ lessonId: substitutionLessonMTM.lessonId })
-      .from(substitutionLessonMTM)
-      .where(eq(substitutionLessonMTM.substitutionId, id));
-    const existingLessonIds = existingLessonRecords.map((r) => r.lessonId);
-
-    const updatedLessonIds =
-      body.lessonIds == null ? existingLessonIds : body.lessonIds;
-    const updatedSubstituter =
-      'substituter' in body ? body.substituter : existing.substituter;
-    const updatedDate = body.date ?? existing.date;
-
-    dispatchPendingNotification(id, 'substitution', {
-      date: updatedDate,
-      lessonIds: updatedLessonIds,
-      substituter: updatedSubstituter,
-    });
-
-    dispatchPendingNotification(
-      id,
-      'substitution_teacher',
-      await loadSubstitutionTeacherPayload({
-        date: updatedDate,
-        lessonIds: updatedLessonIds,
-        substituter: updatedSubstituter,
-      })
-    );
+    const payload = await loadSubstitutionNotificationPayload(id);
+    if (payload) {
+      dispatchPendingNotification(id, 'substitution', payload);
+      dispatchPendingNotification(id, 'substitution_teacher', payload);
+    } else {
+      logger.warning('substitution notification skipped', {
+        requestId: context.requestId,
+        substitutionId: id,
+      });
+    }
 
     return updatedSubstitution;
   });

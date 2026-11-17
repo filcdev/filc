@@ -11,7 +11,7 @@
     "db:import-navigator": "bun --bun src/database/scripts/import-navigator.ts",
     "db:reset": "bun run ./src/database/scripts/reset.ts",
     "openapi:check": "bun run scripts/check-openapi.ts",
-    "test": "bun test --isolate ./src/utils ./src/modules/theme",
+    "test": "bun test --isolate ./src/utils ./src/modules/theme ./src/modules/notifications",
     "openapi:generate": "bun run scripts/generate-openapi.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"
@@ -21,6 +21,7 @@
     "@better-auth/drizzle-adapter": "^1.7.11",
     "@filcdev/api": "workspace:*",
     "@filcdev/auth": "workspace:*",
+    "@filcdev/i18n": "workspace:*",
     "@filcdev/mail": "workspace:*",
     "@filcdev/timetable-import": "workspace:*",
     "@logtape/logtape": "^2.4.2",

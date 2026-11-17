@@ -163,6 +163,13 @@ const buildRemappedLinks = (
  *
  * If a source lesson has no unique equivalent in the target timetable, no
  * changes are made and the caller can abort the timetable deletion.
+ *
+ * Known limit: the rewrite touches `substitution_lesson_mtm` only. A pending
+ * `substitution`/`substitution_teacher` timer armed before the delete keeps the
+ * payload it captured — stale lesson ids — and by the time it fires the old
+ * timetable's cohort links are gone, so its audience resolves to nobody and the
+ * notification is silently lost. Cancelling or re-dispatching those timers here
+ * needs the substitution ids the caller would have to collect.
  */
 export const remapSubstitutionLessonsToTimetable = async (
   tx: TxClient,

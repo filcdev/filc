@@ -1,8 +1,15 @@
+import { type Locale, normalizeLocale } from '@filcdev/i18n';
+
+/** The languages the notification emails and their chrome are written in. */
+export type MailLocale = Locale;
+
 /**
- * Whether a notification should be written in Hungarian. Every module that
- * owns a notification branches on this, so it lives here rather than being
- * copied per feature. Matches on the BCP-47 prefix, so `hu-HU` counts too.
+ * The language a stored preference resolves to for mail. The column is free
+ * text — `en-GB`, an empty string, a code we do not translate — while the
+ * templates and their chrome only exist in English and Hungarian, so the
+ * BCP-47 primary tag decides and anything that is not English falls back to
+ * Hungarian, the column's default.
  */
-export function isHungarianLocale(locale: string): boolean {
-  return (locale.toLowerCase().split('-')[0] ?? locale) === 'hu';
+export function mailLocale(locale?: string | null): MailLocale {
+  return normalizeLocale(locale ?? undefined);
 }

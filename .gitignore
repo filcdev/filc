@@ -53,3 +53,5 @@ thoughts
 .opencode
 .codegraph
 graphify-out/
+
+build.env

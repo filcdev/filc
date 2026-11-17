@@ -1,4 +1,7 @@
 {
   "extends": "@filcdev/tsconfig/react-library.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
   "include": ["src"]
 }

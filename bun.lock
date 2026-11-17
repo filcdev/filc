@@ -18,6 +18,7 @@
         "@better-auth/drizzle-adapter": "^1.7.11",
         "@filcdev/api": "workspace:*",
         "@filcdev/auth": "workspace:*",
+        "@filcdev/i18n": "workspace:*",
         "@filcdev/mail": "workspace:*",
         "@filcdev/timetable-import": "workspace:*",
         "@logtape/logtape": "^2.4.2",
@@ -170,10 +171,23 @@
         "react": "catalog:",
       },
     },
+    "packages/i18n": {
+      "name": "@filcdev/i18n",
+      "version": "0.1.0",
+      "dependencies": {
+        "i18next": "^26.5.2",
+      },
+      "devDependencies": {
+        "@filcdev/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/mail": {
       "name": "@filcdev/mail",
       "version": "0.1.0",
       "dependencies": {
+        "@filcdev/i18n": "workspace:*",
         "@react-email/components": "^1.0.12",
         "@react-email/render": "^2.1.1",
         "nodemailer": "^10.1.7",
@@ -469,6 +483,8 @@
     "@filcdev/chronos": ["@filcdev/chronos@workspace:apps/chronos"],
 
     "@filcdev/e2e": ["@filcdev/e2e@workspace:apps/e2e"],
+
+    "@filcdev/i18n": ["@filcdev/i18n@workspace:packages/i18n"],
 
     "@filcdev/iris": ["@filcdev/iris@workspace:apps/iris"],
 

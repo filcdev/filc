@@ -6,6 +6,7 @@
     "dev": "bun --bun vite",
     "build": "bun --bun vite build",
     "start": "srvx serve --prod -s ../client dist/server/server.js",
+    "test": "bun test ./src",
     "typecheck": "tsc"
   },
   "dependencies": {

@@ -1,5 +1,5 @@
 {
-  "id": "e0836727-e650-4d0d-93b3-b761814869fe",
+  "id": "cf219c1a-199e-4136-884f-78015650ee33",
   "prevId": "b8f94643-c8b1-4154-931a-b1bccd10d7f9",
   "version": "7",
   "dialect": "postgresql",
@@ -2664,83 +2664,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.site_theme_schedule": {
-      "name": "site_theme_schedule",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "theme": {
-          "name": "theme",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "start_month": {
-          "name": "start_month",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "start_day": {
-          "name": "start_day",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "end_month": {
-          "name": "end_month",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "end_day": {
-          "name": "end_day",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_by": {
-          "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "site_theme_schedule_updated_by_user_id_fk": {
-          "name": "site_theme_schedule_updated_by_user_id_fk",
-          "tableFrom": "site_theme_schedule",
-          "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.building": {
       "name": "building",
       "schema": "",
@@ -3968,7 +3891,23 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "teacher_user_id_idx": {
+          "name": "teacher_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "teacher_user_id_user_id_fk": {
           "name": "teacher_user_id_user_id_fk",

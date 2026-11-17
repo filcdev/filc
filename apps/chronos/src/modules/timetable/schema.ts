@@ -65,19 +65,25 @@ export const subject = pgTable('subject', {
   ...timestamps,
 });
 
-export const teacher = pgTable('teacher', {
-  // `id` must stay the first field: drizzle's left-join result mapper nulls a
-  // whole nested object when its first selected column is NULL, so a nullable
-  // column up front (e.g. `email`) would collapse real joined rows into null
-  // and turn substituted lessons into "cancelled" on every client.
-  id: text('id').primaryKey(),
-  email: text('email'),
-  firstName: text('first_name').notNull(),
-  gender: bit({ dimensions: 1 }),
-  lastName: text('last_name').notNull(),
-  short: text('short').notNull(),
-  userId: uuid('user_id').references((): PgColumn => user.id),
-});
+export const teacher = pgTable(
+  'teacher',
+  {
+    // `id` must stay the first field: drizzle's left-join result mapper nulls a
+    // whole nested object when its first selected column is NULL, so a nullable
+    // column up front (e.g. `email`) would collapse real joined rows into null
+    // and turn substituted lessons into "cancelled" on every client.
+    id: text('id').primaryKey(),
+    email: text('email'),
+    firstName: text('first_name').notNull(),
+    gender: bit({ dimensions: 1 }),
+    lastName: text('last_name').notNull(),
+    short: text('short').notNull(),
+    userId: uuid('user_id').references((): PgColumn => user.id),
+  },
+  // Every "is this account a teacher" lookup — `getMyTeacher` and the
+  // notification engine's per-recipient role default — filters on this column.
+  (t) => [index('teacher_user_id_idx').on(t.userId)]
+);
 
 // `building` and `classroom` are shared with the campus model: the Navigator
 // columns they carry, and the classroom columns themselves, keep the upstream

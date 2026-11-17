@@ -22,6 +22,7 @@ import {
 } from '#utils/avatars';
 import { createEntraIdTokenVerifier } from '#utils/entra-id-token';
 import { env } from '#utils/environment';
+import { getUserEmail } from '#utils/teacher-email';
 
 const logger = getLogger(['chronos', 'auth']);
 
@@ -31,6 +32,15 @@ const logger = getLogger(['chronos', 'auth']);
  * below also accepts this shape.
  */
 const BEARER_TOKEN_REGEX = /^Bearer\s+(.+)$/i;
+
+/**
+ * The teacher-row write that seeds the email column from the signed-in
+ * account. `coalesce` makes the seeded address a fallback: an email already on
+ * the teacher row is never overwritten.
+ */
+function seedTeacherEmail(email: string) {
+  return { email: sql`coalesce(${teacher.email}, ${email})` };
+}
 
 /**
  * Preview deployments sign in through the production origin: Entra rejects
@@ -99,7 +109,10 @@ const authOptions = {
             if (userEmail) {
               await db
                 .update(teacher)
-                .set({ userId: session.userId })
+                .set({
+                  ...seedTeacherEmail(userEmail),
+                  userId: session.userId,
+                })
                 .where(
                   and(
                     eq(sql`lower(${teacher.email})`, userEmail),
@@ -157,9 +170,13 @@ const authOptions = {
                 );
               const [candidate] = candidates;
               if (candidates.length === 1 && candidate) {
+                const email = await getUserEmail(session.userId);
                 await db
                   .update(teacher)
-                  .set({ userId: session.userId })
+                  .set({
+                    ...(email ? seedTeacherEmail(email) : {}),
+                    userId: session.userId,
+                  })
                   .where(
                     and(
                       eq(teacher.id, candidate.id),

@@ -34,6 +34,17 @@ export function parseDateOnly(value: string | Date): Date {
   return new Date(year, month - 1, day);
 }
 
+/**
+ * `YYYY-MM-DD` for a local calendar day — an ISO date-only label with no
+ * locale involved, for values the API or a picker keys on rather than shows.
+ */
+export function formatIsoDateOnly(value: string | Date): string {
+  const date = parseDateOnly(value);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 export function formatLocalizedDate(
   value: DateInput,
   language: string | undefined,

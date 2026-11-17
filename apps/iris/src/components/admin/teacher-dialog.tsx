@@ -10,7 +10,7 @@ import {
 import { Field, FieldError, FieldLabel } from '@filcdev/ui/components/field';
 import { Input } from '@filcdev/ui/components/input';
 import { useForm } from '@tanstack/react-form';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import {
@@ -46,6 +46,11 @@ export function TeacherDialog({
     label: `${u.name} (${u.email})`,
     value: u.id,
   }));
+
+  // The address this dialog filled in for the currently selected account.
+  // Switching to another account replaces it, while an address the teacher
+  // typed by hand is never overwritten.
+  const autofilledEmail = useRef<string | null>(null);
 
   const form = useForm({
     defaultValues: {
@@ -112,7 +117,23 @@ export function TeacherDialog({
                 <FieldLabel>{t('teachers.assignedUser')}</FieldLabel>
                 <Combobox
                   emptyMessage={t('teachers.noUsersFound')}
-                  onValueChange={(value) => field.handleChange(value)}
+                  onValueChange={(value) => {
+                    field.handleChange(value);
+                    const selected = usersQuery.data?.find(
+                      (user) => user.id === value
+                    );
+                    const currentEmail = form.getFieldValue('email');
+                    // Empty, or still holding what this dialog put there:
+                    // both are safe to replace on a new selection.
+                    if (
+                      selected &&
+                      (currentEmail === '' ||
+                        currentEmail === autofilledEmail.current)
+                    ) {
+                      form.setFieldValue('email', selected.email);
+                      autofilledEmail.current = selected.email;
+                    }
+                  }}
                   options={userOptions}
                   placeholder={t('teachers.assignedUserPlaceholder')}
                   searchPlaceholder={t('search')}
