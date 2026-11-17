@@ -59,7 +59,7 @@ export const themeContract = {
           auth: true,
           description: 'Remove an annual window from the theme schedule.',
           method: 'DELETE',
-          operationId: 'deleteThemeSchedule',
+          operationId: 'deleteThemeScheduleById',
           path: '/theme/schedule/{id}',
           tags: THEME_TAGS,
         })
@@ -86,7 +86,7 @@ export const themeContract = {
           description:
             'Edit an annual window of the theme schedule. The merged window may not overlap another row.',
           method: 'PATCH',
-          operationId: 'patchThemeSchedule',
+          operationId: 'patchThemeScheduleById',
           path: '/theme/schedule/{id}',
           tags: THEME_TAGS,
         })

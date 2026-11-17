@@ -36266,7 +36266,7 @@
     },
     "/theme/schedule/{id}": {
       "delete": {
-        "operationId": "deleteThemeSchedule",
+        "operationId": "deleteThemeScheduleById",
         "description": "Remove an annual window from the theme schedule.",
         "tags": [
           "Theme"
@@ -36492,7 +36492,7 @@
         ]
       },
       "patch": {
-        "operationId": "patchThemeSchedule",
+        "operationId": "patchThemeScheduleById",
         "description": "Edit an annual window of the theme schedule. The merged window may not overlap another row.",
         "tags": [
           "Theme"
