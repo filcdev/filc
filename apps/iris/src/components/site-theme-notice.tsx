@@ -79,11 +79,11 @@ export function SiteThemeNotice() {
           })}
         </DialogDescription>
         <DialogFooter>
-          <Button onClick={() => acknowledge(true)} variant="outline">
-            {t('siteTheme.notice.thanks')}
-          </Button>
-          <Button onClick={() => acknowledge(false)}>
+          <Button onClick={() => acknowledge(false)} variant="outline">
             {t('siteTheme.notice.disable')}
+          </Button>
+          <Button onClick={() => acknowledge(true)}>
+            {t('siteTheme.notice.thanks')}
           </Button>
         </DialogFooter>
       </DialogContent>
