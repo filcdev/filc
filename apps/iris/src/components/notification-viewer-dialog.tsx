@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
+import { cn } from '@filcdev/ui/lib/utils';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsDialog } from '@/components/settings-dialog-store';
@@ -22,6 +23,38 @@ type NotificationViewerDialogProps = {
   onOpenChange: (open: boolean) => void;
   notification: NotificationItem | null;
 };
+
+/**
+ * The metadata highlights of one notification, deduplicated. `max` collapses
+ * the remainder into a `+N` badge for the compact history rows.
+ */
+export function NotificationHighlights({
+  className,
+  highlights,
+  max,
+}: {
+  className?: string;
+  highlights: string[];
+  max?: number;
+}) {
+  const unique = [...new Set(highlights)];
+  if (unique.length === 0) {
+    return null;
+  }
+  const shown = max === undefined ? unique : unique.slice(0, max);
+  return (
+    <div className={cn('flex flex-wrap gap-1', className)}>
+      {shown.map((highlight) => (
+        <Badge key={highlight} variant="secondary">
+          {highlight}
+        </Badge>
+      ))}
+      {max !== undefined && unique.length > max ? (
+        <Badge variant="secondary">+{unique.length - max}</Badge>
+      ) : null}
+    </div>
+  );
+}
 
 export function NotificationViewerDialog({
   open,
@@ -42,7 +75,7 @@ export function NotificationViewerDialog({
     return null;
   }
 
-  const highlights = [...new Set(notification.metadata?.highlights ?? [])];
+  const highlights = notification.metadata?.highlights ?? [];
   const details = notification.metadata?.details ?? [];
 
   return (
@@ -60,16 +93,7 @@ export function NotificationViewerDialog({
         <p className="whitespace-pre-wrap text-sm">{notification.content}</p>
 
         {highlights.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {highlights.map((highlight) => (
-              <span
-                className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs"
-                key={highlight}
-              >
-                {highlight}
-              </span>
-            ))}
-          </div>
+          <NotificationHighlights className="gap-1.5" highlights={highlights} />
         )}
 
         {details.length > 0 && (

@@ -38,7 +38,6 @@ import {
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { z } from 'zod';
 import { useCohortSelector } from '@/hooks/timetables-admin';
 import {
   ADMIN_UI_PERMISSIONS,
@@ -47,6 +46,7 @@ import {
 import { useWifiStatus } from '@/hooks/wifi';
 import {
   callbackUrlWithRedirect,
+  redirectSearchSchema,
   resolveReturnTo,
 } from '@/utils/auth-redirect';
 import {
@@ -55,14 +55,10 @@ import {
   nicknamePattern,
 } from '@/utils/form-schemas';
 
-const searchSchema = z.object({
-  // Carried from /auth/login so a new user still lands where they were going.
-  redirect: z.coerce.string().optional(),
-});
-
 export const Route = createFileRoute('/auth/welcome')({
   component: RouteComponent,
-  validateSearch: searchSchema,
+  // Carried from /auth/login so a new user still lands where they were going.
+  validateSearch: redirectSearchSchema,
 });
 
 function RouteComponent() {

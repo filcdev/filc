@@ -4,12 +4,11 @@ import { CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Navbar } from '@/components/navbar';
-import { resolveReturnTo } from '@/utils/auth-redirect';
+import { redirectSearchSchema, resolveReturnTo } from '@/utils/auth-redirect';
 
 const errorSearchSchema = z.object({
+  ...redirectSearchSchema.shape,
   error: z.string().optional(),
-  // Carried from /auth/login, so a retry heads for the same page.
-  redirect: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute('/auth/error')({

@@ -12,20 +12,15 @@ import { FingerprintPattern, Shield } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { z } from 'zod';
 import {
   callbackUrlWithRedirect,
+  redirectSearchSchema,
   resolveReturnTo,
 } from '@/utils/auth-redirect';
 
-const searchSchema = z.object({
-  // Coerced: `?redirect=1` (or any non-string) must not throw the route.
-  redirect: z.coerce.string().optional(),
-});
-
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,
-  validateSearch: searchSchema,
+  validateSearch: redirectSearchSchema,
 });
 
 function RouteComponent() {

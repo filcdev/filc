@@ -760,7 +760,9 @@
       "announcement": "News item",
       "systemMessage": "System message",
       "blogPost": "Blog post",
-      "doorlockCardUsed": "Door unlock"
+      "doorlockCardUsed": "Door unlock",
+      "cohortReselectionRequired": "Group selection",
+      "test": "Test notification"
     }
   },
   "preferences": {

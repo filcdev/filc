@@ -26,12 +26,11 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import {
   describeTestNotificationError,
   NOTIFICATION_MOCKS,
-  NOTIFICATION_TYPES,
   usePreviewTestNotification,
   useSendTestNotification,
   useTestNotificationRecordOptions,
 } from '@/hooks/dev-notifications';
-import { typeLabel } from '@/utils/notification-labels';
+import { NOTIFICATION_TYPES, typeLabel } from '@/utils/notification-labels';
 
 type ChannelKey = 'channelEmail' | 'channelInApp' | 'channelPush';
 

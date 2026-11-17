@@ -1,7 +1,4 @@
-import {
-  type NotificationDetail,
-  notificationTypeValues,
-} from '@filcdev/api/domains/notifications';
+import type { NotificationDetail } from '@filcdev/api/domains/notifications';
 import { ERROR_CODE } from '@filcdev/api/errors';
 import { isDefinedError } from '@orpc/client';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -10,10 +7,12 @@ import { toast } from 'sonner';
 import { useMovedLessons } from '@/hooks/moved-lessons';
 import { useAdminSystemMessages, useAnnouncements } from '@/hooks/news';
 import { type SubstitutionItem, useSubstitutions } from '@/hooks/substitutions';
-import { getLocalizedWeekdayName, parseDateOnly } from '@/utils/date-locale';
+import {
+  formatIsoDateOnly,
+  getLocalizedWeekdayName,
+} from '@/utils/date-locale';
+import type { NOTIFICATION_TYPES } from '@/utils/notification-labels';
 import { api, orpc } from '@/utils/orpc';
-
-export const NOTIFICATION_TYPES = notificationTypeValues;
 
 type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -236,14 +235,6 @@ export const describeTestNotificationError = <T>(
     ? message.disabled
     : message.fallback;
 
-/** Date-only ISO label for the record picker; the API sends a local midnight. */
-function formatRecordDate(value: Date | string): string {
-  const date = parseDateOnly(value);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
 /** "3. óra" / "Period 3", mirroring the backend's notification period label. */
 function formatPeriodNumber(
   period: number,
@@ -292,7 +283,7 @@ export function useTestNotificationRecordOptions(
     const cohort = lesson?.cohorts[0]?.name;
     const subject = lesson?.subject?.name;
     const period = lesson?.period?.period;
-    const parts = [formatRecordDate(item.substitution.date)];
+    const parts = [formatIsoDateOnly(item.substitution.date)];
     if (cohort) {
       parts.push(cohort);
     }
@@ -359,7 +350,7 @@ export function useTestNotificationRecordOptions(
         ]
           .filter(Boolean)
           .join(', ');
-        const parts = [formatRecordDate(item.movedLesson.date)];
+        const parts = [formatIsoDateOnly(item.movedLesson.date)];
         if (subject) {
           parts.push(subject);
         }
@@ -371,17 +362,17 @@ export function useTestNotificationRecordOptions(
     case 'announcement':
       return (announcements.data ?? []).map((item) => ({
         id: item.id,
-        label: `${formatRecordDate(item.validFrom)} · ${item.title ?? t('announcements.untitled')}`,
+        label: `${formatIsoDateOnly(item.validFrom)} · ${item.title ?? t('announcements.untitled')}`,
       }));
     case 'system_message':
       return (systemMessages.data ?? []).map((item) => ({
         id: item.id,
-        label: `${formatRecordDate(item.validFrom)} · ${item.title}`,
+        label: `${formatIsoDateOnly(item.validFrom)} · ${item.title}`,
       }));
     case 'blog_post':
       return (blogPosts.data ?? []).map((item) => ({
         id: item.id,
-        label: `${formatRecordDate(item.publishedAt ?? item.createdAt)} · ${item.title}`,
+        label: `${formatIsoDateOnly(item.publishedAt ?? item.createdAt)} · ${item.title}`,
       }));
     default:
       return [];

@@ -1,5 +1,16 @@
+import { z } from 'zod';
+
 /** Where a sign-in lands when no usable return path was carried. */
 const DEFAULT_RETURN_TO = '/';
+
+/**
+ * The search params the auth routes carry between each other: the return path
+ * `resolveReturnTo` reads. Coerced, so `?redirect=1` (or any non-string) is
+ * parsed instead of throwing the route.
+ */
+export const redirectSearchSchema = z.object({
+  redirect: z.coerce.string().optional(),
+});
 
 /**
  * Only used to parse the incoming path; any origin works, because the parsed
@@ -36,14 +47,29 @@ export function resolveReturnTo(redirect: string | undefined): string {
 /**
  * Absolute URL of `path` carrying the return path as `?redirect=`, for the
  * better-auth redirect options that have to survive the OAuth round trip.
+ *
+ * OAuth forbids a fragment in the URL it redirects to, so the return path
+ * travels as its path and query only: the fragment is dropped here, the same
+ * way `callbackURL` drops it at the sign-in call.
  */
 export function callbackUrlWithRedirect(
   path: string,
   returnTo: string
 ): string {
   const url = new URL(path, window.location.origin);
-  if (returnTo !== DEFAULT_RETURN_TO) {
-    url.searchParams.set('redirect', returnTo);
+  let target: URL | null = null;
+  try {
+    target = new URL(returnTo, RESOLUTION_ORIGIN);
+  } catch {
+    // A malformed return path is a stale or hand-edited URL, not an error the
+    // caller can act on: drop it and land on the default destination.
+  }
+  if (target !== null) {
+    target.hash = '';
+    const redirect = `${target.pathname}${target.search}`;
+    if (redirect !== DEFAULT_RETURN_TO) {
+      url.searchParams.set('redirect', redirect);
+    }
   }
   return url.href;
 }

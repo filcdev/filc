@@ -760,7 +760,9 @@
       "announcement": "Hír",
       "systemMessage": "Rendszerüzenet",
       "blogPost": "Blogbejegyzés",
-      "doorlockCardUsed": "Ajtó kinyitása"
+      "doorlockCardUsed": "Ajtó kinyitása",
+      "cohortReselectionRequired": "Csoportválasztás",
+      "test": "Teszt értesítés"
     }
   },
   "preferences": {
