@@ -37,8 +37,12 @@ type ThemeScheduleFormValues = {
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 
-/** Leap-free maximum each month can hold; 29 February stays representable. */
-const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/**
+ * The days each month offers. February stops at 28: a window repeats every
+ * year, so 29 February would name a day that exists in only one year in four.
+ * The backend rejects it for the same reason.
+ */
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 const daysInMonth = (month: number): number => DAYS_IN_MONTH[month - 1] ?? 31;
 
@@ -61,12 +65,16 @@ function toFormValues(
   }
 
   const today = new Date();
+  const month = today.getMonth() + 1;
+  // Never seed a day the month's select does not offer — 29 February is not a
+  // valid window day, so a leap-day "today" becomes the 28th.
+  const day = Math.min(today.getDate(), daysInMonth(month));
 
   return {
-    endDay: today.getDate(),
-    endMonth: today.getMonth() + 1,
-    startDay: today.getDate(),
-    startMonth: today.getMonth() + 1,
+    endDay: day,
+    endMonth: month,
+    startDay: day,
+    startMonth: month,
     theme: 'default',
   };
 }

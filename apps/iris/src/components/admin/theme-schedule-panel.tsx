@@ -70,7 +70,7 @@ export function ThemeSchedulePanel() {
             {item.active && <Badge>{t('siteTheme.schedule.active')}</Badge>}
             <div className="ml-auto flex items-center gap-1">
               <Button
-                aria-label={t('siteTheme.schedule.edit')}
+                aria-label={`${t('siteTheme.schedule.edit')}: ${t(THEME_COPY[item.theme].nameKey)}`}
                 onClick={() => openEdit(item)}
                 size="icon-sm"
                 variant="ghost"
@@ -78,7 +78,7 @@ export function ThemeSchedulePanel() {
                 <Pencil className="h-4 w-4" />
               </Button>
               <Button
-                aria-label={t('siteTheme.schedule.delete')}
+                aria-label={`${t('siteTheme.schedule.delete')}: ${t(THEME_COPY[item.theme].nameKey)}`}
                 onClick={() => setDeleteTarget(item)}
                 size="icon-sm"
                 variant="ghost"

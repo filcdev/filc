@@ -31,10 +31,13 @@ export const Route = createFileRoute('/_private/admin/theme')({
     </PermissionGuard>
   ),
   loader: ({ context }) =>
-    prefetch(
-      context.queryClient,
-      orpc.theme.get.queryOptions({ staleTime: 5 * 60_000 })
-    ),
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.theme.get.queryOptions({ staleTime: 5 * 60_000 })
+      ),
+      prefetch(context.queryClient, orpc.theme.schedule.list.queryOptions()),
+    ]),
 });
 
 function ThemePage() {
