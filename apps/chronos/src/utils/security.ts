@@ -40,7 +40,9 @@ const BASE_CSP: Readonly<Record<string, readonly string[]>> = {
   'media-src': ["'self'"],
   'object-src': ["'none'"],
   'report-to': ['endpoint-1'],
-  sandbox: ['allow-same-origin', 'allow-scripts'],
+  // `allow-forms` lets the unsubscribe page POST its confirmation form back to
+  // this same origin; the sandbox would otherwise block the submission.
+  sandbox: ['allow-same-origin', 'allow-scripts', 'allow-forms'],
   'script-src': ["'self'"],
   'script-src-attr': ["'none'"],
   'script-src-elem': ["'self'"],

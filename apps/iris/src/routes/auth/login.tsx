@@ -12,14 +12,21 @@ import { FingerprintPattern, Shield } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import {
+  callbackUrlWithRedirect,
+  redirectSearchSchema,
+  resolveReturnTo,
+} from '@/utils/auth-redirect';
 
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,
+  validateSearch: redirectSearchSchema,
 });
 
 function RouteComponent() {
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
+  const { redirect } = Route.useSearch();
 
   const handleMicrosoftSignIn = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,12 +36,19 @@ function RouteComponent() {
 
     setIsLoading(true);
 
+    // Only a same-origin path is honoured; anything else would make the login
+    // page an open redirect through the OAuth callback.
+    const returnTo = resolveReturnTo(redirect);
+    // OAuth forbids a fragment in its redirect URLs, so the hash stays behind
+    // and everything else (path and query) comes back after the round trip.
+    const callbackUrl = new URL(returnTo, window.location.origin);
+    callbackUrl.hash = '';
+
     try {
       await authClient.signIn.social({
-        callbackURL: new URL('/', window.location.origin).href,
-        errorCallbackURL: new URL('/auth/error', window.location.origin).href,
-        newUserCallbackURL: new URL('/auth/welcome', window.location.origin)
-          .href,
+        callbackURL: callbackUrl.href,
+        errorCallbackURL: callbackUrlWithRedirect('/auth/error', returnTo),
+        newUserCallbackURL: callbackUrlWithRedirect('/auth/welcome', returnTo),
         provider: 'microsoft',
       });
     } catch (err) {

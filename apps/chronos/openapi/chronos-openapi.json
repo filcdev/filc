@@ -30883,8 +30883,41 @@
                             "anyOf": [
                               {
                                 "type": "object",
-                                "propertyNames": {
-                                  "type": "string"
+                                "properties": {
+                                  "action": {
+                                    "type": "string"
+                                  },
+                                  "details": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "label",
+                                        "value"
+                                      ]
+                                    }
+                                  },
+                                  "highlights": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "slug": {
+                                    "type": "string"
+                                  },
+                                  "userId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  }
                                 },
                                 "additionalProperties": {}
                               },
@@ -31379,8 +31412,41 @@
                       "anyOf": [
                         {
                           "type": "object",
-                          "propertyNames": {
-                            "type": "string"
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "details": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "label",
+                                  "value"
+                                ]
+                              }
+                            },
+                            "highlights": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "slug": {
+                              "type": "string"
+                            },
+                            "userId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
                           },
                           "additionalProperties": {}
                         },
@@ -31610,7 +31676,7 @@
     "/notifications/test/preview": {
       "post": {
         "operationId": "postNotificationsTestPreview",
-        "description": "Development helper: render a notification template without sending it (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS)",
+        "description": "Development helper: render a notification template without sending it (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS). When entityId is given, a real record is rendered through the same builders as the live pipeline instead of the supplied text: substitution, substitution_teacher, moved_lesson, moved_lesson_teacher, announcement, system_message and blog_post; every other type answers 400.",
         "tags": [
           "Notifications"
         ],
@@ -31623,6 +31689,35 @@
                 "properties": {
                   "content": {
                     "type": "string"
+                  },
+                  "details": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Id of a real record to render instead of the supplied text; only the types previewTest resolves accept one"
+                  },
+                  "highlights": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "language": {
                     "enum": [
@@ -31639,6 +31734,7 @@
                       "substitution",
                       "substitution_teacher",
                       "moved_lesson",
+                      "moved_lesson_teacher",
                       "announcement",
                       "system_message",
                       "blog_post",
@@ -31899,9 +31995,33 @@
                   "content": {
                     "type": "string"
                   },
+                  "details": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "value"
+                      ]
+                    }
+                  },
                   "email": {
                     "type": "string",
                     "format": "email"
+                  },
+                  "highlights": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "language": {
                     "enum": [
@@ -31918,6 +32038,7 @@
                       "substitution",
                       "substitution_teacher",
                       "moved_lesson",
+                      "moved_lesson_teacher",
                       "announcement",
                       "system_message",
                       "blog_post",
@@ -32199,14 +32320,23 @@
                         "announcement": {
                           "type": "boolean"
                         },
+                        "announcementEmail": {
+                          "type": "boolean",
+                          "description": "Email me about announcements; in-app announcements are unaffected"
+                        },
                         "blogPost": {
                           "type": "boolean"
                         },
                         "channelsEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
+                        },
+                        "emailEnabled": {
+                          "type": "boolean",
+                          "description": "Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher"
                         },
                         "movedLesson": {
                           "type": "boolean"
@@ -32215,14 +32345,17 @@
                           "type": "boolean"
                         },
                         "systemMessage": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Ignored: system messages are always delivered"
                         }
                       },
                       "required": [
                         "announcement",
+                        "announcementEmail",
                         "blogPost",
                         "channelsEnabled",
                         "doorlockCardUsed",
+                        "emailEnabled",
                         "movedLesson",
                         "substitution",
                         "systemMessage"
@@ -32512,14 +32645,23 @@
                       "announcement": {
                         "type": "boolean"
                       },
+                      "announcementEmail": {
+                        "type": "boolean",
+                        "description": "Email me about announcements; in-app announcements are unaffected"
+                      },
                       "blogPost": {
                         "type": "boolean"
                       },
                       "channelsEnabled": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default"
                       },
                       "doorlockCardUsed": {
                         "type": "boolean"
+                      },
+                      "emailEnabled": {
+                        "type": "boolean",
+                        "description": "Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher"
                       },
                       "movedLesson": {
                         "type": "boolean"
@@ -32528,7 +32670,8 @@
                         "type": "boolean"
                       },
                       "systemMessage": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "description": "Ignored: system messages are always delivered"
                       }
                     }
                   },
@@ -32611,14 +32754,23 @@
                         "announcement": {
                           "type": "boolean"
                         },
+                        "announcementEmail": {
+                          "type": "boolean",
+                          "description": "Email me about announcements; in-app announcements are unaffected"
+                        },
                         "blogPost": {
                           "type": "boolean"
                         },
                         "channelsEnabled": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default"
                         },
                         "doorlockCardUsed": {
                           "type": "boolean"
+                        },
+                        "emailEnabled": {
+                          "type": "boolean",
+                          "description": "Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher"
                         },
                         "movedLesson": {
                           "type": "boolean"
@@ -32627,14 +32779,17 @@
                           "type": "boolean"
                         },
                         "systemMessage": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "Ignored: system messages are always delivered"
                         }
                       },
                       "required": [
                         "announcement",
+                        "announcementEmail",
                         "blogPost",
                         "channelsEnabled",
                         "doorlockCardUsed",
+                        "emailEnabled",
                         "movedLesson",
                         "substitution",
                         "systemMessage"
@@ -32893,7 +33048,7 @@
     "/notifications/test": {
       "post": {
         "operationId": "postNotificationsTest",
-        "description": "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS)",
+        "description": "Development helper: drop a test notification into the caller's own inbox (needs CHRONOS_ENABLE_TEST_NOTIFICATIONS).",
         "tags": [
           "Notifications"
         ],
@@ -32921,8 +33076,41 @@
                       "anyOf": [
                         {
                           "type": "object",
-                          "propertyNames": {
-                            "type": "string"
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "details": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "label",
+                                  "value"
+                                ]
+                              }
+                            },
+                            "highlights": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "slug": {
+                              "type": "string"
+                            },
+                            "userId": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
                           },
                           "additionalProperties": {}
                         },
@@ -45020,30 +45208,8 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "email": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "firstName": {
                                     "type": "string"
-                                  },
-                                  "gender": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 1,
-                                        "pattern": "^[01]+$"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   },
                                   "id": {
                                     "type": "string",
@@ -45054,27 +45220,13 @@
                                   },
                                   "short": {
                                     "type": "string"
-                                  },
-                                  "userId": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   }
                                 },
                                 "required": [
-                                  "email",
                                   "firstName",
-                                  "gender",
                                   "id",
                                   "lastName",
-                                  "short",
-                                  "userId"
+                                  "short"
                                 ]
                               },
                               {
@@ -46444,30 +46596,8 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "email": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "firstName": {
                                     "type": "string"
-                                  },
-                                  "gender": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 1,
-                                        "pattern": "^[01]+$"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   },
                                   "id": {
                                     "type": "string",
@@ -46478,27 +46608,13 @@
                                   },
                                   "short": {
                                     "type": "string"
-                                  },
-                                  "userId": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   }
                                 },
                                 "required": [
-                                  "email",
                                   "firstName",
-                                  "gender",
                                   "id",
                                   "lastName",
-                                  "short",
-                                  "userId"
+                                  "short"
                                 ]
                               },
                               {
@@ -46799,30 +46915,8 @@
                               {
                                 "type": "object",
                                 "properties": {
-                                  "email": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
                                   "firstName": {
                                     "type": "string"
-                                  },
-                                  "gender": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 1,
-                                        "pattern": "^[01]+$"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   },
                                   "id": {
                                     "type": "string",
@@ -46833,27 +46927,13 @@
                                   },
                                   "short": {
                                     "type": "string"
-                                  },
-                                  "userId": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
                                   }
                                 },
                                 "required": [
-                                  "email",
                                   "firstName",
-                                  "gender",
                                   "id",
                                   "lastName",
-                                  "short",
-                                  "userId"
+                                  "short"
                                 ]
                               },
                               {

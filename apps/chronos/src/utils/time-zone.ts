@@ -132,6 +132,49 @@ export const offsetMinutesAt = (date: Date, timeZone: string): number => {
   return Math.round((wallClockAsUtc - date.getTime()) / 60_000) || 0;
 };
 
+/**
+ * The instant at which the calendar day containing `date` begins in `timeZone`,
+ * i.e. the UTC `Date` for local `00:00` that day.
+ *
+ * `getZonedDateTimeParts` supplies the zone's calendar day; that midnight is the
+ * day's `Date.UTC` reinterpreted as wall clock, so the zone's offset is
+ * subtracted from it (`offsetMinutesAt`, taken at the naive instant — the moment
+ * midnight is meant to occur).
+ *
+ * Caveat: a zone whose midnight does not exist (a DST jump that skips 00:00, as
+ * some Brazil/Chile rules do) has no offset in force at that wall clock, and the
+ * offset at the naive instant is used instead — the result can then be an hour
+ * off the real start of the day. Europe/Budapest shifts at 02:00/03:00, so its
+ * midnights always exist.
+ */
+export const startOfDayInTimeZone = (date: Date, timeZone: string): Date => {
+  const { day, month, year } = getZonedDateTimeParts(date, timeZone);
+
+  // The zone's midnight, reinterpreted as if it were UTC.
+  const naiveMidnight = Date.UTC(Number(year), Number(month) - 1, Number(day));
+
+  const offsetMinutes = offsetMinutesAt(new Date(naiveMidnight), timeZone);
+
+  return new Date(naiveMidnight - offsetMinutes * 60_000);
+};
+
+/**
+ * The UTC wall-clock literal `YYYY-MM-DD HH:MM:SS` of the start of `date`'s
+ * calendar day in `timeZone` — the form a `timestamp without time zone`
+ * comparison understands.
+ *
+ * A bound `Date` reaches Postgres as a timestamp string whose zone marker a
+ * `timestamp` comparison silently discards, so a day cutoff has to be pinned as
+ * an explicit UTC literal rather than compared as an instant. Truncating the ISO
+ * string drops the milliseconds and the `Z`; the space is the separator
+ * `timestamp` accepts.
+ */
+export const cutoffLiteral = (date: Date, timeZone: string): string =>
+  startOfDayInTimeZone(date, timeZone)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+
 /** Weekday index (0 = Sunday … 6 = Saturday) for `date` in `timeZone`. */
 export const getWeekdayInTimeZone = (date: Date, timeZone: string): number => {
   const { weekday } = getZonedDateTimeParts(date, timeZone);

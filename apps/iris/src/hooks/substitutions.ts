@@ -15,9 +15,10 @@ export type SubstitutionItem = SubstitutionsResponse[number];
 export type Teacher = NonNullable<SubstitutionItem['teacher']>;
 
 /** Full substitution list. */
-export function useSubstitutions() {
+export function useSubstitutions(enabled = true) {
   return useQuery({
     ...orpc.timetable.substitutions.list.queryOptions(),
+    enabled,
     select: (data) => data.items,
   });
 }

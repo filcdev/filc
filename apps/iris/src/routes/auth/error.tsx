@@ -4,8 +4,10 @@ import { CircleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Navbar } from '@/components/navbar';
+import { redirectSearchSchema, resolveReturnTo } from '@/utils/auth-redirect';
 
 const errorSearchSchema = z.object({
+  ...redirectSearchSchema.shape,
   error: z.string().optional(),
 });
 
@@ -16,7 +18,11 @@ export const Route = createFileRoute('/auth/error')({
 
 function RouteComponent() {
   const { t } = useTranslation();
-  const { error } = Route.useSearch();
+  const { error, redirect } = Route.useSearch();
+  // A failed sign-in leaves no session, so returning to a protected page would
+  // only bounce back here: the retry re-enters the sign-in with the same
+  // destination instead.
+  const returnTo = resolveReturnTo(redirect);
 
   return (
     <>
@@ -35,9 +41,17 @@ function RouteComponent() {
         ) : (
           <p className="text-center">{t('auth.error.genericMessage')}</p>
         )}
-        <Button variant="secondary">
-          <Link to="/">{t('auth.error.returnToHome')}</Link>
-        </Button>
+        {returnTo === '/' ? (
+          <Button variant="secondary">
+            <Link to="/">{t('auth.error.returnToHome')}</Link>
+          </Button>
+        ) : (
+          <Button variant="secondary">
+            <Link search={{ redirect: returnTo }} to="/auth/login">
+              {t('auth.error.retrySignIn')}
+            </Link>
+          </Button>
+        )}
       </main>
       <footer className="p-1 text-center font-mono text-muted-foreground text-sm">
         Error code: {error ?? 'none'}

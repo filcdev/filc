@@ -573,6 +573,7 @@
   "auth": {
     "error": {
       "returnToHome": "Vissza a kezdőlapra",
+      "retrySignIn": "Újra bejelentkezés",
       "title": "Hiba történt",
       "invalid_code": "Hiba történt a hitelesítés során.",
       "unauthorized": "Nincs jogosultságod az oldal megtekintéséhez.",
@@ -587,6 +588,12 @@
     "title": "Teszt értesítések",
     "description": "Teszt értesítések küldése és e-mail sablonok előnézete (csak fejlesztés)",
     "type": "Értesítés típusa",
+    "record": "Valódi rekord",
+    "recordNone": "A beírt szöveg használata",
+    "recordPlaceholder": "Válassz rekordot",
+    "recordHint": "Csak az előnézetre vonatkozik: az előnézet a rekord saját tartalmát jeleníti meg a fenti tárgy és tartalom helyett. A küldés a beírt szöveget használja.",
+    "recordLessonCount_one": "{{count}} óra",
+    "recordLessonCount_other": "{{count}} óra",
     "language": "Nyelv",
     "recipientEmail": "Címzett e-mail",
     "recipientEmailPlaceholder": "opcionalis@example.com",
@@ -602,11 +609,14 @@
     "preview": "E-mail előnézet",
     "previewTitle": "E-mail előnézet",
     "previewDescription": "Renderelt sablon küldés nélkül.",
+    "previewDesktop": "Asztali",
+    "previewPhone": "Telefon",
     "sendAll": "Minden típus küldése",
     "sendAllSuccess": "Minden típushoz elküldve a minta",
     "sendSuccess": "Teszt elküldve: {{channels}}",
     "sendError": "Nem sikerült elküldeni a teszt értesítést",
-    "previewError": "Nem sikerült renderelni az előnézetet"
+    "previewError": "Nem sikerült renderelni az előnézetet",
+    "disabled": "A teszt értesítések ki vannak kapcsolva ezen a szerveren (állítsd be: CHRONOS_ENABLE_TEST_NOTIFICATIONS=true, és indítsd újra a Chronost)"
   },
   "teachers": {
     "title": "Tanárok",
@@ -731,7 +741,6 @@
       "filterAll": "Minden típus",
       "noNotifications": "Nincsenek értesítések",
       "markRead": "Olvasottnak jelölés",
-      "markUnread": "Olvasatlannak jelölés",
       "loadError": "Nem sikerült betölteni az értesítéseket",
       "loadErrorMessage": "Kérlek próbáld újra később.",
       "deleteConfirm": "Értesítés törlése?",
@@ -747,10 +756,13 @@
       "substitution": "Helyettesítés",
       "substitutionTeacher": "A te helyettesítésed",
       "movedLesson": "Áthelyezett óra",
+      "movedLessonTeacher": "A te áthelyezett órád",
       "announcement": "Hír",
       "systemMessage": "Rendszerüzenet",
       "blogPost": "Blogbejegyzés",
-      "doorlockCardUsed": "Ajtó kinyitása"
+      "doorlockCardUsed": "Ajtó kinyitása",
+      "cohortReselectionRequired": "Csoportválasztás",
+      "test": "Teszt értesítés"
     }
   },
   "preferences": {
@@ -775,7 +787,15 @@
     "groupDisplayHide": "Más csoportok elrejtése",
     "notifications": "Értesítések",
     "notificationsDescription": "Válaszd ki, mely értesítéseket szeretnéd megkapni",
-    "channelsEnabled": "Értesítések engedélyezése",
+    "channels": "Értesítési csatornák",
+    "channelsDescription": "Válaszd ki, hol szeretnél értesítéseket kapni.",
+    "types": "Értesítés típusai",
+    "typesDescription": "Válaszd ki, mely eseményekről kérsz értesítést.",
+    "emailEnabled": "E-mail",
+    "emailEnabledDescription": "Az iskolai e-mail címedre küldjük.",
+    "announcementEmail": "Kérjek e-mailt a hírekről",
+    "announcementEmailDescription": "Az alkalmazásban a hírek megjelenését ez a beállítás nem érinti.",
+    "systemMessageAlwaysOn": "A rendszerüzeneteket mindig megkapod.",
     "saveSuccess": "Beállítások mentve",
     "saveError": "Nem sikerült menteni a beállításokat",
     "loadError": "Nem sikerült betölteni a beállításokat",
@@ -826,7 +846,10 @@
     "description": "Értesítési beállítások kezelése",
     "success": "Beállítások sikeresen frissítve",
     "error": "Nem sikerült frissíteni a beállításokat",
-    "invalidToken": "Érvénytelen vagy lejárt leiratkozási link"
+    "errorTitle": "Nem sikerült a leiratkozás",
+    "invalidToken": "Érvénytelen vagy lejárt leiratkozási link",
+    "action": "Leiratkozás az e-mailekről",
+    "systemMessageNote": "Az iskola rendszerüzeneteit leiratkozás után is megkapod."
   },
   "activityLog": {
     "title": "Tevékenységi napló",

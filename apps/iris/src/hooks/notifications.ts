@@ -84,6 +84,8 @@ type UpdateSettingsCallbacks = {
   updateCohort?: () => Promise<void>;
   /** Called after the settings are saved successfully. */
   onSaved?: () => void;
+  /** Skip the success toast for a field that saves as it changes. */
+  silent?: boolean;
 };
 
 /** Unread notification count for the badge; polls every 30s while signed in. */
@@ -124,6 +126,7 @@ export function useNotificationSettings(enabled: boolean) {
 /** Save notification preference settings. */
 export function useUpdateNotificationSettings({
   onSaved,
+  silent = false,
   updateCohort,
 }: UpdateSettingsCallbacks = {}) {
   const queryClient = useQueryClient();
@@ -154,14 +157,16 @@ export function useUpdateNotificationSettings({
       queryClient.invalidateQueries({
         queryKey: orpc.notifications.settings.key(),
       });
-      toast.success(t('preferences.saveSuccess'));
+      if (!silent) {
+        toast.success(t('preferences.saveSuccess'));
+      }
       onSaved?.();
     },
   });
 }
 
 /**
- * Opt out of every notification channel via an unsubscribe token. The backend
+ * Opt out of notification emails via an unsubscribe token. The backend
  * answers an HTML page (not an oRPC procedure), so this hook posts the form
  * directly and emits no toast: the public page renders its own result panel.
  */
@@ -184,8 +189,8 @@ export function useUnsubscribe() {
         throw new Error('Failed to update preferences');
       }
     },
-    // Unsubscribing disables every channel server-side, so the settings query
-    // (the same preferences row) is stale.
+    // Unsubscribing turns email off only: the per-type flags are untouched
+    // server-side, so the settings query (the same preferences row) is stale.
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: orpc.notifications.settings.key(),

@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@filcdev/ui/components/dialog';
-import { MailCheck, MailX } from 'lucide-react';
+import { cn } from '@filcdev/ui/lib/utils';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsDialog } from '@/components/settings-dialog-store';
@@ -23,6 +23,38 @@ type NotificationViewerDialogProps = {
   onOpenChange: (open: boolean) => void;
   notification: NotificationItem | null;
 };
+
+/**
+ * The metadata highlights of one notification, deduplicated. `max` collapses
+ * the remainder into a `+N` badge for the compact history rows.
+ */
+export function NotificationHighlights({
+  className,
+  highlights,
+  max,
+}: {
+  className?: string;
+  highlights: string[];
+  max?: number;
+}) {
+  const unique = [...new Set(highlights)];
+  if (unique.length === 0) {
+    return null;
+  }
+  const shown = max === undefined ? unique : unique.slice(0, max);
+  return (
+    <div className={cn('flex flex-wrap gap-1', className)}>
+      {shown.map((highlight) => (
+        <Badge key={highlight} variant="secondary">
+          {highlight}
+        </Badge>
+      ))}
+      {max !== undefined && unique.length > max ? (
+        <Badge variant="secondary">+{unique.length - max}</Badge>
+      ) : null}
+    </div>
+  );
+}
 
 export function NotificationViewerDialog({
   open,
@@ -43,6 +75,9 @@ export function NotificationViewerDialog({
     return null;
   }
 
+  const highlights = notification.metadata?.highlights ?? [];
+  const details = notification.metadata?.details ?? [];
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-2xl">
@@ -56,6 +91,30 @@ export function NotificationViewerDialog({
         </DialogHeader>
 
         <p className="whitespace-pre-wrap text-sm">{notification.content}</p>
+
+        {highlights.length > 0 && (
+          <NotificationHighlights className="gap-1.5" highlights={highlights} />
+        )}
+
+        {details.length > 0 && (
+          <dl className="divide-y rounded-md border text-xs">
+            {details.map((detail, index) => (
+              <div
+                className="flex items-start justify-between gap-4 px-3 py-1.5"
+                // biome-ignore lint/suspicious/noArrayIndexKey: two rows can carry the same label, so the position is part of the identity
+                key={`${detail.label}-${index}`}
+              >
+                <dt className="text-muted-foreground uppercase tracking-wide">
+                  {detail.label}
+                </dt>
+                <dd className="min-w-0 break-words text-right">
+                  {detail.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
         <p className="text-muted-foreground text-xs">
           {formatLocalizedDate(notification.createdAt, i18n.language, {
             dateStyle: 'short',
@@ -64,19 +123,8 @@ export function NotificationViewerDialog({
           })}
         </p>
 
-        <DialogFooter>
-          <Button
-            onClick={() => markReadMutation.mutate({ id: notification.id })}
-            size="sm"
-            variant="ghost"
-          >
-            {notification.read ? (
-              <MailX className="h-4 w-4" />
-            ) : (
-              <MailCheck className="h-4 w-4" />
-            )}
-          </Button>
-          {notification.metadata?.action === 'cohort_reselection' && (
+        {notification.metadata?.action === 'cohort_reselection' && (
+          <DialogFooter>
             <Button
               onClick={() => {
                 onOpenChange(false);
@@ -87,8 +135,8 @@ export function NotificationViewerDialog({
             >
               {t('notifications.viewer.changeCohort')}
             </Button>
-          )}
-        </DialogFooter>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

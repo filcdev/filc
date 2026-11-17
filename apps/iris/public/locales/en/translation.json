@@ -573,6 +573,7 @@
   "auth": {
     "error": {
       "returnToHome": "Return to home",
+      "retrySignIn": "Sign in again",
       "title": "Something went wrong",
       "invalid_code": "An error occurred during authentication.",
       "unauthorized": "You are not authorized to view this page.",
@@ -587,6 +588,12 @@
     "title": "Test notifications",
     "description": "Send test notifications and preview email templates (development only)",
     "type": "Notification type",
+    "record": "Real record",
+    "recordNone": "Use the typed text",
+    "recordPlaceholder": "Choose a record",
+    "recordHint": "Applies to the preview only: the preview renders this record's own content instead of the subject and content above. Sending still uses the typed text.",
+    "recordLessonCount_one": "{{count}} lesson",
+    "recordLessonCount_other": "{{count}} lessons",
     "language": "Language",
     "recipientEmail": "Recipient email",
     "recipientEmailPlaceholder": "optional@example.com",
@@ -602,11 +609,14 @@
     "preview": "Preview email",
     "previewTitle": "Email preview",
     "previewDescription": "Rendered template without sending.",
+    "previewDesktop": "Desktop",
+    "previewPhone": "Phone",
     "sendAll": "Send all types",
     "sendAllSuccess": "Sample sent for every type",
     "sendSuccess": "Test sent via: {{channels}}",
     "sendError": "Failed to send test notification",
-    "previewError": "Failed to render preview"
+    "previewError": "Failed to render preview",
+    "disabled": "Test notifications are disabled on this server (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true and restart Chronos)"
   },
   "teachers": {
     "title": "Teachers",
@@ -731,7 +741,6 @@
       "filterAll": "All types",
       "noNotifications": "No notifications found",
       "markRead": "Mark as read",
-      "markUnread": "Mark as unread",
       "loadError": "Failed to load notifications",
       "loadErrorMessage": "Please try again later.",
       "deleteConfirm": "Delete notification?",
@@ -747,10 +756,13 @@
       "substitution": "Substitution",
       "substitutionTeacher": "Your substitution",
       "movedLesson": "Moved lesson",
+      "movedLessonTeacher": "Your moved lesson",
       "announcement": "News item",
       "systemMessage": "System message",
       "blogPost": "Blog post",
-      "doorlockCardUsed": "Door unlock"
+      "doorlockCardUsed": "Door unlock",
+      "cohortReselectionRequired": "Group selection",
+      "test": "Test notification"
     }
   },
   "preferences": {
@@ -775,7 +787,15 @@
     "groupDisplayHide": "Hide other groups",
     "notifications": "Notifications",
     "notificationsDescription": "Choose which notifications you want to receive",
-    "channelsEnabled": "Enable notifications",
+    "channels": "Notification channels",
+    "channelsDescription": "Choose where you'd like to receive notifications.",
+    "types": "Notify me about",
+    "typesDescription": "Choose which events are worth an alert.",
+    "emailEnabled": "Email",
+    "emailEnabledDescription": "Sent to your school email address.",
+    "announcementEmail": "Email me about announcements",
+    "announcementEmailDescription": "In-app news items are not affected by this setting.",
+    "systemMessageAlwaysOn": "System messages are always delivered.",
     "saveSuccess": "Preferences saved",
     "saveError": "Failed to save preferences",
     "loadError": "Failed to load preferences",
@@ -826,7 +846,10 @@
     "description": "Manage your notification preferences",
     "success": "Preferences updated successfully",
     "error": "Failed to update preferences",
-    "invalidToken": "Invalid or expired unsubscribe link"
+    "errorTitle": "Unsubscribe failed",
+    "invalidToken": "Invalid or expired unsubscribe link",
+    "action": "Unsubscribe from emails",
+    "systemMessageNote": "System messages from the school are still delivered after you unsubscribe."
   },
   "activityLog": {
     "title": "Activity Log",

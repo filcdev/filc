@@ -1,0 +1,75 @@
+import { z } from 'zod';
+
+/** Where a sign-in lands when no usable return path was carried. */
+const DEFAULT_RETURN_TO = '/';
+
+/**
+ * The search params the auth routes carry between each other: the return path
+ * `resolveReturnTo` reads. Coerced, so `?redirect=1` (or any non-string) is
+ * parsed instead of throwing the route.
+ */
+export const redirectSearchSchema = z.object({
+  redirect: z.coerce.string().optional(),
+});
+
+/**
+ * Only used to parse the incoming path; any origin works, because the parsed
+ * target is compared against this one rather than against the live page. That
+ * keeps the check available outside a browser, where `window` does not exist.
+ */
+const RESOLUTION_ORIGIN = 'http://filc.invalid';
+
+/**
+ * A same-origin path to return to after signing in, or `/`.
+ *
+ * An absolute path is required, so `?redirect=1` is rejected rather than
+ * resolved against the current URL into `/1`. The origin comparison (rather
+ * than the naive `startsWith('/') && !startsWith('//')` prefix check) rejects
+ * the rest: the URL parser normalises backslashes and strips tabs/newlines, so
+ * `/\evil.com` and the same path with a literal tab collapse into a different
+ * origin.
+ */
+export function resolveReturnTo(redirect: string | undefined): string {
+  if (!redirect?.startsWith('/')) {
+    return DEFAULT_RETURN_TO;
+  }
+  try {
+    const target = new URL(redirect, RESOLUTION_ORIGIN);
+    if (target.origin !== RESOLUTION_ORIGIN) {
+      return DEFAULT_RETURN_TO;
+    }
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return DEFAULT_RETURN_TO;
+  }
+}
+
+/**
+ * Absolute URL of `path` carrying the return path as `?redirect=`, for the
+ * better-auth redirect options that have to survive the OAuth round trip.
+ *
+ * OAuth forbids a fragment in the URL it redirects to, so the return path
+ * travels as its path and query only: the fragment is dropped here, the same
+ * way `callbackURL` drops it at the sign-in call.
+ */
+export function callbackUrlWithRedirect(
+  path: string,
+  returnTo: string
+): string {
+  const url = new URL(path, window.location.origin);
+  let target: URL | null = null;
+  try {
+    target = new URL(returnTo, RESOLUTION_ORIGIN);
+  } catch {
+    // A malformed return path is a stale or hand-edited URL, not an error the
+    // caller can act on: drop it and land on the default destination.
+  }
+  if (target !== null) {
+    target.hash = '';
+    const redirect = `${target.pathname}${target.search}`;
+    if (redirect !== DEFAULT_RETURN_TO) {
+      url.searchParams.set('redirect', redirect);
+    }
+  }
+  return url.href;
+}

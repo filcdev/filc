@@ -1,0 +1,99 @@
+{
+  "substitution": {
+    "title": "Új helyettesítés",
+    "cta": "Nézd meg az órárendedben a részletekért!",
+    "teacherTitle": "Új helyettesítés",
+    "teacherIntro": "Új helyettesítést jelöltek ki hozzád.",
+    "teacherMulti_one": "{{count}} órára jelöltek ki helyettesítésre {{weekday}}.",
+    "teacherMulti_other": "{{count}} órára jelöltek ki helyettesítésre {{weekday}}.",
+    "coveringLessons_one": "{{name}} helyettesít {{date}}, {{count}} órádat tartja meg.",
+    "coveringLessons_other": "{{name}} helyettesít {{date}}, {{count}} órádat tartja meg.",
+    "coveringYourLessons": "{{name}} helyettesít {{date}}.",
+    "affectedLessons_one": "Helyettesítés {{date}} — {{count}} órádat érinti.",
+    "affectedLessons_other": "Helyettesítés {{date}} — {{count}} órádat érinti.",
+    "newSubstitution": "Új helyettesítés {{date}}."
+  },
+  "movedLesson": {
+    "title": "Áthelyezett óra",
+    "teacherTitle": "Az órád áthelyezve",
+    "body": "Az órád át lett helyezve: {{location}}.",
+    "teacherBody": "Az órád áthelyezésre került.",
+    "teacherBodyTo": "Az órád áthelyezésre került: {{location}}.",
+    "teacherBodyNamed": "A {{who}} órád áthelyezésre került.",
+    "teacherBodyNamedTo": "A {{who}} órád áthelyezésre került: {{location}}.",
+    "teacherWhoClass": "{{className}} osztály",
+    "teacherWhoClassSubject": "{{className}} osztály {{subject}}",
+    "inRoom": "{{room}} terem",
+    "proseLocation": "{{time}}, {{room}}",
+    "newTimeSlot": "másik időpontra",
+    "newTimeSlotInRoom": "másik időpontra ({{room}} terem)",
+    "multipleSuffix": "Nézd meg az órárendedben a további változásokat!"
+  },
+  "cohortReselection": {
+    "title": "Csoport újraválasztása szükséges",
+    "body": "A csoportod már nem elérhető. Kérjük, válassz új csoportot a Beállítások menüben."
+  },
+  "announcement": {
+    "prefix": "Új bejelentés",
+    "title": "Új bejelentés",
+    "content": "{{prefix}}: {{title}}"
+  },
+  "systemMessage": {
+    "prefix": "Rendszerüzenet",
+    "title": "Rendszerüzenet",
+    "content": "{{prefix}}: {{title}}"
+  },
+  "blogPost": {
+    "prefix": "Új bejegyzés",
+    "title": "Új blogbejegyzés",
+    "cta": "koppints az olvasáshoz",
+    "content": "{{prefix}}: {{title}} — {{cta}}"
+  },
+  "doorlock": {
+    "title": "Belépőkártya használat",
+    "withDevice": "A belépőkártyád használatát észleltük: {{device}}.",
+    "withoutDevice": "A belépőkártyád használatát észleltük."
+  },
+  "test": {
+    "notificationTitle": "Teszt értesítés",
+    "notificationBody": "Ez egy teszt értesítés. Ha megkaptad, minden működik.",
+    "messageSubject": "Filc teszt üzenet",
+    "messageBody": "Ez egy fejlesztési teszt üzenet. Ha megkaptad, minden rendben működik.",
+    "sampleRecipientName": "Minta Felhasználó"
+  },
+  "types": {
+    "announcement": "Hír",
+    "blog_post": "Blogbejegyzés",
+    "cohort_reselection_required": "Csoportválasztás",
+    "doorlock_card_used": "Ajtózár",
+    "moved_lesson": "Óra áthelyezve",
+    "moved_lesson_teacher": "A te áthelyezett órád",
+    "substitution": "Helyettesítés",
+    "substitution_teacher": "Tanári helyettesítés",
+    "system_message": "Rendszerüzenet",
+    "test": "Teszt értesítés"
+  },
+  "labels": {
+    "class": "Osztály",
+    "comment": "Megjegyzés",
+    "date": "Dátum",
+    "lesson": "Óra",
+    "room": "Terem",
+    "subject": "Tantárgy",
+    "substitutedTeacher": "Helyettesített tanár",
+    "cancelled": "Lemarad",
+    "substitute": "Helyettesítő",
+    "original": "Eredeti",
+    "new": "Új",
+    "teacher": "Tanár"
+  },
+  "mail": {
+    "autoMessage": "Ez az email a Filc rendszer automatikus üzenete.",
+    "greeting": "Kedves Filc felhasználó!",
+    "greetingNamed": "Kedves {{name}}!",
+    "manageLabel": "Értesítések kezelése",
+    "unsubscribeLabel": "Leiratkozás az e-mailekről",
+    "unsubscribeNote": "Az iskola rendszerüzeneteit leiratkozás után is megkapod.",
+    "viewLabel": "Megtekintés a Filcben"
+  }
+}

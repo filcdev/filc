@@ -1,12 +1,65 @@
+import { createTranslator } from '@filcdev/i18n';
 import { env } from '#utils/environment';
 import { resolveAudienceByCohortOrAll } from '#utils/notifications/engine';
-import { isHungarianLocale } from '#utils/notifications/locale';
-import type { NotificationHandler } from '#utils/notifications/types';
+import type {
+  NotificationContent,
+  NotificationHandler,
+} from '#utils/notifications/types';
 
 /** The payload is the record this module's own handlers dispatch with. */
 function byCohortOrAll(payload: unknown) {
   const p = payload as { cohortIds?: string[] };
   return resolveAudienceByCohortOrAll(p.cohortIds);
+}
+
+export function buildAnnouncementContent(
+  payload: { title: string },
+  locale: string
+): NotificationContent {
+  const t = createTranslator(locale);
+  const title = payload.title || '';
+  return {
+    content: t('announcement.content', {
+      prefix: t('announcement.prefix'),
+      title,
+    }),
+    title: t('announcement.title'),
+  };
+}
+
+export function buildSystemMessageContent(
+  payload: { title: string },
+  locale: string
+): NotificationContent {
+  const t = createTranslator(locale);
+  const title = payload.title || '';
+  return {
+    content: t('systemMessage.content', {
+      prefix: t('systemMessage.prefix'),
+      title,
+    }),
+    title: t('systemMessage.title'),
+  };
+}
+
+export function buildBlogPostContent(
+  payload: { slug?: string; title: string },
+  locale: string
+): NotificationContent {
+  const t = createTranslator(locale);
+  const title = payload.title || '';
+  const result: NotificationContent = {
+    content: t('blogPost.content', {
+      cta: t('blogPost.cta'),
+      prefix: t('blogPost.prefix'),
+      title,
+    }),
+    title: t('blogPost.title'),
+  };
+  if (payload.slug) {
+    result.metadata = { slug: payload.slug };
+  }
+  return result;
 }
 
 /**
@@ -16,63 +69,24 @@ function byCohortOrAll(payload: unknown) {
  */
 export const newsNotifications: readonly NotificationHandler[] = [
   {
-    buildContent: (payload, locale) => {
-      const p = payload as { title: string };
-      const title = p.title || '';
-      const prefix = isHungarianLocale(locale)
-        ? 'Új bejelentés'
-        : 'New announcement';
-      const content = `${prefix}: ${title}`;
-      return {
-        content,
-        title: isHungarianLocale(locale) ? 'Új bejelentés' : 'New Announcement',
-      };
-    },
+    buildContent: (payload, locale) =>
+      buildAnnouncementContent(payload as { title: string }, locale),
     getAudience: byCohortOrAll,
     getDelay: () => env.notificationDelayAnnouncement,
     preferenceKey: 'announcement',
     type: 'announcement',
   },
   {
-    buildContent: (payload, locale) => {
-      const p = payload as { title: string };
-      const title = p.title || '';
-      const prefix = isHungarianLocale(locale)
-        ? 'Rendszerüzenet'
-        : 'System notice';
-      const content = `${prefix}: ${title}`;
-      return {
-        content,
-        title: isHungarianLocale(locale) ? 'Rendszerüzenet' : 'System Message',
-      };
-    },
+    buildContent: (payload, locale) =>
+      buildSystemMessageContent(payload as { title: string }, locale),
     getAudience: byCohortOrAll,
     getDelay: () => env.notificationDelaySystemMessage,
     preferenceKey: 'systemMessage',
     type: 'system_message',
   },
   {
-    buildContent: (payload, locale) => {
-      const p = payload as { title: string; slug?: string };
-      const title = p.title || '';
-      const cta = isHungarianLocale(locale)
-        ? 'koppints az olvasáshoz'
-        : 'tap to read';
-      const prefix = isHungarianLocale(locale) ? 'Új bejegyzés' : 'New post';
-      const content = `${prefix}: ${title} — ${cta}`;
-      const result: {
-        content: string;
-        title: string;
-        metadata?: Record<string, unknown>;
-      } = {
-        content,
-        title: isHungarianLocale(locale) ? 'Új blogbejegyzés' : 'New Blog Post',
-      };
-      if (p.slug) {
-        result.metadata = { slug: p.slug };
-      }
-      return result;
-    },
+    buildContent: (payload, locale) =>
+      buildBlogPostContent(payload as { slug?: string; title: string }, locale),
     getAudience: () => resolveAudienceByCohortOrAll(),
     getDelay: () => env.notificationDelayBlogPost,
     preferenceKey: 'blogPost',

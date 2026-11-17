@@ -1,7 +1,14 @@
+import {
+  createTranslator,
+  formatMailDate,
+  type Locale,
+  normalizeLocale,
+  periodLabel,
+  weekdayOn,
+} from '@filcdev/i18n';
+import type { EmailDetail } from '@filcdev/mail';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
-import { user as userTable } from '#database/schema/authentication';
-import { userPreferences } from '#modules/notifications/schema';
 import {
   classroom,
   cohort,
@@ -11,10 +18,9 @@ import {
   subject,
   teacher,
 } from '#modules/timetable/schema';
-import { isHungarianLocale } from './locale';
+import { uniqueStrings } from './strings';
+import { resolveTeacherUserAudience } from './teacher-audience';
 import type { AudienceUser, NotificationContent } from './types';
-
-const TRAILING_NEWLINES = /\n+$/;
 
 /** One affected lesson, with the details a substitute teacher needs. */
 export type SubstitutionTeacherLesson = {
@@ -31,10 +37,14 @@ export type SubstitutionTeacherLesson = {
 
 /** Payload carrying everything needed to notify the substitute teacher. */
 export type SubstitutionTeacherPayload = {
+  /** Optional note the substitution was created with. */
+  comment?: string | null;
   date: Date;
   lessons: SubstitutionTeacherLesson[];
   /** The substitute teacher id. */
   substituter: string | null;
+  /** The substitute teacher's display name, resolved by the loader. */
+  substituterName: string | null;
 };
 
 /** "07:10:00" -> "07:10"; anything else -> null. */
@@ -43,39 +53,23 @@ const formatTime = (value: unknown): string | null => {
   return str ? str.slice(0, 5) : null;
 };
 
-const formatDate = (value: Date, hu: boolean): string => {
-  const day = String(value.getDate()).padStart(2, '0');
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const year = value.getFullYear();
-  return hu ? `${year}. ${month}. ${day}.` : `${year}-${month}-${day}`;
-};
-
-const periodLabel = (periodNo: number | null, hu: boolean): string => {
-  if (periodNo == null) {
-    return '';
-  }
-  return hu ? `${periodNo}. óra` : `Period ${periodNo}`;
-};
-
 /**
  * Load the enriched details of the affected lessons so the substitute-teacher
  * notification can include the date, lesson number/time, class, subject, room
  * and replaced teacher(s).
  */
 export async function loadSubstitutionTeacherPayload(args: {
+  comment?: string | null;
   date: Date;
   lessonIds: string[];
   substituter: string | null | undefined;
 }): Promise<SubstitutionTeacherPayload> {
-  const { date, lessonIds, substituter } = args;
+  const { comment, date, lessonIds, substituter } = args;
+  const substituterId = substituter ?? null;
 
   const lessons = lessonIds.length
     ? await db.select().from(lesson).where(inArray(lesson.id, lessonIds))
     : [];
-
-  if (lessons.length === 0) {
-    return { date, lessons: [], substituter: substituter ?? null };
-  }
 
   const subjectIds = [...new Set(lessons.map((l) => l.subjectId))].filter(
     (id): id is string => id != null
@@ -89,9 +83,12 @@ export async function loadSubstitutionTeacherPayload(args: {
   ];
   const periodIds = [...new Set(lessons.map((l) => l.periodId))];
   const teacherIds = [
-    ...new Set(
-      lessons.flatMap((l) => (Array.isArray(l.teacherIds) ? l.teacherIds : []))
-    ),
+    ...new Set([
+      ...lessons.flatMap((l) =>
+        Array.isArray(l.teacherIds) ? l.teacherIds : []
+      ),
+      ...(substituterId ? [substituterId] : []),
+    ]),
   ];
 
   const [subjects, classrooms, periods, teachers, cohortRows] =
@@ -150,7 +147,15 @@ export async function loadSubstitutionTeacherPayload(args: {
     };
   });
 
-  return { date, lessons: lessonDetails, substituter: substituter ?? null };
+  return {
+    comment: comment ?? null,
+    date,
+    lessons: lessonDetails,
+    substituter: substituterId,
+    substituterName: substituterId
+      ? (teacherMap.get(substituterId) ?? null)
+      : null,
+  };
 }
 
 /** Resolve the linked user (and thus email) of the substitute teacher. */
@@ -162,72 +167,142 @@ export async function resolveSubstituteTeacherAudience(
     return [];
   }
 
-  const [teacherRow] = await db
-    .select({ userId: teacher.userId })
-    .from(teacher)
-    .where(eq(teacher.id, substituter))
-    .limit(1);
-
-  if (!teacherRow?.userId) {
-    return [];
-  }
-
-  const [userRow] = await db
-    .select({
-      cohortId: userTable.cohortId,
-      email: userTable.email,
-      id: userTable.id,
-    })
-    .from(userTable)
-    .where(eq(userTable.id, teacherRow.userId))
-    .limit(1);
-
-  if (!userRow) {
-    return [];
-  }
-
-  const [prefs] = await db
-    .select()
-    .from(userPreferences)
-    .where(eq(userPreferences.userId, userRow.id))
-    .limit(1);
-
-  return [
-    {
-      cohortId: userRow.cohortId,
-      email: userRow.email,
-      id: userRow.id,
-      language: prefs?.language ?? 'hu',
-    },
-  ];
+  // Shared with the moved-lesson mail: a `teacher` row -> its linked user.
+  return await resolveTeacherUserAudience([substituter]);
 }
+
+/** The "(07:10 - 07:55)" suffix for a lesson, or an empty string when it has no start. */
+const timeRangeLabel = (entry: SubstitutionTeacherLesson): string => {
+  if (!entry.startTime) {
+    return '';
+  }
+  return entry.endTime
+    ? `(${entry.startTime} - ${entry.endTime})`
+    : `(${entry.startTime})`;
+};
+
+/** Hero chips for the substitute-teacher email: first lesson and first class. */
+const buildSubstitutionTeacherHighlights = (
+  payload: SubstitutionTeacherPayload,
+  locale: Locale
+): string[] => {
+  const first = payload.lessons[0];
+  if (!first) {
+    return [];
+  }
+  const periodPart =
+    first.period == null ? '' : periodLabel(first.period, locale);
+  return [
+    `${periodPart} ${timeRangeLabel(first)}`.trim(),
+    first.cohortName ?? '',
+  ]
+    .filter(Boolean)
+    .slice(0, 4);
+};
+
+/**
+ * The single-lesson details card, using the same labels as the student-facing
+ * `buildSubstitutionDetails` so the two substitution emails match.
+ */
+const buildSubstitutionTeacherDetails = (
+  payload: SubstitutionTeacherPayload,
+  locale: Locale
+): EmailDetail[] => {
+  const t = createTranslator(locale);
+  const [first] = payload.lessons;
+  if (!first) {
+    return [];
+  }
+
+  const rows: EmailDetail[] = [
+    { label: t('labels.date'), value: formatMailDate(payload.date, locale) },
+    { label: t('labels.class'), value: first.cohortName ?? '' },
+    { label: t('labels.subject'), value: first.subjectName ?? '' },
+    {
+      label: t('labels.lesson'),
+      value: [
+        first.period == null ? '' : periodLabel(first.period, locale),
+        timeRangeLabel(first),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    },
+    {
+      label: t('labels.room'),
+      value: uniqueStrings(first.rooms).join(', '),
+    },
+    {
+      label: t('labels.substitutedTeacher'),
+      value: uniqueStrings(first.substitutedTeachers).join(', '),
+    },
+    { label: t('labels.comment'), value: payload.comment?.trim() ?? '' },
+  ];
+
+  return rows.filter((row) => row.value.length > 0);
+};
+
+/**
+ * The multi-lesson details card: the date, then one row per affected lesson.
+ * The label carries the period and the class so the rows stay readable without
+ * a header, and a duplicate label gets a numeric suffix because the mail
+ * template keys its rows by label.
+ */
+export const buildSubstitutionMultiLessonDetails = (
+  payload: SubstitutionTeacherPayload,
+  locale: Locale
+): EmailDetail[] => {
+  const t = createTranslator(locale);
+  const seen = new Map<string, number>();
+  const lessonFallback = t('labels.lesson');
+
+  const rows: EmailDetail[] = [
+    { label: t('labels.date'), value: formatMailDate(payload.date, locale) },
+    ...payload.lessons.map((entry) => {
+      const base =
+        [
+          entry.period == null ? '' : periodLabel(entry.period, locale),
+          entry.cohortName,
+        ]
+          .filter(Boolean)
+          .join(' · ') || lessonFallback;
+      const count = (seen.get(base) ?? 0) + 1;
+      seen.set(base, count);
+
+      return {
+        label: count > 1 ? `${base} · ${count}` : base,
+        value: uniqueStrings([
+          entry.subjectName,
+          entry.rooms.length > 0 ? entry.rooms.join(', ') : null,
+          entry.substitutedTeachers.length > 0
+            ? entry.substitutedTeachers.join(', ')
+            : null,
+        ]).join(' · '),
+      };
+    }),
+  ];
+
+  const comment = payload.comment?.trim();
+  if (comment) {
+    rows.push({ label: t('labels.comment'), value: comment });
+  }
+
+  return rows.filter((row) => row.value.length > 0);
+};
 
 /** Build the teacher-facing notification content for a substitution. */
 export function buildSubstitutionTeacherContent(
   payload: SubstitutionTeacherPayload,
   locale: string
 ): NotificationContent {
-  const hu = isHungarianLocale(locale);
+  const resolved = normalizeLocale(locale);
+  const t = createTranslator(resolved);
   const { date, lessons } = payload;
 
-  const label = {
-    cohort: hu ? 'Osztály' : 'Class',
-    date: hu ? 'Dátum' : 'Date',
-    intro: hu
-      ? 'Új helyettesítést jelöltek ki hozzád.'
-      : 'You have been assigned a new substitution.',
-    lessons: hu ? 'Órák' : 'Lessons',
-    period: hu ? 'Óra' : 'Lesson',
-    replaced: hu ? 'Helyettesített tanár' : 'Substituted teacher',
-    room: hu ? 'Terem' : 'Room',
-    subject: hu ? 'Tárgy' : 'Subject',
-    title: hu ? 'Új helyettesítés' : 'New substitution',
-  };
-
   const first = lessons[0];
-  const firstPeriod = first ? periodLabel(first.period, hu) : '';
+  const firstPeriod =
+    first?.period == null ? '' : periodLabel(first.period, resolved);
 
-  let title = label.title;
+  let title = t('substitution.teacherTitle');
   if (first?.cohortName) {
     title = `${title} – ${first.cohortName}`;
     if (firstPeriod) {
@@ -239,56 +314,87 @@ export function buildSubstitutionTeacherContent(
     return { content: '', title };
   }
 
-  const lessonLines = (entry: SubstitutionTeacherLesson): string[] => {
-    const result: string[] = [];
-    let timeRange = '';
-    if (entry.startTime) {
-      timeRange = entry.endTime
-        ? ` (${entry.startTime} - ${entry.endTime})`
-        : ` (${entry.startTime})`;
-    }
-    const lessonLabel = [periodLabel(entry.period, hu), timeRange]
-      .filter(Boolean)
-      .join(' ');
-    if (lessonLabel) {
-      result.push(`${label.period}: ${lessonLabel}`);
-    }
-    if (entry.cohortName) {
-      result.push(`${label.cohort}: ${entry.cohortName}`);
-    }
-    if (entry.subjectName) {
-      result.push(`${label.subject}: ${entry.subjectName}`);
-    }
-    if (entry.rooms.length > 0) {
-      result.push(`${label.room}: ${entry.rooms.join(', ')}`);
-    }
-    if (entry.substitutedTeachers.length > 0) {
-      result.push(`${label.replaced}: ${entry.substitutedTeachers.join(', ')}`);
-    }
-    return result;
-  };
+  const highlights = buildSubstitutionTeacherHighlights(payload, resolved);
 
-  const dateLine = `${label.date}: ${formatDate(date, hu)}`;
-  const body =
-    lessons.length === 1
-      ? [
-          dateLine,
-          ...lessonLines(lessons[0] as SubstitutionTeacherLesson),
-        ].join('\n')
-      : [
-          dateLine,
-          '',
-          ...lessons.flatMap((entry, i) => [
-            `${label.lessons} (${i + 1}):`,
-            ...lessonLines(entry),
-            '',
-          ]),
-        ]
-          .join('\n')
-          .replace(TRAILING_NEWLINES, '');
+  if (lessons.length === 1) {
+    return {
+      content: t('substitution.teacherIntro'),
+      details: buildSubstitutionTeacherDetails(payload, resolved),
+      highlights,
+      title,
+    };
+  }
+
+  // The rows carry the per-lesson information, so the body stays one sentence:
+  // the mail template renders the hero, then the detail rows below it.
+  const content = t('substitution.teacherMulti', {
+    count: lessons.length,
+    weekday: weekdayOn(date.getDay(), resolved),
+  });
 
   return {
-    content: `${label.intro}\n\n${body}`,
+    content,
+    details: buildSubstitutionMultiLessonDetails(payload, resolved),
+    highlights,
     title,
   };
+}
+
+/**
+ * Build the structured label/value rows for the student-facing `substitution`
+ * email. Every row is optional: a row whose value is empty is omitted.
+ */
+export function buildSubstitutionDetails(
+  payload: SubstitutionTeacherPayload,
+  locale: string
+): EmailDetail[] {
+  const resolved = normalizeLocale(locale);
+  const t = createTranslator(resolved);
+  const { comment, date, lessons, substituter, substituterName } = payload;
+
+  const lessonLabels = lessons
+    .map((entry) => {
+      let timeRange = '';
+      if (entry.startTime) {
+        timeRange = entry.endTime
+          ? ` (${entry.startTime} - ${entry.endTime})`
+          : ` (${entry.startTime})`;
+      }
+      const periodPart =
+        entry.period == null ? '' : periodLabel(entry.period, resolved);
+      return `${periodPart}${timeRange}`.trim();
+    })
+    .filter((value) => value.length > 0);
+
+  const rows: EmailDetail[] = [
+    { label: t('labels.date'), value: formatMailDate(date, resolved) },
+    {
+      label: t('labels.class'),
+      value: uniqueStrings(lessons.map((entry) => entry.cohortName)).join(', '),
+    },
+    {
+      label: t('labels.subject'),
+      value: uniqueStrings(lessons.map((entry) => entry.subjectName)).join(
+        ', '
+      ),
+    },
+    { label: t('labels.lesson'), value: lessonLabels.join(' · ') },
+    {
+      label: t('labels.room'),
+      value: uniqueStrings(lessons.flatMap((entry) => entry.rooms)).join(', '),
+    },
+    {
+      label: t('labels.substitutedTeacher'),
+      value: uniqueStrings(
+        lessons.flatMap((entry) => entry.substitutedTeachers)
+      ).join(', '),
+    },
+    {
+      label: t('labels.substitute'),
+      value: substituter ? (substituterName ?? '') : t('labels.cancelled'),
+    },
+    { label: t('labels.comment'), value: comment?.trim() ?? '' },
+  ];
+
+  return rows.filter((row) => row.value.length > 0);
 }

@@ -3,24 +3,48 @@ import { listResponse } from './list';
 import { colorSchemeSchema } from './theme';
 
 /**
- * The per-type email/push toggles stored in
+ * The per-type toggles and the email channel switch stored in
  * `user_preferences.notification_preferences`. Declared first because
  * `updateSettingsSchema` narrows it with `.partial()`: the column has to hold
  * a complete record, so a caller may patch a subset but never store one.
  */
 export const notificationPreferencesSchema = z.object({
   announcement: z.boolean(),
+  announcementEmail: z
+    .boolean()
+    .describe(
+      'Email me about announcements; in-app announcements are unaffected'
+    ),
   blogPost: z.boolean(),
-  channelsEnabled: z.boolean(),
+  channelsEnabled: z
+    .boolean()
+    .describe(
+      'Legacy master switch; ignored since the channel split — use emailEnabled. A stored false still forces email off, beating the role default'
+    ),
   doorlockCardUsed: z.boolean(),
+  emailEnabled: z
+    .boolean()
+    .describe(
+      'Receive notification email; the only user-facing channel switch, on by default only for an account linked to a teacher'
+    ),
   movedLesson: z.boolean(),
   substitution: z.boolean(),
-  systemMessage: z.boolean(),
+  systemMessage: z
+    .boolean()
+    .describe('Ignored: system messages are always delivered'),
 });
 
 export type NotificationPreferences = z.infer<
   typeof notificationPreferencesSchema
 >;
+
+/** One label/value row of a notification's detail block; the same shape as the mail package's `EmailDetail`, asserted in `apps/chronos/src/_types/notifications.ts`. */
+export const notificationDetailSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+});
+
+export type NotificationDetail = z.infer<typeof notificationDetailSchema>;
 
 export const paginationSchema = z.object({
   dateFrom: z.string().optional(),
@@ -87,6 +111,7 @@ export const notificationTypeValues = [
   'substitution',
   'substitution_teacher',
   'moved_lesson',
+  'moved_lesson_teacher',
   'announcement',
   'system_message',
   'blog_post',
@@ -112,7 +137,9 @@ export const testNotificationChannelsSchema = z
 export const sendTestNotificationSchema = z.object({
   channels: testNotificationChannelsSchema,
   content: z.string().optional(),
+  details: z.array(notificationDetailSchema).optional(),
   email: z.email().optional(),
+  highlights: z.array(z.string()).optional(),
   language: z.enum(['en', 'hu']).optional(),
   subject: z.string().optional(),
   type: notificationTypeSchema,
@@ -124,6 +151,14 @@ export type SendTestNotificationInput = z.infer<
 
 export const previewTestNotificationSchema = z.object({
   content: z.string().optional(),
+  details: z.array(notificationDetailSchema).optional(),
+  entityId: z
+    .uuid()
+    .optional()
+    .describe(
+      'Id of a real record to render instead of the supplied text; only the types previewTest resolves accept one'
+    ),
+  highlights: z.array(z.string()).optional(),
   language: z.enum(['en', 'hu']).optional(),
   subject: z.string().optional(),
   type: notificationTypeSchema,
@@ -133,12 +168,42 @@ export type PreviewTestNotificationInput = z.infer<
   typeof previewTestNotificationSchema
 >;
 
+/**
+ * The structured payload stored in `notification.metadata`. The known keys are
+ * the ones the inbox renders or reacts to; the catchall keeps the handler-owned
+ * keys (and anything added before this schema) instead of stripping them.
+ */
+export const notificationMetadataSchema = z
+  .object({
+    action: z.string().optional(),
+    details: z.array(notificationDetailSchema).optional(),
+    highlights: z.array(z.string()).optional(),
+    slug: z.string().optional(),
+    userId: z.uuid().optional(),
+  })
+  .catchall(z.unknown());
+
+export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
+
+/**
+ * Read shape of `notification.metadata`.
+ *
+ * The column is handler-owned jsonb, so a row written by an older handler (or
+ * by hand) may not match the typed shape above; one such row must not fail the
+ * whole inbox response. A value that does not parse reads as `null` — no
+ * detail block — the same way `colorSchemeSchema.catch(...)` tolerates a bad
+ * `color_scheme`.
+ */
+const notificationMetadataReadSchema = notificationMetadataSchema
+  .nullable()
+  .catch(null);
+
 /** One `notification` row: a single inbox entry. */
 export const notificationRowSchema = z.object({
   content: z.string(),
   createdAt: z.date(),
   id: z.uuid(),
-  metadata: z.record(z.string(), z.unknown()).nullable(),
+  metadata: notificationMetadataReadSchema,
   read: z.boolean(),
   title: z.string(),
   type: z.string(),
