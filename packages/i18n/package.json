@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "i18next": "^26.5.2"
+    "i18next": "^27.1.1"
   },
   "devDependencies": {
     "@filcdev/tsconfig": "workspace:*",
