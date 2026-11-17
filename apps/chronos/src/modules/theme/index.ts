@@ -52,11 +52,29 @@ const toScheduleItem = (
   today: CalendarDay,
   requestId?: string
 ) => {
+  // Narrow month/day to the wire range, then require each pair to be a real
+  // date: `02-29` passes both field schemas individually but a window that
+  // repeats every year cannot mean a leap day, so the pair degrades to 01-01
+  // like any other out-of-range value instead of being served with
+  // phantom-ordinal semantics.
+  const readPair = (month: number, day: number) => {
+    const narrowed = {
+      day: daySchema.catch(1).parse(day),
+      month: monthSchema.catch(1).parse(month),
+    };
+
+    return isRealMonthDay(narrowed.month, narrowed.day)
+      ? narrowed
+      : { day: 1, month: 1 };
+  };
+
+  const start = readPair(row.startMonth, row.startDay);
+  const end = readPair(row.endMonth, row.endDay);
   const window = {
-    endDay: daySchema.catch(1).parse(row.endDay),
-    endMonth: monthSchema.catch(1).parse(row.endMonth),
-    startDay: daySchema.catch(1).parse(row.startDay),
-    startMonth: monthSchema.catch(1).parse(row.startMonth),
+    endDay: end.day,
+    endMonth: end.month,
+    startDay: start.day,
+    startMonth: start.month,
   };
   const theme = siteThemeSchema.catch('default').parse(row.theme);
 
@@ -101,6 +119,22 @@ const assertRealWindow = (window: {
     );
   }
 };
+
+type Tx = Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+
+/**
+ * Serialise every schedule write, so the overlap check and the row it writes
+ * see the same table.
+ *
+ * The isolation level matters and is therefore always passed explicitly
+ * (`read committed`): it re-snapshots a statement after it has waited on a
+ * lock, so rows committed by the transaction we queued behind are visible to
+ * the check. Under `repeatable read` the overlap would be missed; a row lock is
+ * no substitute either, because it locks no gap — two creates from an empty
+ * table would both pass.
+ */
+const lockScheduleWrites = (tx: Tx) =>
+  tx.execute(sql`lock table site_theme_schedule in share row exclusive mode`);
 
 /**
  * The skin the site should wear today. Readable without a session because
@@ -232,43 +266,41 @@ export const createThemeSchedule = base.theme.schedule.create
   .handler(async ({ context, input }) => {
     assertRealWindow(input);
 
-    const row = await db.transaction(async (tx) => {
-      // Serialise schedule writes: the overlap check and the insert have to see
-      // the same table, or two concurrent creates both pass the check and the
-      // invariant is gone. A row lock cannot do that — `select … for update`
-      // locks zero rows on an empty table, which is exactly the first two
-      // creates a school ever makes — so take a table lock in the mode that
-      // conflicts with INSERT/UPDATE/DELETE and leaves readers untouched.
-      await tx.execute(
-        sql`lock table site_theme_schedule in share row exclusive mode`
-      );
+    const row = await db.transaction(
+      async (tx) => {
+        await lockScheduleWrites(tx);
 
-      const siblings = await tx
-        .select(scheduleWindowColumns)
-        .from(siteThemeSchedule);
-      const overlapping = siblings.find((sibling) =>
-        windowsOverlap(sibling, input)
-      );
-
-      if (overlapping) {
-        logger.warning('theme schedule window rejected: overlaps another row', {
-          candidate: input,
-          conflictingId: overlapping.id,
-          requestId: context.requestId,
-          userId: context.user?.id,
-        });
-        throw conflict(
-          'This window overlaps another scheduled window. Windows must not overlap.'
+        const siblings = await tx
+          .select(scheduleWindowColumns)
+          .from(siteThemeSchedule);
+        const overlapping = siblings.find((sibling) =>
+          windowsOverlap(sibling, input)
         );
-      }
 
-      const [inserted] = await tx
-        .insert(siteThemeSchedule)
-        .values({ ...input, updatedBy: context.user?.id })
-        .returning();
+        if (overlapping) {
+          logger.warning(
+            'theme schedule window rejected: overlaps another row',
+            {
+              candidate: input,
+              conflictingId: overlapping.id,
+              requestId: context.requestId,
+              userId: context.user?.id,
+            }
+          );
+          throw conflict(
+            'This window overlaps another scheduled window. Windows must not overlap.'
+          );
+        }
 
-      return inserted;
-    });
+        const [inserted] = await tx
+          .insert(siteThemeSchedule)
+          .values({ ...input, updatedBy: context.user?.id })
+          .returning();
+
+        return inserted;
+      },
+      { isolationLevel: 'read committed' }
+    );
 
     logger.info('theme schedule window created', {
       end: `${row.endMonth}-${row.endDay}`,
@@ -298,13 +330,96 @@ export const updateThemeSchedule = base.theme.schedule.update
   .handler(async ({ context, input }) => {
     const { id, ...patch } = input;
 
-    const [existing] = await db
-      .select()
-      .from(siteThemeSchedule)
-      .where(eq(siteThemeSchedule.id, id))
-      .limit(1);
+    // The row is read inside the transaction, under the lock, and `merged`, the
+    // no-op check and the overlap check are all derived from that read. Reading
+    // it outside would let two PATCHes of different fields start from the same
+    // snapshot and the second silently revert the first.
+    const result = await db.transaction(
+      async (tx) => {
+        await lockScheduleWrites(tx);
 
-    if (!existing) {
+        const [existing] = await tx
+          .select()
+          .from(siteThemeSchedule)
+          .where(eq(siteThemeSchedule.id, id))
+          .limit(1);
+
+        if (!existing) {
+          return null;
+        }
+
+        const merged = {
+          endDay: patch.endDay ?? existing.endDay,
+          endMonth: patch.endMonth ?? existing.endMonth,
+          startDay: patch.startDay ?? existing.startDay,
+          startMonth: patch.startMonth ?? existing.startMonth,
+          theme: patch.theme ?? existing.theme,
+        };
+
+        assertRealWindow(merged);
+
+        // A PATCH that changes nothing is not a write: no row update, no
+        // activity entry, same answer as the stored row.
+        const unchanged =
+          merged.endDay === existing.endDay &&
+          merged.endMonth === existing.endMonth &&
+          merged.startDay === existing.startDay &&
+          merged.startMonth === existing.startMonth &&
+          merged.theme === existing.theme;
+
+        if (unchanged) {
+          logger.debug('theme schedule window unchanged', {
+            id,
+            requestId: context.requestId,
+            userId: context.user?.id,
+          });
+          return { after: existing, before: existing, unchanged: true };
+        }
+
+        const siblings = await tx
+          .select(scheduleWindowColumns)
+          .from(siteThemeSchedule)
+          .where(ne(siteThemeSchedule.id, id));
+        const overlapping = siblings.find((sibling) =>
+          windowsOverlap(sibling, merged)
+        );
+
+        if (overlapping) {
+          logger.warning(
+            'theme schedule window rejected: overlaps another row',
+            {
+              candidate: merged,
+              conflictingId: overlapping.id,
+              id,
+              requestId: context.requestId,
+              userId: context.user?.id,
+            }
+          );
+          throw conflict(
+            'This window overlaps another scheduled window. Windows must not overlap.'
+          );
+        }
+
+        const [updated] = await tx
+          .update(siteThemeSchedule)
+          .set({
+            ...merged,
+            updatedAt: new Date(),
+            updatedBy: context.user?.id,
+          })
+          .where(eq(siteThemeSchedule.id, id))
+          .returning();
+
+        // The read above already happened under this lock, so an empty
+        // `returning` means the row is gone; answer it as a 404, never a 500.
+        return updated
+          ? { after: updated, before: existing, unchanged: false }
+          : null;
+      },
+      { isolationLevel: 'read committed' }
+    );
+
+    if (!result) {
       logger.debug('theme schedule window not found', {
         id,
         requestId: context.requestId,
@@ -312,92 +427,24 @@ export const updateThemeSchedule = base.theme.schedule.update
       throw notFound('Theme schedule window not found');
     }
 
-    const merged = {
-      endDay: patch.endDay ?? existing.endDay,
-      endMonth: patch.endMonth ?? existing.endMonth,
-      startDay: patch.startDay ?? existing.startDay,
-      startMonth: patch.startMonth ?? existing.startMonth,
-      theme: patch.theme ?? existing.theme,
-    };
-
-    assertRealWindow(merged);
-
-    // A PATCH that changes nothing is not a write: no row update, no activity
-    // entry, same answer as the stored row.
-    const unchanged =
-      merged.endDay === existing.endDay &&
-      merged.endMonth === existing.endMonth &&
-      merged.startDay === existing.startDay &&
-      merged.startMonth === existing.startMonth &&
-      merged.theme === existing.theme;
-
-    if (unchanged) {
-      logger.debug('theme schedule window unchanged', {
-        id,
-        requestId: context.requestId,
-        userId: context.user?.id,
-      });
+    if (result.unchanged) {
       return toScheduleItem(
-        existing,
+        result.after,
         todayInTimeZone(new Date(), env.timeZone),
         context.requestId
       );
     }
 
-    const row = await db.transaction(async (tx) => {
-      // Same table lock as create: the merged window is checked against a table
-      // no other write can modify until this transaction ends.
-      await tx.execute(
-        sql`lock table site_theme_schedule in share row exclusive mode`
-      );
-
-      const siblings = await tx
-        .select(scheduleWindowColumns)
-        .from(siteThemeSchedule)
-        .where(ne(siteThemeSchedule.id, id));
-      const overlapping = siblings.find((sibling) =>
-        windowsOverlap(sibling, merged)
-      );
-
-      if (overlapping) {
-        logger.warning('theme schedule window rejected: overlaps another row', {
-          candidate: merged,
-          conflictingId: overlapping.id,
-          id,
-          requestId: context.requestId,
-          userId: context.user?.id,
-        });
-        throw conflict(
-          'This window overlaps another scheduled window. Windows must not overlap.'
-        );
-      }
-
-      const [updated] = await tx
-        .update(siteThemeSchedule)
-        .set({ ...merged, updatedAt: new Date(), updatedBy: context.user?.id })
-        .where(eq(siteThemeSchedule.id, id))
-        .returning();
-
-      return updated;
-    });
-
-    // The row can disappear between the read above and this write; `returning`
-    // is empty then, and dereferencing it would be a 500 instead of the 404 the
-    // caller's next attempt would get anyway.
-    if (!row) {
-      logger.debug('theme schedule window vanished during update', {
-        id,
-        requestId: context.requestId,
-      });
-      throw notFound('Theme schedule window not found');
-    }
-
     logger.info('theme schedule window updated', {
-      after: merged,
+      after: {
+        end: `${result.after.endMonth}-${result.after.endDay}`,
+        start: `${result.after.startMonth}-${result.after.startDay}`,
+        theme: result.after.theme,
+      },
       before: {
-        end: `${existing.endMonth}-${existing.endDay}`,
-        start: `${existing.startMonth}-${existing.startDay}`,
-        theme: existing.theme,
+        end: `${result.before.endMonth}-${result.before.endDay}`,
+        start: `${result.before.startMonth}-${result.before.startDay}`,
+        theme: result.before.theme,
       },
       id,
       requestId: context.requestId,
@@ -408,11 +455,11 @@ export const updateThemeSchedule = base.theme.schedule.update
       action: 'update',
       entityId: id,
       entityType: 'site-theme-schedule',
-      metadata: { after: row, before: existing },
+      metadata: { after: result.after, before: result.before },
     });
 
     return toScheduleItem(
-      row,
+      result.after,
       todayInTimeZone(new Date(), env.timeZone),
       context.requestId
     );
@@ -421,10 +468,22 @@ export const updateThemeSchedule = base.theme.schedule.update
 export const deleteThemeSchedule = base.theme.schedule.delete
   .use(requireAuthorization(permissions.siteThemeManage))
   .handler(async ({ context, input }) => {
-    const [row] = await db
-      .delete(siteThemeSchedule)
-      .where(eq(siteThemeSchedule.id, input.id))
-      .returning();
+    // A delete cannot create an overlap on its own, but it takes the same lock
+    // as every other schedule write so "writes are serialised" stays true for
+    // whatever reads or imports this table next.
+    const row = await db.transaction(
+      async (tx) => {
+        await lockScheduleWrites(tx);
+
+        const [deleted] = await tx
+          .delete(siteThemeSchedule)
+          .where(eq(siteThemeSchedule.id, input.id))
+          .returning();
+
+        return deleted;
+      },
+      { isolationLevel: 'read committed' }
+    );
 
     if (!row) {
       logger.debug('theme schedule window not found for delete', {

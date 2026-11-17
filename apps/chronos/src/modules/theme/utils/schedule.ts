@@ -2,15 +2,18 @@
  * The one piece of theme-selection logic the backend owns: which skin is in
  * season today.
  *
- * Deliberately pure — no database, no logger, no app imports — because it runs
- * inside `GET /theme`, the endpoint in every visitor's first paint. The caller
- * loads the schedule rows and the stored manual value, and supplies the date.
+ * Deliberately pure — no database, no logger — because it runs inside
+ * `GET /theme`, the endpoint in every visitor's first paint. The caller loads
+ * the schedule rows and the stored manual value, and supplies the date. The one
+ * import is the leaf time-zone helper, which is pure too (and caches its
+ * formatters per zone).
  *
  * Resolution order:
  * 1. Easter (movable, so code rather than a row) — wins over every row.
  * 2. The schedule row whose annual window contains today.
  * 3. Nothing in season — the manually pinned skin.
  */
+import { getZonedDateTimeParts } from '#utils/time-zone';
 
 /** A month/day pair without a year; `annual` windows repeat every year. */
 export type AnnualWindow = {
@@ -77,21 +80,14 @@ export const isRealMonthDay = (month: number, day: number): boolean => {
  * against. `CHRONOS_TIME_ZONE` is configuration, not UTC, because "is it
  * Christmas yet" is a local-calendar question.
  *
- * Parts rather than `toISOString()`: the instant is not the calendar day, and
- * the zone's offset is what turns one into the other.
+ * Delegates to the shared helper so the formatter stays cached per zone: this
+ * runs on the anonymous first paint, where building an `Intl.DateTimeFormat`
+ * per call is the only real cost in the function.
  */
 export const todayInTimeZone = (date: Date, timeZone: string): CalendarDay => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    day: 'numeric',
-    month: 'numeric',
-    timeZone,
-    year: 'numeric',
-  }).formatToParts(date);
+  const { day, month, year } = getZonedDateTimeParts(date, timeZone);
 
-  const part = (type: Intl.DateTimeFormatPartTypes): number =>
-    Number(parts.find((candidate) => candidate.type === type)?.value);
-
-  return { day: part('day'), month: part('month'), year: part('year') };
+  return { day: Number(day), month: Number(month), year: Number(year) };
 };
 
 /**
