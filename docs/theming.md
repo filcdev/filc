@@ -10,7 +10,7 @@ three calls, and owns no palette of its own.
 | --- | --- | --- | --- |
 | everyday light/dark | `packages/ui/src/styles/globals.css` | `:root` / `.dark` | next-themes |
 | the visitor's palette | `packages/ui/src/styles/schemes.css` | `data-color-scheme="<id>"` | the visitor, in Settings → Appearance |
-| the seasonal skin | `packages/ui/src/styles/themes.css` | `data-site-theme="<id>"` | an admin, site-wide |
+| the seasonal skin | `packages/ui/src/styles/themes.css` | `data-site-theme="<id>"` | an admin, site-wide (manual pick or schedule) |
 | seasonal motifs (emoji) | `lib/site-theme-art.ts` + `components/site-theme-art.tsx` | same ids | the active skin |
 
 Every layer declares the same ~32 token names at the same specificity
@@ -61,6 +61,37 @@ The settings picker iterates the ids and renders each swatch with the palette
 itself (`data-color-scheme` on the swatch), so no colours are copied into TS.
 Use the palette's published values rather than derived shades — that is the
 point of naming it after a known theme.
+
+## Scheduled skins
+
+The site-wide skin is resolved on every request from two admin-owned sources:
+the `site_theme` singleton row (`GET`/`PATCH /theme`) and the annual schedule
+(`/theme/schedule`). A row of `site_theme_schedule` is a skin plus a window of
+month/day pairs that repeats every year; the picker's "Scheduled skins" section
+edits them.
+
+`GET /theme` resolves in this order:
+
+1. **Easter** — the one rule in code. Easter Sunday (Gregorian computus) −7 days
+   through +1 day, so Palm Sunday to Easter Monday. It wins over every row,
+   because a movable feast cannot be written as a month/day pair.
+2. **An annual window containing today**, measured on the school's wall clock
+   (`CHRONOS_TIME_ZONE`, default `Europe/Budapest`). That row's skin is served.
+3. **The manual pick** in `site_theme.theme` — the behaviour that predates the
+   schedule.
+
+A window may wrap the year end (`12-28 → 01-02`), and a one-day window
+(`03-15 → 03-15`) is legal. Two rows may never share a day: create and update
+answer `409 CONFLICT`, and the dialog only offers days the chosen month actually
+has. Easter is not checked against rows — it is code, and it always wins.
+
+There is **no cron job and no stored "current skin"**. Resolution happens inside
+`GET /theme`, so a schedule edit applies on the next request and a window
+boundary flips as soon as the date does.
+
+Clients cache `GET /theme` for five minutes (`staleTime` in
+`apps/iris/src/hooks/site-theme.ts`), so a tab left open can keep the previous
+skin for up to that long after a boundary or an admin edit.
 
 ## Subject colours come along for free
 
