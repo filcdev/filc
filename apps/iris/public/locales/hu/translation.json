@@ -201,7 +201,7 @@
     "currentTheme": "Jelenlegi téma",
     "schedule": {
       "title": "Ütemezett témák",
-      "description": "Időszakok, amelyekben a téma automatikusan átvált. Az itteni időszak felülírja a fenti kézi választást; Húsvét hete viszont minden időszakot megelőz, még azt is, amelyik lefedi.",
+      "description": "Időszakok, amelyekben a téma automatikusan átvált. Az itteni időszak felülírja a fenti kézi választást.",
       "add": "Időszak hozzáadása",
       "edit": "Időszak szerkesztése",
       "delete": "Időszak törlése",

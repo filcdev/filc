@@ -219,7 +219,7 @@
     "currentTheme": "Current theme",
     "schedule": {
       "title": "Scheduled skins",
-      "description": "Windows that switch the skin automatically while they are in season. A window overrides the manual pick above; Easter's own week takes precedence over every window, including one that covers it.",
+      "description": "Windows that switch the skin automatically while they are in season. A window overrides the manual pick above.",
       "add": "Add window",
       "edit": "Edit window",
       "delete": "Delete window",
