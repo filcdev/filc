@@ -211,6 +211,13 @@
       "when": 1793877105560,
       "tag": "0029_overconfident_justice",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794923699389,
+      "tag": "0030_small_the_hunter",
+      "breakpoints": true
     }
   ]
 }
