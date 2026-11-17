@@ -1,6 +1,6 @@
+import { createTranslator } from '@filcdev/i18n';
 import { env } from '#utils/environment';
 import { resolveAudienceByCohortOrAll } from '#utils/notifications/engine';
-import { isHungarianLocale } from '#utils/notifications/locale';
 import type {
   NotificationContent,
   NotificationHandler,
@@ -16,13 +16,14 @@ export function buildAnnouncementContent(
   payload: { title: string },
   locale: string
 ): NotificationContent {
+  const t = createTranslator(locale);
   const title = payload.title || '';
-  const prefix = isHungarianLocale(locale)
-    ? 'Új bejelentés'
-    : 'New announcement';
   return {
-    content: `${prefix}: ${title}`,
-    title: isHungarianLocale(locale) ? 'Új bejelentés' : 'New Announcement',
+    content: t('announcement.content', {
+      prefix: t('announcement.prefix'),
+      title,
+    }),
+    title: t('announcement.title'),
   };
 }
 
@@ -30,11 +31,14 @@ export function buildSystemMessageContent(
   payload: { title: string },
   locale: string
 ): NotificationContent {
+  const t = createTranslator(locale);
   const title = payload.title || '';
-  const prefix = isHungarianLocale(locale) ? 'Rendszerüzenet' : 'System notice';
   return {
-    content: `${prefix}: ${title}`,
-    title: isHungarianLocale(locale) ? 'Rendszerüzenet' : 'System Message',
+    content: t('systemMessage.content', {
+      prefix: t('systemMessage.prefix'),
+      title,
+    }),
+    title: t('systemMessage.title'),
   };
 }
 
@@ -42,15 +46,15 @@ export function buildBlogPostContent(
   payload: { slug?: string; title: string },
   locale: string
 ): NotificationContent {
+  const t = createTranslator(locale);
   const title = payload.title || '';
-  const cta = isHungarianLocale(locale)
-    ? 'koppints az olvasáshoz'
-    : 'tap to read';
-  const prefix = isHungarianLocale(locale) ? 'Új bejegyzés' : 'New post';
-  const content = `${prefix}: ${title} — ${cta}`;
   const result: NotificationContent = {
-    content,
-    title: isHungarianLocale(locale) ? 'Új blogbejegyzés' : 'New Blog Post',
+    content: t('blogPost.content', {
+      cta: t('blogPost.cta'),
+      prefix: t('blogPost.prefix'),
+      title,
+    }),
+    title: t('blogPost.title'),
   };
   if (payload.slug) {
     result.metadata = { slug: payload.slug };

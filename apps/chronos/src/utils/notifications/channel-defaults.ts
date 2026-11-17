@@ -1,4 +1,4 @@
-import { type SQL, type SQLWrapper, sql } from 'drizzle-orm';
+import { exists, type SQL, type SQLWrapper, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { teacher } from '#modules/timetable/schema';
 import type { ChannelDefaults } from '#utils/notifications/types';
@@ -14,13 +14,18 @@ function teacherLink(userId: string | SQLWrapper): SQL {
 }
 
 /**
- * `EXISTS (select 1 from teacher where teacher.user_id = <userId>)`: the
- * teacher-existence predicate as a selectable fragment. The notification engine
+ * `EXISTS (select id from teacher where teacher.user_id = <userId>)`: the
+ * teacher-existence predicate as a selectable fragment, built with Drizzle's
+ * `exists` over the shared `teacherLink` predicate. The notification engine
  * puts it beside the recipient's preferences so a role-aware default still
  * costs one query per recipient instead of two.
  */
 export function linkedTeacherExists(userId: string | SQLWrapper): SQL<boolean> {
-  return sql<boolean>`exists (select 1 from ${teacher} where ${teacherLink(userId)})`;
+  // drizzle-orm 0.45 types `exists` as an untyped `SQL`; the predicate is only
+  // ever read as a boolean, so the decoder is asserted here.
+  return exists(
+    db.select({ id: teacher.id }).from(teacher).where(teacherLink(userId))
+  ) as SQL<boolean>;
 }
 
 /**

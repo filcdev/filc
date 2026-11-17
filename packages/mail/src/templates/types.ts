@@ -1,4 +1,7 @@
-export type Locale = 'en' | 'hu';
+import type { Locale as I18nLocale } from '@filcdev/i18n';
+
+/** The languages the notification emails are written in. */
+export type Locale = I18nLocale;
 
 /** Accent identity of a notification email. */
 export type EmailAccent =

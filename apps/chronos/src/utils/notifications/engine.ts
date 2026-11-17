@@ -180,7 +180,10 @@ export async function resolveAudienceForUser(
   }
 
   const [prefs] = await db
-    .select({ language: userPreferences.language })
+    .select({
+      language: userPreferences.language,
+      notificationPreferences: userPreferences.notificationPreferences,
+    })
     .from(userPreferences)
     .where(eq(userPreferences.userId, target.id))
     .limit(1);
@@ -192,19 +195,27 @@ export async function resolveAudienceForUser(
       id: target.id,
       language: prefs?.language ?? 'hu',
       name: target.name,
+      notificationPreferences: prefs?.notificationPreferences,
     },
   ];
 }
 
 /** The columns an audience query selects; the language is merged in after. */
-type AudienceUserSource = {
+export type AudienceUserSource = {
   cohortId: string | null;
   email: string;
   id: string;
   name: string;
 };
 
-async function enrichUsersWithLanguage(
+/**
+ * Merge each recipient's preferences row into the audience: the language for
+ * the mail, and the stored (still partial) notification record the delivery
+ * step gates on, so a recipient's preferences are read once and not again per
+ * mail. Shared with `teacher-audience`, so the teacher-addressed mails resolve
+ * a language the same way every other audience does.
+ */
+export async function enrichUsersWithLanguage(
   users: AudienceUserSource[]
 ): Promise<AudienceUser[]> {
   if (users.length === 0) {
@@ -212,7 +223,11 @@ async function enrichUsersWithLanguage(
   }
 
   const prefResults = await db
-    .select()
+    .select({
+      language: userPreferences.language,
+      notificationPreferences: userPreferences.notificationPreferences,
+      userId: userPreferences.userId,
+    })
     .from(userPreferences)
     .where(
       inArray(
@@ -231,6 +246,7 @@ async function enrichUsersWithLanguage(
       id: u.id,
       language: prefs?.language ?? 'hu',
       name: u.name,
+      notificationPreferences: prefs?.notificationPreferences,
     };
   });
 }
@@ -238,22 +254,22 @@ async function enrichUsersWithLanguage(
 /**
  * Preferences and the actual write for one recipient. A user who opted out of
  * the type is a normal outcome, not an error.
+ *
+ * Exported so the gate and the write can be exercised against a fake database
+ * and a fake queue; `fireNotification` is the only production caller.
  */
-async function deliverToUser(
+export async function deliverToUser(
   type: NotificationType,
   payload: unknown,
   handler: NotificationHandler,
   user: AudienceUser
 ): Promise<void> {
-  // One row per recipient: the stored preferences and whether a teacher row
-  // links this user, so the role-aware defaults below cost no extra query.
+  // The audience already carries the recipient's stored preferences, so the
+  // only thing left to resolve per recipient is whether a teacher row links
+  // this user — the role-aware default for the email flag.
   const [row] = await db
-    .select({
-      hasTeacher: linkedTeacherExists(userTable.id),
-      notificationPreferences: userPreferences.notificationPreferences,
-    })
+    .select({ hasTeacher: linkedTeacherExists(userTable.id) })
     .from(userTable)
-    .leftJoin(userPreferences, eq(userPreferences.userId, userTable.id))
     .where(eq(userTable.id, user.id))
     .limit(1);
 
@@ -263,7 +279,7 @@ async function deliverToUser(
   // opt-out. The helper also resolves the legacy `channelsEnabled` switch, so
   // the email flag read here is already the effective one.
   const preferences: NotificationPreferences = completePreferences(
-    row?.notificationPreferences,
+    user.notificationPreferences,
     { email: row?.hasTeacher ?? false }
   );
 

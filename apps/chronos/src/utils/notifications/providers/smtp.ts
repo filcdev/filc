@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { createTranslator } from '@filcdev/i18n';
 import {
   createGraphTransport,
   createMailTransport,
@@ -154,28 +155,6 @@ function createGraphMailTransport(): MailTransport | null {
   }
 }
 
-const typeLabels: Record<NotificationType, { en: string; hu: string }> = {
-  announcement: { en: 'News item', hu: 'Hír' },
-  blog_post: { en: 'Blog post', hu: 'Blogbejegyzés' },
-  cohort_reselection_required: {
-    en: 'Group selection',
-    hu: 'Csoportválasztás',
-  },
-  doorlock_card_used: { en: 'Door lock', hu: 'Ajtózár' },
-  moved_lesson: { en: 'Lesson moved', hu: 'Óra áthelyezve' },
-  moved_lesson_teacher: {
-    en: 'Your moved lesson',
-    hu: 'A te áthelyezett órád',
-  },
-  substitution: { en: 'Substitution', hu: 'Helyettesítés' },
-  substitution_teacher: {
-    en: 'Teacher substitution',
-    hu: 'Tanári helyettesítés',
-  },
-  system_message: { en: 'System message', hu: 'Rendszerüzenet' },
-  test: { en: 'Test notification', hu: 'Teszt értesítés' },
-};
-
 const typeAccents: Record<NotificationType, EmailAccent> = {
   announcement: 'violet',
   blog_post: 'blue',
@@ -206,6 +185,15 @@ export type SendEmailResult = {
   retryAfterMs?: number;
 };
 
+/**
+ * What a caller may substitute for the provider's own collaborators. Tests use
+ * it to exercise a send outcome without the memoised, env-configured transport
+ * module state; production calls pass nothing and the real resolver is used.
+ */
+export type SendEmailDeps = {
+  getTransport?: () => MailTransport | null;
+};
+
 /** A rate-limited transport reports how long to wait; anything else does not. */
 const retryAfterMsOf = (error: unknown): number | undefined => {
   if (!(error instanceof GraphMailError)) {
@@ -230,9 +218,10 @@ export async function sendEmail(
     title: string;
   },
   userId: string,
-  recipientName?: string
+  recipientName?: string,
+  deps: SendEmailDeps = {}
 ): Promise<SendEmailResult> {
-  const tp = getTransport();
+  const tp = (deps.getTransport ?? getTransport)();
   if (!tp) {
     logger.debug('Mail transport not available, skipping email to {to}', {
       to,
@@ -241,6 +230,7 @@ export async function sendEmail(
   }
   try {
     const lang = mailLocale(locale);
+    const t = createTranslator(lang);
     // The id is a uuid column: the pure SMTP delivery test passes an empty id,
     // so the authenticated links below are only built for a real user.
     const manageUrl = userId
@@ -267,7 +257,7 @@ export async function sendEmail(
         // costs no per-recipient `user.name` query.
         recipientName,
         title: body.title,
-        typeLabel: typeLabels[type][lang],
+        typeLabel: t(`types.${type}`),
         // A pure SMTP delivery test has no user behind it to unsubscribe.
         unsubscribeUrl,
       },
@@ -315,6 +305,7 @@ export async function renderPreviewEmail(
   }
 ): Promise<string> {
   const lang = mailLocale(locale);
+  const t = createTranslator(lang);
   const { html } = await renderEmail(
     'notification',
     {
@@ -325,9 +316,9 @@ export async function renderPreviewEmail(
       locale: lang,
       // Sample target so the preview shows the footer's manage link too.
       manageUrl: `${env.baseUrl}/settings/notifications?channel=email`,
-      recipientName: lang === 'en' ? 'John Doe' : 'Minta Felhasználó',
+      recipientName: t('test.sampleRecipientName'),
       title: body.title,
-      typeLabel: typeLabels[type][lang],
+      typeLabel: t(`types.${type}`),
     },
     branding
   );

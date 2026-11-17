@@ -38,15 +38,7 @@ export type NotificationPreferences = z.infer<
   typeof notificationPreferencesSchema
 >;
 
-/**
- * One label/value row of a notification's structured detail block.
- *
- * The same shape as `EmailDetail` in `packages/mail` (`templates/types.ts`):
- * one row of the detail table, rendered by the in-app inbox and the email
- * template alike. The two are declared separately on purpose — the mail
- * package must not depend on the API contract and the contract must stay free
- * of React — so change both together.
- */
+/** One label/value row of a notification's detail block; the same shape as the mail package's `EmailDetail`, asserted in `apps/chronos/src/_types/notifications.ts`. */
 export const notificationDetailSchema = z.object({
   label: z.string(),
   value: z.string(),

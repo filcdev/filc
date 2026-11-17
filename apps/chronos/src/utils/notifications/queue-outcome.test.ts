@@ -4,6 +4,7 @@ import {
   initialChannelState,
   isChannelSatisfied,
   isJobDone,
+  MAX_RETRY_WAIT_MS,
   retryDelayMs,
 } from '#utils/notifications/queue-outcome';
 
@@ -44,6 +45,19 @@ describe('retryDelayMs', () => {
   it('keeps the backoff when it is already the longer wait', () => {
     expect(retryDelayMs(5000, 2000)).toBe(5000);
     expect(retryDelayMs(5000)).toBe(5000);
+  });
+
+  it('keeps a hint below the ceiling as given', () => {
+    expect(retryDelayMs(1000, 300_000)).toBe(300_000);
+  });
+
+  it('caps a one-year hint at the ceiling', () => {
+    expect(retryDelayMs(1000, 31_536_000_000)).toBe(MAX_RETRY_WAIT_MS);
+    expect(retryDelayMs(1000, 31_536_000_000)).toBe(900_000);
+  });
+
+  it('caps a backoff above the ceiling too', () => {
+    expect(retryDelayMs(MAX_RETRY_WAIT_MS + 60_000)).toBe(MAX_RETRY_WAIT_MS);
   });
 });
 

@@ -1,10 +1,4 @@
 /**
- * The FCM multicast batch response as a pure decision, so the "did this push
- * deliver, and may it be retried" rules can be tested without firebase-admin,
- * a database or credentials.
- */
-
-/**
  * The error codes that mean the token itself is dead: re-sending to it can
  * never succeed, so it is deleted instead of retried.
  */

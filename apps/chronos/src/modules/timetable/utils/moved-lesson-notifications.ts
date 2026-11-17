@@ -15,13 +15,12 @@ import {
   enrichLessons,
   loadLessonsByIds,
 } from '#modules/timetable/utils/enrich-lessons';
-import { uniqueStrings } from '#utils/notifications/substitution-teacher';
+import { uniqueStrings } from '#utils/notifications/strings';
 import { resolveTeacherUserAudience } from '#utils/notifications/teacher-audience';
 import type { AudienceUser } from '#utils/notifications/types';
 
 // Shared by every moved-lesson list endpoint: rows carry the target joins and
 // their linked lessons already enriched.
-// Row shape returned by each moved-lesson query before lesson enrichment.
 type MovedLessonRow = {
   classroom: typeof classroom.$inferSelect | null;
   dayDefinition: typeof dayDefinition.$inferSelect | null;

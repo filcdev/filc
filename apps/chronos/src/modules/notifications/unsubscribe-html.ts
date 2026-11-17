@@ -56,6 +56,13 @@ export async function handleUnsubscribe(
 </html>`;
 
   if (!parsed.success) {
+    // A token of the wrong length never reaches the comparison below: the
+    // schema rejects it first. Log the rejection here so the malformed case
+    // leaves the same trace as a well-formed token that does not verify.
+    logger.warning('Rejected malformed unsubscribe request', {
+      method: request.method,
+      requestId,
+    });
     return new Response(invalidTokenHtml, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
       status: 400,

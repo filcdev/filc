@@ -34,6 +34,15 @@ const logger = getLogger(['chronos', 'auth']);
 const BEARER_TOKEN_REGEX = /^Bearer\s+(.+)$/i;
 
 /**
+ * The teacher-row write that seeds the email column from the signed-in
+ * account. `coalesce` makes the seeded address a fallback: an email already on
+ * the teacher row is never overwritten.
+ */
+function seedTeacherEmail(email: string) {
+  return { email: sql`coalesce(${teacher.email}, ${email})` };
+}
+
+/**
  * Preview deployments sign in through the production origin: Entra rejects
  * wildcard redirect URIs, and registering one URI per pull request does not
  * scale. Production terminates the real OAuth flow, then hands an encrypted
@@ -101,7 +110,7 @@ const authOptions = {
               await db
                 .update(teacher)
                 .set({
-                  email: sql`coalesce(${teacher.email}, ${userEmail})`,
+                  ...seedTeacherEmail(userEmail),
                   userId: session.userId,
                 })
                 .where(
@@ -165,9 +174,7 @@ const authOptions = {
                 await db
                   .update(teacher)
                   .set({
-                    ...(email
-                      ? { email: sql`coalesce(${teacher.email}, ${email})` }
-                      : {}),
+                    ...(email ? seedTeacherEmail(email) : {}),
                     userId: session.userId,
                   })
                   .where(

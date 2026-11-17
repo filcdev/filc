@@ -9,14 +9,7 @@ export type ChannelState = { email: boolean; push: boolean };
 
 export type ChannelName = keyof ChannelState;
 
-/**
- * What one provider attempt reported. `skipped` marks an outcome that retrying
- * cannot improve — as opposed to a real failure, which is the only outcome
- * that leaves the channel unsatisfied and retries it. It covers two cases:
- * there was nothing to deliver to (no mail transport configured, no registered
- * device), and there was something to deliver to but it can never succeed
- * (every device's token is dead, so a retry would fail identically).
- */
+/** `skipped`: retrying cannot change the outcome. */
 export type ChannelAttemptResult = {
   ok: boolean;
   skipped?: boolean;
@@ -58,9 +51,17 @@ export function failedChannels(delivered: ChannelState): ChannelName[] {
 }
 
 /**
+ * The longest a single retry wait may be: a `Retry-After` hint beyond this is
+ * capped so a bad header cannot park the job forever, and the attempt budget
+ * still bounds the job.
+ */
+export const MAX_RETRY_WAIT_MS = 15 * 60_000;
+
+/**
  * How long to wait before the next attempt: the exponential backoff, or the
- * transport's own rate-limit hint when that is longer.
+ * transport's own rate-limit hint when that is longer, capped at
+ * `MAX_RETRY_WAIT_MS`.
  */
 export function retryDelayMs(backoffMs: number, retryAfterMs = 0): number {
-  return Math.max(backoffMs, retryAfterMs);
+  return Math.min(Math.max(backoffMs, retryAfterMs), MAX_RETRY_WAIT_MS);
 }

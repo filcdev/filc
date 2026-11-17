@@ -1,8 +1,8 @@
 import { inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
-import { userPreferences } from '#modules/notifications/schema';
 import { teacher } from '#modules/timetable/schema';
+import { enrichUsersWithLanguage } from './engine';
 import type { AudienceUser } from './types';
 
 /**
@@ -39,32 +39,15 @@ export async function resolveTeacherUserAudience(
     return [];
   }
 
-  const [users, prefs] = await Promise.all([
-    db
-      .select({
-        cohortId: userTable.cohortId,
-        email: userTable.email,
-        id: userTable.id,
-        name: userTable.name,
-      })
-      .from(userTable)
-      .where(inArray(userTable.id, userIds)),
-    db
-      .select({
-        language: userPreferences.language,
-        userId: userPreferences.userId,
-      })
-      .from(userPreferences)
-      .where(inArray(userPreferences.userId, userIds)),
-  ]);
+  const users = await db
+    .select({
+      cohortId: userTable.cohortId,
+      email: userTable.email,
+      id: userTable.id,
+      name: userTable.name,
+    })
+    .from(userTable)
+    .where(inArray(userTable.id, userIds));
 
-  const languageMap = new Map(prefs.map((p) => [p.userId, p.language]));
-
-  return users.map((user) => ({
-    cohortId: user.cohortId,
-    email: user.email,
-    id: user.id,
-    language: languageMap.get(user.id) ?? 'hu',
-    name: user.name,
-  }));
+  return enrichUsersWithLanguage(users);
 }

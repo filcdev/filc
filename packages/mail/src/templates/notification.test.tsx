@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { createTranslator } from '@filcdev/i18n';
 import { EmailLayout } from './email-layout';
 import { renderNotification } from './notification';
 import { renderEmailElement } from './render';
@@ -188,6 +189,104 @@ describe('notification email footer', () => {
     expect(html).not.toContain(unsubscribeUrl);
     expect(html).not.toContain(' · ');
   });
+});
+
+const COPY_TYPES = [
+  'substitution',
+  'substitution_teacher',
+  'moved_lesson',
+  'moved_lesson_teacher',
+  'announcement',
+  'system_message',
+] as const;
+
+type CopyType = (typeof COPY_TYPES)[number];
+
+/** The two teacher-facing mails drop the teacher row: the recipient is the teacher. */
+const TEACHER_TYPES: ReadonlySet<CopyType> = new Set([
+  'substitution_teacher',
+  'moved_lesson_teacher',
+]);
+
+/** The body copy of a type, built from the catalogue the way a handler builds it. */
+const contentFor = (
+  t: ReturnType<typeof createTranslator>,
+  type: CopyType
+): string => {
+  const content: Record<CopyType, string> = {
+    announcement: t('announcement.content', {
+      prefix: t('announcement.prefix'),
+      title: 'School trip',
+    }),
+    moved_lesson: t('movedLesson.body', { location: '201' }),
+    moved_lesson_teacher: t('movedLesson.teacherBody'),
+    substitution: t('substitution.newSubstitution', { date: '2026-11-17' }),
+    substitution_teacher: t('substitution.teacherIntro'),
+    system_message: t('systemMessage.content', {
+      prefix: t('systemMessage.prefix'),
+      title: 'Maintenance',
+    }),
+  };
+  return content[type];
+};
+
+describe('notification email types', () => {
+  for (const locale of ['en', 'hu'] as const) {
+    describe(locale, () => {
+      const t = createTranslator(locale);
+      // Literal expectations, so a drifted key fails here rather than silently
+      // moving both the payload and the assertion together.
+      const expected =
+        locale === 'en'
+          ? {
+              greeting: 'Dear Filc user,',
+              labels: ['Date', 'Class', 'Room'],
+              teacher: 'Teacher',
+            }
+          : {
+              greeting: 'Kedves Filc felhasználó!',
+              labels: ['Dátum', 'Osztály', 'Terem'],
+              teacher: 'Tanár',
+            };
+      const label = {
+        class: t('labels.class'),
+        date: t('labels.date'),
+        room: t('labels.room'),
+        teacher: t('labels.teacher'),
+      };
+
+      for (const type of COPY_TYPES) {
+        test(`renders ${type} with its greeting and direct labels`, async () => {
+          const details = [
+            { label: label.date, value: '2026-11-17' },
+            { label: label.class, value: '12A' },
+            { label: label.room, value: '201' },
+            ...(TEACHER_TYPES.has(type)
+              ? []
+              : [{ label: label.teacher, value: 'Kiss Anna' }]),
+          ];
+          const { html } = await renderNotification(
+            {
+              content: contentFor(t, type),
+              details,
+              locale,
+              title: t(`types.${type}`),
+              typeLabel: t(`types.${type}`),
+            },
+            branding
+          );
+
+          expect(html).toContain(expected.greeting);
+          for (const direct of expected.labels) {
+            expect(html).toContain(direct);
+          }
+          expect(countOf(html, expected.teacher)).toBe(
+            TEACHER_TYPES.has(type) ? 0 : 1
+          );
+        });
+      }
+    });
+  }
 });
 
 describe('EmailLayout', () => {

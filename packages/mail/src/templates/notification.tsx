@@ -1,3 +1,4 @@
+import { createTranslator } from '@filcdev/i18n';
 import {
   Button,
   Column,
@@ -7,7 +8,6 @@ import {
   Text,
 } from '@react-email/components';
 import { EmailLayout } from './email-layout';
-import { copyFor, greetingFor } from './i18n';
 import { renderEmailElement } from './render';
 import {
   buttonStyle,
@@ -33,6 +33,11 @@ export const renderNotification = (
   data: NotificationEmailData,
   branding: Branding
 ): Promise<RenderedEmail> => {
+  const t = createTranslator(data.locale);
+  const recipientName = data.recipientName?.trim();
+  const greeting = recipientName
+    ? t('mail.greetingNamed', { name: recipientName })
+    : t('mail.greeting');
   const accent = data.accent ?? 'teal';
   const paragraphs = data.content
     .split(PARAGRAPH_BREAK)
@@ -48,9 +53,7 @@ export const renderNotification = (
 
   const hero = (
     <Section style={heroStyle(accent)}>
-      <Text style={heroGreetingStyle(accent)}>
-        {greetingFor(data.locale, data.recipientName)}
-      </Text>
+      <Text style={heroGreetingStyle(accent)}>{greeting}</Text>
       {lead ? <Text style={heroLeadStyle}>{lead}</Text> : undefined}
       {highlights.length > 0 ? (
         <Section style={chipRowStyle}>
@@ -102,7 +105,7 @@ export const renderNotification = (
         </>
       ) : undefined}
       <Button href={branding.appUrl} style={buttonStyle(accent)}>
-        {copyFor(data.locale).viewLabel}
+        {t('mail.viewLabel')}
       </Button>
     </EmailLayout>
   );

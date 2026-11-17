@@ -1,3 +1,4 @@
+import { createTranslator } from '@filcdev/i18n';
 import {
   Body,
   Column,
@@ -12,7 +13,6 @@ import {
   Text,
 } from '@react-email/components';
 import type { ReactNode } from 'react';
-import { copyFor } from './i18n';
 import {
   bodyContentStyle,
   bodyStyle,
@@ -35,7 +35,6 @@ export type EmailLayoutProps = {
   accent?: EmailAccent;
   appName: string;
   children: ReactNode;
-  /** Hero panel rendered above the body content. */
   hero?: ReactNode;
   lang: Locale;
   preview: string;
@@ -57,6 +56,7 @@ export const EmailLayout = ({
   unsubscribeUrl,
   manageUrl,
 }: EmailLayoutProps) => {
+  const t = createTranslator(lang);
   return (
     <Html lang={lang}>
       <Head>
@@ -87,23 +87,21 @@ export const EmailLayout = ({
           </Section>
           <Section style={footerStyle(accent)}>
             <Text style={footerBrandStyle(accent)}>{appName}</Text>
-            <Text style={footerTextStyle}>{copyFor(lang).autoMessage}</Text>
+            <Text style={footerTextStyle}>{t('mail.autoMessage')}</Text>
             {unsubscribeUrl ? (
-              <Text style={footerTextStyle}>
-                {copyFor(lang).unsubscribeNote}
-              </Text>
+              <Text style={footerTextStyle}>{t('mail.unsubscribeNote')}</Text>
             ) : undefined}
             {manageUrl || unsubscribeUrl ? (
               <Text style={{ ...footerTextStyle, margin: 0 }}>
                 {manageUrl ? (
                   <Link href={manageUrl} style={footerLinkStyle(accent)}>
-                    {copyFor(lang).manageLabel}
+                    {t('mail.manageLabel')}
                   </Link>
                 ) : undefined}
                 {manageUrl && unsubscribeUrl ? ' · ' : undefined}
                 {unsubscribeUrl ? (
                   <Link href={unsubscribeUrl} style={footerLinkStyle(accent)}>
-                    {copyFor(lang).unsubscribeLabel}
+                    {t('mail.unsubscribeLabel')}
                   </Link>
                 ) : undefined}
               </Text>

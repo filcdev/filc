@@ -8,7 +8,7 @@ import { db } from '#database';
 import { fcmToken } from '#modules/notifications/schema';
 import { env } from '#utils/environment';
 import { interpretFcmBatch } from '#utils/notifications/fcm-outcome';
-import type { ChannelAttemptResult } from '../queue-outcome';
+import type { ChannelAttemptResult } from '#utils/notifications/queue-outcome';
 
 const logger = getLogger(['chronos', 'notifications', 'fcm']);
 
@@ -56,6 +56,38 @@ export async function initializeFcm(): Promise<boolean> {
 }
 
 /**
+ * What `sendPush` needs beyond its arguments: the initialized Firebase client
+ * and the token store. Production calls the function without this and gets the
+ * module's own state; tests pass fakes so a batch's outcome can be driven
+ * without credentials or a database.
+ */
+export type SendPushDeps = {
+  messaging: FirebaseMessaging | null;
+  store: {
+    deleteTokens: (tokens: string[]) => Promise<unknown>;
+    listTokens: (userId: string) => Promise<string[]>;
+  };
+};
+
+function productionDeps(): SendPushDeps {
+  return {
+    messaging: fcmMessaging,
+    store: {
+      deleteTokens: async (tokens) => {
+        await db.delete(fcmToken).where(inArray(fcmToken.token, tokens));
+      },
+      listTokens: async (userId) => {
+        const rows = await db
+          .select({ token: fcmToken.token })
+          .from(fcmToken)
+          .where(eq(fcmToken.userId, userId));
+        return rows.map((row) => row.token);
+      },
+    },
+  };
+}
+
+/**
  * Outcome of one push attempt. `skipped` distinguishes "there was nothing to
  * send to" (no registered device, FCM not configured) from a real delivery
  * failure, so the queue can treat a skip as satisfied instead of retrying. A
@@ -64,7 +96,8 @@ export async function initializeFcm(): Promise<boolean> {
 export async function sendPush(
   userId: string,
   title: string,
-  body: string
+  body: string,
+  deps: SendPushDeps = productionDeps()
 ): Promise<ChannelAttemptResult> {
   if (fcmInitFailed) {
     logger.error(
@@ -74,7 +107,9 @@ export async function sendPush(
     return { ok: false };
   }
 
-  if (!fcmMessaging) {
+  const { messaging, store } = deps;
+
+  if (!messaging) {
     logger.debug('FCM not configured, skipping push for user {userId}', {
       userId,
     });
@@ -82,12 +117,7 @@ export async function sendPush(
   }
 
   try {
-    const tokens = await db
-      .select({ token: fcmToken.token })
-      .from(fcmToken)
-      .where(eq(fcmToken.userId, userId));
-
-    const tokenValues = tokens.map((t) => t.token);
+    const tokenValues = await store.listTokens(userId);
 
     if (tokenValues.length === 0) {
       logger.debug('No FCM tokens for user {userId}', { userId });
@@ -105,7 +135,7 @@ export async function sendPush(
       tokens: tokenValues,
     };
 
-    const response = await fcmMessaging.sendEachForMulticast(message);
+    const response = await messaging.sendEachForMulticast(message);
 
     const outcome = interpretFcmBatch(tokenValues, response.responses);
 
@@ -119,7 +149,7 @@ export async function sendPush(
       ),
     ];
 
-    if (outcome.deliveredCount === 0 && outcome.skipped === true) {
+    if (outcome.skipped) {
       // Nothing was delivered and retrying cannot help: usually every device
       // rejected a dead token, which the cleanup below deletes. Routine, so
       // `info`, but the codes stay on the line to tell that apart from an
@@ -150,9 +180,7 @@ export async function sendPush(
     if (outcome.invalidTokens.length > 0) {
       const count = outcome.invalidTokens.length;
       try {
-        await db
-          .delete(fcmToken)
-          .where(inArray(fcmToken.token, outcome.invalidTokens));
+        await store.deleteTokens(outcome.invalidTokens);
         logger.info('Cleaned up {count} invalid FCM tokens', { count, userId });
       } catch (error) {
         // The push already reached its verdict for these devices; a failed

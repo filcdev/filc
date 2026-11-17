@@ -56,15 +56,8 @@ export type ChannelDefaults = {
 };
 
 /**
- * The literal baked into the `user_preferences.notification_preferences`
- * column default. Kept in the pre-split shape on purpose: changing a column
- * default is a schema migration, while every reader merges
- * `DEFAULT_NOTIFICATION_PREFERENCES` over the stored row — so a row created
- * with this default still resolves email as enabled.
- *
- * `Partial`: the column is jsonb and holds whatever was written to it, so the
- * type must not promise every key (this literal carries neither `emailEnabled`
- * nor `announcementEmail`).
+ * Pre-split shape on purpose: changing a column default is a migration, and
+ * every reader merges `DEFAULT_NOTIFICATION_PREFERENCES` over the stored row.
  */
 export const NOTIFICATION_PREFERENCES_COLUMN_DEFAULT: Partial<NotificationPreferences> =
   {
@@ -98,17 +91,9 @@ export function resolveEmailEnabled(
 }
 
 /**
- * The single read shape of a stored preferences row: defaults merged over the
- * stored value, then the email flag replaced by its *effective* value with
- * `channelsEnabled` raised.
- *
- * A legacy row (`channelsEnabled: false`, no `emailEnabled` key) therefore
- * reads back as email off, which is what the user chose, instead of the
- * defaults' `true`. An email flag the row does not name falls back to the
- * caller-supplied role default, then to the global default. Everything that
- * reads a row — the settings endpoint, the delivery engine, the dev helpers —
- * goes through this so the write path and the read path agree on what the row
- * means.
+ * The one read shape: defaults merged over the stored row, a legacy
+ * `channelsEnabled: false` winning over them, role defaults filling only a
+ * missing `emailEnabled` key.
  */
 export function completePreferences(
   stored?: Partial<NotificationPreferences> | null,
@@ -171,17 +156,8 @@ export function resolveEmailAllowed(
 }
 
 /**
- * Apply a preference patch over a stored record and return the complete value
- * to persist.
- *
- * `base` may be a raw/partial row, the same shape `completePreferences` takes:
- * it is completed first, so a legacy `channelsEnabled: false` row reads as
- * email off and a patch that names only a type flag leaves it off rather than
- * reviving the defaults. An email flag the base does not name falls back to
- * `defaults` — which is why the role defaults have to be forwarded here, not
- * only to the read path. A patch that names the email flag sets it
- * explicitly, and the stored record always ends up in the current shape
- * (`channelsEnabled: true`, every key present).
+ * Complete the base first: a legacy `channelsEnabled: false` row stays off, so
+ * `defaults` must be forwarded here too, not only to the read path.
  */
 export function applyPreferencesPatch(
   base: Partial<NotificationPreferences>,
@@ -210,6 +186,14 @@ export type AudienceUser = {
    * re-select `user.name` for every mail it sends.
    */
   name: string;
+  /**
+   * The stored `user_preferences.notification_preferences` record, exactly as
+   * written (partial, not merged with the defaults), or `undefined` when the
+   * user has no preferences row. The engine resolves language from the same
+   * row, so carrying the record here is what lets delivery gate on the user's
+   * preferences without a second read per recipient.
+   */
+  notificationPreferences?: Partial<NotificationPreferences>;
 };
 
 export type NotificationContent = {
@@ -252,6 +236,11 @@ export type DeliveryJob = {
    * delivered and is not attempted again when the job is retried.
    */
   delivered?: { email: boolean; push: boolean };
+  /**
+   * Attempts started so far, owned by the queue and 1-based. Runtime-only:
+   * never written to a store, so a job re-read from anywhere starts over.
+   */
+  attempt?: number;
   /** Locale the recipient's `buildContent` ran with; the email wrapper uses it too. */
   language: string;
 };

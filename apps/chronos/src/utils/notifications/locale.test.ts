@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { isHungarianLocale, mailLocale } from '#utils/notifications/locale';
+import { mailLocale } from '#utils/notifications/locale';
 
 describe('mailLocale', () => {
   it('resolves English tags and their regional variants to en', () => {
@@ -18,13 +18,5 @@ describe('mailLocale', () => {
     for (const locale of ['', undefined, null, 'de', 'de-DE']) {
       expect(mailLocale(locale)).toBe('hu');
     }
-  });
-});
-
-describe('isHungarianLocale', () => {
-  it('shares the mail rule, so unsupported tags count as Hungarian', () => {
-    expect(isHungarianLocale('hu-HU')).toBe(true);
-    expect(isHungarianLocale('en-US')).toBe(false);
-    expect(isHungarianLocale('de')).toBe(true);
   });
 });

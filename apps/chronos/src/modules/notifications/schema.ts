@@ -19,8 +19,7 @@ export const userPreferences = pgTable('user_preferences', {
   colorScheme: text('color_scheme').default('default').notNull(),
   language: text('language').default('hu').notNull(),
   notificationPreferences: jsonb('notification_preferences')
-    // The column holds whatever was written to it, so the stored value is a
-    // partial: readers merge `DEFAULT_NOTIFICATION_PREFERENCES` over it.
+    // Partial: readers merge `DEFAULT_NOTIFICATION_PREFERENCES` over it.
     .$type<Partial<NotificationPreferences>>()
     .notNull()
     .default(NOTIFICATION_PREFERENCES_COLUMN_DEFAULT),

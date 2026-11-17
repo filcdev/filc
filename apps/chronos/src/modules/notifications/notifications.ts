@@ -1,7 +1,18 @@
 import { colorSchemeSchema } from '@filcdev/api/domains/theme';
+import { createTranslator } from '@filcdev/i18n';
 import { getLogger } from '@logtape/logtape';
 import { ORPCError } from '@orpc/server';
-import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  not,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import { db } from '#database';
 import { user as userTable } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';
@@ -44,69 +55,94 @@ import {
   type NotificationPreferences,
   type NotificationType,
 } from '#utils/notifications/types';
-import { startOfDayInTimeZone } from '#utils/time-zone';
+import { cutoffLiteral, startOfDayInTimeZone } from '#utils/time-zone';
 
 const logger = getLogger(['chronos', 'notifications', 'preview']);
 
+/** The column stores UTC, so the cutoff is pinned as an explicit UTC literal. */
+export const createdBeforeToday = () =>
+  sql<boolean>`${notification.createdAt} < ${cutoffLiteral(new Date(), env.timeZone)}::timestamp`;
+
+/** What the inbox list filters on, once the contract has parsed the query. */
+type NotificationListFilter = {
+  dateFrom?: string;
+  dateTo?: string;
+  type?: string;
+  unread?: boolean;
+  userId: string;
+};
+
 /**
- * Start of today in the school timezone, as the UTC wall clock `YYYY-MM-DD
- * HH:MM:SS` a `timestamp without time zone` comparison understands.
+ * The WHERE chain of the inbox list, shared by the page and its count.
  *
- * `notification.created_at` stores UTC (Drizzle writes `toISOString()`), and a
- * bound `Date` reaches Postgres as a timestamp string whose zone marker a
- * `timestamp` comparison silently discards — pinning the instant as an explicit
- * UTC literal here is what keeps the cutoff independent of the server's zone.
+ * Exported with `createdBeforeToday` so the predicate can be rendered in a
+ * test: the unread clause has to stay parenthesised, because `or` binds looser
+ * than the `and` carrying the user scoping and an unparenthesised
+ * `read OR beforeToday` would escape it.
  */
-const todayStartUtcLiteral = (): string =>
-  startOfDayInTimeZone(new Date(), env.timeZone)
-    .toISOString()
-    .slice(0, 19)
-    .replace('T', ' ');
+export function notificationListConditions(input: NotificationListFilter) {
+  const { dateFrom, dateTo, type, unread, userId } = input;
+
+  // Unread means "today": a row from a past day counts as read, both in the
+  // unread filter and in the computed column every row comes back with. One
+  // cutoff per request keeps the two expressions on the same day.
+  const beforeToday = createdBeforeToday();
+
+  const conditions = [eq(notification.userId, userId)];
+
+  if (type) {
+    conditions.push(eq(notification.type, type));
+  }
+  if (unread !== undefined) {
+    // Kept parenthesised: these conditions are joined with `and`, which binds
+    // tighter than `or`, so an unparenthesised `read OR beforeToday` would
+    // escape the user scoping above.
+    const readFilter = unread
+      ? and(eq(notification.read, false), not(beforeToday))
+      : or(notification.read, beforeToday);
+    conditions.push(sql<boolean>`(${readFilter})`);
+  }
+  if (dateFrom) {
+    // Same school-timezone day boundary as the unread cutoff above, so the
+    // range filter and "unread means today" agree on where a day starts.
+    conditions.push(
+      sql`${notification.createdAt} >= ${startOfDayInTimeZone(new Date(dateFrom), env.timeZone)}`
+    );
+  }
+  if (dateTo) {
+    // Inclusive end of the chosen day: everything before the next day starts
+    // in the school timezone. Midday + one day keeps a DST shift from moving
+    // the calendar day the helper then resolves.
+    const noon =
+      startOfDayInTimeZone(new Date(dateTo), env.timeZone).getTime() +
+      12 * 60 * 60 * 1000;
+    const exclusiveEnd = startOfDayInTimeZone(
+      new Date(noon + 24 * 60 * 60 * 1000),
+      env.timeZone
+    );
+    conditions.push(sql`${notification.createdAt} < ${exclusiveEnd}`);
+  }
+
+  return { beforeToday, conditions };
+}
+
+/**
+ * The derived `read` column: the row's own flag, or any row from a past day,
+ * which counts as read for display. Parenthesised because it is one item of a
+ * select list.
+ */
+export function notificationReadColumn(beforeToday: SQL<boolean>) {
+  return sql<boolean>`(${or(notification.read, beforeToday)})`;
+}
 
 export const listNotifications = base.notifications.list
   .use(requireAuthentication)
   .handler(async ({ context, input }) => {
-    const userId = context.session.userId;
-    const { limit, offset, type, unread, dateFrom, dateTo } = input;
-
-    // Unread means "today": once a notification's day has passed in the school
-    // timezone it reads as read everywhere, without any job writing the column.
-    const startOfToday = sql`${todayStartUtcLiteral()}::timestamp`;
-    const createdToday = sql`${notification.createdAt} >= ${startOfToday}`;
-    const createdBeforeToday = sql`${notification.createdAt} < ${startOfToday}`;
-
-    const conditions = [eq(notification.userId, userId)];
-
-    if (type) {
-      conditions.push(eq(notification.type, type));
-    }
-    if (unread !== undefined) {
-      conditions.push(
-        unread
-          ? sql`(${notification.read} = false AND ${createdToday})`
-          : sql`(${notification.read} = true OR ${createdBeforeToday})`
-      );
-    }
-    if (dateFrom) {
-      // Same school-timezone day boundary as the unread cutoff above, so the
-      // range filter and "unread means today" agree on where a day starts.
-      conditions.push(
-        sql`${notification.createdAt} >= ${startOfDayInTimeZone(new Date(dateFrom), env.timeZone)}`
-      );
-    }
-    if (dateTo) {
-      // Inclusive end of the chosen day: everything before the next day starts
-      // in the school timezone. Midday + one day keeps a DST shift from moving
-      // the calendar day the helper then resolves.
-      const noon =
-        startOfDayInTimeZone(new Date(dateTo), env.timeZone).getTime() +
-        12 * 60 * 60 * 1000;
-      const exclusiveEnd = startOfDayInTimeZone(
-        new Date(noon + 24 * 60 * 60 * 1000),
-        env.timeZone
-      );
-      conditions.push(sql`${notification.createdAt} < ${exclusiveEnd}`);
-    }
+    const { limit, offset } = input;
+    const { beforeToday, conditions } = notificationListConditions({
+      ...input,
+      userId: context.session.userId,
+    });
 
     const [items, totalResult] = await Promise.all([
       db
@@ -114,7 +150,7 @@ export const listNotifications = base.notifications.list
           ...getTableColumns(notification),
           // Computed, not stored: the row's own `read` flag only turns a
           // past-day notification into a read one for display.
-          read: sql<boolean>`(${notification.read} OR ${createdBeforeToday})`,
+          read: notificationReadColumn(beforeToday),
         })
         .from(notification)
         .where(and(...conditions))
@@ -142,7 +178,8 @@ export const getUnreadCount = base.notifications.unreadCount
         and(
           eq(notification.userId, userId),
           // Same "unread means today" rule as `listNotifications`.
-          sql`${notification.read} = false AND ${notification.createdAt} >= ${todayStartUtcLiteral()}::timestamp`
+          eq(notification.read, false),
+          not(createdBeforeToday())
         )
       );
 
@@ -351,14 +388,23 @@ export const registerFcmToken = base.notifications.fcmTokens.register
     return { ok: true as const };
   });
 
+/**
+ * The three test endpoints are development tools: each refuses to run unless the
+ * server was started with `CHRONOS_ENABLE_TEST_NOTIFICATIONS=true`, so a
+ * deployment cannot be talked into sending mail or push to arbitrary addresses.
+ */
+function requireTestNotificationsEnabled(): void {
+  if (!env.enableTestNotifications) {
+    throw forbidden(
+      'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
+    );
+  }
+}
+
 export const testNotification = base.notifications.test
   .use(requireAuthentication)
   .handler(async ({ context }) => {
-    if (!env.enableTestNotifications) {
-      throw forbidden(
-        'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
-      );
-    }
+    requireTestNotificationsEnabled();
 
     const userId = context.session.userId;
     const defaults = await channelDefaultsForUser(userId);
@@ -374,15 +420,13 @@ export const testNotification = base.notifications.test
       defaults
     );
     const lang = mailLocale(prefs?.language);
+    const t = createTranslator(lang);
 
     const [notif] = await db
       .insert(notification)
       .values({
-        content:
-          lang === 'en'
-            ? 'This is a test notification. If you received this, everything works.'
-            : 'Ez egy teszt értesítés. Ha megkaptad, minden működik.',
-        title: lang === 'en' ? 'Test Notification' : 'Teszt értesítés',
+        content: t('test.notificationBody'),
+        title: t('test.notificationTitle'),
         type: 'test',
         userId,
       })
@@ -509,11 +553,7 @@ async function resolveTestTarget(
 export const sendTestNotification = base.notifications.sendTest
   .use(requireAuthentication)
   .handler(async ({ context, input }) => {
-    if (!env.enableTestNotifications) {
-      throw forbidden(
-        'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
-      );
-    }
+    requireTestNotificationsEnabled();
 
     const currentUserId = context.session.userId;
     const body = input;
@@ -524,14 +564,9 @@ export const sendTestNotification = base.notifications.sendTest
       currentUserId
     );
     const lang = mailLocale(target.language);
-    const subject =
-      body.subject ??
-      (lang === 'en' ? 'Filc test message' : 'Filc teszt üzenet');
-    const content =
-      body.content ??
-      (lang === 'en'
-        ? 'This is a development test message. If you received this, everything works.'
-        : 'Ez egy fejlesztési teszt üzenet. Ha megkaptad, minden rendben működik.');
+    const t = createTranslator(lang);
+    const subject = body.subject ?? t('test.messageSubject');
+    const content = body.content ?? t('test.messageBody');
 
     const results = { email: false, inApp: false, push: false };
     const metadata = {
@@ -658,11 +693,7 @@ async function resolvePreviewContent(
 export const previewTestNotification = base.notifications.previewTest
   .use(requireAuthentication)
   .handler(async ({ input }) => {
-    if (!env.enableTestNotifications) {
-      throw forbidden(
-        'Test notifications are disabled (set CHRONOS_ENABLE_TEST_NOTIFICATIONS=true)'
-      );
-    }
+    requireTestNotificationsEnabled();
 
     const locale = mailLocale(input.language);
 
@@ -681,14 +712,9 @@ export const previewTestNotification = base.notifications.previewTest
     }
 
     const body = input;
-    const subject =
-      body.subject ??
-      (locale === 'en' ? 'Filc test message' : 'Filc teszt üzenet');
-    const content =
-      body.content ??
-      (locale === 'en'
-        ? 'This is a development test message. If you received this, everything works.'
-        : 'Ez egy fejlesztési teszt üzenet. Ha megkaptad, minden rendben működik.');
+    const t = createTranslator(locale);
+    const subject = body.subject ?? t('test.messageSubject');
+    const content = body.content ?? t('test.messageBody');
 
     const html = await renderPreviewEmail(body.type, locale, {
       content,

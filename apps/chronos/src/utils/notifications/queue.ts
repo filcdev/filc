@@ -19,6 +19,26 @@ const CONCURRENCY = 5;
 const MAX_RETRIES = 3;
 const RATE_LIMIT_MS = 50;
 
+/**
+ * Everything the queue reaches outside itself: the two providers, the timer a
+ * retry waits on, and the dead-letter sink. Injected so the retry rules are
+ * testable without mail, push, a real timer or Sentry; production uses
+ * `defaultDeps`.
+ */
+export type DeliveryDeps = {
+  sendEmail: typeof sendEmail;
+  sendPush: typeof sendPush;
+  schedule: (fn: () => void, ms: number) => unknown;
+  /** The dead-letter sink; defaults to Sentry's `captureException`. */
+  capture?: typeof captureException;
+};
+
+const defaultDeps: DeliveryDeps = {
+  schedule: (fn, ms) => setTimeout(fn, ms),
+  sendEmail,
+  sendPush,
+};
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -38,12 +58,6 @@ type JobOutcome = {
 };
 
 /**
- * How many attempts a job has had. The job object is re-enqueued, so its
- * `delivered` state — and this count — survive the wait for a retry.
- */
-const attempts = new WeakMap<DeliveryJob, number>();
-
-/**
  * Attempts every channel the job has not delivered yet. A channel that
  * succeeds — or that had nothing to deliver — is recorded on the job, so a
  * later attempt never repeats it. A disabled email starts out satisfied (see
@@ -52,26 +66,30 @@ const attempts = new WeakMap<DeliveryJob, number>();
  * user without a registered device is satisfied by the provider's `skipped`
  * answer.
  */
-async function processJob(job: DeliveryJob): Promise<JobOutcome> {
+async function processJob(
+  job: DeliveryJob,
+  deps: DeliveryDeps = defaultDeps
+): Promise<JobOutcome> {
   job.delivered ??= initialChannelState(job.emailEnabled);
   const { delivered } = job;
   let retryAfterMs: number | undefined;
 
   const emailPromise = delivered.email
     ? Promise.resolve()
-    : sendEmail(
-        job.email,
-        job.type,
-        job.language,
-        {
-          content: job.content,
-          details: job.details,
-          highlights: job.highlights,
-          title: job.title,
-        },
-        job.userId,
-        job.recipientName
-      )
+    : deps
+        .sendEmail(
+          job.email,
+          job.type,
+          job.language,
+          {
+            content: job.content,
+            details: job.details,
+            highlights: job.highlights,
+            title: job.title,
+          },
+          job.userId,
+          job.recipientName
+        )
         .then((result) => {
           retryAfterMs = result.retryAfterMs;
           delivered.email = isChannelSatisfied(result);
@@ -85,7 +103,8 @@ async function processJob(job: DeliveryJob): Promise<JobOutcome> {
 
   const pushPromise = delivered.push
     ? Promise.resolve()
-    : sendPush(job.userId, job.title, job.content)
+    : deps
+        .sendPush(job.userId, job.title, job.content)
         .then((result) => {
           delivered.push = isChannelSatisfied(result);
         })
@@ -101,13 +120,16 @@ async function processJob(job: DeliveryJob): Promise<JobOutcome> {
   return isJobDone(delivered) ? { done: true } : { done: false, retryAfterMs };
 }
 
-async function attemptJob(job: DeliveryJob): Promise<void> {
-  const attempt = (attempts.get(job) ?? 0) + 1;
-  attempts.set(job, attempt);
+export async function attemptJob(
+  job: DeliveryJob,
+  deps: DeliveryDeps = defaultDeps
+): Promise<void> {
+  const attempt = (job.attempt ?? 0) + 1;
+  job.attempt = attempt;
 
   let retryAfterMs = 0;
   try {
-    const outcome = await processJob(job);
+    const outcome = await processJob(job, deps);
     if (outcome.done) {
       return;
     }
@@ -137,7 +159,7 @@ async function attemptJob(job: DeliveryJob): Promise<void> {
     // queue has no durable store — so a process restart inside the delay window
     // loses this attempt, the same ceiling as the engine's delayed
     // notifications. No worker is held while it waits.
-    setTimeout(() => {
+    deps.schedule(() => {
       queue.push(job);
       pump();
     }, delay);
@@ -153,12 +175,13 @@ async function attemptJob(job: DeliveryJob): Promise<void> {
   };
 
   logger.error(
-    'Job {notificationId} for user {userId} failed after {max} retries, dead-lettering channels {channels}',
+    'Job {notificationId} for user {userId} failed after {max} attempts, dead-lettering channels {channels}',
     { ...context, max: MAX_RETRIES }
   );
   // A dead-lettered notification is a silent loss for its recipient unless
   // someone is told, so it goes to Sentry as well as the log.
-  captureException(
+  const capture = deps.capture ?? captureException;
+  capture(
     new Error(
       `Notification ${job.notificationId} dead-lettered after ${MAX_RETRIES} attempts`
     ),
@@ -175,7 +198,7 @@ async function processLoop(): Promise<void> {
   try {
     while (queue.length > 0) {
       const batch = queue.splice(0, CONCURRENCY);
-      await Promise.all(batch.map(attemptJob));
+      await Promise.all(batch.map((job) => attemptJob(job)));
 
       if (queue.length > 0) {
         await sleep(RATE_LIMIT_MS);

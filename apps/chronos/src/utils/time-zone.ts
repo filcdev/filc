@@ -158,6 +158,23 @@ export const startOfDayInTimeZone = (date: Date, timeZone: string): Date => {
   return new Date(naiveMidnight - offsetMinutes * 60_000);
 };
 
+/**
+ * The UTC wall-clock literal `YYYY-MM-DD HH:MM:SS` of the start of `date`'s
+ * calendar day in `timeZone` — the form a `timestamp without time zone`
+ * comparison understands.
+ *
+ * A bound `Date` reaches Postgres as a timestamp string whose zone marker a
+ * `timestamp` comparison silently discards, so a day cutoff has to be pinned as
+ * an explicit UTC literal rather than compared as an instant. Truncating the ISO
+ * string drops the milliseconds and the `Z`; the space is the separator
+ * `timestamp` accepts.
+ */
+export const cutoffLiteral = (date: Date, timeZone: string): string =>
+  startOfDayInTimeZone(date, timeZone)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+
 /** Weekday index (0 = Sunday … 6 = Saturday) for `date` in `timeZone`. */
 export const getWeekdayInTimeZone = (date: Date, timeZone: string): number => {
   const { weekday } = getZonedDateTimeParts(date, timeZone);

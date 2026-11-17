@@ -1,3 +1,11 @@
+import {
+  createTranslator,
+  formatMailDate,
+  type Locale,
+  normalizeLocale,
+  periodLabel,
+  weekdayOn,
+} from '@filcdev/i18n';
 import type { EmailDetail } from '@filcdev/mail';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
@@ -10,7 +18,7 @@ import {
   subject,
   teacher,
 } from '#modules/timetable/schema';
-import { isHungarianLocale } from './locale';
+import { uniqueStrings } from './strings';
 import { resolveTeacherUserAudience } from './teacher-audience';
 import type { AudienceUser, NotificationContent } from './types';
 
@@ -43,48 +51,6 @@ export type SubstitutionTeacherPayload = {
 const formatTime = (value: unknown): string | null => {
   const str = typeof value === 'string' ? value : null;
   return str ? str.slice(0, 5) : null;
-};
-
-const formatDate = (value: Date, hu: boolean): string => {
-  const day = String(value.getDate()).padStart(2, '0');
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const year = value.getFullYear();
-  return hu ? `${year}. ${month}. ${day}.` : `${year}-${month}-${day}`;
-};
-
-/**
- * The weekday of a date as it reads inside a sentence: English keeps the plain
- * name, Hungarian needs the "-on/-en/-ön" form ("szerdán", "pénteken"), which
- * `Intl` does not produce.
- */
-const WEEKDAYS_EN = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-];
-
-const WEEKDAYS_HU_ON = [
-  'vasárnap',
-  'hétfőn',
-  'kedden',
-  'szerdán',
-  'csütörtökön',
-  'pénteken',
-  'szombaton',
-];
-
-const weekdayOn = (value: Date, hu: boolean): string =>
-  (hu ? WEEKDAYS_HU_ON : WEEKDAYS_EN)[value.getDay()] ?? '';
-
-const periodLabel = (periodNo: number | null, hu: boolean): string => {
-  if (periodNo == null) {
-    return '';
-  }
-  return hu ? `${periodNo}. óra` : `Period ${periodNo}`;
 };
 
 /**
@@ -218,14 +184,16 @@ const timeRangeLabel = (entry: SubstitutionTeacherLesson): string => {
 /** Hero chips for the substitute-teacher email: first lesson and first class. */
 const buildSubstitutionTeacherHighlights = (
   payload: SubstitutionTeacherPayload,
-  hu: boolean
+  locale: Locale
 ): string[] => {
   const first = payload.lessons[0];
   if (!first) {
     return [];
   }
+  const periodPart =
+    first.period == null ? '' : periodLabel(first.period, locale);
   return [
-    `${periodLabel(first.period, hu)} ${timeRangeLabel(first)}`.trim(),
+    `${periodPart} ${timeRangeLabel(first)}`.trim(),
     first.cohortName ?? '',
   ]
     .filter(Boolean)
@@ -238,39 +206,36 @@ const buildSubstitutionTeacherHighlights = (
  */
 const buildSubstitutionTeacherDetails = (
   payload: SubstitutionTeacherPayload,
-  hu: boolean
+  locale: Locale
 ): EmailDetail[] => {
+  const t = createTranslator(locale);
   const [first] = payload.lessons;
   if (!first) {
     return [];
   }
 
-  const label = {
-    class: hu ? 'Osztály' : 'Class',
-    comment: hu ? 'Megjegyzés' : 'Comment',
-    date: hu ? 'Dátum' : 'Date',
-    lesson: hu ? 'Óra' : 'Lesson',
-    room: hu ? 'Terem' : 'Room',
-    subject: hu ? 'Tantárgy' : 'Subject',
-    substituted: hu ? 'Helyettesített tanár' : 'Substituted teacher',
-  };
-
   const rows: EmailDetail[] = [
-    { label: label.date, value: formatDate(payload.date, hu) },
-    { label: label.class, value: first.cohortName ?? '' },
-    { label: label.subject, value: first.subjectName ?? '' },
+    { label: t('labels.date'), value: formatMailDate(payload.date, locale) },
+    { label: t('labels.class'), value: first.cohortName ?? '' },
+    { label: t('labels.subject'), value: first.subjectName ?? '' },
     {
-      label: label.lesson,
-      value: [periodLabel(first.period, hu), timeRangeLabel(first)]
+      label: t('labels.lesson'),
+      value: [
+        first.period == null ? '' : periodLabel(first.period, locale),
+        timeRangeLabel(first),
+      ]
         .filter(Boolean)
         .join(' '),
     },
-    { label: label.room, value: uniqueStrings(first.rooms).join(', ') },
     {
-      label: label.substituted,
+      label: t('labels.room'),
+      value: uniqueStrings(first.rooms).join(', '),
+    },
+    {
+      label: t('labels.substitutedTeacher'),
       value: uniqueStrings(first.substitutedTeachers).join(', '),
     },
-    { label: label.comment, value: payload.comment?.trim() ?? '' },
+    { label: t('labels.comment'), value: payload.comment?.trim() ?? '' },
   ];
 
   return rows.filter((row) => row.value.length > 0);
@@ -284,16 +249,20 @@ const buildSubstitutionTeacherDetails = (
  */
 export const buildSubstitutionMultiLessonDetails = (
   payload: SubstitutionTeacherPayload,
-  hu: boolean
+  locale: Locale
 ): EmailDetail[] => {
+  const t = createTranslator(locale);
   const seen = new Map<string, number>();
-  const lessonFallback = hu ? 'Óra' : 'Lesson';
+  const lessonFallback = t('labels.lesson');
 
   const rows: EmailDetail[] = [
-    { label: hu ? 'Dátum' : 'Date', value: formatDate(payload.date, hu) },
+    { label: t('labels.date'), value: formatMailDate(payload.date, locale) },
     ...payload.lessons.map((entry) => {
       const base =
-        [periodLabel(entry.period, hu), entry.cohortName]
+        [
+          entry.period == null ? '' : periodLabel(entry.period, locale),
+          entry.cohortName,
+        ]
           .filter(Boolean)
           .join(' · ') || lessonFallback;
       const count = (seen.get(base) ?? 0) + 1;
@@ -314,7 +283,7 @@ export const buildSubstitutionMultiLessonDetails = (
 
   const comment = payload.comment?.trim();
   if (comment) {
-    rows.push({ label: hu ? 'Megjegyzés' : 'Comment', value: comment });
+    rows.push({ label: t('labels.comment'), value: comment });
   }
 
   return rows.filter((row) => row.value.length > 0);
@@ -325,20 +294,15 @@ export function buildSubstitutionTeacherContent(
   payload: SubstitutionTeacherPayload,
   locale: string
 ): NotificationContent {
-  const hu = isHungarianLocale(locale);
+  const resolved = normalizeLocale(locale);
+  const t = createTranslator(resolved);
   const { date, lessons } = payload;
 
-  const label = {
-    intro: hu
-      ? 'Új helyettesítést jelöltek ki hozzád.'
-      : 'You have been assigned a new substitution.',
-    title: hu ? 'Új helyettesítés' : 'New substitution',
-  };
-
   const first = lessons[0];
-  const firstPeriod = first ? periodLabel(first.period, hu) : '';
+  const firstPeriod =
+    first?.period == null ? '' : periodLabel(first.period, resolved);
 
-  let title = label.title;
+  let title = t('substitution.teacherTitle');
   if (first?.cohortName) {
     title = `${title} – ${first.cohortName}`;
     if (firstPeriod) {
@@ -350,12 +314,12 @@ export function buildSubstitutionTeacherContent(
     return { content: '', title };
   }
 
-  const highlights = buildSubstitutionTeacherHighlights(payload, hu);
+  const highlights = buildSubstitutionTeacherHighlights(payload, resolved);
 
   if (lessons.length === 1) {
     return {
-      content: label.intro,
-      details: buildSubstitutionTeacherDetails(payload, hu),
+      content: t('substitution.teacherIntro'),
+      details: buildSubstitutionTeacherDetails(payload, resolved),
       highlights,
       title,
     };
@@ -363,23 +327,18 @@ export function buildSubstitutionTeacherContent(
 
   // The rows carry the per-lesson information, so the body stays one sentence:
   // the mail template renders the hero, then the detail rows below it.
-  const content = hu
-    ? `${lessons.length} órára jelöltek ki helyettesítésre ${weekdayOn(date, hu)}.`
-    : `You were assigned to substitute ${lessons.length} lessons on ${weekdayOn(date, hu)}.`;
+  const content = t('substitution.teacherMulti', {
+    count: lessons.length,
+    weekday: weekdayOn(date.getDay(), resolved),
+  });
 
   return {
     content,
-    details: buildSubstitutionMultiLessonDetails(payload, hu),
+    details: buildSubstitutionMultiLessonDetails(payload, resolved),
     highlights,
     title,
   };
 }
-
-/** Deduplicated, non-empty strings in first-seen order. Shared by the email
- * detail builders (substitution and moved lesson). */
-export const uniqueStrings = (
-  values: (string | null | undefined)[]
-): string[] => [...new Set(values.filter((value): value is string => !!value))];
 
 /**
  * Build the structured label/value rows for the student-facing `substitution`
@@ -389,20 +348,9 @@ export function buildSubstitutionDetails(
   payload: SubstitutionTeacherPayload,
   locale: string
 ): EmailDetail[] {
-  const hu = isHungarianLocale(locale);
+  const resolved = normalizeLocale(locale);
+  const t = createTranslator(resolved);
   const { comment, date, lessons, substituter, substituterName } = payload;
-
-  const label = {
-    cancelled: hu ? 'Lemarad' : 'Cancelled',
-    class: hu ? 'Osztály' : 'Class',
-    comment: hu ? 'Megjegyzés' : 'Comment',
-    date: hu ? 'Dátum' : 'Date',
-    lesson: hu ? 'Óra' : 'Lesson',
-    room: hu ? 'Terem' : 'Room',
-    subject: hu ? 'Tantárgy' : 'Subject',
-    substitute: hu ? 'Helyettesítő' : 'Substitute',
-    substituted: hu ? 'Helyettesített tanár' : 'Substituted teacher',
-  };
 
   const lessonLabels = lessons
     .map((entry) => {
@@ -412,38 +360,40 @@ export function buildSubstitutionDetails(
           ? ` (${entry.startTime} - ${entry.endTime})`
           : ` (${entry.startTime})`;
       }
-      return `${periodLabel(entry.period, hu)}${timeRange}`.trim();
+      const periodPart =
+        entry.period == null ? '' : periodLabel(entry.period, resolved);
+      return `${periodPart}${timeRange}`.trim();
     })
     .filter((value) => value.length > 0);
 
   const rows: EmailDetail[] = [
-    { label: label.date, value: formatDate(date, hu) },
+    { label: t('labels.date'), value: formatMailDate(date, resolved) },
     {
-      label: label.class,
+      label: t('labels.class'),
       value: uniqueStrings(lessons.map((entry) => entry.cohortName)).join(', '),
     },
     {
-      label: label.subject,
+      label: t('labels.subject'),
       value: uniqueStrings(lessons.map((entry) => entry.subjectName)).join(
         ', '
       ),
     },
-    { label: label.lesson, value: lessonLabels.join(' · ') },
+    { label: t('labels.lesson'), value: lessonLabels.join(' · ') },
     {
-      label: label.room,
+      label: t('labels.room'),
       value: uniqueStrings(lessons.flatMap((entry) => entry.rooms)).join(', '),
     },
     {
-      label: label.substituted,
+      label: t('labels.substitutedTeacher'),
       value: uniqueStrings(
         lessons.flatMap((entry) => entry.substitutedTeachers)
       ).join(', '),
     },
     {
-      label: label.substitute,
-      value: substituter ? (substituterName ?? '') : label.cancelled,
+      label: t('labels.substitute'),
+      value: substituter ? (substituterName ?? '') : t('labels.cancelled'),
     },
-    { label: label.comment, value: comment?.trim() ?? '' },
+    { label: t('labels.comment'), value: comment?.trim() ?? '' },
   ];
 
   return rows.filter((row) => row.value.length > 0);
