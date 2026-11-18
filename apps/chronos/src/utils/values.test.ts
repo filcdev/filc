@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { diffActivity, valuesEqual } from '#modules/activity-log/utils/record';
+import { diffActivity, valuesEqual } from '#utils/values';
 
 /**
  * The activity diff decides whether a PATCH wrote anything, in events and in

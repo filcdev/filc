@@ -5,10 +5,7 @@ import { ORPCError } from '@orpc/server';
 import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
-import {
-  diffActivity,
-  recordActivity,
-} from '#modules/activity-log/utils/record';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import {
   cohort,
   dayDefinition,
@@ -39,6 +36,7 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
+import { diffActivity } from '#utils/values';
 
 const logger = getLogger(['chronos', 'timetable', 'substitution']);
 

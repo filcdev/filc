@@ -6,13 +6,11 @@ import { desc, eq } from 'drizzle-orm';
 import type { ChronosContext } from '#_types/globals';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
-import {
-  diffActivity,
-  recordActivity,
-} from '#modules/activity-log/utils/record';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import { device } from '#modules/doorlock/schema';
 import { base } from '#orpc';
 import { conflict, notFound } from '#utils/http';
+import { diffActivity } from '#utils/values';
 
 const logger = getLogger(['chronos', 'doorlock', 'devices']);
 
