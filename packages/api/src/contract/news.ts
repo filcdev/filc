@@ -1,5 +1,6 @@
 import { oc } from '@orpc/contract';
 import z from 'zod';
+import { paginationSchema } from '../domains/list';
 import {
   announcementCreateSchema,
   announcementImageUploadSchema,
@@ -8,7 +9,6 @@ import {
   announcementQuerySchema,
   announcementTargetedRowSchema,
   announcementUpdateSchema,
-  paginationSchema,
 } from '../domains/news/announcements';
 import {
   blogCreateSchema,

@@ -18,6 +18,7 @@ import {
   teacher,
 } from '#modules/timetable/schema';
 import { base } from '#orpc';
+import { csvFile } from '#utils/csv';
 import { andAll } from '#utils/drizzle';
 
 const buildDateFilters = (
@@ -32,30 +33,6 @@ const buildDateFilters = (
     filters.push(lte(column, new Date(query.to)));
   }
 };
-
-const CSV_SPECIAL_CHARS = /[",\n\r]/;
-const CSV_QUOTE = /"/g;
-
-const escapeCsvField = (value: unknown): string => {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  const str = String(value);
-  if (CSV_SPECIAL_CHARS.test(str)) {
-    return `"${str.replace(CSV_QUOTE, '""')}"`;
-  }
-  return str;
-};
-
-const toCsv = (header: string[], rows: Record<string, unknown>[]): string => {
-  const lines = rows.map((row) =>
-    header.map((col) => escapeCsvField(row[col])).join(',')
-  );
-  return [header.join(','), ...lines].join('\n');
-};
-
-const buildFilename = (prefix: string): string =>
-  `${prefix}-export-${new Date().toISOString().slice(0, 10)}.csv`;
 
 export const exportSubstitutionsRoute = base.timetable.substitutions.export
   .use(requireAuthentication)
@@ -164,9 +141,7 @@ export const exportSubstitutionsRoute = base.timetable.substitutions.export
       };
     });
 
-    const csv = toCsv(header, rows);
-    const filename = buildFilename('substitutions');
-    return new File([csv], filename, { type: 'text/csv; charset=utf-8' });
+    return csvFile('substitutions', header, rows);
   });
 
 export const exportMovedLessonsRoute = base.timetable.movedLessons.export
@@ -382,7 +357,5 @@ export const exportMovedLessonsRoute = base.timetable.movedLessons.export
       };
     });
 
-    const csv = toCsv(header, rows);
-    const filename = buildFilename('moved-lessons');
-    return new File([csv], filename, { type: 'text/csv; charset=utf-8' });
+    return csvFile('moved-lessons', header, rows);
   });
