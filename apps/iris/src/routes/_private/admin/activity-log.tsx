@@ -30,6 +30,7 @@ import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import type { ActivityLogEntry } from '@/hooks/activity-log';
 import { useActivityLog } from '@/hooks/activity-log';
+import { formatLocalizedDate } from '@/utils/date-locale';
 import { orpc, prefetch } from '@/utils/orpc';
 
 const PAGE_SIZE = 50;
@@ -222,14 +223,28 @@ function ActivityLogPage() {
 }
 
 function ActivityLogRow({ entry }: { entry: ActivityLogEntry }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const hasMetadata = entry.metadata != null;
+  const createdAt = new Date(entry.createdAt);
+  const isoTimestamp = createdAt.toISOString();
 
   return (
     <>
       <TableRow>
-        <TableCell>{dayjs(entry.createdAt).format('L LTS')}</TableCell>
+        <TableCell>
+          <time
+            className="whitespace-nowrap"
+            dateTime={isoTimestamp}
+            title={isoTimestamp}
+          >
+            {formatLocalizedDate(createdAt, i18n.language, {
+              dateStyle: 'medium',
+              timeStyle: 'medium',
+              timeZone: 'Europe/Budapest',
+            })}
+          </time>
+        </TableCell>
         <TableCell>
           {entry.actor?.nickname ||
             entry.actor?.name ||
