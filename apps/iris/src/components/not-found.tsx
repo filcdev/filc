@@ -164,11 +164,14 @@ function NotFoundScene() {
           d="M338 155c0-19 13-33 31-33s31 14 31 33-13 35-31 35-31-16-31-35z"
           fill="#0a1c13"
         />
+        {/* Fill-only so the cap's top blends into the hood; the fringe below
+            is outlined separately. */}
         <path
           d="M337 150c2-21 15-31 32-31s30 11 32 29c-11-8-22-10-32-8-13 2-23 6-32 10z"
           fill="#1a3b28"
-          stroke="#1a3b28"
+          stroke="none"
         />
+        <path d="M401 148c-11-8-22-10-32-8c-13 2-23 6-32 10" fill="none" />
         {/* Confused face */}
         <path d="m349 150 11-3m31 3-11-3" strokeWidth="2" />
         <path d="M356 165h4m22 0h4" strokeWidth="4" />
