@@ -215,7 +215,7 @@ export function NotFoundPage() {
       </div>
 
       <div className="flex w-full max-w-2xl flex-col items-center text-center">
-        <h1 className="-mb-4 font-extrabold text-[#f4fff8] text-[clamp(4.5rem,16vw,8rem)] leading-none tracking-tight [text-shadow:0_0_40px_rgba(141,245,179,0.4)]">
+        <h1 className="-mb-4 font-extrabold text-[#f4fff8] text-[clamp(4.5rem,16vw,8rem)] leading-none tracking-tight">
           404
         </h1>
         <NotFoundScene />
