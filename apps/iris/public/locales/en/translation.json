@@ -5,7 +5,7 @@
   "notFound": {
     "pageTitle": "Page not found | Filc",
     "title": "Oops, you got lost?",
-    "message": "This page can't be found. Maybe you're looking in the wrong place, or our server hasn't learned this page yet.",
+    "message": "This page can't be found. Maybe you're looking in the wrong place.",
     "returnToHome": "Back to home",
     "footer": "Or shall we find a new spot on the map? (Error code: {{code}})"
   },

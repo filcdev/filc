@@ -5,7 +5,7 @@
   "notFound": {
     "pageTitle": "Az oldal nem található | Filc",
     "title": "Hoppá, eltévedtél?",
-    "message": "Ez a lap nem található. Lehet, hogy rossz helyen keresed, vagy a szerverünk még nem tanulta meg ezt az oldalt.",
+    "message": "Ez a lap nem található. Lehet, hogy rossz helyen keresed.",
     "returnToHome": "Vissza a főoldalra",
     "footer": "Vagy keressünk új helyet a térképen? (Hibakód: {{code}})"
   },

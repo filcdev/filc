@@ -89,14 +89,29 @@ function NotFoundScene() {
       viewBox="0 0 720 380"
     >
       <defs>
-        <linearGradient id="nf-beam" x1="0" x2="0.7" y1="0" y2="1">
-          <stop offset="0%" stopColor="#e2ffec" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#8fe0aa" stopOpacity="0" />
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id="nf-beam"
+          x1="452"
+          x2="585"
+          y1="252"
+          y2="312"
+        >
+          <stop offset="0%" stopColor="#eafff1" stopOpacity="0.5" />
+          <stop offset="55%" stopColor="#a6f5c1" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#a6f5c1" stopOpacity="0" />
         </linearGradient>
+        <radialGradient id="nf-beam-pool">
+          <stop offset="0%" stopColor="#a6f5c1" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#a6f5c1" stopOpacity="0" />
+        </radialGradient>
         <radialGradient cx="50%" cy="50%" id="nf-floor-glow" r="50%">
           <stop offset="0%" stopColor="#a6f5c1" stopOpacity="0.18" />
           <stop offset="100%" stopColor="#a6f5c1" stopOpacity="0" />
         </radialGradient>
+        <filter height="200%" id="nf-beam-blur" width="200%" x="-50%" y="-50%">
+          <feGaussianBlur stdDeviation="3" />
+        </filter>
       </defs>
 
       {/* Floor and its sketchy shading */}
@@ -125,8 +140,13 @@ function NotFoundScene() {
       <ClassroomChair scale={0.92} x={142} y={222} />
       <ClassroomChair x={78} y={218} />
 
-      {/* Flashlight beam, painted behind the student */}
-      <path d="m450 248 112 52-86 18-40-56z" fill="url(#nf-beam)" />
+      {/* Flashlight beam: a soft cone from the lens that lands on the floor */}
+      <ellipse cx="584" cy="313" fill="url(#nf-beam-pool)" rx="52" ry="9" />
+      <path
+        d="M454 248 572 284 598 340 450 257z"
+        fill="url(#nf-beam)"
+        filter="url(#nf-beam-blur)"
+      />
 
       {/* Bewildered student */}
       <g
@@ -142,7 +162,7 @@ function NotFoundScene() {
         />
         <path
           d="M338 155c0-19 13-33 31-33s31 14 31 33-13 35-31 35-31-16-31-35z"
-          fill="#f0c78e"
+          fill="#0a1c13"
         />
         <path
           d="M337 150c2-21 15-31 32-31s30 11 32 29c-11-8-22-10-32-8-13 2-23 6-32 10z"
