@@ -1,5 +1,5 @@
 import { getDayOrder } from '@/utils/date-locale';
-import { getLessonWeekType, toHHMM } from '../helpers';
+import { compareLessonsInSlot, getSplitGroups, toHHMM } from '../helpers';
 import type { LessonItem, PeriodItem } from '../types';
 import type {
   SecondaryDay,
@@ -30,26 +30,6 @@ export const formatPeriodTime = (value: string | null | undefined): string => {
     return '';
   }
   return `${Number(hhmm.slice(0, 2))}:${hhmm.slice(3, 5)}`;
-};
-
-/** Deterministic order for two lessons sharing a slot (A-week before B-week). */
-const WEEK_ORDER = {
-  A: 0,
-  all: 2,
-  B: 1,
-} as const;
-
-const compareSlotLessons = (a: LessonItem, b: LessonItem): number => {
-  const aWeek = getLessonWeekType(a);
-  const bWeek = getLessonWeekType(b);
-
-  const weekDiff = WEEK_ORDER[aWeek] - WEEK_ORDER[bWeek];
-
-  if (weekDiff !== 0) {
-    return weekDiff;
-  }
-
-  return a.id.localeCompare(b.id);
 };
 
 /**
@@ -138,9 +118,10 @@ export const buildSecondaryModel = (
     grid.set(key, slot);
   }
 
-  // Stable ordering within a slot (A-week on top, B-week below).
+  // Same ordering as the grid view: group position, then A-week before B-week,
+  // so the two views never disagree about which lesson comes first.
   for (const slot of grid.values()) {
-    slot.sort(compareSlotLessons);
+    slot.sort(compareLessonsInSlot);
   }
 
   return {
@@ -185,10 +166,7 @@ export const formatGroupCode = (
   lesson: LessonItem,
   cohortShort?: string
 ): string => {
-  const groups = lesson.groups ?? [];
-  const splitGroups = groups.filter(
-    (group) => !group.entireClass && group.name
-  );
+  const splitGroups = getSplitGroups(lesson);
   if (splitGroups.length === 0) {
     return '';
   }
