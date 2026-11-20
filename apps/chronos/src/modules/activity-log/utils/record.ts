@@ -9,43 +9,6 @@ type TxOrDb =
   | Parameters<Parameters<(typeof Db)['transaction']>[0]>[0];
 
 /**
- * Compact `{before, after}` diff over `keys`, or null when nothing changed.
- * Undefined fields in `after` (untouched inputs) are never recorded; extra
- * keys the caller computed (e.g. relation lists) come in as `extras`.
- */
-export const diffActivity = (
-  before: Record<string, unknown>,
-  after: Record<string, unknown>,
-  keys: readonly string[],
-  extras?: { after: Record<string, unknown>; before: Record<string, unknown> }
-): {
-  after: Record<string, unknown>;
-  before: Record<string, unknown>;
-} | null => {
-  const beforeDiff: Record<string, unknown> = { ...extras?.before };
-  const afterDiff: Record<string, unknown> = { ...extras?.after };
-  for (const key of keys) {
-    // Arrays compare by content, not reference: pass an array twice and the
-    // reference differs while the value does not.
-    if (
-      after[key] !== undefined &&
-      after[key] !== before[key] &&
-      !(
-        Array.isArray(after[key]) &&
-        Array.isArray(before[key]) &&
-        JSON.stringify(after[key]) === JSON.stringify(before[key])
-      )
-    ) {
-      beforeDiff[key] = before[key];
-      afterDiff[key] = after[key];
-    }
-  }
-  return Object.keys(afterDiff).length === 0
-    ? null
-    : { after: afterDiff, before: beforeDiff };
-};
-
-/**
  * Best-effort audit insert. Awaited so it shares the caller's transaction
  * when one is passed, but a failure only logs — it never fails the mutation
  * being recorded.

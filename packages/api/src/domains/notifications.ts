@@ -1,5 +1,5 @@
 import z from 'zod';
-import { listResponse } from './list';
+import { listResponse, paginationSchema } from './list';
 import { colorSchemeSchema } from './theme';
 
 /**
@@ -46,11 +46,10 @@ export const notificationDetailSchema = z.object({
 
 export type NotificationDetail = z.infer<typeof notificationDetailSchema>;
 
-export const paginationSchema = z.object({
+/** The history filters on top of the shared page window. */
+export const notificationQuerySchema = paginationSchema.extend({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
-  limit: z.coerce.number().min(1).max(100).default(20),
-  offset: z.coerce.number().min(0).default(0),
   type: z.string().optional(),
   unread: z
     .enum(['true', 'false'])
@@ -61,7 +60,7 @@ export const paginationSchema = z.object({
     .transform((v) => (v === undefined ? undefined : v === 'true')),
 });
 
-export type PaginationInput = z.infer<typeof paginationSchema>;
+export type NotificationQueryInput = z.infer<typeof notificationQuerySchema>;
 
 export const timetableGroupDisplayValues = ['highlight', 'hide'] as const;
 export type TimetableGroupDisplay =

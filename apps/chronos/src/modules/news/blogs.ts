@@ -5,10 +5,7 @@ import { and, count, eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
-import {
-  diffActivity,
-  recordActivity,
-} from '#modules/activity-log/utils/record';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import { blogPost } from '#modules/news/schema';
 import { ensureUniqueSlug, generateSlug } from '#modules/news/utils/schemas';
 import { base } from '#orpc';
@@ -17,6 +14,7 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
+import { diffActivity } from '#utils/values';
 
 const authorSelect = {
   id: user.id,

@@ -5,10 +5,7 @@ import { and, count, eq, gte, lte, type SQL, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
-import {
-  diffActivity,
-  recordActivity,
-} from '#modules/activity-log/utils/record';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import { systemMessage, systemMessageCohortMtm } from '#modules/news/schema';
 import {
   cohortVisibilityCondition,
@@ -21,6 +18,7 @@ import {
   cancelPendingNotification,
   dispatchPendingNotification,
 } from '#utils/notifications/engine';
+import { diffActivity } from '#utils/values';
 
 export const listSystemMessages = base.news.systemMessages.list.handler(
   async ({ context, input }) => {
