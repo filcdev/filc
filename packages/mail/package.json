@@ -13,8 +13,8 @@
   "dependencies": {
     "@filcdev/i18n": "workspace:*",
     "@react-email/components": "^1.0.12",
-    "@react-email/render": "^2.1.1",
-    "nodemailer": "^10.1.7",
+    "@react-email/render": "^2.3.1",
+    "nodemailer": "^10.5.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:"
