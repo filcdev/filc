@@ -54,3 +54,53 @@ export const siteThemeResponseSchema = z.object({ theme: siteThemeSchema });
 
 /** Payload for an admin setting the site-wide theme. */
 export const updateSiteThemeSchema = z.object({ theme: siteThemeSchema });
+
+/** An annual schedule window is a month/day pair without a year, so 1–12 and
+ *  1–31 are the wire bounds. The pair is validated server-side: impossible days
+ *  (31 April) and 29 February are rejected with `VALIDATION`. */
+export const monthSchema = z.number().int().min(1).max(12);
+export const daySchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(31)
+  .describe(
+    'Day of the month. Each month/day pair is validated server-side: impossible days (such as 31 April) and 29 February are rejected with VALIDATION, because an annual window cannot express a leap day.'
+  );
+
+/**
+ * A row of the admin-editable annual schedule: while the window is in season,
+ * its theme overrides the manually pinned `site_theme.theme`. `active` is
+ * computed server-side against today's wall clock (`env.timeZone`) on every
+ * read — it is not stored and never editable.
+ */
+export const themeScheduleItemSchema = z.object({
+  active: z
+    .boolean()
+    .describe(
+      "True when today (in the school's time zone) falls inside this row's annual window. Computed per request, not stored."
+    ),
+  endDay: daySchema,
+  endMonth: monthSchema,
+  id: z.uuid(),
+  startDay: daySchema,
+  startMonth: monthSchema,
+  theme: siteThemeSchema,
+});
+
+/** Payload for adding a schedule window. Windows must not overlap. */
+export const createThemeScheduleSchema = z.object({
+  endDay: daySchema,
+  endMonth: monthSchema,
+  startDay: daySchema,
+  startMonth: monthSchema,
+  theme: siteThemeSchema,
+});
+
+/** Partial edit of one schedule window; `id` rides in the path. */
+export const updateThemeScheduleSchema = createThemeScheduleSchema
+  .partial()
+  .extend({ id: z.uuid() });
+
+/** Path/query input of the endpoints that address one schedule row. */
+export const themeScheduleIdSchema = z.object({ id: z.uuid() });

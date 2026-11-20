@@ -11,7 +11,7 @@
     "db:import-navigator": "bun --bun src/database/scripts/import-navigator.ts",
     "db:reset": "bun run ./src/database/scripts/reset.ts",
     "openapi:check": "bun run scripts/check-openapi.ts",
-    "test": "bun test --isolate ./src/utils ./src/modules/notifications",
+    "test": "bun test --isolate ./src/utils ./src/modules/theme ./src/modules/notifications",
     "openapi:generate": "bun run scripts/generate-openapi.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"

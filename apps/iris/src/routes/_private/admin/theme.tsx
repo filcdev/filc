@@ -1,4 +1,4 @@
-import { type SiteTheme, siteThemeIds } from '@filcdev/api/domains/theme';
+import type { SiteTheme } from '@filcdev/api/domains/theme';
 import { permissions } from '@filcdev/api/permissions';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
@@ -9,57 +9,20 @@ import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  THEME_COPY,
+  THEMES,
+  type ThemeOption,
+  windowText,
+} from '@/components/admin/theme-catalog';
+import { ThemeSchedulePanel } from '@/components/admin/theme-schedule-panel';
 import { PermissionGuard } from '@/components/util/permission-guard';
-import { useSiteTheme, useUpdateSiteTheme } from '@/hooks/site-theme';
+import {
+  useSiteTheme,
+  useThemeSchedule,
+  useUpdateSiteTheme,
+} from '@/hooks/site-theme';
 import { orpc, prefetch } from '@/utils/orpc';
-
-/**
- * The label keys for each skin, keyed by the contract's id list. Declaring it
- * as a `Record<SiteTheme, …>` is what makes a new skin a compile error until it
- * is named in both locales, instead of a missing card at runtime.
- */
-const THEME_COPY: Record<
-  SiteTheme,
-  { descriptionKey: string; nameKey: string }
-> = {
-  christmas: {
-    descriptionKey: 'siteTheme.christmas.description',
-    nameKey: 'siteTheme.christmas.name',
-  },
-  default: {
-    descriptionKey: 'siteTheme.default.description',
-    nameKey: 'siteTheme.default.name',
-  },
-  easter: {
-    descriptionKey: 'siteTheme.easter.description',
-    nameKey: 'siteTheme.easter.name',
-  },
-  halloween: {
-    descriptionKey: 'siteTheme.halloween.description',
-    nameKey: 'siteTheme.halloween.name',
-  },
-  march15: {
-    descriptionKey: 'siteTheme.march15.description',
-    nameKey: 'siteTheme.march15.name',
-  },
-  newYear: {
-    descriptionKey: 'siteTheme.newYear.description',
-    nameKey: 'siteTheme.newYear.name',
-  },
-  summer: {
-    descriptionKey: 'siteTheme.summer.description',
-    nameKey: 'siteTheme.summer.name',
-  },
-  valentines: {
-    descriptionKey: 'siteTheme.valentines.description',
-    nameKey: 'siteTheme.valentines.name',
-  },
-};
-
-/** One card per skin, in the contract's order (which is the calendar's). */
-const THEMES = siteThemeIds.map((id) => ({ id, ...THEME_COPY[id] }));
-
-type ThemeOption = (typeof THEMES)[number];
 
 export const Route = createFileRoute('/_private/admin/theme')({
   component: () => (
@@ -68,21 +31,26 @@ export const Route = createFileRoute('/_private/admin/theme')({
     </PermissionGuard>
   ),
   loader: ({ context }) =>
-    prefetch(
-      context.queryClient,
-      orpc.theme.get.queryOptions({ staleTime: 5 * 60_000 })
-    ),
+    Promise.all([
+      prefetch(
+        context.queryClient,
+        orpc.theme.get.queryOptions({ staleTime: 5 * 60_000 })
+      ),
+      prefetch(context.queryClient, orpc.theme.schedule.list.queryOptions()),
+    ]),
 });
 
 function ThemePage() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const siteThemeQuery = useSiteTheme();
+  const scheduleQuery = useThemeSchedule();
   const activeTheme = siteThemeQuery.data?.theme ?? 'default';
   const [selected, setSelected] = useState<SiteTheme>(activeTheme);
   const updateMutation = useUpdateSiteTheme();
 
   const activeOption =
     THEMES.find((option) => option.id === activeTheme) ?? THEMES[0];
+  const activeWindow = scheduleQuery.data?.find((item) => item.active);
 
   return (
     <div className="space-y-6">
@@ -113,6 +81,15 @@ function ThemePage() {
         </div>
       ) : (
         <>
+          {activeWindow && (
+            <p className="rounded-xl border bg-muted/40 p-4 text-sm">
+              {t('siteTheme.schedule.override', {
+                theme: t(THEME_COPY[activeWindow.theme].nameKey),
+                window: windowText(activeWindow, i18n.language),
+              })}
+            </p>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {THEMES.map((option) => (
               <ThemeCard
@@ -124,6 +101,8 @@ function ThemePage() {
               />
             ))}
           </div>
+
+          <ThemeSchedulePanel />
 
           <div className="sticky bottom-0 flex items-center justify-end gap-3 rounded-2xl border bg-card/95 p-4 backdrop-blur">
             <span className="text-muted-foreground text-sm">

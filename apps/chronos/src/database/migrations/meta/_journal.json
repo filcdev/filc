@@ -218,6 +218,13 @@
       "when": 1794526024382,
       "tag": "0030_dizzy_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794945857568,
+      "tag": "0031_typical_trish_tilby",
+      "breakpoints": true
     }
   ]
 }
