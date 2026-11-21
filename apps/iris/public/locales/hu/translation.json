@@ -835,6 +835,12 @@
     "gradeHint": "A nyolc két tanítási nyelvű osztály (1/13.RS, 2/14.VL, …) nem nevez meg évfolyamot, ezért bármely évfolyamkorlát kizárja őket.",
     "total": "{{count}} esemény",
     "helperRegistrationGroup": "Segítők",
+    "helpersSettings": {
+      "title": "Segítőbeállítások",
+      "hint": "A segítőjelentkezés és hogy mit mutat a beléptető. Ugyanezek a beállítások az esemény párbeszédablakában is megtalálhatók.",
+      "collapse": "Segítőbeállítások összecsukása",
+      "expand": "Segítőbeállítások kinyitása"
+    },
     "helperRegistrationEnabled": "Segítők engedélyezése",
     "helperRegistrationHint": "A segítőjelentkezést mindig a szervező hagyja jóvá, és a segítők nem foglalnak helyet.",
     "helperRegistrationSeparateWindow": "Külön jelentkezési időszak a segítőknek",

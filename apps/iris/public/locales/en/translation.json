@@ -835,6 +835,12 @@
     "gradeHint": "The eight bilingual classes (1/13.RS, 2/14.VL, …) name no grade, so any grade bound keeps them out.",
     "total": "{{count}} events",
     "helperRegistrationGroup": "Helpers",
+    "helpersSettings": {
+      "title": "Helper settings",
+      "hint": "Helper signups and what the door's scanner shows. These also live in the event dialog.",
+      "collapse": "Collapse helper settings",
+      "expand": "Expand helper settings"
+    },
     "helperRegistrationEnabled": "Allow helper signups",
     "helperRegistrationHint": "Helper signups always wait for an organizer’s approval, and helpers do not take a seat.",
     "helperRegistrationSeparateWindow": "Separate signup window for helpers",
