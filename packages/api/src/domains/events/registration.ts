@@ -147,6 +147,11 @@ export const eventParticipantSchema = z.object({
   answers: z.array(eventRegistrationAnswerViewSchema),
   /** Null until someone scans the ticket; guests have one, students may not. */
   checkedInAt: z.date().nullable(),
+  /**
+   * When this helper's door grant lapses; null for a participant, a guest or a
+   * helper who has not been approved. An approval is what creates it.
+   */
+  checkinGrantExpiresAt: z.date().nullable(),
   email: z.string(),
   id: z.uuid(),
   name: z.string(),

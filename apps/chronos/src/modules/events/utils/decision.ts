@@ -5,9 +5,15 @@ import type {
 import { and, eq } from 'drizzle-orm';
 import type { db as Db } from '#database';
 import {
+  event,
   eventRegistration,
   eventRegistrationAnswer,
 } from '#modules/events/schema';
+import {
+  checkinGrantExpiresAt,
+  revokeCheckinGrant,
+  upsertCheckinGrant,
+} from '#modules/events/utils/grant';
 import { conflict, notFound } from '#utils/http';
 
 export type DecideTransaction =
@@ -60,6 +66,32 @@ export const decidePendingRegistration = async (
 
   if (!updated) {
     throw conflict('This registration is not waiting for approval');
+  }
+
+  // The door grant follows the decision inside the same transaction: an
+  // approval opens the event until a day after it ends, and a decline closes
+  // whatever an earlier approval had opened. A pending row is always a
+  // signed-in helper, so it has a user to grant.
+  if (updated.userId) {
+    if (decision === 'approve') {
+      const [eventRow] = await tx
+        .select({ endsAt: event.endsAt })
+        .from(event)
+        .where(eq(event.id, eventId));
+      if (!eventRow) {
+        throw notFound('Event not found');
+      }
+      await upsertCheckinGrant(tx, {
+        eventId,
+        expiresAt: checkinGrantExpiresAt(eventRow.endsAt),
+        userId: updated.userId,
+      });
+    } else {
+      await revokeCheckinGrant(tx, {
+        eventId,
+        userId: updated.userId,
+      });
+    }
   }
 
   const answers = await tx

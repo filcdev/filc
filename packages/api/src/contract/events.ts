@@ -247,6 +247,26 @@ export const eventsContract = {
       )
       .input(eventRegistrationCancelInputSchema)
       .output(deleteResponseSchema),
+    /**
+     * Ends an approved helper's door access early, without touching their
+     * registration: the helper stays confirmed, the scanner stops accepting
+     * them for this event.
+     */
+    revokeCheckinGrant: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description:
+            "Revoke an approved helper's door check-in grant before it expires",
+          method: 'DELETE',
+          operationId:
+            'deleteEventsByIdRegistrationsByRegistrationIdCheckinGrant',
+          path: '/events/{id}/registrations/{registrationId}/checkin-grant',
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventRegistrationCancelInputSchema)
+      .output(deleteResponseSchema),
   },
   /**
    * The organizer's plain numbers: seats, role and status counts, check-ins, the

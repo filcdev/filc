@@ -1,4 +1,5 @@
 import { doorlockModule } from '#modules/doorlock/_module';
+import { eventsModule } from '#modules/events/_module';
 import type { Module } from '#modules/module';
 import { newsModule } from '#modules/news/_module';
 import { notificationsModule } from '#modules/notifications/_module';
@@ -20,6 +21,7 @@ import { wifiModule } from '#modules/wifi/_module';
  */
 export const modules: readonly Module[] = [
   doorlockModule,
+  eventsModule,
   newsModule,
   notificationsModule,
   timetableModule,

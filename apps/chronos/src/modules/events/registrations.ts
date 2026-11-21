@@ -13,6 +13,7 @@ import {
   resolveEventViewer,
   studentEventFields,
 } from '#modules/events/utils/events';
+import { revokeCheckinGrant } from '#modules/events/utils/grant';
 import {
   lockPublishedEvent,
   replaceAnswers,
@@ -257,24 +258,35 @@ export const cancelRegistration = base.events.registrations.cancel
         )
       );
 
-    const [cancelled] = await db
-      .update(eventRegistration)
-      .set({ status: 'cancelled' })
-      .where(
-        and(
-          eq(eventRegistration.id, registrationId),
-          eq(eventRegistration.eventId, id),
-          canManage
-            ? eq(eventRegistration.status, 'confirmed')
-            : and(
-                eq(eventRegistration.userId, userId),
-                // A pending helper may withdraw their own application; a
-                // cancelled row stays cancelled, so a second cancel is a 404.
-                inArray(eventRegistration.status, ['confirmed', 'pending'])
-              )
+    // The cancellation and the grant it revokes move together: leaving an
+    // approved helper with a live grant after a withdrawal would let them scan
+    // into an event they are no longer signed up for.
+    const cancelled = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(eventRegistration)
+        .set({ status: 'cancelled' })
+        .where(
+          and(
+            eq(eventRegistration.id, registrationId),
+            eq(eventRegistration.eventId, id),
+            canManage
+              ? eq(eventRegistration.status, 'confirmed')
+              : and(
+                  eq(eventRegistration.userId, userId),
+                  // A pending helper may withdraw their own application; a
+                  // cancelled row stays cancelled, so a second cancel is a 404.
+                  inArray(eventRegistration.status, ['confirmed', 'pending'])
+                )
+          )
         )
-      )
-      .returning();
+        .returning();
+
+      if (row?.userId) {
+        await revokeCheckinGrant(tx, { eventId: id, userId: row.userId });
+      }
+
+      return row ?? null;
+    });
 
     if (!cancelled) {
       throw notFound('Registration not found');
@@ -301,6 +313,47 @@ export const cancelRegistration = base.events.registrations.cancel
 
     return { id: cancelled.id };
   });
+
+/**
+ * Ends an approved helper's door access before its natural expiry. The
+ * registration stays confirmed — they are still expected at the event — only
+ * the scanner grant goes away.
+ */
+export const revokeRegistrationCheckinGrant =
+  base.events.registrations.revokeCheckinGrant
+    .use(requireAuthorization(permissions.eventsManage))
+    .handler(async ({ context, input }) => {
+      const { id, registrationId } = input;
+
+      const [registration] = await db
+        .select({ userId: eventRegistration.userId })
+        .from(eventRegistration)
+        .where(
+          and(
+            eq(eventRegistration.id, registrationId),
+            eq(eventRegistration.eventId, id)
+          )
+        );
+
+      if (!registration) {
+        throw notFound('Registration not found');
+      }
+
+      if (registration.userId) {
+        await revokeCheckinGrant(db, {
+          eventId: id,
+          userId: registration.userId,
+        });
+        logger.info('event check-in grant revoked', {
+          eventId: id,
+          registrationId,
+          requestId: context.requestId,
+          userId: registration.userId,
+        });
+      }
+
+      return { id: registrationId };
+    });
 
 /**
  * The organizer's answer to a pending helper signup. Approving confirms the

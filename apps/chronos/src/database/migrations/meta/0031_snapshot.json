@@ -1,5 +1,5 @@
 {
-  "id": "de4c27a3-f103-4a01-ad77-b52c993d8ca7",
+  "id": "a0d0e242-ba76-418b-8750-ec7cd08d5f13",
   "prevId": "cf219c1a-199e-4136-884f-78015650ee33",
   "version": "7",
   "dialect": "postgresql",
@@ -1523,6 +1523,110 @@
           "value": "(\"event\".\"image_key\" IS NULL) = (\"event\".\"image_content_type\" IS NULL)\n        AND (\"event\".\"image_key\" IS NULL) = (\"event\".\"image_byte_size\" IS NULL)\n        AND (\"event\".\"image_key\" IS NULL) = (\"event\".\"image_updated_at\" IS NULL)"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.event_checkin_grant": {
+      "name": "event_checkin_grant",
+      "schema": "",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "event_checkin_grant_event_id_idx": {
+          "name": "event_checkin_grant_event_id_idx",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_checkin_grant_event_id_event_id_fk": {
+          "name": "event_checkin_grant_event_id_event_id_fk",
+          "tableFrom": "event_checkin_grant",
+          "tableTo": "event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_checkin_grant_user_id_user_id_fk": {
+          "name": "event_checkin_grant_user_id_user_id_fk",
+          "tableFrom": "event_checkin_grant",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "event_checkin_grant_user_event_unique": {
+          "name": "event_checkin_grant_user_event_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "event_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.event_field": {

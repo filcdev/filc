@@ -286,8 +286,39 @@ export const eventTicket = pgTable(
   ]
 );
 
+/**
+ * A helper's permission to scan tickets at one event's door.
+ *
+ * Approving a helper registration creates it, and it lapses on its own after
+ * the event (its expiry is read on every check-in, never trusted to a cleanup
+ * job). The pair is unique because one helper has one grant per event: a
+ * re-approval refreshes the row instead of stacking a second one.
+ */
+export const eventCheckinGrant = pgTable(
+  'event_checkin_grant',
+  {
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    /** The moment the door closes for this helper; read at request time. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (t) => [
+    // One grant per helper per event; an approval refreshes this row.
+    unique('event_checkin_grant_user_event_unique').on(t.userId, t.eventId),
+    // The picker and the cleanup job both read by event.
+    index('event_checkin_grant_event_id_idx').on(t.eventId),
+  ]
+);
+
 export const eventsSchema = {
   event,
+  eventCheckinGrant,
   eventField,
   eventRegistration,
   eventRegistrationAnswer,

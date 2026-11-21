@@ -3,6 +3,7 @@ import type {
   EventParticipantQueryInput,
 } from '@filcdev/api/domains/events/registration';
 import {
+  and,
   count,
   desc,
   eq,
@@ -16,6 +17,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import {
   event,
+  eventCheckinGrant,
   eventField,
   eventRegistration,
   eventRegistrationAnswer,
@@ -31,6 +33,7 @@ import { notFound } from '#utils/http';
  */
 const participantColumns = {
   checkedInAt: eventTicket.checkedInAt,
+  checkinGrantExpiresAt: eventCheckinGrant.expiresAt,
   createdAt: eventRegistration.createdAt,
   email: sql<string>`coalesce(${user.email}, ${eventRegistration.guestEmail}, '')`,
   id: eventRegistration.id,
@@ -128,6 +131,15 @@ export const listEventRegistrations = async (
         eventTicket,
         eq(eventTicket.registrationId, eventRegistration.id)
       )
+      // The grant is per helper and event, not per registration: the pair is
+      // what identifies it. A guest has neither half and keeps a null.
+      .leftJoin(
+        eventCheckinGrant,
+        and(
+          eq(eventCheckinGrant.userId, eventRegistration.userId),
+          eq(eventCheckinGrant.eventId, eventRegistration.eventId)
+        )
+      )
       .where(where)
       // Newest first; the id breaks a same-second tie so paging is stable.
       .orderBy(desc(eventRegistration.createdAt), desc(eventRegistration.id))
@@ -146,6 +158,7 @@ export const listEventRegistrations = async (
     items: rows.map((row) => ({
       answers: answers.get(row.id) ?? [],
       checkedInAt: row.checkedInAt,
+      checkinGrantExpiresAt: row.checkinGrantExpiresAt,
       email: row.email,
       id: row.id,
       name: row.name,
