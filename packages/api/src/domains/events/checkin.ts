@@ -1,0 +1,47 @@
+import z from 'zod';
+
+/**
+ * The body of `POST /events/{id}/checkin`, scanned at the door.
+ *
+ * `code` is the ticket id a QR carries, and it is deliberately a plain string:
+ * a hand-typed code is not guaranteed to be a uuid, and a malformed one is an
+ * ordinary "not found" at the door, not a validation error the helper cannot
+ * act on. The endpoint checks the shape before it queries.
+ */
+export const eventCheckinInputSchema = z.object({
+  code: z.string().trim().min(1),
+  id: z.uuid(),
+});
+
+export type EventCheckinInput = z.infer<typeof eventCheckinInputSchema>;
+
+/** Who the ticket belongs to; only ever returned for a ticket of this event. */
+const checkinVisitorSchema = z.object({
+  registrationId: z.uuid(),
+  visitorEmail: z.email(),
+  visitorName: z.string(),
+});
+
+/**
+ * What one scan answers. Every branch is a state the door renders, so an
+ * unknown code is a 200 with `not_found` rather than a 404 the helper would
+ * read as "the app broke".
+ *
+ * A ticket of another event answers exactly like an unknown one: the endpoint
+ * must never confirm that a foreign code exists.
+ */
+export const eventCheckinResultSchema = z.discriminatedUnion('status', [
+  checkinVisitorSchema.extend({ status: z.literal('admitted') }),
+  checkinVisitorSchema.extend({
+    /** The first scan's time, so a helper can see who came in when. */
+    checkedInAt: z.date(),
+    /** The colleague who let them in; null once that account is deleted. */
+    checkedInByName: z.string().nullable(),
+    status: z.literal('already_checked_in'),
+  }),
+  /** A cancelled registration: the ticket is real, the place is not. */
+  checkinVisitorSchema.extend({ status: z.literal('invalid') }),
+  z.object({ status: z.literal('not_found') }),
+]);
+
+export type EventCheckinResult = z.infer<typeof eventCheckinResultSchema>;

@@ -1,6 +1,10 @@
 import { oc } from '@orpc/contract';
 import z from 'zod';
 import {
+  eventCheckinInputSchema,
+  eventCheckinResultSchema,
+} from '../domains/events/checkin';
+import {
   eventCreateSchema,
   eventDetailSchema,
   eventGetInputSchema,
@@ -41,6 +45,24 @@ const deleteResponseSchema = z.object({ id: z.uuid() });
  * up once registration is open.
  */
 export const eventsContract = {
+  /**
+   * The door scan. `events:checkin` is the permission a helper needs, and this
+   * procedure is what registers it as a known permission for the roles UI.
+   */
+  checkin: oc
+    .route(
+      filcRoute({
+        auth: true,
+        description:
+          'Check a ticket in at the door: the result is admitted, already checked in, invalid (cancelled) or not found, never an error; a ticket of another event answers not found',
+        method: 'POST',
+        operationId: 'postEventsByIdCheckin',
+        path: '/events/{id}/checkin',
+        tags: EVENT_TAGS,
+      })
+    )
+    .input(eventCheckinInputSchema)
+    .output(eventCheckinResultSchema),
   create: oc
     .route(
       filcRoute({

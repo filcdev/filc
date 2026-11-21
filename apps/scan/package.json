@@ -1,0 +1,31 @@
+{
+  "name": "@filcdev/scan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun --bun vite build",
+    "dev": "bun --bun vite",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@filcdev/api": "workspace:*",
+    "@filcdev/auth": "workspace:*",
+    "@filcdev/ui": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@zxing/browser": "^0.2.1",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwindcss": "catalog:"
+  },
+  "devDependencies": {
+    "@filcdev/tsconfig": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

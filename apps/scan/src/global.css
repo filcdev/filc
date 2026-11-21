@@ -1,0 +1,11 @@
+@import "@filcdev/ui/globals.css";
+
+/* The shared UI package ships its own utility classes. */
+@source "../../../packages/ui/src";
+
+html,
+body,
+#app {
+  min-height: 100%;
+  margin: 0;
+}

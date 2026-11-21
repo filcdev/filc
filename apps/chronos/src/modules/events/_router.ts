@@ -1,3 +1,4 @@
+import { checkInTicketAtDoor } from '#modules/events/checkin';
 import {
   createEvent,
   deleteEvent,
@@ -25,6 +26,7 @@ import { getEventStats } from '#modules/events/stats';
 import { getTicket } from '#modules/events/tickets';
 
 export const eventsRouter = {
+  checkin: checkInTicketAtDoor,
   create: createEvent,
   delete: deleteEvent,
   deleteImage: deleteEventImage,

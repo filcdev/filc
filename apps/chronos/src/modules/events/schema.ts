@@ -319,8 +319,8 @@ export const eventRegistrationAnswer = pgTable(
 );
 
 /**
- * The QR ticket of one registration. Phase C issues one per guest; check-in is
- * the scanner phase's job, so the columns exist and stay null for now.
+ * The QR ticket of one registration. Phase C issues one per guest, and the
+ * scanner's `checkInTicketAtDoor` is what sets `checkedInAt`/`checkedInBy`.
  */
 export const eventTicket = pgTable(
   'event_ticket',
