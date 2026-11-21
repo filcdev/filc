@@ -18039,6 +18039,9 @@
                     "checkedIn": {
                       "type": "number"
                     },
+                    "confirmedHelpers": {
+                      "type": "number"
+                    },
                     "perDay": {
                       "type": "array",
                       "items": {
@@ -18096,6 +18099,7 @@
                     "byRole",
                     "byStatus",
                     "checkedIn",
+                    "confirmedHelpers",
                     "perDay",
                     "seats"
                   ]
