@@ -216,6 +216,16 @@ never confirms that a foreign ticket exists. Only the first scan writes:
 `checked_in_at` and `checked_in_by` are set once, so a repeat scan is idempotent
 — it changes nothing and reports the stored state.
 
+**What the scanner reveals is an event setting.** `event.checkinDisplay` is
+`minimal`, `name` (the default) or `full`. The check-in handler shapes every
+outcome from it, not only an admission: `minimal` carries no name or address at
+all, `name` the visitor's or registrant's name, `full` both name and email. The
+API never sends a field the mode forbids, so a client cannot widen the answer,
+and a cancelled ticket (`invalid`) is reduced by the same rule. The permission
+is not an exemption either: an organizer holding `events:checkin` sees exactly
+what a helper sees, because the setting describes the screen at the door, not
+the caller.
+
 The QR payload is a credential, so the check-in path logs `eventId`,
 `registrationId`, `requestId` and the outcome — never the scanned code, the
 visitor's name or their email. The same rule covers the ticket mail and the
