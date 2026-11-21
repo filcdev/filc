@@ -1,7 +1,7 @@
 import type { EventRegistrationAnswer } from '@filcdev/api/domains/events/registration';
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
@@ -365,8 +365,9 @@ export const cancelRegistration = base.events.registrations.cancel
     const userId = context.session.userId;
 
     // A student cancels their own row only, where someone else's id is
-    // indistinguishable from a missing one. An organizer may cancel any row of
-    // the event — that is the participant table's cancel action.
+    // indistinguishable from a missing one. An organizer may also cancel any
+    // confirmed row of the event — the participant table's cancel action — but
+    // a pending application is answered through the decision endpoint.
     const canManage = await canManageEvents(userId);
 
     // The status the row held before the update: only needed for the audit
@@ -381,6 +382,17 @@ export const cancelRegistration = base.events.registrations.cancel
         )
       );
 
+    // The owner branch comes first: an admin who signed up as a helper must
+    // still be able to withdraw their own pending application. The manager
+    // branch covers everyone else's confirmed rows only — a pending row is the
+    // decide endpoint's, not this one's.
+    const ownership = and(
+      eq(eventRegistration.userId, userId),
+      // A pending helper may withdraw their own application; a cancelled row
+      // stays cancelled, so a second cancel is a 404.
+      inArray(eventRegistration.status, ['confirmed', 'pending'])
+    );
+
     // The cancellation and the grant it revokes move together: leaving an
     // approved helper with a live grant after a withdrawal would let them scan
     // into an event they are no longer signed up for.
@@ -392,14 +404,10 @@ export const cancelRegistration = base.events.registrations.cancel
           and(
             eq(eventRegistration.id, registrationId),
             eq(eventRegistration.eventId, id),
-            canManage
-              ? eq(eventRegistration.status, 'confirmed')
-              : and(
-                  eq(eventRegistration.userId, userId),
-                  // A pending helper may withdraw their own application; a
-                  // cancelled row stays cancelled, so a second cancel is a 404.
-                  inArray(eventRegistration.status, ['confirmed', 'pending'])
-                )
+            or(
+              ownership,
+              canManage ? eq(eventRegistration.status, 'confirmed') : undefined
+            )
           )
         )
         .returning();
