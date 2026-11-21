@@ -37,8 +37,7 @@ export const canManageEvents = async (
 export const EVENT_AUDIT_FIELDS = [
   'capacity',
   'category',
-  'checkinDisplay',
-  'checkinFields',
+  'checkinRules',
   'cohortIds',
   'description',
   'endsAt',

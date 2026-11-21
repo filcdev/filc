@@ -1,8 +1,7 @@
 CREATE TABLE "event" (
 	"capacity" integer,
 	"category" text NOT NULL,
-	"checkin_display" text DEFAULT 'name' NOT NULL,
-	"checkin_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"checkin_rules" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"cohort_ids" text[] DEFAULT '{}'::text[] NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
@@ -30,7 +29,6 @@ CREATE TABLE "event" (
 	"title" text NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "event_category_valid" CHECK ("event"."category" IN ('honfoglalo', 'open_day', 'career_day', 'digital_week', 'codeweek', 'fair', 'external')),
-	CONSTRAINT "event_checkin_display_valid" CHECK ("event"."checkin_display" IN ('minimal', 'name', 'full')),
 	CONSTRAINT "event_status_valid" CHECK ("event"."status" IN ('draft', 'published', 'archived')),
 	CONSTRAINT "event_dates_ordered" CHECK ("event"."ends_at" >= "event"."starts_at"),
 	CONSTRAINT "event_registration_window_ordered" CHECK (("event"."registration_opens_at" IS NULL OR "event"."registration_closes_at" IS NULL

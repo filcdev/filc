@@ -1,4 +1,5 @@
 import z from 'zod';
+import { eventFieldTypeSchema } from './fields';
 
 /**
  * The body of `POST /events/{id}/checkin`, scanned at the door.
@@ -25,20 +26,40 @@ export const eventCheckinAnswerSchema = z.object({
 export type EventCheckinAnswer = z.infer<typeof eventCheckinAnswerSchema>;
 
 /**
- * Who the ticket belongs to, as far as this event lets the door see. Both
- * fields are omitted — not null, not an empty string — when `checkinDisplay`
- * hides them: `minimal` sends neither, `name` only the name, `full` both. The
- * handler shapes the payload from the event's setting, so a client cannot
- * widen it; the nullable type is for a stored `null`, never a hidden value.
+ * One answer of the scanned registration, revealed only behind the scanner's
+ * "more information" button. Independent of what the matched rule chose to
+ * show: that setting picks the always-visible rows, this list is what the
+ * helper can open on demand.
+ *
+ * A checkbox is a boolean here (the stored string is an implementation detail),
+ * so the scanner can draw a tick or a cross instead of the word `true`.
+ */
+export const eventCheckinDetailSchema = z.object({
+  fieldId: z.uuid(),
+  label: z.string(),
+  type: eventFieldTypeSchema,
+  value: z.union([z.string(), z.boolean()]),
+});
+
+export type EventCheckinDetail = z.infer<typeof eventCheckinDetailSchema>;
+
+/**
+ * The visitor as the matched rule allows the door to see. The two identity
+ * fields are omitted — not null, not an empty string — when the rule hides
+ * them, so the handler, not the client, enforces the rule's `show` block.
  */
 const checkinVisitorSchema = z.object({
   /**
-   * The answers the organizer selected in `event.checkinFields`, in that
-   * order. Independent of the display mode: `minimal` with answers shows them
-   * and no identity. A configured question the registration left unanswered is
-   * omitted rather than sent empty.
+   * The answers the matched rule chose in its `show.fieldIds`, in that order. A
+   * question the registration left unanswered is omitted rather than sent
+   * empty.
    */
   answers: z.array(eventCheckinAnswerSchema),
+  /**
+   * Every answer of the registration, for the scanner's details panel. Never
+   * contains the visitor's email; identity stays governed by the rule's `show`.
+   */
+  details: z.array(eventCheckinDetailSchema),
   registrationId: z.uuid(),
   visitorEmail: z.email().nullish(),
   visitorName: z.string().nullish(),
@@ -63,6 +84,15 @@ export const eventCheckinResultSchema = z.discriminatedUnion('status', [
   }),
   /** A cancelled registration: the ticket is real, the place is not. */
   checkinVisitorSchema.extend({ status: z.literal('invalid') }),
+  /**
+   * A rule denied this registration. Nothing is written, so a corrected
+   * registration can still be admitted later. `message` is the rule's own
+   * wording, which the scanner shows verbatim.
+   */
+  checkinVisitorSchema.extend({
+    message: z.string(),
+    status: z.literal('not_granted'),
+  }),
   z.object({ status: z.literal('not_found') }),
 ]);
 

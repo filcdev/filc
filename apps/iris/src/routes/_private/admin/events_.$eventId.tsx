@@ -1,8 +1,4 @@
 import {
-  type EventCheckinDisplay,
-  eventCheckinDisplays,
-} from '@filcdev/api/domains/events/event';
-import {
   eventExportColumns,
   eventQuestionColumnHeaders,
 } from '@filcdev/api/domains/events/export';
@@ -14,12 +10,6 @@ import type {
 import { permissions } from '@filcdev/api/permissions';
 import { Badge } from '@filcdev/ui/components/badge';
 import { Button } from '@filcdev/ui/components/button';
-import { Checkbox } from '@filcdev/ui/components/checkbox';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@filcdev/ui/components/collapsible';
 import { Input } from '@filcdev/ui/components/input';
 import { Label } from '@filcdev/ui/components/label';
 import {
@@ -36,7 +26,6 @@ import {
   TableRow,
 } from '@filcdev/ui/components/table';
 import { cn } from '@filcdev/ui/lib/utils';
-import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
@@ -48,7 +37,7 @@ import {
   Mail,
   Pencil,
   Plus,
-  Save,
+  Settings2,
   ShieldOff,
   Trash2,
   X,
@@ -56,15 +45,14 @@ import {
 import { Fragment, useDeferredValue, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
+import { EventRegistrationDialog } from '@/components/admin/event-registration-dialog';
 import { EventRoomDialog } from '@/components/admin/event-room-dialog';
-import { DateTimePicker } from '@/components/date-time-picker';
 import { ExportButton, type ExportColumn } from '@/components/export-button';
 import { Lazy } from '@/components/lazy';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
 import {
   type EventDetail,
-  type EventFieldItem,
   type EventParticipantItem,
   type EventRoomItem,
   type EventStatsData,
@@ -77,7 +65,6 @@ import {
   useEventStats,
   useResendEventTicket,
   useRevokeCheckinGrant,
-  useUpdateEvent,
 } from '@/hooks/events';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api, orpc, prefetch } from '@/utils/orpc';
@@ -216,7 +203,7 @@ function ParticipantActions({
           <Mail className="h-4 w-4" />
         </Button>
       )}
-      {item.status === 'confirmed' && item.checkinGrantExpiresAt && (
+      {item.status === 'confirmed' && item.checkinGrant && (
         <Button
           aria-label={t('events.participants.revokeGrantAria', {
             name: item.name,
@@ -261,395 +248,6 @@ function ParticipantRoomCell({
   return <TableCell>{room?.name ?? t('events.participants.noRoom')}</TableCell>;
 }
 
-/** A blank grade input is "unset" (`null`), never zero. */
-function gradeOrNull(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-type HelperSettingsValues = {
-  checkinDisplay: EventCheckinDisplay;
-  checkinFields: string[];
-  helperMaxGrade: string;
-  helperMinGrade: string;
-  helperRegistrationClosesAt: Date | null;
-  helperRegistrationEnabled: boolean;
-  helperRegistrationOpensAt: Date | null;
-  helperRegistrationSeparateWindow: boolean;
-};
-
-const toHelperSettingsValues = (event: EventDetail): HelperSettingsValues => ({
-  checkinDisplay: event.checkinDisplay,
-  checkinFields: event.checkinFields,
-  helperMaxGrade: event.helperMaxGrade?.toString() ?? '',
-  helperMinGrade: event.helperMinGrade?.toString() ?? '',
-  helperRegistrationClosesAt: event.helperRegistrationClosesAt
-    ? new Date(event.helperRegistrationClosesAt)
-    : null,
-  helperRegistrationEnabled: event.helperRegistrationEnabled,
-  helperRegistrationOpensAt: event.helperRegistrationOpensAt
-    ? new Date(event.helperRegistrationOpensAt)
-    : null,
-  helperRegistrationSeparateWindow: event.helperRegistrationSeparateWindow,
-});
-
-type DoorAnswerPickerProps = {
-  fields: EventFieldItem[];
-  onChange: (fieldIds: string[]) => void;
-  selected: string[];
-};
-
-/** The event's saved questions; the ticked ones are the answers the door returns. */
-function DoorAnswerPicker({
-  fields,
-  onChange,
-  selected,
-}: DoorAnswerPickerProps) {
-  const { t } = useTranslation();
-  const idPrefix = useId();
-  return (
-    <div className="space-y-2">
-      <p className="font-medium text-sm">{t('events.checkinFields')}</p>
-      <p className="text-muted-foreground text-xs">
-        {t('events.checkinFieldsHint')}
-      </p>
-      {fields.length === 0 ? (
-        <p className="text-muted-foreground text-xs">
-          {t('events.checkinFieldsEmpty')}
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {fields.map((question) => {
-            const checkboxId = `${idPrefix}-${question.id}`;
-            return (
-              <div className="flex items-center gap-2" key={question.id}>
-                <Checkbox
-                  checked={selected.includes(question.id)}
-                  id={checkboxId}
-                  onCheckedChange={(checked) =>
-                    onChange(
-                      checked === true && !selected.includes(question.id)
-                        ? [...selected, question.id]
-                        : selected.filter((id) => id !== question.id)
-                    )
-                  }
-                />
-                <label
-                  className="cursor-pointer font-medium text-sm leading-none"
-                  htmlFor={checkboxId}
-                >
-                  {question.label}
-                </label>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * The helper and door settings the event dialog also carries, as their own card
- * on the detail page: an organizer can change what the scanner reveals without
- * opening the dialog. It reads the same detail query, saves through the same
- * update hook and is remounted by the page when the event changes, so the two
- * entry points never hold separate copies of the rule.
- */
-function HelperSettings({ event }: { event: EventDetail }) {
-  const { t } = useTranslation();
-  const formId = useId();
-  const headingId = useId();
-  const contentId = useId();
-  const [open, setOpen] = useState(true);
-  const updateMutation = useUpdateEvent();
-
-  const form = useForm({
-    defaultValues: toHelperSettingsValues(event),
-    onSubmit: ({ value }) => {
-      // PATCH: only these columns move; `updatedAt` does not change when the
-      // values are already stored, so saving an untouched card is a no-op.
-      updateMutation.mutate({
-        checkinDisplay: value.checkinDisplay,
-        checkinFields: value.checkinFields,
-        helperMaxGrade: gradeOrNull(value.helperMaxGrade),
-        helperMinGrade: gradeOrNull(value.helperMinGrade),
-        helperRegistrationClosesAt: value.helperRegistrationClosesAt,
-        helperRegistrationEnabled: value.helperRegistrationEnabled,
-        helperRegistrationOpensAt: value.helperRegistrationOpensAt,
-        helperRegistrationSeparateWindow:
-          value.helperRegistrationSeparateWindow,
-        id: event.id,
-      });
-    },
-  });
-
-  const helperRegistrationEnabled = useStore(
-    form.store,
-    (state) => state.values.helperRegistrationEnabled
-  );
-  const separateWindow = useStore(
-    form.store,
-    (state) => state.values.helperRegistrationSeparateWindow
-  );
-
-  return (
-    <section aria-labelledby={headingId} className="rounded-lg border p-4">
-      <Collapsible className="space-y-4" onOpenChange={setOpen} open={open}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="font-semibold text-xl" id={headingId}>
-              {t('events.helpersSettings.title')}
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {t('events.helpersSettings.hint')}
-            </p>
-          </div>
-          <CollapsibleTrigger
-            aria-controls={contentId}
-            aria-expanded={open}
-            aria-label={t(
-              open
-                ? 'events.helpersSettings.collapse'
-                : 'events.helpersSettings.expand'
-            )}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-          >
-            <ChevronDown
-              className={cn(
-                'h-4 w-4 transition-transform',
-                open && 'rotate-180'
-              )}
-            />
-          </CollapsibleTrigger>
-        </div>
-
-        <CollapsibleContent id={contentId}>
-          <form
-            aria-labelledby={headingId}
-            className="space-y-4"
-            onSubmit={(submitEvent) => {
-              submitEvent.preventDefault();
-              form.handleSubmit();
-            }}
-          >
-            <div className="grid gap-6 lg:grid-cols-2">
-              <fieldset className="space-y-3">
-                <legend className="mb-2 font-medium text-sm">
-                  {t('events.helperRegistrationGroup')}
-                </legend>
-
-                <form.Field name="helperRegistrationEnabled">
-                  {(field) => (
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={field.state.value}
-                        id={`${formId}-helper-registration`}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(checked === true)
-                        }
-                      />
-                      <label
-                        className="cursor-pointer font-medium text-sm leading-none"
-                        htmlFor={`${formId}-helper-registration`}
-                      >
-                        {t('events.helperRegistrationEnabled')}
-                      </label>
-                    </div>
-                  )}
-                </form.Field>
-
-                <p className="text-muted-foreground text-xs">
-                  {t('events.helperRegistrationHint')}
-                </p>
-
-                {/* Off means off: a disabled fieldset takes the controls out of
-                  the tab order exactly as the dialog does. */}
-                <fieldset
-                  className={cn(
-                    'space-y-3 transition-opacity',
-                    !helperRegistrationEnabled && 'opacity-60'
-                  )}
-                  disabled={!helperRegistrationEnabled}
-                >
-                  <form.Field name="helperRegistrationSeparateWindow">
-                    {(field) => (
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={field.state.value}
-                          id={`${formId}-helper-window`}
-                          onCheckedChange={(checked) =>
-                            field.handleChange(checked === true)
-                          }
-                        />
-                        <label
-                          className="cursor-pointer font-medium text-sm leading-none"
-                          htmlFor={`${formId}-helper-window`}
-                        >
-                          {t('events.helperRegistrationSeparateWindow')}
-                        </label>
-                      </div>
-                    )}
-                  </form.Field>
-
-                  {separateWindow && (
-                    <div className="space-y-2">
-                      <p className="text-muted-foreground text-xs">
-                        {t('events.helperRegistrationSeparateWindowHint')}
-                      </p>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <form.Field name="helperRegistrationOpensAt">
-                          {(field) => (
-                            <div className="space-y-2">
-                              <Label htmlFor={`${formId}-helper-opens`}>
-                                {t('events.helperRegistrationOpensAt')}
-                              </Label>
-                              <DateTimePicker
-                                clearable
-                                id={`${formId}-helper-opens`}
-                                onChange={field.handleChange}
-                                value={field.state.value}
-                              />
-                            </div>
-                          )}
-                        </form.Field>
-                        <form.Field name="helperRegistrationClosesAt">
-                          {(field) => (
-                            <div className="space-y-2">
-                              <Label htmlFor={`${formId}-helper-closes`}>
-                                {t('events.helperRegistrationClosesAt')}
-                              </Label>
-                              <DateTimePicker
-                                clearable
-                                id={`${formId}-helper-closes`}
-                                onChange={field.handleChange}
-                                value={field.state.value}
-                              />
-                            </div>
-                          )}
-                        </form.Field>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <form.Field name="helperMinGrade">
-                      {(field) => (
-                        <div className="space-y-2">
-                          <Label htmlFor={`${formId}-helper-min-grade`}>
-                            {t('events.helperMinGrade')}
-                          </Label>
-                          <Input
-                            id={`${formId}-helper-min-grade`}
-                            max={13}
-                            min={1}
-                            onChange={(changeEvent) =>
-                              field.handleChange(changeEvent.target.value)
-                            }
-                            placeholder={t('events.noGradeBound')}
-                            type="number"
-                            value={field.state.value}
-                          />
-                        </div>
-                      )}
-                    </form.Field>
-                    <form.Field name="helperMaxGrade">
-                      {(field) => (
-                        <div className="space-y-2">
-                          <Label htmlFor={`${formId}-helper-max-grade`}>
-                            {t('events.helperMaxGrade')}
-                          </Label>
-                          <Input
-                            id={`${formId}-helper-max-grade`}
-                            max={13}
-                            min={1}
-                            onChange={(changeEvent) =>
-                              field.handleChange(changeEvent.target.value)
-                            }
-                            placeholder={t('events.noGradeBound')}
-                            type="number"
-                            value={field.state.value}
-                          />
-                        </div>
-                      )}
-                    </form.Field>
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    {t('events.helperGradeHint')}
-                  </p>
-                </fieldset>
-              </fieldset>
-
-              <fieldset className="space-y-3">
-                <legend className="mb-2 font-medium text-sm">
-                  {t('events.checkinDisplayGroup')}
-                </legend>
-
-                <form.Field name="checkinDisplay">
-                  {(field) => (
-                    <div className="space-y-2">
-                      <Label htmlFor={`${formId}-checkin-display`}>
-                        {t('events.checkinDisplay')}
-                      </Label>
-                      <Select
-                        items={eventCheckinDisplays.map((display) => ({
-                          label: t(`events.checkinDisplays.${display}`),
-                          value: display,
-                        }))}
-                        onValueChange={(value) =>
-                          value &&
-                          field.handleChange(value as EventCheckinDisplay)
-                        }
-                        value={field.state.value}
-                      >
-                        <SelectTrigger
-                          className="w-full"
-                          id={`${formId}-checkin-display`}
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                      </Select>
-                      <p className="text-muted-foreground text-xs">
-                        {t(`events.checkinDisplayHints.${field.state.value}`)}
-                      </p>
-                    </div>
-                  )}
-                </form.Field>
-
-                <form.Field name="checkinFields">
-                  {(field) => (
-                    <DoorAnswerPicker
-                      fields={event.fields}
-                      onChange={field.handleChange}
-                      selected={field.state.value}
-                    />
-                  )}
-                </form.Field>
-              </fieldset>
-            </div>
-
-            <Button disabled={updateMutation.isPending} type="submit">
-              <Save className="h-4 w-4" />
-              {updateMutation.isPending
-                ? t('common.loading')
-                : t('common.save')}
-            </Button>
-          </form>
-        </CollapsibleContent>
-      </Collapsible>
-    </section>
-  );
-}
-
-/**
- * The event's rooms: name, capacity and how many places are taken, with the
- * add/edit/delete actions. A room is its own resource, so this card only lists
- * it and opens the dialogs; the mutations live in the dialogs themselves.
- */
 function RoomsSection({
   event,
   eventId,
@@ -811,6 +409,9 @@ function EventDetailPage() {
   const [revokeTarget, setRevokeTarget] = useState<EventParticipantItem | null>(
     null
   );
+  const [detailTarget, setDetailTarget] = useState<EventParticipantItem | null>(
+    null
+  );
 
   // Typing narrows the list without a timer: React defers the value while the
   // user keeps typing, and the query keeps the previous page on screen.
@@ -956,19 +557,23 @@ function EventDetailPage() {
               <p className="max-w-2xl text-muted-foreground text-sm">
                 {t('events.participants.description')}
               </p>
+              <Button
+                render={
+                  <Link
+                    params={{ eventId: detail.id }}
+                    to="/admin/events/$eventId/helpers"
+                  />
+                }
+                size="sm"
+                variant="outline"
+              >
+                <Settings2 className="h-4 w-4" />
+                {t('events.helpersPage.link')}
+              </Button>
             </div>
           )}
         </QueryBoundary>
       </div>
-
-      {/* Above the table on purpose: this is the door's configuration, and the
-          participants list is what an organizer reads after it. */}
-      {event && (
-        <HelperSettings
-          event={event}
-          key={`${event.id}:${event.updatedAt.getTime()}`}
-        />
-      )}
 
       {event && <RoomsSection event={event} eventId={eventId} />}
 
@@ -1095,9 +700,29 @@ function EventDetailPage() {
                       const isExpanded = expandedId === item.id;
                       return (
                         <Fragment key={item.id}>
-                          <TableRow>
+                          <TableRow
+                            className="cursor-pointer"
+                            onClick={(clickEvent) => {
+                              // A click on an action button or the answers
+                              // disclosure keeps its own meaning; anywhere else
+                              // opens the registration in full.
+                              if (
+                                clickEvent.target instanceof Element &&
+                                clickEvent.target.closest('a, button')
+                              ) {
+                                return;
+                              }
+                              setDetailTarget(item);
+                            }}
+                          >
                             <TableCell className="font-medium">
-                              {item.name}
+                              <button
+                                className="text-left hover:underline"
+                                onClick={() => setDetailTarget(item)}
+                                type="button"
+                              >
+                                {item.name}
+                              </button>
                             </TableCell>
                             <TableCell>{item.email}</TableCell>
                             <ParticipantRoomCell
@@ -1117,11 +742,11 @@ function EventDetailPage() {
                                   `events.participants.statuses.${item.status}`
                                 )}
                               </Badge>
-                              {item.checkinGrantExpiresAt && (
+                              {item.checkinGrant && (
                                 <p className="mt-1 whitespace-nowrap text-muted-foreground text-xs">
                                   {t('events.participants.grantUntil', {
                                     date: formatLocalizedDate(
-                                      item.checkinGrantExpiresAt,
+                                      item.checkinGrant.expiresAt,
                                       i18n.language,
                                       {
                                         dateStyle: 'short',
@@ -1388,6 +1013,42 @@ function EventDetailPage() {
         pending={cancelMutation.isPending}
         pendingLabelKey="events.participants.cancelling"
         title={t('events.participants.cancelConfirmTitle')}
+      />
+
+      <EventRegistrationDialog
+        eventId={eventId}
+        item={detailTarget}
+        onCancel={(target) => {
+          setDetailTarget(null);
+          setCancelTarget(target);
+        }}
+        onDecide={(target, decision) => {
+          setDetailTarget(null);
+          if (decision === 'approve') {
+            // The approval opens a door, so it says what it grants before it
+            // does — the same confirmation the table action uses.
+            setApproveTarget(target);
+            return;
+          }
+          decideMutation.mutate({
+            decision,
+            id: eventId,
+            registrationId: target.id,
+          });
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailTarget(null);
+          }
+        }}
+        onRevoke={(target) => {
+          setDetailTarget(null);
+          setRevokeTarget(target);
+        }}
+        revokePending={
+          revokeGrantMutation.isPending &&
+          revokeGrantMutation.variables?.registrationId === detailTarget?.id
+        }
       />
     </div>
   );

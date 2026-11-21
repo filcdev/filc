@@ -1,9 +1,7 @@
 import {
   type EventCategory,
-  type EventCheckinDisplay,
   type EventStatus,
   eventCategories,
-  eventCheckinDisplays,
   eventStatuses,
 } from '@filcdev/api/domains/events/event';
 import {
@@ -19,6 +17,7 @@ import {
   eventRegistrationRoles,
   eventRegistrationStatuses,
 } from '@filcdev/api/domains/events/registration';
+import type { EventCheckinRule } from '@filcdev/api/domains/events/rules';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -57,21 +56,15 @@ export const event = pgTable(
     capacity: integer('capacity'),
     category: text('category').$type<EventCategory>().notNull(),
     /**
-     * What the door's scanner reveals on a check-in: `minimal` nothing about
-     * the person, `name` the visitor/ticket holder, `full` name and address.
-     * Read by the check-in handler on every scan, never filtered client-side.
+     * The door's ordered rule list: the first rule whose condition matches
+     * decides, and the last rule is the catch-all. Identity, shown answers and
+     * the admission decision are all expressed here, so the rule list is the
+     * single door setting. A JSONB list rather than a child table because it is
+     * read and replaced with the event row; the write validator keeps every
+     * reference inside this event.
      */
-    checkinDisplay: text('checkin_display')
-      .$type<EventCheckinDisplay>()
-      .notNull()
-      .default('name'),
-    /**
-     * The questions whose answers the door returns, in this order. A JSONB list
-     * of ids rather than a child table: it is read and replaced with the event
-     * row, and every id is kept inside this event by the write validator.
-     */
-    checkinFields: jsonb('checkin_fields')
-      .$type<string[]>()
+    checkinRules: jsonb('checkin_rules')
+      .$type<EventCheckinRule[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
     // Registration scope, not visibility: every published event is visible to
@@ -143,10 +136,6 @@ export const event = pgTable(
     check(
       'event_category_valid',
       sql`${t.category} IN (${sqlLiterals(eventCategories)})`
-    ),
-    check(
-      'event_checkin_display_valid',
-      sql`${t.checkinDisplay} IN (${sqlLiterals(eventCheckinDisplays)})`
     ),
     check(
       'event_status_valid',

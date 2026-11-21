@@ -41,7 +41,11 @@ const scanner = alias(user, 'scanner');
  * registration; a signed-in student has none, so the account is joined as the
  * fallback. The scanner is joined for the "who let them in" of a repeat scan.
  */
-/** Every answer of one registration, with the question's own label. */
+/**
+ * Every answer of one registration, with the question's own label and type. The
+ * type is what lets the rule evaluator compare numbers and checkboxes correctly,
+ * and what the details panel renders as a tick.
+ */
 const findAnswers = async (
   registrationId: string
 ): Promise<CheckinTicket['answers']> =>
@@ -49,6 +53,7 @@ const findAnswers = async (
     .select({
       fieldId: eventField.id,
       label: eventField.label,
+      type: eventField.type,
       value: eventRegistrationAnswer.value,
     })
     .from(eventRegistrationAnswer)
@@ -137,14 +142,11 @@ export const checkInTicketAtDoor = base.events.checkin
     // expired grant is refused before a cleanup job ever runs.
     await requireEventCheckin(context.session.userId, id, now);
 
-    // The event's own setting decides how much every outcome may carry. Read
-    // here, on the server, so the client never receives a field the organizer
-    // hid — a cancelled ticket is reduced by the same mode.
+    // The event's own rules decide both what the scanner may reveal and
+    // whether entry is granted. Read here, on the server, so the client never
+    // receives a field a rule hid — a cancelled ticket is reduced the same way.
     const [eventRow] = await db
-      .select({
-        checkinDisplay: event.checkinDisplay,
-        checkinFields: event.checkinFields,
-      })
+      .select({ checkinRules: event.checkinRules })
       .from(event)
       .where(eq(event.id, id));
 
@@ -153,19 +155,17 @@ export const checkInTicketAtDoor = base.events.checkin
     }
 
     logger.debug('check-in scanned', {
-      checkinDisplay: eventRow.checkinDisplay,
-      checkinFieldCount: eventRow.checkinFields.length,
       eventId: id,
       requestId: context.requestId,
+      ruleCount: eventRow.checkinRules.length,
     });
 
     const result = UUID.test(code)
       ? await checkInTicket(store, {
           code,
-          display: eventRow.checkinDisplay,
           eventId: id,
-          fields: eventRow.checkinFields,
           now,
+          rules: eventRow.checkinRules,
           userId: context.session.userId,
         })
       : { status: 'not_found' as const };
@@ -197,6 +197,16 @@ export const checkInTicketAtDoor = base.events.checkin
       // A cancelled place at the door is recoverable but worth seeing in the
       // log: someone turned up who is not expected.
       logger.warning('check-in refused: registration cancelled', {
+        eventId: id,
+        registrationId: result.registrationId,
+        requestId: context.requestId,
+      });
+    }
+
+    if (result.status === 'not_granted') {
+      // A rule denied entry. The message is the organizer's wording for the
+      // scanner, not a substitute for the log line.
+      logger.warning('check-in denied by a door rule', {
         eventId: id,
         registrationId: result.registrationId,
         requestId: context.requestId,

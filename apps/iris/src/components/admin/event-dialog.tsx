@@ -1,10 +1,8 @@
 import {
   categoryDefaults,
   type EventCategory,
-  type EventCheckinDisplay,
   type EventStatus,
   eventCategories,
-  eventCheckinDisplays,
   eventStatuses,
 } from '@filcdev/api/domains/events/event';
 import {
@@ -73,14 +71,9 @@ type EventDialogProps = BaseDialogProps & {
   item?: EventDetail | null;
 };
 
-/** The door's configured answers; an event without any has none. */
-const toCheckinFields = (item: EventDetail | null | undefined): string[] =>
-  item?.checkinFields ?? [];
-
 type EventFormValues = {
   capacity: string;
   category: EventCategory;
-  checkinDisplay: EventCheckinDisplay;
   cohortIds: string[];
   description: string;
   endsAt: Date | null;
@@ -240,7 +233,6 @@ function toFormValues(item: EventDetail | null | undefined): EventFormValues {
   return {
     capacity: item?.capacity?.toString() ?? '',
     category,
-    checkinDisplay: item?.checkinDisplay ?? 'name',
     cohortIds: item?.cohortIds ?? [],
     description: contentToText(item?.description),
     endsAt: toMinuteDate(item?.endsAt),
@@ -271,54 +263,6 @@ const splitOptions = (text: string): string[] =>
     .split(',')
     .map((option) => option.trim())
     .filter(Boolean);
-
-type CheckinFieldPickerProps = {
-  fields: EventFieldItem[];
-  onToggle: (fieldId: string, checked: boolean) => void;
-  selected: string[];
-};
-
-/** The event's saved questions, each one shown at the door when ticked. */
-function CheckinFieldPicker({
-  fields,
-  onToggle,
-  selected,
-}: CheckinFieldPickerProps) {
-  const { t } = useTranslation();
-  return (
-    <div className="space-y-2">
-      <p className="font-medium text-sm">{t('events.checkinFields')}</p>
-      <p className="text-muted-foreground text-xs">
-        {t('events.checkinFieldsHint')}
-      </p>
-      {fields.length === 0 ? (
-        <p className="text-muted-foreground text-xs">
-          {t('events.checkinFieldsEmpty')}
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {fields.map((question) => (
-            <div className="flex items-center gap-2" key={question.id}>
-              <Checkbox
-                checked={selected.includes(question.id)}
-                id={`checkin-field-${question.id}`}
-                onCheckedChange={(checked) =>
-                  onToggle(question.id, checked === true)
-                }
-              />
-              <label
-                className="cursor-pointer font-medium text-sm leading-none"
-                htmlFor={`checkin-field-${question.id}`}
-              >
-                {question.label}
-              </label>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 type FieldAudiencePickerProps = {
   audiences: EventFieldAudience[];
@@ -544,12 +488,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
   const [fields, setFields] = useState<EventFieldDraft[]>(() =>
     toFieldDrafts(item?.fields)
   );
-  // The door's answers are a saved list of question ids: a question added in
-  // this visit needs a save before it can be selected here.
-  const [checkinFields, setCheckinFields] = useState<string[]>(() =>
-    toCheckinFields(item)
-  );
-
   const imageRow = uploadImage.data ?? (bannerRemoved ? null : item);
   const imageKey = imageRow?.imageKey ?? null;
   const imageUrl = imageKey
@@ -572,8 +510,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
       const payload: Omit<EventPayload, 'description'> = {
         capacity: capacityOrNull(value.capacity),
         category: value.category,
-        checkinDisplay: value.checkinDisplay,
-        checkinFields,
         cohortIds: value.cohortIds,
         endsAt,
         guestRegistrationEnabled: value.guestRegistrationEnabled,
@@ -697,15 +633,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
     // closes, so the pane is focused on the next frame: that lands the
     // keyboard at the top of the section that just opened.
     requestAnimationFrame(() => paneRef.current?.focus());
-  };
-
-  const toggleCheckinField = (fieldId: string, checked: boolean): void => {
-    setCheckinFields((current) => {
-      if (checked) {
-        return [...current, fieldId];
-      }
-      return current.filter((id) => id !== fieldId);
-    });
   };
 
   const toggleCohort = (cohortId: string, checked: boolean) => {
@@ -1181,50 +1108,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
                         {t('events.helperGradeHint')}
                       </p>
                     </fieldset>
-                  </fieldset>
-
-                  <fieldset className="space-y-3 rounded-md border p-3">
-                    <legend className="px-1 font-medium text-sm">
-                      {t('events.checkinDisplayGroup')}
-                    </legend>
-                    <form.Field name="checkinDisplay">
-                      {(field) => (
-                        <div className="space-y-2">
-                          <Label htmlFor={`${formId}-checkin-display`}>
-                            {t('events.checkinDisplay')}
-                          </Label>
-                          <Select
-                            items={eventCheckinDisplays.map((display) => ({
-                              label: t(`events.checkinDisplays.${display}`),
-                              value: display,
-                            }))}
-                            onValueChange={(value) =>
-                              value &&
-                              field.handleChange(value as EventCheckinDisplay)
-                            }
-                            value={field.state.value}
-                          >
-                            <SelectTrigger
-                              className="w-full"
-                              id={`${formId}-checkin-display`}
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                          </Select>
-                          <p className="text-muted-foreground text-xs">
-                            {t(
-                              `events.checkinDisplayHints.${field.state.value}`
-                            )}
-                          </p>
-                        </div>
-                      )}
-                    </form.Field>
-
-                    <CheckinFieldPicker
-                      fields={item?.fields ?? []}
-                      onToggle={toggleCheckinField}
-                      selected={checkinFields}
-                    />
                   </fieldset>
 
                   <div className="grid gap-4 sm:grid-cols-3">
