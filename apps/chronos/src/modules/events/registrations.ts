@@ -1,7 +1,7 @@
 import type { EventRegistrationAnswer } from '@filcdev/api/domains/events/registration';
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
-import { and, eq, inArray, or } from 'drizzle-orm';
+import { and, count, eq, inArray, or } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
@@ -57,6 +57,7 @@ const REFUSAL_MESSAGES: Record<RegistrationRefusal, string> = {
   grade_too_low: 'This event is for higher grades',
   grade_unknown:
     'Your class does not name a grade, so this event cannot judge it',
+  helper_full: 'The helper limit has been reached',
   helper_registration_disabled: 'This event does not take helper signups',
   not_open_yet: 'Registration has not opened yet',
   pending_approval: 'Your registration is waiting for approval',
@@ -83,6 +84,7 @@ const throwRefusal = (decision: RegistrationDecision): void => {
   // rest are the request asking for something the event never allows.
   if (
     decision.reason === 'full' ||
+    decision.reason === 'helper_full' ||
     decision.reason === 'already_registered' ||
     decision.reason === 'pending_approval'
   ) {
@@ -201,9 +203,21 @@ const judgeStudentEligibility = async (
   const registered = existing?.status === 'confirmed';
 
   if (args.isHelper) {
+    const [confirmedHelperRows] = await tx
+      .select({ value: count() })
+      .from(eventRegistration)
+      .where(
+        and(
+          eq(eventRegistration.eventId, args.eventId),
+          eq(eventRegistration.role, 'helper'),
+          eq(eventRegistration.status, 'confirmed')
+        )
+      );
     throwRefusal(
       judgeHelperRegistration({
+        confirmedHelpers: Number(confirmedHelperRows?.value ?? 0),
         grade: args.viewer.grade,
+        helperCapacity: row.helperCapacity,
         helperMaxGrade: row.helperMaxGrade,
         helperMinGrade: row.helperMinGrade,
         helperRegistrationClosesAt: row.helperRegistrationClosesAt,

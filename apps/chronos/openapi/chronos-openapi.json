@@ -9805,6 +9805,19 @@
                   "guestRegistrationEnabled": {
                     "type": "boolean"
                   },
+                  "helperCapacity": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "helperMaxGrade": {
                     "anyOf": [
                       {
@@ -10171,6 +10184,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -10363,9 +10389,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "room_required",
-                                "room_full"
+                                "helper_full",
+                                "grade_unknown"
                               ],
                               "type": "string"
                             },
@@ -10423,6 +10448,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -10951,6 +10977,19 @@
                           "guestRegistrationEnabled": {
                             "type": "boolean"
                           },
+                          "helperCapacity": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "exclusiveMinimum": 0
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "helperMaxGrade": {
                             "anyOf": [
                               {
@@ -11143,9 +11182,8 @@
                                       "already_registered",
                                       "pending_approval",
                                       "full",
-                                      "grade_unknown",
-                                      "room_required",
-                                      "room_full"
+                                      "helper_full",
+                                      "grade_unknown"
                                     ],
                                     "type": "string"
                                   },
@@ -11203,6 +11241,7 @@
                           "description",
                           "endsAt",
                           "guestRegistrationEnabled",
+                          "helperCapacity",
                           "helperMaxGrade",
                           "helperMinGrade",
                           "helperRegistrationClosesAt",
@@ -11912,6 +11951,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -12104,9 +12156,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "room_required",
-                                "room_full"
+                                "helper_full",
+                                "grade_unknown"
                               ],
                               "type": "string"
                             },
@@ -12244,9 +12295,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "room_required",
-                                "room_full"
+                                "helper_full",
+                                "grade_unknown"
                               ],
                               "type": "string"
                             },
@@ -12326,29 +12376,6 @@
                               ],
                               "type": "string"
                             },
-                            "room": {
-                              "anyOf": [
-                                {
-                                  "type": "object",
-                                  "properties": {
-                                    "id": {
-                                      "type": "string",
-                                      "format": "uuid"
-                                    },
-                                    "name": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": [
-                                    "id",
-                                    "name"
-                                  ]
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
                             "status": {
                               "enum": [
                                 "pending",
@@ -12382,7 +12409,6 @@
                             "guestName",
                             "id",
                             "role",
-                            "room",
                             "status",
                             "updatedAt",
                             "userId"
@@ -12392,33 +12418,6 @@
                           "type": "null"
                         }
                       ]
-                    },
-                    "rooms": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "capacity": {
-                            "type": "number"
-                          },
-                          "remaining": {
-                            "type": "number"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "name",
-                          "capacity",
-                          "remaining"
-                        ]
-                      }
                     }
                   },
                   "required": [
@@ -12430,6 +12429,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -12455,8 +12455,7 @@
                     "seats",
                     "fields",
                     "helperEligibility",
-                    "myRegistration",
-                    "rooms"
+                    "myRegistration"
                   ]
                 }
               }
@@ -12889,6 +12888,19 @@
                   "guestRegistrationEnabled": {
                     "type": "boolean"
                   },
+                  "helperCapacity": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "helperMaxGrade": {
                     "anyOf": [
                       {
@@ -13248,6 +13260,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -13440,9 +13465,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "room_required",
-                                "room_full"
+                                "helper_full",
+                                "grade_unknown"
                               ],
                               "type": "string"
                             },
@@ -13500,6 +13524,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -14450,6 +14475,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -14642,9 +14680,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "room_required",
-                                "room_full"
+                                "helper_full",
+                                "grade_unknown"
                               ],
                               "type": "string"
                             },
@@ -14702,6 +14739,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -15574,10 +15612,6 @@
                   "name": {
                     "type": "string",
                     "minLength": 1
-                  },
-                  "roomId": {
-                    "type": "string",
-                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -16086,10 +16120,6 @@
                     ],
                     "type": "string",
                     "default": "participant"
-                  },
-                  "roomId": {
-                    "type": "string",
-                    "format": "uuid"
                   }
                 }
               }
@@ -16164,29 +16194,6 @@
                       ],
                       "type": "string"
                     },
-                    "room": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "name": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "name"
-                          ]
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "status": {
                       "enum": [
                         "pending",
@@ -16220,7 +16227,6 @@
                     "guestName",
                     "id",
                     "role",
-                    "room",
                     "status",
                     "updatedAt",
                     "userId"
@@ -16599,29 +16605,6 @@
                             ],
                             "type": "string"
                           },
-                          "room": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "id",
-                                  "name"
-                                ]
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
                           "status": {
                             "enum": [
                               "pending",
@@ -16640,7 +16623,6 @@
                           "name",
                           "registeredAt",
                           "role",
-                          "room",
                           "status"
                         ]
                       }
@@ -16964,29 +16946,6 @@
                       ],
                       "type": "string"
                     },
-                    "room": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "name": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "name"
-                          ]
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "status": {
                       "enum": [
                         "pending",
@@ -17020,7 +16979,6 @@
                     "guestName",
                     "id",
                     "role",
-                    "room",
                     "status",
                     "updatedAt",
                     "userId"
@@ -17498,824 +17456,6 @@
                   },
                   "required": [
                     "id"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
-      }
-    },
-    "/events/{id}/rooms": {
-      "post": {
-        "operationId": "postEventsByIdRooms",
-        "description": "Create a room of an event with its own seat count",
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "capacity": {
-                    "type": "integer",
-                    "minimum": -9007199254740991,
-                    "maximum": 9007199254740991,
-                    "exclusiveMinimum": 0
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": [
-                  "capacity",
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "capacity": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991,
-                      "exclusiveMinimum": 0
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "x-native-type": "date"
-                    },
-                    "eventId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "position": {
-                      "type": "number"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "x-native-type": "date"
-                    }
-                  },
-                  "required": [
-                    "capacity",
-                    "name",
-                    "createdAt",
-                    "eventId",
-                    "id",
-                    "position",
-                    "updatedAt"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
-      }
-    },
-    "/events/{id}/rooms/{roomId}": {
-      "delete": {
-        "operationId": "deleteEventsByIdRoomsByRoomId",
-        "description": "Delete a room; refused while any registration names it, so no registration keeps a dangling room",
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "roomId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    }
-                  },
-                  "required": [
-                    "id"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "400",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "401",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "403",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "404",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "409",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "429",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "500",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "code": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "status"
-                  ],
-                  "type": "object"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "sessionAuth": []
-          }
-        ]
-      },
-      "put": {
-        "operationId": "putEventsByIdRoomsByRoomId",
-        "description": "Update a room's name and seat count; both are required, exactly like the create",
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "roomId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "capacity": {
-                    "type": "integer",
-                    "minimum": -9007199254740991,
-                    "maximum": 9007199254740991,
-                    "exclusiveMinimum": 0
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": [
-                  "capacity",
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "capacity": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991,
-                      "exclusiveMinimum": 0
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "x-native-type": "date"
-                    },
-                    "eventId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "position": {
-                      "type": "number"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "x-native-type": "date"
-                    }
-                  },
-                  "required": [
-                    "capacity",
-                    "name",
-                    "createdAt",
-                    "eventId",
-                    "id",
-                    "position",
-                    "updatedAt"
                   ]
                 }
               }

@@ -117,6 +117,8 @@ export const event = pgTable(
      */
     helperMaxGrade: integer('helper_max_grade'),
     helperMinGrade: integer('helper_min_grade'),
+    /** Null means unlimited; only confirmed helper rows consume this cap. */
+    helperCapacity: integer('helper_capacity'),
     /** Null means no upper/lower grade bound. */
     maxGrade: integer('max_grade'),
     minGrade: integer('min_grade'),
@@ -173,6 +175,10 @@ export const event = pgTable(
       'event_helper_grade_range',
       sql`(${t.helperMinGrade} IS NULL OR ${t.helperMaxGrade} IS NULL
         OR ${t.helperMinGrade} <= ${t.helperMaxGrade})`
+    ),
+    check(
+      'event_helper_capacity_positive',
+      sql`${t.helperCapacity} IS NULL OR ${t.helperCapacity} > 0`
     ),
     // The four image columns describe one object, so a half-written row must
     // be impossible. Same rule as the announcement table.

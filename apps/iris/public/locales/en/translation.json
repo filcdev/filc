@@ -562,6 +562,7 @@
       "description": "Organizer view: who signed up, the statistics behind each question, and the export.",
       "total": "Registrations: {{count}}",
       "seats": "Seats: {{taken}} / {{capacity}}",
+      "helpers": "Helpers: {{count}} / {{capacity}}",
       "roleFilter": "Role",
       "statusFilter": "Status",
       "searchLabel": "Search",
@@ -749,6 +750,7 @@
         "sign_in_required": "Sign in to register for this event.",
         "wrong_cohort": "This event is not open to your class.",
         "helper_registration_disabled": "This event does not take helper signups.",
+        "helper_full": "The helper limit has been reached.",
         "pending_approval": "Your signup is waiting for the organizer’s approval.",
         "room_required": "Choose a room for this event.",
         "room_full": "The chosen room is full."
@@ -883,6 +885,8 @@
     "helperRegistrationClosesAt": "Helper signup closes",
     "helperMinGrade": "Helpers' minimum grade",
     "helperMaxGrade": "Helpers' maximum grade",
+    "helperCapacity": "Maximum number of helpers",
+    "helperCapacityHint": "Only approved helpers count; leave empty for no limit.",
     "helperGradeHint": "Leave both empty to use the event's own grade bounds for helpers.",
     "noGradeBound": "No bound",
     "checkinRules": {

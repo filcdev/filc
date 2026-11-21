@@ -179,28 +179,16 @@ describe('checkInTicket', () => {
         visitorName: 'Jegyes Diák',
       });
 
-    const admitted = await checkInTicket(memoryStore([student()]), {
-      code: TICKET_ID,
-      display: 'full',
-      eventId: EVENT_ID,
-      fields: [],
-      now: FIRST_SCAN,
-      userId: HELPER_ID,
+    expect(await scan(memoryStore([student()]), [catchAll()])).toMatchObject({
+      status: 'admitted',
     });
-    expect(admitted).toMatchObject({ status: 'admitted' });
 
     const cancelled = memoryStore([
       { ...student(), registrationStatus: 'cancelled' },
     ]);
-    const refused = await checkInTicket(cancelled, {
-      code: TICKET_ID,
-      display: 'full',
-      eventId: EVENT_ID,
-      fields: [],
-      now: FIRST_SCAN,
-      userId: HELPER_ID,
+    expect(await scan(cancelled, [catchAll()])).toMatchObject({
+      status: 'invalid',
     });
-    expect(refused).toMatchObject({ status: 'invalid' });
     expect(cancelled.byId.get(TICKET_ID)?.checkedInAt).toBe(null);
   });
 

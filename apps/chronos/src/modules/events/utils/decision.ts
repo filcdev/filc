@@ -2,7 +2,7 @@ import type {
   EventRegistrationDecideInput,
   EventRegistrationItem,
 } from '@filcdev/api/domains/events/registration';
-import { and, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import type { db as Db } from '#database';
 import {
   event,
@@ -50,11 +50,12 @@ export const decidePendingRegistration = async (
     throw conflict('This registration is not waiting for approval');
   }
 
-  const [[eventRow], answers] = await Promise.all([
+  const [[eventRow], answers, confirmedHelpers] = await Promise.all([
     tx
-      .select({ endsAt: event.endsAt })
+      .select({ endsAt: event.endsAt, helperCapacity: event.helperCapacity })
       .from(event)
-      .where(eq(event.id, eventId)),
+      .where(eq(event.id, eventId))
+      .for('update'),
     tx
       .select({
         fieldId: eventRegistrationAnswer.fieldId,
@@ -62,9 +63,30 @@ export const decidePendingRegistration = async (
       })
       .from(eventRegistrationAnswer)
       .where(eq(eventRegistrationAnswer.registrationId, registrationId)),
+    tx
+      .select({ value: count() })
+      .from(eventRegistration)
+      .where(
+        and(
+          eq(eventRegistration.eventId, eventId),
+          eq(eventRegistration.role, 'helper'),
+          eq(eventRegistration.status, 'confirmed')
+        )
+      ),
   ]);
   if (!eventRow) {
     throw notFound('Event not found');
+  }
+
+  // Only a helper consumes the helper cap; a pending participant is confirmed
+  // against the seat rule the create path already applied.
+  if (
+    decision === 'approve' &&
+    row.role === 'helper' &&
+    eventRow.helperCapacity != null &&
+    Number(confirmedHelpers[0]?.value ?? 0) >= eventRow.helperCapacity
+  ) {
+    throw conflict('The helper limit has been reached');
   }
 
   // The status predicate repeats on the write: the row lock already serializes

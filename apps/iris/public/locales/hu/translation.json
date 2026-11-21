@@ -562,6 +562,7 @@
       "description": "Szervezői nézet: a jelentkezők, a kérdések statisztikái és az export.",
       "total": "Jelentkezők: {{count}}",
       "seats": "Helyek: {{taken}} / {{capacity}}",
+      "helpers": "Segítők: {{count}} / {{capacity}}",
       "roleFilter": "Szerep",
       "statusFilter": "Állapot",
       "searchLabel": "Keresés",
@@ -749,6 +750,7 @@
         "sign_in_required": "A jelentkezéshez be kell jelentkezned.",
         "wrong_cohort": "Ez az esemény nem nyitott az osztályodnak.",
         "helper_registration_disabled": "Erre az eseményre nem lehet segítőként jelentkezni.",
+        "helper_full": "A segítői létszám betelt.",
         "pending_approval": "A jelentkezésed a szervező jóváhagyására vár.",
         "room_required": "Válassz termet az eseményhez.",
         "room_full": "A kiválasztott terem betelt."
@@ -883,6 +885,8 @@
     "helperRegistrationClosesAt": "Segítő jelentkezés vége",
     "helperMinGrade": "Segítők minimum évfolyama",
     "helperMaxGrade": "Segítők maximum évfolyama",
+    "helperCapacity": "Segítők maximális száma",
+    "helperCapacityHint": "Csak a jóváhagyott segítők számítanak; üresen nincs korlát.",
     "helperGradeHint": "Ha mindkettő üres, a segítőkre az esemény saját évfolyamhatárai érvényesek.",
     "noGradeBound": "Nincs korlát",
     "checkinRules": {

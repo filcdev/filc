@@ -19,6 +19,7 @@ CREATE TABLE "event" (
 	"image_updated_at" timestamp,
 	"helper_max_grade" integer,
 	"helper_min_grade" integer,
+	"helper_capacity" integer,
 	"max_grade" integer,
 	"min_grade" integer,
 	"registration_closes_at" timestamp,
@@ -44,6 +45,7 @@ CREATE TABLE "event" (
           OR ("event"."helper_max_grade" >= 1 AND "event"."helper_max_grade" <= 13))),
 	CONSTRAINT "event_helper_grade_range" CHECK (("event"."helper_min_grade" IS NULL OR "event"."helper_max_grade" IS NULL
         OR "event"."helper_min_grade" <= "event"."helper_max_grade")),
+	CONSTRAINT "event_helper_capacity_positive" CHECK ("event"."helper_capacity" IS NULL OR "event"."helper_capacity" > 0),
 	CONSTRAINT "event_image_complete" CHECK (("event"."image_key" IS NULL) = ("event"."image_content_type" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_byte_size" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_updated_at" IS NULL))

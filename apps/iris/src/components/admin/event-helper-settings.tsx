@@ -24,6 +24,7 @@ function gradeOrNull(value: string): number | null {
 
 type HelperSettingsValues = {
   checkinRules: EventCheckinRule[];
+  helperCapacity: string;
   helperMaxGrade: string;
   helperMinGrade: string;
   helperRegistrationClosesAt: Date | null;
@@ -34,6 +35,7 @@ type HelperSettingsValues = {
 
 const toHelperSettingsValues = (event: EventDetail): HelperSettingsValues => ({
   checkinRules: event.checkinRules,
+  helperCapacity: event.helperCapacity?.toString() ?? '',
   helperMaxGrade: event.helperMaxGrade?.toString() ?? '',
   helperMinGrade: event.helperMinGrade?.toString() ?? '',
   helperRegistrationClosesAt: event.helperRegistrationClosesAt
@@ -67,6 +69,7 @@ export function HelperSettings({ event }: { event: EventDetail }) {
       // values are already stored, so saving an untouched page is a no-op.
       updateMutation.mutate({
         checkinRules: value.checkinRules,
+        helperCapacity: gradeOrNull(value.helperCapacity),
         helperMaxGrade: gradeOrNull(value.helperMaxGrade),
         helperMinGrade: gradeOrNull(value.helperMinGrade),
         helperRegistrationClosesAt: value.helperRegistrationClosesAt,
@@ -195,7 +198,26 @@ export function HelperSettings({ event }: { event: EventDetail }) {
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <form.Field name="helperCapacity">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor={`${formId}-helper-capacity`}>
+                      {t('events.helperCapacity')}
+                    </Label>
+                    <Input
+                      id={`${formId}-helper-capacity`}
+                      min={1}
+                      onChange={(changeEvent) =>
+                        field.handleChange(changeEvent.target.value)
+                      }
+                      placeholder={t('events.unlimited')}
+                      type="number"
+                      value={field.state.value}
+                    />
+                  </div>
+                )}
+              </form.Field>
               <form.Field name="helperMinGrade">
                 {(field) => (
                   <div className="space-y-2">
@@ -237,6 +259,9 @@ export function HelperSettings({ event }: { event: EventDetail }) {
                 )}
               </form.Field>
             </div>
+            <p className="text-muted-foreground text-xs">
+              {t('events.helperCapacityHint')}
+            </p>
             <p className="text-muted-foreground text-xs">
               {t('events.helperGradeHint')}
             </p>

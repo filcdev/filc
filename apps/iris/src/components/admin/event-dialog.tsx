@@ -78,6 +78,7 @@ type EventFormValues = {
   description: string;
   endsAt: Date | null;
   guestRegistrationEnabled: boolean;
+  helperCapacity: string;
   helperMaxGrade: string;
   helperMinGrade: string;
   helperRegistrationClosesAt: Date | null;
@@ -138,6 +139,7 @@ const EVENT_SECTIONS: EventSection[] = [
       'maxGrade',
       'cohortIds',
       'helperRegistrationEnabled',
+      'helperCapacity',
       'helperRegistrationSeparateWindow',
       'helperRegistrationOpensAt',
       'helperRegistrationClosesAt',
@@ -237,6 +239,7 @@ function toFormValues(item: EventDetail | null | undefined): EventFormValues {
     description: contentToText(item?.description),
     endsAt: toMinuteDate(item?.endsAt),
     guestRegistrationEnabled: item?.guestRegistrationEnabled ?? false,
+    helperCapacity: item?.helperCapacity?.toString() ?? '',
     helperMaxGrade: item?.helperMaxGrade?.toString() ?? '',
     helperMinGrade: item?.helperMinGrade?.toString() ?? '',
     helperRegistrationClosesAt: toMinuteDate(item?.helperRegistrationClosesAt),
@@ -513,6 +516,7 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
         cohortIds: value.cohortIds,
         endsAt,
         guestRegistrationEnabled: value.guestRegistrationEnabled,
+        helperCapacity: numberOrNull(value.helperCapacity),
         helperMaxGrade: numberOrNull(value.helperMaxGrade),
         helperMinGrade: numberOrNull(value.helperMinGrade),
         helperRegistrationClosesAt: value.helperRegistrationClosesAt,
@@ -1062,7 +1066,26 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
                         </div>
                       )}
 
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <form.Field name="helperCapacity">
+                          {(field) => (
+                            <div className="space-y-2">
+                              <Label htmlFor={field.name}>
+                                {t('events.helperCapacity')}
+                              </Label>
+                              <Input
+                                id={field.name}
+                                min={1}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                placeholder={t('events.unlimited')}
+                                type="number"
+                                value={field.state.value}
+                              />
+                            </div>
+                          )}
+                        </form.Field>
                         <form.Field name="helperMinGrade">
                           {(field) => (
                             <div className="space-y-2">
@@ -1104,6 +1127,9 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
                           )}
                         </form.Field>
                       </div>
+                      <p className="text-muted-foreground text-xs">
+                        {t('events.helperCapacityHint')}
+                      </p>
                       <p className="text-muted-foreground text-xs">
                         {t('events.helperGradeHint')}
                       </p>

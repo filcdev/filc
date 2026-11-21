@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import process from 'node:process';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 /**
  * The decision and seat rules want a real Postgres, so the suite skips when the
@@ -180,5 +180,147 @@ describe.skipIf(!hasDatabase)('helper registration decision', () => {
       violated = true;
     }
     expect(violated).toBe(true);
+  });
+});
+
+describe.skipIf(!hasDatabase)('helper capacity at the decision', () => {
+  let modules: Modules;
+
+  const CAP_EVENT_ID = crypto.randomUUID();
+  const CONFIRMED_A = crypto.randomUUID();
+  const CONFIRMED_B = crypto.randomUUID();
+  const WAITING = crypto.randomUUID();
+  const CAP_USERS = [CONFIRMED_A, CONFIRMED_B, WAITING];
+  const WAITING_ID = crypto.randomUUID();
+  const CAP_PREFIX = CAP_EVENT_ID.slice(0, 8);
+
+  const decide = (registrationId: string, decision: 'approve' | 'decline') =>
+    modules.db.transaction((tx) =>
+      modules.decidePendingRegistration(tx, {
+        decision,
+        id: CAP_EVENT_ID,
+        registrationId,
+      })
+    );
+
+  const setCapacity = (helperCapacity: number) =>
+    modules.db
+      .update(modules.event)
+      .set({ helperCapacity })
+      .where(eq(modules.event.id, CAP_EVENT_ID));
+
+  const confirmedCount = async () => {
+    const rows = await modules.db
+      .select({ id: modules.eventRegistration.id })
+      .from(modules.eventRegistration)
+      .where(
+        and(
+          eq(modules.eventRegistration.eventId, CAP_EVENT_ID),
+          eq(modules.eventRegistration.role, 'helper'),
+          eq(modules.eventRegistration.status, 'confirmed')
+        )
+      );
+    return rows.length;
+  };
+
+  beforeAll(async () => {
+    modules = await loadModules();
+
+    await modules.db.insert(modules.event).values({
+      category: 'open_day',
+      description: [],
+      endsAt: at(17),
+      helperCapacity: 2,
+      helperRegistrationEnabled: true,
+      id: CAP_EVENT_ID,
+      startsAt: at(9),
+      status: 'published',
+      title: 'Segítői létszám',
+    });
+
+    await modules.db.insert(modules.user).values(
+      CAP_USERS.map((id, index) => ({
+        createdAt: at(8),
+        email: `capacity.${index}.${CAP_PREFIX}@example.hu`,
+        emailVerified: true,
+        id,
+        name: `Signup ${index}`,
+        updatedAt: at(8),
+      }))
+    );
+
+    await modules.db.insert(modules.eventRegistration).values([
+      {
+        eventId: CAP_EVENT_ID,
+        role: 'helper',
+        status: 'confirmed',
+        userId: CONFIRMED_A,
+      },
+      {
+        eventId: CAP_EVENT_ID,
+        role: 'helper',
+        status: 'confirmed',
+        userId: CONFIRMED_B,
+      },
+      {
+        eventId: CAP_EVENT_ID,
+        id: WAITING_ID,
+        role: 'helper',
+        status: 'pending',
+        userId: WAITING,
+      },
+    ]);
+  });
+
+  afterAll(async () => {
+    if (!modules) {
+      return;
+    }
+    // The event cascade takes its registrations and check-in grants with it.
+    await modules.db
+      .delete(modules.event)
+      .where(eq(modules.event.id, CAP_EVENT_ID));
+    await modules.db
+      .delete(modules.user)
+      .where(inArray(modules.user.id, CAP_USERS));
+  });
+
+  it('refuses an approval once the confirmed helpers fill the cap', async () => {
+    await expect(decide(WAITING_ID, 'approve')).rejects.toMatchObject({
+      code: 'CONFLICT',
+    });
+
+    const [row] = await modules.db
+      .select({ status: modules.eventRegistration.status })
+      .from(modules.eventRegistration)
+      .where(eq(modules.eventRegistration.id, WAITING_ID));
+    expect(row?.status).toBe('pending');
+  });
+
+  it('keeps every confirmed helper when the cap is lowered below the count', async () => {
+    await setCapacity(1);
+
+    expect(await confirmedCount()).toBe(2);
+    await expect(decide(WAITING_ID, 'approve')).rejects.toMatchObject({
+      code: 'CONFLICT',
+    });
+  });
+
+  it('approves again once a confirmed helper gives a slot back', async () => {
+    await setCapacity(2);
+    await modules.db
+      .update(modules.eventRegistration)
+      .set({ status: 'cancelled' })
+      .where(
+        and(
+          eq(modules.eventRegistration.eventId, CAP_EVENT_ID),
+          eq(modules.eventRegistration.userId, CONFIRMED_A)
+        )
+      );
+
+    const registration = await decide(WAITING_ID, 'approve');
+
+    expect(registration.status).toBe('confirmed');
+    expect(await confirmedCount()).toBe(2);
   });
 });

@@ -218,7 +218,9 @@ describe('judgeGuestRegistration', () => {
 
 /** A published event that takes helpers, on the shared window, open now. */
 const OPEN_HELPER: HelperRegistrationFacts = {
+  confirmedHelpers: 0,
   grade: 10,
+  helperCapacity: null,
   helperMaxGrade: null,
   helperMinGrade: null,
   helperRegistrationClosesAt: null,
@@ -308,17 +310,10 @@ describe('judgeHelperRegistration', () => {
 
   it('selects the window pair from the switch', () => {
     const separate = helperRegistrationWindow({
-      grade: 10,
-      helperMaxGrade: null,
-      helperMinGrade: null,
       helperRegistrationClosesAt: new Date('2026-12-02T00:00:00.000Z'),
-      helperRegistrationEnabled: true,
       helperRegistrationOpensAt: new Date('2026-12-01T00:00:00.000Z'),
       helperRegistrationSeparateWindow: true,
-      maxGrade: null,
-      minGrade: null,
       registrationClosesAt: new Date('2026-11-02T00:00:00.000Z'),
-      registrationEnabled: true,
       registrationOpensAt: new Date('2026-11-01T00:00:00.000Z'),
     });
     expect(separate.opensAt).toEqual(new Date('2026-12-01T00:00:00.000Z'));
@@ -342,6 +337,18 @@ describe('judgeHelperRegistration', () => {
     expect(helperReason(judgeHelper({ registered: true }))).toBe(
       'already_registered'
     );
+  });
+
+  it('refuses only when confirmed helpers fill the cap', () => {
+    expect(
+      helperReason(judgeHelper({ confirmedHelpers: 2, helperCapacity: 2 }))
+    ).toBe('helper_full');
+    expect(
+      judgeHelper({ confirmedHelpers: 1, helperCapacity: 2, pending: true })
+    ).toEqual({ ok: false, reason: 'pending_approval' });
+    expect(
+      judgeHelper({ confirmedHelpers: 1, helperCapacity: 2, pending: false })
+    ).toEqual({ ok: true });
   });
 
   it('uses the helper band when either helper bound is set', () => {

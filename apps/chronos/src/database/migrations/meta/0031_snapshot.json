@@ -1,6 +1,6 @@
 {
-  "id": "fa2fbbb3-bc7e-4a9a-9755-84781a8133dc",
-  "prevId": "cf219c1a-199e-4136-884f-78015650ee33",
+  "id": "408053ae-5532-4828-af86-0686e97be2ed",
+  "prevId": "fa2fbbb3-bc7e-4a9a-9755-84781a8133dc",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1398,6 +1398,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "helper_capacity": {
+          "name": "helper_capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "max_grade": {
           "name": "max_grade",
           "type": "integer",
@@ -1544,6 +1550,10 @@
         "event_helper_grade_range": {
           "name": "event_helper_grade_range",
           "value": "(\"event\".\"helper_min_grade\" IS NULL OR \"event\".\"helper_max_grade\" IS NULL\n        OR \"event\".\"helper_min_grade\" <= \"event\".\"helper_max_grade\")"
+        },
+        "event_helper_capacity_positive": {
+          "name": "event_helper_capacity_positive",
+          "value": "\"event\".\"helper_capacity\" IS NULL OR \"event\".\"helper_capacity\" > 0"
         },
         "event_image_complete": {
           "name": "event_image_complete",
