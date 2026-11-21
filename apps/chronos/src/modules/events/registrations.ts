@@ -1,7 +1,7 @@
 import type { EventRegistrationAnswer } from '@filcdev/api/domains/events/registration';
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
@@ -245,6 +245,18 @@ export const cancelRegistration = base.events.registrations.cancel
     // the event — that is the participant table's cancel action.
     const canManage = await canManageEvents(userId);
 
+    // The status the row held before the update: only needed for the audit
+    // metadata, and read before the write because RETURNING cannot see it.
+    const [before] = await db
+      .select({ status: eventRegistration.status })
+      .from(eventRegistration)
+      .where(
+        and(
+          eq(eventRegistration.id, registrationId),
+          eq(eventRegistration.eventId, id)
+        )
+      );
+
     const [cancelled] = await db
       .update(eventRegistration)
       .set({ status: 'cancelled' })
@@ -252,8 +264,14 @@ export const cancelRegistration = base.events.registrations.cancel
         and(
           eq(eventRegistration.id, registrationId),
           eq(eventRegistration.eventId, id),
-          eq(eventRegistration.status, 'confirmed'),
-          canManage ? undefined : eq(eventRegistration.userId, userId)
+          canManage
+            ? eq(eventRegistration.status, 'confirmed')
+            : and(
+                eq(eventRegistration.userId, userId),
+                // A pending helper may withdraw their own application; a
+                // cancelled row stays cancelled, so a second cancel is a 404.
+                inArray(eventRegistration.status, ['confirmed', 'pending'])
+              )
         )
       )
       .returning();
@@ -268,7 +286,7 @@ export const cancelRegistration = base.events.registrations.cancel
       entityType: 'event',
       metadata: {
         after: { status: 'cancelled' },
-        before: { status: 'confirmed' },
+        before: { status: before?.status ?? null },
         registrationId: cancelled.id,
       },
     });
