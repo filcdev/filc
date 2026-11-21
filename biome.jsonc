@@ -59,6 +59,16 @@
             "useSortedKeys": "off"
           }
         }
+      },
+      "linter": {
+        "rules": {
+          "style": {
+            // A dynamic segment is the URL, and TanStack names the file after
+            // the param: `$eventId.tsx` cannot be kebab-case without renaming
+            // the param to `event-id`, which stops being one word.
+            "useFilenamingConvention": "off"
+          }
+        }
       }
     },
     {

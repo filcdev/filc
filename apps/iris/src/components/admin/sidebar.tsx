@@ -21,6 +21,7 @@ import {
   Bell,
   Bug,
   Building2,
+  CalendarDays,
   ChevronDown,
   DoorOpen,
   Eye,
@@ -135,6 +136,18 @@ function useAdminMenuCategories(): MenuCategory[] {
           },
         ],
         label: t('admin.communications'),
+      },
+      {
+        id: 'events',
+        items: [
+          {
+            icon: CalendarDays,
+            permission: permissions.eventsManage,
+            title: t('events.title'),
+            url: '/admin/events',
+          },
+        ],
+        label: t('events.group'),
       },
       {
         id: 'doorlock',

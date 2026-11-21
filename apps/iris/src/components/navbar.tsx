@@ -21,6 +21,7 @@ import { useNavigate } from '@tanstack/react-router';
 import {
   Book,
   Calendar,
+  CalendarDays,
   Cog,
   DoorOpen,
   GraduationCap,
@@ -71,6 +72,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Calendar, labelKey: 'schedule', to: '/' },
   { icon: Book, labelKey: 'substitutions', to: '/subs' },
   { icon: Newspaper, labelKey: 'news.title', to: '/news' },
+  { icon: CalendarDays, labelKey: 'events.title', to: '/events' },
   { adminOnly: true, icon: UserCog, labelKey: 'adminDashboard', to: '/admin' },
 ];
 

@@ -10,6 +10,7 @@ export const ADMIN_UI_PERMISSIONS = [
   permissions.doorlockDevicesRead,
   permissions.doorlockCardsRead,
   permissions.doorlockLogsRead,
+  permissions.eventsManage,
   permissions.usersRead,
   permissions.rolesRead,
   permissions.bugReportsRead,

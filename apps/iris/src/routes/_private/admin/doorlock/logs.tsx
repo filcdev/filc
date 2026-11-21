@@ -61,6 +61,7 @@ import {
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
+import { getDayPickerLocaleConfig } from '@/utils/day-picker-locale';
 import { orpc, prefetch } from '@/utils/orpc';
 
 type EventFilter = 'all' | 'virtual' | 'physical';
@@ -438,7 +439,8 @@ function DateRangePicker({
   onChange: (range: DateRange) => void;
   value: DateRange;
 }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const { locale, weekStartsOn } = getDayPickerLocaleConfig(i18n.language);
   const getRangeLabel = () => {
     if (!value.from) {
       return t('doorlockLogs.selectDates');
@@ -473,6 +475,7 @@ function DateRangePicker({
         <PopoverContent align="end" className="w-auto p-0">
           <Calendar
             autoFocus
+            locale={locale}
             mode="range"
             numberOfMonths={2}
             onSelect={(range) =>
@@ -482,6 +485,7 @@ function DateRangePicker({
               })
             }
             selected={{ from: value.from, to: value.to }}
+            weekStartsOn={weekStartsOn}
           />
         </PopoverContent>
       </Popover>

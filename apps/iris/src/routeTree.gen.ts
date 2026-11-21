@@ -24,17 +24,20 @@ import { Route as AuthWelcomeRouteImport } from './routes/auth/welcome'
 import { Route as PrivateAdminActivityLogRouteImport } from './routes/_private/admin/activity-log'
 import { Route as PrivateAdminApiKeysRouteImport } from './routes/_private/admin/api-keys'
 import { Route as PrivateAdminBugReportsRouteImport } from './routes/_private/admin/bug-reports'
+import { Route as PrivateAdminEventsRouteImport } from './routes/_private/admin/events'
 import { Route as PrivateAdminKiosksRouteImport } from './routes/_private/admin/kiosks'
 import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/roles'
 import { Route as PrivateAdminThemeRouteImport } from './routes/_private/admin/theme'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
 import { Route as PrivateSettingsNotificationsRouteImport } from './routes/_private/settings/notifications'
+import { Route as PublicEventsIndexRouteImport } from './routes/_public/events/index'
 import { Route as PrivateAdminDevNotificationsRouteImport } from './routes/_private/admin/dev/notifications'
 import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private/admin/doorlock/index'
 import { Route as PrivateAdminDoorlockCardsRouteImport } from './routes/_private/admin/doorlock/cards'
 import { Route as PrivateAdminDoorlockDevicesRouteImport } from './routes/_private/admin/doorlock/devices'
 import { Route as PrivateAdminDoorlockLogsRouteImport } from './routes/_private/admin/doorlock/logs'
+import { Route as PrivateAdminEventsEventIdRouteImport } from './routes/_private/admin/events_.$eventId'
 import { Route as PrivateAdminNavigatorIndexRouteImport } from './routes/_private/admin/navigator/index'
 import { Route as PrivateAdminNavigatorBuildingsRouteImport } from './routes/_private/admin/navigator/buildings'
 import { Route as PrivateAdminNavigatorClassroomTypesRouteImport } from './routes/_private/admin/navigator/classroom-types'
@@ -55,6 +58,9 @@ import { Route as PrivateAdminWifiIndexRouteImport } from './routes/_private/adm
 import { Route as PrivateAdminWifiNasRouteImport } from './routes/_private/admin/wifi/nas'
 import { Route as PrivateAdminWifiSpeedProfilesRouteImport } from './routes/_private/admin/wifi/speed-profiles'
 import { Route as PrivateAdminWifiUsersRouteImport } from './routes/_private/admin/wifi/users'
+import { Route as PublicEventsEventIdIndexRouteImport } from './routes/_public/events/$eventId/index'
+import { Route as PublicEventsEventIdRegisterRouteImport } from './routes/_public/events/$eventId/register'
+import { Route as PublicTicketsTicketIdIndexRouteImport } from './routes/_public/tickets/$ticketId/index'
 
 const PrivateRouteRoute = PrivateRouteRouteImport.update({
   id: '/_private',
@@ -129,6 +135,11 @@ const PrivateAdminBugReportsRoute = PrivateAdminBugReportsRouteImport.update({
   path: '/bug-reports',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PrivateAdminEventsRoute = PrivateAdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => PrivateAdminRouteRoute,
+} as any)
 const PrivateAdminKiosksRoute = PrivateAdminKiosksRouteImport.update({
   id: '/kiosks',
   path: '/kiosks',
@@ -160,6 +171,11 @@ const PrivateSettingsNotificationsRoute =
     path: '/settings/notifications',
     getParentRoute: () => PrivateRouteRoute,
   } as any)
+const PublicEventsIndexRoute = PublicEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
 const PrivateAdminDevNotificationsRoute =
   PrivateAdminDevNotificationsRouteImport.update({
     id: '/dev/notifications',
@@ -188,6 +204,12 @@ const PrivateAdminDoorlockLogsRoute =
   PrivateAdminDoorlockLogsRouteImport.update({
     id: '/doorlock/logs',
     path: '/doorlock/logs',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
+const PrivateAdminEventsEventIdRoute =
+  PrivateAdminEventsEventIdRouteImport.update({
+    id: '/events_/$eventId',
+    path: '/events/$eventId',
     getParentRoute: () => PrivateAdminRouteRoute,
   } as any)
 const PrivateAdminNavigatorIndexRoute =
@@ -307,6 +329,24 @@ const PrivateAdminWifiUsersRoute = PrivateAdminWifiUsersRouteImport.update({
   path: '/wifi/users',
   getParentRoute: () => PrivateAdminRouteRoute,
 } as any)
+const PublicEventsEventIdIndexRoute =
+  PublicEventsEventIdIndexRouteImport.update({
+    id: '/events/$eventId/',
+    path: '/events/$eventId/',
+    getParentRoute: () => PublicRouteRoute,
+  } as any)
+const PublicEventsEventIdRegisterRoute =
+  PublicEventsEventIdRegisterRouteImport.update({
+    id: '/events/$eventId/register',
+    path: '/events/$eventId/register',
+    getParentRoute: () => PublicRouteRoute,
+  } as any)
+const PublicTicketsTicketIdIndexRoute =
+  PublicTicketsTicketIdIndexRouteImport.update({
+    id: '/tickets/$ticketId/',
+    path: '/tickets/$ticketId/',
+    getParentRoute: () => PublicRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -322,16 +362,19 @@ export interface FileRoutesByFullPath {
   '/admin/activity-log': typeof PrivateAdminActivityLogRoute
   '/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
+  '/admin/events': typeof PrivateAdminEventsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/theme': typeof PrivateAdminThemeRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/settings/notifications': typeof PrivateSettingsNotificationsRoute
   '/cards/': typeof PrivateCardsIndexRoute
+  '/events/': typeof PublicEventsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/admin/events/$eventId': typeof PrivateAdminEventsEventIdRoute
   '/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
   '/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
   '/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
@@ -350,9 +393,12 @@ export interface FileRoutesByFullPath {
   '/admin/wifi/nas': typeof PrivateAdminWifiNasRoute
   '/admin/wifi/speed-profiles': typeof PrivateAdminWifiSpeedProfilesRoute
   '/admin/wifi/users': typeof PrivateAdminWifiUsersRoute
+  '/events/$eventId/register': typeof PublicEventsEventIdRegisterRoute
   '/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
   '/admin/navigator/': typeof PrivateAdminNavigatorIndexRoute
   '/admin/wifi/': typeof PrivateAdminWifiIndexRoute
+  '/events/$eventId/': typeof PublicEventsEventIdIndexRoute
+  '/tickets/$ticketId/': typeof PublicTicketsTicketIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
@@ -368,16 +414,19 @@ export interface FileRoutesByTo {
   '/admin/activity-log': typeof PrivateAdminActivityLogRoute
   '/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/admin/bug-reports': typeof PrivateAdminBugReportsRoute
+  '/admin/events': typeof PrivateAdminEventsRoute
   '/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/theme': typeof PrivateAdminThemeRoute
   '/admin/users': typeof PrivateAdminUsersRoute
   '/settings/notifications': typeof PrivateSettingsNotificationsRoute
   '/cards': typeof PrivateCardsIndexRoute
+  '/events': typeof PublicEventsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/admin/events/$eventId': typeof PrivateAdminEventsEventIdRoute
   '/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
   '/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
   '/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
@@ -396,9 +445,12 @@ export interface FileRoutesByTo {
   '/admin/wifi/nas': typeof PrivateAdminWifiNasRoute
   '/admin/wifi/speed-profiles': typeof PrivateAdminWifiSpeedProfilesRoute
   '/admin/wifi/users': typeof PrivateAdminWifiUsersRoute
+  '/events/$eventId/register': typeof PublicEventsEventIdRegisterRoute
   '/admin/doorlock': typeof PrivateAdminDoorlockIndexRoute
   '/admin/navigator': typeof PrivateAdminNavigatorIndexRoute
   '/admin/wifi': typeof PrivateAdminWifiIndexRoute
+  '/events/$eventId': typeof PublicEventsEventIdIndexRoute
+  '/tickets/$ticketId': typeof PublicTicketsTicketIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -417,16 +469,19 @@ export interface FileRoutesById {
   '/_private/admin/activity-log': typeof PrivateAdminActivityLogRoute
   '/_private/admin/api-keys': typeof PrivateAdminApiKeysRoute
   '/_private/admin/bug-reports': typeof PrivateAdminBugReportsRoute
+  '/_private/admin/events': typeof PrivateAdminEventsRoute
   '/_private/admin/kiosks': typeof PrivateAdminKiosksRoute
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
   '/_private/admin/theme': typeof PrivateAdminThemeRoute
   '/_private/admin/users': typeof PrivateAdminUsersRoute
   '/_private/settings/notifications': typeof PrivateSettingsNotificationsRoute
   '/_private/cards/': typeof PrivateCardsIndexRoute
+  '/_public/events/': typeof PublicEventsIndexRoute
   '/_private/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/_private/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
   '/_private/admin/doorlock/devices': typeof PrivateAdminDoorlockDevicesRoute
   '/_private/admin/doorlock/logs': typeof PrivateAdminDoorlockLogsRoute
+  '/_private/admin/events_/$eventId': typeof PrivateAdminEventsEventIdRoute
   '/_private/admin/navigator/buildings': typeof PrivateAdminNavigatorBuildingsRoute
   '/_private/admin/navigator/classroom-types': typeof PrivateAdminNavigatorClassroomTypesRoute
   '/_private/admin/navigator/classrooms': typeof PrivateAdminNavigatorClassroomsRoute
@@ -445,9 +500,12 @@ export interface FileRoutesById {
   '/_private/admin/wifi/nas': typeof PrivateAdminWifiNasRoute
   '/_private/admin/wifi/speed-profiles': typeof PrivateAdminWifiSpeedProfilesRoute
   '/_private/admin/wifi/users': typeof PrivateAdminWifiUsersRoute
+  '/_public/events/$eventId/register': typeof PublicEventsEventIdRegisterRoute
   '/_private/admin/doorlock/': typeof PrivateAdminDoorlockIndexRoute
   '/_private/admin/navigator/': typeof PrivateAdminNavigatorIndexRoute
   '/_private/admin/wifi/': typeof PrivateAdminWifiIndexRoute
+  '/_public/events/$eventId/': typeof PublicEventsEventIdIndexRoute
+  '/_public/tickets/$ticketId/': typeof PublicTicketsTicketIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -465,16 +523,19 @@ export interface FileRouteTypes {
     | '/admin/activity-log'
     | '/admin/api-keys'
     | '/admin/bug-reports'
+    | '/admin/events'
     | '/admin/kiosks'
     | '/admin/roles'
     | '/admin/theme'
     | '/admin/users'
     | '/settings/notifications'
     | '/cards/'
+    | '/events/'
     | '/admin/dev/notifications'
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
+    | '/admin/events/$eventId'
     | '/admin/navigator/buildings'
     | '/admin/navigator/classroom-types'
     | '/admin/navigator/classrooms'
@@ -493,9 +554,12 @@ export interface FileRouteTypes {
     | '/admin/wifi/nas'
     | '/admin/wifi/speed-profiles'
     | '/admin/wifi/users'
+    | '/events/$eventId/register'
     | '/admin/doorlock/'
     | '/admin/navigator/'
     | '/admin/wifi/'
+    | '/events/$eventId/'
+    | '/tickets/$ticketId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -511,16 +575,19 @@ export interface FileRouteTypes {
     | '/admin/activity-log'
     | '/admin/api-keys'
     | '/admin/bug-reports'
+    | '/admin/events'
     | '/admin/kiosks'
     | '/admin/roles'
     | '/admin/theme'
     | '/admin/users'
     | '/settings/notifications'
     | '/cards'
+    | '/events'
     | '/admin/dev/notifications'
     | '/admin/doorlock/cards'
     | '/admin/doorlock/devices'
     | '/admin/doorlock/logs'
+    | '/admin/events/$eventId'
     | '/admin/navigator/buildings'
     | '/admin/navigator/classroom-types'
     | '/admin/navigator/classrooms'
@@ -539,9 +606,12 @@ export interface FileRouteTypes {
     | '/admin/wifi/nas'
     | '/admin/wifi/speed-profiles'
     | '/admin/wifi/users'
+    | '/events/$eventId/register'
     | '/admin/doorlock'
     | '/admin/navigator'
     | '/admin/wifi'
+    | '/events/$eventId'
+    | '/tickets/$ticketId'
   id:
     | '__root__'
     | '/_private'
@@ -559,16 +629,19 @@ export interface FileRouteTypes {
     | '/_private/admin/activity-log'
     | '/_private/admin/api-keys'
     | '/_private/admin/bug-reports'
+    | '/_private/admin/events'
     | '/_private/admin/kiosks'
     | '/_private/admin/roles'
     | '/_private/admin/theme'
     | '/_private/admin/users'
     | '/_private/settings/notifications'
     | '/_private/cards/'
+    | '/_public/events/'
     | '/_private/admin/dev/notifications'
     | '/_private/admin/doorlock/cards'
     | '/_private/admin/doorlock/devices'
     | '/_private/admin/doorlock/logs'
+    | '/_private/admin/events_/$eventId'
     | '/_private/admin/navigator/buildings'
     | '/_private/admin/navigator/classroom-types'
     | '/_private/admin/navigator/classrooms'
@@ -587,9 +660,12 @@ export interface FileRouteTypes {
     | '/_private/admin/wifi/nas'
     | '/_private/admin/wifi/speed-profiles'
     | '/_private/admin/wifi/users'
+    | '/_public/events/$eventId/register'
     | '/_private/admin/doorlock/'
     | '/_private/admin/navigator/'
     | '/_private/admin/wifi/'
+    | '/_public/events/$eventId/'
+    | '/_public/tickets/$ticketId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -707,6 +783,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminBugReportsRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_private/admin/events': {
+      id: '/_private/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof PrivateAdminEventsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
     '/_private/admin/kiosks': {
       id: '/_private/admin/kiosks'
       path: '/kiosks'
@@ -749,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateSettingsNotificationsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
+    '/_public/events/': {
+      id: '/_public/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof PublicEventsIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
     '/_private/admin/dev/notifications': {
       id: '/_private/admin/dev/notifications'
       path: '/dev/notifications'
@@ -782,6 +872,13 @@ declare module '@tanstack/react-router' {
       path: '/doorlock/logs'
       fullPath: '/admin/doorlock/logs'
       preLoaderRoute: typeof PrivateAdminDoorlockLogsRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
+    '/_private/admin/events_/$eventId': {
+      id: '/_private/admin/events_/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/admin/events/$eventId'
+      preLoaderRoute: typeof PrivateAdminEventsEventIdRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
     '/_private/admin/navigator/': {
@@ -924,6 +1021,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivateAdminWifiUsersRouteImport
       parentRoute: typeof PrivateAdminRouteRoute
     }
+    '/_public/events/$eventId/': {
+      id: '/_public/events/$eventId/'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId/'
+      preLoaderRoute: typeof PublicEventsEventIdIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/events/$eventId/register': {
+      id: '/_public/events/$eventId/register'
+      path: '/events/$eventId/register'
+      fullPath: '/events/$eventId/register'
+      preLoaderRoute: typeof PublicEventsEventIdRegisterRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/tickets/$ticketId/': {
+      id: '/_public/tickets/$ticketId/'
+      path: '/tickets/$ticketId'
+      fullPath: '/tickets/$ticketId/'
+      preLoaderRoute: typeof PublicTicketsTicketIdIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
   }
 }
 
@@ -931,6 +1049,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminActivityLogRoute: typeof PrivateAdminActivityLogRoute
   PrivateAdminApiKeysRoute: typeof PrivateAdminApiKeysRoute
   PrivateAdminBugReportsRoute: typeof PrivateAdminBugReportsRoute
+  PrivateAdminEventsRoute: typeof PrivateAdminEventsRoute
   PrivateAdminKiosksRoute: typeof PrivateAdminKiosksRoute
   PrivateAdminRolesRoute: typeof PrivateAdminRolesRoute
   PrivateAdminThemeRoute: typeof PrivateAdminThemeRoute
@@ -939,6 +1058,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminDoorlockCardsRoute: typeof PrivateAdminDoorlockCardsRoute
   PrivateAdminDoorlockDevicesRoute: typeof PrivateAdminDoorlockDevicesRoute
   PrivateAdminDoorlockLogsRoute: typeof PrivateAdminDoorlockLogsRoute
+  PrivateAdminEventsEventIdRoute: typeof PrivateAdminEventsEventIdRoute
   PrivateAdminNavigatorBuildingsRoute: typeof PrivateAdminNavigatorBuildingsRoute
   PrivateAdminNavigatorClassroomTypesRoute: typeof PrivateAdminNavigatorClassroomTypesRoute
   PrivateAdminNavigatorClassroomsRoute: typeof PrivateAdminNavigatorClassroomsRoute
@@ -966,6 +1086,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminActivityLogRoute: PrivateAdminActivityLogRoute,
   PrivateAdminApiKeysRoute: PrivateAdminApiKeysRoute,
   PrivateAdminBugReportsRoute: PrivateAdminBugReportsRoute,
+  PrivateAdminEventsRoute: PrivateAdminEventsRoute,
   PrivateAdminKiosksRoute: PrivateAdminKiosksRoute,
   PrivateAdminRolesRoute: PrivateAdminRolesRoute,
   PrivateAdminThemeRoute: PrivateAdminThemeRoute,
@@ -974,6 +1095,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminDoorlockCardsRoute: PrivateAdminDoorlockCardsRoute,
   PrivateAdminDoorlockDevicesRoute: PrivateAdminDoorlockDevicesRoute,
   PrivateAdminDoorlockLogsRoute: PrivateAdminDoorlockLogsRoute,
+  PrivateAdminEventsEventIdRoute: PrivateAdminEventsEventIdRoute,
   PrivateAdminNavigatorBuildingsRoute: PrivateAdminNavigatorBuildingsRoute,
   PrivateAdminNavigatorClassroomTypesRoute:
     PrivateAdminNavigatorClassroomTypesRoute,
@@ -1028,6 +1150,10 @@ interface PublicRouteRouteChildren {
   PublicSubsRoute: typeof PublicSubsRoute
   PublicUnsubscribeRoute: typeof PublicUnsubscribeRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicEventsIndexRoute: typeof PublicEventsIndexRoute
+  PublicEventsEventIdRegisterRoute: typeof PublicEventsEventIdRegisterRoute
+  PublicEventsEventIdIndexRoute: typeof PublicEventsEventIdIndexRoute
+  PublicTicketsTicketIdIndexRoute: typeof PublicTicketsTicketIdIndexRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
@@ -1036,6 +1162,10 @@ const PublicRouteRouteChildren: PublicRouteRouteChildren = {
   PublicSubsRoute: PublicSubsRoute,
   PublicUnsubscribeRoute: PublicUnsubscribeRoute,
   PublicIndexRoute: PublicIndexRoute,
+  PublicEventsIndexRoute: PublicEventsIndexRoute,
+  PublicEventsEventIdRegisterRoute: PublicEventsEventIdRegisterRoute,
+  PublicEventsEventIdIndexRoute: PublicEventsEventIdIndexRoute,
+  PublicTicketsTicketIdIndexRoute: PublicTicketsTicketIdIndexRoute,
 }
 
 const PublicRouteRouteWithChildren = PublicRouteRoute._addFileChildren(

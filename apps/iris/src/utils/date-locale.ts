@@ -1,6 +1,6 @@
 type DateInput = Date | number | string;
 
-function getLanguageCode(language: string | undefined): string {
+export function getLanguageCode(language: string | undefined): string {
   return (language ?? 'hu').toLowerCase().split('-')[0] ?? 'hu';
 }
 

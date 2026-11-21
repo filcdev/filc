@@ -9,6 +9,8 @@ import { cn } from '@filcdev/ui/lib/utils';
 import dayjs from 'dayjs';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getDayPickerLocaleConfig } from '@/utils/day-picker-locale';
 
 export type DateRangeValue = {
   from?: Date;
@@ -22,6 +24,8 @@ type DateRangePickerProps = {
 
 export function DateRangePicker({ onChange, value }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
+  const { i18n } = useTranslation();
+  const { locale, weekStartsOn } = getDayPickerLocaleConfig(i18n.language);
 
   const getRangeLabel = () => {
     if (!value.from) {
@@ -53,6 +57,7 @@ export function DateRangePicker({ onChange, value }: DateRangePickerProps) {
       <PopoverContent align="end" className="w-auto p-0" translate="no">
         <Calendar
           autoFocus
+          locale={locale}
           mode="range"
           numberOfMonths={2}
           onSelect={(range) => {
@@ -65,6 +70,7 @@ export function DateRangePicker({ onChange, value }: DateRangePickerProps) {
             }
           }}
           selected={{ from: value.from, to: value.to }}
+          weekStartsOn={weekStartsOn}
         />
       </PopoverContent>
     </Popover>

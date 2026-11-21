@@ -70,6 +70,9 @@ function TableHead({ className, ...props }: ComponentProps<'th'>) {
         className
       )}
       data-slot="table-head"
+      // Every table in the app is a column table: naming the scope is what
+      // lets a screen reader announce a cell together with its column.
+      scope="col"
       {...props}
     />
   );

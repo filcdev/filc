@@ -17,8 +17,8 @@ import {
   useForm,
   useStore,
 } from '@tanstack/react-form';
-import { Save, Trash, Upload } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { Save } from 'lucide-react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useKiosks } from '@/hooks/kiosks';
 import {
@@ -34,6 +34,8 @@ import { useHasPermission } from '@/hooks/use-has-permission';
 import { getIntlLocale } from '@/utils/date-locale';
 import { apiBaseUrl } from '@/utils/orpc';
 import type { BaseDialogProps } from './admin.types';
+import { AudiencePicker } from './audience-picker';
+import { ImageField } from './image-field';
 
 type AnnouncementsDialogProps = BaseDialogProps & {
   item?: AnnouncementItem | null;
@@ -103,211 +105,6 @@ const hasDateRange = (item?: AnnouncementItem | null): boolean => {
   );
 };
 
-type AnnouncementImageFieldProps = {
-  /** Null while creating: there is no row to upload against yet. */
-  announcementId: string | null;
-  /** The file picked locally, uploaded together with the save. */
-  file: File | null;
-  imageKey: string | null;
-  imageUrl: string | null;
-  isRemoving: boolean;
-  onFileChange: (file: File | null) => void;
-  onRemove: (id: string) => void;
-  upload: (file: File, id: string) => Promise<unknown>;
-};
-
-/**
- * The kiosk image field: preview, file picker, and — for an announcement that
- * already exists — an immediate upload and a remove button. A newly picked file
- * is previewed from a local object URL until the dialog saves it.
- */
-function AnnouncementImageField({
-  announcementId,
-  file,
-  imageKey,
-  imageUrl,
-  isRemoving,
-  onFileChange,
-  onRemove,
-  upload,
-}: AnnouncementImageFieldProps) {
-  const { t } = useTranslation();
-  const imageId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [pickedPreview, setPickedPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  useEffect(() => {
-    if (!file) {
-      setPickedPreview(null);
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    setPickedPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-
-  const handleUpload = async () => {
-    if (!(announcementId && file)) {
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      await upload(file, announcementId);
-      onFileChange(null);
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
-    } catch {
-      // The hook toasted the failure; keep the file picked for a retry.
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const previewUrl = pickedPreview ?? imageUrl;
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={imageId}>{t('announcements.image')}</Label>
-      {previewUrl && (
-        <img
-          alt=""
-          className="max-h-48 w-full rounded-md object-contain"
-          height={600}
-          src={previewUrl}
-          width={800}
-        />
-      )}
-      <input
-        accept="image/png,image/jpeg,image/webp"
-        className="w-full cursor-pointer rounded-lg border-2 border-muted-foreground/25 border-dashed p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1 file:font-medium file:text-secondary-foreground hover:border-muted-foreground/50"
-        id={imageId}
-        onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-        ref={inputRef}
-        type="file"
-      />
-      {announcementId && (
-        <div className="flex items-center gap-2">
-          <Button
-            disabled={!(file && !isUploading)}
-            onClick={handleUpload}
-            size="sm"
-            type="button"
-          >
-            <Upload className="h-4 w-4" />
-            {t('announcements.imageUpload')}
-          </Button>
-          {imageKey && (
-            <Button
-              disabled={isRemoving}
-              onClick={() => onRemove(announcementId)}
-              size="sm"
-              type="button"
-              variant="destructive"
-            >
-              <Trash className="h-4 w-4" />
-              {t('announcements.imageRemove')}
-            </Button>
-          )}
-        </div>
-      )}
-      <p className="text-muted-foreground text-xs">
-        {t('announcements.imageHint')}
-      </p>
-      {!announcementId && (
-        <p className="text-muted-foreground text-xs">
-          {t('announcements.imageOnSave')}
-        </p>
-      )}
-    </div>
-  );
-}
-
-type AudiencePickerProps = {
-  /** Shown when nothing is picked, i.e. the selection means "everyone". */
-  allHint: string;
-  allLabel: string;
-  /** Shown when at least one entry is picked. */
-  hint: string;
-  idPrefix: string;
-  items: { id: string; name: string }[];
-  label: string;
-  /** Clears the selection, which means "everyone". */
-  onClear: () => void;
-  onToggle: (id: string, checked: boolean) => void;
-  selectedIds: string[];
-};
-
-/**
- * The cohort / kiosk picker: an "all" row that clears the selection, then one
- * checkbox per entry. Both pickers in this dialog are the same control.
- */
-function AudiencePicker({
-  allHint,
-  allLabel,
-  hint,
-  idPrefix,
-  items,
-  label,
-  onClear,
-  onToggle,
-  selectedIds,
-}: AudiencePickerProps) {
-  const allId = useId();
-  const selectedIdSet = new Set(selectedIds);
-
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border p-2">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={selectedIds.length === 0}
-            id={allId}
-            onCheckedChange={(checked) => {
-              if (checked) {
-                onClear();
-              }
-            }}
-          />
-          <label
-            className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            htmlFor={allId}
-          >
-            {allLabel}
-          </label>
-        </div>
-        {items.map((item) => (
-          <div className="flex items-center gap-2" key={item.id}>
-            <Checkbox
-              checked={selectedIdSet.has(item.id)}
-              id={`${idPrefix}-${item.id}`}
-              onCheckedChange={(checked) => onToggle(item.id, Boolean(checked))}
-            />
-            <label
-              className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              htmlFor={`${idPrefix}-${item.id}`}
-            >
-              {item.name}
-            </label>
-          </div>
-        ))}
-      </div>
-      <p className="text-muted-foreground text-xs">
-        {selectedIds.length === 0 ? allHint : hint}
-      </p>
-    </div>
-  );
-}
-
-/**
- * The dialog form's API, as handed to its field-group components. TanStack's
- * validator generics are invariant, so they are spelled out to match the
- * `useForm` call below.
- */
 type AnnouncementFormApi = ReactFormExtendedApi<
   AnnouncementFormValues,
   undefined,
@@ -665,12 +462,19 @@ export function AnnouncementsDialog({
               />
             )}
 
-            <AnnouncementImageField
-              announcementId={item?.id ?? null}
+            <ImageField
               file={imageFile}
+              id={item?.id ?? null}
               imageKey={imageKey}
               imageUrl={imageUrl}
               isRemoving={removeImage.isPending}
+              labels={{
+                hint: t('announcements.imageHint'),
+                onSave: t('announcements.imageOnSave'),
+                remove: t('announcements.imageRemove'),
+                title: t('announcements.image'),
+                upload: t('announcements.imageUpload'),
+              }}
               onFileChange={setImageFile}
               onRemove={(id) => removeImage.mutate({ id })}
               upload={(file, id) => uploadImage.mutateAsync({ file, id })}

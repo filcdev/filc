@@ -175,6 +175,24 @@
 }
 
 /*
+ * Everything that moves here is decoration: the dialog and popover enter/exit,
+ * the collapsible rows, a chevron rotating. A visitor or an OS-level setting
+ * that asks for less motion gets the state change without the jolt, which is
+ * what `prefers-reduced-motion: reduce` means — no animation carries meaning,
+ * so none of it is load-bearing.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
  * The twelve categorical colours the timetable assigns to subjects, in the
  * order the stored `timetable_class_colors` index refers to. Only the hues
  * are fixed: each chip is a `color-mix` against `--card`, so the tint and
