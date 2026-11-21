@@ -30,6 +30,7 @@ import {
   TableRow,
 } from '@filcdev/ui/components/table';
 import { useIsMobile } from '@filcdev/ui/hooks/use-mobile';
+import { getDayPickerLocaleConfig } from '@filcdev/ui/lib/day-picker-locale';
 import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute } from '@tanstack/react-router';
 import dayjs from 'dayjs';
@@ -61,7 +62,6 @@ import {
 } from '@/hooks/doorlock-admin';
 import { useHasPermission } from '@/hooks/use-has-permission';
 import { type UseSortableResult, useSortable } from '@/hooks/use-sortable';
-import { getDayPickerLocaleConfig } from '@/utils/day-picker-locale';
 import { orpc, prefetch } from '@/utils/orpc';
 
 type EventFilter = 'all' | 'virtual' | 'physical';

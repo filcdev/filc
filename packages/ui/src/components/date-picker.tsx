@@ -1,5 +1,6 @@
 import { Calendar as CalendarIcon } from 'lucide-react';
 import type { Matcher } from 'react-day-picker';
+import { getDayPickerLocaleConfig } from '../lib/day-picker-locale';
 import { cn } from '../lib/utils';
 import { Button } from './button';
 import { Calendar } from './calendar';
@@ -35,7 +36,8 @@ export function DatePicker({
   disabled = false,
   locale,
 }: DatePickerProps) {
-  const dayPickerLocale = { code: locale } as const;
+  const { locale: dayPickerLocale, weekStartsOn } =
+    getDayPickerLocaleConfig(locale);
 
   return (
     <Popover>
@@ -76,7 +78,7 @@ export function DatePicker({
           }}
           required={false}
           selected={date}
-          weekStartsOn={1}
+          weekStartsOn={weekStartsOn}
         />
       </PopoverContent>
     </Popover>

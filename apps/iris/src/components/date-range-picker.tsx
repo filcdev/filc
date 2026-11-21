@@ -5,12 +5,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@filcdev/ui/components/popover';
+import { getDayPickerLocaleConfig } from '@filcdev/ui/lib/day-picker-locale';
 import { cn } from '@filcdev/ui/lib/utils';
 import dayjs from 'dayjs';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDayPickerLocaleConfig } from '@/utils/day-picker-locale';
 
 export type DateRangeValue = {
   from?: Date;

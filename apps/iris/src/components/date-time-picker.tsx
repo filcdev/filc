@@ -8,12 +8,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@filcdev/ui/components/popover';
+import { getDayPickerLocaleConfig } from '@filcdev/ui/lib/day-picker-locale';
 import { cn } from '@filcdev/ui/lib/utils';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatLocalizedDate } from '@/utils/date-locale';
-import { getDayPickerLocaleConfig } from '@/utils/day-picker-locale';
 
 export type DateTimePickerProps = {
   /** Renders the clear button that sets the value back to `null`. */
