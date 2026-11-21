@@ -13,6 +13,11 @@ type DeleteConfirmDialogProps = {
   /** i18n key of the confirm button; defaults to the delete copy. */
   confirmLabelKey?: string;
   description: string;
+  /**
+   * Styles the confirm button as destructive. A confirmation that opens
+   * something instead (approving a helper) turns it off.
+   */
+  destructive?: boolean;
   /** Dismisses the dialog; the caller owns the open state. */
   onCancel: () => void;
   onConfirm: () => void;
@@ -29,6 +34,7 @@ type DeleteConfirmDialogProps = {
 export function DeleteConfirmDialog({
   confirmLabelKey = 'common.delete',
   description,
+  destructive = true,
   onCancel,
   onConfirm,
   onOpenChange,
@@ -50,7 +56,11 @@ export function DeleteConfirmDialog({
           <Button onClick={onCancel} variant="outline">
             {t('common.cancel')}
           </Button>
-          <Button disabled={pending} onClick={onConfirm} variant="destructive">
+          <Button
+            disabled={pending}
+            onClick={onConfirm}
+            variant={destructive ? 'destructive' : 'default'}
+          >
             {pending ? t(pendingLabelKey) : t(confirmLabelKey)}
           </Button>
         </DialogFooter>

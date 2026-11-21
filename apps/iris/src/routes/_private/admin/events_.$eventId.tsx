@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
+  ShieldOff,
   X,
 } from 'lucide-react';
 import { Fragment, useDeferredValue, useId, useState } from 'react';
@@ -52,6 +53,7 @@ import {
   useEventParticipants,
   useEventStats,
   useResendEventTicket,
+  useRevokeCheckinGrant,
 } from '@/hooks/events';
 import { formatLocalizedDate } from '@/utils/date-locale';
 import { api, orpc, prefetch } from '@/utils/orpc';
@@ -98,6 +100,9 @@ const STATUSES: readonly EventRegistrationStatus[] = [
   'cancelled',
 ];
 
+/** Mirrors the server's grant lifetime: the event's end plus one day. */
+const GRANT_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
 type BadgeVariant = 'default' | 'secondary' | 'outline';
 
 function eventStatusVariant(status: string): BadgeVariant {
@@ -130,7 +135,9 @@ function ParticipantActions({
   onCancel,
   onDecide,
   onResend,
+  onRevoke,
   resendPending,
+  revokePending,
 }: {
   decidePending: boolean;
   item: EventParticipantItem;
@@ -140,7 +147,9 @@ function ParticipantActions({
     decision: EventRegistrationDecision
   ) => void;
   onResend: (item: EventParticipantItem) => void;
+  onRevoke: (item: EventParticipantItem) => void;
   resendPending: boolean;
+  revokePending: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -183,6 +192,19 @@ function ParticipantActions({
           <Mail className="h-4 w-4" />
         </Button>
       )}
+      {item.status === 'confirmed' && item.checkinGrantExpiresAt && (
+        <Button
+          aria-label={t('events.participants.revokeGrantAria', {
+            name: item.name,
+          })}
+          disabled={revokePending}
+          onClick={() => onRevoke(item)}
+          size="icon"
+          variant="ghost"
+        >
+          <ShieldOff className="h-4 w-4" />
+        </Button>
+      )}
       {item.status === 'confirmed' && (
         <Button
           aria-label={t('events.participants.cancelAria', { name: item.name })}
@@ -215,6 +237,11 @@ function EventDetailPage() {
   const [cancelTarget, setCancelTarget] = useState<EventParticipantItem | null>(
     null
   );
+  const [approveTarget, setApproveTarget] =
+    useState<EventParticipantItem | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<EventParticipantItem | null>(
+    null
+  );
 
   // Typing narrows the list without a timer: React defers the value while the
   // user keeps typing, and the query keeps the previous page on screen.
@@ -235,9 +262,23 @@ function EventDetailPage() {
     onSaved: () => setCancelTarget(null),
   });
   const resendMutation = useResendEventTicket();
-  const decideMutation = useDecideEventRegistration();
+  const decideMutation = useDecideEventRegistration({
+    onSaved: () => setApproveTarget(null),
+  });
+  const revokeGrantMutation = useRevokeCheckinGrant({
+    onSaved: () => setRevokeTarget(null),
+  });
 
   const event = eventQuery.data;
+  // What an approval grants, in the organizer's own words: this event's door
+  // until a day after it ends.
+  const grantUntil = event
+    ? formatLocalizedDate(
+        new Date(new Date(event.endsAt).getTime() + GRANT_LIFETIME_MS),
+        i18n.language,
+        { dateStyle: 'medium', timeStyle: 'short' }
+      )
+    : '';
   const participants = participantsQuery.data;
   const total = participants?.total ?? 0;
   // Pending helper signups wait for this page's decision, so their count sits
@@ -476,6 +517,20 @@ function EventDetailPage() {
                                   `events.participants.statuses.${item.status}`
                                 )}
                               </Badge>
+                              {item.checkinGrantExpiresAt && (
+                                <p className="mt-1 whitespace-nowrap text-muted-foreground text-xs">
+                                  {t('events.participants.grantUntil', {
+                                    date: formatLocalizedDate(
+                                      item.checkinGrantExpiresAt,
+                                      i18n.language,
+                                      {
+                                        dateStyle: 'short',
+                                        timeStyle: 'short',
+                                      }
+                                    ),
+                                  })}
+                                </p>
+                              )}
                             </TableCell>
                             <TableCell>
                               {formatLocalizedDate(
@@ -526,20 +581,32 @@ function EventDetailPage() {
                                 }
                                 item={item}
                                 onCancel={setCancelTarget}
-                                onDecide={(target, decision) =>
+                                onDecide={(target, decision) => {
+                                  if (decision === 'approve') {
+                                    // The approval opens a door, so it says
+                                    // what it grants before it does.
+                                    setApproveTarget(target);
+                                    return;
+                                  }
                                   decideMutation.mutate({
                                     decision,
                                     id: eventId,
                                     registrationId: target.id,
-                                  })
-                                }
+                                  });
+                                }}
                                 onResend={(target) =>
                                   resendMutation.mutate({
                                     id: eventId,
                                     registrationId: target.id,
                                   })
                                 }
+                                onRevoke={setRevokeTarget}
                                 resendPending={resendMutation.isPending}
+                                revokePending={
+                                  revokeGrantMutation.isPending &&
+                                  revokeGrantMutation.variables
+                                    ?.registrationId === item.id
+                                }
                               />
                             </TableCell>
                           </TableRow>
@@ -644,6 +711,59 @@ function EventDetailPage() {
           />
         )}
       </section>
+
+      <DeleteConfirmDialog
+        confirmLabelKey="events.participants.approve"
+        description={t('events.participants.approveConfirmDescription', {
+          date: grantUntil,
+          name: approveTarget?.name ?? '',
+        })}
+        destructive={false}
+        onCancel={() => setApproveTarget(null)}
+        onConfirm={() => {
+          if (approveTarget) {
+            decideMutation.mutate({
+              decision: 'approve',
+              id: eventId,
+              registrationId: approveTarget.id,
+            });
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setApproveTarget(null);
+          }
+        }}
+        open={approveTarget !== null}
+        pending={decideMutation.isPending}
+        pendingLabelKey="events.participants.approving"
+        title={t('events.participants.approveConfirmTitle')}
+      />
+
+      <DeleteConfirmDialog
+        confirmLabelKey="events.participants.revokeGrantConfirmAction"
+        description={t('events.participants.revokeGrantConfirmDescription', {
+          name: revokeTarget?.name ?? '',
+        })}
+        onCancel={() => setRevokeTarget(null)}
+        onConfirm={() => {
+          if (revokeTarget) {
+            revokeGrantMutation.mutate({
+              id: eventId,
+              registrationId: revokeTarget.id,
+            });
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRevokeTarget(null);
+          }
+        }}
+        open={revokeTarget !== null}
+        pending={revokeGrantMutation.isPending}
+        pendingLabelKey="events.participants.revoking"
+        title={t('events.participants.revokeGrantConfirmTitle')}
+      />
 
       <DeleteConfirmDialog
         confirmLabelKey="events.participants.cancelConfirmAction"

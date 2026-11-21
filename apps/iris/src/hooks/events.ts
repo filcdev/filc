@@ -410,6 +410,27 @@ export function useResendEventTicket({ onSaved }: MutationCallbacks = {}) {
 }
 
 /**
+ * Ends an approved helper's door access before it expires. The registration is
+ * untouched: the helper stays confirmed, only the scanner stops accepting them.
+ */
+export function useRevokeCheckinGrant({ onSaved }: MutationCallbacks = {}) {
+  const invalidate = useInvalidateEvents();
+  const { t } = useTranslation();
+  return useMutation(
+    orpc.events.registrations.revokeCheckinGrant.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('events.participants.revokeGrantError'));
+      },
+      onSuccess: () => {
+        toast.success(t('events.participants.revokeGrantSuccess'));
+        invalidate();
+        onSaved?.();
+      },
+    })
+  );
+}
+
+/**
  * The organizer's answer to a pending helper signup. The returned row is
  * confirmed after an approval and cancelled after a decline, which is what the
  * success toast reads.
