@@ -1,4 +1,5 @@
 import type { EventCheckinResult } from '@filcdev/api/domains/events/checkin';
+import type { EventCheckinDisplay } from '@filcdev/api/domains/events/event';
 import type { EventRegistrationStatus } from '@filcdev/api/domains/events/registration';
 
 /**
@@ -74,20 +75,34 @@ export const judgeCheckin = (
   return { status: 'admitted', ticket };
 };
 
-const visitorOf = (ticket: CheckinTicket) => ({
-  registrationId: ticket.registrationId,
-  visitorEmail: ticket.visitorEmail,
-  visitorName: ticket.visitorName,
-});
+const visitorOf = (ticket: CheckinTicket, display: EventCheckinDisplay) => {
+  // The setting is applied here, where the payload is built, not in the client:
+  // a hidden field is left out entirely so no consumer can show it.
+  const base = { registrationId: ticket.registrationId };
+  if (display === 'minimal') {
+    return base;
+  }
+  if (display === 'name') {
+    return { ...base, visitorName: ticket.visitorName };
+  }
+  return {
+    ...base,
+    visitorEmail: ticket.visitorEmail,
+    visitorName: ticket.visitorName,
+  };
+};
 
 /** The answer for a ticket this request did not write. */
-const storedAnswer = (verdict: CheckinVerdict): EventCheckinResult => {
+const storedAnswer = (
+  verdict: CheckinVerdict,
+  display: EventCheckinDisplay
+): EventCheckinResult => {
   if (verdict.status === 'invalid') {
-    return { ...visitorOf(verdict.ticket), status: 'invalid' };
+    return { ...visitorOf(verdict.ticket, display), status: 'invalid' };
   }
   if (verdict.status === 'already_checked_in') {
     return {
-      ...visitorOf(verdict.ticket),
+      ...visitorOf(verdict.ticket, display),
       checkedInAt: verdict.checkedInAt,
       checkedInByName: verdict.ticket.checkedInByName,
       status: 'already_checked_in',
@@ -110,16 +125,19 @@ export const checkInTicket = async (
   store: CheckinStore,
   args: {
     code: string;
+    /** What the event's check-in screen may reveal, applied to every outcome. */
+    display: EventCheckinDisplay;
     eventId: string;
     /** Injectable so a test can pin the first check-in's time. */
     now?: Date;
     userId: string;
   }
 ): Promise<EventCheckinResult> => {
+  const { display } = args;
   const first = judgeCheckin(await store.findTicket(args.code), args.eventId);
 
   if (first.status !== 'admitted') {
-    return storedAnswer(first);
+    return storedAnswer(first, display);
   }
 
   const at = args.now ?? new Date();
@@ -129,11 +147,11 @@ export const checkInTicket = async (
     at
   );
   if (written) {
-    return { ...visitorOf(first.ticket), status: 'admitted' };
+    return { ...visitorOf(first.ticket, display), status: 'admitted' };
   }
 
   // Another scan won the write between the read and the update: answer the
   // state that is now stored, which is the same thing a later scan would see.
   const second = judgeCheckin(await store.findTicket(args.code), args.eventId);
-  return storedAnswer(second);
+  return storedAnswer(second, display);
 };

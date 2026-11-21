@@ -5,7 +5,7 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { eventRegistration, eventTicket } from '#modules/events/schema';
+import { event, eventRegistration, eventTicket } from '#modules/events/schema';
 import {
   type CheckinStore,
   type CheckinTicket,
@@ -111,7 +111,20 @@ export const checkInTicketAtDoor = base.events.checkin
     // expired grant is refused before a cleanup job ever runs.
     await requireEventCheckin(context.session.userId, id, now);
 
+    // The event's own setting decides how much every outcome may carry. Read
+    // here, on the server, so the client never receives a field the organizer
+    // hid — a cancelled ticket is reduced by the same mode.
+    const [eventRow] = await db
+      .select({ checkinDisplay: event.checkinDisplay })
+      .from(event)
+      .where(eq(event.id, id));
+
+    if (!eventRow) {
+      return { status: 'not_found' as const };
+    }
+
     logger.debug('check-in scanned', {
+      checkinDisplay: eventRow.checkinDisplay,
       eventId: id,
       requestId: context.requestId,
     });
@@ -119,6 +132,7 @@ export const checkInTicketAtDoor = base.events.checkin
     const result = UUID.test(code)
       ? await checkInTicket(store, {
           code,
+          display: eventRow.checkinDisplay,
           eventId: id,
           now,
           userId: context.session.userId,

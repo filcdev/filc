@@ -15,11 +15,17 @@ export const eventCheckinInputSchema = z.object({
 
 export type EventCheckinInput = z.infer<typeof eventCheckinInputSchema>;
 
-/** Who the ticket belongs to; only ever returned for a ticket of this event. */
+/**
+ * Who the ticket belongs to, as far as this event lets the door see. Both
+ * fields are omitted — not null, not an empty string — when `checkinDisplay`
+ * hides them: `minimal` sends neither, `name` only the name, `full` both. The
+ * handler shapes the payload from the event's setting, so a client cannot
+ * widen it; the nullable type is for a stored `null`, never a hidden value.
+ */
 const checkinVisitorSchema = z.object({
   registrationId: z.uuid(),
-  visitorEmail: z.email(),
-  visitorName: z.string(),
+  visitorEmail: z.email().nullish(),
+  visitorName: z.string().nullish(),
 });
 
 /**

@@ -64,6 +64,7 @@ describe('checkInTicket', () => {
 
     const first = await checkInTicket(store, {
       code: TICKET_ID,
+      display: 'full',
       eventId: EVENT_ID,
       now: FIRST_SCAN,
       userId: HELPER_ID,
@@ -72,6 +73,7 @@ describe('checkInTicket', () => {
 
     const second = await checkInTicket(store, {
       code: TICKET_ID,
+      display: 'full',
       eventId: EVENT_ID,
       now: LATER_SCAN,
       userId: HELPER_ID,
@@ -93,6 +95,7 @@ describe('checkInTicket', () => {
 
     const result = await checkInTicket(store, {
       code: TICKET_ID,
+      display: 'full',
       eventId: EVENT_ID,
       now: FIRST_SCAN,
       userId: HELPER_ID,
@@ -107,6 +110,7 @@ describe('checkInTicket', () => {
 
     const result = await checkInTicket(store, {
       code: TICKET_ID,
+      display: 'full',
       eventId: EVENT_ID,
       now: FIRST_SCAN,
       userId: HELPER_ID,
@@ -121,6 +125,7 @@ describe('checkInTicket', () => {
 
     const result = await checkInTicket(store, {
       code: '6f5e4d3c-2b1a-4098-8776-5a4b3c2d1e0f',
+      display: 'full',
       eventId: EVENT_ID,
       now: FIRST_SCAN,
       userId: HELPER_ID,
@@ -150,6 +155,7 @@ describe('checkInTicket', () => {
 
     const result = await checkInTicket(store, {
       code: TICKET_ID,
+      display: 'full',
       eventId: EVENT_ID,
       now: LATER_SCAN,
       userId: HELPER_ID,
@@ -161,5 +167,91 @@ describe('checkInTicket', () => {
       checkedInByName: 'Other Helper',
       status: 'already_checked_in',
     });
+  });
+});
+
+/**
+ * The event's check-in display is a privacy setting, so the payload is shaped
+ * where it is built. A hidden field is left out of the object entirely; the
+ * assertions check for absence, not a null or empty placeholder.
+ */
+describe('checkInTicket display modes', () => {
+  const scanAs = (display: 'minimal' | 'name' | 'full') =>
+    checkInTicket(memoryStore([ticket()]), {
+      code: TICKET_ID,
+      display,
+      eventId: EVENT_ID,
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+  it('answers minimal with the registration id only', async () => {
+    const result = await scanAs('minimal');
+
+    expect(result).toEqual({
+      registrationId: REGISTRATION_ID,
+      status: 'admitted',
+    });
+    expect(result).not.toHaveProperty('visitorName');
+    expect(result).not.toHaveProperty('visitorEmail');
+  });
+
+  it('answers name with the name and no email', async () => {
+    const result = await scanAs('name');
+
+    expect(result).toEqual({
+      registrationId: REGISTRATION_ID,
+      status: 'admitted',
+      visitorName: 'Guest Visitor',
+    });
+    expect(result).not.toHaveProperty('visitorEmail');
+  });
+
+  it('answers full with both', async () => {
+    const result = await scanAs('full');
+
+    expect(result).toEqual({ ...visitor, status: 'admitted' });
+  });
+
+  it('applies the mode to an already checked-in answer', async () => {
+    const store = memoryStore([
+      ticket({ checkedInAt: FIRST_SCAN, checkedInByName: 'Helper' }),
+    ]);
+
+    const result = await checkInTicket(store, {
+      code: TICKET_ID,
+      display: 'minimal',
+      eventId: EVENT_ID,
+      now: LATER_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toEqual({
+      checkedInAt: FIRST_SCAN,
+      checkedInByName: 'Helper',
+      registrationId: REGISTRATION_ID,
+      status: 'already_checked_in',
+    });
+    expect(result).not.toHaveProperty('visitorName');
+    expect(result).not.toHaveProperty('visitorEmail');
+  });
+
+  it('applies the mode to a cancelled ticket too', async () => {
+    const store = memoryStore([ticket({ registrationStatus: 'cancelled' })]);
+
+    const result = await checkInTicket(store, {
+      code: TICKET_ID,
+      display: 'minimal',
+      eventId: EVENT_ID,
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toEqual({
+      registrationId: REGISTRATION_ID,
+      status: 'invalid',
+    });
+    expect(result).not.toHaveProperty('visitorName');
+    expect(result).not.toHaveProperty('visitorEmail');
   });
 });

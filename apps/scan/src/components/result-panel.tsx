@@ -75,19 +75,27 @@ export const ResultPanel = ({ locale, result, strings: s }: Props) => {
         {s[look.title]}
       </p>
 
-      {/* Only a ticket of this event reaches these branches, so the visitor
-          is shown for all of them but "not found". */}
-      {result.status === 'not_found' ? null : (
+      {/* The event's check-in display decides what arrives: a minimal scan
+          carries no person at all, so the block disappears rather than
+          rendering an empty name. The header keeps the event and its time. */}
+      {result.status !== 'not_found' &&
+      (result.visitorName || result.visitorEmail) ? (
         <div className="space-y-1">
           <p className="font-medium text-xs uppercase tracking-wide opacity-80">
             {s.resultVisitor}
           </p>
-          <p className="text-balance font-semibold text-xl leading-tight">
-            {result.visitorName}
-          </p>
-          <p className="break-all text-sm opacity-90">{result.visitorEmail}</p>
+          {result.visitorName ? (
+            <p className="text-balance font-semibold text-xl leading-tight">
+              {result.visitorName}
+            </p>
+          ) : null}
+          {result.visitorEmail ? (
+            <p className="break-all text-sm opacity-90">
+              {result.visitorEmail}
+            </p>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       <p className="text-balance text-sm opacity-90">{hint}</p>
     </div>

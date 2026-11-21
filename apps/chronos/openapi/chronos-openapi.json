@@ -8941,11 +8941,25 @@
                           "format": "uuid"
                         },
                         "visitorEmail": {
-                          "type": "string",
-                          "format": "email"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "visitorName": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "status": {
                           "const": "admitted"
@@ -8953,8 +8967,6 @@
                       },
                       "required": [
                         "registrationId",
-                        "visitorEmail",
-                        "visitorName",
                         "status"
                       ]
                     },
@@ -8966,11 +8978,25 @@
                           "format": "uuid"
                         },
                         "visitorEmail": {
-                          "type": "string",
-                          "format": "email"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "visitorName": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "checkedInAt": {
                           "type": "string",
@@ -8993,8 +9019,6 @@
                       },
                       "required": [
                         "registrationId",
-                        "visitorEmail",
-                        "visitorName",
                         "checkedInAt",
                         "checkedInByName",
                         "status"
@@ -9008,11 +9032,25 @@
                           "format": "uuid"
                         },
                         "visitorEmail": {
-                          "type": "string",
-                          "format": "email"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "visitorName": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "status": {
                           "const": "invalid"
@@ -9020,8 +9058,6 @@
                       },
                       "required": [
                         "registrationId",
-                        "visitorEmail",
-                        "visitorName",
                         "status"
                       ]
                     },
