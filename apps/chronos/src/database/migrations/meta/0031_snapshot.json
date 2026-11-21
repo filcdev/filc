@@ -1,5 +1,5 @@
 {
-  "id": "a0d0e242-ba76-418b-8750-ec7cd08d5f13",
+  "id": "c9f9dad6-6b25-42eb-8136-166f4b613ed0",
   "prevId": "cf219c1a-199e-4136-884f-78015650ee33",
   "version": "7",
   "dialect": "postgresql",
@@ -1347,6 +1347,13 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "helper_requirements": {
+          "name": "helper_requirements",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "id": {
           "name": "id",

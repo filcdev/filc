@@ -15,6 +15,10 @@ import {
 } from '#modules/events/utils/events';
 import { revokeCheckinGrant } from '#modules/events/utils/grant';
 import {
+  firstUnmetHelperRequirement,
+  helperRequirementRefusalMessage,
+} from '#modules/events/utils/helper-requirement-match';
+import {
   lockPublishedEvent,
   replaceAnswers,
   runWithFormRaceGuard,
@@ -52,6 +56,8 @@ const REFUSAL_MESSAGES: Record<RegistrationRefusal, string> = {
   not_open_yet: 'Registration has not opened yet',
   pending_approval: 'Your registration is waiting for approval',
   registration_disabled: 'Registration is not open for this event',
+  requirement_unmet:
+    "Your answers do not meet this event's helper requirements",
   wrong_cohort: 'This event is not open to your class',
 };
 
@@ -59,7 +65,12 @@ const throwRefusal = (decision: RegistrationDecision): void => {
   if (decision.ok) {
     return;
   }
-  const message = REFUSAL_MESSAGES[decision.reason];
+  // A requirement refusal names the question, so the applicant knows what to
+  // change; the static map cannot carry that.
+  const message =
+    decision.reason === 'requirement_unmet' && decision.field
+      ? helperRequirementRefusalMessage(decision.field)
+      : REFUSAL_MESSAGES[decision.reason];
   // Losing a race for the last seat and double-submitting are conflicts; the
   // rest are the request asking for something the event never allows.
   if (
@@ -146,10 +157,15 @@ export const createRegistration = base.events.registrations.create
           const pending = existing?.status === 'pending';
           const registered = existing?.status === 'confirmed';
 
+          // The questions are read once: a helper's answers are matched
+          // against the requirements before the decision, and both paths then
+          // validate the form against the same rows.
+          const fields = await studentEventFields(id, tx);
+
           // Eligibility first: a caller the event does not admit is told so, not
           // sent back to fix a form they could not submit anyway. A helper is
           // judged by its own switches and window; a participant by seats, cohort
-          // and grade.
+          // and grade. The requirement check is the helper decision's last step.
           if (isHelper) {
             throwRefusal(
               judgeHelperRegistration({
@@ -164,6 +180,11 @@ export const createRegistration = base.events.registrations.create
                 registrationClosesAt: row.registrationClosesAt,
                 registrationEnabled: row.registrationEnabled,
                 registrationOpensAt: row.registrationOpensAt,
+                requirementFailure: firstUnmetHelperRequirement(
+                  fields,
+                  row.helperRequirements,
+                  answers
+                ),
               })
             );
           } else {
@@ -185,7 +206,6 @@ export const createRegistration = base.events.registrations.create
             throwRefusal(judgeRegistration(facts));
           }
 
-          const fields = await studentEventFields(id, tx);
           const checked = checkAnswers(fields, answers);
           if (!checked.ok) {
             throw badRequest(checked.message);

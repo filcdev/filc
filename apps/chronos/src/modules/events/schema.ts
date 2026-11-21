@@ -1,5 +1,6 @@
 import {
   type EventCategory,
+  type EventHelperRequirement,
   type EventStatus,
   eventCategories,
   eventStatuses,
@@ -89,6 +90,16 @@ export const event = pgTable(
       .default(false),
     helperRegistrationClosesAt: timestamp('helper_registration_closes_at'),
     helperRegistrationOpensAt: timestamp('helper_registration_opens_at'),
+    /**
+     * The answered conditions a helper application must satisfy, as an ordered
+     * list owned by the event. A JSONB list rather than a child table: it is
+     * read and replaced with the event row, never joined or filtered on its
+     * own, and the write validator keeps every `fieldId` inside this event.
+     */
+    helperRequirements: jsonb('helper_requirements')
+      .$type<EventHelperRequirement[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     id: uuid('id').primaryKey().defaultRandom(),
     /** Bytes of the stored banner; the object itself lives in S3. */
     imageByteSize: integer('image_byte_size'),

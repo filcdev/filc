@@ -100,7 +100,10 @@ export const replaceEventFields = base.events.fields.replace
       // could be deleted between a form read and the answer insert, which is a
       // foreign-key violation (23503) rather than the conflict it is.
       const [locked] = await tx
-        .select({ id: event.id })
+        .select({
+          helperRequirements: event.helperRequirements,
+          id: event.id,
+        })
         .from(event)
         .where(eq(event.id, id))
         .for('update');
@@ -149,6 +152,21 @@ export const replaceEventFields = base.events.fields.replace
         .from(eventField)
         .where(eq(eventField.eventId, id))
         .orderBy(eventField.position);
+
+      // A requirement can only point at a question this event still has. A
+      // removed question takes its requirements with it, inside the same
+      // transaction, so no later helper signup can meet a condition on a field
+      // that no longer exists.
+      const keptFieldIds = new Set(rows.map((field) => field.id));
+      const prunedRequirements = locked.helperRequirements.filter(
+        (requirement) => keptFieldIds.has(requirement.fieldId)
+      );
+      if (prunedRequirements.length !== locked.helperRequirements.length) {
+        await tx
+          .update(event)
+          .set({ helperRequirements: prunedRequirements })
+          .where(eq(event.id, id));
+      }
 
       return { before: existingFields, replaced: rows };
     });

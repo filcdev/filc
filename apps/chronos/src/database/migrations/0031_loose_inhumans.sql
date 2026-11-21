@@ -113,3 +113,5 @@ CREATE TABLE "event_checkin_grant" (
 ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "event_checkin_grant_event_id_idx" ON "event_checkin_grant" USING btree ("event_id");
+--> statement-breakpoint
+ALTER TABLE "event" ADD COLUMN "helper_requirements" jsonb DEFAULT '[]'::jsonb NOT NULL;

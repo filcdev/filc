@@ -19,6 +19,7 @@ import {
   resolveEventViewer,
   toEventItem,
 } from '#modules/events/utils/events';
+import { assertHelperRequirements } from '#modules/events/utils/helper-requirements';
 import {
   myConfirmedEventIds,
   registrationWithAnswers,
@@ -166,7 +167,13 @@ export const getEvent = base.events.get.handler(async ({ context, input }) => {
   return {
     ...item,
     fields,
-    helperEligibility: helperEligibilityFor(row, viewer, registrationState),
+    helperEligibility: helperEligibilityFor(
+      row,
+      viewer,
+      registrationState,
+      fields,
+      myRegistration?.answers ?? []
+    ),
     myRegistration,
   };
 });
@@ -192,6 +199,7 @@ function eventInsertValues(
     helperRegistrationOpensAt: body.helperRegistrationOpensAt ?? null,
     helperRegistrationSeparateWindow:
       body.helperRegistrationSeparateWindow ?? false,
+    helperRequirements: body.helperRequirements ?? [],
     maxGrade: body.maxGrade ?? null,
     minGrade: body.minGrade ?? null,
     registrationClosesAt: body.registrationClosesAt ?? null,
@@ -211,6 +219,10 @@ export const createEvent = base.events.create
     if (body.cohortIds && body.cohortIds.length > 0) {
       await validateCohortIds(body.cohortIds);
     }
+
+    // A new event has no questions yet (they are replaced after the create), so
+    // a requirement here could only name another event's field. Reject it now.
+    assertHelperRequirements([], body.helperRequirements ?? []);
 
     const [created] = await db
       .insert(event)
@@ -297,6 +309,10 @@ export const updateEvent = base.events.update
 
     if (body.cohortIds && body.cohortIds.length > 0) {
       await validateCohortIds(body.cohortIds);
+    }
+
+    if (body.helperRequirements !== undefined) {
+      assertHelperRequirements(await eventFields(id), body.helperRequirements);
     }
 
     const values = changedEventValues(existing, body);

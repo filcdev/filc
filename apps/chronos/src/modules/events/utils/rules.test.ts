@@ -213,6 +213,18 @@ describe('judgeHelperRegistration', () => {
     expect(judgeHelper({})).toEqual({ ok: true });
   });
 
+  it('refuses a helper whose answers miss a requirement, naming the question', () => {
+    expect(
+      judgeHelper({
+        requirementFailure: { fieldId: 'field-1', label: 'Szakirány' },
+      })
+    ).toEqual({
+      field: 'Szakirány',
+      ok: false,
+      reason: 'requirement_unmet',
+    });
+  });
+
   it('needs the master switch and the helper switch', () => {
     expect(helperReason(judgeHelper({ registrationEnabled: false }))).toBe(
       'registration_disabled'
