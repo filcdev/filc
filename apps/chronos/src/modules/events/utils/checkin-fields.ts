@@ -20,9 +20,9 @@ export const assertCheckinFieldIds = (
 };
 
 /**
- * Drop the ids a replace no longer keeps. Used for both the door's questions
- * and the helper requirements, inside the transaction that removes them, so no
- * later read can point at a question that is gone.
+ * Drop the ids a replace no longer keeps. Used for the door's questions inside
+ * the transaction that removes them, so no later read can point at a question
+ * that is gone.
  */
 export const pruneFieldIds = (
   fieldIds: readonly string[],
