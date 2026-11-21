@@ -13,7 +13,6 @@ CREATE TABLE "event" (
 	"helper_registration_separate_window" boolean DEFAULT false NOT NULL,
 	"helper_registration_closes_at" timestamp,
 	"helper_registration_opens_at" timestamp,
-	"helper_requirements" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"image_byte_size" integer,
 	"image_content_type" text,

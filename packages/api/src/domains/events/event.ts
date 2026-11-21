@@ -1,11 +1,7 @@
 import z from 'zod';
 import { listResponse, paginationSchema } from '../list';
 import { blockContentSchema, uniqueIdList } from '../news/announcements';
-import {
-  type EventFieldAudience,
-  type EventFieldType,
-  eventFieldSchema,
-} from './fields';
+import { type EventFieldAudience, eventFieldSchema } from './fields';
 import { eventRegistrationSchema } from './registration';
 
 /**
@@ -72,57 +68,6 @@ export const categoryDefaults = (
   category: EventCategory
 ): EventCategoryDefaults => CATEGORY_DEFAULTS[category];
 
-/**
- * The condition an organizer may put on a helper application. Which ops a
- * question accepts depends on its type; the backend validates that pair, and
- * the shared enum lets the editor offer only the valid ones.
- */
-export const eventHelperRequirementOps = [
-  'equals',
-  'contains',
-  'gte',
-  'lte',
-  'is_true',
-  'is_false',
-] as const;
-
-export type EventHelperRequirementOp =
-  (typeof eventHelperRequirementOps)[number];
-
-export const eventHelperRequirementOpSchema = z.enum(eventHelperRequirementOps);
-
-/**
- * Which operators make sense for each question type. The backend rejects a
- * pair outside its row and the editor offers only these, so the rule has one
- * home. A checkbox carries no value (`is_true`/`is_false` read its state); a
- * number is compared numerically, a text field case/diacritic-insensitively.
- */
-export const helperRequirementOpsByFieldType: Record<
-  EventFieldType,
-  readonly EventHelperRequirementOp[]
-> = {
-  checkbox: ['is_true', 'is_false'],
-  number: ['equals', 'gte', 'lte'],
-  select: ['equals'],
-  text: ['equals', 'contains'],
-  textarea: ['equals', 'contains'],
-};
-
-/**
- * One condition on the helper signup: the applicant's answer to `fieldId` must
- * satisfy `op` against `value`. `value` is a string even for a number or a
- * checkbox so the stored shape is one row; the matcher parses it per type.
- */
-export const eventHelperRequirementSchema = z.object({
-  fieldId: z.uuid(),
-  op: eventHelperRequirementOpSchema,
-  value: z.string(),
-});
-
-export type EventHelperRequirement = z.infer<
-  typeof eventHelperRequirementSchema
->;
-
 /** An `event` row exactly as stored. */
 export const eventRowSchema = z.object({
   capacity: z.number().nullable(),
@@ -158,11 +103,6 @@ export const eventRowSchema = z.object({
    * off, `helperRegistrationOpensAt`/`helperRegistrationClosesAt` are ignored.
    */
   helperRegistrationSeparateWindow: z.boolean(),
-  /**
-   * The answers a helper application has to satisfy, in the organizer's order.
-   * Empty means every student may apply.
-   */
-  helperRequirements: z.array(eventHelperRequirementSchema),
   id: z.uuid(),
   imageByteSize: z.number().nullable(),
   imageContentType: z.string().nullable(),
@@ -217,7 +157,6 @@ export const eventEligibilityReasons = [
   'pending_approval',
   'full',
   'grade_unknown',
-  'requirement_unmet',
 ] as const;
 
 export type EventEligibilityReason =
@@ -227,11 +166,6 @@ export type EventEligibilityReason =
 export const eventEligibilitySchema = z.object({
   eligible: z.boolean(),
   reason: z.enum(eventEligibilityReasons).nullable(),
-  /**
-   * The question a `requirement_unmet` refusal is about, so the public page can
-   * name it in the viewer's own language. Null for every other reason.
-   */
-  reasonField: z.string().nullable(),
 });
 
 export type EventEligibility = z.infer<typeof eventEligibilitySchema>;
@@ -309,8 +243,6 @@ const eventWriteFieldsSchema = z.object({
   helperRegistrationOpensAt: z.coerce.date().nullable().optional(),
   /** When on, the helper window below replaces the participant window. */
   helperRegistrationSeparateWindow: z.boolean().optional(),
-  /** The answered conditions a helper application must satisfy. */
-  helperRequirements: z.array(eventHelperRequirementSchema).optional(),
   maxGrade: z.number().int().min(1).max(13).nullable().optional(),
   minGrade: z.number().int().min(1).max(13).nullable().optional(),
   registrationClosesAt: z.coerce.date().nullable().optional(),

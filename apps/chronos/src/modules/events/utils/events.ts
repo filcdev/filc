@@ -7,7 +7,6 @@ import type {
   EventField,
   EventFieldAudience,
 } from '@filcdev/api/domains/events/fields';
-import type { EventRegistrationAnswer } from '@filcdev/api/domains/events/registration';
 import { permissions } from '@filcdev/api/permissions';
 import { eq } from 'drizzle-orm';
 import type { db as Db } from '#database';
@@ -15,7 +14,6 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { type event, eventField } from '#modules/events/schema';
 import { cohortGrade } from '#modules/events/utils/grade';
-import { firstUnmetHelperRequirement } from '#modules/events/utils/helper-requirement-match';
 import { confirmedRegistration } from '#modules/events/utils/registrations';
 import {
   judgeHelperRegistration,
@@ -50,7 +48,6 @@ export const EVENT_AUDIT_FIELDS = [
   'helperMaxGrade',
   'helperMinGrade',
   'helperRegistrationOpensAt',
-  'helperRequirements',
   'helperRegistrationSeparateWindow',
   'maxGrade',
   'minGrade',
@@ -74,12 +71,21 @@ export const eventFields = async (eventId: string) =>
 /**
  * Whether a question belongs on a form aimed at any of these audiences. The
  * filter runs in one place so the form, the answer validation and the
- * requirement editor cannot disagree about who sees a question.
+ * answer validation cannot disagree about who sees a question.
  */
 export const fieldHasAudience = (
   field: Pick<EventField, 'audiences'>,
   audiences: readonly EventFieldAudience[]
 ): boolean => audiences.some((audience) => field.audiences.includes(audience));
+
+/**
+ * The questions on the forms aimed at any of `audiences`, keeping the event's
+ * order. Pure so the filter the forms use can be asserted without a database.
+ */
+export const filterFieldsForAudiences = (
+  fields: readonly EventField[],
+  audiences: readonly EventFieldAudience[]
+): EventField[] => fields.filter((field) => fieldHasAudience(field, audiences));
 
 /** The event's questions on the forms aimed at any of `audiences`, in order. */
 const fieldsForAudiences = async (
@@ -87,13 +93,14 @@ const fieldsForAudiences = async (
   audiences: readonly EventFieldAudience[],
   tx?: TxOrDb
 ): Promise<EventField[]> =>
-  (
+  filterFieldsForAudiences(
     await (tx ?? db)
       .select()
       .from(eventField)
       .where(eq(eventField.eventId, eventId))
-      .orderBy(eventField.position, eventField.id)
-  ).filter((field) => fieldHasAudience(field, audiences));
+      .orderBy(eventField.position, eventField.id),
+    audiences
+  );
 
 /**
  * The questions a visitor (a guest) answers on signup: those whose audiences
@@ -162,7 +169,7 @@ export const eligibilityFor = (
   now: Date = new Date()
 ): EventEligibility => {
   if (!viewer.userId) {
-    return { eligible: false, reason: 'sign_in_required', reasonField: null };
+    return { eligible: false, reason: 'sign_in_required' };
   }
 
   const decision = judgeRegistration({
@@ -182,33 +189,25 @@ export const eligibilityFor = (
   });
 
   return decision.ok
-    ? { eligible: true, reason: null, reasonField: null }
-    : { eligible: false, reason: decision.reason, reasonField: null };
+    ? { eligible: true, reason: null }
+    : { eligible: false, reason: decision.reason };
 };
 
 /**
  * Whether this viewer may sign up as a helper. Same viewer rules as a
- * participant, but the helper decision ignores seats, cohort and grade. When
- * the caller already applied, `answers` are matched against the event's
- * requirements so the detail can name the first question they miss.
+ * participant, but the helper decision ignores seats, cohort and its own
+ * windows are the helper ones (or the shared pair).
  */
 export const helperEligibilityFor = (
   row: typeof event.$inferSelect,
   viewer: EventViewer,
   facts: { pending: boolean; registered: boolean },
-  fields: readonly EventField[],
-  answers: readonly EventRegistrationAnswer[],
   now: Date = new Date()
 ): EventEligibility => {
   if (!viewer.userId) {
-    return { eligible: false, reason: 'sign_in_required', reasonField: null };
+    return { eligible: false, reason: 'sign_in_required' };
   }
 
-  const requirementFailure = firstUnmetHelperRequirement(
-    fields,
-    row.helperRequirements,
-    answers
-  );
   const decision = judgeHelperRegistration({
     grade: viewer.grade,
     helperMaxGrade: row.helperMaxGrade,
@@ -225,16 +224,11 @@ export const helperEligibilityFor = (
     registrationClosesAt: row.registrationClosesAt,
     registrationEnabled: row.registrationEnabled,
     registrationOpensAt: row.registrationOpensAt,
-    requirementFailure,
   });
 
   return decision.ok
-    ? { eligible: true, reason: null, reasonField: null }
-    : {
-        eligible: false,
-        reason: decision.reason,
-        reasonField: decision.field ?? null,
-      };
+    ? { eligible: true, reason: null }
+    : { eligible: false, reason: decision.reason };
 };
 
 /**

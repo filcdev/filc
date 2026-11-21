@@ -6,7 +6,6 @@ import { and, eq } from 'drizzle-orm';
 import type { db as Db } from '#database';
 import {
   event,
-  eventField,
   eventRegistration,
   eventRegistrationAnswer,
 } from '#modules/events/schema';
@@ -15,11 +14,7 @@ import {
   revokeCheckinGrant,
   upsertCheckinGrant,
 } from '#modules/events/utils/grant';
-import {
-  firstUnmetHelperRequirement,
-  helperRequirementRefusalMessage,
-} from '#modules/events/utils/helper-requirement-match';
-import { badRequest, conflict, notFound } from '#utils/http';
+import { conflict, notFound } from '#utils/http';
 
 export type DecideTransaction =
   | typeof Db
@@ -55,23 +50,11 @@ export const decidePendingRegistration = async (
     throw conflict('This registration is not waiting for approval');
   }
 
-  const [eventRow] = await tx
-    .select({
-      endsAt: event.endsAt,
-      helperRequirements: event.helperRequirements,
-    })
-    .from(event)
-    .where(eq(event.id, eventId));
-  if (!eventRow) {
-    throw notFound('Event not found');
-  }
-
-  const [fields, answers] = await Promise.all([
+  const [[eventRow], answers] = await Promise.all([
     tx
-      .select()
-      .from(eventField)
-      .where(eq(eventField.eventId, eventId))
-      .orderBy(eventField.position),
+      .select({ endsAt: event.endsAt })
+      .from(event)
+      .where(eq(event.id, eventId)),
     tx
       .select({
         fieldId: eventRegistrationAnswer.fieldId,
@@ -80,19 +63,8 @@ export const decidePendingRegistration = async (
       .from(eventRegistrationAnswer)
       .where(eq(eventRegistrationAnswer.registrationId, registrationId)),
   ]);
-
-  // Approving re-checks the conditions against the answers as they stand now:
-  // the organizer may have edited the requirements after the application
-  // arrived. A decline never looks at them.
-  if (decision === 'approve') {
-    const failure = firstUnmetHelperRequirement(
-      fields,
-      eventRow.helperRequirements,
-      answers
-    );
-    if (failure) {
-      throw badRequest(helperRequirementRefusalMessage(failure.label));
-    }
+  if (!eventRow) {
+    throw notFound('Event not found');
   }
 
   // The status predicate repeats on the write: the row lock already serializes

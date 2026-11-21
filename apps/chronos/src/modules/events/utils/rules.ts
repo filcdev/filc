@@ -1,5 +1,4 @@
 import type { EventEligibilityReason } from '@filcdev/api/domains/events/event';
-import type { HelperRequirementFailure } from '#modules/events/utils/helper-requirement-match';
 
 /** Everything the rules can refuse with; `sign_in_required` belongs to the views. */
 export type RegistrationRefusal = Exclude<
@@ -9,12 +8,7 @@ export type RegistrationRefusal = Exclude<
 
 export type RegistrationDecision =
   | { ok: true }
-  | {
-      ok: false;
-      reason: RegistrationRefusal;
-      /** The question a requirement refusal is about, when there is one. */
-      field?: string;
-    };
+  | { ok: false; reason: RegistrationRefusal };
 
 /**
  * Everything the decision needs, all of it from the event's own columns plus
@@ -237,12 +231,6 @@ export type HelperRegistrationFacts = {
   /** The event's master registration switch. */
   registrationEnabled: boolean;
   registrationOpensAt: Date | null;
-  /**
-   * The first configured answer condition this application misses, computed
-   * before the decision. Optional so a caller with no requirements passes
-   * nothing rather than fabricating a match.
-   */
-  requirementFailure?: HelperRequirementFailure | null;
 };
 
 export type HelperRefusal =
@@ -254,17 +242,11 @@ export type HelperRefusal =
   | 'grade_too_high'
   | 'grade_unknown'
   | 'already_registered'
-  | 'pending_approval'
-  | 'requirement_unmet';
+  | 'pending_approval';
 
 export type HelperRegistrationDecision =
   | { ok: true }
-  | {
-      ok: false;
-      reason: HelperRefusal;
-      /** The question a requirement refusal is about, when there is one. */
-      field?: string;
-    };
+  | { ok: false; reason: HelperRefusal };
 
 export type RegistrationWindow = {
   closesAt: Date | null;
@@ -366,16 +348,6 @@ export const judgeHelperRegistration = (
   }
   if (facts.registered) {
     return refuseHelper('already_registered');
-  }
-  // Last, after every event-level refusal: a closed window is the answer even
-  // if the answers would also miss a condition. On approval this is the
-  // re-check against the requirements as they stand now.
-  if (facts.requirementFailure) {
-    return {
-      field: facts.requirementFailure.label,
-      ok: false,
-      reason: 'requirement_unmet',
-    };
   }
 
   return { ok: true };

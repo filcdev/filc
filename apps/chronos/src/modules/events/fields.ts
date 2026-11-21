@@ -103,7 +103,6 @@ export const replaceEventFields = base.events.fields.replace
       const [locked] = await tx
         .select({
           checkinFields: event.checkinFields,
-          helperRequirements: event.helperRequirements,
           id: event.id,
         })
         .from(event)
@@ -155,28 +154,18 @@ export const replaceEventFields = base.events.fields.replace
         .where(eq(eventField.eventId, id))
         .orderBy(eventField.position);
 
-      // A requirement can only point at a question this event still has. A
-      // removed question takes its requirements with it, inside the same
-      // transaction, so no later helper signup can meet a condition on a field
-      // that no longer exists.
+      // The door's answer list can only point at a question this event still
+      // has, so a removed question is pruned inside the same transaction. No
+      // later scan can then wait for an id that no longer exists.
       const keptFieldIds = new Set(rows.map((field) => field.id));
-      const prunedRequirements = locked.helperRequirements.filter(
-        (requirement) => keptFieldIds.has(requirement.fieldId)
-      );
       const prunedCheckinFields = pruneFieldIds(
         locked.checkinFields,
         keptFieldIds
       );
-      if (
-        prunedRequirements.length !== locked.helperRequirements.length ||
-        prunedCheckinFields.length !== locked.checkinFields.length
-      ) {
+      if (prunedCheckinFields.length !== locked.checkinFields.length) {
         await tx
           .update(event)
-          .set({
-            checkinFields: prunedCheckinFields,
-            helperRequirements: prunedRequirements,
-          })
+          .set({ checkinFields: prunedCheckinFields })
           .where(eq(event.id, id));
       }
 

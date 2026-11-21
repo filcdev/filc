@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import process from 'node:process';
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 /**
  * The decision and seat rules want a real Postgres, so the suite skips when the
@@ -33,18 +33,11 @@ const EVENT_ID = crypto.randomUUID();
 const PENDING_STUDENT = crypto.randomUUID();
 const DECLINE_STUDENT = crypto.randomUUID();
 const CONFIRMED_STUDENT = crypto.randomUUID();
-const REQUIREMENT_STUDENT = crypto.randomUUID();
 const PENDING_ID = crypto.randomUUID();
 const DECLINE_ID = crypto.randomUUID();
 const CONFIRMED_ID = crypto.randomUUID();
-const REQUIREMENT_ID = crypto.randomUUID();
 const FIELD_ID = crypto.randomUUID();
-const STUDENT_IDS = [
-  PENDING_STUDENT,
-  DECLINE_STUDENT,
-  CONFIRMED_STUDENT,
-  REQUIREMENT_STUDENT,
-];
+const STUDENT_IDS = [PENDING_STUDENT, DECLINE_STUDENT, CONFIRMED_STUDENT];
 const EMAIL_PREFIX = EVENT_ID.slice(0, 8);
 
 const at = (hour: number) => new Date(2026, 4, 5, hour, 0, 0);
@@ -112,13 +105,6 @@ describe.skipIf(!hasDatabase)('helper registration decision', () => {
         status: 'confirmed',
         userId: CONFIRMED_STUDENT,
       },
-      {
-        eventId: EVENT_ID,
-        id: REQUIREMENT_ID,
-        role: 'helper',
-        status: 'pending',
-        userId: REQUIREMENT_STUDENT,
-      },
     ]);
 
     await db.insert(modules.eventField).values({
@@ -132,29 +118,11 @@ describe.skipIf(!hasDatabase)('helper registration decision', () => {
       type: 'text',
     });
 
-    // The already-approved helper meets the condition; the requirement student
-    // starts below it and is fixed inside the test.
-    await db.insert(modules.eventRegistrationAnswer).values([
-      {
-        fieldId: FIELD_ID,
-        registrationId: PENDING_ID,
-        value: 'informatika',
-      },
-      {
-        fieldId: FIELD_ID,
-        registrationId: REQUIREMENT_ID,
-        value: 'matek',
-      },
-    ]);
-
-    await db
-      .update(modules.event)
-      .set({
-        helperRequirements: [
-          { fieldId: FIELD_ID, op: 'equals', value: 'Informatika' },
-        ],
-      })
-      .where(eq(modules.event.id, EVENT_ID));
+    await db.insert(modules.eventRegistrationAnswer).values({
+      fieldId: FIELD_ID,
+      registrationId: PENDING_ID,
+      value: 'informatika',
+    });
   });
 
   afterAll(async () => {
@@ -187,40 +155,6 @@ describe.skipIf(!hasDatabase)('helper registration decision', () => {
 
     expect(registration.status).toBe('cancelled');
     expect(await modules.seatCount(EVENT_ID)).toBe(0);
-  });
-
-  it('refuses an approval that misses a requirement, then accepts once it is met', async () => {
-    let status: number | undefined;
-    let message = '';
-    try {
-      await decide(REQUIREMENT_ID, 'approve');
-    } catch (error) {
-      status = (error as { status?: number }).status;
-      message = (error as Error).message;
-    }
-    expect(status).toBe(400);
-    expect(message).toContain('"Szakirány"');
-
-    // The refusal leaves the row exactly where it was.
-    const [stillPending] = await modules.db
-      .select({ status: modules.eventRegistration.status })
-      .from(modules.eventRegistration)
-      .where(eq(modules.eventRegistration.id, REQUIREMENT_ID));
-    expect(stillPending?.status).toBe('pending');
-
-    // Case and accents do not matter: this now satisfies `equals Informatika`.
-    await modules.db
-      .update(modules.eventRegistrationAnswer)
-      .set({ value: 'INFORMATIKA' })
-      .where(
-        and(
-          eq(modules.eventRegistrationAnswer.registrationId, REQUIREMENT_ID),
-          eq(modules.eventRegistrationAnswer.fieldId, FIELD_ID)
-        )
-      );
-
-    const approved = await decide(REQUIREMENT_ID, 'approve');
-    expect(approved.status).toBe('confirmed');
   });
 
   it('answers 409 when the row is no longer pending', async () => {

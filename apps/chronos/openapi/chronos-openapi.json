@@ -9052,6 +9052,30 @@
                   "guestRegistrationEnabled": {
                     "type": "boolean"
                   },
+                  "helperMaxGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "helperMinGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "helperRegistrationClosesAt": {
                     "anyOf": [
                       {
@@ -9081,61 +9105,6 @@
                   },
                   "helperRegistrationSeparateWindow": {
                     "type": "boolean"
-                  },
-                  "helperMaxGrade": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 13
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "helperMinGrade": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 13
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "helperRequirements": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fieldId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "op": {
-                          "enum": [
-                            "equals",
-                            "contains",
-                            "gte",
-                            "lte",
-                            "is_true",
-                            "is_false"
-                          ],
-                          "type": "string"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "fieldId",
-                        "op",
-                        "value"
-                      ]
-                    }
                   },
                   "maxGrade": {
                     "anyOf": [
@@ -9379,6 +9348,26 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperRegistrationClosesAt": {
                       "anyOf": [
                         {
@@ -9408,57 +9397,6 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
-                    },
-                    "helperMaxGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperMinGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperRequirements": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fieldId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "op": {
-                            "enum": [
-                              "equals",
-                              "contains",
-                              "gte",
-                              "lte",
-                              "is_true",
-                              "is_false"
-                            ],
-                            "type": "string"
-                          },
-                          "value": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fieldId",
-                          "op",
-                          "value"
-                        ]
-                      }
                     },
                     "id": {
                       "type": "string",
@@ -9602,19 +9540,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "requirement_unmet"
+                                "grade_unknown"
                               ],
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "reasonField": {
-                          "anyOf": [
-                            {
                               "type": "string"
                             },
                             {
@@ -9625,8 +9552,7 @@
                       },
                       "required": [
                         "eligible",
-                        "reason",
-                        "reasonField"
+                        "reason"
                       ]
                     },
                     "seats": {
@@ -9673,13 +9599,12 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRegistrationClosesAt",
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
-                    "helperMaxGrade",
-                    "helperMinGrade",
-                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
@@ -10132,6 +10057,26 @@
                           "guestRegistrationEnabled": {
                             "type": "boolean"
                           },
+                          "helperMaxGrade": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "helperMinGrade": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "helperRegistrationClosesAt": {
                             "anyOf": [
                               {
@@ -10161,57 +10106,6 @@
                           },
                           "helperRegistrationSeparateWindow": {
                             "type": "boolean"
-                          },
-                          "helperMaxGrade": {
-                            "anyOf": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "helperMinGrade": {
-                            "anyOf": [
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "helperRequirements": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "fieldId": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "op": {
-                                  "enum": [
-                                    "equals",
-                                    "contains",
-                                    "gte",
-                                    "lte",
-                                    "is_true",
-                                    "is_false"
-                                  ],
-                                  "type": "string"
-                                },
-                                "value": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "fieldId",
-                                "op",
-                                "value"
-                              ]
-                            }
                           },
                           "id": {
                             "type": "string",
@@ -10355,19 +10249,8 @@
                                       "already_registered",
                                       "pending_approval",
                                       "full",
-                                      "grade_unknown",
-                                      "requirement_unmet"
+                                      "grade_unknown"
                                     ],
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "reasonField": {
-                                "anyOf": [
-                                  {
                                     "type": "string"
                                   },
                                   {
@@ -10378,8 +10261,7 @@
                             },
                             "required": [
                               "eligible",
-                              "reason",
-                              "reasonField"
+                              "reason"
                             ]
                           },
                           "seats": {
@@ -10426,13 +10308,12 @@
                           "description",
                           "endsAt",
                           "guestRegistrationEnabled",
+                          "helperMaxGrade",
+                          "helperMinGrade",
                           "helperRegistrationClosesAt",
                           "helperRegistrationEnabled",
                           "helperRegistrationOpensAt",
                           "helperRegistrationSeparateWindow",
-                          "helperMaxGrade",
-                          "helperMinGrade",
-                          "helperRequirements",
                           "id",
                           "imageByteSize",
                           "imageContentType",
@@ -11066,6 +10947,26 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperRegistrationClosesAt": {
                       "anyOf": [
                         {
@@ -11095,57 +10996,6 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
-                    },
-                    "helperMaxGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperMinGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperRequirements": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fieldId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "op": {
-                            "enum": [
-                              "equals",
-                              "contains",
-                              "gte",
-                              "lte",
-                              "is_true",
-                              "is_false"
-                            ],
-                            "type": "string"
-                          },
-                          "value": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fieldId",
-                          "op",
-                          "value"
-                        ]
-                      }
                     },
                     "id": {
                       "type": "string",
@@ -11289,19 +11139,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "requirement_unmet"
+                                "grade_unknown"
                               ],
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "reasonField": {
-                          "anyOf": [
-                            {
                               "type": "string"
                             },
                             {
@@ -11312,8 +11151,7 @@
                       },
                       "required": [
                         "eligible",
-                        "reason",
-                        "reasonField"
+                        "reason"
                       ]
                     },
                     "seats": {
@@ -11439,19 +11277,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "requirement_unmet"
+                                "grade_unknown"
                               ],
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "reasonField": {
-                          "anyOf": [
-                            {
                               "type": "string"
                             },
                             {
@@ -11462,8 +11289,7 @@
                       },
                       "required": [
                         "eligible",
-                        "reason",
-                        "reasonField"
+                        "reason"
                       ]
                     },
                     "myRegistration": {
@@ -11585,13 +11411,12 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRegistrationClosesAt",
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
-                    "helperMaxGrade",
-                    "helperMinGrade",
-                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
@@ -11974,6 +11799,30 @@
                   "guestRegistrationEnabled": {
                     "type": "boolean"
                   },
+                  "helperMaxGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "helperMinGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "helperRegistrationClosesAt": {
                     "anyOf": [
                       {
@@ -12003,61 +11852,6 @@
                   },
                   "helperRegistrationSeparateWindow": {
                     "type": "boolean"
-                  },
-                  "helperMaxGrade": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 13
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "helperMinGrade": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 13
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "helperRequirements": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fieldId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "op": {
-                          "enum": [
-                            "equals",
-                            "contains",
-                            "gte",
-                            "lte",
-                            "is_true",
-                            "is_false"
-                          ],
-                          "type": "string"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "fieldId",
-                        "op",
-                        "value"
-                      ]
-                    }
                   },
                   "maxGrade": {
                     "anyOf": [
@@ -12294,6 +12088,26 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperRegistrationClosesAt": {
                       "anyOf": [
                         {
@@ -12323,57 +12137,6 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
-                    },
-                    "helperMaxGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperMinGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperRequirements": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fieldId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "op": {
-                            "enum": [
-                              "equals",
-                              "contains",
-                              "gte",
-                              "lte",
-                              "is_true",
-                              "is_false"
-                            ],
-                            "type": "string"
-                          },
-                          "value": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fieldId",
-                          "op",
-                          "value"
-                        ]
-                      }
                     },
                     "id": {
                       "type": "string",
@@ -12517,19 +12280,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "requirement_unmet"
+                                "grade_unknown"
                               ],
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "reasonField": {
-                          "anyOf": [
-                            {
                               "type": "string"
                             },
                             {
@@ -12540,8 +12292,7 @@
                       },
                       "required": [
                         "eligible",
-                        "reason",
-                        "reasonField"
+                        "reason"
                       ]
                     },
                     "seats": {
@@ -12588,13 +12339,12 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRegistrationClosesAt",
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
-                    "helperMaxGrade",
-                    "helperMinGrade",
-                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
@@ -13469,6 +13219,26 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperRegistrationClosesAt": {
                       "anyOf": [
                         {
@@ -13498,57 +13268,6 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
-                    },
-                    "helperMaxGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperMinGrade": {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "helperRequirements": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fieldId": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "op": {
-                            "enum": [
-                              "equals",
-                              "contains",
-                              "gte",
-                              "lte",
-                              "is_true",
-                              "is_false"
-                            ],
-                            "type": "string"
-                          },
-                          "value": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fieldId",
-                          "op",
-                          "value"
-                        ]
-                      }
                     },
                     "id": {
                       "type": "string",
@@ -13692,19 +13411,8 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown",
-                                "requirement_unmet"
+                                "grade_unknown"
                               ],
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "reasonField": {
-                          "anyOf": [
-                            {
                               "type": "string"
                             },
                             {
@@ -13715,8 +13423,7 @@
                       },
                       "required": [
                         "eligible",
-                        "reason",
-                        "reasonField"
+                        "reason"
                       ]
                     },
                     "seats": {
@@ -13763,13 +13470,12 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRegistrationClosesAt",
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
-                    "helperMaxGrade",
-                    "helperMinGrade",
-                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
