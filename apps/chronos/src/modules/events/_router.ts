@@ -22,6 +22,7 @@ import {
   resendRegistrationTicket,
   revokeRegistrationCheckinGrant,
 } from '#modules/events/registrations';
+import { listScanEvents } from '#modules/events/scan';
 import { getEventStats } from '#modules/events/stats';
 import { getTicket } from '#modules/events/tickets';
 
@@ -44,6 +45,7 @@ export const eventsRouter = {
     resend: resendRegistrationTicket,
     revokeCheckinGrant: revokeRegistrationCheckinGrant,
   },
+  scan: listScanEvents,
   stats: getEventStats,
   update: updateEvent,
   uploadImage: uploadEventImage,

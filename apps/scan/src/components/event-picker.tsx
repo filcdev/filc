@@ -2,6 +2,7 @@ import { Button } from '@filcdev/ui/components/button';
 import { Spinner } from '@filcdev/ui/components/spinner';
 import { LogOut } from 'lucide-react';
 import { LocaleToggle } from '@/components/locale-toggle';
+import { NoAccessScreen } from '@/components/no-access-screen';
 import { type ScanEvent, useEvents } from '@/hooks/events';
 import { fill, formatWhen, type ScanLocale, type ScanStrings } from '@/i18n';
 
@@ -32,6 +33,19 @@ export const EventPicker = ({
   const retry = () => {
     refetch();
   };
+
+  // 403 is the endpoint saying "neither the permission nor a grant": that is
+  // the no-access screen, not a failed load. Any other error keeps the retry.
+  if (error && (error as { status?: number }).status === 403) {
+    return (
+      <NoAccessScreen
+        locale={locale}
+        onLocaleChange={onLocaleChange}
+        onSignOut={onSignOut}
+        strings={s}
+      />
+    );
+  }
 
   return (
     <main className="flex min-h-dvh flex-col bg-background">
@@ -92,6 +106,7 @@ export const EventPicker = ({
                   className="flex min-h-16 w-full flex-col items-start justify-center gap-1 rounded-2xl border border-border bg-card px-4 py-3 text-left transition-colors active:bg-muted"
                   onClick={() =>
                     onSelect({
+                      expiresAt: event.expiresAt,
                       id: event.id,
                       startsAt: event.startsAt,
                       title: event.title,
@@ -105,6 +120,13 @@ export const EventPicker = ({
                   <span className="text-muted-foreground text-sm">
                     {formatWhen(event.startsAt, locale)}
                   </span>
+                  {event.expiresAt ? (
+                    <span className="text-muted-foreground text-xs">
+                      {fill(s.pickerGrantUntil, {
+                        date: formatWhen(event.expiresAt, locale),
+                      })}
+                    </span>
+                  ) : null}
                 </button>
               </li>
             ))}

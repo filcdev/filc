@@ -31,6 +31,7 @@ import {
   eventRegistrationDecideInputSchema,
   eventRegistrationSchema,
 } from '../domains/events/registration';
+import { eventScanEventSchema } from '../domains/events/scan';
 import { eventStatsSchema } from '../domains/events/stats';
 import { listResponse } from '../domains/list';
 import { filcRoute } from './route';
@@ -46,8 +47,9 @@ const deleteResponseSchema = z.object({ id: z.uuid() });
  */
 export const eventsContract = {
   /**
-   * The door scan. `events:checkin` is the permission a helper needs, and this
-   * procedure is what registers it as a known permission for the roles UI.
+   * The door scan. A caller may scan with the global `events:checkin`
+   * permission or with an unexpired grant for this exact event — the grant an
+   * organizer creates by approving a helper registration.
    */
   checkin: oc
     .route(
@@ -290,6 +292,27 @@ export const eventsContract = {
       .input(eventRegistrationCancelInputSchema)
       .output(deleteResponseSchema),
   },
+  /**
+   * The scanner's picker: the events this caller may check tickets in at.
+   *
+   * A holder of `events:checkin` sees every published event that has not
+   * ended; everyone else sees only the events they hold an unexpired door
+   * grant for, each with its expiry. A caller with neither answers 403, which
+   * is what the scan app renders as its no-access screen.
+   */
+  scan: oc
+    .route(
+      filcRoute({
+        auth: true,
+        description:
+          'List the events the caller may check tickets in at: every published, not-ended event for a holder of events:checkin, otherwise only their active door grants with their expiry; a caller with neither answers 403',
+        method: 'GET',
+        operationId: 'getScanEvents',
+        path: '/scan/events',
+        tags: EVENT_TAGS,
+      })
+    )
+    .output(listResponse(eventScanEventSchema)),
   /**
    * The organizer's plain numbers: seats, role and status counts, check-ins, the
    * answers per question and the registration timeline.

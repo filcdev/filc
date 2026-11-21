@@ -1,10 +1,9 @@
-import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { and, eq, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
-import { requireAuthorization } from '#middleware/auth';
+import { requireAuthentication } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
 import { eventRegistration, eventTicket } from '#modules/events/schema';
 import {
@@ -12,6 +11,7 @@ import {
   type CheckinTicket,
   checkInTicket,
 } from '#modules/events/utils/checkin';
+import { requireEventCheckin } from '#modules/events/utils/checkin-access';
 import { base } from '#orpc';
 
 const logger = getLogger(['chronos', 'events', 'checkin']);
@@ -101,10 +101,15 @@ const store: CheckinStore = { findTicket, markCheckedIn };
  * ticket, a cancelled one or nonsense changes nothing.
  */
 export const checkInTicketAtDoor = base.events.checkin
-  .use(requireAuthorization(permissions.eventsCheckin))
+  .use(requireAuthentication)
   .handler(async ({ context, input }) => {
     const { code, id } = input;
     const now = new Date();
+
+    // The global permission is not required: an approved helper's grant is
+    // enough, but only for this event. The check reads the clock here, so an
+    // expired grant is refused before a cleanup job ever runs.
+    await requireEventCheckin(context.session.userId, id, now);
 
     logger.debug('check-in scanned', {
       eventId: id,
