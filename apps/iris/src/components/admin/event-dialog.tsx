@@ -248,7 +248,8 @@ function toFormValues(item: EventDetail | null | undefined): EventFormValues {
       categoryDefaults(category).registrationEnabled,
     registrationOpensAt: toMinuteDate(item?.registrationOpensAt),
     startsAt: toMinuteDate(item?.startsAt),
-    status: item?.status ?? 'draft',
+    // A new event starts published; an edited event keeps its own status.
+    status: item?.status ?? 'published',
     title: item?.title ?? '',
   };
 }
