@@ -61,6 +61,7 @@ import { Route as PrivateAdminWifiUsersRouteImport } from './routes/_private/adm
 import { Route as PublicEventsEventIdIndexRouteImport } from './routes/_public/events/$eventId/index'
 import { Route as PublicEventsEventIdRegisterRouteImport } from './routes/_public/events/$eventId/register'
 import { Route as PublicTicketsTicketIdIndexRouteImport } from './routes/_public/tickets/$ticketId/index'
+import { Route as PrivateAdminEventsEventIdHelpersRouteImport } from './routes/_private/admin/events_.$eventId_.helpers'
 
 const PrivateRouteRoute = PrivateRouteRouteImport.update({
   id: '/_private',
@@ -347,6 +348,12 @@ const PublicTicketsTicketIdIndexRoute =
     path: '/tickets/$ticketId/',
     getParentRoute: () => PublicRouteRoute,
   } as any)
+const PrivateAdminEventsEventIdHelpersRoute =
+  PrivateAdminEventsEventIdHelpersRouteImport.update({
+    id: '/events_/$eventId_/helpers',
+    path: '/events/$eventId/helpers',
+    getParentRoute: () => PrivateAdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -399,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/admin/wifi/': typeof PrivateAdminWifiIndexRoute
   '/events/$eventId/': typeof PublicEventsEventIdIndexRoute
   '/tickets/$ticketId/': typeof PublicTicketsTicketIdIndexRoute
+  '/admin/events/$eventId/helpers': typeof PrivateAdminEventsEventIdHelpersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
@@ -451,6 +459,7 @@ export interface FileRoutesByTo {
   '/admin/wifi': typeof PrivateAdminWifiIndexRoute
   '/events/$eventId': typeof PublicEventsEventIdIndexRoute
   '/tickets/$ticketId': typeof PublicTicketsTicketIdIndexRoute
+  '/admin/events/$eventId/helpers': typeof PrivateAdminEventsEventIdHelpersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -506,6 +515,7 @@ export interface FileRoutesById {
   '/_private/admin/wifi/': typeof PrivateAdminWifiIndexRoute
   '/_public/events/$eventId/': typeof PublicEventsEventIdIndexRoute
   '/_public/tickets/$ticketId/': typeof PublicTicketsTicketIdIndexRoute
+  '/_private/admin/events_/$eventId_/helpers': typeof PrivateAdminEventsEventIdHelpersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -560,6 +570,7 @@ export interface FileRouteTypes {
     | '/admin/wifi/'
     | '/events/$eventId/'
     | '/tickets/$ticketId/'
+    | '/admin/events/$eventId/helpers'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -612,6 +623,7 @@ export interface FileRouteTypes {
     | '/admin/wifi'
     | '/events/$eventId'
     | '/tickets/$ticketId'
+    | '/admin/events/$eventId/helpers'
   id:
     | '__root__'
     | '/_private'
@@ -666,6 +678,7 @@ export interface FileRouteTypes {
     | '/_private/admin/wifi/'
     | '/_public/events/$eventId/'
     | '/_public/tickets/$ticketId/'
+    | '/_private/admin/events_/$eventId_/helpers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1042,6 +1055,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicTicketsTicketIdIndexRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/_private/admin/events_/$eventId_/helpers': {
+      id: '/_private/admin/events_/$eventId_/helpers'
+      path: '/events/$eventId/helpers'
+      fullPath: '/admin/events/$eventId/helpers'
+      preLoaderRoute: typeof PrivateAdminEventsEventIdHelpersRouteImport
+      parentRoute: typeof PrivateAdminRouteRoute
+    }
   }
 }
 
@@ -1080,6 +1100,7 @@ interface PrivateAdminRouteRouteChildren {
   PrivateAdminDoorlockIndexRoute: typeof PrivateAdminDoorlockIndexRoute
   PrivateAdminNavigatorIndexRoute: typeof PrivateAdminNavigatorIndexRoute
   PrivateAdminWifiIndexRoute: typeof PrivateAdminWifiIndexRoute
+  PrivateAdminEventsEventIdHelpersRoute: typeof PrivateAdminEventsEventIdHelpersRoute
 }
 
 const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
@@ -1121,6 +1142,7 @@ const PrivateAdminRouteRouteChildren: PrivateAdminRouteRouteChildren = {
   PrivateAdminDoorlockIndexRoute: PrivateAdminDoorlockIndexRoute,
   PrivateAdminNavigatorIndexRoute: PrivateAdminNavigatorIndexRoute,
   PrivateAdminWifiIndexRoute: PrivateAdminWifiIndexRoute,
+  PrivateAdminEventsEventIdHelpersRoute: PrivateAdminEventsEventIdHelpersRoute,
 }
 
 const PrivateAdminRouteRouteWithChildren =

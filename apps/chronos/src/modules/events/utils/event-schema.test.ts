@@ -3,7 +3,6 @@ import {
   categoryDefaults,
   eventCategories,
   eventCategorySchema,
-  eventCheckinDisplays,
   eventCreateSchema,
   eventUpdateSchema,
 } from '@filcdev/api/domains/events/event';
@@ -84,16 +83,22 @@ describe('eventCreateSchema', () => {
     expect(eventCategorySchema.safeParse('concert').success).toBe(false);
   });
 
-  it('accepts every check-in display and rejects an unknown one', () => {
-    for (const checkinDisplay of eventCheckinDisplays) {
-      expect(
-        eventCreateSchema.safeParse({ ...validCreate, checkinDisplay }).success
-      ).toBe(true);
-    }
+  it('accepts a door rule list and rejects an unknown action', () => {
+    const rule = {
+      action: 'allow' as const,
+      id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      message: '',
+      show: { email: false, fieldIds: [], name: true },
+      when: null,
+    };
+    expect(
+      eventCreateSchema.safeParse({ ...validCreate, checkinRules: [rule] })
+        .success
+    ).toBe(true);
     expect(
       eventCreateSchema.safeParse({
         ...validCreate,
-        checkinDisplay: 'everything',
+        checkinRules: [{ ...rule, action: 'maybe' }],
       }).success
     ).toBe(false);
   });

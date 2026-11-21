@@ -102,7 +102,12 @@ export const ScannerScreen = ({
         />
 
         {result ? (
-          <ResultPanel locale={locale} result={result} strings={s} />
+          <ResultPanel
+            locale={locale}
+            onClose={handleNext}
+            result={result}
+            strings={s}
+          />
         ) : null}
 
         {!result && failure ? (

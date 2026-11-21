@@ -632,7 +632,8 @@
       "revokeGrantConfirmTitle": "Revoke door access?",
       "revokeGrantError": "The door access could not be revoked.",
       "revokeGrantSuccess": "Door access revoked",
-      "revoking": "Revoking…"
+      "revoking": "Revoking…",
+      "cancel": "Cancel registration"
     },
     "public": {
       "guestCta": "Register as a guest",
@@ -835,12 +836,6 @@
     "gradeHint": "The eight bilingual classes (1/13.RS, 2/14.VL, …) name no grade, so any grade bound keeps them out.",
     "total": "{{count}} events",
     "helperRegistrationGroup": "Helpers",
-    "helpersSettings": {
-      "title": "Helper settings",
-      "hint": "Helper signups and what the door's scanner shows. These also live in the event dialog.",
-      "collapse": "Collapse helper settings",
-      "expand": "Expand helper settings"
-    },
     "helperRegistrationEnabled": "Allow helper signups",
     "helperRegistrationHint": "Helper signups always wait for an organizer’s approval, and helpers do not take a seat.",
     "helperRegistrationSeparateWindow": "Separate signup window for helpers",
@@ -851,21 +846,63 @@
     "helperMaxGrade": "Helpers' maximum grade",
     "helperGradeHint": "Leave both empty to use the event's own grade bounds for helpers.",
     "noGradeBound": "No bound",
-    "checkinDisplayGroup": "Door check-in",
-    "checkinDisplay": "What the scanner shows",
-    "checkinDisplays": {
-      "minimal": "Validity only",
-      "name": "Name",
-      "full": "Name and email"
+    "checkinRules": {
+      "action": "Decision",
+      "actions": {
+        "allow": "May enter",
+        "deny": "May not enter"
+      },
+      "add": "Add rule",
+      "catchAllTitle": "In every other case…",
+      "delete": "Delete rule {{number}}",
+      "duplicate": "Duplicate rule {{number}}",
+      "message": "Message at the door",
+      "messagePlaceholder": "What the scanner should say when entry is denied",
+      "moveDown": "Move rule {{number}} down",
+      "moveUp": "Move rule {{number}} up",
+      "noQuestions": "Add a question to the event first; rules compare its answers.",
+      "ops": {
+        "equals": "is",
+        "contains": "contains",
+        "gte": "is at least",
+        "lte": "is at most",
+        "is_true": "is ticked",
+        "is_false": "is not ticked"
+      },
+      "orderFirstMatch": "The first matching rule decides. The last rule answers everyone else.",
+      "question": "Question",
+      "rule": "Rule {{number}}",
+      "show": "and show this",
+      "showEmail": "E-mail",
+      "showName": "Name",
+      "then": "then",
+      "title": "Door rules",
+      "value": "Value",
+      "when": "If"
     },
-    "checkinDisplayHints": {
-      "minimal": "Only that the ticket is valid — no name or email.",
-      "name": "The visitor’s name, so the door can compare it with the person.",
-      "full": "The visitor’s name and email address."
+    "helpersPage": {
+      "back": "Back to the event",
+      "hint": "Helper signups and the door rules: who may enter, and what the scanner shows when they do.",
+      "link": "Helper settings",
+      "title": "Helper settings"
     },
-    "checkinFields": "Answers shown at the door",
-    "checkinFieldsHint": "Only the ticked questions' answers appear at the scanner, in this order.",
-    "checkinFieldsEmpty": "Save a question first; the answers are picked from the event's saved questions."
+    "registrationDialog": {
+      "answers": "Answers",
+      "approveAria": "Approve and grant door access to {{name}}",
+      "cancelAria": "Cancel the registration of {{name}}",
+      "checkedInAt": "Checked in",
+      "declineAria": "Decline the helper signup of {{name}}",
+      "doorAccess": "Door access",
+      "grant": "Approve and grant",
+      "grantActive": "May check tickets in until {{date}}.",
+      "grantNone": "No door access.",
+      "registeredAt": "Registered",
+      "revoke": "Revoke access",
+      "revokeAria": "Revoke the door access of {{name}}",
+      "role": "Role",
+      "rulesHint": "Who may enter is decided by the door rules:",
+      "status": "Status"
+    }
   },
   "systemMessages": {
     "title": "System Messages",

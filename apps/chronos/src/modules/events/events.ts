@@ -2,6 +2,7 @@ import type {
   EventCreateInput,
   EventUpdateInput,
 } from '@filcdev/api/domains/events/event';
+import { defaultCheckinRules } from '@filcdev/api/domains/events/rules';
 import { permissions } from '@filcdev/api/permissions';
 import { getLogger } from '@logtape/logtape';
 import { and, asc, count, eq, gte, type SQL } from 'drizzle-orm';
@@ -9,7 +10,7 @@ import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
 import { event, eventRegistration } from '#modules/events/schema';
-import { assertCheckinFieldIds } from '#modules/events/utils/checkin-fields';
+import { assertCheckinRules } from '#modules/events/utils/door-rules';
 import {
   canManageEvents,
   EVENT_AUDIT_FIELDS,
@@ -172,14 +173,6 @@ export const getEvent = base.events.get.handler(async ({ context, input }) => {
   };
 });
 
-/** The door's two columns, defaulted once for both create and a read-back. */
-function doorInsertValues(body: EventCreateInput) {
-  return {
-    checkinDisplay: body.checkinDisplay ?? 'name',
-    checkinFields: body.checkinFields ?? [],
-  };
-}
-
 /** The helper grade band, whose absence is `null` rather than a fallback. */
 function helperGradeInsertValues(body: EventCreateInput) {
   return {
@@ -194,12 +187,13 @@ function helperGradeInsertValues(body: EventCreateInput) {
  */
 function eventInsertValues(
   body: EventCreateInput,
-  createdBy: string
+  createdBy: string,
+  checkinRules: typeof event.$inferInsert.checkinRules
 ): typeof event.$inferInsert {
   return {
     capacity: body.capacity ?? null,
     category: body.category,
-    ...doorInsertValues(body),
+    checkinRules,
     cohortIds: body.cohortIds ?? [],
     createdBy,
     description: body.description,
@@ -232,12 +226,13 @@ export const createEvent = base.events.create
     }
 
     // A new event has no questions yet (they are replaced after the create), so
-    // a door answer here could only name another event's field. Reject it now.
-    assertCheckinFieldIds([], body.checkinFields ?? []);
+    // a rule here could only name another event's field. Reject it now.
+    const checkinRules = body.checkinRules ?? defaultCheckinRules();
+    assertCheckinRules([], checkinRules);
 
     const [created] = await db
       .insert(event)
-      .values(eventInsertValues(body, context.session.userId))
+      .values(eventInsertValues(body, context.session.userId, checkinRules))
       .returning();
     if (!created) {
       throw errors.INTERNAL({ message: 'Failed to create event' });
@@ -345,8 +340,8 @@ export const updateEvent = base.events.update
       await validateCohortIds(body.cohortIds);
     }
 
-    if (body.checkinFields !== undefined) {
-      assertCheckinFieldIds(await eventFields(id), body.checkinFields);
+    if (body.checkinRules !== undefined) {
+      assertCheckinRules(await eventFields(id), body.checkinRules);
     }
 
     const values = changedEventValues(existing, body);

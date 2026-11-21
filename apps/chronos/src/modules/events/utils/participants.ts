@@ -158,7 +158,9 @@ export const listEventRegistrations = async (
     items: rows.map((row) => ({
       answers: answers.get(row.id) ?? [],
       checkedInAt: row.checkedInAt,
-      checkinGrantExpiresAt: row.checkinGrantExpiresAt,
+      checkinGrant: row.checkinGrantExpiresAt
+        ? { expiresAt: row.checkinGrantExpiresAt }
+        : null,
       email: row.email,
       id: row.id,
       name: row.name,

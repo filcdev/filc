@@ -10,10 +10,10 @@ import {
   eventField,
   eventRegistrationAnswer,
 } from '#modules/events/schema';
-import { pruneFieldIds } from '#modules/events/utils/checkin-fields';
+import { pruneCheckinRules } from '#modules/events/utils/door-rules';
 import { base } from '#orpc';
 import { badRequest, conflict, notFound } from '#utils/http';
-import { diffActivity } from '#utils/values';
+import { diffActivity, valuesEqual } from '#utils/values';
 
 const logger = getLogger(['chronos', 'events']);
 
@@ -102,7 +102,7 @@ export const replaceEventFields = base.events.fields.replace
       // foreign-key violation (23503) rather than the conflict it is.
       const [locked] = await tx
         .select({
-          checkinFields: event.checkinFields,
+          checkinRules: event.checkinRules,
           id: event.id,
         })
         .from(event)
@@ -154,18 +154,19 @@ export const replaceEventFields = base.events.fields.replace
         .where(eq(eventField.eventId, id))
         .orderBy(eventField.position);
 
-      // The door's answer list can only point at a question this event still
-      // has, so a removed question is pruned inside the same transaction. No
-      // later scan can then wait for an id that no longer exists.
+      // A door rule can only point at a question this event still has, so a
+      // removed question is pruned inside the same transaction: a rule that
+      // named it goes, and a rule that showed it stops showing it. No later scan
+      // can then evaluate a condition whose field no longer exists.
       const keptFieldIds = new Set(rows.map((field) => field.id));
-      const prunedCheckinFields = pruneFieldIds(
-        locked.checkinFields,
+      const prunedCheckinRules = pruneCheckinRules(
+        locked.checkinRules,
         keptFieldIds
       );
-      if (prunedCheckinFields.length !== locked.checkinFields.length) {
+      if (!valuesEqual(prunedCheckinRules, locked.checkinRules)) {
         await tx
           .update(event)
-          .set({ checkinFields: prunedCheckinFields })
+          .set({ checkinRules: prunedCheckinRules })
           .where(eq(event.id, id));
       }
 

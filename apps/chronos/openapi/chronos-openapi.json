@@ -8959,6 +8959,47 @@
                             ]
                           }
                         },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "enum": [
+                                  "text",
+                                  "textarea",
+                                  "select",
+                                  "number",
+                                  "checkbox"
+                                ],
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "type",
+                              "value"
+                            ]
+                          }
+                        },
                         "registrationId": {
                           "type": "string",
                           "format": "uuid"
@@ -8990,6 +9031,7 @@
                       },
                       "required": [
                         "answers",
+                        "details",
                         "registrationId",
                         "status"
                       ]
@@ -9016,6 +9058,47 @@
                             "required": [
                               "fieldId",
                               "label",
+                              "value"
+                            ]
+                          }
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "enum": [
+                                  "text",
+                                  "textarea",
+                                  "select",
+                                  "number",
+                                  "checkbox"
+                                ],
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "type",
                               "value"
                             ]
                           }
@@ -9066,6 +9149,7 @@
                       },
                       "required": [
                         "answers",
+                        "details",
                         "registrationId",
                         "checkedInAt",
                         "checkedInByName",
@@ -9094,6 +9178,47 @@
                             "required": [
                               "fieldId",
                               "label",
+                              "value"
+                            ]
+                          }
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "enum": [
+                                  "text",
+                                  "textarea",
+                                  "select",
+                                  "number",
+                                  "checkbox"
+                                ],
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "type",
                               "value"
                             ]
                           }
@@ -9129,7 +9254,115 @@
                       },
                       "required": [
                         "answers",
+                        "details",
                         "registrationId",
+                        "status"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "answers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "value"
+                            ]
+                          }
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "enum": [
+                                  "text",
+                                  "textarea",
+                                  "select",
+                                  "number",
+                                  "checkbox"
+                                ],
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "type",
+                              "value"
+                            ]
+                          }
+                        },
+                        "registrationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "visitorEmail": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "email"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "visitorName": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "not_granted"
+                        }
+                      },
+                      "required": [
+                        "answers",
+                        "details",
+                        "registrationId",
+                        "message",
                         "status"
                       ]
                     },
@@ -9378,19 +9611,89 @@
                     ],
                     "type": "string"
                   },
-                  "checkinDisplay": {
-                    "enum": [
-                      "minimal",
-                      "name",
-                      "full"
-                    ],
-                    "type": "string"
-                  },
-                  "checkinFields": {
+                  "checkinRules": {
                     "type": "array",
                     "items": {
-                      "type": "string",
-                      "format": "uuid"
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "enum": [
+                            "allow",
+                            "deny"
+                          ],
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "message": {
+                          "type": "string",
+                          "default": ""
+                        },
+                        "show": {
+                          "type": "object",
+                          "properties": {
+                            "email": {
+                              "type": "boolean",
+                              "default": false
+                            },
+                            "fieldIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "default": []
+                            },
+                            "name": {
+                              "type": "boolean",
+                              "default": true
+                            }
+                          }
+                        },
+                        "when": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "fieldId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "op": {
+                                  "enum": [
+                                    "equals",
+                                    "contains",
+                                    "gte",
+                                    "lte",
+                                    "is_true",
+                                    "is_false"
+                                  ],
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "default": ""
+                                }
+                              },
+                              "required": [
+                                "fieldId",
+                                "op"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "id",
+                        "show",
+                        "when"
+                      ]
                     }
                   },
                   "cohortIds": {
@@ -9666,19 +9969,89 @@
                       ],
                       "type": "string"
                     },
-                    "checkinDisplay": {
-                      "enum": [
-                        "minimal",
-                        "name",
-                        "full"
-                      ],
-                      "type": "string"
-                    },
-                    "checkinFields": {
+                    "checkinRules": {
                       "type": "array",
                       "items": {
-                        "type": "string",
-                        "format": "uuid"
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "allow",
+                              "deny"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "message": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "show": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "boolean",
+                                "default": false
+                              },
+                              "fieldIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "default": []
+                              },
+                              "name": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            }
+                          },
+                          "when": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fieldId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "op": {
+                                    "enum": [
+                                      "equals",
+                                      "contains",
+                                      "gte",
+                                      "lte",
+                                      "is_true",
+                                      "is_false"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "default": ""
+                                  }
+                                },
+                                "required": [
+                                  "fieldId",
+                                  "op"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "id",
+                          "show",
+                          "when"
+                        ]
                       }
                     },
                     "createdAt": {
@@ -10042,8 +10415,7 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinDisplay",
-                    "checkinFields",
+                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -10375,19 +10747,89 @@
                             ],
                             "type": "string"
                           },
-                          "checkinDisplay": {
-                            "enum": [
-                              "minimal",
-                              "name",
-                              "full"
-                            ],
-                            "type": "string"
-                          },
-                          "checkinFields": {
+                          "checkinRules": {
                             "type": "array",
                             "items": {
-                              "type": "string",
-                              "format": "uuid"
+                              "type": "object",
+                              "properties": {
+                                "action": {
+                                  "enum": [
+                                    "allow",
+                                    "deny"
+                                  ],
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "message": {
+                                  "type": "string",
+                                  "default": ""
+                                },
+                                "show": {
+                                  "type": "object",
+                                  "properties": {
+                                    "email": {
+                                      "type": "boolean",
+                                      "default": false
+                                    },
+                                    "fieldIds": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "default": []
+                                    },
+                                    "name": {
+                                      "type": "boolean",
+                                      "default": true
+                                    }
+                                  }
+                                },
+                                "when": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "fieldId": {
+                                          "type": "string",
+                                          "format": "uuid"
+                                        },
+                                        "op": {
+                                          "enum": [
+                                            "equals",
+                                            "contains",
+                                            "gte",
+                                            "lte",
+                                            "is_true",
+                                            "is_false"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string",
+                                          "default": ""
+                                        }
+                                      },
+                                      "required": [
+                                        "fieldId",
+                                        "op"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "action",
+                                "id",
+                                "show",
+                                "when"
+                              ]
                             }
                           },
                           "createdAt": {
@@ -10751,8 +11193,7 @@
                         "required": [
                           "capacity",
                           "category",
-                          "checkinDisplay",
-                          "checkinFields",
+                          "checkinRules",
                           "createdAt",
                           "createdBy",
                           "description",
@@ -11265,19 +11706,89 @@
                       ],
                       "type": "string"
                     },
-                    "checkinDisplay": {
-                      "enum": [
-                        "minimal",
-                        "name",
-                        "full"
-                      ],
-                      "type": "string"
-                    },
-                    "checkinFields": {
+                    "checkinRules": {
                       "type": "array",
                       "items": {
-                        "type": "string",
-                        "format": "uuid"
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "allow",
+                              "deny"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "message": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "show": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "boolean",
+                                "default": false
+                              },
+                              "fieldIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "default": []
+                              },
+                              "name": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            }
+                          },
+                          "when": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fieldId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "op": {
+                                    "enum": [
+                                      "equals",
+                                      "contains",
+                                      "gte",
+                                      "lte",
+                                      "is_true",
+                                      "is_false"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "default": ""
+                                  }
+                                },
+                                "required": [
+                                  "fieldId",
+                                  "op"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "id",
+                          "show",
+                          "when"
+                        ]
                       }
                     },
                     "createdAt": {
@@ -11854,8 +12365,7 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinDisplay",
-                    "checkinFields",
+                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -12125,19 +12635,89 @@
                     ],
                     "type": "string"
                   },
-                  "checkinDisplay": {
-                    "enum": [
-                      "minimal",
-                      "name",
-                      "full"
-                    ],
-                    "type": "string"
-                  },
-                  "checkinFields": {
+                  "checkinRules": {
                     "type": "array",
                     "items": {
-                      "type": "string",
-                      "format": "uuid"
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "enum": [
+                            "allow",
+                            "deny"
+                          ],
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "message": {
+                          "type": "string",
+                          "default": ""
+                        },
+                        "show": {
+                          "type": "object",
+                          "properties": {
+                            "email": {
+                              "type": "boolean",
+                              "default": false
+                            },
+                            "fieldIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "default": []
+                            },
+                            "name": {
+                              "type": "boolean",
+                              "default": true
+                            }
+                          }
+                        },
+                        "when": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "fieldId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "op": {
+                                  "enum": [
+                                    "equals",
+                                    "contains",
+                                    "gte",
+                                    "lte",
+                                    "is_true",
+                                    "is_false"
+                                  ],
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "default": ""
+                                }
+                              },
+                              "required": [
+                                "fieldId",
+                                "op"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "id",
+                        "show",
+                        "when"
+                      ]
                     }
                   },
                   "cohortIds": {
@@ -12406,19 +12986,89 @@
                       ],
                       "type": "string"
                     },
-                    "checkinDisplay": {
-                      "enum": [
-                        "minimal",
-                        "name",
-                        "full"
-                      ],
-                      "type": "string"
-                    },
-                    "checkinFields": {
+                    "checkinRules": {
                       "type": "array",
                       "items": {
-                        "type": "string",
-                        "format": "uuid"
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "allow",
+                              "deny"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "message": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "show": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "boolean",
+                                "default": false
+                              },
+                              "fieldIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "default": []
+                              },
+                              "name": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            }
+                          },
+                          "when": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fieldId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "op": {
+                                    "enum": [
+                                      "equals",
+                                      "contains",
+                                      "gte",
+                                      "lte",
+                                      "is_true",
+                                      "is_false"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "default": ""
+                                  }
+                                },
+                                "required": [
+                                  "fieldId",
+                                  "op"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "id",
+                          "show",
+                          "when"
+                        ]
                       }
                     },
                     "createdAt": {
@@ -12782,8 +13432,7 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinDisplay",
-                    "checkinFields",
+                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -13537,19 +14186,89 @@
                       ],
                       "type": "string"
                     },
-                    "checkinDisplay": {
-                      "enum": [
-                        "minimal",
-                        "name",
-                        "full"
-                      ],
-                      "type": "string"
-                    },
-                    "checkinFields": {
+                    "checkinRules": {
                       "type": "array",
                       "items": {
-                        "type": "string",
-                        "format": "uuid"
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "allow",
+                              "deny"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "message": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "show": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "boolean",
+                                "default": false
+                              },
+                              "fieldIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "default": []
+                              },
+                              "name": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            }
+                          },
+                          "when": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fieldId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "op": {
+                                    "enum": [
+                                      "equals",
+                                      "contains",
+                                      "gte",
+                                      "lte",
+                                      "is_true",
+                                      "is_false"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "default": ""
+                                  }
+                                },
+                                "required": [
+                                  "fieldId",
+                                  "op"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "id",
+                          "show",
+                          "when"
+                        ]
                       }
                     },
                     "createdAt": {
@@ -13913,8 +14632,7 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinDisplay",
-                    "checkinFields",
+                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -15742,12 +16460,20 @@
                               }
                             ]
                           },
-                          "checkinGrantExpiresAt": {
+                          "checkinGrant": {
                             "anyOf": [
                               {
-                                "type": "string",
-                                "format": "date-time",
-                                "x-native-type": "date"
+                                "type": "object",
+                                "properties": {
+                                  "expiresAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "x-native-type": "date"
+                                  }
+                                },
+                                "required": [
+                                  "expiresAt"
+                                ]
                               },
                               {
                                 "type": "null"
@@ -15789,7 +16515,7 @@
                         "required": [
                           "answers",
                           "checkedInAt",
-                          "checkinGrantExpiresAt",
+                          "checkinGrant",
                           "email",
                           "id",
                           "name",

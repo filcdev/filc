@@ -632,7 +632,8 @@
       "revokeGrantConfirmTitle": "Visszavonod a beléptetési jogot?",
       "revokeGrantError": "A beléptetési jogot nem sikerült visszavonni.",
       "revokeGrantSuccess": "Beléptetési jog visszavonva",
-      "revoking": "Visszavonás…"
+      "revoking": "Visszavonás…",
+      "cancel": "Regisztráció lemondása"
     },
     "public": {
       "guestCta": "Jelentkezés vendégként",
@@ -835,12 +836,6 @@
     "gradeHint": "A nyolc két tanítási nyelvű osztály (1/13.RS, 2/14.VL, …) nem nevez meg évfolyamot, ezért bármely évfolyamkorlát kizárja őket.",
     "total": "{{count}} esemény",
     "helperRegistrationGroup": "Segítők",
-    "helpersSettings": {
-      "title": "Segítőbeállítások",
-      "hint": "A segítőjelentkezés és hogy mit mutat a beléptető. Ugyanezek a beállítások az esemény párbeszédablakában is megtalálhatók.",
-      "collapse": "Segítőbeállítások összecsukása",
-      "expand": "Segítőbeállítások kinyitása"
-    },
     "helperRegistrationEnabled": "Segítők engedélyezése",
     "helperRegistrationHint": "A segítőjelentkezést mindig a szervező hagyja jóvá, és a segítők nem foglalnak helyet.",
     "helperRegistrationSeparateWindow": "Külön jelentkezési időszak a segítőknek",
@@ -851,21 +846,63 @@
     "helperMaxGrade": "Segítők maximum évfolyama",
     "helperGradeHint": "Ha mindkettő üres, a segítőkre az esemény saját évfolyamhatárai érvényesek.",
     "noGradeBound": "Nincs korlát",
-    "checkinDisplayGroup": "Beléptetés",
-    "checkinDisplay": "A beléptető mit mutasson",
-    "checkinDisplays": {
-      "minimal": "Csak az érvényességet",
-      "name": "Nevet",
-      "full": "Nevet és e-mailt"
+    "checkinRules": {
+      "action": "Döntés",
+      "actions": {
+        "allow": "Beléphet",
+        "deny": "Nem léphet be"
+      },
+      "add": "Szabály hozzáadása",
+      "catchAllTitle": "Minden más esetben…",
+      "delete": "{{number}}. szabály törlése",
+      "duplicate": "{{number}}. szabály másolása",
+      "message": "Üzenet a beléptetésnél",
+      "messagePlaceholder": "Mit mondjon a beléptető, ha nem léphet be",
+      "moveDown": "{{number}}. szabály mozgatása lejjebb",
+      "moveUp": "{{number}}. szabály mozgatása feljebb",
+      "noQuestions": "Előbb adj hozzá kérdést az eseményhez; a szabályok a válaszait hasonlítják össze.",
+      "ops": {
+        "equals": "egyenlő",
+        "contains": "tartalmazza",
+        "gte": "nagyobb vagy egyenlő",
+        "lte": "kisebb vagy egyenlő",
+        "is_true": "be van jelölve",
+        "is_false": "nincs bejelölve"
+      },
+      "orderFirstMatch": "Az első illeszkedő szabály dönt. Az utolsó mindenki másra vonatkozik.",
+      "question": "Kérdés",
+      "rule": "{{number}}. szabály",
+      "show": "és ezt mutassa",
+      "showEmail": "E-mail",
+      "showName": "Név",
+      "then": "akkor",
+      "title": "Beléptetési szabályok",
+      "value": "Érték",
+      "when": "Ha"
     },
-    "checkinDisplayHints": {
-      "minimal": "Csak azt, hogy érvényes a jegy — nevet és e-mailt nem.",
-      "name": "A vendég nevét, hogy a beléptető összevesse a belépővel.",
-      "full": "A vendég nevét és e-mail-címét."
+    "helpersPage": {
+      "back": "Vissza az eseményhez",
+      "hint": "Segítőjelentkezés és beléptetési szabályok: ki léphet be, és mit mutat közben a beléptető.",
+      "link": "Segítő beállítások",
+      "title": "Segítő beállítások"
     },
-    "checkinFields": "Megjelenített válaszok",
-    "checkinFieldsHint": "Csak a bejelölt kérdések válaszai jelennek meg a beléptetőnél, ebben a sorrendben.",
-    "checkinFieldsEmpty": "Előbb ments el egy kérdést; a válaszok az esemény mentett kérdései közül választhatók."
+    "registrationDialog": {
+      "answers": "Válaszok",
+      "approveAria": "{{name}} jóváhagyása és beléptetése",
+      "cancelAria": "{{name}} regisztrációjának lemondása",
+      "checkedInAt": "Belépett",
+      "declineAria": "{{name}} segítőjelentkezésének elutasítása",
+      "doorAccess": "Beléptetési jogosultság",
+      "grant": "Jóváhagyás és beléptetés",
+      "grantActive": "Beléptethet eddig: {{date}}.",
+      "grantNone": "Nincs beléptetési jogosultsága.",
+      "registeredAt": "Regisztrált",
+      "revoke": "Jogosultság visszavonása",
+      "revokeAria": "{{name}} beléptetési jogosultságának visszavonása",
+      "role": "Szerep",
+      "rulesHint": "Hogy ki léphet be, a beléptetési szabályok döntik el:",
+      "status": "Állapot"
+    }
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",

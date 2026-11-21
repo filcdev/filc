@@ -148,10 +148,11 @@ export const eventParticipantSchema = z.object({
   /** Null until someone scans the ticket; guests have one, students may not. */
   checkedInAt: z.date().nullable(),
   /**
-   * When this helper's door grant lapses; null for a participant, a guest or a
-   * helper who has not been approved. An approval is what creates it.
+   * This helper's door grant, or null for a participant, a guest or a helper
+   * who has not been approved. An approval is what creates it, and the expiry
+   * is read at the door rather than trusted to a cleanup job.
    */
-  checkinGrantExpiresAt: z.date().nullable(),
+  checkinGrant: z.object({ expiresAt: z.date() }).nullable(),
   email: z.string(),
   id: z.uuid(),
   name: z.string(),

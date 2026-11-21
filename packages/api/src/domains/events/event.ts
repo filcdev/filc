@@ -3,6 +3,7 @@ import { listResponse, paginationSchema } from '../list';
 import { blockContentSchema, uniqueIdList } from '../news/announcements';
 import { type EventFieldAudience, eventFieldSchema } from './fields';
 import { eventRegistrationSchema } from './registration';
+import { eventCheckinRuleSchema } from './rules';
 
 /**
  * The seven fixed event categories. Each one is a hint for the organizer's
@@ -29,17 +30,6 @@ export const eventStatuses = ['draft', 'published', 'archived'] as const;
 export type EventStatus = (typeof eventStatuses)[number];
 
 export const eventStatusSchema = z.enum(eventStatuses);
-
-/**
- * How much the scanner reveals on a successful check-in. The setting is about
- * the screen at the door, so it applies to every outcome, not only an
- * admission: a cancelled ticket must not leak more than a valid one.
- */
-export const eventCheckinDisplays = ['minimal', 'name', 'full'] as const;
-
-export type EventCheckinDisplay = (typeof eventCheckinDisplays)[number];
-
-export const eventCheckinDisplaySchema = z.enum(eventCheckinDisplays);
 
 /**
  * What a category pre-fills in the organizer's dialog. Deliberately data, not
@@ -72,13 +62,12 @@ export const categoryDefaults = (
 export const eventRowSchema = z.object({
   capacity: z.number().nullable(),
   category: eventCategorySchema,
-  /** What the door's scanner reveals; `name` unless the organizer changes it. */
-  checkinDisplay: eventCheckinDisplaySchema,
   /**
-   * The answers the scanner returns, in this order. Empty means the identity
-   * setting is all a check-in reveals.
+   * The door's ordered rules: the first whose condition matches decides, and
+   * the last is the catch-all, so every scan has an answer. This is the one door
+   * setting — identity, shown answers and the admission decision all live here.
    */
-  checkinFields: z.array(z.uuid()),
+  checkinRules: z.array(eventCheckinRuleSchema),
   createdAt: z.date(),
   createdBy: z.uuid().nullable(),
   description: z.json(),
@@ -221,13 +210,12 @@ export type EventQueryInput = z.infer<typeof eventQuerySchema>;
 const eventWriteFieldsSchema = z.object({
   capacity: z.number().int().positive().nullable().optional(),
   category: eventCategorySchema,
-  /** What the door's scanner reveals; omitted means the column default. */
-  checkinDisplay: eventCheckinDisplaySchema.optional(),
   /**
-   * The answers the door returns; each must be a question of this event, and a
-   * removed question is pruned from the list. Omitted means empty.
+   * The door's rule list. Omitted means a single catch-all allow on create and
+   * untouched on update. The write validator checks the questions, the
+   * operators and the catch-all position.
    */
-  checkinFields: uniqueIdList(z.uuid()).optional(),
+  checkinRules: z.array(eventCheckinRuleSchema).optional(),
   /** Registration scope, never visibility: empty means every student. */
   cohortIds: uniqueIdList(z.uuid()).optional(),
   description: blockContentSchema,
