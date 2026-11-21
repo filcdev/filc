@@ -48,9 +48,14 @@ not a cascade's to decide.
    and is streamed back through `GET /events/{id}/image`, so a draft's banner
    stays as hidden as the draft. Replacing or removing one leaves the row
    correct even if the object delete fails; the failure is logged, not thrown.
-4. **Publish** by setting the status to `published`. A draft is invisible to
-   everyone except an organizer, and its detail read answers 404 to anyone else
-   rather than admitting it exists.
+4. **Publish it — or draft it.** A new event is **published** unless the caller
+   explicitly passes `status: 'draft'`: `events.create` falls back to
+   `published`, and the dialog's own default is the same, so what an organizer
+   saves is on the public list immediately. A draft is invisible to everyone
+   except an organizer, and its detail read answers 404 to anyone else rather
+   than admitting it exists. The `event.status` column still defaults to
+   `draft`, but that is the raw-insert safety net only — the handler always
+   writes a status.
 
 The API answers the same `eventItemSchema` from every write and every read
 (`toEventItem`), with `seats` and the caller's `eligibility`, so the dialog and
@@ -189,8 +194,10 @@ and a second address is a second visitor.
    `/admin/roles`. It is what `requireAuthorization` registers, so the roles UI
    lists it without a code change.
 2. **Open the scanner.** `apps/scan` signs the helper in with the same Microsoft
-   account, lists published events and takes over the camera. Point it at the
-   event of the day before the doors open.
+   account, lists published events and takes over the camera. It serves on port
+   **3003** and proxies `/api` to Chronos on 3001, so the session cookie and the
+   RPC calls stay same-origin in development. Point it at the event of the day
+   before the doors open.
 3. **Scan**, or type the code into the manual field when the camera or the
    visitor's screen does not cooperate — the typed path is the same request as
    the scan.
@@ -206,8 +213,8 @@ and a second address is a second visitor.
 
 A ticket of another event answers exactly like an unknown code, so the endpoint
 never confirms that a foreign ticket exists. Only the first scan writes:
-`checked_in_at` and `checked_in_by` are set once, and every later scan reports
-the stored state.
+`checked_in_at` and `checked_in_by` are set once, so a repeat scan is idempotent
+— it changes nothing and reports the stored state.
 
 The QR payload is a credential, so the check-in path logs `eventId`,
 `registrationId`, `requestId` and the outcome — never the scanned code, the
