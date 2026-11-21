@@ -367,6 +367,11 @@ function EventDetailPage() {
                 {t('events.participants.seats', {
                   capacity: detail.seats.capacity ?? t('events.unlimited'),
                   taken: detail.seats.taken,
+                })}{' '}
+                ·{' '}
+                {t('events.participants.helpers', {
+                  capacity: detail.helperCapacity ?? t('events.unlimited'),
+                  count: statsQuery.data?.confirmedHelpers ?? 0,
                 })}
                 {pendingCount > 0 && (
                   <>

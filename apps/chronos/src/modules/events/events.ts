@@ -149,11 +149,22 @@ export const getEvent = base.events.get.handler(async ({ context, input }) => {
   }
 
   const viewer = await resolveEventViewer(context.user?.id);
-  const [fields, myRegistration] = await Promise.all([
+  const [fields, myRegistration, helperRows] = await Promise.all([
     eventFields(id),
     registrationWithAnswers(id, context.user?.id),
+    db
+      .select({ value: count() })
+      .from(eventRegistration)
+      .where(
+        and(
+          eq(eventRegistration.eventId, id),
+          eq(eventRegistration.role, 'helper'),
+          eq(eventRegistration.status, 'confirmed')
+        )
+      ),
   ]);
   const registrationState = {
+    confirmedHelpers: Number(helperRows[0]?.value ?? 0),
     pending: myRegistration?.status === 'pending',
     registered: myRegistration?.status === 'confirmed',
   };
@@ -200,6 +211,7 @@ function eventInsertValues(
     endsAt: body.endsAt,
     guestRegistrationEnabled: body.guestRegistrationEnabled ?? false,
     ...helperGradeInsertValues(body),
+    helperCapacity: body.helperCapacity ?? null,
     helperRegistrationClosesAt: body.helperRegistrationClosesAt ?? null,
     helperRegistrationEnabled: body.helperRegistrationEnabled ?? false,
     helperRegistrationOpensAt: body.helperRegistrationOpensAt ?? null,

@@ -38,7 +38,9 @@ type RegistrationSummary = Pick<EventStats, 'byRole' | 'byStatus' | 'perDay'>;
 
 /**
  * Role and status counts plus the sparse per-day timeline, from the event's
- * registration rows. Cancelled rows count in `perDay`: they were registrations
+ * registration rows. Every row counts in `byRole` and `byStatus` — a helper
+ * takes no seat, but that is a seat rule, not a reason to hide them from the
+ * organizer's totals. Cancelled rows count in `perDay`: they were registrations
  * when they were made.
  *
  * Days are bucketed in the school's timezone, not the host's: under UTC the
@@ -173,6 +175,11 @@ export const readEventStats = async (eventId: string): Promise<EventStats> => {
         ),
     ]);
 
+  // The rows are already in memory, so the helper count costs no extra query.
+  const confirmedHelpers = registrations.filter(
+    (row) => row.role === 'helper' && row.status === 'confirmed'
+  ).length;
+
   return {
     ...summarizeRegistrations(registrations, env.timeZone),
     answers: summarizeAnswers(
@@ -184,6 +191,7 @@ export const readEventStats = async (eventId: string): Promise<EventStats> => {
       }))
     ),
     checkedIn: Number(checkedInRows[0]?.value ?? 0),
+    confirmedHelpers,
     seats: toSeats(eventRow.capacity, takenSeats(registrations)),
   };
 };

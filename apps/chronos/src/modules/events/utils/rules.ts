@@ -219,6 +219,10 @@ export type HelperRegistrationFacts = {
   helperRegistrationEnabled: boolean;
   helperRegistrationOpensAt: Date | null;
   helperRegistrationSeparateWindow: boolean;
+  /** Maximum confirmed helpers; null means unlimited. */
+  helperCapacity: number | null;
+  /** Confirmed helper count. Pending applications do not consume a slot. */
+  confirmedHelpers: number;
   /** The event's participant bounds, the helper fallback when its own are null. */
   maxGrade: number | null;
   minGrade: number | null;
@@ -242,7 +246,8 @@ export type HelperRefusal =
   | 'grade_too_high'
   | 'grade_unknown'
   | 'already_registered'
-  | 'pending_approval';
+  | 'pending_approval'
+  | 'helper_full';
 
 export type HelperRegistrationDecision =
   | { ok: true }
@@ -259,7 +264,14 @@ export type RegistrationWindow = {
  * share the participant window.
  */
 export const helperRegistrationWindow = (
-  facts: Omit<HelperRegistrationFacts, 'now' | 'pending' | 'registered'>
+  facts: Pick<
+    HelperRegistrationFacts,
+    | 'helperRegistrationClosesAt'
+    | 'helperRegistrationOpensAt'
+    | 'helperRegistrationSeparateWindow'
+    | 'registrationClosesAt'
+    | 'registrationOpensAt'
+  >
 ): RegistrationWindow =>
   facts.helperRegistrationSeparateWindow
     ? {
@@ -348,6 +360,12 @@ export const judgeHelperRegistration = (
   }
   if (facts.registered) {
     return refuseHelper('already_registered');
+  }
+  if (
+    facts.helperCapacity != null &&
+    facts.confirmedHelpers >= facts.helperCapacity
+  ) {
+    return refuseHelper('helper_full');
   }
 
   return { ok: true };

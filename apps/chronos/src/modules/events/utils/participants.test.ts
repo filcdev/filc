@@ -227,6 +227,7 @@ describe.skipIf(!hasDatabase)('event participant reads', () => {
     // Two tickets are stamped, but the cancelled visitor's no longer counts:
     // the check-in total has to agree with the seat the cancel gave back.
     expect(stats.checkedIn).toBe(1);
+    expect(stats.confirmedHelpers).toBe(0);
     expect(stats.perDay).toEqual([{ count: 3, date: '2026-05-05' }]);
     expect(stats.answers).toEqual([
       {

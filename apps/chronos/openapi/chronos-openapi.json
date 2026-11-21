@@ -9805,6 +9805,19 @@
                   "guestRegistrationEnabled": {
                     "type": "boolean"
                   },
+                  "helperCapacity": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "helperMaxGrade": {
                     "anyOf": [
                       {
@@ -10171,6 +10184,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -10363,6 +10389,7 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
+                                "helper_full",
                                 "grade_unknown"
                               ],
                               "type": "string"
@@ -10421,6 +10448,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -10949,6 +10977,19 @@
                           "guestRegistrationEnabled": {
                             "type": "boolean"
                           },
+                          "helperCapacity": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "exclusiveMinimum": 0
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "helperMaxGrade": {
                             "anyOf": [
                               {
@@ -11141,6 +11182,7 @@
                                       "already_registered",
                                       "pending_approval",
                                       "full",
+                                      "helper_full",
                                       "grade_unknown"
                                     ],
                                     "type": "string"
@@ -11199,6 +11241,7 @@
                           "description",
                           "endsAt",
                           "guestRegistrationEnabled",
+                          "helperCapacity",
                           "helperMaxGrade",
                           "helperMinGrade",
                           "helperRegistrationClosesAt",
@@ -11908,6 +11951,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -12100,6 +12156,7 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
+                                "helper_full",
                                 "grade_unknown"
                               ],
                               "type": "string"
@@ -12238,6 +12295,7 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
+                                "helper_full",
                                 "grade_unknown"
                               ],
                               "type": "string"
@@ -12371,6 +12429,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -12829,6 +12888,19 @@
                   "guestRegistrationEnabled": {
                     "type": "boolean"
                   },
+                  "helperCapacity": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "helperMaxGrade": {
                     "anyOf": [
                       {
@@ -13188,6 +13260,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -13380,6 +13465,7 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
+                                "helper_full",
                                 "grade_unknown"
                               ],
                               "type": "string"
@@ -13438,6 +13524,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",
@@ -14388,6 +14475,19 @@
                     "guestRegistrationEnabled": {
                       "type": "boolean"
                     },
+                    "helperCapacity": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "exclusiveMinimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "helperMaxGrade": {
                       "anyOf": [
                         {
@@ -14580,6 +14680,7 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
+                                "helper_full",
                                 "grade_unknown"
                               ],
                               "type": "string"
@@ -14638,6 +14739,7 @@
                     "description",
                     "endsAt",
                     "guestRegistrationEnabled",
+                    "helperCapacity",
                     "helperMaxGrade",
                     "helperMinGrade",
                     "helperRegistrationClosesAt",

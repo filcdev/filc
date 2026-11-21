@@ -48,6 +48,12 @@ export const eventStatsSchema = z.object({
   /** Tickets the scanner has stamped for this event. */
   checkedIn: z.number(),
   /**
+   * Confirmed helper rows. The number the event's helper cap is judged on:
+   * pending applications have not taken a slot, and declined or cancelled rows
+   * gave theirs back.
+   */
+  confirmedHelpers: z.number(),
+  /**
    * Registrations per day, sparse: only days with at least one registration,
    * oldest first. Cancelled rows are counted, because they were registrations
    * when they were made.

@@ -44,6 +44,7 @@ export const EVENT_AUDIT_FIELDS = [
   'guestRegistrationEnabled',
   'helperRegistrationClosesAt',
   'helperRegistrationEnabled',
+  'helperCapacity',
   'helperMaxGrade',
   'helperMinGrade',
   'helperRegistrationOpensAt',
@@ -200,7 +201,7 @@ export const eligibilityFor = (
 export const helperEligibilityFor = (
   row: typeof event.$inferSelect,
   viewer: EventViewer,
-  facts: { pending: boolean; registered: boolean },
+  facts: { confirmedHelpers: number; pending: boolean; registered: boolean },
   now: Date = new Date()
 ): EventEligibility => {
   if (!viewer.userId) {
@@ -208,7 +209,9 @@ export const helperEligibilityFor = (
   }
 
   const decision = judgeHelperRegistration({
+    confirmedHelpers: facts.confirmedHelpers,
     grade: viewer.grade,
+    helperCapacity: row.helperCapacity,
     helperMaxGrade: row.helperMaxGrade,
     helperMinGrade: row.helperMinGrade,
     helperRegistrationClosesAt: row.helperRegistrationClosesAt,

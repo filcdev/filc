@@ -75,6 +75,11 @@ export const eventRowSchema = z.object({
   /** Whether a visitor may sign up without an account. Its own switch. */
   guestRegistrationEnabled: z.boolean(),
   /**
+   * Maximum confirmed helpers. Null is unlimited, and lowering it never
+   * removes a helper who is already confirmed — only new approvals stop.
+   */
+  helperCapacity: z.number().int().positive().nullable(),
+  /**
    * The grade band helpers sign up in. Either bound governs helpers when set;
    * with both null the event's own `minGrade`/`maxGrade` apply to them too.
    */
@@ -145,6 +150,7 @@ export const eventEligibilityReasons = [
   'already_registered',
   'pending_approval',
   'full',
+  'helper_full',
   'grade_unknown',
 ] as const;
 
@@ -222,6 +228,8 @@ const eventWriteFieldsSchema = z.object({
   endsAt: z.coerce.date(),
   /** Visitors sign up without an account only when this switch is on. */
   guestRegistrationEnabled: z.boolean().optional(),
+  /** Maximum confirmed helpers; null or omission leaves the limit unlimited. */
+  helperCapacity: z.number().int().positive().nullable().optional(),
   /** Helper grade bounds; null leaves the event's own bounds in charge. */
   helperMaxGrade: z.number().int().min(1).max(13).nullable().optional(),
   helperMinGrade: z.number().int().min(1).max(13).nullable().optional(),
