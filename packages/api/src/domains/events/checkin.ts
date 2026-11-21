@@ -15,6 +15,15 @@ export const eventCheckinInputSchema = z.object({
 
 export type EventCheckinInput = z.infer<typeof eventCheckinInputSchema>;
 
+/** One configured answer the door shows, with the question's own label. */
+export const eventCheckinAnswerSchema = z.object({
+  fieldId: z.uuid(),
+  label: z.string(),
+  value: z.string(),
+});
+
+export type EventCheckinAnswer = z.infer<typeof eventCheckinAnswerSchema>;
+
 /**
  * Who the ticket belongs to, as far as this event lets the door see. Both
  * fields are omitted — not null, not an empty string — when `checkinDisplay`
@@ -23,6 +32,13 @@ export type EventCheckinInput = z.infer<typeof eventCheckinInputSchema>;
  * widen it; the nullable type is for a stored `null`, never a hidden value.
  */
 const checkinVisitorSchema = z.object({
+  /**
+   * The answers the organizer selected in `event.checkinFields`, in that
+   * order. Independent of the display mode: `minimal` with answers shows them
+   * and no identity. A configured question the registration left unanswered is
+   * omitted rather than sent empty.
+   */
+  answers: z.array(eventCheckinAnswerSchema),
   registrationId: z.uuid(),
   visitorEmail: z.email().nullish(),
   visitorName: z.string().nullish(),

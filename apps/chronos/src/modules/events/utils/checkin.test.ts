@@ -15,6 +15,7 @@ const FIRST_SCAN = new Date('2026-11-18T08:00:00.000Z');
 const LATER_SCAN = new Date('2026-11-18T08:00:05.000Z');
 
 const ticket = (overrides: Partial<CheckinTicket> = {}): CheckinTicket => ({
+  answers: [],
   checkedInAt: null,
   checkedInByName: null,
   eventId: EVENT_ID,
@@ -27,6 +28,7 @@ const ticket = (overrides: Partial<CheckinTicket> = {}): CheckinTicket => ({
 });
 
 const visitor = {
+  answers: [],
   registrationId: REGISTRATION_ID,
   visitorEmail: 'visitor@example.com',
   visitorName: 'Guest Visitor',
@@ -66,6 +68,7 @@ describe('checkInTicket', () => {
       code: TICKET_ID,
       display: 'full',
       eventId: EVENT_ID,
+      fields: [],
       now: FIRST_SCAN,
       userId: HELPER_ID,
     });
@@ -75,6 +78,7 @@ describe('checkInTicket', () => {
       code: TICKET_ID,
       display: 'full',
       eventId: EVENT_ID,
+      fields: [],
       now: LATER_SCAN,
       userId: HELPER_ID,
     });
@@ -97,6 +101,7 @@ describe('checkInTicket', () => {
       code: TICKET_ID,
       display: 'full',
       eventId: EVENT_ID,
+      fields: [],
       now: FIRST_SCAN,
       userId: HELPER_ID,
     });
@@ -112,6 +117,7 @@ describe('checkInTicket', () => {
       code: TICKET_ID,
       display: 'full',
       eventId: EVENT_ID,
+      fields: [],
       now: FIRST_SCAN,
       userId: HELPER_ID,
     });
@@ -127,6 +133,7 @@ describe('checkInTicket', () => {
       code: '6f5e4d3c-2b1a-4098-8776-5a4b3c2d1e0f',
       display: 'full',
       eventId: EVENT_ID,
+      fields: [],
       now: FIRST_SCAN,
       userId: HELPER_ID,
     });
@@ -157,6 +164,7 @@ describe('checkInTicket', () => {
       code: TICKET_ID,
       display: 'full',
       eventId: EVENT_ID,
+      fields: [],
       now: LATER_SCAN,
       userId: HELPER_ID,
     });
@@ -181,6 +189,7 @@ describe('checkInTicket display modes', () => {
       code: TICKET_ID,
       display,
       eventId: EVENT_ID,
+      fields: [],
       now: FIRST_SCAN,
       userId: HELPER_ID,
     });
@@ -189,6 +198,7 @@ describe('checkInTicket display modes', () => {
     const result = await scanAs('minimal');
 
     expect(result).toEqual({
+      answers: [],
       registrationId: REGISTRATION_ID,
       status: 'admitted',
     });
@@ -200,6 +210,7 @@ describe('checkInTicket display modes', () => {
     const result = await scanAs('name');
 
     expect(result).toEqual({
+      answers: [],
       registrationId: REGISTRATION_ID,
       status: 'admitted',
       visitorName: 'Guest Visitor',
@@ -222,11 +233,13 @@ describe('checkInTicket display modes', () => {
       code: TICKET_ID,
       display: 'minimal',
       eventId: EVENT_ID,
+      fields: [],
       now: LATER_SCAN,
       userId: HELPER_ID,
     });
 
     expect(result).toEqual({
+      answers: [],
       checkedInAt: FIRST_SCAN,
       checkedInByName: 'Helper',
       registrationId: REGISTRATION_ID,
@@ -243,15 +256,151 @@ describe('checkInTicket display modes', () => {
       code: TICKET_ID,
       display: 'minimal',
       eventId: EVENT_ID,
+      fields: [],
       now: FIRST_SCAN,
       userId: HELPER_ID,
     });
 
     expect(result).toEqual({
+      answers: [],
       registrationId: REGISTRATION_ID,
       status: 'invalid',
     });
     expect(result).not.toHaveProperty('visitorName');
     expect(result).not.toHaveProperty('visitorEmail');
+  });
+});
+
+/**
+ * The answers are a second, independent setting: the event names the question
+ * ids, and a scan returns exactly those answers. Identity and answers combine
+ * freely, so `minimal` is the privacy-safe configuration rather than the
+ * answer-less one.
+ */
+describe('checkInTicket answers', () => {
+  const NAME_ID = '2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e';
+  const CLASS_ID = '4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a';
+  const DIET_ID = '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b9c';
+
+  const answer = (fieldId: string, label: string, value: string) => ({
+    fieldId,
+    label,
+    value,
+  });
+
+  it('returns only the configured questions, in the configured order', async () => {
+    const store = memoryStore([
+      ticket({
+        answers: [
+          answer(NAME_ID, 'Név', 'Anna'),
+          answer(CLASS_ID, 'Osztály', '10.B'),
+          answer(DIET_ID, 'Étrend', 'vegán'),
+        ],
+      }),
+    ]);
+
+    const result = await checkInTicket(store, {
+      code: TICKET_ID,
+      display: 'full',
+      eventId: EVENT_ID,
+      fields: [CLASS_ID, NAME_ID],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toEqual({
+      ...visitor,
+      answers: [
+        answer(CLASS_ID, 'Osztály', '10.B'),
+        answer(NAME_ID, 'Név', 'Anna'),
+      ],
+      status: 'admitted',
+    });
+    // The unconfigured answer is not in the payload at all.
+    expect(JSON.stringify(result)).not.toContain('vegán');
+  });
+
+  it('shows answers without identity in minimal mode', async () => {
+    const store = memoryStore([
+      ticket({ answers: [answer(CLASS_ID, 'Osztály', '10.B')] }),
+    ]);
+
+    const result = await checkInTicket(store, {
+      code: TICKET_ID,
+      display: 'minimal',
+      eventId: EVENT_ID,
+      fields: [CLASS_ID],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toEqual({
+      answers: [answer(CLASS_ID, 'Osztály', '10.B')],
+      registrationId: REGISTRATION_ID,
+      status: 'admitted',
+    });
+    expect(result).not.toHaveProperty('visitorName');
+    expect(result).not.toHaveProperty('visitorEmail');
+  });
+
+  it('omits a configured question the registration did not answer', async () => {
+    const store = memoryStore([
+      ticket({ answers: [answer(CLASS_ID, 'Osztály', '10.B')] }),
+    ]);
+
+    const result = await checkInTicket(store, {
+      code: TICKET_ID,
+      display: 'full',
+      eventId: EVENT_ID,
+      fields: [CLASS_ID, DIET_ID],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toEqual({
+      ...visitor,
+      answers: [answer(CLASS_ID, 'Osztály', '10.B')],
+      status: 'admitted',
+    });
+  });
+
+  it('returns an empty list for an answer-less registration', async () => {
+    const result = await checkInTicket(memoryStore([ticket()]), {
+      code: TICKET_ID,
+      display: 'full',
+      eventId: EVENT_ID,
+      fields: [CLASS_ID],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toMatchObject({ answers: [] });
+  });
+
+  it('filters the answers of a cancelled ticket the same way', async () => {
+    const store = memoryStore([
+      ticket({
+        answers: [
+          answer(CLASS_ID, 'Osztály', '10.B'),
+          answer(DIET_ID, 'Étrend', 'vegán'),
+        ],
+        registrationStatus: 'cancelled',
+      }),
+    ]);
+
+    const result = await checkInTicket(store, {
+      code: TICKET_ID,
+      display: 'full',
+      eventId: EVENT_ID,
+      fields: [DIET_ID],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+
+    expect(result).toEqual({
+      ...visitor,
+      answers: [answer(DIET_ID, 'Étrend', 'vegán')],
+      status: 'invalid',
+    });
   });
 });

@@ -5,7 +5,13 @@ import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { event, eventRegistration, eventTicket } from '#modules/events/schema';
+import {
+  event,
+  eventField,
+  eventRegistration,
+  eventRegistrationAnswer,
+  eventTicket,
+} from '#modules/events/schema';
 import {
   type CheckinStore,
   type CheckinTicket,
@@ -35,6 +41,21 @@ const scanner = alias(user, 'scanner');
  * registration; a signed-in student has none, so the account is joined as the
  * fallback. The scanner is joined for the "who let them in" of a repeat scan.
  */
+/** Every answer of one registration, with the question's own label. */
+const findAnswers = async (
+  registrationId: string
+): Promise<CheckinTicket['answers']> =>
+  db
+    .select({
+      fieldId: eventField.id,
+      label: eventField.label,
+      value: eventRegistrationAnswer.value,
+    })
+    .from(eventRegistrationAnswer)
+    .innerJoin(eventField, eq(eventRegistrationAnswer.fieldId, eventField.id))
+    .where(eq(eventRegistrationAnswer.registrationId, registrationId))
+    .orderBy(eventField.position, eventField.id);
+
 const findTicket = async (code: string): Promise<CheckinTicket | null> => {
   const [row] = await db
     .select({
@@ -62,7 +83,12 @@ const findTicket = async (code: string): Promise<CheckinTicket | null> => {
     return null;
   }
 
+  // A second read only for a ticket that exists: the door's common miss is an
+  // unknown code, and that path never pays for the answer query.
+  const answers = await findAnswers(row.registrationId);
+
   return {
+    answers,
     checkedInAt: row.checkedInAt,
     checkedInByName: row.checkedInByName,
     eventId: row.eventId,
@@ -115,7 +141,10 @@ export const checkInTicketAtDoor = base.events.checkin
     // here, on the server, so the client never receives a field the organizer
     // hid — a cancelled ticket is reduced by the same mode.
     const [eventRow] = await db
-      .select({ checkinDisplay: event.checkinDisplay })
+      .select({
+        checkinDisplay: event.checkinDisplay,
+        checkinFields: event.checkinFields,
+      })
       .from(event)
       .where(eq(event.id, id));
 
@@ -125,6 +154,7 @@ export const checkInTicketAtDoor = base.events.checkin
 
     logger.debug('check-in scanned', {
       checkinDisplay: eventRow.checkinDisplay,
+      checkinFieldCount: eventRow.checkinFields.length,
       eventId: id,
       requestId: context.requestId,
     });
@@ -134,6 +164,7 @@ export const checkInTicketAtDoor = base.events.checkin
           code,
           display: eventRow.checkinDisplay,
           eventId: id,
+          fields: eventRow.checkinFields,
           now,
           userId: context.session.userId,
         })

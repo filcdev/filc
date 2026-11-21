@@ -97,6 +97,20 @@ export const ResultPanel = ({ locale, result, strings: s }: Props) => {
         </div>
       ) : null}
 
+      {/* The configured answers, under the person (or under the verdict in
+          minimal mode). Six rows fit the panel; more scroll rather than push
+          the verdict off screen. */}
+      {result.status !== 'not_found' && result.answers.length > 0 ? (
+        <div className="max-h-56 w-full max-w-sm space-y-1 overflow-y-auto text-left">
+          {result.answers.map((answer) => (
+            <p className="text-sm" key={answer.fieldId}>
+              <span className="opacity-80">{answer.label}:</span>{' '}
+              <span className="font-medium">{answer.value}</span>
+            </p>
+          ))}
+        </div>
+      ) : null}
+
       <p className="text-balance text-sm opacity-90">{hint}</p>
     </div>
   );

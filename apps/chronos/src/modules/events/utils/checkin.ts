@@ -1,4 +1,7 @@
-import type { EventCheckinResult } from '@filcdev/api/domains/events/checkin';
+import type {
+  EventCheckinAnswer,
+  EventCheckinResult,
+} from '@filcdev/api/domains/events/checkin';
 import type { EventCheckinDisplay } from '@filcdev/api/domains/events/event';
 import type { EventRegistrationStatus } from '@filcdev/api/domains/events/registration';
 
@@ -9,6 +12,11 @@ import type { EventRegistrationStatus } from '@filcdev/api/domains/events/regist
  * database.
  */
 export type CheckinTicket = {
+  /**
+   * Every answer this registration holds, with its question's label. The door
+   * configuration decides which of them a scan returns.
+   */
+  answers: EventCheckinAnswer[];
   /** Null until someone scans it; the first scan's time afterwards. */
   checkedInAt: Date | null;
   /** The colleague who scanned first; null while unchecked or deleted. */
@@ -75,10 +83,35 @@ export const judgeCheckin = (
   return { status: 'admitted', ticket };
 };
 
-const visitorOf = (ticket: CheckinTicket, display: EventCheckinDisplay) => {
+/**
+ * The answers the event configured, in the organizer's order. A question the
+ * registration did not answer is simply absent, and an unconfigured one is
+ * never sent, so the door cannot extract more than the list allows.
+ */
+const configuredAnswers = (
+  ticket: CheckinTicket,
+  fields: readonly string[]
+): EventCheckinAnswer[] => {
+  const order = new Map(fields.map((fieldId, index) => [fieldId, index]));
+  return ticket.answers
+    .filter((answer) => order.has(answer.fieldId))
+    .sort(
+      (left, right) =>
+        (order.get(left.fieldId) ?? 0) - (order.get(right.fieldId) ?? 0)
+    );
+};
+
+const visitorOf = (
+  ticket: CheckinTicket,
+  display: EventCheckinDisplay,
+  fields: readonly string[]
+) => {
   // The setting is applied here, where the payload is built, not in the client:
   // a hidden field is left out entirely so no consumer can show it.
-  const base = { registrationId: ticket.registrationId };
+  const base = {
+    answers: configuredAnswers(ticket, fields),
+    registrationId: ticket.registrationId,
+  };
   if (display === 'minimal') {
     return base;
   }
@@ -95,14 +128,15 @@ const visitorOf = (ticket: CheckinTicket, display: EventCheckinDisplay) => {
 /** The answer for a ticket this request did not write. */
 const storedAnswer = (
   verdict: CheckinVerdict,
-  display: EventCheckinDisplay
+  display: EventCheckinDisplay,
+  fields: readonly string[]
 ): EventCheckinResult => {
   if (verdict.status === 'invalid') {
-    return { ...visitorOf(verdict.ticket, display), status: 'invalid' };
+    return { ...visitorOf(verdict.ticket, display, fields), status: 'invalid' };
   }
   if (verdict.status === 'already_checked_in') {
     return {
-      ...visitorOf(verdict.ticket, display),
+      ...visitorOf(verdict.ticket, display, fields),
       checkedInAt: verdict.checkedInAt,
       checkedInByName: verdict.ticket.checkedInByName,
       status: 'already_checked_in',
@@ -128,16 +162,18 @@ export const checkInTicket = async (
     /** What the event's check-in screen may reveal, applied to every outcome. */
     display: EventCheckinDisplay;
     eventId: string;
+    /** The question ids whose answers the door returns, in the event's order. */
+    fields: readonly string[];
     /** Injectable so a test can pin the first check-in's time. */
     now?: Date;
     userId: string;
   }
 ): Promise<EventCheckinResult> => {
-  const { display } = args;
+  const { display, fields } = args;
   const first = judgeCheckin(await store.findTicket(args.code), args.eventId);
 
   if (first.status !== 'admitted') {
-    return storedAnswer(first, display);
+    return storedAnswer(first, display, fields);
   }
 
   const at = args.now ?? new Date();
@@ -147,11 +183,14 @@ export const checkInTicket = async (
     at
   );
   if (written) {
-    return { ...visitorOf(first.ticket, display), status: 'admitted' };
+    return {
+      ...visitorOf(first.ticket, display, fields),
+      status: 'admitted',
+    };
   }
 
   // Another scan won the write between the read and the update: answer the
   // state that is now stored, which is the same thing a later scan would see.
   const second = judgeCheckin(await store.findTicket(args.code), args.eventId);
-  return storedAnswer(second, display);
+  return storedAnswer(second, display, fields);
 };

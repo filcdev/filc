@@ -8936,6 +8936,29 @@
                     {
                       "type": "object",
                       "properties": {
+                        "answers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "value"
+                            ]
+                          }
+                        },
                         "registrationId": {
                           "type": "string",
                           "format": "uuid"
@@ -8966,6 +8989,7 @@
                         }
                       },
                       "required": [
+                        "answers",
                         "registrationId",
                         "status"
                       ]
@@ -8973,6 +8997,29 @@
                     {
                       "type": "object",
                       "properties": {
+                        "answers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "value"
+                            ]
+                          }
+                        },
                         "registrationId": {
                           "type": "string",
                           "format": "uuid"
@@ -9018,6 +9065,7 @@
                         }
                       },
                       "required": [
+                        "answers",
                         "registrationId",
                         "checkedInAt",
                         "checkedInByName",
@@ -9027,6 +9075,29 @@
                     {
                       "type": "object",
                       "properties": {
+                        "answers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fieldId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "fieldId",
+                              "label",
+                              "value"
+                            ]
+                          }
+                        },
                         "registrationId": {
                           "type": "string",
                           "format": "uuid"
@@ -9057,6 +9128,7 @@
                         }
                       },
                       "required": [
+                        "answers",
                         "registrationId",
                         "status"
                       ]
@@ -9484,6 +9556,37 @@
                   "helperRegistrationSeparateWindow": {
                     "type": "boolean"
                   },
+                  "helperRequirements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fieldId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "op": {
+                          "enum": [
+                            "equals",
+                            "contains",
+                            "gte",
+                            "lte",
+                            "is_true",
+                            "is_false"
+                          ],
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "fieldId",
+                        "op",
+                        "value"
+                      ]
+                    }
+                  },
                   "maxGrade": {
                     "anyOf": [
                       {
@@ -9776,6 +9879,37 @@
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
                     },
+                    "helperRequirements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fieldId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "op": {
+                            "enum": [
+                              "equals",
+                              "contains",
+                              "gte",
+                              "lte",
+                              "is_true",
+                              "is_false"
+                            ],
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fieldId",
+                          "op",
+                          "value"
+                        ]
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid"
@@ -9918,8 +10052,19 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown"
+                                "grade_unknown",
+                                "requirement_unmet"
                               ],
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasonField": {
+                          "anyOf": [
+                            {
                               "type": "string"
                             },
                             {
@@ -9930,7 +10075,8 @@
                       },
                       "required": [
                         "eligible",
-                        "reason"
+                        "reason",
+                        "reasonField"
                       ]
                     },
                     "seats": {
@@ -9983,6 +10129,7 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
@@ -10485,6 +10632,37 @@
                           "helperRegistrationSeparateWindow": {
                             "type": "boolean"
                           },
+                          "helperRequirements": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "fieldId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "op": {
+                                  "enum": [
+                                    "equals",
+                                    "contains",
+                                    "gte",
+                                    "lte",
+                                    "is_true",
+                                    "is_false"
+                                  ],
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "fieldId",
+                                "op",
+                                "value"
+                              ]
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "format": "uuid"
@@ -10627,8 +10805,19 @@
                                       "already_registered",
                                       "pending_approval",
                                       "full",
-                                      "grade_unknown"
+                                      "grade_unknown",
+                                      "requirement_unmet"
                                     ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "reasonField": {
+                                "anyOf": [
+                                  {
                                     "type": "string"
                                   },
                                   {
@@ -10639,7 +10828,8 @@
                             },
                             "required": [
                               "eligible",
-                              "reason"
+                              "reason",
+                              "reasonField"
                             ]
                           },
                           "seats": {
@@ -10692,6 +10882,7 @@
                           "helperRegistrationEnabled",
                           "helperRegistrationOpensAt",
                           "helperRegistrationSeparateWindow",
+                          "helperRequirements",
                           "id",
                           "imageByteSize",
                           "imageContentType",
@@ -11375,6 +11566,37 @@
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
                     },
+                    "helperRequirements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fieldId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "op": {
+                            "enum": [
+                              "equals",
+                              "contains",
+                              "gte",
+                              "lte",
+                              "is_true",
+                              "is_false"
+                            ],
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fieldId",
+                          "op",
+                          "value"
+                        ]
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid"
@@ -11517,8 +11739,19 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown"
+                                "grade_unknown",
+                                "requirement_unmet"
                               ],
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasonField": {
+                          "anyOf": [
+                            {
                               "type": "string"
                             },
                             {
@@ -11529,7 +11762,8 @@
                       },
                       "required": [
                         "eligible",
-                        "reason"
+                        "reason",
+                        "reasonField"
                       ]
                     },
                     "seats": {
@@ -11655,8 +11889,19 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown"
+                                "grade_unknown",
+                                "requirement_unmet"
                               ],
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasonField": {
+                          "anyOf": [
+                            {
                               "type": "string"
                             },
                             {
@@ -11667,7 +11912,8 @@
                       },
                       "required": [
                         "eligible",
-                        "reason"
+                        "reason",
+                        "reasonField"
                       ]
                     },
                     "myRegistration": {
@@ -11795,6 +12041,7 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
@@ -12231,6 +12478,37 @@
                   "helperRegistrationSeparateWindow": {
                     "type": "boolean"
                   },
+                  "helperRequirements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fieldId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "op": {
+                          "enum": [
+                            "equals",
+                            "contains",
+                            "gte",
+                            "lte",
+                            "is_true",
+                            "is_false"
+                          ],
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "fieldId",
+                        "op",
+                        "value"
+                      ]
+                    }
+                  },
                   "maxGrade": {
                     "anyOf": [
                       {
@@ -12516,6 +12794,37 @@
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
                     },
+                    "helperRequirements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fieldId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "op": {
+                            "enum": [
+                              "equals",
+                              "contains",
+                              "gte",
+                              "lte",
+                              "is_true",
+                              "is_false"
+                            ],
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fieldId",
+                          "op",
+                          "value"
+                        ]
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid"
@@ -12658,8 +12967,19 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown"
+                                "grade_unknown",
+                                "requirement_unmet"
                               ],
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasonField": {
+                          "anyOf": [
+                            {
                               "type": "string"
                             },
                             {
@@ -12670,7 +12990,8 @@
                       },
                       "required": [
                         "eligible",
-                        "reason"
+                        "reason",
+                        "reasonField"
                       ]
                     },
                     "seats": {
@@ -12723,6 +13044,7 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
@@ -13647,6 +13969,37 @@
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
                     },
+                    "helperRequirements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fieldId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "op": {
+                            "enum": [
+                              "equals",
+                              "contains",
+                              "gte",
+                              "lte",
+                              "is_true",
+                              "is_false"
+                            ],
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fieldId",
+                          "op",
+                          "value"
+                        ]
+                      }
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid"
@@ -13789,8 +14142,19 @@
                                 "already_registered",
                                 "pending_approval",
                                 "full",
-                                "grade_unknown"
+                                "grade_unknown",
+                                "requirement_unmet"
                               ],
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasonField": {
+                          "anyOf": [
+                            {
                               "type": "string"
                             },
                             {
@@ -13801,7 +14165,8 @@
                       },
                       "required": [
                         "eligible",
-                        "reason"
+                        "reason",
+                        "reasonField"
                       ]
                     },
                     "seats": {
@@ -13854,6 +14219,7 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperRequirements",
                     "id",
                     "imageByteSize",
                     "imageContentType",
