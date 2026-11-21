@@ -406,19 +406,11 @@ function eligibilityLabel(
     : t('events.public.notAvailable');
 }
 
-/**
- * Why the helper form is not offered. A requirement refusal names the question
- * in the viewer's language; every other reason is the shared eligibility copy.
- */
+/** Why the helper form is not offered, in the shared eligibility copy. */
 function helperEligibilityLabel(
   event: EventDetail,
   t: (key: string, options?: Record<string, unknown>) => string
 ): string {
-  if (event.helperEligibility.reason === 'requirement_unmet') {
-    return t('events.public.helperRequirementUnmet', {
-      question: event.helperEligibility.reasonField ?? '',
-    });
-  }
   return event.helperEligibility.reason
     ? t(`events.public.reasons.${event.helperEligibility.reason}`)
     : t('events.public.notAvailable');
@@ -499,11 +491,6 @@ function RegistrationSection({ event }: { event: EventDetail }) {
         <p className="text-muted-foreground text-sm">
           {eligibilityLabel(event, t)}
         </p>
-        {event.helperEligibility.reason === 'requirement_unmet' && (
-          <p className="text-muted-foreground text-sm">
-            {helperEligibilityLabel(event, t)}
-          </p>
-        )}
         {event.eligibility.reason === 'sign_in_required' && !session?.user && (
           <Button render={<Link to="/auth/login" />}>
             <LogIn className="h-4 w-4" />

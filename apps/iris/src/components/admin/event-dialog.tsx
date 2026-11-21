@@ -2,12 +2,10 @@ import {
   categoryDefaults,
   type EventCategory,
   type EventCheckinDisplay,
-  type EventHelperRequirement,
   type EventStatus,
   eventCategories,
   eventCheckinDisplays,
   eventStatuses,
-  helperRequirementOpsByFieldType,
 } from '@filcdev/api/domains/events/event';
 import {
   type EventFieldAudience,
@@ -273,315 +271,6 @@ const splitOptions = (text: string): string[] =>
     .split(',')
     .map((option) => option.trim())
     .filter(Boolean);
-
-/** One condition while it is edited, with a stable client-side key. */
-type HelperRequirementDraft = EventHelperRequirement & { key: string };
-
-const toRequirementDrafts = (
-  requirements: EventHelperRequirement[] | undefined
-): HelperRequirementDraft[] =>
-  (requirements ?? []).map((requirement) => ({
-    ...requirement,
-    key: crypto.randomUUID(),
-  }));
-
-type HelperRequirementRowProps = {
-  fields: EventFieldItem[];
-  formId: string;
-  index: number;
-  onFieldChange: (index: number, fieldId: string) => void;
-  onOpChange: (index: number, op: EventHelperRequirement['op']) => void;
-  onRemove: (index: number) => void;
-  onValueChange: (index: number, value: string) => void;
-  requirement: HelperRequirementDraft;
-};
-
-/** The value control follows the picked question's type. */
-function RequirementValueControl({
-  field,
-  id,
-  onChange,
-  value,
-}: {
-  field: EventFieldItem | undefined;
-  id: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  const { t } = useTranslation();
-
-  if (field?.type === 'checkbox') {
-    return (
-      <p className="py-2 text-muted-foreground text-xs">
-        {t('events.helperRequirementNoValue')}
-      </p>
-    );
-  }
-
-  if (field?.type === 'select') {
-    return (
-      <Select
-        items={(field.options ?? []).map((option) => ({
-          label: option,
-          value: option,
-        }))}
-        onValueChange={(next) => onChange(next ?? '')}
-        value={value}
-      >
-        <SelectTrigger className="w-full" id={id}>
-          <SelectValue />
-        </SelectTrigger>
-      </Select>
-    );
-  }
-
-  return (
-    <Input
-      id={id}
-      onChange={(event) => onChange(event.target.value)}
-      step={field?.type === 'number' ? 'any' : undefined}
-      type={field?.type === 'number' ? 'number' : 'text'}
-      value={value}
-    />
-  );
-}
-
-/** One condition row: question, operator and the value it compares against. */
-function HelperRequirementRow({
-  fields,
-  formId,
-  index,
-  onFieldChange,
-  onOpChange,
-  onRemove,
-  onValueChange,
-  requirement,
-}: HelperRequirementRowProps) {
-  const { t } = useTranslation();
-  const field = fields.find(
-    (candidate) => candidate.id === requirement.fieldId
-  );
-  const ops = field
-    ? helperRequirementOpsByFieldType[field.type]
-    : ([] as const);
-  const fieldKey = `${requirement.fieldId}-${index}`;
-
-  return (
-    <div className="space-y-2 rounded-md border p-2">
-      <div className="flex items-end gap-2">
-        <div className="min-w-0 flex-1 space-y-1">
-          <Label htmlFor={`${formId}-requirement-field-${fieldKey}`}>
-            {t('events.helperRequirementField')}
-          </Label>
-          <Select
-            items={fields.map((candidate) => ({
-              label: candidate.label,
-              value: candidate.id,
-            }))}
-            onValueChange={(value) => onFieldChange(index, value ?? '')}
-            value={requirement.fieldId}
-          >
-            <SelectTrigger
-              className="w-full"
-              id={`${formId}-requirement-field-${fieldKey}`}
-            >
-              <SelectValue />
-            </SelectTrigger>
-          </Select>
-        </div>
-        <Button
-          aria-label={t('events.removeHelperRequirement')}
-          onClick={() => onRemove(index)}
-          size="icon"
-          type="button"
-          variant="ghost"
-        >
-          <Trash className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor={`${formId}-requirement-op-${fieldKey}`}>
-            {t('events.helperRequirementOperator')}
-          </Label>
-          <Select
-            items={ops.map((op) => ({
-              label: t(`events.helperRequirementOps.${op}`),
-              value: op,
-            }))}
-            onValueChange={(value) =>
-              onOpChange(
-                index,
-                (value ?? ops[0] ?? 'equals') as EventHelperRequirement['op']
-              )
-            }
-            value={requirement.op}
-          >
-            <SelectTrigger
-              className="w-full"
-              id={`${formId}-requirement-op-${fieldKey}`}
-            >
-              <SelectValue />
-            </SelectTrigger>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor={`${formId}-requirement-value-${fieldKey}`}>
-            {t('events.helperRequirementValue')}
-          </Label>
-          <RequirementValueControl
-            field={field}
-            id={`${formId}-requirement-value-${fieldKey}`}
-            onChange={(value) => onValueChange(index, value)}
-            value={requirement.value}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type HelperRequirementEditorProps = {
-  fields: EventFieldItem[];
-  /** Helper signups are off: the fieldset is inert, so explain that instead. */
-  helpersEnabled: boolean;
-  /** Append a question draft and open the Questions pane. */
-  onAddQuestion: () => void;
-  requirements: HelperRequirementDraft[];
-  setRequirements: Dispatch<SetStateAction<HelperRequirementDraft[]>>;
-};
-
-/**
- * The answers a helper application must satisfy. Only a saved, student-facing
- * question can be picked: a condition stores a field id, and the backend
- * rejects an id that is not on this event. Adding a question and a condition in
- * the same visit therefore needs one save in between, which is why the empty
- * state says so.
- *
- * The empty button is a way out, not a dead end: with no usable question it
- * adds a draft and jumps to the Questions pane, and with helper signups off
- * there is no button at all, only the reason the section is disabled.
- */
-function HelperRequirementEditor({
-  fields,
-  helpersEnabled,
-  onAddQuestion,
-  requirements,
-  setRequirements,
-}: HelperRequirementEditorProps) {
-  const { t } = useTranslation();
-  const formId = useId();
-  const usableFields = fields.filter((field) =>
-    field.audiences.includes('helper')
-  );
-
-  const update = (
-    index: number,
-    patch: Partial<EventHelperRequirement>
-  ): void => {
-    setRequirements((current) =>
-      current.map((requirement, position) =>
-        position === index ? { ...requirement, ...patch } : requirement
-      )
-    );
-  };
-
-  const remove = (index: number): void => {
-    setRequirements((current) =>
-      current.filter((_requirement, position) => position !== index)
-    );
-  };
-
-  const selectField = (index: number, fieldId: string): void => {
-    const field = usableFields.find((candidate) => candidate.id === fieldId);
-    if (!field) {
-      return;
-    }
-    const op = helperRequirementOpsByFieldType[field.type][0] ?? 'equals';
-    const value = field.type === 'select' ? (field.options?.[0] ?? '') : '';
-    update(index, { fieldId, op, value });
-  };
-
-  const add = (): void => {
-    const field = usableFields[0];
-    if (!field) {
-      return;
-    }
-    const op = helperRequirementOpsByFieldType[field.type][0] ?? 'equals';
-    setRequirements((current) => [
-      ...current,
-      {
-        fieldId: field.id,
-        key: crypto.randomUUID(),
-        op,
-        value: field.type === 'select' ? (field.options?.[0] ?? '') : '',
-      },
-    ]);
-  };
-
-  // One line above the rows, naming the actual blocker: the helper signup
-  // switch, a missing student question, or nothing at all.
-  let explanation: string | null = null;
-  if (!helpersEnabled) {
-    explanation = t('events.helperRequirementsNeedHelpers');
-  } else if (usableFields.length === 0) {
-    explanation = t('events.noStudentQuestionsForRequirements');
-  } else if (requirements.length === 0) {
-    explanation = t('events.noHelperRequirements');
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="font-medium text-sm">
-            {t('events.helperRequirementsTitle')}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t('events.helperRequirementsHint')}
-          </p>
-        </div>
-        {helpersEnabled && usableFields.length === 0 && (
-          <Button
-            onClick={onAddQuestion}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Plus className="h-4 w-4" />
-            {t('events.addQuestion')}
-          </Button>
-        )}
-        {helpersEnabled && usableFields.length > 0 && (
-          <Button onClick={add} size="sm" type="button" variant="outline">
-            <Plus className="h-4 w-4" />
-            {t('events.addHelperRequirement')}
-          </Button>
-        )}
-      </div>
-
-      {explanation && (
-        <p className="text-muted-foreground text-xs">{explanation}</p>
-      )}
-
-      {requirements.map((requirement, index) => (
-        <HelperRequirementRow
-          fields={usableFields}
-          formId={formId}
-          index={index}
-          key={requirement.key}
-          onFieldChange={selectField}
-          onOpChange={(position, op) => update(position, { op })}
-          onRemove={remove}
-          onValueChange={(position, value) => update(position, { value })}
-          requirement={requirement}
-        />
-      ))}
-    </div>
-  );
-}
 
 type CheckinFieldPickerProps = {
   fields: EventFieldItem[];
@@ -855,12 +544,8 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
   const [fields, setFields] = useState<EventFieldDraft[]>(() =>
     toFieldDrafts(item?.fields)
   );
-  const [requirements, setRequirements] = useState<HelperRequirementDraft[]>(
-    () => toRequirementDrafts(item?.helperRequirements)
-  );
-  // The door's answers are a saved list of question ids, like the helper
-  // requirements: a question added in this visit needs a save before it can be
-  // selected here.
+  // The door's answers are a saved list of question ids: a question added in
+  // this visit needs a save before it can be selected here.
   const [checkinFields, setCheckinFields] = useState<string[]>(() =>
     toCheckinFields(item)
   );
@@ -899,9 +584,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
         helperRegistrationOpensAt: value.helperRegistrationOpensAt,
         helperRegistrationSeparateWindow:
           value.helperRegistrationSeparateWindow,
-        helperRequirements: requirements.map(
-          ({ key: _key, ...requirement }) => requirement
-        ),
         maxGrade: numberOrNull(value.maxGrade),
         minGrade: numberOrNull(value.minGrade),
         registrationClosesAt: value.registrationClosesAt,
@@ -1015,16 +697,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
     // closes, so the pane is focused on the next frame: that lands the
     // keyboard at the top of the section that just opened.
     requestAnimationFrame(() => paneRef.current?.focus());
-  };
-
-  /**
-   * The way out of the empty requirement editor: a saved question is what a
-   * condition can name, so this adds a draft and takes the organizer to the
-   * pane where it is filled in and saved with the event.
-   */
-  const addQuestionForRequirements = () => {
-    setFields((current) => [...current, newEventFieldDraft()]);
-    goToSection('questions');
   };
 
   const toggleCheckinField = (fieldId: string, checked: boolean): void => {
@@ -1508,14 +1180,6 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
                       <p className="text-muted-foreground text-xs">
                         {t('events.helperGradeHint')}
                       </p>
-
-                      <HelperRequirementEditor
-                        fields={item?.fields ?? []}
-                        helpersEnabled={helperRegistrationEnabled}
-                        onAddQuestion={addQuestionForRequirements}
-                        requirements={requirements}
-                        setRequirements={setRequirements}
-                      />
                     </fieldset>
                   </fieldset>
 
