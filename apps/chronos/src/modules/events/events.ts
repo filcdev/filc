@@ -189,6 +189,7 @@ function eventInsertValues(
   return {
     capacity: body.capacity ?? null,
     category: body.category,
+    checkinDisplay: body.checkinDisplay ?? 'name',
     cohortIds: body.cohortIds ?? [],
     createdBy,
     description: body.description,

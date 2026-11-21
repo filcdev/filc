@@ -8928,6 +8928,14 @@
                     ],
                     "type": "string"
                   },
+                  "checkinDisplay": {
+                    "enum": [
+                      "minimal",
+                      "name",
+                      "full"
+                    ],
+                    "type": "string"
+                  },
                   "cohortIds": {
                     "type": "array",
                     "items": {
@@ -9205,6 +9213,14 @@
                         "codeweek",
                         "fair",
                         "external"
+                      ],
+                      "type": "string"
+                    },
+                    "checkinDisplay": {
+                      "enum": [
+                        "minimal",
+                        "name",
+                        "full"
                       ],
                       "type": "string"
                     },
@@ -9592,6 +9608,7 @@
                   "required": [
                     "capacity",
                     "category",
+                    "checkinDisplay",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -9919,6 +9936,14 @@
                               "codeweek",
                               "fair",
                               "external"
+                            ],
+                            "type": "string"
+                          },
+                          "checkinDisplay": {
+                            "enum": [
+                              "minimal",
+                              "name",
+                              "full"
                             ],
                             "type": "string"
                           },
@@ -10306,6 +10331,7 @@
                         "required": [
                           "capacity",
                           "category",
+                          "checkinDisplay",
                           "createdAt",
                           "createdBy",
                           "description",
@@ -10814,6 +10840,14 @@
                         "codeweek",
                         "fair",
                         "external"
+                      ],
+                      "type": "string"
+                    },
+                    "checkinDisplay": {
+                      "enum": [
+                        "minimal",
+                        "name",
+                        "full"
                       ],
                       "type": "string"
                     },
@@ -11423,6 +11457,7 @@
                   "required": [
                     "capacity",
                     "category",
+                    "checkinDisplay",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -11688,6 +11723,14 @@
                       "codeweek",
                       "fair",
                       "external"
+                    ],
+                    "type": "string"
+                  },
+                  "checkinDisplay": {
+                    "enum": [
+                      "minimal",
+                      "name",
+                      "full"
                     ],
                     "type": "string"
                   },
@@ -11961,6 +12004,14 @@
                         "codeweek",
                         "fair",
                         "external"
+                      ],
+                      "type": "string"
+                    },
+                    "checkinDisplay": {
+                      "enum": [
+                        "minimal",
+                        "name",
+                        "full"
                       ],
                       "type": "string"
                     },
@@ -12348,6 +12399,7 @@
                   "required": [
                     "capacity",
                     "category",
+                    "checkinDisplay",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -13100,6 +13152,14 @@
                       ],
                       "type": "string"
                     },
+                    "checkinDisplay": {
+                      "enum": [
+                        "minimal",
+                        "name",
+                        "full"
+                      ],
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -13484,6 +13544,7 @@
                   "required": [
                     "capacity",
                     "category",
+                    "checkinDisplay",
                     "createdAt",
                     "createdBy",
                     "description",

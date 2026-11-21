@@ -3,6 +3,7 @@ import {
   categoryDefaults,
   eventCategories,
   eventCategorySchema,
+  eventCheckinDisplays,
   eventCreateSchema,
   eventUpdateSchema,
 } from '@filcdev/api/domains/events/event';
@@ -78,6 +79,20 @@ describe('eventCreateSchema', () => {
 
   it('rejects an unknown category', () => {
     expect(eventCategorySchema.safeParse('concert').success).toBe(false);
+  });
+
+  it('accepts every check-in display and rejects an unknown one', () => {
+    for (const checkinDisplay of eventCheckinDisplays) {
+      expect(
+        eventCreateSchema.safeParse({ ...validCreate, checkinDisplay }).success
+      ).toBe(true);
+    }
+    expect(
+      eventCreateSchema.safeParse({
+        ...validCreate,
+        checkinDisplay: 'everything',
+      }).success
+    ).toBe(false);
   });
 });
 

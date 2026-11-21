@@ -1,8 +1,10 @@
 import {
   type EventCategory,
+  type EventCheckinDisplay,
   type EventHelperRequirement,
   type EventStatus,
   eventCategories,
+  eventCheckinDisplays,
   eventStatuses,
 } from '@filcdev/api/domains/events/event';
 import {
@@ -54,6 +56,15 @@ export const event = pgTable(
     /** Null means unlimited seats. */
     capacity: integer('capacity'),
     category: text('category').$type<EventCategory>().notNull(),
+    /**
+     * What the door's scanner reveals on a check-in: `minimal` nothing about
+     * the person, `name` the visitor/ticket holder, `full` name and address.
+     * Read by the check-in handler on every scan, never filtered client-side.
+     */
+    checkinDisplay: text('checkin_display')
+      .$type<EventCheckinDisplay>()
+      .notNull()
+      .default('name'),
     // Registration scope, not visibility: every published event is visible to
     // everyone, and only a student whose cohort is listed here may sign up. An
     // empty list means every student may. Ids are validated on write, and a
@@ -127,6 +138,10 @@ export const event = pgTable(
     check(
       'event_category_valid',
       sql`${t.category} IN (${sqlLiterals(eventCategories)})`
+    ),
+    check(
+      'event_checkin_display_valid',
+      sql`${t.checkinDisplay} IN (${sqlLiterals(eventCheckinDisplays)})`
     ),
     check(
       'event_status_valid',

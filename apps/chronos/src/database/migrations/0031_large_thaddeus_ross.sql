@@ -1,6 +1,7 @@
 CREATE TABLE "event" (
 	"capacity" integer,
 	"category" text NOT NULL,
+	"checkin_display" text DEFAULT 'name' NOT NULL,
 	"cohort_ids" text[] DEFAULT '{}'::text[] NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
@@ -11,6 +12,7 @@ CREATE TABLE "event" (
 	"helper_registration_separate_window" boolean DEFAULT false NOT NULL,
 	"helper_registration_closes_at" timestamp,
 	"helper_registration_opens_at" timestamp,
+	"helper_requirements" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"image_byte_size" integer,
 	"image_content_type" text,
@@ -26,6 +28,7 @@ CREATE TABLE "event" (
 	"title" text NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "event_category_valid" CHECK ("event"."category" IN ('honfoglalo', 'open_day', 'career_day', 'digital_week', 'codeweek', 'fair', 'external')),
+	CONSTRAINT "event_checkin_display_valid" CHECK ("event"."checkin_display" IN ('minimal', 'name', 'full')),
 	CONSTRAINT "event_status_valid" CHECK ("event"."status" IN ('draft', 'published', 'archived')),
 	CONSTRAINT "event_dates_ordered" CHECK ("event"."ends_at" >= "event"."starts_at"),
 	CONSTRAINT "event_registration_window_ordered" CHECK (("event"."registration_opens_at" IS NULL OR "event"."registration_closes_at" IS NULL
@@ -38,6 +41,16 @@ CREATE TABLE "event" (
 	CONSTRAINT "event_image_complete" CHECK (("event"."image_key" IS NULL) = ("event"."image_content_type" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_byte_size" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_updated_at" IS NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "event_checkin_grant" (
+	"event_id" uuid NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "event_checkin_grant_user_event_unique" UNIQUE("user_id","event_id")
 );
 --> statement-breakpoint
 CREATE TABLE "event_field" (
@@ -87,6 +100,8 @@ CREATE TABLE "event_ticket" (
 );
 --> statement-breakpoint
 ALTER TABLE "event" ADD CONSTRAINT "event_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_field" ADD CONSTRAINT "event_field_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_registration" ADD CONSTRAINT "event_registration_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_registration" ADD CONSTRAINT "event_registration_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -96,22 +111,7 @@ ALTER TABLE "event_ticket" ADD CONSTRAINT "event_ticket_checked_in_by_user_id_fk
 ALTER TABLE "event_ticket" ADD CONSTRAINT "event_ticket_registration_id_event_registration_id_fk" FOREIGN KEY ("registration_id") REFERENCES "public"."event_registration"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "event_status_starts_at_idx" ON "event" USING btree ("status","starts_at");--> statement-breakpoint
 CREATE INDEX "event_registration_opens_at_idx" ON "event" USING btree ("registration_opens_at");--> statement-breakpoint
+CREATE INDEX "event_checkin_grant_event_id_idx" ON "event_checkin_grant" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "event_field_event_id_idx" ON "event_field" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "event_registration_event_status_idx" ON "event_registration" USING btree ("event_id","status");--> statement-breakpoint
 CREATE UNIQUE INDEX "event_registration_guest_unique" ON "event_registration" USING btree ("event_id",lower("guest_email")) WHERE "event_registration"."guest_email" is not null;
---> statement-breakpoint
-CREATE TABLE "event_checkin_grant" (
-	"event_id" uuid NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "event_checkin_grant_user_event_unique" UNIQUE("user_id","event_id")
-);
---> statement-breakpoint
-ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "event_checkin_grant_event_id_idx" ON "event_checkin_grant" USING btree ("event_id");
---> statement-breakpoint
-ALTER TABLE "event" ADD COLUMN "helper_requirements" jsonb DEFAULT '[]'::jsonb NOT NULL;

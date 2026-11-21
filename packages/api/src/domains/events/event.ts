@@ -31,6 +31,17 @@ export type EventStatus = (typeof eventStatuses)[number];
 export const eventStatusSchema = z.enum(eventStatuses);
 
 /**
+ * How much the scanner reveals on a successful check-in. The setting is about
+ * the screen at the door, so it applies to every outcome, not only an
+ * admission: a cancelled ticket must not leak more than a valid one.
+ */
+export const eventCheckinDisplays = ['minimal', 'name', 'full'] as const;
+
+export type EventCheckinDisplay = (typeof eventCheckinDisplays)[number];
+
+export const eventCheckinDisplaySchema = z.enum(eventCheckinDisplays);
+
+/**
  * What a category pre-fills in the organizer's dialog. Deliberately data, not
  * a rule: every value below is an editable field on the event itself, and the
  * backend never consults this map.
@@ -112,6 +123,8 @@ export type EventHelperRequirement = z.infer<
 export const eventRowSchema = z.object({
   capacity: z.number().nullable(),
   category: eventCategorySchema,
+  /** What the door's scanner reveals; `name` unless the organizer changes it. */
+  checkinDisplay: eventCheckinDisplaySchema,
   createdAt: z.date(),
   createdBy: z.uuid().nullable(),
   description: z.json(),
@@ -259,6 +272,8 @@ export type EventQueryInput = z.infer<typeof eventQuerySchema>;
 const eventWriteFieldsSchema = z.object({
   capacity: z.number().int().positive().nullable().optional(),
   category: eventCategorySchema,
+  /** What the door's scanner reveals; omitted means the column default. */
+  checkinDisplay: eventCheckinDisplaySchema.optional(),
   /** Registration scope, never visibility: empty means every student. */
   cohortIds: uniqueIdList(z.uuid()).optional(),
   description: blockContentSchema,

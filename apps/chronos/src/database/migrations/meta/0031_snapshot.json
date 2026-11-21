@@ -1,5 +1,5 @@
 {
-  "id": "c9f9dad6-6b25-42eb-8136-166f4b613ed0",
+  "id": "61217925-66c0-4a83-b350-389724ff252c",
   "prevId": "cf219c1a-199e-4136-884f-78015650ee33",
   "version": "7",
   "dialect": "postgresql",
@@ -1283,6 +1283,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "checkin_display": {
+          "name": "checkin_display",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'name'"
+        },
         "cohort_ids": {
           "name": "cohort_ids",
           "type": "text[]",
@@ -1504,6 +1511,10 @@
         "event_category_valid": {
           "name": "event_category_valid",
           "value": "\"event\".\"category\" IN ('honfoglalo', 'open_day', 'career_day', 'digital_week', 'codeweek', 'fair', 'external')"
+        },
+        "event_checkin_display_valid": {
+          "name": "event_checkin_display_valid",
+          "value": "\"event\".\"checkin_display\" IN ('minimal', 'name', 'full')"
         },
         "event_status_valid": {
           "name": "event_status_valid",
