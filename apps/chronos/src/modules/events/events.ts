@@ -198,7 +198,7 @@ function eventInsertValues(
     registrationEnabled: body.registrationEnabled ?? true,
     registrationOpensAt: body.registrationOpensAt ?? null,
     startsAt: body.startsAt,
-    status: body.status ?? 'draft',
+    status: body.status ?? 'published',
     title: body.title,
   };
 }
