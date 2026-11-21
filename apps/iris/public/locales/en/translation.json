@@ -845,6 +845,7 @@
     "removeHelperRequirement": "Remove requirement",
     "noHelperRequirements": "No conditions: every student may apply as a helper.",
     "noStudentQuestionsForRequirements": "Add a student question first; conditions are built from them.",
+    "helperRequirementsNeedHelpers": "Helper signups are off. Turn on “Allow helper signups” to set conditions.",
     "helperRequirementField": "Question",
     "helperRequirementOperator": "Condition",
     "helperRequirementValue": "Value",
@@ -860,7 +861,19 @@
     "helperRegistrationSeparateWindow": "Separate signup window for helpers",
     "helperRegistrationSeparateWindowHint": "When on, helpers sign up in their own window instead of the participant one.",
     "helperRegistrationOpensAt": "Helper signup opens",
-    "helperRegistrationClosesAt": "Helper signup closes"
+    "helperRegistrationClosesAt": "Helper signup closes",
+    "checkinDisplayGroup": "Door check-in",
+    "checkinDisplay": "What the scanner shows",
+    "checkinDisplays": {
+      "minimal": "Validity only",
+      "name": "Name",
+      "full": "Name and email"
+    },
+    "checkinDisplayHints": {
+      "minimal": "Only that the ticket is valid — no name or email.",
+      "name": "The visitor’s name, so the door can compare it with the person.",
+      "full": "The visitor’s name and email address."
+    }
   },
   "systemMessages": {
     "title": "System Messages",

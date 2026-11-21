@@ -1,9 +1,11 @@
 import {
   categoryDefaults,
   type EventCategory,
+  type EventCheckinDisplay,
   type EventHelperRequirement,
   type EventStatus,
   eventCategories,
+  eventCheckinDisplays,
   eventStatuses,
   helperRequirementOpsByFieldType,
 } from '@filcdev/api/domains/events/event';
@@ -76,6 +78,7 @@ type EventDialogProps = BaseDialogProps & {
 type EventFormValues = {
   capacity: string;
   category: EventCategory;
+  checkinDisplay: EventCheckinDisplay;
   cohortIds: string[];
   description: string;
   endsAt: Date | null;
@@ -233,6 +236,7 @@ function toFormValues(item: EventDetail | null | undefined): EventFormValues {
   return {
     capacity: item?.capacity?.toString() ?? '',
     category,
+    checkinDisplay: item?.checkinDisplay ?? 'name',
     cohortIds: item?.cohortIds ?? [],
     description: contentToText(item?.description),
     endsAt: toMinuteDate(item?.endsAt),
@@ -433,6 +437,10 @@ function HelperRequirementRow({
 
 type HelperRequirementEditorProps = {
   fields: EventFieldItem[];
+  /** Helper signups are off: the fieldset is inert, so explain that instead. */
+  helpersEnabled: boolean;
+  /** Append a question draft and open the Questions pane. */
+  onAddQuestion: () => void;
   requirements: HelperRequirementDraft[];
   setRequirements: Dispatch<SetStateAction<HelperRequirementDraft[]>>;
 };
@@ -443,9 +451,15 @@ type HelperRequirementEditorProps = {
  * rejects an id that is not on this event. Adding a question and a condition in
  * the same visit therefore needs one save in between, which is why the empty
  * state says so.
+ *
+ * The empty button is a way out, not a dead end: with no usable question it
+ * adds a draft and jumps to the Questions pane, and with helper signups off
+ * there is no button at all, only the reason the section is disabled.
  */
 function HelperRequirementEditor({
   fields,
+  helpersEnabled,
+  onAddQuestion,
   requirements,
   setRequirements,
 }: HelperRequirementEditorProps) {
@@ -499,6 +513,17 @@ function HelperRequirementEditor({
     ]);
   };
 
+  // One line above the rows, naming the actual blocker: the helper signup
+  // switch, a missing student question, or nothing at all.
+  let explanation: string | null = null;
+  if (!helpersEnabled) {
+    explanation = t('events.helperRequirementsNeedHelpers');
+  } else if (usableFields.length === 0) {
+    explanation = t('events.noStudentQuestionsForRequirements');
+  } else if (requirements.length === 0) {
+    explanation = t('events.noHelperRequirements');
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -510,24 +535,27 @@ function HelperRequirementEditor({
             {t('events.helperRequirementsHint')}
           </p>
         </div>
-        <Button
-          disabled={usableFields.length === 0}
-          onClick={add}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <Plus className="h-4 w-4" />
-          {t('events.addHelperRequirement')}
-        </Button>
+        {helpersEnabled && usableFields.length === 0 && (
+          <Button
+            onClick={onAddQuestion}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
+            {t('events.addQuestion')}
+          </Button>
+        )}
+        {helpersEnabled && usableFields.length > 0 && (
+          <Button onClick={add} size="sm" type="button" variant="outline">
+            <Plus className="h-4 w-4" />
+            {t('events.addHelperRequirement')}
+          </Button>
+        )}
       </div>
 
-      {requirements.length === 0 && (
-        <p className="text-muted-foreground text-xs">
-          {usableFields.length === 0
-            ? t('events.noStudentQuestionsForRequirements')
-            : t('events.noHelperRequirements')}
-        </p>
+      {explanation && (
+        <p className="text-muted-foreground text-xs">{explanation}</p>
       )}
 
       {requirements.map((requirement, index) => (
@@ -758,6 +786,7 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
       const payload: Omit<EventPayload, 'description'> = {
         capacity: capacityOrNull(value.capacity),
         category: value.category,
+        checkinDisplay: value.checkinDisplay,
         cohortIds: value.cohortIds,
         endsAt,
         guestRegistrationEnabled: value.guestRegistrationEnabled,
@@ -882,6 +911,16 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
     // closes, so the pane is focused on the next frame: that lands the
     // keyboard at the top of the section that just opened.
     requestAnimationFrame(() => paneRef.current?.focus());
+  };
+
+  /**
+   * The way out of the empty requirement editor: a saved question is what a
+   * condition can name, so this adds a draft and takes the organizer to the
+   * pane where it is filled in and saved with the event.
+   */
+  const addQuestionForRequirements = () => {
+    setFields((current) => [...current, newEventFieldDraft()]);
+    goToSection('questions');
   };
 
   const toggleCohort = (cohortId: string, checked: boolean) => {
@@ -1313,10 +1352,50 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
 
                       <HelperRequirementEditor
                         fields={item?.fields ?? []}
+                        helpersEnabled={helperRegistrationEnabled}
+                        onAddQuestion={addQuestionForRequirements}
                         requirements={requirements}
                         setRequirements={setRequirements}
                       />
                     </fieldset>
+                  </fieldset>
+
+                  <fieldset className="space-y-3 rounded-md border p-3">
+                    <legend className="px-1 font-medium text-sm">
+                      {t('events.checkinDisplayGroup')}
+                    </legend>
+                    <form.Field name="checkinDisplay">
+                      {(field) => (
+                        <div className="space-y-2">
+                          <Label htmlFor={`${formId}-checkin-display`}>
+                            {t('events.checkinDisplay')}
+                          </Label>
+                          <Select
+                            items={eventCheckinDisplays.map((display) => ({
+                              label: t(`events.checkinDisplays.${display}`),
+                              value: display,
+                            }))}
+                            onValueChange={(value) =>
+                              value &&
+                              field.handleChange(value as EventCheckinDisplay)
+                            }
+                            value={field.state.value}
+                          >
+                            <SelectTrigger
+                              className="w-full"
+                              id={`${formId}-checkin-display`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                          </Select>
+                          <p className="text-muted-foreground text-xs">
+                            {t(
+                              `events.checkinDisplayHints.${field.state.value}`
+                            )}
+                          </p>
+                        </div>
+                      )}
+                    </form.Field>
                   </fieldset>
 
                   <div className="grid gap-4 sm:grid-cols-3">

@@ -845,6 +845,7 @@
     "removeHelperRequirement": "Feltétel eltávolítása",
     "noHelperRequirements": "Nincs feltétel: minden diák jelentkezhet segítőnek.",
     "noStudentQuestionsForRequirements": "Előbb adj hozzá diákoknak szóló kérdést; a feltételek ezekből épülnek fel.",
+    "helperRequirementsNeedHelpers": "A segítőjelentkezés ki van kapcsolva. Kapcsold be a „Segítők engedélyezése” lehetőséget a feltételek beállításához.",
     "helperRequirementField": "Kérdés",
     "helperRequirementOperator": "Feltétel",
     "helperRequirementValue": "Érték",
@@ -860,7 +861,19 @@
     "helperRegistrationSeparateWindow": "Külön jelentkezési időszak a segítőknek",
     "helperRegistrationSeparateWindowHint": "Bekapcsolva a segítők a saját időszakukban jelentkeznek a résztvevők időszaka helyett.",
     "helperRegistrationOpensAt": "Segítő jelentkezés kezdete",
-    "helperRegistrationClosesAt": "Segítő jelentkezés vége"
+    "helperRegistrationClosesAt": "Segítő jelentkezés vége",
+    "checkinDisplayGroup": "Beléptetés",
+    "checkinDisplay": "A beléptető mit mutasson",
+    "checkinDisplays": {
+      "minimal": "Csak az érvényességet",
+      "name": "Nevet",
+      "full": "Nevet és e-mailt"
+    },
+    "checkinDisplayHints": {
+      "minimal": "Csak azt, hogy érvényes a jegy — nevet és e-mailt nem.",
+      "name": "A vendég nevét, hogy a beléptető összevesse a belépővel.",
+      "full": "A vendég nevét és e-mail-címét."
+    }
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",
