@@ -37,8 +37,10 @@ function GuestForm({ event }: { event: EventDetail }) {
   const [error, setError] = useState<string | null>(null);
   const nameId = useId();
   const emailId = useId();
-  // Guest questions are the ones a student is not asked, plus the shared ones.
-  const fields = event.fields.filter((field) => field.appliesTo !== 'student');
+  // The questions aimed at visitors; a question may also be shown to students.
+  const fields = event.fields.filter((field) =>
+    field.audiences.includes('guest')
+  );
 
   const form = useForm({
     defaultValues: {

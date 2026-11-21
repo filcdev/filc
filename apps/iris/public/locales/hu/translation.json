@@ -791,8 +791,8 @@
     "questionRequired": "Kötelező",
     "questionOptions": "Lehetőségek",
     "questionOptionsPlaceholder": "Vesszővel elválasztva",
-    "questionAppliesTo": "Kire vonatkozik",
-    "questionAppliesToHint": "Csak vendégek: a diákok nem látják. Csak diákok: a vendégek nem látják. Mindkettő: mindenki látja.",
+    "questionAudiences": "Kire vonatkozik",
+    "questionAudiencesHint": "Csak azok a űrlapok mutatják a kérdést, amelyek be vannak jelölve. Legalább egy közönség mindig bejelölve marad.",
     "removeQuestion": "Kérdés törlése",
     "noQuestions": "Még nincs egyedi kérdés.",
     "fieldTypes": {
@@ -802,10 +802,10 @@
       "number": "Szám",
       "checkbox": "Jelölőnégyzet"
     },
-    "appliesTo": {
+    "audiences": {
       "guest": "Vendégek",
       "student": "Diákok",
-      "both": "Mindkettő"
+      "helper": "Segítők"
     },
     "banner": "Borítókép",
     "bannerHint": "JPEG, PNG vagy WebP, legfeljebb 8 MiB",
@@ -862,6 +862,10 @@
     "helperRegistrationSeparateWindowHint": "Bekapcsolva a segítők a saját időszakukban jelentkeznek a résztvevők időszaka helyett.",
     "helperRegistrationOpensAt": "Segítő jelentkezés kezdete",
     "helperRegistrationClosesAt": "Segítő jelentkezés vége",
+    "helperMinGrade": "Segítők minimum évfolyama",
+    "helperMaxGrade": "Segítők maximum évfolyama",
+    "helperGradeHint": "Ha mindkettő üres, a segítőkre az esemény saját évfolyamhatárai érvényesek.",
+    "noGradeBound": "Nincs korlát",
     "checkinDisplayGroup": "Beléptetés",
     "checkinDisplay": "A beléptető mit mutasson",
     "checkinDisplays": {
@@ -873,7 +877,10 @@
       "minimal": "Csak azt, hogy érvényes a jegy — nevet és e-mailt nem.",
       "name": "A vendég nevét, hogy a beléptető összevesse a belépővel.",
       "full": "A vendég nevét és e-mail-címét."
-    }
+    },
+    "checkinFields": "Megjelenített válaszok",
+    "checkinFieldsHint": "Csak a bejelölt kérdések válaszai jelennek meg a beléptetőnél, ebben a sorrendben.",
+    "checkinFieldsEmpty": "Előbb ments el egy kérdést; a válaszok az esemény mentett kérdései közül választhatók."
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",

@@ -128,7 +128,10 @@ function RegistrationForm({
   // participant, the helper button arms this ref before submitting.
   const signupRole = useRef<EventSignupRole>('participant');
   // Guest questions belong to the visitor form; this one is a student signup.
-  const fields = event.fields.filter((field) => field.appliesTo !== 'guest');
+  const fields = event.fields.filter(
+    (field) =>
+      field.audiences.includes('student') || field.audiences.includes('helper')
+  );
   const pendingRole = register.isPending ? register.variables?.role : undefined;
 
   const form = useForm({

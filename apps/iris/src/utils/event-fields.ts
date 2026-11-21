@@ -1,11 +1,12 @@
-import type {
-  EventFieldAppliesTo,
-  EventFieldType,
+import {
+  defaultEventFieldAudiences,
+  type EventFieldAudience,
+  type EventFieldType,
 } from '@filcdev/api/domains/events/fields';
 
 /** One custom question while the organizer edits it, before it is sent. */
 export type EventFieldDraft = {
-  appliesTo: EventFieldAppliesTo;
+  audiences: EventFieldAudience[];
   id?: string;
   key: string;
   label: string;
@@ -15,13 +16,13 @@ export type EventFieldDraft = {
 };
 
 /**
- * A blank question row. It starts on `both` whatever the event category is:
- * the category used to seed it, and an open-day event seeded `guest`, which
- * kept the question off the student form the organizer was looking at.
+ * A blank question row. It starts on every audience — guest, student and
+ * helper — so no category and no default can hide it from a form the
+ * organizer is looking at; narrowing it is an explicit tick.
  */
 export function newEventFieldDraft(): EventFieldDraft {
   return {
-    appliesTo: 'both',
+    audiences: [...defaultEventFieldAudiences],
     key: crypto.randomUUID(),
     label: '',
     optionsText: '',

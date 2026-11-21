@@ -791,8 +791,8 @@
     "questionRequired": "Required",
     "questionOptions": "Options",
     "questionOptionsPlaceholder": "Comma separated",
-    "questionAppliesTo": "Applies to",
-    "questionAppliesToHint": "Guests only: hidden from the student form. Students only: hidden from the visitor form. Both: everyone sees it.",
+    "questionAudiences": "Applies to",
+    "questionAudiencesHint": "Only the ticked forms show the question. At least one audience stays ticked.",
     "removeQuestion": "Remove question",
     "noQuestions": "No custom questions yet.",
     "fieldTypes": {
@@ -802,10 +802,10 @@
       "number": "Number",
       "checkbox": "Checkbox"
     },
-    "appliesTo": {
+    "audiences": {
       "guest": "Guests",
       "student": "Students",
-      "both": "Both"
+      "helper": "Helpers"
     },
     "banner": "Banner",
     "bannerHint": "JPEG, PNG or WebP, max 8 MiB",
@@ -862,6 +862,10 @@
     "helperRegistrationSeparateWindowHint": "When on, helpers sign up in their own window instead of the participant one.",
     "helperRegistrationOpensAt": "Helper signup opens",
     "helperRegistrationClosesAt": "Helper signup closes",
+    "helperMinGrade": "Helpers' minimum grade",
+    "helperMaxGrade": "Helpers' maximum grade",
+    "helperGradeHint": "Leave both empty to use the event's own grade bounds for helpers.",
+    "noGradeBound": "No bound",
     "checkinDisplayGroup": "Door check-in",
     "checkinDisplay": "What the scanner shows",
     "checkinDisplays": {
@@ -873,7 +877,10 @@
       "minimal": "Only that the ticket is valid — no name or email.",
       "name": "The visitor’s name, so the door can compare it with the person.",
       "full": "The visitor’s name and email address."
-    }
+    },
+    "checkinFields": "Answers shown at the door",
+    "checkinFieldsHint": "Only the ticked questions' answers appear at the scanner, in this order.",
+    "checkinFieldsEmpty": "Save a question first; the answers are picked from the event's saved questions."
   },
   "systemMessages": {
     "title": "System Messages",

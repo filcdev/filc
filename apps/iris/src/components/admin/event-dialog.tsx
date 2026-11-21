@@ -10,9 +10,9 @@ import {
   helperRequirementOpsByFieldType,
 } from '@filcdev/api/domains/events/event';
 import {
-  type EventFieldAppliesTo,
+  type EventFieldAudience,
   type EventFieldType,
-  eventFieldAppliesToValues,
+  eventFieldAudiences,
   eventFieldTypes,
 } from '@filcdev/api/domains/events/fields';
 import { Badge } from '@filcdev/ui/components/badge';
@@ -75,6 +75,10 @@ type EventDialogProps = BaseDialogProps & {
   item?: EventDetail | null;
 };
 
+/** The door's configured answers; an event without any has none. */
+const toCheckinFields = (item: EventDetail | null | undefined): string[] =>
+  item?.checkinFields ?? [];
+
 type EventFormValues = {
   capacity: string;
   category: EventCategory;
@@ -83,6 +87,8 @@ type EventFormValues = {
   description: string;
   endsAt: Date | null;
   guestRegistrationEnabled: boolean;
+  helperMaxGrade: string;
+  helperMinGrade: string;
   helperRegistrationClosesAt: Date | null;
   helperRegistrationEnabled: boolean;
   helperRegistrationOpensAt: Date | null;
@@ -221,7 +227,7 @@ function toFieldDrafts(
   fields: EventFieldItem[] | undefined
 ): EventFieldDraft[] {
   return (fields ?? []).map((field) => ({
-    appliesTo: field.appliesTo,
+    audiences: field.audiences,
     id: field.id,
     key: field.id,
     label: field.label,
@@ -241,6 +247,8 @@ function toFormValues(item: EventDetail | null | undefined): EventFormValues {
     description: contentToText(item?.description),
     endsAt: toMinuteDate(item?.endsAt),
     guestRegistrationEnabled: item?.guestRegistrationEnabled ?? false,
+    helperMaxGrade: item?.helperMaxGrade?.toString() ?? '',
+    helperMinGrade: item?.helperMinGrade?.toString() ?? '',
     helperRegistrationClosesAt: toMinuteDate(item?.helperRegistrationClosesAt),
     helperRegistrationEnabled: item?.helperRegistrationEnabled ?? false,
     helperRegistrationOpensAt: toMinuteDate(item?.helperRegistrationOpensAt),
@@ -465,8 +473,8 @@ function HelperRequirementEditor({
 }: HelperRequirementEditorProps) {
   const { t } = useTranslation();
   const formId = useId();
-  const usableFields = fields.filter(
-    (field) => field.appliesTo === 'student' || field.appliesTo === 'both'
+  const usableFields = fields.filter((field) =>
+    field.audiences.includes('helper')
   );
 
   const update = (
@@ -575,6 +583,116 @@ function HelperRequirementEditor({
   );
 }
 
+type CheckinFieldPickerProps = {
+  fields: EventFieldItem[];
+  onToggle: (fieldId: string, checked: boolean) => void;
+  selected: string[];
+};
+
+/** The event's saved questions, each one shown at the door when ticked. */
+function CheckinFieldPicker({
+  fields,
+  onToggle,
+  selected,
+}: CheckinFieldPickerProps) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-2">
+      <p className="font-medium text-sm">{t('events.checkinFields')}</p>
+      <p className="text-muted-foreground text-xs">
+        {t('events.checkinFieldsHint')}
+      </p>
+      {fields.length === 0 ? (
+        <p className="text-muted-foreground text-xs">
+          {t('events.checkinFieldsEmpty')}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {fields.map((question) => (
+            <div className="flex items-center gap-2" key={question.id}>
+              <Checkbox
+                checked={selected.includes(question.id)}
+                id={`checkin-field-${question.id}`}
+                onCheckedChange={(checked) =>
+                  onToggle(question.id, checked === true)
+                }
+              />
+              <label
+                className="cursor-pointer font-medium text-sm leading-none"
+                htmlFor={`checkin-field-${question.id}`}
+              >
+                {question.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type FieldAudiencePickerProps = {
+  audiences: EventFieldAudience[];
+  idPrefix: string;
+  onChange: (audiences: EventFieldAudience[]) => void;
+};
+
+/**
+ * Who sees the question. Ticking several is the point: the old "both" is now
+ * guest + student. The last remaining tick cannot be removed, because a
+ * question on no form is never shown and never answerable.
+ */
+function FieldAudiencePicker({
+  audiences,
+  idPrefix,
+  onChange,
+}: FieldAudiencePickerProps) {
+  const { t } = useTranslation();
+
+  const toggle = (audience: EventFieldAudience, checked: boolean): void => {
+    if (checked) {
+      onChange([...audiences, audience]);
+      return;
+    }
+    if (audiences.length === 1) {
+      return;
+    }
+    onChange(audiences.filter((value) => value !== audience));
+  };
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="font-medium text-sm">
+        {t('events.questionAudiences')}
+      </legend>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        {eventFieldAudiences.map((audience) => {
+          const checked = audiences.includes(audience);
+          return (
+            <div className="flex items-center gap-2" key={audience}>
+              <Checkbox
+                checked={checked}
+                disabled={checked && audiences.length === 1}
+                id={`${idPrefix}-${audience}`}
+                onCheckedChange={(next) => toggle(audience, next === true)}
+              />
+              <label
+                className="cursor-pointer font-medium text-sm leading-none"
+                htmlFor={`${idPrefix}-${audience}`}
+              >
+                {t(`events.audiences.${audience}`)}
+              </label>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-muted-foreground text-xs">
+        {t('events.questionAudiencesHint')}
+      </p>
+    </fieldset>
+  );
+}
+
 type FieldEditorProps = {
   fields: EventFieldDraft[];
   setFields: Dispatch<SetStateAction<EventFieldDraft[]>>;
@@ -664,34 +782,11 @@ function FieldEditor({ fields, setFields }: FieldEditorProps) {
                 </SelectTrigger>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor={`field-applies-${field.key}`}>
-                {t('events.questionAppliesTo')}
-              </Label>
-              <Select
-                items={eventFieldAppliesToValues.map((value) => ({
-                  label: t(`events.appliesTo.${value}`),
-                  value,
-                }))}
-                onValueChange={(value) =>
-                  value &&
-                  updateField(field.key, {
-                    appliesTo: value as EventFieldAppliesTo,
-                  })
-                }
-                value={field.appliesTo}
-              >
-                <SelectTrigger
-                  className="w-full"
-                  id={`field-applies-${field.key}`}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-              </Select>
-              <p className="text-muted-foreground text-xs">
-                {t('events.questionAppliesToHint')}
-              </p>
-            </div>
+            <FieldAudiencePicker
+              audiences={field.audiences}
+              idPrefix={`field-audiences-${field.key}`}
+              onChange={(audiences) => updateField(field.key, { audiences })}
+            />
           </div>
           {field.type === 'select' && (
             <div className="space-y-1">
@@ -763,6 +858,12 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
   const [requirements, setRequirements] = useState<HelperRequirementDraft[]>(
     () => toRequirementDrafts(item?.helperRequirements)
   );
+  // The door's answers are a saved list of question ids, like the helper
+  // requirements: a question added in this visit needs a save before it can be
+  // selected here.
+  const [checkinFields, setCheckinFields] = useState<string[]>(() =>
+    toCheckinFields(item)
+  );
 
   const imageRow = uploadImage.data ?? (bannerRemoved ? null : item);
   const imageKey = imageRow?.imageKey ?? null;
@@ -787,9 +888,12 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
         capacity: capacityOrNull(value.capacity),
         category: value.category,
         checkinDisplay: value.checkinDisplay,
+        checkinFields,
         cohortIds: value.cohortIds,
         endsAt,
         guestRegistrationEnabled: value.guestRegistrationEnabled,
+        helperMaxGrade: numberOrNull(value.helperMaxGrade),
+        helperMinGrade: numberOrNull(value.helperMinGrade),
         helperRegistrationClosesAt: value.helperRegistrationClosesAt,
         helperRegistrationEnabled: value.helperRegistrationEnabled,
         helperRegistrationOpensAt: value.helperRegistrationOpensAt,
@@ -838,7 +942,7 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
           fields: fields
             .filter((field) => field.label.trim())
             .map((field, position) => ({
-              appliesTo: field.appliesTo,
+              audiences: field.audiences,
               ...(field.id ? { id: field.id } : {}),
               label: field.label.trim(),
               options:
@@ -921,6 +1025,15 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
   const addQuestionForRequirements = () => {
     setFields((current) => [...current, newEventFieldDraft()]);
     goToSection('questions');
+  };
+
+  const toggleCheckinField = (fieldId: string, checked: boolean): void => {
+    setCheckinFields((current) => {
+      if (checked) {
+        return [...current, fieldId];
+      }
+      return current.filter((id) => id !== fieldId);
+    });
   };
 
   const toggleCohort = (cohortId: string, checked: boolean) => {
@@ -1350,6 +1463,52 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
                         </div>
                       )}
 
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <form.Field name="helperMinGrade">
+                          {(field) => (
+                            <div className="space-y-2">
+                              <Label htmlFor={field.name}>
+                                {t('events.helperMinGrade')}
+                              </Label>
+                              <Input
+                                id={field.name}
+                                max={13}
+                                min={1}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                placeholder={t('events.noGradeBound')}
+                                type="number"
+                                value={field.state.value}
+                              />
+                            </div>
+                          )}
+                        </form.Field>
+                        <form.Field name="helperMaxGrade">
+                          {(field) => (
+                            <div className="space-y-2">
+                              <Label htmlFor={field.name}>
+                                {t('events.helperMaxGrade')}
+                              </Label>
+                              <Input
+                                id={field.name}
+                                max={13}
+                                min={1}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                placeholder={t('events.noGradeBound')}
+                                type="number"
+                                value={field.state.value}
+                              />
+                            </div>
+                          )}
+                        </form.Field>
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        {t('events.helperGradeHint')}
+                      </p>
+
                       <HelperRequirementEditor
                         fields={item?.fields ?? []}
                         helpersEnabled={helperRegistrationEnabled}
@@ -1396,6 +1555,12 @@ export function EventDialog({ item, onOpenChange, open }: EventDialogProps) {
                         </div>
                       )}
                     </form.Field>
+
+                    <CheckinFieldPicker
+                      fields={item?.fields ?? []}
+                      onToggle={toggleCheckinField}
+                      selected={checkinFields}
+                    />
                   </fieldset>
 
                   <div className="grid gap-4 sm:grid-cols-3">
