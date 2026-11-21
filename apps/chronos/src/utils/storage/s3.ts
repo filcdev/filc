@@ -32,6 +32,10 @@ export const announcementImageKey = (
   extension: string
 ): string => `news/${announcementId}/${crypto.randomUUID()}${extension}`;
 
+/** Object key for one event banner: a fresh key per upload, same cache-busting rule. */
+export const eventImageKey = (eventId: string, extension: string): string =>
+  `events/${eventId}/${crypto.randomUUID()}${extension}`;
+
 export const putObject = async (
   key: string,
   body: Uint8Array,

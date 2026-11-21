@@ -1,6 +1,7 @@
 import { activityLogSchema } from '#modules/activity-log/schema';
 import { bugReportSchema } from '#modules/bug-report/schema';
 import { doorlockSchema } from '#modules/doorlock/schema';
+import { eventsSchema } from '#modules/events/schema';
 import { kioskSchema } from '#modules/kiosk/schema';
 import { navigatorSchema } from '#modules/navigator/schema';
 import { newsSchema } from '#modules/news/schema';
@@ -26,6 +27,7 @@ export const moduleSchemas = {
   ...activityLogSchema,
   ...bugReportSchema,
   ...doorlockSchema,
+  ...eventsSchema,
   ...kioskSchema,
   ...navigatorSchema,
   ...newsSchema,

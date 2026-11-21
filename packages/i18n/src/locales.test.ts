@@ -61,6 +61,7 @@ describe('locale key parity', () => {
       'blogPost',
       'cohortReselection',
       'doorlock',
+      'eventTicket',
       'labels',
       'mail',
       'movedLesson',

@@ -10,6 +10,7 @@ import {
 } from '#database/schema/authentication';
 import { authorizationSchema, role } from '#database/schema/authorization';
 import { doorlockSchema } from '#modules/doorlock/schema';
+import { eventsSchema } from '#modules/events/schema';
 import {
   cohort,
   dayDefinition,
@@ -41,6 +42,8 @@ import { configureLogger } from '#utils/logger';
  *   - a minimal timetable (timetable, day, week, period, subject, one lesson
  *     for one cohort) with two teachers, the admin's teacher row linked via
  *     `teacher.userId`;
+ *   - no events: the events spec creates its own, and the truncate above is
+ *     what keeps a rerun from finding the previous run's rows;
  *   - one substitution replacing the lesson on today's date.
  *
  * Run: `bun run --cwd apps/chronos db:seed:test` with CHRONOS_DATABASE_URL and
@@ -67,6 +70,7 @@ const schema = {
   ...authenticationSchema,
   ...authorizationSchema,
   ...doorlockSchema,
+  ...eventsSchema,
   ...timetableSchema,
   ...wifiSchema,
 };

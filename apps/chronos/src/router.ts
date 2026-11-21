@@ -5,6 +5,7 @@ import { bugReportRouter } from '#modules/bug-report/_router';
 import { cohortRouter } from '#modules/cohort/_router';
 import { dashboardRouter } from '#modules/dashboard/_router';
 import { doorlockRouter } from '#modules/doorlock/_router';
+import { eventsRouter, ticketsRouter } from '#modules/events/_router';
 import { healthRouter } from '#modules/health/_router';
 import { kioskRouter } from '#modules/kiosk/_router';
 import { navigatorRouter } from '#modules/navigator/_router';
@@ -33,6 +34,7 @@ export const appRouter = base.use(rateLimit).router({
   cohort: cohortRouter,
   dashboard: dashboardRouter,
   doorlock: doorlockRouter,
+  events: eventsRouter,
   health: healthRouter,
   kiosk: kioskRouter,
   navigator: navigatorRouter,
@@ -41,6 +43,7 @@ export const appRouter = base.use(rateLimit).router({
   ping: pingRouter,
   roles: rolesRouter,
   theme: themeRouter,
+  tickets: ticketsRouter,
   timetable: timetableRouter,
   users: usersRouter,
   wifi: wifiRouter,

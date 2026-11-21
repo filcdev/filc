@@ -3,9 +3,9 @@ import {
   fcmTokenSchema,
   notificationIdParamsSchema,
   notificationListResponseSchema,
+  notificationQuerySchema,
   notificationRowSchema,
   notificationsOkResponseSchema,
-  paginationSchema,
   previewTestNotificationSchema,
   previewTestResponseSchema,
   sendTestNotificationSchema,
@@ -74,7 +74,7 @@ export const notificationsContract = {
         tags: ['Notifications'],
       })
     )
-    .input(paginationSchema)
+    .input(notificationQuerySchema)
     .output(notificationListResponseSchema),
   markAllAsRead: oc
     .route(

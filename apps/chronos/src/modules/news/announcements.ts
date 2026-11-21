@@ -7,10 +7,7 @@ import type { ChronosContext } from '#_types/globals';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
-import {
-  diffActivity,
-  recordActivity,
-} from '#modules/activity-log/utils/record';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import {
   announcement,
   announcementCohortMtm,
@@ -39,6 +36,7 @@ import {
   isObjectStorageConfigured,
   putObject,
 } from '#utils/storage/s3';
+import { diffActivity } from '#utils/values';
 
 const logger = getLogger(['chronos', 'news']);
 

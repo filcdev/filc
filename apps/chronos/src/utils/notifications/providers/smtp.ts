@@ -194,6 +194,17 @@ export type SendEmailDeps = {
   getTransport?: () => MailTransport | null;
 };
 
+/** The same seam, for a mail that has no notification behind it. */
+export type SendRawEmailDeps = SendEmailDeps;
+
+/** An already-rendered message; nothing here is a notification. */
+export type RawEmail = {
+  html: string;
+  subject: string;
+  text: string;
+  to: string;
+};
+
 /** A rate-limited transport reports how long to wait; anything else does not. */
 const retryAfterMsOf = (error: unknown): number | undefined => {
   if (!(error instanceof GraphMailError)) {
@@ -285,6 +296,43 @@ export async function sendEmail(
       error,
       ...(retryAfterMs === undefined ? {} : { retryAfterMs }),
       to,
+    });
+    return { ok: false, retryAfterMs };
+  }
+}
+
+/**
+ * Send an already-rendered email, with no preferences, no unsubscribe header and
+ * no queue: the recipient is not a user, which is the whole point of a guest
+ * ticket. Failures answer `ok: false` exactly like `sendEmail`, so the caller
+ * decides what a failed send means — for a guest ticket it must not undo the
+ * registration that already committed.
+ *
+ * The only caller is the guest ticket, so the recipient is a visitor's address
+ * and never enters the log: the subject and the ids on the caller's line are
+ * what identifies a send.
+ */
+export async function sendRawEmail(
+  message: RawEmail,
+  deps: SendRawEmailDeps = {}
+): Promise<SendEmailResult> {
+  const tp = (deps.getTransport ?? getTransport)();
+  if (!tp) {
+    logger.warn('Mail transport not available, skipping raw email', {
+      subject: message.subject,
+    });
+    return { ok: false, skipped: true };
+  }
+  try {
+    await tp.send(message);
+    logger.info('Raw email sent', { subject: message.subject });
+    return { ok: true };
+  } catch (error) {
+    const retryAfterMs = retryAfterMsOf(error);
+    logger.error('Failed to send a raw email', {
+      error,
+      ...(retryAfterMs === undefined ? {} : { retryAfterMs }),
+      subject: message.subject,
     });
     return { ok: false, retryAfterMs };
   }

@@ -1,4 +1,19 @@
 {
+  "eventTicket": {
+    "subject": "Your ticket: {{title}}",
+    "title": "Your event ticket",
+    "typeLabel": "Event ticket",
+    "preview": "Here is your ticket for {{title}}.",
+    "greeting": "Hi {{name}},",
+    "intro": "You are registered for {{title}}. Show this ticket at the door.",
+    "eventLabel": "Event",
+    "dateLabel": "Date",
+    "nameLabel": "Name",
+    "codeLabel": "Ticket code",
+    "qrAlt": "Ticket QR code",
+    "openTicket": "Open your ticket",
+    "imageHint": "If the image does not load, open your ticket with this link:"
+  },
   "substitution": {
     "title": "New Substitution",
     "cta": "Check your timetable for details.",

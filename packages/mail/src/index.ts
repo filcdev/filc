@@ -4,9 +4,11 @@
 import { createTransport } from 'nodemailer';
 import { fetchEntraAccessToken } from './entra';
 import { assertSafeHeaders } from './headers';
+import { renderEventTicket } from './templates/event-ticket';
 import { renderNotification } from './templates/notification';
 import type {
   Branding,
+  EventTicketEmailData,
   NotificationEmailData,
   RenderedEmail,
 } from './templates/types';
@@ -19,6 +21,7 @@ export type {
   Branding,
   EmailAccent,
   EmailDetail,
+  EventTicketEmailData,
   Locale,
   NotificationEmailData,
   RenderedEmail,
@@ -70,6 +73,7 @@ export const createMailTransport = (config: SmtpConfig): MailTransport => {
 };
 
 export type TemplateData = {
+  eventTicket: EventTicketEmailData;
   notification: NotificationEmailData;
 };
 
@@ -81,6 +85,7 @@ type TemplateRenderer<Name extends TemplateName> = (
 ) => Promise<RenderedEmail>;
 
 const renderers: { [Name in TemplateName]: TemplateRenderer<Name> } = {
+  eventTicket: renderEventTicket,
   notification: renderNotification,
 };
 

@@ -17,6 +17,8 @@ export const permissions = {
   doorlockDevicesWrite: 'doorlock:devices:write',
   doorlockLogsRead: 'doorlock:logs:read',
   doorlockStatsRead: 'doorlock:stats:read',
+  eventsCheckin: 'events:checkin',
+  eventsManage: 'events:manage',
   importTimetable: 'import:timetable',
   kiosksManage: 'kiosks:manage',
   movedLessonCreate: 'movedLesson:create',

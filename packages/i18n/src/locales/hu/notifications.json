@@ -1,4 +1,19 @@
 {
+  "eventTicket": {
+    "subject": "Jegyed: {{title}}",
+    "title": "Eseményjegyed",
+    "typeLabel": "Eseményjegy",
+    "preview": "Íme a jegyed: {{title}}.",
+    "greeting": "Kedves {{name}}!",
+    "intro": "Jelentkeztél erre az eseményre: {{title}}. Mutasd ezt a jegyet a belépésnél.",
+    "eventLabel": "Esemény",
+    "dateLabel": "Időpont",
+    "nameLabel": "Név",
+    "codeLabel": "Jegykód",
+    "qrAlt": "A jegy QR-kódja",
+    "openTicket": "Jegy megnyitása",
+    "imageHint": "Ha a kép nem jelenik meg, ezen a linken nyithatod meg a jegyet:"
+  },
   "substitution": {
     "title": "Új helyettesítés",
     "cta": "Nézd meg az órárendedben a részletekért!",
@@ -88,7 +103,7 @@
     "teacher": "Tanár"
   },
   "mail": {
-    "autoMessage": "Ez az email a Filc rendszer automatikus üzenete.",
+    "autoMessage": "Ezt az üzenetet a Filc rendszer automatikusan küldte.",
     "greeting": "Kedves Filc felhasználó!",
     "greetingNamed": "Kedves {{name}}!",
     "manageLabel": "Értesítések kezelése",

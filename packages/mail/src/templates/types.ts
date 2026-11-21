@@ -28,6 +28,25 @@ export type RenderedEmail = {
   text: string;
 };
 
+/**
+ * The guest ticket. Every string the mail shows is built by the template from
+ * the i18n catalogue; the caller supplies the facts and the QR image, so the
+ * mail package needs no QR library and no database.
+ */
+export type EventTicketEmailData = {
+  /** The ticket id, which is also the QR payload; shown as text as well. */
+  code: string;
+  /** Already formatted in the recipient's locale by the caller. */
+  eventDate: string;
+  eventTitle: string;
+  locale: Locale;
+  /** An inline `data:image/png;base64,...` QR of the ticket id. */
+  qrDataUri: string;
+  /** The public ticket page, so an image-blocking client still gets in. */
+  ticketUrl: string;
+  visitorName: string;
+};
+
 export type NotificationEmailData = {
   /** Accent identity of the email; defaults to `teal`. */
   accent?: EmailAccent;

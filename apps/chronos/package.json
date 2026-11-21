@@ -11,7 +11,7 @@
     "db:import-navigator": "bun --bun src/database/scripts/import-navigator.ts",
     "db:reset": "bun run ./src/database/scripts/reset.ts",
     "openapi:check": "bun run scripts/check-openapi.ts",
-    "test": "bun test --isolate ./src/utils ./src/modules/notifications",
+    "test": "bun test --isolate ./src/utils ./src/modules/activity-log ./src/modules/events ./src/modules/notifications",
     "openapi:generate": "bun run scripts/generate-openapi.ts",
     "build": "bun run build.ts",
     "typecheck": "tsc"
@@ -39,6 +39,7 @@
     "fast-xml-parser": "catalog:",
     "firebase-admin": "^14.5.0",
     "jose": "^6.2.12",
+    "qrcode": "^1.5.4",
     "string-ts": "^2.3.1",
     "zod": "catalog:"
   },
@@ -49,6 +50,7 @@
     "@openapi-spec/downgrader": "^0.3.0",
     "@types/bun": "catalog:",
     "@types/cli-progress": "^3.11.6",
+    "@types/qrcode": "^1.5.6",
     "cli-progress": "^3.12.0",
     "drizzle-kit": "^0.31.11",
     "pg": "^8.23.1",

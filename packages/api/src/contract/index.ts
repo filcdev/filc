@@ -6,6 +6,7 @@ import { bugReportContract } from './bug-report';
 import { cohortContract } from './cohort';
 import { dashboardContract } from './dashboard';
 import { doorlockContract } from './doorlock';
+import { eventsContract } from './events';
 import { healthContract } from './health';
 import { kioskContract } from './kiosk';
 import { navigatorContract } from './navigator';
@@ -14,6 +15,7 @@ import { notificationsContract } from './notifications';
 import { pingContract } from './ping';
 import { rolesContract } from './roles';
 import { themeContract } from './theme';
+import { ticketsContract } from './tickets';
 import { timetableContract } from './timetable';
 import { usersContract } from './users';
 import { wifiContract } from './wifi';
@@ -34,6 +36,7 @@ export const appContract = oc.errors(apiErrors).router({
   cohort: cohortContract,
   dashboard: dashboardContract,
   doorlock: doorlockContract,
+  events: eventsContract,
   health: healthContract,
   kiosk: kioskContract,
   navigator: navigatorContract,
@@ -42,6 +45,7 @@ export const appContract = oc.errors(apiErrors).router({
   ping: pingContract,
   roles: rolesContract,
   theme: themeContract,
+  tickets: ticketsContract,
   timetable: timetableContract,
   users: usersContract,
   wifi: wifiContract,

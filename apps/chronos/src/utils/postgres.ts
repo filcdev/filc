@@ -17,6 +17,9 @@ export type PostgresErrorNode = {
 /** SQLSTATE for a unique-constraint violation. */
 export const UNIQUE_VIOLATION = '23505';
 
+/** SQLSTATE for a foreign-key violation. */
+export const FOREIGN_KEY_VIOLATION = '23503';
+
 /**
  * Whether any node in an error's cause chain satisfies `match`.
  *
@@ -28,8 +31,16 @@ export const someErrorCause = (
   match: (node: PostgresErrorNode) => boolean
 ): boolean => {
   let current: unknown = error;
+  // `Error.cause` is allowed to point back at an earlier error, so the walk
+  // remembers what it has seen instead of trusting the chain to end.
+  const seen = new Set<unknown>();
 
-  while (current !== null && typeof current === 'object') {
+  while (
+    current !== null &&
+    typeof current === 'object' &&
+    !seen.has(current)
+  ) {
+    seen.add(current);
     if (match(current as PostgresErrorNode)) {
       return true;
     }
@@ -43,3 +54,7 @@ export const someErrorCause = (
 /** Whether any node in the chain is a Postgres unique-constraint violation. */
 export const isUniqueViolation = (error: unknown): boolean =>
   someErrorCause(error, (node) => node.errno === UNIQUE_VIOLATION);
+
+/** Whether any node in the chain is a Postgres foreign-key violation. */
+export const isForeignKeyViolation = (error: unknown): boolean =>
+  someErrorCause(error, (node) => node.errno === FOREIGN_KEY_VIOLATION);
