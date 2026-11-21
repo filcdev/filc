@@ -56,7 +56,7 @@ test('a student registers for a published event and the export answers a CSV', a
     data: {
       fields: [
         {
-          appliesTo: 'both',
+          audiences: ['guest', 'student'],
           label: 'Why are you coming?',
           position: 0,
           required: true,

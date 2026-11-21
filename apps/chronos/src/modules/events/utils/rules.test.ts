@@ -188,10 +188,15 @@ describe('judgeGuestRegistration', () => {
 
 /** A published event that takes helpers, on the shared window, open now. */
 const OPEN_HELPER: HelperRegistrationFacts = {
+  grade: 10,
+  helperMaxGrade: null,
+  helperMinGrade: null,
   helperRegistrationClosesAt: null,
   helperRegistrationEnabled: true,
   helperRegistrationOpensAt: null,
   helperRegistrationSeparateWindow: false,
+  maxGrade: null,
+  minGrade: null,
   now: new Date('2026-11-18T12:00:00.000Z'),
   pending: false,
   registered: false,
@@ -285,10 +290,15 @@ describe('judgeHelperRegistration', () => {
 
   it('selects the window pair from the switch', () => {
     const separate = helperRegistrationWindow({
+      grade: 10,
+      helperMaxGrade: null,
+      helperMinGrade: null,
       helperRegistrationClosesAt: new Date('2026-12-02T00:00:00.000Z'),
       helperRegistrationEnabled: true,
       helperRegistrationOpensAt: new Date('2026-12-01T00:00:00.000Z'),
       helperRegistrationSeparateWindow: true,
+      maxGrade: null,
+      minGrade: null,
       registrationClosesAt: new Date('2026-11-02T00:00:00.000Z'),
       registrationEnabled: true,
       registrationOpensAt: new Date('2026-11-01T00:00:00.000Z'),
@@ -314,6 +324,48 @@ describe('judgeHelperRegistration', () => {
     expect(helperReason(judgeHelper({ registered: true }))).toBe(
       'already_registered'
     );
+  });
+
+  it('uses the helper band when either helper bound is set', () => {
+    // A helper band of its own overrides the event band, even on the side the
+    // event happens to bound.
+    expect(helperReason(judgeHelper({ helperMinGrade: 11 }))).toBe(
+      'grade_too_low'
+    );
+    expect(helperReason(judgeHelper({ helperMaxGrade: 9 }))).toBe(
+      'grade_too_high'
+    );
+    // The unset side of a helper band is unbounded: the event's maxGrade does
+    // not leak into a helper band that only has a minimum.
+    expect(
+      judgeHelper({ helperMinGrade: 9, maxGrade: 10, minGrade: 12 })
+    ).toEqual({ ok: true });
+    expect(
+      helperReason(judgeHelper({ helperMinGrade: 11, maxGrade: 13 }))
+    ).toBe('grade_too_low');
+  });
+
+  it('falls back to the event band when both helper bounds are null', () => {
+    expect(helperReason(judgeHelper({ maxGrade: 13, minGrade: 11 }))).toBe(
+      'grade_too_low'
+    );
+    expect(helperReason(judgeHelper({ maxGrade: 9, minGrade: null }))).toBe(
+      'grade_too_high'
+    );
+    expect(helperReason(judgeHelper({ maxGrade: null, minGrade: 11 }))).toBe(
+      'grade_too_low'
+    );
+  });
+
+  it('refuses an unreadable grade only when a band applies', () => {
+    expect(helperReason(judgeHelper({ grade: null, helperMinGrade: 9 }))).toBe(
+      'grade_unknown'
+    );
+    expect(helperReason(judgeHelper({ grade: null, maxGrade: 12 }))).toBe(
+      'grade_unknown'
+    );
+    // No helper band and no event band: the grade is irrelevant.
+    expect(judgeHelper({ grade: null })).toEqual({ ok: true });
   });
 
   it('never refuses a helper for capacity', () => {

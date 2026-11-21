@@ -8,9 +8,10 @@ import {
   eventStatuses,
 } from '@filcdev/api/domains/events/event';
 import {
-  type EventFieldAppliesTo,
+  defaultEventFieldAudiences,
+  type EventFieldAudience,
   type EventFieldType,
-  eventFieldAppliesToValues,
+  eventFieldAudiences,
   eventFieldTypes,
 } from '@filcdev/api/domains/events/fields';
 import {
@@ -65,6 +66,15 @@ export const event = pgTable(
       .$type<EventCheckinDisplay>()
       .notNull()
       .default('name'),
+    /**
+     * The questions whose answers the door returns, in this order. A JSONB list
+     * of ids rather than a child table: it is read and replaced with the event
+     * row, and every id is kept inside this event by the write validator.
+     */
+    checkinFields: jsonb('checkin_fields')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     // Registration scope, not visibility: every published event is visible to
     // everyone, and only a student whose cohort is listed here may sign up. An
     // empty list means every student may. Ids are validated on write, and a
@@ -119,6 +129,12 @@ export const event = pgTable(
     imageKey: text('image_key'),
     /** Bumped on every upload; the browser's cache-busting token. */
     imageUpdatedAt: timestamp('image_updated_at'),
+    /**
+     * The grade band helpers sign up in. Either bound governs helpers when
+     * set; with both null the event's own bounds below apply to them too.
+     */
+    helperMaxGrade: integer('helper_max_grade'),
+    helperMinGrade: integer('helper_min_grade'),
     /** Null means no upper/lower grade bound. */
     maxGrade: integer('max_grade'),
     minGrade: integer('min_grade'),
@@ -167,6 +183,19 @@ export const event = pgTable(
       sql`(${t.minGrade} IS NULL OR ${t.maxGrade} IS NULL
         OR ${t.minGrade} <= ${t.maxGrade})`
     ),
+    // The school runs grades 1-13, and the helper band has to be a real one.
+    check(
+      'event_helper_grades_valid',
+      sql`(${t.helperMinGrade} IS NULL
+          OR (${t.helperMinGrade} >= 1 AND ${t.helperMinGrade} <= 13))
+        AND (${t.helperMaxGrade} IS NULL
+          OR (${t.helperMaxGrade} >= 1 AND ${t.helperMaxGrade} <= 13))`
+    ),
+    check(
+      'event_helper_grade_range',
+      sql`(${t.helperMinGrade} IS NULL OR ${t.helperMaxGrade} IS NULL
+        OR ${t.helperMinGrade} <= ${t.helperMaxGrade})`
+    ),
     // The four image columns describe one object, so a half-written row must
     // be impossible. Same rule as the announcement table.
     check(
@@ -182,10 +211,15 @@ export const event = pgTable(
 export const eventField = pgTable(
   'event_field',
   {
-    appliesTo: text('applies_to')
-      .$type<EventFieldAppliesTo>()
+    /**
+     * Whose signup form shows the question. A set, not one choice: the old
+     * `both` is `{guest,student}`, and helpers are an audience of their own.
+     */
+    audiences: text('audiences')
+      .array()
+      .$type<EventFieldAudience[]>()
       .notNull()
-      .default('guest'),
+      .default(sql.raw(`'{${defaultEventFieldAudiences.join(',')}}'`)),
     eventId: uuid('event_id')
       .notNull()
       .references(() => event.id, { onDelete: 'cascade' }),
@@ -205,9 +239,18 @@ export const eventField = pgTable(
       'event_field_type_valid',
       sql`${t.type} IN (${sqlLiterals(eventFieldTypes)})`
     ),
+    // Every element is a known audience and each appears once. The sum trick
+    // is what expresses "no duplicates" without a subquery: each audience
+    // contributes at most one to the count.
     check(
-      'event_field_applies_to_valid',
-      sql`${t.appliesTo} IN (${sqlLiterals(eventFieldAppliesToValues)})`
+      'event_field_audiences_valid',
+      sql`${t.audiences} <@ ${sql.raw(`ARRAY[${eventFieldAudiences.map((audience) => `'${audience}'`).join(', ')}]::text[]`)}
+        AND cardinality(${t.audiences}) > 0
+        AND cardinality(${t.audiences}) = (
+          (CASE WHEN 'guest' = ANY(${t.audiences}) THEN 1 ELSE 0 END)
+          + (CASE WHEN 'student' = ANY(${t.audiences}) THEN 1 ELSE 0 END)
+          + (CASE WHEN 'helper' = ANY(${t.audiences}) THEN 1 ELSE 0 END)
+        )`
     ),
   ]
 );

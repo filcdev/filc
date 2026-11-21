@@ -213,10 +213,21 @@ export const judgeRegistration = (
  * not apply: only the two switches, the chosen window and the caller's own row.
  */
 export type HelperRegistrationFacts = {
+  /** The student's grade, null when their cohort does not name one. */
+  grade: number | null;
+  /**
+   * The helper band. Either bound governs helpers when set; with both null the
+   * event's own `minGrade`/`maxGrade` below apply to them.
+   */
+  helperMaxGrade: number | null;
+  helperMinGrade: number | null;
   helperRegistrationClosesAt: Date | null;
   helperRegistrationEnabled: boolean;
   helperRegistrationOpensAt: Date | null;
   helperRegistrationSeparateWindow: boolean;
+  /** The event's participant bounds, the helper fallback when its own are null. */
+  maxGrade: number | null;
+  minGrade: number | null;
   now: Date;
   /** The caller already holds a pending row on this event. */
   pending: boolean;
@@ -239,6 +250,9 @@ export type HelperRefusal =
   | 'helper_registration_disabled'
   | 'not_open_yet'
   | 'closed'
+  | 'grade_too_low'
+  | 'grade_too_high'
+  | 'grade_unknown'
   | 'already_registered'
   | 'pending_approval'
   | 'requirement_unmet';
@@ -281,6 +295,43 @@ const refuseHelper = (reason: HelperRefusal): HelperRegistrationDecision => ({
 });
 
 /**
+ * The grade band a helper is judged against, and precedence stated once:
+ *
+ * 1. When either helper bound is set, the helper pair governs — the unset side
+ *    of that pair is simply unbounded, even if the event has a bound there.
+ * 2. When both helper bounds are null, the event's own participant bounds
+ *    apply, so an event that is 11+ for participants is 11+ for helpers by
+ *    default.
+ * 3. When both pairs are null, any readable grade passes.
+ *
+ * A bound with no readable grade refuses as `grade_unknown`, exactly like the
+ * participant rule: guessing a grade either bars a student who qualifies or
+ * admits one who does not.
+ */
+const helperGradeRefusal = (
+  facts: HelperRegistrationFacts
+): HelperRefusal | null => {
+  const usesHelperBand =
+    facts.helperMinGrade != null || facts.helperMaxGrade != null;
+  const min = usesHelperBand ? facts.helperMinGrade : facts.minGrade;
+  const max = usesHelperBand ? facts.helperMaxGrade : facts.maxGrade;
+
+  if (min == null && max == null) {
+    return null;
+  }
+  if (facts.grade == null) {
+    return 'grade_unknown';
+  }
+  if (min != null && facts.grade < min) {
+    return 'grade_too_low';
+  }
+  if (max != null && facts.grade > max) {
+    return 'grade_too_high';
+  }
+  return null;
+};
+
+/**
  * Whether a student may sign up as a helper.
  *
  * Capacity is deliberately absent: a helper never fills a seat, so an event
@@ -303,6 +354,12 @@ export const judgeHelperRegistration = (
   }
   if (closesAt && facts.now > closesAt) {
     return refuseHelper('closed');
+  }
+  // The grade band is an event-level rule, answered before the caller's own
+  // row, exactly like the participant path.
+  const gradeRefusalForTheHelper = helperGradeRefusal(facts);
+  if (gradeRefusalForTheHelper) {
+    return refuseHelper(gradeRefusalForTheHelper);
   }
   if (facts.pending) {
     return refuseHelper('pending_approval');

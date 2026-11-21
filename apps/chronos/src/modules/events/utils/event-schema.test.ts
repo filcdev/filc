@@ -21,13 +21,16 @@ describe('categoryDefaults', () => {
     for (const category of eventCategories) {
       const defaults = categoryDefaults(category);
       expect(typeof defaults.registrationEnabled).toBe('boolean');
-      expect(['guest', 'student', 'both']).toContain(defaults.fieldAppliesTo);
+      expect(defaults.audiences.length).toBeGreaterThan(0);
+      for (const audience of defaults.audiences) {
+        expect(['guest', 'student', 'helper']).toContain(audience);
+      }
     }
   });
 
   it('starts an open day with guest questions and signup on', () => {
     expect(categoryDefaults('open_day')).toEqual({
-      fieldAppliesTo: 'guest',
+      audiences: ['guest'],
       registrationEnabled: true,
     });
   });
@@ -117,6 +120,15 @@ describe('eventUpdateSchema', () => {
         endsAt: new Date('2026-12-01T08:00:00Z'),
       }).success
     ).toBe(true);
+  });
+
+  it('rejects a reversed helper grade range in a patch', () => {
+    expect(
+      eventUpdateSchema.safeParse({
+        helperMaxGrade: 9,
+        helperMinGrade: 11,
+      }).success
+    ).toBe(false);
   });
 
   it('rejects a reversed helper window in a patch', () => {

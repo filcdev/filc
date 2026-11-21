@@ -2,6 +2,7 @@ CREATE TABLE "event" (
 	"capacity" integer,
 	"category" text NOT NULL,
 	"checkin_display" text DEFAULT 'name' NOT NULL,
+	"checkin_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"cohort_ids" text[] DEFAULT '{}'::text[] NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
@@ -18,6 +19,8 @@ CREATE TABLE "event" (
 	"image_content_type" text,
 	"image_key" text,
 	"image_updated_at" timestamp,
+	"helper_max_grade" integer,
+	"helper_min_grade" integer,
 	"max_grade" integer,
 	"min_grade" integer,
 	"registration_closes_at" timestamp,
@@ -38,6 +41,12 @@ CREATE TABLE "event" (
         OR "event"."helper_registration_closes_at" >= "event"."helper_registration_opens_at")),
 	CONSTRAINT "event_grade_range" CHECK (("event"."min_grade" IS NULL OR "event"."max_grade" IS NULL
         OR "event"."min_grade" <= "event"."max_grade")),
+	CONSTRAINT "event_helper_grades_valid" CHECK (("event"."helper_min_grade" IS NULL
+          OR ("event"."helper_min_grade" >= 1 AND "event"."helper_min_grade" <= 13))
+        AND ("event"."helper_max_grade" IS NULL
+          OR ("event"."helper_max_grade" >= 1 AND "event"."helper_max_grade" <= 13))),
+	CONSTRAINT "event_helper_grade_range" CHECK (("event"."helper_min_grade" IS NULL OR "event"."helper_max_grade" IS NULL
+        OR "event"."helper_min_grade" <= "event"."helper_max_grade")),
 	CONSTRAINT "event_image_complete" CHECK (("event"."image_key" IS NULL) = ("event"."image_content_type" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_byte_size" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_updated_at" IS NULL))
@@ -54,7 +63,7 @@ CREATE TABLE "event_checkin_grant" (
 );
 --> statement-breakpoint
 CREATE TABLE "event_field" (
-	"applies_to" text DEFAULT 'guest' NOT NULL,
+	"audiences" text[] DEFAULT '{guest,student,helper}' NOT NULL,
 	"event_id" uuid NOT NULL,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"label" text NOT NULL,
@@ -63,7 +72,13 @@ CREATE TABLE "event_field" (
 	"required" boolean DEFAULT false NOT NULL,
 	"type" text NOT NULL,
 	CONSTRAINT "event_field_type_valid" CHECK ("event_field"."type" IN ('text', 'textarea', 'select', 'number', 'checkbox')),
-	CONSTRAINT "event_field_applies_to_valid" CHECK ("event_field"."applies_to" IN ('guest', 'student', 'both'))
+	CONSTRAINT "event_field_audiences_valid" CHECK ("event_field"."audiences" <@ ARRAY['guest', 'student', 'helper']::text[]
+        AND cardinality("event_field"."audiences") > 0
+        AND cardinality("event_field"."audiences") = (
+          (CASE WHEN 'guest' = ANY("event_field"."audiences") THEN 1 ELSE 0 END)
+          + (CASE WHEN 'student' = ANY("event_field"."audiences") THEN 1 ELSE 0 END)
+          + (CASE WHEN 'helper' = ANY("event_field"."audiences") THEN 1 ELSE 0 END)
+        ))
 );
 --> statement-breakpoint
 CREATE TABLE "event_registration" (

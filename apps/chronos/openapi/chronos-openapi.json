@@ -8936,6 +8936,13 @@
                     ],
                     "type": "string"
                   },
+                  "checkinFields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
                   "cohortIds": {
                     "type": "array",
                     "items": {
@@ -9074,6 +9081,30 @@
                   },
                   "helperRegistrationSeparateWindow": {
                     "type": "boolean"
+                  },
+                  "helperMaxGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "helperMinGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "helperRequirements": {
                     "type": "array",
@@ -9224,6 +9255,13 @@
                       ],
                       "type": "string"
                     },
+                    "checkinFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -9370,6 +9408,26 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
+                    },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "helperRequirements": {
                       "type": "array",
@@ -9609,6 +9667,7 @@
                     "capacity",
                     "category",
                     "checkinDisplay",
+                    "checkinFields",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -9618,6 +9677,8 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRequirements",
                     "id",
                     "imageByteSize",
@@ -9947,6 +10008,13 @@
                             ],
                             "type": "string"
                           },
+                          "checkinFields": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time",
@@ -10093,6 +10161,26 @@
                           },
                           "helperRegistrationSeparateWindow": {
                             "type": "boolean"
+                          },
+                          "helperMaxGrade": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "helperMinGrade": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "helperRequirements": {
                             "type": "array",
@@ -10332,6 +10420,7 @@
                           "capacity",
                           "category",
                           "checkinDisplay",
+                          "checkinFields",
                           "createdAt",
                           "createdBy",
                           "description",
@@ -10341,6 +10430,8 @@
                           "helperRegistrationEnabled",
                           "helperRegistrationOpensAt",
                           "helperRegistrationSeparateWindow",
+                          "helperMaxGrade",
+                          "helperMinGrade",
                           "helperRequirements",
                           "id",
                           "imageByteSize",
@@ -10851,6 +10942,13 @@
                       ],
                       "type": "string"
                     },
+                    "checkinFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -10997,6 +11095,26 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
+                    },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "helperRequirements": {
                       "type": "array",
@@ -11236,13 +11354,16 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "appliesTo": {
-                            "enum": [
-                              "guest",
-                              "student",
-                              "both"
-                            ],
-                            "type": "string"
+                          "audiences": {
+                            "type": "array",
+                            "items": {
+                              "enum": [
+                                "guest",
+                                "student",
+                                "helper"
+                              ],
+                              "type": "string"
+                            }
                           },
                           "eventId": {
                             "type": "string",
@@ -11286,7 +11407,7 @@
                           }
                         },
                         "required": [
-                          "appliesTo",
+                          "audiences",
                           "eventId",
                           "id",
                           "label",
@@ -11458,6 +11579,7 @@
                     "capacity",
                     "category",
                     "checkinDisplay",
+                    "checkinFields",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -11467,6 +11589,8 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRequirements",
                     "id",
                     "imageByteSize",
@@ -11734,6 +11858,13 @@
                     ],
                     "type": "string"
                   },
+                  "checkinFields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
                   "cohortIds": {
                     "type": "array",
                     "items": {
@@ -11872,6 +12003,30 @@
                   },
                   "helperRegistrationSeparateWindow": {
                     "type": "boolean"
+                  },
+                  "helperMaxGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "helperMinGrade": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 13
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "helperRequirements": {
                     "type": "array",
@@ -12014,6 +12169,13 @@
                         "full"
                       ],
                       "type": "string"
+                    },
+                    "checkinFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -12161,6 +12323,26 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
+                    },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "helperRequirements": {
                       "type": "array",
@@ -12400,6 +12582,7 @@
                     "capacity",
                     "category",
                     "checkinDisplay",
+                    "checkinFields",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -12409,6 +12592,8 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRequirements",
                     "id",
                     "imageByteSize",
@@ -13160,6 +13345,13 @@
                       ],
                       "type": "string"
                     },
+                    "checkinFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -13306,6 +13498,26 @@
                     },
                     "helperRegistrationSeparateWindow": {
                       "type": "boolean"
+                    },
+                    "helperMaxGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "helperMinGrade": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "helperRequirements": {
                       "type": "array",
@@ -13545,6 +13757,7 @@
                     "capacity",
                     "category",
                     "checkinDisplay",
+                    "checkinFields",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -13554,6 +13767,8 @@
                     "helperRegistrationEnabled",
                     "helperRegistrationOpensAt",
                     "helperRegistrationSeparateWindow",
+                    "helperMaxGrade",
+                    "helperMinGrade",
                     "helperRequirements",
                     "id",
                     "imageByteSize",
@@ -14017,14 +14232,22 @@
                     "items": {
                       "type": "object",
                       "properties": {
-                        "appliesTo": {
-                          "enum": [
+                        "audiences": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "enum": [
+                              "guest",
+                              "student",
+                              "helper"
+                            ],
+                            "type": "string"
+                          },
+                          "default": [
                             "guest",
                             "student",
-                            "both"
-                          ],
-                          "type": "string",
-                          "default": "guest"
+                            "helper"
+                          ]
                         },
                         "id": {
                           "type": "string",
@@ -14096,13 +14319,16 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "appliesTo": {
-                            "enum": [
-                              "guest",
-                              "student",
-                              "both"
-                            ],
-                            "type": "string"
+                          "audiences": {
+                            "type": "array",
+                            "items": {
+                              "enum": [
+                                "guest",
+                                "student",
+                                "helper"
+                              ],
+                              "type": "string"
+                            }
                           },
                           "eventId": {
                             "type": "string",
@@ -14146,7 +14372,7 @@
                           }
                         },
                         "required": [
-                          "appliesTo",
+                          "audiences",
                           "eventId",
                           "id",
                           "label",

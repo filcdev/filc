@@ -169,11 +169,16 @@ export const createRegistration = base.events.registrations.create
           if (isHelper) {
             throwRefusal(
               judgeHelperRegistration({
+                grade: viewer.grade,
+                helperMaxGrade: row.helperMaxGrade,
+                helperMinGrade: row.helperMinGrade,
                 helperRegistrationClosesAt: row.helperRegistrationClosesAt,
                 helperRegistrationEnabled: row.helperRegistrationEnabled,
                 helperRegistrationOpensAt: row.helperRegistrationOpensAt,
                 helperRegistrationSeparateWindow:
                   row.helperRegistrationSeparateWindow,
+                maxGrade: row.maxGrade,
+                minGrade: row.minGrade,
                 now,
                 pending,
                 registered,

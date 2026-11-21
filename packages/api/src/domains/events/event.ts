@@ -1,7 +1,11 @@
 import z from 'zod';
 import { listResponse, paginationSchema } from '../list';
 import { blockContentSchema, uniqueIdList } from '../news/announcements';
-import { type EventFieldType, eventFieldSchema } from './fields';
+import {
+  type EventFieldAudience,
+  type EventFieldType,
+  eventFieldSchema,
+} from './fields';
 import { eventRegistrationSchema } from './registration';
 
 /**
@@ -47,20 +51,20 @@ export const eventCheckinDisplaySchema = z.enum(eventCheckinDisplays);
  * backend never consults this map.
  */
 export type EventCategoryDefaults = {
-  /** Which signup form a newly added custom question starts on. */
-  fieldAppliesTo: 'guest' | 'student' | 'both';
+  /** Which audiences a newly added custom question starts with. */
+  audiences: EventFieldAudience[];
   /** Whether the event starts with its signup form switched on. */
   registrationEnabled: boolean;
 };
 
 const CATEGORY_DEFAULTS: Record<EventCategory, EventCategoryDefaults> = {
-  career_day: { fieldAppliesTo: 'student', registrationEnabled: true },
-  codeweek: { fieldAppliesTo: 'student', registrationEnabled: false },
-  digital_week: { fieldAppliesTo: 'student', registrationEnabled: false },
-  external: { fieldAppliesTo: 'both', registrationEnabled: false },
-  fair: { fieldAppliesTo: 'student', registrationEnabled: true },
-  honfoglalo: { fieldAppliesTo: 'student', registrationEnabled: true },
-  open_day: { fieldAppliesTo: 'guest', registrationEnabled: true },
+  career_day: { audiences: ['student'], registrationEnabled: true },
+  codeweek: { audiences: ['student'], registrationEnabled: false },
+  digital_week: { audiences: ['student'], registrationEnabled: false },
+  external: { audiences: ['guest', 'student'], registrationEnabled: false },
+  fair: { audiences: ['student'], registrationEnabled: true },
+  honfoglalo: { audiences: ['student'], registrationEnabled: true },
+  open_day: { audiences: ['guest'], registrationEnabled: true },
 };
 
 /** The dialog defaults for a category; never enforced server-side. */
@@ -125,12 +129,23 @@ export const eventRowSchema = z.object({
   category: eventCategorySchema,
   /** What the door's scanner reveals; `name` unless the organizer changes it. */
   checkinDisplay: eventCheckinDisplaySchema,
+  /**
+   * The answers the scanner returns, in this order. Empty means the identity
+   * setting is all a check-in reveals.
+   */
+  checkinFields: z.array(z.uuid()),
   createdAt: z.date(),
   createdBy: z.uuid().nullable(),
   description: z.json(),
   endsAt: z.date(),
   /** Whether a visitor may sign up without an account. Its own switch. */
   guestRegistrationEnabled: z.boolean(),
+  /**
+   * The grade band helpers sign up in. Either bound governs helpers when set;
+   * with both null the event's own `minGrade`/`maxGrade` apply to them too.
+   */
+  helperMaxGrade: z.number().nullable(),
+  helperMinGrade: z.number().nullable(),
   helperRegistrationClosesAt: z.date().nullable(),
   /**
    * Whether students may sign up as helpers. Off by default, and inert until
@@ -274,12 +289,20 @@ const eventWriteFieldsSchema = z.object({
   category: eventCategorySchema,
   /** What the door's scanner reveals; omitted means the column default. */
   checkinDisplay: eventCheckinDisplaySchema.optional(),
+  /**
+   * The answers the door returns; each must be a question of this event, and a
+   * removed question is pruned from the list. Omitted means empty.
+   */
+  checkinFields: uniqueIdList(z.uuid()).optional(),
   /** Registration scope, never visibility: empty means every student. */
   cohortIds: uniqueIdList(z.uuid()).optional(),
   description: blockContentSchema,
   endsAt: z.coerce.date(),
   /** Visitors sign up without an account only when this switch is on. */
   guestRegistrationEnabled: z.boolean().optional(),
+  /** Helper grade bounds; null leaves the event's own bounds in charge. */
+  helperMaxGrade: z.number().int().min(1).max(13).nullable().optional(),
+  helperMinGrade: z.number().int().min(1).max(13).nullable().optional(),
   helperRegistrationClosesAt: z.coerce.date().nullable().optional(),
   /** Students sign up as helpers only while this switch is on. */
   helperRegistrationEnabled: z.boolean().optional(),
@@ -303,6 +326,8 @@ const windowInvalid = 'Registration must close on or after it opens';
 const helperWindowInvalid =
   'Helper registration must close on or after it opens';
 const gradesInvalid = 'The maximum grade must be at least the minimum grade';
+const helperGradesInvalid =
+  'The helper maximum grade must be at least the helper minimum grade';
 
 function orderedDates(values: { startsAt?: Date; endsAt?: Date }): boolean {
   return (
@@ -327,6 +352,17 @@ function orderedGrades(values: {
   return (
     !(values.minGrade != null && values.maxGrade != null) ||
     values.maxGrade >= values.minGrade
+  );
+}
+
+/** The helper pair is its own band; a participant bound does not decide it. */
+function orderedHelperGrades(values: {
+  helperMinGrade?: number | null;
+  helperMaxGrade?: number | null;
+}): boolean {
+  return (
+    !(values.helperMinGrade != null && values.helperMaxGrade != null) ||
+    values.helperMaxGrade >= values.helperMinGrade
   );
 }
 
@@ -357,6 +393,10 @@ export const eventCreateSchema = eventWriteFieldsSchema
   .refine((data) => orderedGrades(data), {
     message: gradesInvalid,
     path: ['maxGrade'],
+  })
+  .refine((data) => orderedHelperGrades(data), {
+    message: helperGradesInvalid,
+    path: ['helperMaxGrade'],
   });
 
 export type EventCreateInput = z.infer<typeof eventCreateSchema>;
@@ -378,6 +418,10 @@ export const eventUpdateSchema = eventWriteFieldsSchema
   .refine((data) => orderedGrades(data), {
     message: gradesInvalid,
     path: ['maxGrade'],
+  })
+  .refine((data) => orderedHelperGrades(data), {
+    message: helperGradesInvalid,
+    path: ['helperMaxGrade'],
   });
 
 export type EventUpdateInput = z.infer<typeof eventUpdateSchema>;

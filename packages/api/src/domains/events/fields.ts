@@ -17,16 +17,38 @@ export type EventFieldType = (typeof eventFieldTypes)[number];
 
 export const eventFieldTypeSchema = z.enum(eventFieldTypes);
 
-/** Whose signup form shows the question. */
-export const eventFieldAppliesToValues = ['guest', 'student', 'both'] as const;
+/**
+ * Whose signup form shows the question. A question may be aimed at several at
+ * once: the old `both` (guests and students) is now the pair
+ * `['guest', 'student']`, and helpers are a form of their own.
+ */
+export const eventFieldAudiences = ['guest', 'student', 'helper'] as const;
 
-export type EventFieldAppliesTo = (typeof eventFieldAppliesToValues)[number];
+export type EventFieldAudience = (typeof eventFieldAudiences)[number];
 
-export const eventFieldAppliesToSchema = z.enum(eventFieldAppliesToValues);
+export const eventFieldAudienceSchema = z.enum(eventFieldAudiences);
+
+/** Every audience ticked: what a new question starts with. */
+export const defaultEventFieldAudiences: EventFieldAudience[] = [
+  ...eventFieldAudiences,
+];
+
+/**
+ * At least one audience, each at most once. An empty list would put the
+ * question on no form at all, and a duplicate is a payload mistake rather than
+ * a different meaning.
+ */
+export const eventFieldAudiencesSchema = z
+  .array(eventFieldAudienceSchema)
+  .min(1)
+  .refine(
+    (audiences) => new Set(audiences).size === audiences.length,
+    'A question cannot be shown to the same audience twice'
+  );
 
 /** One organizer-defined question, as stored. */
 export const eventFieldSchema = z.object({
-  appliesTo: eventFieldAppliesToSchema,
+  audiences: z.array(eventFieldAudienceSchema),
   eventId: z.uuid(),
   id: z.uuid(),
   label: z.string(),
@@ -43,7 +65,7 @@ export type EventField = z.infer<typeof eventFieldSchema>;
  * (answers stay attached to it); omitting it inserts a new question.
  */
 export const eventFieldInputSchema = z.object({
-  appliesTo: eventFieldAppliesToSchema.default('guest'),
+  audiences: eventFieldAudiencesSchema.default(defaultEventFieldAudiences),
   id: z.uuid().optional(),
   label: z.string().min(1),
   /** Only read for `select`; other types store no options. */

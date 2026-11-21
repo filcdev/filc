@@ -10,6 +10,7 @@ import {
   eventField,
   eventRegistrationAnswer,
 } from '#modules/events/schema';
+import { pruneFieldIds } from '#modules/events/utils/checkin-fields';
 import { base } from '#orpc';
 import { badRequest, conflict, notFound } from '#utils/http';
 import { diffActivity } from '#utils/values';
@@ -61,7 +62,7 @@ async function writeField(
   field: EventFieldInput
 ): Promise<void> {
   const values = {
-    appliesTo: field.appliesTo,
+    audiences: field.audiences,
     label: field.label,
     options: field.type === 'select' ? (field.options ?? null) : null,
     position: field.position,
@@ -101,6 +102,7 @@ export const replaceEventFields = base.events.fields.replace
       // foreign-key violation (23503) rather than the conflict it is.
       const [locked] = await tx
         .select({
+          checkinFields: event.checkinFields,
           helperRequirements: event.helperRequirements,
           id: event.id,
         })
@@ -161,10 +163,20 @@ export const replaceEventFields = base.events.fields.replace
       const prunedRequirements = locked.helperRequirements.filter(
         (requirement) => keptFieldIds.has(requirement.fieldId)
       );
-      if (prunedRequirements.length !== locked.helperRequirements.length) {
+      const prunedCheckinFields = pruneFieldIds(
+        locked.checkinFields,
+        keptFieldIds
+      );
+      if (
+        prunedRequirements.length !== locked.helperRequirements.length ||
+        prunedCheckinFields.length !== locked.checkinFields.length
+      ) {
         await tx
           .update(event)
-          .set({ helperRequirements: prunedRequirements })
+          .set({
+            checkinFields: prunedCheckinFields,
+            helperRequirements: prunedRequirements,
+          })
           .where(eq(event.id, id));
       }
 

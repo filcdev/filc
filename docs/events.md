@@ -39,8 +39,9 @@ not a cascade's to decide.
    from the category (`categoryDefaults` in `packages/api/src/domains/events/event.ts`);
    that map is a hint, never a rule the backend enforces.
 2. **Add questions** in the same dialog: short text, long text, choice, number
-   or checkbox, each marked required or not and assigned to the student form,
-   the guest form or both. Saving replaces the whole set; a question carried
+   or checkbox, each marked required or not and aimed at any combination of the
+   guest, student and helper forms (a new question starts on all three). Saving
+   replaces the whole set; a question carried
    with its `id` keeps its row and therefore the answers already attached to
    it, and a question that already has answers cannot be removed — the API
    answers a conflict naming it instead.
@@ -105,9 +106,11 @@ last seat get one registration and one conflict, never two tickets.
 
 A helper is a student who works the event — check-in, the queue — not a visitor
 and not a participant. They sign up through the same
-`POST /events/{id}/registrations` with `role: 'helper'` and the same student
-question form, so the event's student questions are validated for them too; what
-changes is the rules and what happens after.
+`POST /events/{id}/registrations` with `role: 'helper'` and the same signed-in
+form, which shows the questions aimed at students *or* helpers; answers are
+validated against that same union of audiences, so a helper-only question is
+accepted for a helper and a guest-only one is not. What changes is the rules and
+what happens after.
 
 Two switches, both off by default:
 
@@ -116,6 +119,12 @@ Two switches, both off by default:
 - `helperRegistrationSeparateWindow` chooses the window. When it is on, helpers
   use `helperRegistrationOpensAt` / `helperRegistrationClosesAt`; when it is off
   those two columns are inert and helpers open and close with everyone else.
+- `helperMinGrade` / `helperMaxGrade` are the optional helper grade band. When
+  either is set it governs helpers (the unset side is simply unbounded); when
+  both are null the event's own `minGrade` / `maxGrade` apply to helpers too, so
+  an event that is 11+ for participants is 11+ for helpers by default. A band
+  with an unreadable grade refuses as `grade_unknown`; participants' bounds are
+  unaffected.
 
 `helperRegistrationWindow` (`apps/chronos/src/modules/events/utils/rules.ts`) is
 that choice in one place, and `judgeHelperRegistration` judges the result. The
@@ -165,8 +174,8 @@ included, so an approval cannot be flipped by a second request.
 A visitor needs no account:
 
 1. The detail page shows the guest card only while `guestRegistrationEnabled` is
-   on. The form asks name and email, plus the questions whose `appliesTo` is
-   `guest` or `both`.
+   on. The form asks name and email, plus the questions whose `audiences`
+   include `guest`.
 2. `POST /events/{id}/guests` judges the same window and seat rules as a
    student's signup, checks the answers, writes the registration and issues the
    `event_ticket` in one transaction.
@@ -226,6 +235,17 @@ is not an exemption either: an organizer holding `events:checkin` sees exactly
 what a helper sees, because the setting describes the screen at the door, not
 the caller.
 
+**The answers the door shows are a second, independent setting.**
+`event.checkinFields` is an ordered list of the event's question ids. A check-in
+answer carries `answers: [{ fieldId, label, value }]` for exactly those
+questions, taken from the registration's stored answers; a configured question
+the registration left unanswered is omitted rather than printed empty, and an
+answer-less registration gets `[]`. The list is validated on write (every id
+must be a question of this event; unknown ids are a readable 400) and pruned in
+the same transaction when `fields.replace` removes a question. Display and
+fields combine freely: `minimal` with configured questions shows answers and no
+identity, which is the privacy-safe configuration.
+
 The QR payload is a credential, so the check-in path logs `eventId`,
 `registrationId`, `requestId` and the outcome — never the scanned code, the
 visitor's name or their email. The same rule covers the ticket mail and the
@@ -280,8 +300,9 @@ the browser from the same response, so the two files cannot disagree.
   are not.
 - **The events migration is one regenerated `0031`.** The feature was developed
   as an `0031`–`0034` series and squashed into a single
-  `0031_loose_inhumans.sql` (five tables, helper columns and the `pending`
-  status) before merge. A database that applied the earlier series already
+  `0031_fat_chat.sql` (five tables, the helper columns and grades, the door's
+  display and answer settings, audience arrays and the `pending` status) before
+  merge. A database that applied the earlier series already
   records index 31 as applied, so it skips the squashed `0031` and keeps the old
   tables. The local fix is to drop the stale event tables, delete their
   `drizzle.__drizzle_migrations` rows and run

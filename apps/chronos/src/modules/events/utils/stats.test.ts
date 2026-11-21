@@ -7,7 +7,7 @@ import {
 } from '#modules/events/utils/stats';
 
 const field = (overrides: Partial<EventField>): EventField => ({
-  appliesTo: 'guest',
+  audiences: ['guest'],
   eventId: '00000000-0000-4000-8000-000000000001',
   id: '00000000-0000-4000-8000-000000000010',
   label: 'Question',

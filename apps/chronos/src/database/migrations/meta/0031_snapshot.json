@@ -1,5 +1,5 @@
 {
-  "id": "61217925-66c0-4a83-b350-389724ff252c",
+  "id": "fbf054f4-8c99-4262-8398-79535107aaa1",
   "prevId": "cf219c1a-199e-4136-884f-78015650ee33",
   "version": "7",
   "dialect": "postgresql",
@@ -1290,6 +1290,13 @@
           "notNull": true,
           "default": "'name'"
         },
+        "checkin_fields": {
+          "name": "checkin_fields",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
         "cohort_ids": {
           "name": "cohort_ids",
           "type": "text[]",
@@ -1390,6 +1397,18 @@
         "image_updated_at": {
           "name": "image_updated_at",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "helper_max_grade": {
+          "name": "helper_max_grade",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "helper_min_grade": {
+          "name": "helper_min_grade",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -1536,6 +1555,14 @@
           "name": "event_grade_range",
           "value": "(\"event\".\"min_grade\" IS NULL OR \"event\".\"max_grade\" IS NULL\n        OR \"event\".\"min_grade\" <= \"event\".\"max_grade\")"
         },
+        "event_helper_grades_valid": {
+          "name": "event_helper_grades_valid",
+          "value": "(\"event\".\"helper_min_grade\" IS NULL\n          OR (\"event\".\"helper_min_grade\" >= 1 AND \"event\".\"helper_min_grade\" <= 13))\n        AND (\"event\".\"helper_max_grade\" IS NULL\n          OR (\"event\".\"helper_max_grade\" >= 1 AND \"event\".\"helper_max_grade\" <= 13))"
+        },
+        "event_helper_grade_range": {
+          "name": "event_helper_grade_range",
+          "value": "(\"event\".\"helper_min_grade\" IS NULL OR \"event\".\"helper_max_grade\" IS NULL\n        OR \"event\".\"helper_min_grade\" <= \"event\".\"helper_max_grade\")"
+        },
         "event_image_complete": {
           "name": "event_image_complete",
           "value": "(\"event\".\"image_key\" IS NULL) = (\"event\".\"image_content_type\" IS NULL)\n        AND (\"event\".\"image_key\" IS NULL) = (\"event\".\"image_byte_size\" IS NULL)\n        AND (\"event\".\"image_key\" IS NULL) = (\"event\".\"image_updated_at\" IS NULL)"
@@ -1651,12 +1678,12 @@
       "name": "event_field",
       "schema": "",
       "columns": {
-        "applies_to": {
-          "name": "applies_to",
-          "type": "text",
+        "audiences": {
+          "name": "audiences",
+          "type": "text[]",
           "primaryKey": false,
           "notNull": true,
-          "default": "'guest'"
+          "default": "'{guest,student,helper}'"
         },
         "event_id": {
           "name": "event_id",
@@ -1744,9 +1771,9 @@
           "name": "event_field_type_valid",
           "value": "\"event_field\".\"type\" IN ('text', 'textarea', 'select', 'number', 'checkbox')"
         },
-        "event_field_applies_to_valid": {
-          "name": "event_field_applies_to_valid",
-          "value": "\"event_field\".\"applies_to\" IN ('guest', 'student', 'both')"
+        "event_field_audiences_valid": {
+          "name": "event_field_audiences_valid",
+          "value": "\"event_field\".\"audiences\" <@ ARRAY['guest', 'student', 'helper']::text[]\n        AND cardinality(\"event_field\".\"audiences\") > 0\n        AND cardinality(\"event_field\".\"audiences\") = (\n          (CASE WHEN 'guest' = ANY(\"event_field\".\"audiences\") THEN 1 ELSE 0 END)\n          + (CASE WHEN 'student' = ANY(\"event_field\".\"audiences\") THEN 1 ELSE 0 END)\n          + (CASE WHEN 'helper' = ANY(\"event_field\".\"audiences\") THEN 1 ELSE 0 END)\n        )"
         }
       },
       "isRLSEnabled": false

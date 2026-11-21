@@ -122,7 +122,7 @@ describe.skipIf(!hasDatabase)('helper registration decision', () => {
     ]);
 
     await db.insert(modules.eventField).values({
-      appliesTo: 'student',
+      audiences: ['student'],
       eventId: EVENT_ID,
       id: FIELD_ID,
       label: 'Szakirány',

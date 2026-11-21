@@ -3,10 +3,13 @@ import type {
   EventItem,
   EventSeats,
 } from '@filcdev/api/domains/events/event';
-import type { EventField } from '@filcdev/api/domains/events/fields';
+import type {
+  EventField,
+  EventFieldAudience,
+} from '@filcdev/api/domains/events/fields';
 import type { EventRegistrationAnswer } from '@filcdev/api/domains/events/registration';
 import { permissions } from '@filcdev/api/permissions';
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { db as Db } from '#database';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
@@ -37,12 +40,15 @@ export const EVENT_AUDIT_FIELDS = [
   'capacity',
   'category',
   'checkinDisplay',
+  'checkinFields',
   'cohortIds',
   'description',
   'endsAt',
   'guestRegistrationEnabled',
   'helperRegistrationClosesAt',
   'helperRegistrationEnabled',
+  'helperMaxGrade',
+  'helperMinGrade',
   'helperRegistrationOpensAt',
   'helperRequirements',
   'helperRegistrationSeparateWindow',
@@ -66,42 +72,48 @@ export const eventFields = async (eventId: string) =>
     .orderBy(eventField.position, eventField.id);
 
 /**
- * The questions a visitor (a guest) answers on signup: the `guest` and `both`
- * ones. A student form gets the `student` and `both` ones instead; a question
- * marked for one audience is not asked of the other.
+ * Whether a question belongs on a form aimed at any of these audiences. The
+ * filter runs in one place so the form, the answer validation and the
+ * requirement editor cannot disagree about who sees a question.
  */
-export const guestEventFields = async (
+export const fieldHasAudience = (
+  field: Pick<EventField, 'audiences'>,
+  audiences: readonly EventFieldAudience[]
+): boolean => audiences.some((audience) => field.audiences.includes(audience));
+
+/** The event's questions on the forms aimed at any of `audiences`, in order. */
+const fieldsForAudiences = async (
   eventId: string,
+  audiences: readonly EventFieldAudience[],
   tx?: TxOrDb
 ): Promise<EventField[]> =>
-  (tx ?? db)
-    .select()
-    .from(eventField)
-    .where(
-      and(
-        eq(eventField.eventId, eventId),
-        inArray(eventField.appliesTo, ['guest', 'both'])
-      )
-    )
-    .orderBy(eventField.position);
+  (
+    await (tx ?? db)
+      .select()
+      .from(eventField)
+      .where(eq(eventField.eventId, eventId))
+      .orderBy(eventField.position, eventField.id)
+  ).filter((field) => fieldHasAudience(field, audiences));
 
 /**
- * The questions a student answers on signup: the `student` and `both` ones.
+ * The questions a visitor (a guest) answers on signup: those whose audiences
+ * include `guest`.
  */
-export const studentEventFields = async (
+export const guestEventFields = (
+  eventId: string,
+  tx?: TxOrDb
+): Promise<EventField[]> => fieldsForAudiences(eventId, ['guest'], tx);
+
+/**
+ * The questions a signed-in student answers on signup. A helper submits
+ * through the same form, so a question aimed at either audience is shown — and
+ * validated — for both.
+ */
+export const studentEventFields = (
   eventId: string,
   tx?: TxOrDb
 ): Promise<EventField[]> =>
-  (tx ?? db)
-    .select()
-    .from(eventField)
-    .where(
-      and(
-        eq(eventField.eventId, eventId),
-        inArray(eventField.appliesTo, ['student', 'both'])
-      )
-    )
-    .orderBy(eventField.position);
+  fieldsForAudiences(eventId, ['student', 'helper'], tx);
 
 /**
  * Who is asking. Anonymous visitors have no cohort and no grade, which is the
@@ -198,10 +210,15 @@ export const helperEligibilityFor = (
     answers
   );
   const decision = judgeHelperRegistration({
+    grade: viewer.grade,
+    helperMaxGrade: row.helperMaxGrade,
+    helperMinGrade: row.helperMinGrade,
     helperRegistrationClosesAt: row.helperRegistrationClosesAt,
     helperRegistrationEnabled: row.helperRegistrationEnabled,
     helperRegistrationOpensAt: row.helperRegistrationOpensAt,
     helperRegistrationSeparateWindow: row.helperRegistrationSeparateWindow,
+    maxGrade: row.maxGrade,
+    minGrade: row.minGrade,
     now,
     pending: facts.pending,
     registered: facts.registered,

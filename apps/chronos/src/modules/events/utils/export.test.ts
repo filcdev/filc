@@ -3,7 +3,7 @@ import type { EventField } from '@filcdev/api/domains/events/fields';
 import { buildExportTable } from '#modules/events/utils/export';
 
 const field = (overrides: Partial<EventField>): EventField => ({
-  appliesTo: 'both',
+  audiences: ['guest', 'student'],
   eventId: '00000000-0000-4000-8000-000000000001',
   id: '00000000-0000-4000-8000-000000000010',
   label: 'Étel',

@@ -33,9 +33,9 @@ const requirementField = (
       'A helper requirement refers to a question that is not on this event'
     );
   }
-  if (field.appliesTo !== 'student' && field.appliesTo !== 'both') {
+  if (!field.audiences.includes('helper')) {
     throw badRequest(
-      `The helper requirement question "${field.label}" is not on the student form`
+      `The helper requirement question "${field.label}" is not shown to helpers`
     );
   }
   return field;
@@ -83,9 +83,9 @@ const requirementValue = (
  * condition that can never be answered or matched.
  *
  * The field has to belong to this event (a copied id from another event is
- * rejected here, which is also what keeps the picker honest), be on the
- * student form (`student` or `both`), accept the chosen operator, and carry a
- * value the field's type can actually match.
+ * rejected here, which is also what keeps the picker honest), be shown to
+ * helpers, accept the chosen operator, and carry a value the field's type can
+ * actually match.
  */
 export const assertHelperRequirements = (
   fields: readonly EventField[],

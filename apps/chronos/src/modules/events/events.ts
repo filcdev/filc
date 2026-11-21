@@ -9,6 +9,7 @@ import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
 import { event, eventRegistration } from '#modules/events/schema';
+import { assertCheckinFieldIds } from '#modules/events/utils/checkin-fields';
 import {
   canManageEvents,
   EVENT_AUDIT_FIELDS,
@@ -178,6 +179,22 @@ export const getEvent = base.events.get.handler(async ({ context, input }) => {
   };
 });
 
+/** The door's two columns, defaulted once for both create and a read-back. */
+function doorInsertValues(body: EventCreateInput) {
+  return {
+    checkinDisplay: body.checkinDisplay ?? 'name',
+    checkinFields: body.checkinFields ?? [],
+  };
+}
+
+/** The helper grade band, whose absence is `null` rather than a fallback. */
+function helperGradeInsertValues(body: EventCreateInput) {
+  return {
+    helperMaxGrade: body.helperMaxGrade ?? null,
+    helperMinGrade: body.helperMinGrade ?? null,
+  };
+}
+
 /**
  * The insert values of a new event: every optional column with its default in
  * one place, so the handler stays a read-and-write rather than a default map.
@@ -189,12 +206,13 @@ function eventInsertValues(
   return {
     capacity: body.capacity ?? null,
     category: body.category,
-    checkinDisplay: body.checkinDisplay ?? 'name',
+    ...doorInsertValues(body),
     cohortIds: body.cohortIds ?? [],
     createdBy,
     description: body.description,
     endsAt: body.endsAt,
     guestRegistrationEnabled: body.guestRegistrationEnabled ?? false,
+    ...helperGradeInsertValues(body),
     helperRegistrationClosesAt: body.helperRegistrationClosesAt ?? null,
     helperRegistrationEnabled: body.helperRegistrationEnabled ?? false,
     helperRegistrationOpensAt: body.helperRegistrationOpensAt ?? null,
@@ -222,8 +240,10 @@ export const createEvent = base.events.create
     }
 
     // A new event has no questions yet (they are replaced after the create), so
-    // a requirement here could only name another event's field. Reject it now.
+    // a requirement or a door answer here could only name another event's
+    // field. Reject it now.
     assertHelperRequirements([], body.helperRequirements ?? []);
+    assertCheckinFieldIds([], body.checkinFields ?? []);
 
     const [created] = await db
       .insert(event)
@@ -250,6 +270,25 @@ export const createEvent = base.events.create
   });
 
 /**
+ * The value a PATCH produces for one column: the patch's own when it carries
+ * it, the stored one otherwise. `null` is a real value, not "untouched".
+ */
+function patched<T>(body: T | undefined, existing: T): T {
+  return body === undefined ? existing : body;
+}
+
+/** A pair that must be ordered when both sides are present. */
+function assertOrdered(
+  min: number | null,
+  max: number | null,
+  message: string
+): void {
+  if (min != null && max != null && max < min) {
+    throw badRequest(message);
+  }
+}
+
+/**
  * The cross-field bounds judged against the row a PATCH produces, not just the
  * fields the patch happens to carry.
  */
@@ -257,43 +296,47 @@ function assertEventBounds(
   existing: typeof event.$inferSelect,
   body: EventUpdateInput
 ): void {
-  const startsAt = body.startsAt ?? existing.startsAt;
-  const endsAt = body.endsAt ?? existing.endsAt;
+  const startsAt = patched(body.startsAt, existing.startsAt);
+  const endsAt = patched(body.endsAt, existing.endsAt);
   if (endsAt < startsAt) {
     throw badRequest('The event must end on or after it starts');
   }
 
-  const opensAt =
-    body.registrationOpensAt === undefined
-      ? existing.registrationOpensAt
-      : body.registrationOpensAt;
-  const closesAt =
-    body.registrationClosesAt === undefined
-      ? existing.registrationClosesAt
-      : body.registrationClosesAt;
+  const opensAt = patched(
+    body.registrationOpensAt,
+    existing.registrationOpensAt
+  );
+  const closesAt = patched(
+    body.registrationClosesAt,
+    existing.registrationClosesAt
+  );
   if (opensAt && closesAt && closesAt < opensAt) {
     throw badRequest('Registration must close on or after it opens');
   }
 
-  const minGrade =
-    body.minGrade === undefined ? existing.minGrade : body.minGrade;
-  const maxGrade =
-    body.maxGrade === undefined ? existing.maxGrade : body.maxGrade;
-  if (minGrade != null && maxGrade != null && maxGrade < minGrade) {
-    throw badRequest('The maximum grade must be at least the minimum grade');
-  }
+  assertOrdered(
+    patched(body.minGrade, existing.minGrade),
+    patched(body.maxGrade, existing.maxGrade),
+    'The maximum grade must be at least the minimum grade'
+  );
 
-  const helperOpensAt =
-    body.helperRegistrationOpensAt === undefined
-      ? existing.helperRegistrationOpensAt
-      : body.helperRegistrationOpensAt;
-  const helperClosesAt =
-    body.helperRegistrationClosesAt === undefined
-      ? existing.helperRegistrationClosesAt
-      : body.helperRegistrationClosesAt;
+  const helperOpensAt = patched(
+    body.helperRegistrationOpensAt,
+    existing.helperRegistrationOpensAt
+  );
+  const helperClosesAt = patched(
+    body.helperRegistrationClosesAt,
+    existing.helperRegistrationClosesAt
+  );
   if (helperOpensAt && helperClosesAt && helperClosesAt < helperOpensAt) {
     throw badRequest('Helper registration must close on or after it opens');
   }
+
+  assertOrdered(
+    patched(body.helperMinGrade, existing.helperMinGrade),
+    patched(body.helperMaxGrade, existing.helperMaxGrade),
+    'The helper maximum grade must be at least the helper minimum grade'
+  );
 }
 
 export const updateEvent = base.events.update
@@ -314,6 +357,10 @@ export const updateEvent = base.events.update
 
     if (body.helperRequirements !== undefined) {
       assertHelperRequirements(await eventFields(id), body.helperRequirements);
+    }
+
+    if (body.checkinFields !== undefined) {
+      assertCheckinFieldIds(await eventFields(id), body.checkinFields);
     }
 
     const values = changedEventValues(existing, body);

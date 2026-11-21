@@ -15,7 +15,7 @@ const EVENT_ID = '11111111-1111-4111-8111-111111111111';
 const FIELD = '22222222-2222-4222-8222-222222222222';
 
 const field = (overrides: Partial<EventField> = {}): EventField => ({
-  appliesTo: 'student',
+  audiences: ['student', 'helper'],
   eventId: EVENT_ID,
   id: FIELD,
   label: 'Szakirány',
@@ -190,10 +190,13 @@ describe('assertHelperRequirements', () => {
     ).toThrow('not on this event');
   });
 
-  it('rejects a question that is not on the student form', () => {
+  it('rejects a question helpers are not shown', () => {
     expect(() =>
-      assertHelperRequirements([field({ appliesTo: 'guest' })], [requirement()])
-    ).toThrow('not on the student form');
+      assertHelperRequirements(
+        [field({ audiences: ['guest'] })],
+        [requirement()]
+      )
+    ).toThrow('not shown to helpers');
   });
 
   it('rejects an operator the field type does not support', () => {

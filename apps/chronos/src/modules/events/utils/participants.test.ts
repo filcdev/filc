@@ -73,7 +73,7 @@ describe.skipIf(!hasDatabase)('event participant reads', () => {
 
     await db.insert(modules.eventField).values([
       {
-        appliesTo: 'both',
+        audiences: ['guest', 'student'],
         eventId: EVENT_ID,
         id: FIELD_DIET_ID,
         label: 'Étel',
@@ -82,7 +82,7 @@ describe.skipIf(!hasDatabase)('event participant reads', () => {
         type: 'select',
       },
       {
-        appliesTo: 'both',
+        audiences: ['guest', 'student'],
         eventId: EVENT_ID,
         id: FIELD_ALLERGY_ID,
         label: 'Allergia',
