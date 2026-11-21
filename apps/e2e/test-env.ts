@@ -4,10 +4,12 @@ import path from 'node:path';
  * Shared E2E environment, the single source for the ports, the Chronos env and
  * the session tokens. `playwright.config.ts` passes the Chronos env into its
  * `webServer`s and into the seed run via `globalSetup`; the specs import the
- * URLs. Nothing here may collide with the running dev stack (chronos 3001,
- * kiosk 5174, postgres 5432/55432).
+ * URLs. Nothing here may collide with the running dev stack (iris 3000,
+ * chronos 3001, kiosk 3002, postgres 5432/55432) — a locally running kiosk
+ * would otherwise answer on this Chronos port and every spec would 404 through
+ * its proxy.
  */
-export const CHRONOS_PORT = 3002;
+export const CHRONOS_PORT = 3003;
 export const IRIS_PORT = 3210;
 export const TEST_DB_PORT = 55_433;
 

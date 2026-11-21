@@ -16,6 +16,9 @@ ticket mail in `packages/mail/src/templates/event-ticket.tsx` with its copy in
 | Event, questions, banner | `POST /events`, `PUT /events/{id}/fields`, `POST /events/{id}/image` | Organizers (`events:manage`) |
 | Public list and detail | `/events`, `/events/{id}` | Everyone, signed in or not |
 | Student signup | `POST /events/{id}/registrations` | A signed-in student |
+| Helper signup | the same endpoint with `role: helper` | A signed-in student |
+| Helper decision | `POST /events/{id}/registrations/{registrationId}/decision` | Organizers (`events:manage`) |
+| Withdraw a signup | `DELETE /events/{id}/registrations/{registrationId}` | The student who signed up, or an organizer |
 | Guest signup | `/events/{id}/register` → `POST /events/{id}/guests` | A visitor with no account |
 | Ticket | `/tickets/{ticketId}` → `GET /tickets/{ticketId}` | The visitor holding the mail |
 | Organizer view | `/admin/events`, `/admin/events/{id}` | Organizers |
@@ -72,7 +75,9 @@ same row (and, for a guest, the same ticket) instead of leaving a duplicate.
 
 Eligibility is decided server-side by `judgeRegistration` /
 `judgeGuestRegistration` against a closed list of reasons
-(`eventEligibilityReasons`), which is also what the page renders:
+(`eventEligibilityReasons`), which is also what the page renders. A helper has
+its own judge, `judgeHelperRegistration`, described in section 4; for a
+participant or a guest the rules are:
 
 - the event must be published, and its `registrationEnabled` switch on;
 - a guest also needs the event's own `guestRegistrationEnabled`, off by default;
@@ -91,7 +96,66 @@ turn that one reason into a sign-in button. Capacity is judged under a lock:
 answer 409 `full` to the request that lost the race. Two parents racing for the
 last seat get one registration and one conflict, never two tickets.
 
-## 4. The guest flow and the ticket
+## 4. Helpers: the pending signup
+
+A helper is a student who works the event — check-in, the queue — not a visitor
+and not a participant. They sign up through the same
+`POST /events/{id}/registrations` with `role: 'helper'` and the same student
+question form, so the event's student questions are validated for them too; what
+changes is the rules and what happens after.
+
+Two switches, both off by default:
+
+- `helperRegistrationEnabled` asks whether the event takes helpers at all; with
+  it off a helper signup is refused as `helper_registration_disabled`.
+- `helperRegistrationSeparateWindow` chooses the window. When it is on, helpers
+  use `helperRegistrationOpensAt` / `helperRegistrationClosesAt`; when it is off
+  those two columns are inert and helpers open and close with everyone else.
+
+`helperRegistrationWindow` (`apps/chronos/src/modules/events/utils/rules.ts`) is
+that choice in one place, and `judgeHelperRegistration` judges the result. The
+event's master `registrationEnabled` still gates both: turning registration off
+closes the helper form too, and a helper window that closes before it opens is a
+validation error, not a silent no-op. The detail
+read carries `helperEligibility`, computed by the same rules, so the public page
+can hide or explain the helper button without guessing; the list does not carry
+it.
+
+Helpers are not seats. `SEAT_ROLES` in `.../utils/seats.ts` is `participant` and
+`visitor`, so neither a pending nor a confirmed helper changes `seats.taken`,
+`remaining` or the full check — a sold-out event still takes helpers. A helper's
+row starts `pending`: approving sets `confirmed`, declining sets `cancelled`, and
+only the organizer's decision endpoint may do either. The stats
+`byStatus.pending` counts those rows, and they are listed and exported with
+everything else.
+
+Because a pending helper never held a seat, rejecting one frees nothing:
+`seats.taken` is the same before and after. The same is true of cancelling an
+application, so neither direction can overbook an event.
+
+A student withdraws their own row with `DELETE
+/events/{id}/registrations/{registrationId}` whether it is `confirmed` (a
+participant's place) or `pending` (a helper application). A cancelled row is not
+touchable again — the same call answers 404 — and anyone else's row answers 404
+too, because it is scoped by event, registration and caller. An organizer's
+cancel stays the participant table's confirmed-only action; a pending
+application is declined through the decision endpoint.
+
+One row per student per event: `event_registration` is unique on
+`(event_id, user_id)`, and that is the whole "no double signup" rule. A confirmed
+participant cannot also be a helper (`already_registered`), a pending helper
+cannot sign up again as anything (`pending_approval`), and a cancelled row is
+reactivated in place with the role the new signup asks for rather than
+duplicated — so a helper who was declined can come back as a participant and
+keeps one row, and the other way round.
+
+The organizer answers with `POST
+/events/{id}/registrations/{registrationId}/decision` and
+`{ "decision": "approve" }` or `"decline"`, gated by `events:manage`. It locks
+the row and refuses with 409 anything that is not `pending`, a double-click
+included, so an approval cannot be flipped by a second request.
+
+## 5. The guest flow and the ticket
 
 A visitor needs no account:
 
@@ -118,7 +182,7 @@ One address per event, enforced by a partial unique index on
 cancelled guest who signs up again gets their old row and their old ticket back,
 and a second address is a second visitor.
 
-## 5. The door: check-in runbook
+## 6. The door: check-in runbook
 
 1. **Grant the permission.** `events:checkin` is a canonical permission in
    `packages/api/src/permissions.ts`; add it to the helper's role in
@@ -150,7 +214,7 @@ The QR payload is a credential, so the check-in path logs `eventId`,
 visitor's name or their email. The same rule covers the ticket mail and the
 ticket read: the transport logs the subject, not the recipient.
 
-## 6. Export
+## 7. Export
 
 `GET /events/{id}/export` answers a CSV with one row per registration, newest
 first: seven fixed columns (`name`, `email`, `class`, `role`, `status`,
@@ -169,14 +233,19 @@ Windows Excel decodes Hungarian names correctly, and RFC 4180 quoting otherwise.
 The *Export* button on the event page downloads that CSV and builds the XLSX in
 the browser from the same response, so the two files cannot disagree.
 
-## 7. Known limits
+## 8. Known limits
 
 - **Everything is per-event.** One row is one event; there is no series, no
   occurrence and no recurrence rule. A three-day festival is three rows or one
   row that carries the range.
-- **No rooms.** Phase A dropped `event_room` on purpose: the venue belongs in
-  the description and capacity is event-wide. The URL does not accept a room and
-  the dialog does not offer one.
+- **No rooms.** `event_room` was dropped on purpose: the venue belongs in the
+  description and capacity is event-wide. The URL does not accept a room and the
+  dialog does not offer one.
+- **Helpers are students, not a second roster.** A helper needs an account and
+  leaves through the same registration row as a participant; there is no
+  separate helper list, no guest helper and no helper-specific questions. An
+  outside volunteer has to sign in with a school account or come in as a guest
+  visitor.
 - **Cohort targeting is registration scope, not visibility.** Every published
   event is listed for every visitor, anonymous included; `cohortIds` only
   decides who may sign up. That is a product decision, not an oversight.
@@ -192,12 +261,12 @@ the browser from the same response, so the two files cannot disagree.
   involved. Statistics bucket days in the school's zone
   (`CHRONOS_TIME_ZONE`), so the *counts* are zone-aware even though the *times*
   are not.
-- **`0031` was regenerated once.** Phase A first shipped eight event tables;
-  the refactor that shipped `event` + `event_field` regenerated migration
-  `0031` under the tag `0031_sad_harpoon`, while a database that had already
-  applied the first draft still records `0031_thankful_omega_flight` at the same
-  index. Such a database skips the new `0031` as applied and keeps the old
-  tables. The local fix is the one the refactor used: drop the stale event
-  tables, delete their `drizzle.__drizzle_migrations` row and run
+- **The events migration is one regenerated `0031`.** The feature was developed
+  as an `0031`–`0034` series and squashed into a single
+  `0031_loose_inhumans.sql` (five tables, helper columns and the `pending`
+  status) before merge. A database that applied the earlier series already
+  records index 31 as applied, so it skips the squashed `0031` and keeps the old
+  tables. The local fix is to drop the stale event tables, delete their
+  `drizzle.__drizzle_migrations` rows and run
   `bun run --cwd apps/chronos db:migrate` — or start from a clean dev database
   (`pg-dispo wipe`) and migrate, which is simpler.
