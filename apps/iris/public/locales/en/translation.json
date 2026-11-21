@@ -685,7 +685,7 @@
           "closed": "closed",
           "off": "off",
           "open": "open",
-          "opensLater": "opens later"
+          "opens_later": "opens later"
         }
       },
       "reasons": {
@@ -713,7 +713,11 @@
       "helperPendingHint": "The organizer still has to approve your helper signup. Until then it is not a confirmed place.",
       "helperPendingWithdraw": "Withdraw application",
       "helperConfirmedTitle": "You are signed up as a helper",
-      "helperConfirmedHint": "The organizer approved your helper signup."
+      "helperConfirmedHint": "The organizer approved your helper signup.",
+      "details": "Details",
+      "featured": "Featured event",
+      "moreEvents": "More events",
+      "seats": "Places"
     },
     "title": "Events",
     "group": "Events",

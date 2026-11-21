@@ -685,7 +685,7 @@
           "closed": "lezárult",
           "off": "kikapcsolva",
           "open": "nyitva",
-          "opensLater": "nyílik"
+          "opens_later": "nyílik"
         }
       },
       "reasons": {
@@ -713,7 +713,11 @@
       "helperPendingHint": "A segítőjelentkezésedet még jóvá kell hagynia a szervezőnek. Addig nem számít megerősített helynek.",
       "helperPendingWithdraw": "Jelentkezés visszavonása",
       "helperConfirmedTitle": "Segítőként jelentkeztél",
-      "helperConfirmedHint": "A szervező jóváhagyta a segítőjelentkezésedet."
+      "helperConfirmedHint": "A szervező jóváhagyta a segítőjelentkezésedet.",
+      "details": "Részletek",
+      "featured": "Kiemelt esemény",
+      "moreEvents": "További események",
+      "seats": "Helyek"
     },
     "title": "Események",
     "group": "Események",
