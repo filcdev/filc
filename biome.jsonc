@@ -17,6 +17,7 @@
       "includes": [
         "apps/iris/src/**",
         "apps/kiosk/src/**",
+        "apps/scan/src/**",
         "packages/api/src/**",
         "packages/navigator-3d/src/**",
         "packages/ui/src/**"
