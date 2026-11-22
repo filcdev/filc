@@ -56,10 +56,10 @@ const LOOKS: Record<
   },
 };
 
-/** `✓` for a ticked checkbox, `✗` for an unticked one. */
-const detailValue = (value: string | boolean): string => {
+/** A checkbox reads as a word, never `true`; anything else stays verbatim. */
+const answerText = (value: string | boolean, s: ScanStrings): string => {
   if (typeof value === 'boolean') {
-    return value ? '✓' : '✗';
+    return value ? s.answerYes : s.answerNo;
   }
   return value || '—';
 };
@@ -137,7 +137,7 @@ export const ResultPanel = ({ locale, onClose, result, strings: s }: Props) => {
           {result.answers.map((answer) => (
             <p className="text-sm" key={answer.fieldId}>
               <span className="opacity-80">{answer.label}:</span>{' '}
-              <span className="font-medium">{answer.value}</span>
+              <span className="font-medium">{answerText(answer.value, s)}</span>
             </p>
           ))}
         </div>
@@ -196,7 +196,7 @@ function ResultDetails({
               >
                 <dt className="text-sm opacity-80">{detail.label}</dt>
                 <dd className="text-right font-medium text-sm">
-                  {detailValue(detail.value)}
+                  {answerText(detail.value, s)}
                 </dd>
               </div>
             ))}

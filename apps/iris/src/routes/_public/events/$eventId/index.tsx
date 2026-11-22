@@ -33,6 +33,7 @@ import {
   useWithdrawHelperRegistration,
 } from '@/hooks/events';
 import { contentToText } from '@/utils/content';
+import { formatEventAnswer } from '@/utils/event-fields';
 import {
   eventRegistrationInfo,
   formatEventDateRange,
@@ -283,21 +284,23 @@ function RegistrationAnswers({
   event: EventDetail;
   registration: EventRegistrationItem;
 }) {
+  const { t } = useTranslation();
+
   if (registration.answers.length === 0) {
     return null;
   }
 
   return (
     <dl className="space-y-1 text-sm">
-      {registration.answers.map((answer) => (
-        <div className="flex gap-2" key={answer.fieldId}>
-          <dt className="text-muted-foreground">
-            {event.fields.find((field) => field.id === answer.fieldId)?.label ??
-              '—'}
-          </dt>
-          <dd>{answer.value}</dd>
-        </div>
-      ))}
+      {registration.answers.map((answer) => {
+        const field = event.fields.find((item) => item.id === answer.fieldId);
+        return (
+          <div className="flex gap-2" key={answer.fieldId}>
+            <dt className="text-muted-foreground">{field?.label ?? '—'}</dt>
+            <dd>{formatEventAnswer(field?.type ?? 'text', answer.value, t)}</dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }

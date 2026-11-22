@@ -16,11 +16,16 @@ export const eventCheckinInputSchema = z.object({
 
 export type EventCheckinInput = z.infer<typeof eventCheckinInputSchema>;
 
-/** One configured answer the door shows, with the question's own label. */
+/**
+ * One configured answer the door shows, with the question's own label.
+ *
+ * A checkbox is a boolean, exactly like the details panel below, so the scanner
+ * can say yes or no in its own language instead of printing `true`.
+ */
 export const eventCheckinAnswerSchema = z.object({
   fieldId: z.uuid(),
   label: z.string(),
-  value: z.string(),
+  value: z.union([z.string(), z.boolean()]),
 });
 
 export type EventCheckinAnswer = z.infer<typeof eventCheckinAnswerSchema>;
