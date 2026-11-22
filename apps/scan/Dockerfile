@@ -18,7 +18,7 @@ RUN bun run build --filter=@filcdev/scan
 
 FROM nginx:1.31-alpine AS release
 COPY --from=builder /app/apps/scan/nginx.conf /etc/nginx/nginx.conf
-COPY --from=builder /app/apps/scan/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/scan/dist /usr/share/nginx/html/scan
 EXPOSE 80/tcp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -q --spider http://127.0.0.1/healthz || exit 1
