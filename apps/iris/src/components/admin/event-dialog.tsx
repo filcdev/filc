@@ -30,6 +30,11 @@ import {
   SelectValue,
 } from '@filcdev/ui/components/select';
 import { Separator } from '@filcdev/ui/components/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@filcdev/ui/components/tooltip';
 import { cn } from '@filcdev/ui/lib/utils';
 import { useForm, useStore } from '@tanstack/react-form';
 import {
@@ -380,19 +385,26 @@ function FieldEditor({ fields, setFields }: FieldEditorProps) {
                 value={field.label}
               />
             </div>
-            <Button
-              aria-label={t('events.removeQuestion')}
-              onClick={() =>
-                setFields((current) =>
-                  current.filter((item) => item.key !== field.key)
-                )
-              }
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t('events.removeQuestion')}
+                    onClick={() =>
+                      setFields((current) =>
+                        current.filter((item) => item.key !== field.key)
+                      )
+                    }
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <TooltipContent>{t('events.removeQuestion')}</TooltipContent>
+            </Tooltip>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1">

@@ -8,6 +8,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@filcdev/ui/components/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@filcdev/ui/components/tooltip';
 import { getDayPickerLocaleConfig } from '@filcdev/ui/lib/day-picker-locale';
 import { cn } from '@filcdev/ui/lib/utils';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
@@ -139,15 +144,22 @@ export function DateTimePicker({
         </PopoverContent>
       </Popover>
       {clearable && value && (
-        <Button
-          aria-label={t('dateTimePicker.clear')}
-          onClick={() => onChange(null)}
-          size="icon"
-          type="button"
-          variant="outline"
-        >
-          <X />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t('dateTimePicker.clear')}
+                onClick={() => onChange(null)}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <X />
+              </Button>
+            }
+          />
+          <TooltipContent>{t('dateTimePicker.clear')}</TooltipContent>
+        </Tooltip>
       )}
     </div>
   );

@@ -17,6 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@filcdev/ui/components/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@filcdev/ui/components/tooltip';
 import { cn } from '@filcdev/ui/lib/utils';
 import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from 'lucide-react';
 import { useId } from 'react';
@@ -228,44 +233,80 @@ function RuleCard({
         </h3>
         {isCatchAll ? null : (
           <div className="flex gap-1">
-            <Button
-              aria-label={t('events.checkinRules.moveUp', { number })}
-              disabled={!canMoveUp}
-              onClick={onMoveUp}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-            <Button
-              aria-label={t('events.checkinRules.moveDown', { number })}
-              disabled={!canMoveDown}
-              onClick={onMoveDown}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <ArrowDown className="h-4 w-4" />
-            </Button>
-            <Button
-              aria-label={t('events.checkinRules.duplicate', { number })}
-              onClick={onDuplicate}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button
-              aria-label={t('events.checkinRules.delete', { number })}
-              onClick={onRemove}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t('events.checkinRules.moveUp', { number })}
+                    disabled={!canMoveUp}
+                    onClick={onMoveUp}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <TooltipContent>
+                {t('events.checkinRules.moveUp', { number })}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t('events.checkinRules.moveDown', { number })}
+                    disabled={!canMoveDown}
+                    onClick={onMoveDown}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <TooltipContent>
+                {t('events.checkinRules.moveDown', { number })}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t('events.checkinRules.duplicate', { number })}
+                    onClick={onDuplicate}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <TooltipContent>
+                {t('events.checkinRules.duplicate', { number })}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={t('events.checkinRules.delete', { number })}
+                    onClick={onRemove}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <TooltipContent>
+                {t('events.checkinRules.delete', { number })}
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
       </div>

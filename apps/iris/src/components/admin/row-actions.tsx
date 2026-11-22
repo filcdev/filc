@@ -1,4 +1,9 @@
 import { Button } from '@filcdev/ui/components/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@filcdev/ui/components/tooltip';
 import { Pen, Trash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,26 +27,42 @@ export function RowActions({
   onEdit,
 }: RowActionsProps) {
   const { t } = useTranslation();
+  const editName = editLabel ?? t('common.edit');
+  const deleteName = deleteLabel ?? t('common.delete');
 
   return (
     <div className="flex gap-2">
-      <Button
-        aria-label={editLabel ?? t('common.edit')}
-        onClick={onEdit}
-        size="icon"
-        variant="outline"
-      >
-        <Pen className="h-4 w-4" />
-      </Button>
-      <Button
-        aria-label={deleteLabel ?? t('common.delete')}
-        disabled={isDeleting}
-        onClick={onDelete}
-        size="icon"
-        variant="destructive"
-      >
-        <Trash className="h-4 w-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={editName}
+              onClick={onEdit}
+              size="icon"
+              variant="outline"
+            >
+              <Pen className="h-4 w-4" />
+            </Button>
+          }
+        />
+        <TooltipContent>{editName}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={deleteName}
+              disabled={isDeleting}
+              onClick={onDelete}
+              size="icon"
+              variant="destructive"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          }
+        />
+        <TooltipContent>{deleteName}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
