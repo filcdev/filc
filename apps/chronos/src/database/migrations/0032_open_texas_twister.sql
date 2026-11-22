@@ -1,0 +1,1 @@
+ALTER TABLE "event_ticket" ADD COLUMN "sent_at" timestamp with time zone;

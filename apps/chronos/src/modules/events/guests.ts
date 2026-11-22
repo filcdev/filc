@@ -3,7 +3,7 @@ import { getLogger } from '@logtape/logtape';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { eventRegistration, eventTicket } from '#modules/events/schema';
+import { eventRegistration } from '#modules/events/schema';
 import { checkAnswers } from '#modules/events/utils/answers';
 import { guestEventFields } from '#modules/events/utils/events';
 import {
@@ -17,7 +17,8 @@ import {
   judgeGuestRegistration,
 } from '#modules/events/utils/rules';
 import { seatCount } from '#modules/events/utils/seats';
-import { sendGuestTicket } from '#modules/events/utils/ticket-mail';
+import { ensureTicket, markTicketSent } from '#modules/events/utils/ticket';
+import { sendTicket } from '#modules/events/utils/ticket-mail';
 import { base } from '#orpc';
 import { badRequest, conflict } from '#utils/http';
 
@@ -129,28 +130,7 @@ const writeGuestRegistration = async (
 
   await replaceAnswers(tx, saved.id, checked.answers);
 
-  const [ticketRow] = existing
-    ? await tx
-        .select()
-        .from(eventTicket)
-        .where(eq(eventTicket.registrationId, saved.id))
-    : await tx
-        .insert(eventTicket)
-        .values({ registrationId: saved.id })
-        .returning();
-
-  const issued =
-    ticketRow ??
-    (
-      await tx
-        .insert(eventTicket)
-        .values({ registrationId: saved.id })
-        .returning()
-    )[0];
-
-  if (!issued) {
-    throw new Error('Failed to issue the guest ticket');
-  }
+  const issued = await ensureTicket(tx, saved.id);
 
   return {
     eventStartsAt: row.startsAt,
@@ -214,8 +194,8 @@ export const createGuestRegistration = base.events.guests.create.handler(
     });
 
     // The row and the ticket are committed; the mail is best effort. A failure
-    // is logged and reported inside `sendGuestTicket`, which never throws.
-    const sent = await sendGuestTicket({
+    // is logged and reported inside `sendTicket`, which never throws.
+    const sent = await sendTicket({
       code: ticket.id,
       email: address,
       eventId: id,
@@ -225,6 +205,20 @@ export const createGuestRegistration = base.events.guests.create.handler(
       requestId: context.requestId,
       visitorName,
     });
+
+    if (sent.ok) {
+      try {
+        await markTicketSent(db, ticket.id);
+      } catch (error) {
+        logger.error('failed to mark the guest ticket as sent', {
+          error,
+          eventId: id,
+          registrationId: registration.id,
+          requestId: context.requestId,
+          ticketId: ticket.id,
+        });
+      }
+    }
 
     logger.info('guest registration created', {
       delivered: sent.ok,

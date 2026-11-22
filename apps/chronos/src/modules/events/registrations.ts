@@ -5,7 +5,7 @@ import { and, count, eq, inArray, or } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { eventRegistration } from '#modules/events/schema';
+import { event, eventRegistration } from '#modules/events/schema';
 import { checkAnswers } from '#modules/events/utils/answers';
 import { decidePendingRegistration } from '#modules/events/utils/decision';
 import {
@@ -29,6 +29,7 @@ import {
   type RegistrationRefusal,
 } from '#modules/events/utils/rules';
 import { seatCount } from '#modules/events/utils/seats';
+import { issueAndSendTicket } from '#modules/events/utils/ticket';
 import { base } from '#orpc';
 import {
   badRequest,
@@ -89,6 +90,29 @@ const findRegistration = async (
       )
     );
   return row ?? null;
+};
+
+/**
+ * The event facts a ticket mail needs, read after the registration commits so
+ * the write path does not carry them. A missing event is impossible while the
+ * registration exists; answering null keeps the best-effort mail from taking a
+ * registration down over a title.
+ */
+const ticketEventFacts = async (eventId: string, requestId: string) => {
+  const [row] = await db
+    .select({ startsAt: event.startsAt, title: event.title })
+    .from(event)
+    .where(eq(event.id, eventId));
+
+  if (!row) {
+    logger.error('registration has no event to issue a ticket for', {
+      eventId,
+      requestId,
+    });
+    return null;
+  }
+
+  return { eventStartsAt: row.startsAt, eventTitle: row.title };
 };
 
 /** Reactivates the caller's cancelled row, or inserts the first one. */
@@ -243,6 +267,21 @@ export const createRegistration = base.events.registrations.create
         registrationId: registration.id,
       },
     });
+
+    // A confirmed participant gets their QR ticket at once; a helper's row is
+    // pending until an organizer approves it. The row is committed, so the
+    // ticket and the mail are best effort and can never undo the registration.
+    if (registration.status === 'confirmed') {
+      const facts = await ticketEventFacts(id, context.requestId);
+      if (facts) {
+        await issueAndSendTicket({
+          eventId: id,
+          ...facts,
+          registrationId: registration.id,
+          requestId: context.requestId,
+        });
+      }
+    }
 
     logger.info('event registration created', {
       eventId: id,
@@ -419,6 +458,21 @@ export const decideRegistration = base.events.registrations.decide
       status: registration.status,
     });
 
+    // An approval that confirms a helper issues their ticket and mails it, the
+    // same best-effort way a participant's is sent at signup. A decline mails
+    // nothing: they are not coming.
+    if (input.decision === 'approve') {
+      const facts = await ticketEventFacts(input.id, context.requestId);
+      if (facts) {
+        await issueAndSendTicket({
+          eventId: input.id,
+          ...facts,
+          registrationId: registration.id,
+          requestId: context.requestId,
+        });
+      }
+    }
+
     return registration;
   });
 
@@ -435,9 +489,9 @@ export const resendRegistrationTicket = base.events.registrations.resend
       }
       // The mail is the whole point of the request, so a failed send is the
       // answer: the admin can retry instead of assuming the parent got it.
-      // `sendGuestTicket` has already logged and reported the failure; this
+      // `sendTicket` has already logged and reported the failure; this
       // line ties it to the request the admin made.
-      logger.error('guest ticket resend failed', {
+      logger.error('ticket resend failed', {
         eventId: id,
         registrationId,
         requestId: context.requestId,
@@ -445,7 +499,7 @@ export const resendRegistrationTicket = base.events.registrations.resend
       throw serviceUnavailable('The ticket email could not be sent');
     }
 
-    logger.info('guest ticket resent', {
+    logger.info('ticket resent', {
       eventId: id,
       registrationId,
       requestId: context.requestId,

@@ -286,6 +286,31 @@ describe('checkin rules', () => {
     expect(store.byId.get(TICKET_ID)?.checkedInAt).toBe(null);
   });
 
+  it('admits a confirmed student ticket and refuses it once cancelled', async () => {
+    // Students and helpers carry a ticket now, not only guests: the door's
+    // cancellation rule is what still keeps a withdrawn place out.
+    const confirmed = memoryStore([
+      ticket({
+        registrationStatus: 'confirmed',
+        visitorEmail: 'student@example.com',
+        visitorName: 'Jegyes Diák',
+      }),
+    ]);
+    const admitted = await scan(confirmed, [catchAll()]);
+    expect(admitted).toMatchObject({ status: 'admitted' });
+
+    const cancelled = memoryStore([
+      ticket({
+        registrationStatus: 'cancelled',
+        visitorEmail: 'student@example.com',
+        visitorName: 'Jegyes Diák',
+      }),
+    ]);
+    const refused = await scan(cancelled, [catchAll()]);
+    expect(refused).toMatchObject({ status: 'invalid' });
+    expect(cancelled.byId.get(TICKET_ID)?.checkedInAt).toBe(null);
+  });
+
   it('applies each operator: equals, contains, bounds and ticks', async () => {
     const answers = [
       answer(CLASS_ID, 'Osztály', '  Ábel 10.B '),

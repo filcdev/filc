@@ -225,6 +225,13 @@
       "when": 1795346236721,
       "tag": "0031_nice_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795384649199,
+      "tag": "0032_open_texas_twister",
+      "breakpoints": true
     }
   ]
 }

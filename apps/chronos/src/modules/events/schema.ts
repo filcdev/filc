@@ -302,7 +302,7 @@ export const eventRegistrationAnswer = pgTable(
 );
 
 /**
- * The QR ticket of one registration. Phase C issues one per guest, and the
+ * The QR ticket of one registration — guest, student or helper alike. The
  * scanner's `checkInTicketAtDoor` is what sets `checkedInAt`/`checkedInBy`.
  */
 export const eventTicket = pgTable(
@@ -319,6 +319,12 @@ export const eventTicket = pgTable(
     registrationId: uuid('registration_id')
       .notNull()
       .references(() => eventRegistration.id, { onDelete: 'cascade' }),
+    /**
+     * When the ticket mail was handed to the transport. Null until a successful
+     * send, and left null when the send fails, so a resend can be told apart
+     * from a first delivery that never left.
+     */
+    sentAt: timestamp('sent_at', { withTimezone: true }),
     ...timestamps,
   },
   (t) => [

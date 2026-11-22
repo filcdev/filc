@@ -13,7 +13,7 @@ mock.module('#utils/environment', () => ({
   env: { authSecret: 'test-auth-secret', baseUrl: BASE_URL },
 }));
 
-const { buildGuestTicketEmail, sendGuestTicket, ticketUrl } = await import(
+const { buildTicketEmail, sendTicket, ticketUrl } = await import(
   '#modules/events/utils/ticket-mail'
 );
 
@@ -35,9 +35,9 @@ const facts = {
 
 const fakeQr = async () => QR;
 
-describe('guest ticket mail', () => {
+describe('ticket mail', () => {
   it('builds the message with the QR, the link and the code', async () => {
-    const message = await buildGuestTicketEmail(facts, { qr: fakeQr });
+    const message = await buildTicketEmail(facts, { qr: fakeQr });
 
     expect(message.to).toBe(facts.email);
     expect(message.subject).toBe('Jegyed: Open day');
@@ -45,13 +45,13 @@ describe('guest ticket mail', () => {
     expect(message.html).toContain(ticketUrl(CODE));
     expect(message.html).toContain(CODE);
     expect(message.text).toContain(CODE);
-    // A guest is not a user: no unsubscribe plumbing on this mail.
+    // The ticket is transactional: no unsubscribe plumbing on this mail.
     expect(message).not.toHaveProperty('headers');
   });
 
   it('addresses the QR with the ticket id and nothing else', async () => {
     const payloads: string[] = [];
-    await buildGuestTicketEmail(facts, {
+    await buildTicketEmail(facts, {
       qr: (payload) => {
         payloads.push(payload);
         return Promise.resolve(QR);
@@ -65,7 +65,7 @@ describe('guest ticket mail', () => {
     const sent: { html: string; subject: string; text: string; to: string }[] =
       [];
 
-    const result = await sendGuestTicket(facts, {
+    const result = await sendTicket(facts, {
       qr: fakeQr,
       send: (message) => {
         sent.push(message);
@@ -83,7 +83,7 @@ describe('guest ticket mail', () => {
   });
 
   it('reports a failed send instead of throwing, so the registration stands', async () => {
-    const result = await sendGuestTicket(facts, {
+    const result = await sendTicket(facts, {
       qr: fakeQr,
       send: () => Promise.resolve({ ok: false }),
     });
@@ -92,7 +92,7 @@ describe('guest ticket mail', () => {
   });
 
   it('swallows a renderer failure the same way', async () => {
-    const result = await sendGuestTicket(facts, {
+    const result = await sendTicket(facts, {
       qr: () => Promise.reject(new Error('qr renderer exploded')),
       send: () => Promise.resolve({ ok: true }),
     });

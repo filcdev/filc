@@ -1,20 +1,26 @@
-import { and, eq } from 'drizzle-orm';
+import { getLogger } from '@logtape/logtape';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '#database';
-import { event, eventRegistration, eventTicket } from '#modules/events/schema';
-import { sendGuestTicket } from '#modules/events/utils/ticket-mail';
+import { event, eventRegistration } from '#modules/events/schema';
+import { ensureTicket, markTicketSent } from '#modules/events/utils/ticket';
+import { sendTicket } from '#modules/events/utils/ticket-mail';
+import { resolveTicketRecipient } from '#modules/events/utils/ticket-recipient';
+
+const logger = getLogger(['chronos', 'events', 'tickets']);
 
 /**
- * Why a resend did nothing, or the ticket code it mailed. `not_found` covers
- * both a missing row and a registration that never had a ticket (a signed-in
- * student), because the caller cannot tell those apart and should not.
+ * Why a resend did nothing, or the ticket code it mailed. `not_found` covers a
+ * registration that does not exist and one that was cancelled: the caller
+ * cannot tell those apart and should not.
  */
 export type TicketResendResult =
   | { code: string; ok: true }
   | { ok: false; reason: 'mail_failed' | 'not_found' };
 
 /**
- * Re-sends the ticket of one guest registration, same code. The mail itself is
- * the whole point of the request, so a failed send is reported rather than
+ * Re-sends the ticket of one registration, same code. A guest, a student and a
+ * helper all have one, so the admin can mail any of them again. The mail itself
+ * is the whole point of the request, so a failed send is reported rather than
  * swallowed the way a registration's first ticket is.
  */
 export const resendTicket = async (
@@ -24,42 +30,59 @@ export const resendTicket = async (
 ): Promise<TicketResendResult> => {
   const [row] = await db
     .select({
-      code: eventTicket.id,
-      guestEmail: eventRegistration.guestEmail,
-      guestName: eventRegistration.guestName,
       startsAt: event.startsAt,
       title: event.title,
     })
     .from(eventRegistration)
     .innerJoin(event, eq(eventRegistration.eventId, event.id))
-    .innerJoin(
-      eventTicket,
-      eq(eventTicket.registrationId, eventRegistration.id)
-    )
     .where(
       and(
         eq(eventRegistration.id, registrationId),
-        eq(eventRegistration.eventId, eventId)
+        eq(eventRegistration.eventId, eventId),
+        ne(eventRegistration.status, 'cancelled')
       )
     );
 
-  // A signed-in student has no ticket; nothing to resend.
-  if (!(row?.guestEmail && row.guestName)) {
+  if (!row) {
     return { ok: false, reason: 'not_found' };
   }
 
-  const sent = await sendGuestTicket({
-    code: row.code,
-    email: row.guestEmail,
+  const recipient = await resolveTicketRecipient(db, registrationId, requestId);
+  if (!recipient) {
+    return { ok: false, reason: 'not_found' };
+  }
+
+  // A confirmed registration issued its ticket when it was confirmed; this is
+  // the backstop for a row written before tickets were role-agnostic.
+  const ticket = await ensureTicket(db, registrationId);
+
+  const sent = await sendTicket({
+    code: ticket.id,
+    email: recipient.email,
     eventId,
     eventStartsAt: row.startsAt,
     eventTitle: row.title,
+    locale: recipient.locale,
     registrationId,
     requestId,
-    visitorName: row.guestName,
+    visitorName: recipient.name,
   });
 
-  return sent.ok
-    ? { code: row.code, ok: true }
-    : { ok: false, reason: 'mail_failed' };
+  if (!sent.ok) {
+    return { ok: false, reason: 'mail_failed' };
+  }
+
+  try {
+    await markTicketSent(db, ticket.id);
+  } catch (error) {
+    logger.error('failed to mark the resent event ticket as sent', {
+      error,
+      eventId,
+      registrationId,
+      requestId,
+      ticketId: ticket.id,
+    });
+  }
+
+  return { code: ticket.id, ok: true };
 };
