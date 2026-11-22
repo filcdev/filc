@@ -55,18 +55,6 @@ export const event = pgTable(
     /** Null means unlimited seats. */
     capacity: integer('capacity'),
     category: text('category').$type<EventCategory>().notNull(),
-    /**
-     * The door's ordered rule list: the first rule whose condition matches
-     * decides, and the last rule is the catch-all. Identity, shown answers and
-     * the admission decision are all expressed here, so the rule list is the
-     * single door setting. A JSONB list rather than a child table because it is
-     * read and replaced with the event row; the write validator keeps every
-     * reference inside this event.
-     */
-    checkinRules: jsonb('checkin_rules')
-      .$type<EventCheckinRule[]>()
-      .notNull()
-      .default(sql`'[]'::jsonb`),
     // Registration scope, not visibility: every published event is visible to
     // everyone, and only a student whose cohort is listed here may sign up. An
     // empty list means every student may. Ids are validated on write, and a
@@ -414,8 +402,48 @@ export const eventCheckinGrant = pgTable(
   ]
 );
 
+/**
+ * The door rules of one scanner. A null `user_id` is the event's default; a
+ * set one is that helper's own rules, which win when they scan.
+ *
+ * The rule list stays a JSONB column because it is read and replaced whole with
+ * its config row, and the upsert validator keeps every reference inside the
+ * event. Two partial unique indexes are what make "one default and one config
+ * per helper" true: Postgres treats nulls as distinct, so a plain unique on
+ * `(event_id, user_id)` would let an event stack defaults.
+ */
+export const eventCheckinConfig = pgTable(
+  'event_checkin_config',
+  {
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The ordered rules; the last one is the catch-all. */
+    rules: jsonb('rules')
+      .$type<EventCheckinRule[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** Null is the event default; a set id is that helper's override. */
+    userId: uuid('user_id').references(() => user.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (t) => [
+    // One override per helper per event.
+    uniqueIndex('event_checkin_config_event_user_unique')
+      .on(t.eventId, t.userId)
+      .where(sql`${t.userId} is not null`),
+    // At most one default per event. The two indexes are separate because a
+    // partial index cannot express "unique among the null rows" on its own.
+    uniqueIndex('event_checkin_config_event_default_unique')
+      .on(t.eventId)
+      .where(sql`${t.userId} is null`),
+  ]
+);
+
 export const eventsSchema = {
   event,
+  eventCheckinConfig,
   eventCheckinGrant,
   eventField,
   eventRegistration,

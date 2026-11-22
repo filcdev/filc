@@ -7,6 +7,7 @@ import { requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
 import {
   event,
+  eventCheckinConfig,
   eventField,
   eventRegistrationAnswer,
 } from '#modules/events/schema';
@@ -101,10 +102,7 @@ export const replaceEventFields = base.events.fields.replace
       // could be deleted between a form read and the answer insert, which is a
       // foreign-key violation (23503) rather than the conflict it is.
       const [locked] = await tx
-        .select({
-          checkinRules: event.checkinRules,
-          id: event.id,
-        })
+        .select({ id: event.id })
         .from(event)
         .where(eq(event.id, id))
         .for('update');
@@ -155,19 +153,23 @@ export const replaceEventFields = base.events.fields.replace
         .orderBy(eventField.position);
 
       // A door rule can only point at a question this event still has, so a
-      // removed question is pruned inside the same transaction: a rule that
-      // named it goes, and a rule that showed it stops showing it. No later scan
-      // can then evaluate a condition whose field no longer exists.
+      // removed question is pruned from every config — the event default and
+      // each helper's override — inside the same transaction: a rule that named
+      // it goes, and a rule that showed it stops showing it. No later scan can
+      // then evaluate a condition whose field no longer exists.
       const keptFieldIds = new Set(rows.map((field) => field.id));
-      const prunedCheckinRules = pruneCheckinRules(
-        locked.checkinRules,
-        keptFieldIds
-      );
-      if (!valuesEqual(prunedCheckinRules, locked.checkinRules)) {
-        await tx
-          .update(event)
-          .set({ checkinRules: prunedCheckinRules })
-          .where(eq(event.id, id));
+      const configs = await tx
+        .select({ id: eventCheckinConfig.id, rules: eventCheckinConfig.rules })
+        .from(eventCheckinConfig)
+        .where(eq(eventCheckinConfig.eventId, id));
+      for (const config of configs) {
+        const prunedRules = pruneCheckinRules(config.rules, keptFieldIds);
+        if (!valuesEqual(prunedRules, config.rules)) {
+          await tx
+            .update(eventCheckinConfig)
+            .set({ rules: prunedRules })
+            .where(eq(eventCheckinConfig.id, config.id));
+        }
       }
 
       return { before: existingFields, replaced: rows };

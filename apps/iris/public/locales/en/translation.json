@@ -889,6 +889,22 @@
     "helperCapacityHint": "Only approved helpers count; leave empty for no limit.",
     "helperGradeHint": "Leave both empty to use the event's own grade bounds for helpers.",
     "noGradeBound": "No bound",
+    "checkinConfigs": {
+      "defaultHint": "This applies to every helper without rules of their own.",
+      "defaultOption": "Default",
+      "helperInheritHint": "This helper has no rules of their own: saving copies the event default into their own rules.",
+      "helperOverrideHint": "This helper checks tickets in under their own rules; the event default does not apply to them.",
+      "hint": "Choose whose rules the scanner follows. Every helper may have their own; anyone without one uses the event default.",
+      "overrideBadge": "own rules",
+      "overrides": "Has own rules:",
+      "reset": "Reset to default",
+      "resetError": "Failed to reset the rules to the event default",
+      "resetSuccess": "The helper is back on the event default rules",
+      "saveError": "Failed to save the door rules",
+      "saved": "Door rules saved",
+      "scanner": "Scanner",
+      "title": "Door rules per scanner"
+    },
     "checkinRules": {
       "action": "Decision",
       "actions": {

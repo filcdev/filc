@@ -18,6 +18,7 @@ import {
   checkInTicket,
 } from '#modules/events/utils/checkin';
 import { requireEventCheckin } from '#modules/events/utils/checkin-access';
+import { resolveCheckinRules } from '#modules/events/utils/checkin-config';
 import { base } from '#orpc';
 
 const logger = getLogger(['chronos', 'events', 'checkin']);
@@ -145,8 +146,11 @@ export const checkInTicketAtDoor = base.events.checkin
     // The event's own rules decide both what the scanner may reveal and
     // whether entry is granted. Read here, on the server, so the client never
     // receives a field a rule hid — a cancelled ticket is reduced the same way.
+    // Which rules: the scanning helper's own config when they have one, the
+    // event default otherwise, and the implicit "admit, name only" fallback
+    // when neither row exists.
     const [eventRow] = await db
-      .select({ checkinRules: event.checkinRules })
+      .select({ id: event.id })
       .from(event)
       .where(eq(event.id, id));
 
@@ -154,10 +158,14 @@ export const checkInTicketAtDoor = base.events.checkin
       return { status: 'not_found' as const };
     }
 
-    logger.debug('check-in scanned', {
+    const resolved = await resolveCheckinRules(id, context.session.userId);
+
+    logger.debug('check-in rules resolved', {
       eventId: id,
       requestId: context.requestId,
-      ruleCount: eventRow.checkinRules.length,
+      ruleCount: resolved.rules.length,
+      source: resolved.source,
+      userId: context.session.userId,
     });
 
     const result = UUID.test(code)
@@ -165,7 +173,7 @@ export const checkInTicketAtDoor = base.events.checkin
           code,
           eventId: id,
           now,
-          rules: eventRow.checkinRules,
+          rules: resolved.rules,
           userId: context.session.userId,
         })
       : { status: 'not_found' as const };

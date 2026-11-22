@@ -1,6 +1,6 @@
 {
-  "id": "408053ae-5532-4828-af86-0686e97be2ed",
-  "prevId": "fa2fbbb3-bc7e-4a9a-9755-84781a8133dc",
+  "id": "d83ea0e9-02a0-4075-a7c4-87231587cdca",
+  "prevId": "cf219c1a-199e-4136-884f-78015650ee33",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1283,13 +1283,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "checkin_rules": {
-          "name": "checkin_rules",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
         "cohort_ids": {
           "name": "cohort_ids",
           "type": "text[]",
@@ -1560,6 +1553,125 @@
           "value": "(\"event\".\"image_key\" IS NULL) = (\"event\".\"image_content_type\" IS NULL)\n        AND (\"event\".\"image_key\" IS NULL) = (\"event\".\"image_byte_size\" IS NULL)\n        AND (\"event\".\"image_key\" IS NULL) = (\"event\".\"image_updated_at\" IS NULL)"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.event_checkin_config": {
+      "name": "event_checkin_config",
+      "schema": "",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rules": {
+          "name": "rules",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "event_checkin_config_event_user_unique": {
+          "name": "event_checkin_config_event_user_unique",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"event_checkin_config\".\"user_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_checkin_config_event_default_unique": {
+          "name": "event_checkin_config_event_default_unique",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"event_checkin_config\".\"user_id\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_checkin_config_event_id_event_id_fk": {
+          "name": "event_checkin_config_event_id_event_id_fk",
+          "tableFrom": "event_checkin_config",
+          "tableTo": "event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_checkin_config_user_id_user_id_fk": {
+          "name": "event_checkin_config_user_id_user_id_fk",
+          "tableFrom": "event_checkin_config",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.event_checkin_grant": {

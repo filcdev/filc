@@ -889,6 +889,22 @@
     "helperCapacityHint": "Csak a jóváhagyott segítők számítanak; üresen nincs korlát.",
     "helperGradeHint": "Ha mindkettő üres, a segítőkre az esemény saját évfolyamhatárai érvényesek.",
     "noGradeBound": "Nincs korlát",
+    "checkinConfigs": {
+      "defaultHint": "Ez érvényes minden segítőre, akinek nincs saját szabálya.",
+      "defaultOption": "Alapértelmezett",
+      "helperInheritHint": "Ennek a segítőnek nincs saját szabálya: mentéskor az alapértelmezett szabályok másolata jön létre.",
+      "helperOverrideHint": "Ez a segítő a saját szabályai szerint léptet be; az alapértelmezett rá nem vonatkozik.",
+      "hint": "Válaszd ki, kinek a szabályai szerint léptessen be a szkenner. Minden segítőnek lehet sajátja; akinek nincs, arra az alapértelmezett érvényes.",
+      "overrideBadge": "saját szabály",
+      "overrides": "Saját szabálya van:",
+      "reset": "Visszaállítás az alapértelmezettre",
+      "resetError": "Nem sikerült visszaállítani az alapértelmezett szabályokat",
+      "resetSuccess": "A segítő ismét az alapértelmezett szabályok szerint léptet be",
+      "saveError": "Nem sikerült menteni a beléptetési szabályokat",
+      "saved": "Beléptetési szabályok mentve",
+      "scanner": "Szkenner",
+      "title": "Beléptetési szabályok szkennerenként"
+    },
     "checkinRules": {
       "action": "Döntés",
       "actions": {

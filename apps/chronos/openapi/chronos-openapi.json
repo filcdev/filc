@@ -9572,12 +9572,627 @@
         ]
       }
     },
-    "/events": {
-      "post": {
-        "operationId": "postEvents",
-        "description": "Create a school event",
+    "/events/{id}/checkin-configs/{userId}": {
+      "delete": {
+        "operationId": "deleteEventsByIdCheckinConfigsByUserId",
+        "description": "Delete a helper's door-rule override, so their next scan is judged by the event default",
         "tags": [
           "Events"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ]
+      }
+    },
+    "/events/{id}/checkin-configs": {
+      "get": {
+        "operationId": "getEventsByIdCheckinConfigs",
+        "description": "List an event's door configurations: its default plus one per helper with an override, each with the helper's name",
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
+                          },
+                          "eventId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "rules": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "action": {
+                                  "enum": [
+                                    "allow",
+                                    "deny"
+                                  ],
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "message": {
+                                  "type": "string",
+                                  "default": ""
+                                },
+                                "show": {
+                                  "type": "object",
+                                  "properties": {
+                                    "email": {
+                                      "type": "boolean",
+                                      "default": false
+                                    },
+                                    "fieldIds": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "default": []
+                                    },
+                                    "name": {
+                                      "type": "boolean",
+                                      "default": true
+                                    }
+                                  }
+                                },
+                                "when": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "fieldId": {
+                                          "type": "string",
+                                          "format": "uuid"
+                                        },
+                                        "op": {
+                                          "enum": [
+                                            "equals",
+                                            "contains",
+                                            "gte",
+                                            "lte",
+                                            "is_true",
+                                            "is_false"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "type": "string",
+                                          "default": ""
+                                        }
+                                      },
+                                      "required": [
+                                        "fieldId",
+                                        "op"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "action",
+                                "id",
+                                "show",
+                                "when"
+                              ]
+                            }
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "x-native-type": "date"
+                          },
+                          "userId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "userName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "createdAt",
+                          "eventId",
+                          "id",
+                          "rules",
+                          "updatedAt",
+                          "userId",
+                          "userName"
+                        ]
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "putEventsByIdCheckinConfigs",
+        "description": "Write one scanner's ordered door rules: userId null writes the event default, an id writes that approved helper's override; the rules are validated against the event's questions",
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -9586,32 +10201,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "capacity": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "minimum": -9007199254740991,
-                        "maximum": 9007199254740991,
-                        "exclusiveMinimum": 0
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "category": {
-                    "enum": [
-                      "honfoglalo",
-                      "open_day",
-                      "career_day",
-                      "digital_week",
-                      "codeweek",
-                      "fair",
-                      "external"
-                    ],
-                    "type": "string"
-                  },
-                  "checkinRules": {
+                  "rules": {
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -9695,6 +10285,401 @@
                         "when"
                       ]
                     }
+                  },
+                  "userId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "rules",
+                  "userId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "x-native-type": "date"
+                    },
+                    "eventId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "rules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "enum": [
+                              "allow",
+                              "deny"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "message": {
+                            "type": "string",
+                            "default": ""
+                          },
+                          "show": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "boolean",
+                                "default": false
+                              },
+                              "fieldIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "default": []
+                              },
+                              "name": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            }
+                          },
+                          "when": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "fieldId": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "op": {
+                                    "enum": [
+                                      "equals",
+                                      "contains",
+                                      "gte",
+                                      "lte",
+                                      "is_true",
+                                      "is_false"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "string",
+                                    "default": ""
+                                  }
+                                },
+                                "required": [
+                                  "fieldId",
+                                  "op"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "action",
+                          "id",
+                          "show",
+                          "when"
+                        ]
+                      }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "x-native-type": "date"
+                    },
+                    "userId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "userName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "createdAt",
+                    "eventId",
+                    "id",
+                    "rules",
+                    "updatedAt",
+                    "userId",
+                    "userName"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "403",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "409",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "429",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ]
+      }
+    },
+    "/events": {
+      "post": {
+        "operationId": "postEvents",
+        "description": "Create a school event",
+        "tags": [
+          "Events"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "capacity": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "category": {
+                    "enum": [
+                      "honfoglalo",
+                      "open_day",
+                      "career_day",
+                      "digital_week",
+                      "codeweek",
+                      "fair",
+                      "external"
+                    ],
+                    "type": "string"
                   },
                   "cohortIds": {
                     "type": "array",
@@ -9981,91 +10966,6 @@
                         "external"
                       ],
                       "type": "string"
-                    },
-                    "checkinRules": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "action": {
-                            "enum": [
-                              "allow",
-                              "deny"
-                            ],
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "message": {
-                            "type": "string",
-                            "default": ""
-                          },
-                          "show": {
-                            "type": "object",
-                            "properties": {
-                              "email": {
-                                "type": "boolean",
-                                "default": false
-                              },
-                              "fieldIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "default": []
-                              },
-                              "name": {
-                                "type": "boolean",
-                                "default": true
-                              }
-                            }
-                          },
-                          "when": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "fieldId": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "op": {
-                                    "enum": [
-                                      "equals",
-                                      "contains",
-                                      "gte",
-                                      "lte",
-                                      "is_true",
-                                      "is_false"
-                                    ],
-                                    "type": "string"
-                                  },
-                                  "value": {
-                                    "type": "string",
-                                    "default": ""
-                                  }
-                                },
-                                "required": [
-                                  "fieldId",
-                                  "op"
-                                ]
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "action",
-                          "id",
-                          "show",
-                          "when"
-                        ]
-                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -10442,7 +11342,6 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -10774,91 +11673,6 @@
                               "external"
                             ],
                             "type": "string"
-                          },
-                          "checkinRules": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "action": {
-                                  "enum": [
-                                    "allow",
-                                    "deny"
-                                  ],
-                                  "type": "string"
-                                },
-                                "id": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "message": {
-                                  "type": "string",
-                                  "default": ""
-                                },
-                                "show": {
-                                  "type": "object",
-                                  "properties": {
-                                    "email": {
-                                      "type": "boolean",
-                                      "default": false
-                                    },
-                                    "fieldIds": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string",
-                                        "format": "uuid"
-                                      },
-                                      "default": []
-                                    },
-                                    "name": {
-                                      "type": "boolean",
-                                      "default": true
-                                    }
-                                  }
-                                },
-                                "when": {
-                                  "anyOf": [
-                                    {
-                                      "type": "object",
-                                      "properties": {
-                                        "fieldId": {
-                                          "type": "string",
-                                          "format": "uuid"
-                                        },
-                                        "op": {
-                                          "enum": [
-                                            "equals",
-                                            "contains",
-                                            "gte",
-                                            "lte",
-                                            "is_true",
-                                            "is_false"
-                                          ],
-                                          "type": "string"
-                                        },
-                                        "value": {
-                                          "type": "string",
-                                          "default": ""
-                                        }
-                                      },
-                                      "required": [
-                                        "fieldId",
-                                        "op"
-                                      ]
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "action",
-                                "id",
-                                "show",
-                                "when"
-                              ]
-                            }
                           },
                           "createdAt": {
                             "type": "string",
@@ -11235,7 +12049,6 @@
                         "required": [
                           "capacity",
                           "category",
-                          "checkinRules",
                           "createdAt",
                           "createdBy",
                           "description",
@@ -11748,91 +12561,6 @@
                         "external"
                       ],
                       "type": "string"
-                    },
-                    "checkinRules": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "action": {
-                            "enum": [
-                              "allow",
-                              "deny"
-                            ],
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "message": {
-                            "type": "string",
-                            "default": ""
-                          },
-                          "show": {
-                            "type": "object",
-                            "properties": {
-                              "email": {
-                                "type": "boolean",
-                                "default": false
-                              },
-                              "fieldIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "default": []
-                              },
-                              "name": {
-                                "type": "boolean",
-                                "default": true
-                              }
-                            }
-                          },
-                          "when": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "fieldId": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "op": {
-                                    "enum": [
-                                      "equals",
-                                      "contains",
-                                      "gte",
-                                      "lte",
-                                      "is_true",
-                                      "is_false"
-                                    ],
-                                    "type": "string"
-                                  },
-                                  "value": {
-                                    "type": "string",
-                                    "default": ""
-                                  }
-                                },
-                                "required": [
-                                  "fieldId",
-                                  "op"
-                                ]
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "action",
-                          "id",
-                          "show",
-                          "when"
-                        ]
-                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -12423,7 +13151,6 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -12693,91 +13420,6 @@
                       "external"
                     ],
                     "type": "string"
-                  },
-                  "checkinRules": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "action": {
-                          "enum": [
-                            "allow",
-                            "deny"
-                          ],
-                          "type": "string"
-                        },
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "message": {
-                          "type": "string",
-                          "default": ""
-                        },
-                        "show": {
-                          "type": "object",
-                          "properties": {
-                            "email": {
-                              "type": "boolean",
-                              "default": false
-                            },
-                            "fieldIds": {
-                              "type": "array",
-                              "items": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "default": []
-                            },
-                            "name": {
-                              "type": "boolean",
-                              "default": true
-                            }
-                          }
-                        },
-                        "when": {
-                          "anyOf": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "fieldId": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "op": {
-                                  "enum": [
-                                    "equals",
-                                    "contains",
-                                    "gte",
-                                    "lte",
-                                    "is_true",
-                                    "is_false"
-                                  ],
-                                  "type": "string"
-                                },
-                                "value": {
-                                  "type": "string",
-                                  "default": ""
-                                }
-                              },
-                              "required": [
-                                "fieldId",
-                                "op"
-                              ]
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "action",
-                        "id",
-                        "show",
-                        "when"
-                      ]
-                    }
                   },
                   "cohortIds": {
                     "type": "array",
@@ -13057,91 +13699,6 @@
                         "external"
                       ],
                       "type": "string"
-                    },
-                    "checkinRules": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "action": {
-                            "enum": [
-                              "allow",
-                              "deny"
-                            ],
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "message": {
-                            "type": "string",
-                            "default": ""
-                          },
-                          "show": {
-                            "type": "object",
-                            "properties": {
-                              "email": {
-                                "type": "boolean",
-                                "default": false
-                              },
-                              "fieldIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "default": []
-                              },
-                              "name": {
-                                "type": "boolean",
-                                "default": true
-                              }
-                            }
-                          },
-                          "when": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "fieldId": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "op": {
-                                    "enum": [
-                                      "equals",
-                                      "contains",
-                                      "gte",
-                                      "lte",
-                                      "is_true",
-                                      "is_false"
-                                    ],
-                                    "type": "string"
-                                  },
-                                  "value": {
-                                    "type": "string",
-                                    "default": ""
-                                  }
-                                },
-                                "required": [
-                                  "fieldId",
-                                  "op"
-                                ]
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "action",
-                          "id",
-                          "show",
-                          "when"
-                        ]
-                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -13518,7 +14075,6 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -14273,91 +14829,6 @@
                       ],
                       "type": "string"
                     },
-                    "checkinRules": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "action": {
-                            "enum": [
-                              "allow",
-                              "deny"
-                            ],
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "message": {
-                            "type": "string",
-                            "default": ""
-                          },
-                          "show": {
-                            "type": "object",
-                            "properties": {
-                              "email": {
-                                "type": "boolean",
-                                "default": false
-                              },
-                              "fieldIds": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "default": []
-                              },
-                              "name": {
-                                "type": "boolean",
-                                "default": true
-                              }
-                            }
-                          },
-                          "when": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "fieldId": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "op": {
-                                    "enum": [
-                                      "equals",
-                                      "contains",
-                                      "gte",
-                                      "lte",
-                                      "is_true",
-                                      "is_false"
-                                    ],
-                                    "type": "string"
-                                  },
-                                  "value": {
-                                    "type": "string",
-                                    "default": ""
-                                  }
-                                },
-                                "required": [
-                                  "fieldId",
-                                  "op"
-                                ]
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "action",
-                          "id",
-                          "show",
-                          "when"
-                        ]
-                      }
-                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -14733,7 +15204,6 @@
                   "required": [
                     "capacity",
                     "category",
-                    "checkinRules",
                     "createdAt",
                     "createdBy",
                     "description",
@@ -16612,6 +17082,17 @@
                               "cancelled"
                             ],
                             "type": "string"
+                          },
+                          "userId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -16623,7 +17104,8 @@
                           "name",
                           "registeredAt",
                           "role",
-                          "status"
+                          "status",
+                          "userId"
                         ]
                       }
                     },

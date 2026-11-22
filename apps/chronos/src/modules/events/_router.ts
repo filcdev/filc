@@ -1,5 +1,10 @@
 import { checkInTicketAtDoor } from '#modules/events/checkin';
 import {
+  deleteCheckinConfig,
+  listCheckinConfigs,
+  upsertCheckinConfig,
+} from '#modules/events/checkin-configs';
+import {
   createEvent,
   deleteEvent,
   getEvent,
@@ -33,6 +38,11 @@ import { getTicket } from '#modules/events/tickets';
 
 export const eventsRouter = {
   checkin: checkInTicketAtDoor,
+  checkinConfigs: {
+    delete: deleteCheckinConfig,
+    list: listCheckinConfigs,
+    upsert: upsertCheckinConfig,
+  },
   create: createEvent,
   delete: deleteEvent,
   deleteImage: deleteEventImage,

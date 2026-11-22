@@ -1,4 +1,3 @@
-import type { EventCheckinRule } from '@filcdev/api/domains/events/rules';
 import { Button } from '@filcdev/ui/components/button';
 import { Checkbox } from '@filcdev/ui/components/checkbox';
 import { Input } from '@filcdev/ui/components/input';
@@ -8,7 +7,6 @@ import { useForm, useStore } from '@tanstack/react-form';
 import { Save } from 'lucide-react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckinRulesEditor } from '@/components/admin/event-checkin-rules';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { type EventDetail, useUpdateEvent } from '@/hooks/events';
 
@@ -23,7 +21,6 @@ function gradeOrNull(value: string): number | null {
 }
 
 type HelperSettingsValues = {
-  checkinRules: EventCheckinRule[];
   helperCapacity: string;
   helperMaxGrade: string;
   helperMinGrade: string;
@@ -34,7 +31,6 @@ type HelperSettingsValues = {
 };
 
 const toHelperSettingsValues = (event: EventDetail): HelperSettingsValues => ({
-  checkinRules: event.checkinRules,
   helperCapacity: event.helperCapacity?.toString() ?? '',
   helperMaxGrade: event.helperMaxGrade?.toString() ?? '',
   helperMinGrade: event.helperMinGrade?.toString() ?? '',
@@ -49,10 +45,9 @@ const toHelperSettingsValues = (event: EventDetail): HelperSettingsValues => ({
 });
 
 /**
- * The helper and door configuration of one event: the helper signup, its
- * window and grade band, and the ordered door rules. The same query and update
- * hook back the event dialog and this page, so the two entry points never hold
- * separate copies of the rule.
+ * The helper signup configuration of one event: whether helpers may sign up,
+ * their window and grade band. The door rules live one section below, per
+ * scanner, because they are no longer a column of the event.
  *
  * The parent remounts this component when the event changes, so the form seeds
  * itself from the fresh row instead of re-seeding inside an effect.
@@ -68,7 +63,6 @@ export function HelperSettings({ event }: { event: EventDetail }) {
       // PATCH: only these columns move; `updatedAt` does not change when the
       // values are already stored, so saving an untouched page is a no-op.
       updateMutation.mutate({
-        checkinRules: value.checkinRules,
         helperCapacity: gradeOrNull(value.helperCapacity),
         helperMaxGrade: gradeOrNull(value.helperMaxGrade),
         helperMinGrade: gradeOrNull(value.helperMinGrade),
@@ -101,10 +95,10 @@ export function HelperSettings({ event }: { event: EventDetail }) {
     >
       <div className="grid gap-6 lg:grid-cols-2">
         <fieldset className="space-y-3">
+          {' '}
           <legend className="mb-2 font-medium text-sm">
             {t('events.helperRegistrationGroup')}
           </legend>
-
           <form.Field name="helperRegistrationEnabled">
             {(field) => (
               <div className="flex items-center gap-2">
@@ -124,11 +118,9 @@ export function HelperSettings({ event }: { event: EventDetail }) {
               </div>
             )}
           </form.Field>
-
           <p className="text-muted-foreground text-xs">
             {t('events.helperRegistrationHint')}
           </p>
-
           {/* Off means off: a disabled fieldset takes the controls out of the
               tab order exactly as the dialog does. */}
           <fieldset
@@ -267,16 +259,6 @@ export function HelperSettings({ event }: { event: EventDetail }) {
             </p>
           </fieldset>
         </fieldset>
-
-        <form.Field name="checkinRules">
-          {(field) => (
-            <CheckinRulesEditor
-              fields={event.fields}
-              onChange={field.handleChange}
-              value={field.state.value}
-            />
-          )}
-        </form.Field>
       </div>
 
       <Button disabled={updateMutation.isPending} type="submit">

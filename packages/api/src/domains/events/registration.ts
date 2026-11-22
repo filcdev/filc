@@ -169,6 +169,8 @@ export const eventParticipantSchema = z.object({
   /** The room this person picked; null when the event has no rooms. */
   room: eventRoomRefSchema.nullable(),
   status: eventRegistrationStatusSchema,
+  /** The helper's account; null for a guest. Door configs are keyed by it. */
+  userId: z.uuid().nullable(),
 });
 
 export type EventParticipant = z.infer<typeof eventParticipantSchema>;

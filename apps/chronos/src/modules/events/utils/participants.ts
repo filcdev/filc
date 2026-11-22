@@ -43,6 +43,7 @@ const participantColumns = {
   roomId: eventRegistration.roomId,
   roomName: eventRoom.name,
   status: eventRegistration.status,
+  userId: eventRegistration.userId,
 };
 
 /** Escapes the LIKE metacharacters so a search for `100%` matches literally. */
@@ -175,6 +176,7 @@ export const listEventRegistrations = async (
           ? { id: row.roomId, name: row.roomName }
           : null,
       status: row.status,
+      userId: row.userId,
     })),
     total: Number(totalRows[0]?.value ?? 0),
   };

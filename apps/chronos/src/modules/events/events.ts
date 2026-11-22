@@ -9,8 +9,11 @@ import { and, asc, count, eq, gte, type SQL } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { event, eventRegistration } from '#modules/events/schema';
-import { assertCheckinRules } from '#modules/events/utils/door-rules';
+import {
+  event,
+  eventCheckinConfig,
+  eventRegistration,
+} from '#modules/events/schema';
 import {
   canManageEvents,
   EVENT_AUDIT_FIELDS,
@@ -203,13 +206,11 @@ function helperGradeInsertValues(body: EventCreateInput) {
  */
 function eventInsertValues(
   body: EventCreateInput,
-  createdBy: string,
-  checkinRules: typeof event.$inferInsert.checkinRules
+  createdBy: string
 ): typeof event.$inferInsert {
   return {
     capacity: body.capacity ?? null,
     category: body.category,
-    checkinRules,
     cohortIds: body.cohortIds ?? [],
     createdBy,
     description: body.description,
@@ -242,18 +243,24 @@ export const createEvent = base.events.create
       await validateCohortIds(body.cohortIds);
     }
 
-    // A new event has no questions yet (they are replaced after the create), so
-    // a rule here could only name another event's field. Reject it now.
-    const checkinRules = body.checkinRules ?? defaultCheckinRules();
-    assertCheckinRules([], checkinRules);
-
-    const [created] = await db
-      .insert(event)
-      .values(eventInsertValues(body, context.session.userId, checkinRules))
-      .returning();
-    if (!created) {
-      throw errors.INTERNAL({ message: 'Failed to create event' });
-    }
+    // The door rules now live in the config rows. A new event starts with the
+    // default one — a single catch-all allow — so its /helper page opens on a
+    // complete rule list instead of an empty editor.
+    const created = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(event)
+        .values(eventInsertValues(body, context.session.userId))
+        .returning();
+      if (!row) {
+        throw errors.INTERNAL({ message: 'Failed to create event' });
+      }
+      await tx.insert(eventCheckinConfig).values({
+        eventId: row.id,
+        rules: defaultCheckinRules(),
+        userId: null,
+      });
+      return row;
+    });
 
     await recordActivity(context, {
       action: 'create',
@@ -355,10 +362,6 @@ export const updateEvent = base.events.update
 
     if (body.cohortIds && body.cohortIds.length > 0) {
       await validateCohortIds(body.cohortIds);
-    }
-
-    if (body.checkinRules !== undefined) {
-      assertCheckinRules(await eventFields(id), body.checkinRules);
     }
 
     const values = changedEventValues(existing, body);
