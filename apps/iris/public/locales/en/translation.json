@@ -560,9 +560,7 @@
       "back": "Back to events",
       "title": "Participants",
       "description": "Organizer view: who signed up, the statistics behind each question, and the export.",
-      "total": "Registrations: {{count}}",
       "seats": "Seats: {{taken}} / {{capacity}}",
-      "helpers": "Helpers: {{count}} / {{capacity}}",
       "roleFilter": "Role",
       "statusFilter": "Status",
       "searchLabel": "Search",
@@ -621,8 +619,9 @@
         "byRole": "By role",
         "byStatus": "By status",
         "perDay": "Registrations per day",
-        "answers": "{{count}} answers",
-        "noAnswers": "No answers yet"
+        "noAnswers": "No answers yet",
+        "answers_one": "{{count}} answer",
+        "answers_other": "{{count}} answers"
       },
       "approve": "Approve",
       "approveAria": "Approve the helper signup of {{name}}",
@@ -635,7 +634,6 @@
       "declineAria": "Decline the helper signup of {{name}}",
       "declined": "Helper signup declined",
       "grantUntil": "Door check-in until {{date}}",
-      "pendingCount": "Pending: {{count}}",
       "revokeGrantAria": "Revoke door check-in for {{name}}",
       "revokeGrantConfirmAction": "Revoke",
       "revokeGrantConfirmDescription": "{{name}} stays registered for the event, but can no longer scan tickets at this event's door. A new approval grants access again.",
@@ -643,7 +641,13 @@
       "revokeGrantError": "The door access could not be revoked.",
       "revokeGrantSuccess": "Door access revoked",
       "revoking": "Revoking…",
-      "cancel": "Cancel registration"
+      "cancel": "Cancel registration",
+      "total_one": "Registrations: {{count}}",
+      "total_other": "Registrations: {{count}}",
+      "helpers_one": "Helpers: {{count}} / {{capacity}}",
+      "helpers_other": "Helpers: {{count}} / {{capacity}}",
+      "pendingCount_one": "Pending: {{count}}",
+      "pendingCount_other": "Pending: {{count}}"
     },
     "rooms": {
       "title": "Rooms",
@@ -875,7 +879,6 @@
     "searchAria": "Search events",
     "searchLabel": "Search",
     "gradeHint": "The eight bilingual classes (1/13.RS, 2/14.VL, …) name no grade, so any grade bound keeps them out.",
-    "total": "{{count}} events",
     "helperRegistrationGroup": "Helpers",
     "helperRegistrationEnabled": "Allow helper signups",
     "helperRegistrationHint": "Helper signups always wait for an organizer’s approval, and helpers do not take a seat.",
@@ -937,7 +940,8 @@
       "then": "then",
       "title": "Door rules",
       "value": "Value",
-      "when": "If"
+      "when": "If",
+      "operator": "Operator"
     },
     "helpersPage": {
       "back": "Back to the event",
@@ -961,7 +965,9 @@
       "role": "Role",
       "rulesHint": "Who may enter is decided by the door rules:",
       "status": "Status"
-    }
+    },
+    "total_one": "{{count}} event",
+    "total_other": "{{count}} events"
   },
   "systemMessages": {
     "title": "System Messages",

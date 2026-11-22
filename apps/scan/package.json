@@ -6,6 +6,7 @@
   "scripts": {
     "build": "bun --bun vite build",
     "dev": "bun --bun vite",
+    "test": "bun test ./src",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@filcdev/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",

@@ -560,9 +560,7 @@
       "back": "Vissza az eseményekhez",
       "title": "Jelentkezők",
       "description": "Szervezői nézet: a jelentkezők, a kérdések statisztikái és az export.",
-      "total": "Jelentkezők: {{count}}",
       "seats": "Helyek: {{taken}} / {{capacity}}",
-      "helpers": "Segítők: {{count}} / {{capacity}}",
       "roleFilter": "Szerep",
       "statusFilter": "Állapot",
       "searchLabel": "Keresés",
@@ -621,8 +619,9 @@
         "byRole": "Szerep szerint",
         "byStatus": "Állapot szerint",
         "perDay": "Jelentkezések naponta",
-        "answers": "{{count}} válasz",
-        "noAnswers": "Még nincs válasz"
+        "noAnswers": "Még nincs válasz",
+        "answers_one": "{{count}} válasz",
+        "answers_other": "{{count}} válasz"
       },
       "approve": "Jóváhagy",
       "approveAria": "{{name}} segítőjelentkezésének jóváhagyása",
@@ -635,7 +634,6 @@
       "declineAria": "{{name}} segítőjelentkezésének elutasítása",
       "declined": "Segítőjelentkezés elutasítva",
       "grantUntil": "Beléptetés eddig: {{date}}",
-      "pendingCount": "Jóváhagyásra vár: {{count}}",
       "revokeGrantAria": "{{name}} beléptetési jogának visszavonása",
       "revokeGrantConfirmAction": "Visszavonás",
       "revokeGrantConfirmDescription": "{{name}} regisztrációja megmarad, de többé nem tud jegyet ellenőrizni ezen az eseményen. Egy új jóváhagyás ismét hozzáférést ad.",
@@ -643,7 +641,13 @@
       "revokeGrantError": "A beléptetési jogot nem sikerült visszavonni.",
       "revokeGrantSuccess": "Beléptetési jog visszavonva",
       "revoking": "Visszavonás…",
-      "cancel": "Regisztráció lemondása"
+      "cancel": "Regisztráció lemondása",
+      "total_one": "Jelentkezők: {{count}}",
+      "total_other": "Jelentkezők: {{count}}",
+      "helpers_one": "Segítők: {{count}} / {{capacity}}",
+      "helpers_other": "Segítők: {{count}} / {{capacity}}",
+      "pendingCount_one": "Jóváhagyásra vár: {{count}}",
+      "pendingCount_other": "Jóváhagyásra vár: {{count}}"
     },
     "rooms": {
       "title": "Termek",
@@ -875,7 +879,6 @@
     "searchAria": "Események keresése",
     "searchLabel": "Keresés",
     "gradeHint": "A nyolc két tanítási nyelvű osztály (1/13.RS, 2/14.VL, …) nem nevez meg évfolyamot, ezért bármely évfolyamkorlát kizárja őket.",
-    "total": "{{count}} esemény",
     "helperRegistrationGroup": "Segítők",
     "helperRegistrationEnabled": "Segítők engedélyezése",
     "helperRegistrationHint": "A segítőjelentkezést mindig a szervező hagyja jóvá, és a segítők nem foglalnak helyet.",
@@ -937,7 +940,8 @@
       "then": "akkor",
       "title": "Beléptetési szabályok",
       "value": "Érték",
-      "when": "Ha"
+      "when": "Ha",
+      "operator": "Összehasonlítás"
     },
     "helpersPage": {
       "back": "Vissza az eseményhez",
@@ -961,7 +965,9 @@
       "role": "Szerep",
       "rulesHint": "Hogy ki léphet be, a beléptetési szabályok döntik el:",
       "status": "Állapot"
-    }
+    },
+    "total_one": "{{count}} esemény",
+    "total_other": "{{count}} esemény"
   },
   "systemMessages": {
     "title": "Rendszerüzenetek",
