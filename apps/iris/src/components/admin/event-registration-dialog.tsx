@@ -14,6 +14,7 @@ import { CheckCircle2, ShieldCheck, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { EventParticipantItem } from '@/hooks/events';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { formatEventAnswer } from '@/utils/event-fields';
 
 type Props = {
   eventId: string;
@@ -26,14 +27,6 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onRevoke: (item: EventParticipantItem) => void;
   revokePending: boolean;
-};
-
-/** A yes/no answer as the tick or cross the organizer reads at a glance. */
-const answerValue = (type: string, value: string) => {
-  if (type === 'checkbox') {
-    return value === 'true' ? '✓' : '✗';
-  }
-  return value || '—';
 };
 
 /**
@@ -219,7 +212,7 @@ function AnswersSection({
             >
               <dt className="text-muted-foreground text-sm">{answer.label}</dt>
               <dd className="text-right text-sm">
-                {answerValue(answer.type, answer.value)}
+                {formatEventAnswer(answer.type, answer.value, t)}
               </dd>
             </div>
           ))}

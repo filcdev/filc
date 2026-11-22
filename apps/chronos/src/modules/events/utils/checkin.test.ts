@@ -386,6 +386,20 @@ describe('checkInTicket show block', () => {
     expect(result).not.toHaveProperty('visitorName');
   });
 
+  it('shows a checkbox answer as a boolean, not the stored true string', async () => {
+    const store = memoryStore([ticket({ answers })]);
+    const result = await scan(store, [
+      allow({
+        show: { email: false, fieldIds: [TICKET_KIND_ID], name: false },
+      }),
+    ]);
+
+    expect(result).toMatchObject({
+      answers: [{ fieldId: TICKET_KIND_ID, label: 'Napijegy', value: true }],
+      status: 'admitted',
+    });
+  });
+
   it('sends the email only when the rule allows it', async () => {
     const store = memoryStore([ticket({ answers })]);
     const result = await scan(store, [

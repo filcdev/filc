@@ -8949,7 +8949,14 @@
                                 "type": "string"
                               },
                               "value": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -9052,7 +9059,14 @@
                                 "type": "string"
                               },
                               "value": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -9172,7 +9186,14 @@
                                 "type": "string"
                               },
                               "value": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -9275,7 +9296,14 @@
                                 "type": "string"
                               },
                               "value": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ]
                               }
                             },
                             "required": [

@@ -142,7 +142,8 @@ export const judgeCheckin = (
 /**
  * The answers a rule chose to show, in the rule's order. A question the
  * registration did not answer is simply absent, and an unconfigured one is
- * never sent, so the door cannot extract more than the rule allows.
+ * never sent, so the door cannot extract more than the rule allows. A checkbox
+ * is a boolean here too, so the scanner says yes or no rather than `true`.
  */
 const configuredAnswers = (
   ticket: CheckinTicket,
@@ -155,12 +156,16 @@ const configuredAnswers = (
       (left, right) =>
         (order.get(left.fieldId) ?? 0) - (order.get(right.fieldId) ?? 0)
     )
-    .map(({ fieldId, label, value }) => ({ fieldId, label, value }));
+    .map(({ fieldId, label, type, value }) => ({
+      fieldId,
+      label,
+      value: type === 'checkbox' ? value === 'true' : value,
+    }));
 };
 
 /**
  * Every answer of the registration for the scanner's details panel. A checkbox
- * is a boolean so the scanner draws a tick or a cross; every other value is the
+ * is a boolean so the scanner says yes or no; every other value is the
  * visitor's own text, verbatim. The visitor's email is never part of this list.
  */
 const detailsOf = (ticket: CheckinTicket): EventCheckinDetail[] =>

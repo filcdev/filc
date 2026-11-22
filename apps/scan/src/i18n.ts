@@ -7,6 +7,8 @@
  * with a fraction of the setup, and `hu` is checked against `en`'s keys.
  */
 const en = {
+  answerNo: 'No',
+  answerYes: 'Yes',
   appName: 'Door check-in',
   cameraDenied:
     'Camera access is not allowed. Enter the code on the ticket below.',
@@ -58,6 +60,8 @@ const en = {
 export type ScanStrings = Record<keyof typeof en, string>;
 
 const hu: ScanStrings = {
+  answerNo: 'Nem',
+  answerYes: 'Igen',
   appName: 'Beléptetés',
   cameraDenied: 'A kamera nem engedélyezett. Írd be a jegy kódját lent.',
   cameraStarting: 'Kamera indítása…',
