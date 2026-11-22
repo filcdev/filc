@@ -60,7 +60,10 @@ the backdrop and the class colours are all data-driven from the id list.
 The settings picker iterates the ids and renders each swatch with the palette
 itself (`data-color-scheme` on the swatch), so no colours are copied into TS.
 Use the palette's published values rather than derived shades — that is the
-point of naming it after a known theme.
+point of naming it after a known theme. The `default` id has no block, so its
+swatch also carries `data-site-theme="default"`: that pins the preview to the
+everyday palette instead of letting it inherit the active seasonal skin from
+`<html>`.
 
 ## Subject colours come along for free
 
