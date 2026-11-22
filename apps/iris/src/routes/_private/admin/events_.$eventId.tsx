@@ -22,6 +22,11 @@ import {
   TableHeader,
   TableRow,
 } from '@filcdev/ui/components/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@filcdev/ui/components/tooltip';
 import { cn } from '@filcdev/ui/lib/utils';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
@@ -58,6 +63,7 @@ import {
   useRevokeCheckinGrant,
 } from '@/hooks/events';
 import { formatLocalizedDate } from '@/utils/date-locale';
+import { formatEventAnswer } from '@/utils/event-fields';
 import { api, orpc, prefetch } from '@/utils/orpc';
 
 export const Route = createFileRoute('/_private/admin/events_/$eventId')({
@@ -184,38 +190,69 @@ function ParticipantActions({
   return (
     <div className="flex justify-end gap-1">
       {item.role === 'visitor' && item.status === 'confirmed' && (
-        <Button
-          aria-label={t('events.participants.resendAria', { name: item.name })}
-          disabled={resendPending}
-          onClick={() => onResend(item)}
-          size="icon"
-          variant="ghost"
-        >
-          <Mail className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t('events.participants.resendAria', {
+                  name: item.name,
+                })}
+                disabled={resendPending}
+                onClick={() => onResend(item)}
+                size="icon"
+                variant="ghost"
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <TooltipContent>
+            {t('events.participants.resendAria', { name: item.name })}
+          </TooltipContent>
+        </Tooltip>
       )}
       {item.status === 'confirmed' && item.checkinGrant && (
-        <Button
-          aria-label={t('events.participants.revokeGrantAria', {
-            name: item.name,
-          })}
-          disabled={revokePending}
-          onClick={() => onRevoke(item)}
-          size="icon"
-          variant="ghost"
-        >
-          <ShieldOff className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t('events.participants.revokeGrantAria', {
+                  name: item.name,
+                })}
+                disabled={revokePending}
+                onClick={() => onRevoke(item)}
+                size="icon"
+                variant="ghost"
+              >
+                <ShieldOff className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <TooltipContent>
+            {t('events.participants.revokeGrantAria', { name: item.name })}
+          </TooltipContent>
+        </Tooltip>
       )}
       {item.status === 'confirmed' && (
-        <Button
-          aria-label={t('events.participants.cancelAria', { name: item.name })}
-          onClick={() => onCancel(item)}
-          size="icon"
-          variant="ghost"
-        >
-          <Ban className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t('events.participants.cancelAria', {
+                  name: item.name,
+                })}
+                onClick={() => onCancel(item)}
+                size="icon"
+                variant="ghost"
+              >
+                <Ban className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <TooltipContent>
+            {t('events.participants.cancelAria', { name: item.name })}
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   );
@@ -593,26 +630,39 @@ function EventDetailPage() {
                             </TableCell>
                             <TableCell>
                               {item.answers.length > 0 && (
-                                <Button
-                                  aria-controls={answersId}
-                                  aria-expanded={isExpanded}
-                                  aria-label={t(
-                                    'events.participants.answersAria',
-                                    { name: item.name }
-                                  )}
-                                  onClick={() =>
-                                    setExpandedId(isExpanded ? null : item.id)
-                                  }
-                                  size="icon"
-                                  variant="ghost"
-                                >
-                                  <ChevronDown
-                                    className={cn(
-                                      'h-4 w-4 transition-transform',
-                                      isExpanded && 'rotate-180'
-                                    )}
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    render={
+                                      <Button
+                                        aria-controls={answersId}
+                                        aria-expanded={isExpanded}
+                                        aria-label={t(
+                                          'events.participants.answersAria',
+                                          { name: item.name }
+                                        )}
+                                        onClick={() =>
+                                          setExpandedId(
+                                            isExpanded ? null : item.id
+                                          )
+                                        }
+                                        size="icon"
+                                        variant="ghost"
+                                      >
+                                        <ChevronDown
+                                          className={cn(
+                                            'h-4 w-4 transition-transform',
+                                            isExpanded && 'rotate-180'
+                                          )}
+                                        />
+                                      </Button>
+                                    }
                                   />
-                                </Button>
+                                  <TooltipContent>
+                                    {t('events.participants.answersAria', {
+                                      name: item.name,
+                                    })}
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
                             </TableCell>
                             <TableCell>
@@ -672,7 +722,14 @@ function EventDetailPage() {
                                           {answer.label}
                                         </dt>
                                         <dd className="text-sm">
-                                          {answer.value}
+                                          {formatEventAnswer(
+                                            event?.fields.find(
+                                              (field) =>
+                                                field.id === answer.fieldId
+                                            )?.type ?? 'text',
+                                            answer.value,
+                                            t
+                                          )}
                                         </dd>
                                       </div>
                                     ))}

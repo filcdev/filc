@@ -1,5 +1,10 @@
 import { Button } from '@filcdev/ui/components/button';
 import { Spinner } from '@filcdev/ui/components/spinner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@filcdev/ui/components/tooltip';
 import { LogOut } from 'lucide-react';
 import { LocaleToggle } from '@/components/locale-toggle';
 import { NoAccessScreen } from '@/components/no-access-screen';
@@ -63,15 +68,22 @@ export const EventPicker = ({
             locale={locale}
             onChange={onLocaleChange}
           />
-          <Button
-            aria-label={s.signOut}
-            onClick={onSignOut}
-            size="icon-lg"
-            type="button"
-            variant="ghost"
-          >
-            <LogOut />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label={s.signOut}
+                  onClick={onSignOut}
+                  size="icon-lg"
+                  type="button"
+                  variant="ghost"
+                >
+                  <LogOut />
+                </Button>
+              }
+            />
+            <TooltipContent>{s.signOut}</TooltipContent>
+          </Tooltip>
         </div>
       </header>
 
