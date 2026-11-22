@@ -4,7 +4,10 @@ import tailwindcss from '@tailwindcss/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Served under /scan in production; the dev server keeps its root base.
+  base: command === 'build' ? '/scan/' : '',
+
   plugins: [viteReact(), tailwindcss()],
 
   resolve: {
@@ -23,4 +26,4 @@ export default defineConfig({
       '/api': process.env.SCAN_API_ORIGIN ?? 'http://localhost:3001',
     },
   },
-});
+}));
