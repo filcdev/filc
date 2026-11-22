@@ -9,12 +9,14 @@ import {
   type CheckinTicket,
   checkInTicket,
 } from '#modules/events/utils/checkin';
+import { pickCheckinConfig } from '#modules/events/utils/checkin-config';
 
 const EVENT_ID = '5b4d1f1e-9c3a-4a2e-8b1f-0d2c3b4a5f60';
 const OTHER_EVENT_ID = '0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b';
 const TICKET_ID = '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a';
 const REGISTRATION_ID = '1a2b3c4d-5e6f-4a7b-9c8d-7e6f5a4b3c2d';
 const HELPER_ID = '3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f';
+const OTHER_HELPER_ID = '5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b';
 
 const CLASS_ID = '2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e';
 const DIET_ID = '4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a';
@@ -449,5 +451,65 @@ describe('checkInTicket show block', () => {
     expect(result).toMatchObject({ answers: [], status: 'invalid' });
     expect(result).not.toHaveProperty('visitorName');
     expect(result).not.toHaveProperty('visitorEmail');
+  });
+});
+
+/**
+ * The door rules are per scanner: the same ticket can be refused for one
+ * helper and admitted for the next, because each scan is judged by the config
+ * of the person holding the scanner. These cases bind the resolution order to
+ * the state machine, which is what the check-in route composes.
+ */
+describe('per-scanner rules', () => {
+  it('lets one helper deny and the next admit the same ticket', async () => {
+    const answers = [answer(CLASS_ID, 'Osztály', '10.B')];
+    const helperRules = [deny({ message: 'A nem léphet be' }), catchAll()];
+    const defaultRules = [allow()];
+    const configs = [
+      { rules: defaultRules, userId: null },
+      { rules: helperRules, userId: HELPER_ID },
+    ];
+
+    // Helper A has an override that denies; nothing is written.
+    const storeA = memoryStore([ticket({ answers })]);
+    const chosenA = pickCheckinConfig(configs, HELPER_ID);
+    const denied = await scan(storeA, chosenA?.rules ?? []);
+
+    expect(denied).toMatchObject({
+      message: 'A nem léphet be',
+      status: 'not_granted',
+    });
+    expect(storeA.byId.get(TICKET_ID)?.checkedInAt).toBeNull();
+
+    // Helper B has no override, so the event default admits the same ticket.
+    const storeB = memoryStore([ticket({ answers })]);
+    const chosenB = pickCheckinConfig(configs, OTHER_HELPER_ID);
+    expect(chosenB?.userId).toBeNull();
+    const admitted = await scan(storeB, chosenB?.rules ?? []);
+
+    expect(admitted).toMatchObject({
+      registrationId: REGISTRATION_ID,
+      status: 'admitted',
+      visitorName: 'Guest Visitor',
+    });
+    expect(storeB.byId.get(TICKET_ID)?.checkedInAt).toBe(FIRST_SCAN);
+  });
+
+  it('admits and shows only the name when no config exists at all', async () => {
+    const store = memoryStore([ticket()]);
+    const chosen = pickCheckinConfig([], HELPER_ID);
+
+    expect(chosen).toBeNull();
+
+    const result = await scan(store, chosen?.rules ?? []);
+
+    expect(result).toEqual({
+      answers: [],
+      details: [],
+      registrationId: REGISTRATION_ID,
+      status: 'admitted',
+      visitorName: 'Guest Visitor',
+    });
+    expect(store.byId.get(TICKET_ID)?.checkedInAt).toBe(FIRST_SCAN);
   });
 });

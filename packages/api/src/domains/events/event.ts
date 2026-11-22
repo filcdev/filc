@@ -3,7 +3,6 @@ import { listResponse, paginationSchema } from '../list';
 import { blockContentSchema, uniqueIdList } from '../news/announcements';
 import { type EventFieldAudience, eventFieldSchema } from './fields';
 import { eventRegistrationSchema } from './registration';
-import { eventCheckinRuleSchema } from './rules';
 
 /**
  * The seven fixed event categories. Each one is a hint for the organizer's
@@ -62,12 +61,6 @@ export const categoryDefaults = (
 export const eventRowSchema = z.object({
   capacity: z.number().nullable(),
   category: eventCategorySchema,
-  /**
-   * The door's ordered rules: the first whose condition matches decides, and
-   * the last is the catch-all, so every scan has an answer. This is the one door
-   * setting — identity, shown answers and the admission decision all live here.
-   */
-  checkinRules: z.array(eventCheckinRuleSchema),
   createdAt: z.date(),
   createdBy: z.uuid().nullable(),
   description: z.json(),
@@ -216,12 +209,6 @@ export type EventQueryInput = z.infer<typeof eventQuerySchema>;
 const eventWriteFieldsSchema = z.object({
   capacity: z.number().int().positive().nullable().optional(),
   category: eventCategorySchema,
-  /**
-   * The door's rule list. Omitted means a single catch-all allow on create and
-   * untouched on update. The write validator checks the questions, the
-   * operators and the catch-all position.
-   */
-  checkinRules: z.array(eventCheckinRuleSchema).optional(),
   /** Registration scope, never visibility: empty means every student. */
   cohortIds: uniqueIdList(z.uuid()).optional(),
   description: blockContentSchema,

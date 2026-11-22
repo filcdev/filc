@@ -5,6 +5,12 @@ import {
   eventCheckinResultSchema,
 } from '../domains/events/checkin';
 import {
+  eventCheckinConfigDeleteSchema,
+  eventCheckinConfigListInputSchema,
+  eventCheckinConfigSchema,
+  eventCheckinConfigUpsertSchema,
+} from '../domains/events/checkin-config';
+import {
   eventCreateSchema,
   eventDetailSchema,
   eventGetInputSchema,
@@ -65,6 +71,54 @@ export const eventsContract = {
     )
     .input(eventCheckinInputSchema)
     .output(eventCheckinResultSchema),
+  /**
+   * The door rules per scanner. `userId: null` is the event default; one set
+   * is that helper's own rules, which win when they scan.
+   */
+  checkinConfigs: {
+    delete: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description:
+            "Delete a helper's door-rule override, so their next scan is judged by the event default",
+          method: 'DELETE',
+          operationId: 'deleteEventsByIdCheckinConfigsByUserId',
+          path: '/events/{id}/checkin-configs/{userId}',
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventCheckinConfigDeleteSchema)
+      .output(deleteResponseSchema),
+    list: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description:
+            "List an event's door configurations: its default plus one per helper with an override, each with the helper's name",
+          method: 'GET',
+          operationId: 'getEventsByIdCheckinConfigs',
+          path: '/events/{id}/checkin-configs',
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventCheckinConfigListInputSchema)
+      .output(listResponse(eventCheckinConfigSchema)),
+    upsert: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description:
+            "Write one scanner's ordered door rules: userId null writes the event default, an id writes that approved helper's override; the rules are validated against the event's questions",
+          method: 'PUT',
+          operationId: 'putEventsByIdCheckinConfigs',
+          path: '/events/{id}/checkin-configs',
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventCheckinConfigUpsertSchema)
+      .output(eventCheckinConfigSchema),
+  },
   create: oc
     .route(
       filcRoute({

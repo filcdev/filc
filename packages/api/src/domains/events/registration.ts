@@ -159,6 +159,8 @@ export const eventParticipantSchema = z.object({
   registeredAt: z.date(),
   role: eventRegistrationRoleSchema,
   status: eventRegistrationStatusSchema,
+  /** The helper's account; null for a guest. Door configs are keyed by it. */
+  userId: z.uuid().nullable(),
 });
 
 export type EventParticipant = z.infer<typeof eventParticipantSchema>;

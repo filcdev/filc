@@ -1,7 +1,6 @@
 CREATE TABLE "event" (
 	"capacity" integer,
 	"category" text NOT NULL,
-	"checkin_rules" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"cohort_ids" text[] DEFAULT '{}'::text[] NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"created_by" uuid,
@@ -50,6 +49,37 @@ CREATE TABLE "event" (
         AND ("event"."image_key" IS NULL) = ("event"."image_byte_size" IS NULL)
         AND ("event"."image_key" IS NULL) = ("event"."image_updated_at" IS NULL))
 );
+--> statement-breakpoint
+CREATE TABLE "event_checkin_config" (
+	"event_id" uuid NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"rules" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"user_id" uuid,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+-- The rule list used to live on the event row. A database that already applied
+-- this migration's earlier revision still carries the column, so move its value
+-- into a default config row per event (an empty list needs none: the door's
+-- implicit fallback already admits and shows the name), then drop it. A fresh
+-- database has no such column and this block is a no-op.
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT 1
+		FROM information_schema.columns
+		WHERE table_schema = 'public'
+			AND table_name = 'event'
+			AND column_name = 'checkin_rules'
+	) THEN
+		INSERT INTO "event_checkin_config" ("event_id", "rules")
+		SELECT "id", "checkin_rules"
+		FROM "event"
+		WHERE jsonb_array_length("checkin_rules") > 0;
+		ALTER TABLE "event" DROP COLUMN "checkin_rules";
+	END IF;
+END $$;
 --> statement-breakpoint
 CREATE TABLE "event_checkin_grant" (
 	"event_id" uuid NOT NULL,
@@ -114,6 +144,8 @@ CREATE TABLE "event_ticket" (
 );
 --> statement-breakpoint
 ALTER TABLE "event" ADD CONSTRAINT "event_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "event_checkin_config" ADD CONSTRAINT "event_checkin_config_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "event_checkin_config" ADD CONSTRAINT "event_checkin_config_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_checkin_grant" ADD CONSTRAINT "event_checkin_grant_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "event_field" ADD CONSTRAINT "event_field_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -125,6 +157,8 @@ ALTER TABLE "event_ticket" ADD CONSTRAINT "event_ticket_checked_in_by_user_id_fk
 ALTER TABLE "event_ticket" ADD CONSTRAINT "event_ticket_registration_id_event_registration_id_fk" FOREIGN KEY ("registration_id") REFERENCES "public"."event_registration"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "event_status_starts_at_idx" ON "event" USING btree ("status","starts_at");--> statement-breakpoint
 CREATE INDEX "event_registration_opens_at_idx" ON "event" USING btree ("registration_opens_at");--> statement-breakpoint
+CREATE UNIQUE INDEX "event_checkin_config_event_user_unique" ON "event_checkin_config" USING btree ("event_id","user_id") WHERE "event_checkin_config"."user_id" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "event_checkin_config_event_default_unique" ON "event_checkin_config" USING btree ("event_id") WHERE "event_checkin_config"."user_id" is null;--> statement-breakpoint
 CREATE INDEX "event_checkin_grant_event_id_idx" ON "event_checkin_grant" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "event_field_event_id_idx" ON "event_field" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "event_registration_event_status_idx" ON "event_registration" USING btree ("event_id","status");--> statement-breakpoint

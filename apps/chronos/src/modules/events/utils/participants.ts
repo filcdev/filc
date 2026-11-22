@@ -40,6 +40,7 @@ const participantColumns = {
   name: sql<string>`coalesce(${user.name}, ${eventRegistration.guestName}, '')`,
   role: eventRegistration.role,
   status: eventRegistration.status,
+  userId: eventRegistration.userId,
 };
 
 /** Escapes the LIKE metacharacters so a search for `100%` matches literally. */
@@ -167,6 +168,7 @@ export const listEventRegistrations = async (
       registeredAt: row.createdAt,
       role: row.role,
       status: row.status,
+      userId: row.userId,
     })),
     total: Number(totalRows[0]?.value ?? 0),
   };

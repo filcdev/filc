@@ -3,6 +3,7 @@ import { Button } from '@filcdev/ui/components/button';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { CheckinConfigs } from '@/components/admin/event-checkin-configs';
 import { HelperSettings } from '@/components/admin/event-helper-settings';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import { QueryBoundary } from '@/components/util/query-boundary';
@@ -70,6 +71,8 @@ function EventHelperSettingsPage() {
           key={`${event.id}:${event.updatedAt.getTime()}`}
         />
       )}
+
+      {event && <CheckinConfigs event={event} />}
 
       <div>
         <Button

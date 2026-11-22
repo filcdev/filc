@@ -51,6 +51,10 @@ function useInvalidateEvents() {
   return () => {
     queryClient.invalidateQueries({ queryKey: orpc.events.list.key() });
     queryClient.invalidateQueries({ queryKey: orpc.events.get.key() });
+    // Replacing questions prunes every scanner's rules, so those move too.
+    queryClient.invalidateQueries({
+      queryKey: orpc.events.checkinConfigs.list.key(),
+    });
     // A registration change moves the organizer's list, its numbers and the
     // seat counts the event itself reports.
     queryClient.invalidateQueries({
@@ -368,6 +372,67 @@ export function useEventStats(id: string, enabled = true) {
     ...orpc.events.stats.queryOptions({ input: { id } }),
     enabled,
   });
+}
+
+/** One scanner's door config, or the event default when `userId` is null. */
+export type EventCheckinConfigItem = Awaited<
+  ReturnType<typeof api.events.checkinConfigs.list>
+>['items'][number];
+
+/** The event's door configs: its default plus each helper override. */
+export function useEventCheckinConfigs(eventId: string, enabled = true) {
+  return useQuery({
+    ...orpc.events.checkinConfigs.list.queryOptions({ input: { id: eventId } }),
+    enabled,
+  });
+}
+
+/**
+ * Writes one scanner's rules. `userId: null` writes the event default; an id
+ * writes that helper's override. Both are upserts, so saving twice keeps one
+ * row.
+ */
+export function useUpsertEventCheckinConfig({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation(
+    orpc.events.checkinConfigs.upsert.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('events.checkinConfigs.saveError'));
+      },
+      onSuccess: () => {
+        toast.success(t('events.checkinConfigs.saved'));
+        queryClient.invalidateQueries({
+          queryKey: orpc.events.checkinConfigs.list.key(),
+        });
+        onSaved?.();
+      },
+    })
+  );
+}
+
+/** Drops a helper's override, so their next scan uses the event default. */
+export function useDeleteEventCheckinConfig({
+  onSaved,
+}: MutationCallbacks = {}) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation(
+    orpc.events.checkinConfigs.delete.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('events.checkinConfigs.resetError'));
+      },
+      onSuccess: () => {
+        toast.success(t('events.checkinConfigs.resetSuccess'));
+        queryClient.invalidateQueries({
+          queryKey: orpc.events.checkinConfigs.list.key(),
+        });
+        onSaved?.();
+      },
+    })
+  );
 }
 
 /**
