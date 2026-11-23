@@ -2,6 +2,13 @@
   "settings": "Settings",
   "logout": "Log out",
   "sign_in": "Sign in",
+  "notFound": {
+    "pageTitle": "Page not found | Filc",
+    "title": "Oops, you got lost?",
+    "message": "This page can't be found. Maybe you're looking in the wrong place.",
+    "returnToHome": "Back to home",
+    "footer": "Or shall we find a new spot on the map? (Error code: {{code}})"
+  },
   "bugReport": {
     "button": "Report a bug",
     "title": "Report a bug",

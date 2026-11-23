@@ -19,7 +19,11 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@filcdev/ui/components/toggle-group';
-import { applyColorScheme } from '@filcdev/ui/lib/color-scheme';
+import {
+  applyColorScheme,
+  DEFAULT_COLOR_SCHEME,
+} from '@filcdev/ui/lib/color-scheme';
+import { DEFAULT_SITE_THEME } from '@filcdev/ui/lib/site-theme';
 import { cn } from '@filcdev/ui/lib/utils';
 import { LayoutGrid, Table2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -51,7 +55,7 @@ export function AppearancePane({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const { setTheme: applyTheme } = useTheme();
+  const { resolvedTheme, setTheme: applyTheme } = useTheme();
   const settingsQuery = useNotificationSettings(active);
   const { setView, view } = useTimetableView(settingsQuery.data?.timetableView);
   const [theme, setTheme] = useState('system');
@@ -132,12 +136,7 @@ export function AppearancePane({
                   <span className="text-sm">
                     {t(`preferences.colorSchemeId.${id}`)}
                   </span>
-                  <span className="flex gap-1" data-color-scheme={id}>
-                    <span className="h-3 w-3 rounded-full bg-background ring-1 ring-border" />
-                    <span className="h-3 w-3 rounded-full bg-primary" />
-                    <span className="h-3 w-3 rounded-full bg-accent" />
-                    <span className="h-3 w-3 rounded-full bg-foreground" />
-                  </span>
+                  <SchemeSwatch dark={resolvedTheme === 'dark'} scheme={id} />
                 </button>
               ))}
             </div>
@@ -210,5 +209,34 @@ export function AppearancePane({
         {t('common.save')}
       </Button>
     </div>
+  );
+}
+
+/**
+ * One palette's four dots. `default` has no block in `schemes.css`, so without
+ * `data-site-theme="default"` its swatch would inherit the active seasonal skin
+ * from `<html>` instead of showing the everyday palette. The `dark` class keeps
+ * that preview on the visitor's own side of the palette.
+ */
+function SchemeSwatch({
+  dark,
+  scheme,
+}: {
+  dark: boolean;
+  scheme: ColorScheme;
+}) {
+  const isDefault = scheme === DEFAULT_COLOR_SCHEME;
+
+  return (
+    <span
+      className={cn('flex gap-1', isDefault && dark && 'dark')}
+      data-color-scheme={scheme}
+      data-site-theme={isDefault ? DEFAULT_SITE_THEME : undefined}
+    >
+      <span className="h-3 w-3 rounded-full bg-background ring-1 ring-border" />
+      <span className="h-3 w-3 rounded-full bg-primary" />
+      <span className="h-3 w-3 rounded-full bg-accent" />
+      <span className="h-3 w-3 rounded-full bg-foreground" />
+    </span>
   );
 }

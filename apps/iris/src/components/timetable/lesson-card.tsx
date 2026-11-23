@@ -77,108 +77,110 @@ export function LessonCard({
   const timeRange = `${startTime} - ${endTime}`;
 
   return (
-    <Popover>
-      <PopoverTrigger
-        nativeButton={false}
-        openOnHover
-        render={
-          <div
-            className={cn(
-              'group relative flex h-full flex-col items-center justify-center overflow-hidden rounded-md border border-l-2 p-1 transition-[filter,opacity] duration-150 hover:brightness-95',
-              color.bg,
-              color.border,
-              emphasis === 'dim' && 'opacity-70 saturate-90'
-            )}
-          >
-            <WeekBadge className="absolute top-1 left-1" lesson={lesson} />
+    <div className="h-full">
+      <Popover>
+        <PopoverTrigger
+          nativeButton={false}
+          openOnHover
+          render={
+            <div
+              className={cn(
+                'group relative flex h-full flex-col items-center justify-center overflow-hidden rounded-md border border-l-2 p-1 transition-[filter,opacity] duration-150 hover:brightness-95',
+                color.bg,
+                color.border,
+                emphasis === 'dim' && 'opacity-70 saturate-90'
+              )}
+            >
+              <WeekBadge className="absolute top-1 left-1" lesson={lesson} />
 
-            {onColorChange && subject !== '—' && (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: positioning wrapper; stops click from reaching the popover trigger
-              // biome-ignore lint/a11y/noStaticElementInteractions: positioning wrapper; stops click from reaching the popover trigger
-              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: positioning wrapper; stops click from reaching the popover trigger
-              <div
-                className="absolute top-0.5 right-0.5 z-10"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <ColorPicker
-                  currentIndex={userColors?.[subject]}
-                  onSelect={(idx) => onColorChange(subject, idx)}
-                />
-              </div>
-            )}
-            <div className="font-semibold text-sm leading-none">{short}</div>
-            {cohort && (
-              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
-                {cohort}
-              </div>
-            )}
-            {groupLabel && (
-              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
-                {groupLabel}
-              </div>
-            )}
-            {teacher && (
-              <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
-                {teacher}
-              </div>
-            )}
-            {room && (
-              <div className="w-full truncate text-center text-muted-foreground text-xs">
-                {room}
-              </div>
-            )}
-          </div>
-        }
-      />
-      <PopoverContent
-        className={cn(
-          'w-72 border bg-card p-0 text-foreground shadow-2xl',
-          color.border
-        )}
-        side="bottom"
-      >
-        <div className="p-4">
-          <div className="mb-2 flex items-start justify-between">
-            <h5 className="font-bold text-accent-foreground text-base leading-tight">
-              {subject}
-            </h5>
-          </div>
+              {onColorChange && subject !== '—' && (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: positioning wrapper; stops click from reaching the popover trigger
+                // biome-ignore lint/a11y/noStaticElementInteractions: positioning wrapper; stops click from reaching the popover trigger
+                // biome-ignore lint/a11y/noNoninteractiveElementInteractions: positioning wrapper; stops click from reaching the popover trigger
+                <div
+                  className="absolute top-0.5 right-0.5 z-10"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <ColorPicker
+                    currentIndex={userColors?.[subject]}
+                    onSelect={(idx) => onColorChange(subject, idx)}
+                  />
+                </div>
+              )}
+              <div className="font-semibold text-sm leading-none">{short}</div>
+              {cohort && (
+                <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+                  {cohort}
+                </div>
+              )}
+              {groupLabel && (
+                <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+                  {groupLabel}
+                </div>
+              )}
+              {teacher && (
+                <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
+                  {teacher}
+                </div>
+              )}
+              {room && (
+                <div className="w-full truncate text-center text-muted-foreground text-xs">
+                  {room}
+                </div>
+              )}
+            </div>
+          }
+        />
+        <PopoverContent
+          className={cn(
+            'w-72 border bg-card p-0 text-foreground shadow-2xl',
+            color.border
+          )}
+          side="bottom"
+        >
+          <div className="p-4">
+            <div className="mb-2 flex items-start justify-between">
+              <h5 className="font-bold text-accent-foreground text-base leading-tight">
+                {subject}
+              </h5>
+            </div>
 
-          <div className="mb-3 flex items-center gap-2 border-b pb-3 text-muted-foreground text-xs">
-            <Clock className="h-4 w-4" />
-            <span className="font-medium text-foreground">{timeRange}</span>
-          </div>
+            <div className="mb-3 flex items-center gap-2 border-b pb-3 text-muted-foreground text-xs">
+              <Clock className="h-4 w-4" />
+              <span className="font-medium text-foreground">{timeRange}</span>
+            </div>
 
-          <div className="space-y-2 text-xs">
-            {cohort && (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
-                  <GraduationCap />
-                </span>
-                <span className="font-bold text-foreground">{cohort}</span>
-              </div>
-            )}
-            {teacher && (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
-                  <UserIcon />
-                </span>
-                <span className="font-bold text-foreground">
-                  {lesson.teachers.map((t) => t.name).join(', ')}
-                </span>
-              </div>
-            )}
-            {room && (
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-accent-foreground">
-                  <MapPinIcon />
-                </span>
-                <span className="font-bold text-foreground">{room}</span>
-              </div>
-            )}
+            <div className="space-y-2 text-xs">
+              {cohort && (
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-accent-foreground">
+                    <GraduationCap />
+                  </span>
+                  <span className="font-bold text-foreground">{cohort}</span>
+                </div>
+              )}
+              {teacher && (
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-accent-foreground">
+                    <UserIcon />
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {lesson.teachers.map((t) => t.name).join(', ')}
+                  </span>
+                </div>
+              )}
+              {room && (
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium text-accent-foreground">
+                    <MapPinIcon />
+                  </span>
+                  <span className="font-bold text-foreground">{room}</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
