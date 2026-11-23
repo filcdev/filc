@@ -184,6 +184,11 @@ export const eligibilityFor = (
     registrationClosesAt: row.registrationClosesAt,
     registrationEnabled: row.registrationEnabled,
     registrationOpensAt: row.registrationOpensAt,
+    // Eligibility is judged before a room is chosen: the form offers the room
+    // choice, and the chosen room's own capacity is judged when it is picked.
+    roomCapacity: null,
+    roomRequired: false,
+    roomTaken: 0,
     taken: facts.taken,
     viewerCohortId: viewer.cohortId,
   });

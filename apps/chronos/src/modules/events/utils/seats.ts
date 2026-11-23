@@ -19,7 +19,7 @@ export const toSeats = (
 });
 
 /** Roles that occupy a seat. A visitor (a guest) does; a helper does not. */
-const SEAT_ROLES = ['participant', 'visitor'] as const;
+export const SEAT_ROLES = ['participant', 'visitor'] as const;
 
 /** The confirmed seats of one event; a helper never fills one. */
 export const seatCount = async (

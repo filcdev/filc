@@ -23,6 +23,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnswerField } from '@/components/event-answer-field';
+import { EventRoomPicker } from '@/components/event-room-picker';
 import {
   type EventDetail,
   type EventRegistrationItem,
@@ -133,9 +134,13 @@ function RegistrationForm({
       field.audiences.includes('student') || field.audiences.includes('helper')
   );
   const pendingRole = register.isPending ? register.variables?.role : undefined;
+  const rooms = event.rooms;
 
   const form = useForm({
-    defaultValues: { answers: seededAnswers(event.myRegistration) },
+    defaultValues: {
+      answers: seededAnswers(event.myRegistration),
+      roomId: event.myRegistration?.room?.id ?? '',
+    },
     onSubmit: ({ value }) => {
       const missing = fields.find(
         (field) => field.required && !(value.answers[field.id] ?? '').trim()
@@ -147,6 +152,20 @@ function RegistrationForm({
         );
         return;
       }
+      // A helper takes no seat, so only a participant signup must pick a room.
+      // The client check names the same limit the server enforces, so a room
+      // that filled up while the form was open reads the same both ways.
+      if (signupRole.current === 'participant' && rooms.length > 0) {
+        const chosen = rooms.find((room) => room.id === value.roomId);
+        if (!chosen) {
+          setError(t('events.public.reasons.room_required'));
+          return;
+        }
+        if (chosen.remaining === 0) {
+          setError(t('events.public.reasons.room_full'));
+          return;
+        }
+      }
       setError(null);
       register.mutate({
         answers: fields
@@ -157,6 +176,9 @@ function RegistrationForm({
           .filter((answer) => answer.value.trim() !== ''),
         id: event.id,
         role: signupRole.current,
+        ...(signupRole.current === 'participant' && value.roomId
+          ? { roomId: value.roomId }
+          : {}),
       });
     },
   });
@@ -170,6 +192,18 @@ function RegistrationForm({
         form.handleSubmit();
       }}
     >
+      {rooms.length > 0 && (
+        <form.Field name="roomId">
+          {(room) => (
+            <EventRoomPicker
+              onChange={room.handleChange}
+              rooms={rooms}
+              value={room.state.value}
+            />
+          )}
+        </form.Field>
+      )}
+
       {fields.map((field) => (
         <form.Field key={field.id} name={`answers.${field.id}`}>
           {(answer) => (
@@ -299,6 +333,11 @@ function RegisteredCard({
               : 'events.public.registeredHint'
           )}
         </p>
+        {registration.room && (
+          <p className="text-sm">
+            {t('events.public.roomChosen', { room: registration.room.name })}
+          </p>
+        )}
         <RegistrationAnswers event={event} registration={registration} />
         <Button
           disabled={cancel.isPending}

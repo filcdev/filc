@@ -5,6 +5,7 @@ import { db } from '#database';
 import {
   eventRegistration,
   eventRegistrationAnswer,
+  eventRoom,
 } from '#modules/events/schema';
 
 type TxOrDb =
@@ -46,8 +47,9 @@ export const registrationWithAnswers = async (
     return null;
   }
   const [row] = await db
-    .select()
+    .select({ registration: eventRegistration, roomName: eventRoom.name })
     .from(eventRegistration)
+    .leftJoin(eventRoom, eq(eventRegistration.roomId, eventRoom.id))
     .where(
       and(
         eq(eventRegistration.eventId, eventId),
@@ -57,14 +59,23 @@ export const registrationWithAnswers = async (
   if (!row) {
     return null;
   }
+  const { registration, roomName } = row;
   const answers = await db
     .select({
       fieldId: eventRegistrationAnswer.fieldId,
       value: eventRegistrationAnswer.value,
     })
     .from(eventRegistrationAnswer)
-    .where(eq(eventRegistrationAnswer.registrationId, row.id));
-  return { ...row, answers };
+    .where(eq(eventRegistrationAnswer.registrationId, registration.id));
+  return {
+    ...registration,
+    answers,
+    // A room that was deleted sets the column null, so both halves are needed.
+    room:
+      registration.roomId && roomName
+        ? { id: registration.roomId, name: roomName }
+        : null,
+  };
 };
 
 /** Which of these events the caller already holds a confirmed seat on. */

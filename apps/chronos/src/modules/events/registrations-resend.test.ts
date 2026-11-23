@@ -26,16 +26,20 @@ const hasDatabase = Boolean(process.env.CHRONOS_DATABASE_URL);
 
 const EVENT_ID = crypto.randomUUID();
 const REGISTRATION_ID = crypto.randomUUID();
+const STUDENT_REGISTRATION_ID = crypto.randomUUID();
+const STUDENT_ID = crypto.randomUUID();
 const TICKET_ID = crypto.randomUUID();
 const GUEST_EMAIL = 'resend.proof@example.hu';
+const STUDENT_EMAIL = `student.${STUDENT_ID.slice(0, 8)}@example.hu`;
 
 const loadModules = async () => {
-  const [database, schema, resend] = await Promise.all([
+  const [database, authentication, schema, resend] = await Promise.all([
     import('#database'),
+    import('#database/schema/authentication'),
     import('#modules/events/schema'),
     import('#modules/events/utils/resend'),
   ]);
-  return { ...database, ...schema, ...resend };
+  return { ...authentication, ...database, ...schema, ...resend };
 };
 
 type Modules = Awaited<ReturnType<typeof loadModules>>;
@@ -70,6 +74,25 @@ describe.skipIf(!hasDatabase)('resendTicket', () => {
       id: TICKET_ID,
       registrationId: REGISTRATION_ID,
     });
+
+    // A signed-in student, confirmed before tickets were issued for students:
+    // no ticket row yet, and no guest name or address to mail.
+    await modules.db.insert(modules.user).values({
+      createdAt: new Date('2026-05-01T08:00:00'),
+      email: STUDENT_EMAIL,
+      emailVerified: true,
+      id: STUDENT_ID,
+      name: 'Jegyes Diák',
+      updatedAt: new Date('2026-05-01T08:00:00'),
+    });
+
+    await modules.db.insert(modules.eventRegistration).values({
+      eventId: EVENT_ID,
+      id: STUDENT_REGISTRATION_ID,
+      role: 'participant',
+      status: 'confirmed',
+      userId: STUDENT_ID,
+    });
   });
 
   afterAll(async () => {
@@ -77,6 +100,9 @@ describe.skipIf(!hasDatabase)('resendTicket', () => {
     await modules.db
       .delete(modules.event)
       .where(eq(modules.event.id, EVENT_ID));
+    await modules.db
+      .delete(modules.user)
+      .where(eq(modules.user.id, STUDENT_ID));
   });
 
   it('mails the same ticket code through the stubbed transport', async () => {
@@ -93,5 +119,39 @@ describe.skipIf(!hasDatabase)('resendTicket', () => {
 
     expect(result).toEqual({ ok: false, reason: 'not_found' });
     expect(sent).toHaveLength(1);
+  });
+
+  it('mails a signed-in student, issuing the ticket they never had', async () => {
+    const result = await modules.resendTicket(
+      EVENT_ID,
+      STUDENT_REGISTRATION_ID
+    );
+
+    expect(result).toMatchObject({ ok: true });
+    expect(sent.at(-1)).toMatchObject({ to: STUDENT_EMAIL });
+
+    const [ticket] = await modules.db
+      .select({
+        id: modules.eventTicket.id,
+        sentAt: modules.eventTicket.sentAt,
+      })
+      .from(modules.eventTicket)
+      .where(eq(modules.eventTicket.registrationId, STUDENT_REGISTRATION_ID));
+    expect(ticket?.id).toBe(result.ok ? result.code : '');
+    expect(ticket?.sentAt).toBeInstanceOf(Date);
+  });
+
+  it('refuses to resend a cancelled registration', async () => {
+    await modules.db
+      .update(modules.eventRegistration)
+      .set({ status: 'cancelled' })
+      .where(eq(modules.eventRegistration.id, STUDENT_REGISTRATION_ID));
+
+    const result = await modules.resendTicket(
+      EVENT_ID,
+      STUDENT_REGISTRATION_ID
+    );
+
+    expect(result).toEqual({ ok: false, reason: 'not_found' });
   });
 });

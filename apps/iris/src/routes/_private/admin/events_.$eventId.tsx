@@ -2,7 +2,10 @@ import {
   type EventCheckinDisplay,
   eventCheckinDisplays,
 } from '@filcdev/api/domains/events/event';
-import { eventQuestionColumnHeaders } from '@filcdev/api/domains/events/export';
+import {
+  eventExportColumns,
+  eventQuestionColumnHeaders,
+} from '@filcdev/api/domains/events/export';
 import type {
   EventRegistrationDecision,
   EventRegistrationRole,
@@ -43,13 +46,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
+  Pencil,
+  Plus,
   Save,
   ShieldOff,
+  Trash2,
   X,
 } from 'lucide-react';
 import { Fragment, useDeferredValue, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DeleteConfirmDialog } from '@/components/admin/delete-confirm-dialog';
+import { EventRoomDialog } from '@/components/admin/event-room-dialog';
 import { DateTimePicker } from '@/components/date-time-picker';
 import { ExportButton, type ExportColumn } from '@/components/export-button';
 import { Lazy } from '@/components/lazy';
@@ -59,11 +66,13 @@ import {
   type EventDetail,
   type EventFieldItem,
   type EventParticipantItem,
+  type EventRoomItem,
   type EventStatsData,
   PARTICIPANTS_PAGE_SIZE,
   useAdminEventDetail,
   useCancelEventParticipant,
   useDecideEventRegistration,
+  useDeleteEventRoom,
   useEventParticipants,
   useEventStats,
   useResendEventTicket,
@@ -232,6 +241,24 @@ function ParticipantActions({
       )}
     </div>
   );
+}
+
+/**
+ * The room cell of the participant table. Its own component because the column
+ * exists only for an event with rooms: the row stays free of the branch.
+ */
+function ParticipantRoomCell({
+  hasRooms,
+  room,
+}: {
+  hasRooms: boolean;
+  room: EventParticipantItem['room'];
+}) {
+  const { t } = useTranslation();
+  if (!hasRooms) {
+    return null;
+  }
+  return <TableCell>{room?.name ?? t('events.participants.noRoom')}</TableCell>;
 }
 
 /** A blank grade input is "unset" (`null`), never zero. */
@@ -618,6 +645,149 @@ function HelperSettings({ event }: { event: EventDetail }) {
   );
 }
 
+/**
+ * The event's rooms: name, capacity and how many places are taken, with the
+ * add/edit/delete actions. A room is its own resource, so this card only lists
+ * it and opens the dialogs; the mutations live in the dialogs themselves.
+ */
+function RoomsSection({
+  event,
+  eventId,
+}: {
+  event: EventDetail;
+  eventId: string;
+}) {
+  const { t } = useTranslation();
+  const headingId = useId();
+  const rooms = event.rooms;
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<EventRoomItem | null>(null);
+  const [roomToDelete, setRoomToDelete] = useState<EventRoomItem | null>(null);
+  const deleteMutation = useDeleteEventRoom({
+    onSaved: () => setRoomToDelete(null),
+  });
+
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="space-y-4 rounded-lg border p-4"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="font-semibold text-xl" id={headingId}>
+            {t('events.rooms.title')}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {t('events.rooms.hint')}
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            setEditingRoom(null);
+            setDialogOpen(true);
+          }}
+          size="sm"
+          type="button"
+        >
+          <Plus className="h-4 w-4" />
+          {t('events.rooms.add')}
+        </Button>
+      </div>
+
+      {rooms.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          {t('events.rooms.empty')}
+        </p>
+      ) : (
+        <ul className="divide-y rounded-md border">
+          {rooms.map((room) => {
+            const taken = room.capacity - room.remaining;
+            return (
+              <li
+                className="flex flex-wrap items-center justify-between gap-3 p-3"
+                key={room.id}
+              >
+                <div className="space-y-0.5">
+                  <p className="font-medium text-sm">{room.name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t('events.rooms.seats', {
+                      capacity: room.capacity,
+                      taken,
+                    })}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    aria-label={t('events.rooms.editAria', {
+                      name: room.name,
+                    })}
+                    onClick={() => {
+                      setEditingRoom(room);
+                      setDialogOpen(true);
+                    }}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    aria-label={t('events.rooms.deleteAria', {
+                      name: room.name,
+                    })}
+                    onClick={() => setRoomToDelete(room)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <EventRoomDialog
+        eventId={eventId}
+        key={`${dialogOpen ? 'open' : 'closed'}:${editingRoom?.id ?? 'new'}`}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setEditingRoom(null);
+          }
+        }}
+        open={dialogOpen}
+        room={editingRoom}
+      />
+
+      <DeleteConfirmDialog
+        description={t('events.rooms.deleteConfirmDescription', {
+          name: roomToDelete?.name ?? '',
+        })}
+        onCancel={() => setRoomToDelete(null)}
+        onConfirm={() => {
+          if (roomToDelete) {
+            deleteMutation.mutate({
+              id: eventId,
+              roomId: roomToDelete.id,
+            });
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRoomToDelete(null);
+          }
+        }}
+        open={roomToDelete !== null}
+        pending={deleteMutation.isPending}
+        title={t('events.rooms.deleteConfirmTitle')}
+      />
+    </section>
+  );
+}
+
 function EventDetailPage() {
   const { eventId } = Route.useParams();
   const { i18n, t } = useTranslation();
@@ -669,6 +839,10 @@ function EventDetailPage() {
   });
 
   const event = eventQuery.data;
+  // The room column, the export column and the room card all exist only for an
+  // event that has rooms.
+  const hasRooms = (event?.rooms.length ?? 0) > 0;
+  const participantColSpan = hasRooms ? 9 : 8;
   // What an approval grants, in the organizer's own words: this event's door
   // until a day after it ends.
   const grantUntil = event
@@ -706,22 +880,29 @@ function EventDetailPage() {
     setExpandedId(null);
   };
 
-  const exportColumns = (fields: EventDetail['fields']): ExportColumn[] => {
-    const questionKeys = eventQuestionColumnHeaders(fields);
+  const exportColumns = (
+    fields: EventDetail['fields'],
+    rooms: boolean
+  ): ExportColumn[] => {
+    const questionKeys = eventQuestionColumnHeaders(fields, rooms);
+    // The fixed headers are localized, the keys stay the server's; the order
+    // comes from the shared helper, so the room column appears exactly where
+    // the CSV carries it.
+    const fixedHeaders: Record<string, string> = {
+      checked_in_at: t('events.participants.columns.checkedInAt'),
+      class: t('events.participants.columns.class'),
+      email: t('events.participants.columns.email'),
+      name: t('events.participants.columns.name'),
+      registered_at: t('events.participants.columns.registeredAt'),
+      role: t('events.participants.columns.role'),
+      room: t('events.participants.columns.room'),
+      status: t('events.participants.columns.status'),
+    };
     return [
-      { header: t('events.participants.columns.name'), key: 'name' },
-      { header: t('events.participants.columns.email'), key: 'email' },
-      { header: t('events.participants.columns.class'), key: 'class' },
-      { header: t('events.participants.columns.role'), key: 'role' },
-      { header: t('events.participants.columns.status'), key: 'status' },
-      {
-        header: t('events.participants.columns.registeredAt'),
-        key: 'registered_at',
-      },
-      {
-        header: t('events.participants.columns.checkedInAt'),
-        key: 'checked_in_at',
-      },
+      ...eventExportColumns(rooms).map((key) => ({
+        header: fixedHeaders[key] ?? key,
+        key,
+      })),
       ...questionKeys.map((key, index) => ({
         header: fields[index]?.label ?? key,
         key,
@@ -788,6 +969,8 @@ function EventDetailPage() {
           key={`${event.id}:${event.updatedAt.getTime()}`}
         />
       )}
+
+      {event && <RoomsSection event={event} eventId={eventId} />}
 
       <section aria-labelledby={participantsHeadingId} className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -869,6 +1052,11 @@ function EventDetailPage() {
                       <TableHead>
                         {t('events.participants.columns.email')}
                       </TableHead>
+                      {hasRooms && (
+                        <TableHead>
+                          {t('events.participants.columns.room')}
+                        </TableHead>
+                      )}
                       <TableHead>
                         {t('events.participants.columns.role')}
                       </TableHead>
@@ -896,7 +1084,7 @@ function EventDetailPage() {
                       <TableRow>
                         <TableCell
                           className="text-muted-foreground"
-                          colSpan={8}
+                          colSpan={participantColSpan}
                         >
                           {t('events.participants.empty')}
                         </TableCell>
@@ -912,6 +1100,10 @@ function EventDetailPage() {
                               {item.name}
                             </TableCell>
                             <TableCell>{item.email}</TableCell>
+                            <ParticipantRoomCell
+                              hasRooms={hasRooms}
+                              room={item.room}
+                            />
                             <TableCell>
                               <Badge variant="outline">
                                 {t(`events.participants.roles.${item.role}`)}
@@ -1022,7 +1214,7 @@ function EventDetailPage() {
                             <TableRow>
                               <TableCell
                                 className="bg-muted/40"
-                                colSpan={8}
+                                colSpan={participantColSpan}
                                 id={answersId}
                               >
                                 {item.answers.length === 0 ? (
@@ -1105,7 +1297,7 @@ function EventDetailPage() {
         </p>
         {event && (
           <ExportButton
-            columns={exportColumns(event.fields)}
+            columns={exportColumns(event.fields, hasRooms)}
             errorKey="events.participants.exportError"
             fetchCsv={async () => {
               const file = await api.events.export({ id: eventId });

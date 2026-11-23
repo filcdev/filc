@@ -5,11 +5,12 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '#database';
 import { requireAuthentication, requireAuthorization } from '#middleware/auth';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { eventRegistration } from '#modules/events/schema';
+import { event, eventRegistration } from '#modules/events/schema';
 import { checkAnswers } from '#modules/events/utils/answers';
 import { decidePendingRegistration } from '#modules/events/utils/decision';
 import {
   canManageEvents,
+  type EventViewer,
   resolveEventViewer,
   studentEventFields,
 } from '#modules/events/utils/events';
@@ -22,6 +23,11 @@ import {
 } from '#modules/events/utils/registration-write';
 import { resendTicket } from '#modules/events/utils/resend';
 import {
+  type eventRooms,
+  resolveChosenRoom,
+  roomSeatCount,
+} from '#modules/events/utils/rooms';
+import {
   judgeHelperRegistration,
   judgeRegistration,
   type RegistrationDecision,
@@ -29,11 +35,14 @@ import {
   type RegistrationRefusal,
 } from '#modules/events/utils/rules';
 import { seatCount } from '#modules/events/utils/seats';
+import { issueAndSendTicket } from '#modules/events/utils/ticket';
 import { base } from '#orpc';
 import {
   badRequest,
   conflict,
   notFound,
+  roomFull,
+  roomRequired,
   serviceUnavailable,
 } from '#utils/http';
 
@@ -52,6 +61,8 @@ const REFUSAL_MESSAGES: Record<RegistrationRefusal, string> = {
   not_open_yet: 'Registration has not opened yet',
   pending_approval: 'Your registration is waiting for approval',
   registration_disabled: 'Registration is not open for this event',
+  room_full: 'The chosen room is full',
+  room_required: 'Choose a room for this event',
   wrong_cohort: 'This event is not open to your class',
 };
 
@@ -60,6 +71,14 @@ const throwRefusal = (decision: RegistrationDecision): void => {
     return;
   }
   const message = REFUSAL_MESSAGES[decision.reason];
+  // A room problem keeps its own code so the client can say which limit was
+  // hit — the event's or the chosen room's — instead of one "full" message.
+  if (decision.reason === 'room_required') {
+    throw roomRequired(message);
+  }
+  if (decision.reason === 'room_full') {
+    throw roomFull(message);
+  }
   // Losing a race for the last seat and double-submitting are conflicts; the
   // rest are the request asking for something the event never allows.
   if (
@@ -89,6 +108,29 @@ const findRegistration = async (
   return row ?? null;
 };
 
+/**
+ * The event facts a ticket mail needs, read after the registration commits so
+ * the write path does not carry them. A missing event is impossible while the
+ * registration exists; answering null keeps the best-effort mail from taking a
+ * registration down over a title.
+ */
+const ticketEventFacts = async (eventId: string, requestId: string) => {
+  const [row] = await db
+    .select({ startsAt: event.startsAt, title: event.title })
+    .from(event)
+    .where(eq(event.id, eventId));
+
+  if (!row) {
+    logger.error('registration has no event to issue a ticket for', {
+      eventId,
+      requestId,
+    });
+    return null;
+  }
+
+  return { eventStartsAt: row.startsAt, eventTitle: row.title };
+};
+
 /** Reactivates the caller's cancelled row, or inserts the first one. */
 const storeRegistration = async (
   tx: TxOrDb,
@@ -97,6 +139,7 @@ const storeRegistration = async (
     eventId: string;
     existing: typeof eventRegistration.$inferSelect | null;
     role: 'helper' | 'participant';
+    roomId: string | null;
     status: 'confirmed' | 'pending';
     userId: string;
   }
@@ -104,7 +147,7 @@ const storeRegistration = async (
   const [saved] = args.existing
     ? await tx
         .update(eventRegistration)
-        .set({ role: args.role, status: args.status })
+        .set({ role: args.role, roomId: args.roomId, status: args.status })
         .where(eq(eventRegistration.id, args.existing.id))
         .returning()
     : await tx
@@ -112,6 +155,7 @@ const storeRegistration = async (
         .values({
           eventId: args.eventId,
           role: args.role,
+          roomId: args.roomId,
           status: args.status,
           userId: args.userId,
         })
@@ -126,12 +170,135 @@ const storeRegistration = async (
   return saved;
 };
 
+type EventRow = Awaited<ReturnType<typeof lockPublishedEvent>>;
+type RoomRow = Awaited<ReturnType<typeof eventRooms>>[number];
+
+type StudentRegistrationWrite = {
+  answers: EventRegistrationAnswer[];
+  eventId: string;
+  isHelper: boolean;
+  now: Date;
+  roomId: string | undefined;
+  userId: string;
+  viewer: EventViewer;
+};
+
+/**
+ * Eligibility is answered before the form: a caller the event does not admit is
+ * told so, not sent back to fix a form they could not submit anyway. A helper is
+ * judged by its own switches, window and grade band; a participant by seats,
+ * cohort, grade and its chosen room.
+ */
+const judgeStudentEligibility = async (
+  tx: TxOrDb,
+  args: StudentRegistrationWrite,
+  row: EventRow,
+  existing: typeof eventRegistration.$inferSelect | null,
+  chosenRoom: RoomRow | null,
+  rooms: readonly RoomRow[]
+): Promise<void> => {
+  const pending = existing?.status === 'pending';
+  const registered = existing?.status === 'confirmed';
+
+  if (args.isHelper) {
+    throwRefusal(
+      judgeHelperRegistration({
+        grade: args.viewer.grade,
+        helperMaxGrade: row.helperMaxGrade,
+        helperMinGrade: row.helperMinGrade,
+        helperRegistrationClosesAt: row.helperRegistrationClosesAt,
+        helperRegistrationEnabled: row.helperRegistrationEnabled,
+        helperRegistrationOpensAt: row.helperRegistrationOpensAt,
+        helperRegistrationSeparateWindow: row.helperRegistrationSeparateWindow,
+        maxGrade: row.maxGrade,
+        minGrade: row.minGrade,
+        now: args.now,
+        pending,
+        registered,
+        registrationClosesAt: row.registrationClosesAt,
+        registrationEnabled: row.registrationEnabled,
+        registrationOpensAt: row.registrationOpensAt,
+      })
+    );
+    return;
+  }
+
+  const facts: RegistrationFacts = {
+    capacity: row.capacity,
+    cohortIds: row.cohortIds,
+    grade: args.viewer.grade,
+    maxGrade: row.maxGrade,
+    minGrade: row.minGrade,
+    now: args.now,
+    pending,
+    registered,
+    registrationClosesAt: row.registrationClosesAt,
+    registrationEnabled: row.registrationEnabled,
+    registrationOpensAt: row.registrationOpensAt,
+    roomCapacity: chosenRoom?.capacity ?? null,
+    roomRequired: rooms.length > 0,
+    roomTaken: chosenRoom ? await roomSeatCount(chosenRoom.id, tx) : 0,
+    taken: await seatCount(args.eventId, tx),
+    viewerCohortId: args.viewer.cohortId,
+  };
+  throwRefusal(judgeRegistration(facts));
+};
+
+/**
+ * The whole write half of a student signup, under the event lock: the row, its
+ * form, the room choice and the seat checks all read the same transaction, so
+ * the judgement and the insert cannot disagree.
+ */
+const writeStudentRegistration = async (
+  tx: TxOrDb,
+  args: StudentRegistrationWrite
+) => {
+  const row = await lockPublishedEvent(tx, args.eventId);
+  const existing = await findRegistration(tx, args.eventId, args.userId);
+  const fields = await studentEventFields(args.eventId, tx);
+  const { chosenRoom, rooms } = await resolveChosenRoom(
+    args.eventId,
+    args.roomId,
+    tx
+  );
+
+  await judgeStudentEligibility(tx, args, row, existing, chosenRoom, rooms);
+
+  const checked = checkAnswers(fields, args.answers);
+  if (!checked.ok) {
+    throw badRequest(checked.message);
+  }
+
+  // A helper takes no seat, so a room id they happen to send is never stored:
+  // only a participant fills a room's place.
+  const roomId = args.isHelper ? null : (chosenRoom?.id ?? null);
+  const saved = await storeRegistration(tx, {
+    answers: checked.answers,
+    eventId: args.eventId,
+    existing,
+    role: args.isHelper ? 'helper' : 'participant',
+    roomId,
+    status: args.isHelper ? 'pending' : 'confirmed',
+    userId: args.userId,
+  });
+
+  return {
+    beforeRole: existing?.role ?? null,
+    beforeStatus: existing?.status ?? null,
+    reactivated: Boolean(existing),
+    registration: {
+      ...saved,
+      answers: checked.answers,
+      room: roomId ? { id: roomId, name: chosenRoom?.name ?? '' } : null,
+    },
+  };
+};
+
 export const createRegistration = base.events.registrations.create
   .use(requireAuthentication)
   .handler(async ({ context, input }) => {
     const { answers = [], id, role } = input;
     const userId = context.session.userId;
-    const now = new Date();
     const isHelper = role === 'helper';
     // Who the caller is does not change mid-request, so this is read once and
     // handed to the rules under the lock.
@@ -139,84 +306,17 @@ export const createRegistration = base.events.registrations.create
 
     const { beforeRole, beforeStatus, reactivated, registration } =
       await runWithFormRaceGuard(() =>
-        db.transaction(async (tx) => {
-          const row = await lockPublishedEvent(tx, id);
-
-          const existing = await findRegistration(tx, id, userId);
-          const pending = existing?.status === 'pending';
-          const registered = existing?.status === 'confirmed';
-
-          // The questions are read once and both paths validate the form
-          // against the same rows.
-          const fields = await studentEventFields(id, tx);
-
-          // Eligibility first: a caller the event does not admit is told so, not
-          // sent back to fix a form they could not submit anyway. A helper is
-          // judged by its own switches, window and grade band; a participant by
-          // seats, cohort and grade.
-          if (isHelper) {
-            throwRefusal(
-              judgeHelperRegistration({
-                grade: viewer.grade,
-                helperMaxGrade: row.helperMaxGrade,
-                helperMinGrade: row.helperMinGrade,
-                helperRegistrationClosesAt: row.helperRegistrationClosesAt,
-                helperRegistrationEnabled: row.helperRegistrationEnabled,
-                helperRegistrationOpensAt: row.helperRegistrationOpensAt,
-                helperRegistrationSeparateWindow:
-                  row.helperRegistrationSeparateWindow,
-                maxGrade: row.maxGrade,
-                minGrade: row.minGrade,
-                now,
-                pending,
-                registered,
-                registrationClosesAt: row.registrationClosesAt,
-                registrationEnabled: row.registrationEnabled,
-                registrationOpensAt: row.registrationOpensAt,
-              })
-            );
-          } else {
-            const facts: RegistrationFacts = {
-              capacity: row.capacity,
-              cohortIds: row.cohortIds,
-              grade: viewer.grade,
-              maxGrade: row.maxGrade,
-              minGrade: row.minGrade,
-              now,
-              pending,
-              registered,
-              registrationClosesAt: row.registrationClosesAt,
-              registrationEnabled: row.registrationEnabled,
-              registrationOpensAt: row.registrationOpensAt,
-              taken: await seatCount(id, tx),
-              viewerCohortId: viewer.cohortId,
-            };
-            throwRefusal(judgeRegistration(facts));
-          }
-
-          const checked = checkAnswers(fields, answers);
-          if (!checked.ok) {
-            throw badRequest(checked.message);
-          }
-
-          // A helper signup always waits for the organizer; a participant is
-          // confirmed at once. Helpers never take a seat either way.
-          const saved = await storeRegistration(tx, {
-            answers: checked.answers,
+        db.transaction((tx) =>
+          writeStudentRegistration(tx, {
+            answers,
             eventId: id,
-            existing,
-            role,
-            status: isHelper ? 'pending' : 'confirmed',
+            isHelper,
+            now: new Date(),
+            roomId: input.roomId,
             userId,
-          });
-
-          return {
-            beforeRole: existing?.role ?? null,
-            beforeStatus: existing?.status ?? null,
-            reactivated: Boolean(existing),
-            registration: { ...saved, answers: checked.answers },
-          };
-        })
+            viewer,
+          })
+        )
       );
 
     await recordActivity(context, {
@@ -229,6 +329,21 @@ export const createRegistration = base.events.registrations.create
         registrationId: registration.id,
       },
     });
+
+    // A confirmed participant gets their QR ticket at once; a helper's row is
+    // pending until an organizer approves it. The row is committed, so the
+    // ticket and the mail are best effort and can never undo the registration.
+    if (registration.status === 'confirmed') {
+      const facts = await ticketEventFacts(id, context.requestId);
+      if (facts) {
+        await issueAndSendTicket({
+          eventId: id,
+          ...facts,
+          registrationId: registration.id,
+          requestId: context.requestId,
+        });
+      }
+    }
 
     logger.info('event registration created', {
       eventId: id,
@@ -397,6 +512,21 @@ export const decideRegistration = base.events.registrations.decide
       status: registration.status,
     });
 
+    // An approval that confirms a helper issues their ticket and mails it, the
+    // same best-effort way a participant's is sent at signup. A decline mails
+    // nothing: they are not coming.
+    if (input.decision === 'approve') {
+      const facts = await ticketEventFacts(input.id, context.requestId);
+      if (facts) {
+        await issueAndSendTicket({
+          eventId: input.id,
+          ...facts,
+          registrationId: registration.id,
+          requestId: context.requestId,
+        });
+      }
+    }
+
     return registration;
   });
 
@@ -413,9 +543,9 @@ export const resendRegistrationTicket = base.events.registrations.resend
       }
       // The mail is the whole point of the request, so a failed send is the
       // answer: the admin can retry instead of assuming the parent got it.
-      // `sendGuestTicket` has already logged and reported the failure; this
+      // `sendTicket` has already logged and reported the failure; this
       // line ties it to the request the admin made.
-      logger.error('guest ticket resend failed', {
+      logger.error('ticket resend failed', {
         eventId: id,
         registrationId,
         requestId: context.requestId,
@@ -423,7 +553,7 @@ export const resendRegistrationTicket = base.events.registrations.resend
       throw serviceUnavailable('The ticket email could not be sent');
     }
 
-    logger.info('guest ticket resent', {
+    logger.info('ticket resent', {
       eventId: id,
       registrationId,
       requestId: context.requestId,

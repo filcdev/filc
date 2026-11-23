@@ -23,6 +23,9 @@ export type EventDetail = Awaited<ReturnType<typeof api.events.get>>;
 
 export type EventFieldItem = EventDetail['fields'][number];
 
+/** One room of an event with its remaining places, as the detail answers it. */
+export type EventRoomItem = EventDetail['rooms'][number];
+
 export type EventPayload = Parameters<typeof api.events.create>[0];
 
 /** The admin table is not paged: it asks for one generous page. */
@@ -164,6 +167,57 @@ export function useReplaceEventFields({ onSaved }: MutationCallbacks = {}) {
   );
 }
 
+export function useCreateEventRoom({ onSaved }: MutationCallbacks = {}) {
+  const invalidate = useInvalidateEvents();
+  const { t } = useTranslation();
+  return useMutation(
+    orpc.events.rooms.create.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('events.rooms.createError'));
+      },
+      onSuccess: () => {
+        toast.success(t('events.rooms.createSuccess'));
+        invalidate();
+        onSaved?.();
+      },
+    })
+  );
+}
+
+export function useUpdateEventRoom({ onSaved }: MutationCallbacks = {}) {
+  const invalidate = useInvalidateEvents();
+  const { t } = useTranslation();
+  return useMutation(
+    orpc.events.rooms.update.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('events.rooms.updateError'));
+      },
+      onSuccess: () => {
+        toast.success(t('events.rooms.updateSuccess'));
+        invalidate();
+        onSaved?.();
+      },
+    })
+  );
+}
+
+export function useDeleteEventRoom({ onSaved }: MutationCallbacks = {}) {
+  const invalidate = useInvalidateEvents();
+  const { t } = useTranslation();
+  return useMutation(
+    orpc.events.rooms.delete.mutationOptions({
+      onError: (error: Error) => {
+        toast.error(error.message || t('events.rooms.deleteError'));
+      },
+      onSuccess: () => {
+        toast.success(t('events.rooms.deleteSuccess'));
+        invalidate();
+        onSaved?.();
+      },
+    })
+  );
+}
+
 /** The registration a caller owns, as the detail endpoint returns it. */
 export type EventRegistrationItem = NonNullable<EventDetail['myRegistration']>;
 
@@ -205,7 +259,19 @@ export function useCreateEventRegistration({
   const { t } = useTranslation();
   return useMutation(
     orpc.events.registrations.create.mutationOptions({
-      onError: (error: Error) => {
+      onError: (error) => {
+        // The room limits are their own codes so the loser of a race is told
+        // which limit filled up, not just that the event is full.
+        if (isDefinedError(error)) {
+          if (error.code === ERROR_CODE.ROOM_FULL) {
+            toast.error(t('events.public.reasons.room_full'));
+            return;
+          }
+          if (error.code === ERROR_CODE.ROOM_REQUIRED) {
+            toast.error(t('events.public.reasons.room_required'));
+            return;
+          }
+        }
         toast.error(error.message || t('events.public.registerError'));
       },
       onSuccess: (registration) => {
@@ -290,7 +356,17 @@ export function useGuestRegistration() {
   const { t } = useTranslation();
   return useMutation(
     orpc.events.guests.create.mutationOptions({
-      onError: (error: Error) => {
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          if (error.code === ERROR_CODE.ROOM_FULL) {
+            toast.error(t('events.public.reasons.room_full'));
+            return;
+          }
+          if (error.code === ERROR_CODE.ROOM_REQUIRED) {
+            toast.error(t('events.public.reasons.room_required'));
+            return;
+          }
+        }
         toast.error(error.message || t('events.public.guestError'));
       },
       onSuccess: () => {

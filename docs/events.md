@@ -102,6 +102,35 @@ turn that one reason into a sign-in button. Capacity is judged under a lock:
 answer 409 `full` to the request that lost the race. Two parents racing for the
 last seat get one registration and one conflict, never two tickets.
 
+### Rooms
+
+An orienteering day is several sessions at once, so an event can be split into
+rooms. The organizer creates them on the event's admin page (`POST
+/events/{id}/rooms`, then `PUT`/`DELETE /events/{id}/rooms/{roomId}`), each with
+a name and its own required, positive capacity. `event_room` hangs off the event
+with `ON DELETE CASCADE`, and a room is ordered by `position` like the signup
+questions.
+
+A room counts **on top of** the event's total, never instead of it: a student
+who takes a room seat also takes an event seat, so an event of 60 with two rooms
+of 20 can still only confirm 60 people, and each room only 20. The chosen room
+is stored in `event_registration.room_id` (`ON DELETE SET NULL`); deleting a room
+that any registration names is refused with `ROOM_HAS_REGISTRATIONS`, so the
+export never leaves a row pointing at a room that is gone.
+
+The student form requires a room once the event has one (`ROOM_REQUIRED`), and
+the guest form does exactly the same — a roomed event never accepts a
+registration without a room, parent or student. A supplied room must belong to
+*that* event (`ROOM_NOT_FOUND`). The chosen room's occupancy is read inside the
+same event row lock as the seat check, so the pre-check and the insert cannot
+disagree: two simultaneous signups for the last room seat produce one success
+and one `ROOM_FULL` ("The chosen room is full"), which is a different code from
+the event-wide `full` — the loser is told which limit filled up. The public
+detail carries `rooms: [{ id, name, capacity, remaining }]` and the page polls
+it every 10 s, so everyone with the page open sees the room counts move without
+a reload. `GET /events/{id}/export` adds a `room` column when the event has
+rooms, and the organizer's participant table shows the same column.
+
 ## 4. Helpers: the pending signup
 
 A helper is a student who works the event — check-in, the queue — not a visitor

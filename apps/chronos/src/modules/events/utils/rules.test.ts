@@ -25,6 +25,9 @@ const OPEN_EVENT: RegistrationFacts = {
   registrationClosesAt: null,
   registrationEnabled: true,
   registrationOpensAt: null,
+  roomCapacity: null,
+  roomRequired: false,
+  roomTaken: 0,
   taken: 0,
   viewerCohortId: 'cohort-a',
 };
@@ -106,6 +109,18 @@ describe('judgeRegistration', () => {
     expect(reasonOf(judge({ capacity: 3, taken: 3 }))).toBe('full');
     expect(judge({ capacity: null, taken: 1000 })).toEqual({ ok: true });
   });
+
+  it('asks for a room once the event has one, and reports a full room apart', () => {
+    expect(reasonOf(judge({ roomRequired: true }))).toBe('room_required');
+    expect(
+      reasonOf(judge({ roomCapacity: 2, roomRequired: true, roomTaken: 2 }))
+    ).toBe('room_full');
+    // The event's own limit is answered first: a full event is not a room.
+    expect(
+      reasonOf(judge({ capacity: 1, roomCapacity: 2, roomTaken: 2, taken: 1 }))
+    ).toBe('full');
+    expect(judge({ roomCapacity: 2, roomTaken: 1 })).toEqual({ ok: true });
+  });
 });
 
 /** A published event that takes guests, is open, unlimited and empty. */
@@ -117,6 +132,9 @@ const OPEN_GUEST: GuestRegistrationFacts = {
   registrationClosesAt: null,
   registrationEnabled: true,
   registrationOpensAt: null,
+  roomCapacity: null,
+  roomRequired: false,
+  roomTaken: 0,
   taken: 0,
 };
 
@@ -170,6 +188,18 @@ describe('judgeGuestRegistration', () => {
     expect(judgeGuest({ capacity: 2, taken: 1 })).toEqual({ ok: true });
     expect(guestReason(judgeGuest({ capacity: 2, taken: 2 }))).toBe('full');
     expect(judgeGuest({ capacity: null, taken: 500 })).toEqual({ ok: true });
+  });
+
+  it('asks a visitor for a room too, and reports a full room apart', () => {
+    expect(guestReason(judgeGuest({ roomRequired: true }))).toBe(
+      'room_required'
+    );
+    expect(
+      guestReason(
+        judgeGuest({ roomCapacity: 1, roomRequired: true, roomTaken: 1 })
+      )
+    ).toBe('room_full');
+    expect(judgeGuest({ roomCapacity: 2, roomTaken: 1 })).toEqual({ ok: true });
   });
 
   it('answers the event before the caller', () => {

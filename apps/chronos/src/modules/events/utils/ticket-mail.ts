@@ -16,15 +16,15 @@ const logger = getLogger(['chronos', 'events', 'tickets']);
 const branding = { appName: 'Filc', appUrl: env.baseUrl };
 
 /** One ticket's facts, as the handler read them from the committed rows. */
-export type GuestTicketFacts = {
+export type TicketFacts = {
   /** The ticket id: the QR payload and the code the visitor shows. */
   code: string;
-  /** Where the ticket goes. A guest has no account and no preferences. */
+  /** Where the ticket goes: the guest's address or the account's. */
   email: string;
   eventId: string;
   eventStartsAt: Date;
   eventTitle: string;
-  /** The guest wrote no locale, so this is the default the school mails in. */
+  /** The recipient's language; anything unknown falls back to Hungarian. */
   locale?: string | null;
   /** Identifies the registration in the log; the code and the address do not. */
   registrationId?: string;
@@ -54,8 +54,8 @@ const qrDataUri = (payload: string): Promise<string> =>
  * Build the ticket mail without sending it. Separate from the send so a test
  * can assert the recipient, subject and body the transport would receive.
  */
-export const buildGuestTicketEmail = async (
-  facts: GuestTicketFacts,
+export const buildTicketEmail = async (
+  facts: TicketFacts,
   deps: TicketMailDeps = {}
 ): Promise<RawEmail> => {
   const locale = facts.locale === 'en' ? 'en' : 'hu';
@@ -74,7 +74,7 @@ export const buildGuestTicketEmail = async (
     branding
   );
 
-  logger.debug('guest ticket email rendered', {
+  logger.debug('ticket email rendered', {
     bytes: html.length,
     eventId: facts.eventId,
     registrationId: facts.registrationId,
@@ -93,15 +93,15 @@ export const buildGuestTicketEmail = async (
  * is ever logged: the ids below are what a log reader gets, and the row holds
  * the rest.
  */
-export const sendGuestTicket = async (
-  facts: GuestTicketFacts,
+export const sendTicket = async (
+  facts: TicketFacts,
   deps: TicketMailDeps = {}
 ): Promise<SendEmailResult> => {
   try {
-    const message = await buildGuestTicketEmail(facts, deps);
+    const message = await buildTicketEmail(facts, deps);
     const result = await (deps.send ?? sendRawEmail)(message);
     if (!result.ok) {
-      logger.error('guest ticket email was not delivered', {
+      logger.error('ticket email was not delivered', {
         eventId: facts.eventId,
         registrationId: facts.registrationId,
         requestId: facts.requestId,
@@ -110,7 +110,7 @@ export const sendGuestTicket = async (
       // A sent-but-lost ticket means a visitor at the door with no QR; a
       // skipped one is a dev/test setup with no transport, not an incident.
       if (!result.skipped) {
-        captureException(new Error('Guest ticket email was not delivered'), {
+        captureException(new Error('Ticket email was not delivered'), {
           extra: {
             eventId: facts.eventId,
             registrationId: facts.registrationId,
@@ -122,7 +122,7 @@ export const sendGuestTicket = async (
     }
     return result;
   } catch (error) {
-    logger.error('failed to build or send the guest ticket email', {
+    logger.error('failed to build or send the ticket email', {
       error,
       eventId: facts.eventId,
       registrationId: facts.registrationId,

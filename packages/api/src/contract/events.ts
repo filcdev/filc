@@ -31,6 +31,12 @@ import {
   eventRegistrationDecideInputSchema,
   eventRegistrationSchema,
 } from '../domains/events/registration';
+import {
+  eventRoomCreateInputSchema,
+  eventRoomDeleteInputSchema,
+  eventRoomSchema,
+  eventRoomUpdateInputSchema,
+} from '../domains/events/room';
 import { eventScanEventSchema } from '../domains/events/scan';
 import { eventStatsSchema } from '../domains/events/stats';
 import { listResponse } from '../domains/list';
@@ -291,6 +297,55 @@ export const eventsContract = {
       )
       .input(eventRegistrationCancelInputSchema)
       .output(deleteResponseSchema),
+  },
+  /**
+   * The event's rooms: the organizer's own seat pools for a day where students
+   * pick a session. Each room counts on top of the event's capacity, and a
+   * registration names the room it took.
+   */
+  rooms: {
+    create: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description: 'Create a room of an event with its own seat count',
+          method: 'POST',
+          operationId: 'postEventsByIdRooms',
+          path: '/events/{id}/rooms',
+          successStatus: 201,
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventRoomCreateInputSchema)
+      .output(eventRoomSchema),
+    delete: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description:
+            'Delete a room; refused while any registration names it, so no registration keeps a dangling room',
+          method: 'DELETE',
+          operationId: 'deleteEventsByIdRoomsByRoomId',
+          path: '/events/{id}/rooms/{roomId}',
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventRoomDeleteInputSchema)
+      .output(deleteResponseSchema),
+    update: oc
+      .route(
+        filcRoute({
+          auth: true,
+          description:
+            "Update a room's name and seat count; both are required, exactly like the create",
+          method: 'PUT',
+          operationId: 'putEventsByIdRoomsByRoomId',
+          path: '/events/{id}/rooms/{roomId}',
+          tags: EVENT_TAGS,
+        })
+      )
+      .input(eventRoomUpdateInputSchema)
+      .output(eventRoomSchema),
   },
   /**
    * The scanner's picker: the events this caller may check tickets in at.

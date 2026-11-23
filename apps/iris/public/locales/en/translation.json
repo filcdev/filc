@@ -585,8 +585,10 @@
         "role": "Role",
         "status": "Status",
         "registeredAt": "Registered at",
-        "checkedInAt": "Checked in at"
+        "checkedInAt": "Checked in at",
+        "room": "Room"
       },
+      "noRoom": "No room",
       "answers": "Answers",
       "answersAria": "Show the answers of {{name}}",
       "noAnswers": "No answers",
@@ -641,6 +643,29 @@
       "revokeGrantSuccess": "Door access revoked",
       "revoking": "Revoking…"
     },
+    "rooms": {
+      "title": "Rooms",
+      "hint": "Each room has its own seat count on top of the event's capacity. Students and guests pick one when they sign up.",
+      "add": "Add room",
+      "empty": "No rooms yet. Without a room, signup is a single event-wide pool.",
+      "name": "Room name",
+      "namePlaceholder": "e.g. Room 12",
+      "capacity": "Seats in this room",
+      "capacityPlaceholder": "e.g. 20",
+      "seats": "{{taken}} / {{capacity}} taken",
+      "editAria": "Edit the room {{name}}",
+      "deleteAria": "Delete the room {{name}}",
+      "createTitle": "Add a room",
+      "editTitle": "Edit the room",
+      "createSuccess": "Room created",
+      "createError": "Failed to create the room",
+      "updateSuccess": "Room updated",
+      "updateError": "Failed to update the room",
+      "deleteSuccess": "Room deleted",
+      "deleteError": "Failed to delete the room",
+      "deleteConfirmTitle": "Delete this room?",
+      "deleteConfirmDescription": "The room {{name}} is removed. A room that already has registrations cannot be deleted."
+    },
     "public": {
       "guestCta": "Register as a guest",
       "guestClosedBody": "This event does not take guest registrations.",
@@ -682,6 +707,11 @@
       "register": "Register",
       "registerError": "Failed to register",
       "registerSuccess": "You are registered",
+      "roomChosen": "Room: {{room}}",
+      "roomHint": "Pick the room you want to attend. A full room cannot be chosen.",
+      "roomLabel": "Room",
+      "roomSeatsLeft_one": "{{count}} place left",
+      "roomSeatsLeft_other": "{{count}} places left",
       "registeredHint": "Your place is confirmed.",
       "registeredTitle": "You are registered",
       "registration": {
@@ -718,7 +748,9 @@
         "sign_in_required": "Sign in to register for this event.",
         "wrong_cohort": "This event is not open to your class.",
         "helper_registration_disabled": "This event does not take helper signups.",
-        "pending_approval": "Your signup is waiting for the organizer’s approval."
+        "pending_approval": "Your signup is waiting for the organizer’s approval.",
+        "room_required": "Choose a room for this event.",
+        "room_full": "The chosen room is full."
       },
       "seatsLeft_one": "{{count}} place left",
       "seatsLeft_other": "{{count}} places left",

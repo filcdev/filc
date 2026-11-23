@@ -9,6 +9,11 @@ export const eventGuestCreateSchema = z.object({
   answers: z.array(eventRegistrationAnswerSchema).optional(),
   email: z.email(),
   name: z.string().trim().min(1),
+  /**
+   * The room a visitor picks. A roomed event requires it exactly like a
+   * student signup does; an event without rooms rejects it.
+   */
+  roomId: z.uuid().optional(),
 });
 
 export type EventGuestCreateInput = z.infer<typeof eventGuestCreateSchema>;

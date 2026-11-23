@@ -7,6 +7,7 @@ import { requireAuthorization } from '#middleware/auth';
 import {
   eventRegistration,
   eventRegistrationAnswer,
+  eventRoom,
   eventTicket,
 } from '#modules/events/schema';
 import { eventFields } from '#modules/events/utils/events';
@@ -29,7 +30,7 @@ export const exportEventRegistrations = base.events.export
   .handler(async ({ context, input }) => {
     await requireEvent(input.id);
 
-    const [registrations, fields] = await Promise.all([
+    const [registrations, fields, rooms] = await Promise.all([
       db
         .select({
           checkedInAt: eventTicket.checkedInAt,
@@ -39,11 +40,13 @@ export const exportEventRegistrations = base.events.export
           id: eventRegistration.id,
           name: sql<string>`coalesce(${user.name}, ${eventRegistration.guestName}, '')`,
           role: eventRegistration.role,
+          roomName: eventRoom.name,
           status: eventRegistration.status,
         })
         .from(eventRegistration)
         .leftJoin(user, eq(eventRegistration.userId, user.id))
         .leftJoin(cohort, eq(user.cohortId, cohort.id))
+        .leftJoin(eventRoom, eq(eventRegistration.roomId, eventRoom.id))
         .leftJoin(
           eventTicket,
           eq(eventTicket.registrationId, eventRegistration.id)
@@ -51,6 +54,14 @@ export const exportEventRegistrations = base.events.export
         .where(eq(eventRegistration.eventId, input.id))
         .orderBy(desc(eventRegistration.createdAt), desc(eventRegistration.id)),
       eventFields(input.id),
+      // Only the presence of a room matters here: the column appears with the
+      // first room and disappears with the last, so an export never carries an
+      // always-empty column.
+      db
+        .select({ id: eventRoom.id })
+        .from(eventRoom)
+        .where(eq(eventRoom.eventId, input.id))
+        .limit(1),
     ]);
 
     const answersByRegistration = new Map<string, Map<string, string>>();
@@ -78,15 +89,18 @@ export const exportEventRegistrations = base.events.export
       }
     }
 
+    const hasRooms = rooms.length > 0;
     const { header, rows } = buildExportTable(
       fields,
       registrations,
-      answersByRegistration
+      answersByRegistration,
+      hasRooms
     );
 
     logger.info('event registrations exported', {
       columns: header.length,
       eventId: input.id,
+      hasRooms,
       questions: fields.length,
       requestId: context.requestId,
       rows: rows.length,

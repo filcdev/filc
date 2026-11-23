@@ -585,8 +585,10 @@
         "role": "Szerep",
         "status": "Állapot",
         "registeredAt": "Jelentkezés ideje",
-        "checkedInAt": "Belépés ideje"
+        "checkedInAt": "Belépés ideje",
+        "room": "Terem"
       },
+      "noRoom": "Nincs terem",
       "answers": "Válaszok",
       "answersAria": "{{name}} válaszainak megjelenítése",
       "noAnswers": "Nincs válasz",
@@ -641,6 +643,29 @@
       "revokeGrantSuccess": "Beléptetési jog visszavonva",
       "revoking": "Visszavonás…"
     },
+    "rooms": {
+      "title": "Termek",
+      "hint": "Minden teremnek saját férőhelyszáma van az esemény kapacitása felett. A diákok és a vendégek jelentkezéskor választanak egyet.",
+      "add": "Terem hozzáadása",
+      "empty": "Még nincs terem. Terem nélkül a jelentkezés egyetlen eseményszintű keret.",
+      "name": "Terem neve",
+      "namePlaceholder": "pl. 12-es terem",
+      "capacity": "Férőhelyek a teremben",
+      "capacityPlaceholder": "pl. 20",
+      "seats": "{{taken}} / {{capacity}} foglalt",
+      "editAria": "A(z) {{name}} terem szerkesztése",
+      "deleteAria": "A(z) {{name}} terem törlése",
+      "createTitle": "Terem hozzáadása",
+      "editTitle": "Terem szerkesztése",
+      "createSuccess": "Terem létrehozva",
+      "createError": "Nem sikerült létrehozni a termet",
+      "updateSuccess": "Terem frissítve",
+      "updateError": "Nem sikerült frissíteni a termet",
+      "deleteSuccess": "Terem törölve",
+      "deleteError": "Nem sikerült törölni a termet",
+      "deleteConfirmTitle": "Törlöd ezt a termet?",
+      "deleteConfirmDescription": "A(z) {{name}} terem törlődik. Olyan termet, amelyhez már tartozik jelentkezés, nem lehet törölni."
+    },
     "public": {
       "guestCta": "Jelentkezés vendégként",
       "guestClosedBody": "Erre az eseményre nem lehet vendégként jelentkezni.",
@@ -682,6 +707,11 @@
       "register": "Jelentkezem",
       "registerError": "Nem sikerült a jelentkezés",
       "registerSuccess": "Jelentkeztél az eseményre",
+      "roomChosen": "Terem: {{room}}",
+      "roomHint": "Válaszd ki, melyik terembe szeretnél menni. A betelt terem nem választható.",
+      "roomLabel": "Terem",
+      "roomSeatsLeft_one": "{{count}} hely maradt",
+      "roomSeatsLeft_other": "{{count}} hely maradt",
       "registeredHint": "A helyed megerősítve.",
       "registeredTitle": "Jelentkeztél",
       "registration": {
@@ -718,7 +748,9 @@
         "sign_in_required": "A jelentkezéshez be kell jelentkezned.",
         "wrong_cohort": "Ez az esemény nem nyitott az osztályodnak.",
         "helper_registration_disabled": "Erre az eseményre nem lehet segítőként jelentkezni.",
-        "pending_approval": "A jelentkezésed a szervező jóváhagyására vár."
+        "pending_approval": "A jelentkezésed a szervező jóváhagyására vár.",
+        "room_required": "Válassz termet az eseményhez.",
+        "room_full": "A kiválasztott terem betelt."
       },
       "seatsLeft_one": "{{count}} hely maradt",
       "seatsLeft_other": "{{count}} hely maradt",

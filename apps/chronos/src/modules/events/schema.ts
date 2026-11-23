@@ -245,6 +245,33 @@ export const eventField = pgTable(
 );
 
 /**
+ * One room of an event, with its own seat count. A room belongs to exactly one
+ * event (`on delete cascade`), so deleting the event takes its rooms with it;
+ * the organizer orders them with `position`, exactly like the signup questions.
+ * A room's capacity counts on top of the event's own: a student fills one room
+ * seat *and* one event seat.
+ */
+export const eventRoom = pgTable(
+  'event_room',
+  {
+    capacity: integer('capacity').notNull(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    position: integer('position').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    // The detail read always lists a room by event; without this every read
+    // scans the whole table.
+    index('event_room_event_id_idx').on(t.eventId),
+    check('event_room_capacity_positive', sql`${t.capacity} > 0`),
+  ]
+);
+
+/**
  * One student's place on an event. A cancelled row is kept, never deleted: it
  * remembers the answers and is reactivated when the student registers again, so
  * the unique `(event_id, user_id)` pair holds without a special case.
@@ -265,6 +292,15 @@ export const eventRegistration = pgTable(
       .$type<EventRegistrationRole>()
       .notNull()
       .default('participant'),
+    /**
+     * The room the student picked. Null for a helper (they take no seat) and
+     * for an event without rooms. A deleted room leaves its registrations
+     * behind with a null room, which is why the delete is refused while any
+     * row still names it.
+     */
+    roomId: uuid('room_id').references(() => eventRoom.id, {
+      onDelete: 'set null',
+    }),
     status: text('status')
       .$type<EventRegistrationStatus>()
       .notNull()
@@ -280,6 +316,9 @@ export const eventRegistration = pgTable(
     unique('event_registration_event_user_unique').on(t.eventId, t.userId),
     // The seat count and the "who is coming" list both filter on this pair.
     index('event_registration_event_status_idx').on(t.eventId, t.status),
+    // A room's occupancy is counted by room, so this is what every registration
+    // write and the detail read filter on.
+    index('event_registration_room_id_idx').on(t.roomId),
     // One visitor row per address per event, cancelled ones included: a
     // cancelled guest frees the seat but keeps their row, and re-registering
     // reactivates it, exactly like a student's. Scoping this to `confirmed`
@@ -319,7 +358,7 @@ export const eventRegistrationAnswer = pgTable(
 );
 
 /**
- * The QR ticket of one registration. Phase C issues one per guest, and the
+ * The QR ticket of one registration — guest, student or helper alike. The
  * scanner's `checkInTicketAtDoor` is what sets `checkedInAt`/`checkedInBy`.
  */
 export const eventTicket = pgTable(
@@ -336,6 +375,12 @@ export const eventTicket = pgTable(
     registrationId: uuid('registration_id')
       .notNull()
       .references(() => eventRegistration.id, { onDelete: 'cascade' }),
+    /**
+     * When the ticket mail was handed to the transport. Null until a successful
+     * send, and left null when the send fails, so a resend can be told apart
+     * from a first delivery that never left.
+     */
+    sentAt: timestamp('sent_at', { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -380,5 +425,6 @@ export const eventsSchema = {
   eventField,
   eventRegistration,
   eventRegistrationAnswer,
+  eventRoom,
   eventTicket,
 };

@@ -1,6 +1,7 @@
 import { getLogger } from '@logtape/logtape';
 import { and, eq } from 'drizzle-orm';
 import { db } from '#database';
+import { user } from '#database/schema/authentication';
 import { event, eventRegistration, eventTicket } from '#modules/events/schema';
 import { base } from '#orpc';
 import { notFound } from '#utils/http';
@@ -25,19 +26,29 @@ export const getTicket = base.tickets.get.handler(
         endsAt: event.endsAt,
         eventId: event.id,
         eventTitle: event.title,
+        guestName: eventRegistration.guestName,
         registrationId: eventTicket.registrationId,
         startsAt: event.startsAt,
-        visitorName: eventRegistration.guestName,
+        userName: user.name,
       })
       .from(eventTicket)
       .innerJoin(
         eventRegistration,
         eq(eventTicket.registrationId, eventRegistration.id)
       )
+      .leftJoin(user, eq(eventRegistration.userId, user.id))
       .innerJoin(event, eq(eventRegistration.eventId, event.id))
       .where(and(eq(eventTicket.id, ticketId), eq(event.status, 'published')));
 
-    if (!row?.visitorName) {
+    if (!row) {
+      throw notFound('Ticket not found');
+    }
+
+    // A guest keeps their name on the registration; a signed-in student or
+    // helper has none, so the account supplies it.
+    const visitorName = row.guestName ?? row.userName;
+
+    if (!visitorName) {
       throw notFound('Ticket not found');
     }
 
@@ -56,7 +67,7 @@ export const getTicket = base.tickets.get.handler(
       eventId: row.eventId,
       eventTitle: row.eventTitle,
       startsAt: row.startsAt,
-      visitorName: row.visitorName,
+      visitorName,
     };
   }
 );

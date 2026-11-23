@@ -1,6 +1,7 @@
 import z from 'zod';
 import { paginationSchema } from '../list';
 import { eventFieldTypeSchema } from './fields';
+import { eventRoomRefSchema } from './room';
 
 /**
  * Who a registration is for. A `participant` (a student) and a `visitor` (a
@@ -67,6 +68,8 @@ export const eventRegistrationSchema = z.object({
   guestName: z.string().nullable(),
   id: z.uuid(),
   role: eventRegistrationRoleSchema,
+  /** The room the student picked; null for a helper or a roomless event. */
+  room: eventRoomRefSchema.nullable(),
   status: eventRegistrationStatusSchema,
   updatedAt: z.date(),
   userId: z.uuid().nullable(),
@@ -83,6 +86,11 @@ export const eventRegistrationCreateSchema = z.object({
   answers: z.array(eventRegistrationAnswerSchema).optional(),
   /** A helper signup is created pending; a participant is confirmed at once. */
   role: eventSignupRoleSchema.default('participant'),
+  /**
+   * The room a participant picks. Required once the event has rooms, and
+   * rejected when it names a room of another event or of no event at all.
+   */
+  roomId: z.uuid().optional(),
 });
 
 export type EventRegistrationCreateInput = z.infer<
@@ -157,6 +165,8 @@ export const eventParticipantSchema = z.object({
   name: z.string(),
   registeredAt: z.date(),
   role: eventRegistrationRoleSchema,
+  /** The room this person picked; null when the event has no rooms. */
+  room: eventRoomRefSchema.nullable(),
   status: eventRegistrationStatusSchema,
 });
 

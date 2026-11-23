@@ -24,6 +24,7 @@ import {
   myConfirmedEventIds,
   registrationWithAnswers,
 } from '#modules/events/utils/registrations';
+import { eventRoomSummaries } from '#modules/events/utils/rooms';
 import { seatCounts, toSeats } from '#modules/events/utils/seats';
 import { validateCohortIds } from '#modules/news/utils/cohort';
 import { base } from '#orpc';
@@ -148,9 +149,12 @@ export const getEvent = base.events.get.handler(async ({ context, input }) => {
   }
 
   const viewer = await resolveEventViewer(context.user?.id);
-  const [fields, myRegistration] = await Promise.all([
+  const [fields, myRegistration, rooms] = await Promise.all([
     eventFields(id),
     registrationWithAnswers(id, context.user?.id),
+    // The room counts are part of this same read, so the ten-second poll of the
+    // detail page refreshes them without a second request.
+    eventRoomSummaries(id),
   ]);
   const registrationState = {
     pending: myRegistration?.status === 'pending',
@@ -169,6 +173,7 @@ export const getEvent = base.events.get.handler(async ({ context, input }) => {
     fields,
     helperEligibility: helperEligibilityFor(row, viewer, registrationState),
     myRegistration,
+    rooms,
   };
 });
 

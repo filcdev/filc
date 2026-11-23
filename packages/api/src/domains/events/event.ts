@@ -3,6 +3,7 @@ import { listResponse, paginationSchema } from '../list';
 import { blockContentSchema, uniqueIdList } from '../news/announcements';
 import { type EventFieldAudience, eventFieldSchema } from './fields';
 import { eventRegistrationSchema } from './registration';
+import { eventRoomSummarySchema } from './room';
 
 /**
  * The seven fixed event categories. Each one is a hint for the organizer's
@@ -157,6 +158,10 @@ export const eventEligibilityReasons = [
   'pending_approval',
   'full',
   'grade_unknown',
+  /** The event has rooms and no room was chosen. */
+  'room_required',
+  /** The chosen room has no free place left. */
+  'room_full',
 ] as const;
 
 export type EventEligibilityReason =
@@ -196,6 +201,12 @@ export const eventDetailSchema = eventItemSchema.extend({
    */
   helperEligibility: eventEligibilitySchema,
   myRegistration: eventRegistrationSchema.nullable(),
+  /**
+   * The event's rooms with their remaining places, in the organizer's order.
+   * Empty for an event without rooms, and read here so the public detail can
+   * offer the choice without a second request.
+   */
+  rooms: z.array(eventRoomSummarySchema),
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;

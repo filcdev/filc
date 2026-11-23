@@ -30,6 +30,16 @@ export type RegistrationFacts = {
   registrationOpensAt: Date | null;
   /** The caller already holds a confirmed registration. */
   registered: boolean;
+  /**
+   * The chosen room's seat count; null when no room was chosen (or the event
+   * has none). Together with `roomRequired` this is what tells "choose a room"
+   * apart from "this room is full".
+   */
+  roomCapacity: number | null;
+  /** Whether the event has rooms, so a participant must choose one. */
+  roomRequired: boolean;
+  /** The chosen room's confirmed seats; 0 when no room was chosen. */
+  roomTaken: number;
   /** Confirmed participants; helpers are not seats. */
   taken: number;
   viewerCohortId: string | null;
@@ -54,6 +64,12 @@ export type GuestRegistrationFacts = {
   /** The event's master registration switch. */
   registrationEnabled: boolean;
   registrationOpensAt: Date | null;
+  /** The chosen room's seat count; null when none was chosen. */
+  roomCapacity: number | null;
+  /** Whether the event has rooms, so a visitor must choose one too. */
+  roomRequired: boolean;
+  /** The chosen room's confirmed seats; 0 when no room was chosen. */
+  roomTaken: number;
   /** Confirmed seats, visitors and participants alike. */
   taken: number;
 };
@@ -65,7 +81,9 @@ export type GuestRefusal =
   | 'not_open_yet'
   | 'closed'
   | 'duplicate_email'
-  | 'full';
+  | 'full'
+  | 'room_required'
+  | 'room_full';
 
 export type GuestRegistrationDecision =
   | { ok: true }
@@ -104,6 +122,14 @@ export const judgeGuestRegistration = (
   }
   if (facts.capacity != null && facts.taken >= facts.capacity) {
     return refuseGuest('full');
+  }
+  // A visitor takes a seat like a student, so a roomed event asks them for a
+  // room too; without one there is nothing to judge the room's capacity on.
+  if (facts.roomRequired && facts.roomCapacity == null) {
+    return refuseGuest('room_required');
+  }
+  if (facts.roomCapacity != null && facts.roomTaken >= facts.roomCapacity) {
+    return refuseGuest('room_full');
   }
   return { ok: true };
 };
@@ -192,6 +218,14 @@ export const judgeRegistration = (
   }
   if (facts.capacity != null && facts.taken >= facts.capacity) {
     return refuse('full');
+  }
+  // The room comes after the event: a full event is the event's answer, and a
+  // roomed event with no room chosen cannot be judged against a capacity yet.
+  if (facts.roomRequired && facts.roomCapacity == null) {
+    return refuse('room_required');
+  }
+  if (facts.roomCapacity != null && facts.roomTaken >= facts.roomCapacity) {
+    return refuse('room_full');
   }
 
   return { ok: true };

@@ -104,5 +104,7 @@ export const decidePendingRegistration = async (
     }
   }
 
-  return { ...updated, answers };
+  // Only a helper signup is pending, and a helper never takes a room, so the
+  // decided row has no room to name.
+  return { ...updated, answers, room: null };
 };

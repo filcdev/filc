@@ -16,6 +16,27 @@ export const EVENT_EXPORT_COLUMNS = [
 export type EventExportColumn = (typeof EVENT_EXPORT_COLUMNS)[number];
 
 /**
+ * The room column an event with rooms carries. It sits after the class, where
+ * the organizer reads who goes where, and is absent from an event without
+ * rooms — the export never carries an empty column.
+ */
+export const EVENT_ROOM_EXPORT_COLUMN = 'room';
+
+/** The fixed columns of one event's export, in order, room column included. */
+export function eventExportColumns(hasRooms: boolean): string[] {
+  return [
+    'name',
+    'email',
+    'class',
+    ...(hasRooms ? [EVENT_ROOM_EXPORT_COLUMN] : []),
+    'role',
+    'status',
+    'registered_at',
+    'checked_in_at',
+  ];
+}
+
+/**
  * The header cells of the custom-question columns, one per question in the
  * order given (the event's position order).
  *
@@ -29,9 +50,10 @@ export type EventExportColumn = (typeof EVENT_EXPORT_COLUMNS)[number];
  * question list, so the client's column keys match the file it parses.
  */
 export function eventQuestionColumnHeaders(
-  fields: readonly { label: string }[]
+  fields: readonly { label: string }[],
+  hasRooms = false
 ): string[] {
-  const used = new Set<string>(EVENT_EXPORT_COLUMNS);
+  const used = new Set<string>(eventExportColumns(hasRooms));
   const seen = new Map<string, number>();
   return fields.map((field) => {
     const times = (seen.get(field.label) ?? 0) + 1;

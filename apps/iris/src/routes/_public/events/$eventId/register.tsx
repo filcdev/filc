@@ -14,6 +14,7 @@ import { CheckCircle2, Mail } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnswerField } from '@/components/event-answer-field';
+import { EventRoomPicker } from '@/components/event-room-picker';
 import {
   type EventDetail,
   useEventDetail,
@@ -41,12 +42,14 @@ function GuestForm({ event }: { event: EventDetail }) {
   const fields = event.fields.filter((field) =>
     field.audiences.includes('guest')
   );
+  const rooms = event.rooms;
 
   const form = useForm({
     defaultValues: {
       answers: {} as Record<string, string>,
       email: '',
       name: '',
+      roomId: '',
     },
     onSubmit: ({ value }) => {
       const missing = fields.find(
@@ -59,6 +62,19 @@ function GuestForm({ event }: { event: EventDetail }) {
         );
         return;
       }
+      // A visitor takes a room seat like a student, so a roomed event asks for
+      // the same choice and the same two limit messages.
+      if (rooms.length > 0) {
+        const chosen = rooms.find((room) => room.id === value.roomId);
+        if (!chosen) {
+          setError(t('events.public.reasons.room_required'));
+          return;
+        }
+        if (chosen.remaining === 0) {
+          setError(t('events.public.reasons.room_full'));
+          return;
+        }
+      }
       setError(null);
       register.mutate({
         answers: fields
@@ -70,6 +86,7 @@ function GuestForm({ event }: { event: EventDetail }) {
         email: value.email.trim(),
         id: event.id,
         name: value.name.trim(),
+        ...(value.roomId ? { roomId: value.roomId } : {}),
       });
     },
   });
@@ -156,6 +173,18 @@ function GuestForm({ event }: { event: EventDetail }) {
           )}
         </form.Field>
       </div>
+
+      {rooms.length > 0 && (
+        <form.Field name="roomId">
+          {(room) => (
+            <EventRoomPicker
+              onChange={room.handleChange}
+              rooms={rooms}
+              value={room.state.value}
+            />
+          )}
+        </form.Field>
+      )}
 
       {fields.map((field) => (
         <form.Field key={field.id} name={`answers.${field.id}`}>

@@ -21,6 +21,7 @@ import {
   eventField,
   eventRegistration,
   eventRegistrationAnswer,
+  eventRoom,
   eventTicket,
 } from '#modules/events/schema';
 import { andAll } from '#utils/drizzle';
@@ -39,6 +40,8 @@ const participantColumns = {
   id: eventRegistration.id,
   name: sql<string>`coalesce(${user.name}, ${eventRegistration.guestName}, '')`,
   role: eventRegistration.role,
+  roomId: eventRegistration.roomId,
+  roomName: eventRoom.name,
   status: eventRegistration.status,
 };
 
@@ -127,6 +130,7 @@ export const listEventRegistrations = async (
       .select(participantColumns)
       .from(eventRegistration)
       .leftJoin(user, eq(eventRegistration.userId, user.id))
+      .leftJoin(eventRoom, eq(eventRegistration.roomId, eventRoom.id))
       .leftJoin(
         eventTicket,
         eq(eventTicket.registrationId, eventRegistration.id)
@@ -164,6 +168,10 @@ export const listEventRegistrations = async (
       name: row.name,
       registeredAt: row.createdAt,
       role: row.role,
+      room:
+        row.roomId && row.roomName
+          ? { id: row.roomId, name: row.roomName }
+          : null,
       status: row.status,
     })),
     total: Number(totalRows[0]?.value ?? 0),

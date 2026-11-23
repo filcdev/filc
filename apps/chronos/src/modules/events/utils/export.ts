@@ -1,5 +1,5 @@
 import {
-  EVENT_EXPORT_COLUMNS,
+  eventExportColumns,
   eventQuestionColumnHeaders,
 } from '@filcdev/api/domains/events/export';
 import type { EventField } from '@filcdev/api/domains/events/fields';
@@ -18,6 +18,8 @@ export type ExportRegistration = {
   id: string;
   name: string;
   role: EventRegistrationRole;
+  /** The room the person picked; null on an event without rooms. */
+  roomName?: string | null;
   status: EventRegistrationStatus;
 };
 
@@ -30,10 +32,11 @@ export type ExportRegistration = {
 export const buildExportTable = (
   fields: readonly EventField[],
   registrations: readonly ExportRegistration[],
-  answers: ReadonlyMap<string, ReadonlyMap<string, string>>
+  answers: ReadonlyMap<string, ReadonlyMap<string, string>>,
+  hasRooms = false
 ): { header: string[]; rows: Record<string, unknown>[] } => {
-  const questionHeaders = eventQuestionColumnHeaders(fields);
-  const header = [...EVENT_EXPORT_COLUMNS, ...questionHeaders];
+  const questionHeaders = eventQuestionColumnHeaders(fields, hasRooms);
+  const header = [...eventExportColumns(hasRooms), ...questionHeaders];
 
   const rows = registrations.map((registration) => {
     const byField = answers.get(registration.id);
@@ -42,6 +45,7 @@ export const buildExportTable = (
       class: registration.cohortName ?? '',
       email: registration.email,
       name: registration.name,
+      ...(hasRooms ? { room: registration.roomName ?? '' } : {}),
       registered_at: registration.createdAt.toISOString(),
       role: registration.role,
       status: registration.status,

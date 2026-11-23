@@ -24,6 +24,23 @@ export const forbidden = (message = 'Forbidden', cause?: unknown) =>
 export const unauthorized = (message = 'Unauthorized', cause?: unknown) =>
   errors.UNAUTHORIZED({ cause, message });
 
+/** A roomed event was registered for without naming a room. */
+export const roomRequired = (message = 'Choose a room for this event') =>
+  errors.ROOM_REQUIRED({ message });
+
+/** The room does not exist, or belongs to another event. */
+export const roomNotFound = (message = 'Room not found') =>
+  errors.ROOM_NOT_FOUND({ message });
+
+/** Losing the race for a room's last place. */
+export const roomFull = (message = 'This room is full') =>
+  errors.ROOM_FULL({ message });
+
+/** A room still referenced by a registration cannot be deleted. */
+export const roomHasRegistrations = (
+  message = 'This room already has registrations'
+) => errors.ROOM_HAS_REGISTRATIONS({ message });
+
 /**
  * 503: the dependency behind the endpoint (object storage, an upstream API) is
  * missing. Deliberately outside the shared map — the status differs from

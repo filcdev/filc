@@ -225,6 +225,13 @@
       "when": 1795283387983,
       "tag": "0031_cloudy_master_mold",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795470231361,
+      "tag": "0032_dizzy_nightcrawler",
+      "breakpoints": true
     }
   ]
 }

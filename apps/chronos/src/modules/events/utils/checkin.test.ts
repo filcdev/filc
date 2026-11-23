@@ -141,6 +141,41 @@ describe('checkInTicket', () => {
     expect(result).toEqual({ status: 'not_found' });
   });
 
+  it('admits a confirmed student ticket and refuses it once cancelled', async () => {
+    // Students and helpers carry a ticket now, not only guests: the door's
+    // cancellation rule is what still keeps a withdrawn place out.
+    const student = () =>
+      ticket({
+        registrationStatus: 'confirmed',
+        visitorEmail: 'student@example.com',
+        visitorName: 'Jegyes Diák',
+      });
+
+    const admitted = await checkInTicket(memoryStore([student()]), {
+      code: TICKET_ID,
+      display: 'full',
+      eventId: EVENT_ID,
+      fields: [],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+    expect(admitted).toMatchObject({ status: 'admitted' });
+
+    const cancelled = memoryStore([
+      { ...student(), registrationStatus: 'cancelled' },
+    ]);
+    const refused = await checkInTicket(cancelled, {
+      code: TICKET_ID,
+      display: 'full',
+      eventId: EVENT_ID,
+      fields: [],
+      now: FIRST_SCAN,
+      userId: HELPER_ID,
+    });
+    expect(refused).toMatchObject({ status: 'invalid' });
+    expect(cancelled.byId.get(TICKET_ID)?.checkedInAt).toBe(null);
+  });
+
   it('answers the stored check-in when another scan wins the write', async () => {
     let reads = 0;
     // The read before the update sees an unchecked ticket; the update loses,

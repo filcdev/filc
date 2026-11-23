@@ -3,7 +3,7 @@ import { getLogger } from '@logtape/logtape';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { recordActivity } from '#modules/activity-log/utils/record';
-import { eventRegistration, eventTicket } from '#modules/events/schema';
+import { eventRegistration } from '#modules/events/schema';
 import { checkAnswers } from '#modules/events/utils/answers';
 import { guestEventFields } from '#modules/events/utils/events';
 import {
@@ -12,14 +12,22 @@ import {
   runWithFormRaceGuard,
   type TxOrDb,
 } from '#modules/events/utils/registration-write';
+import { eventRooms, roomSeatCount } from '#modules/events/utils/rooms';
 import {
   type GuestRefusal,
   judgeGuestRegistration,
 } from '#modules/events/utils/rules';
 import { seatCount } from '#modules/events/utils/seats';
-import { sendGuestTicket } from '#modules/events/utils/ticket-mail';
+import { ensureTicket, markTicketSent } from '#modules/events/utils/ticket';
+import { sendTicket } from '#modules/events/utils/ticket-mail';
 import { base } from '#orpc';
-import { badRequest, conflict } from '#utils/http';
+import {
+  badRequest,
+  conflict,
+  roomFull,
+  roomNotFound,
+  roomRequired,
+} from '#utils/http';
 
 const logger = getLogger(['chronos', 'events', 'guests']);
 
@@ -31,10 +39,20 @@ const GUEST_REFUSAL_MESSAGES: Record<GuestRefusal, string> = {
   guest_registration_disabled: 'This event does not take guest registrations',
   not_open_yet: 'Registration has not opened yet',
   registration_disabled: 'Registration is not open for this event',
+  room_full: 'The chosen room is full',
+  room_required: 'Choose a room for this event',
 };
 
 const throwGuestRefusal = (reason: GuestRefusal): never => {
   const message = GUEST_REFUSAL_MESSAGES[reason];
+  // The room limits keep their own codes, so a visitor is told which one is
+  // full — the event's or the chosen room's.
+  if (reason === 'room_required') {
+    throw roomRequired(message);
+  }
+  if (reason === 'room_full') {
+    throw roomFull(message);
+  }
   if (reason === 'full' || reason === 'duplicate_email') {
     throw conflict(message);
   }
@@ -55,9 +73,11 @@ const writeGuestRegistration = async (
     name: string;
     now: Date;
     requestId: string;
+    roomId: string | undefined;
   }
 ) => {
-  const { address, answers, emailKey, eventId, name, now, requestId } = args;
+  const { address, answers, emailKey, eventId, name, now, requestId, roomId } =
+    args;
   const row = await lockPublishedEvent(tx, eventId);
 
   const [existing] = await tx
@@ -70,6 +90,17 @@ const writeGuestRegistration = async (
       )
     );
 
+  // Same room rule as a student signup, under the same event lock: a roomed
+  // event asks a visitor for a room, and the chosen room's occupancy is read
+  // inside this transaction so two parents cannot both take its last place.
+  const rooms = await eventRooms(eventId, tx);
+  const chosenRoom = roomId
+    ? (rooms.find((room) => room.id === roomId) ?? null)
+    : null;
+  if (roomId && !chosenRoom) {
+    throw roomNotFound('Room not found');
+  }
+
   const taken = await seatCount(eventId, tx);
   const decision = judgeGuestRegistration({
     capacity: row.capacity,
@@ -79,6 +110,9 @@ const writeGuestRegistration = async (
     registrationClosesAt: row.registrationClosesAt,
     registrationEnabled: row.registrationEnabled,
     registrationOpensAt: row.registrationOpensAt,
+    roomCapacity: chosenRoom?.capacity ?? null,
+    roomRequired: rooms.length > 0,
+    roomTaken: chosenRoom ? await roomSeatCount(chosenRoom.id, tx) : 0,
     taken,
   });
   // Eligibility first: a closed or full event is the answer, before the form
@@ -107,6 +141,7 @@ const writeGuestRegistration = async (
           guestEmail: address,
           guestName: name,
           role: 'visitor',
+          roomId: chosenRoom?.id ?? null,
           status: 'confirmed',
         })
         .where(eq(eventRegistration.id, existing.id))
@@ -119,6 +154,7 @@ const writeGuestRegistration = async (
           guestName: name,
           // A visitor occupies a seat; only a helper does not.
           role: 'visitor',
+          roomId: chosenRoom?.id ?? null,
           status: 'confirmed',
         })
         .returning();
@@ -129,28 +165,7 @@ const writeGuestRegistration = async (
 
   await replaceAnswers(tx, saved.id, checked.answers);
 
-  const [ticketRow] = existing
-    ? await tx
-        .select()
-        .from(eventTicket)
-        .where(eq(eventTicket.registrationId, saved.id))
-    : await tx
-        .insert(eventTicket)
-        .values({ registrationId: saved.id })
-        .returning();
-
-  const issued =
-    ticketRow ??
-    (
-      await tx
-        .insert(eventTicket)
-        .values({ registrationId: saved.id })
-        .returning()
-    )[0];
-
-  if (!issued) {
-    throw new Error('Failed to issue the guest ticket');
-  }
+  const issued = await ensureTicket(tx, saved.id);
 
   return {
     eventStartsAt: row.startsAt,
@@ -171,7 +186,7 @@ const writeGuestRegistration = async (
  */
 export const createGuestRegistration = base.events.guests.create.handler(
   async ({ context, input }) => {
-    const { answers = [], email, id, name } = input;
+    const { answers = [], email, id, name, roomId } = input;
     const now = new Date();
     const address = email.trim();
     // The unique guard is on `lower(guest_email)`, so the comparison is too.
@@ -197,6 +212,7 @@ export const createGuestRegistration = base.events.guests.create.handler(
             name: visitorName,
             now,
             requestId: context.requestId,
+            roomId,
           })
         )
       );
@@ -214,8 +230,8 @@ export const createGuestRegistration = base.events.guests.create.handler(
     });
 
     // The row and the ticket are committed; the mail is best effort. A failure
-    // is logged and reported inside `sendGuestTicket`, which never throws.
-    const sent = await sendGuestTicket({
+    // is logged and reported inside `sendTicket`, which never throws.
+    const sent = await sendTicket({
       code: ticket.id,
       email: address,
       eventId: id,
@@ -225,6 +241,20 @@ export const createGuestRegistration = base.events.guests.create.handler(
       requestId: context.requestId,
       visitorName,
     });
+
+    if (sent.ok) {
+      try {
+        await markTicketSent(db, ticket.id);
+      } catch (error) {
+        logger.error('failed to mark the guest ticket as sent', {
+          error,
+          eventId: id,
+          registrationId: registration.id,
+          requestId: context.requestId,
+          ticketId: ticket.id,
+        });
+      }
+    }
 
     logger.info('guest registration created', {
       delivered: sent.ok,
