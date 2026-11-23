@@ -1,10 +1,12 @@
 import { camelKeys, replaceKeys } from 'string-ts';
 import z from 'zod';
+import { DEFAULT_TIME_ZONE, isTimeZone } from '#utils/time-zone';
 
 const MIN_SECRET_LENGTH = 32;
 const MIN_PORT = 1;
 const MAX_PORT = 65_535;
 const DEFAULT_PORT = 3001;
+const DEFAULT_MAX_HTTP_HEADER_SIZE = 65_536;
 
 const boolean = z.preprocess((v) => {
   if (typeof v === 'string') {
@@ -35,27 +37,75 @@ const envShape = z.object({
   CHRONOS_FCM_PROJECT_ID: z.string().optional(),
   CHRONOS_FREERADIUS_IP: z.string().optional(),
   CHRONOS_FREERADIUS_SHARED_SECRET: z.string().optional(),
+  // The mailbox Graph sends as; defaults to CHRONOS_SMTP_FROM_EMAIL.
+  CHRONOS_GRAPH_MAILBOX: z.email().optional(),
   CHRONOS_KIOSK_WEATHER_LOCATION: z
     .string()
     .default('47.50535837979173,19.090123083749727'),
   CHRONOS_LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warning', 'error'])
     .default('info'),
+  // A dedicated Entra app for mail, used by both transports: SMTP XOAUTH2
+  // ("Office 365 Exchange Online", application permission SMTP.SendAsApp) and
+  // Graph (Mail.Send). Unset, each field falls back to the sign-in app's
+  // CHRONOS_ENTRA_* value, so one registration keeps working.
+  CHRONOS_MAIL_ENTRA_CLIENT_ID: z.string().optional(),
+  CHRONOS_MAIL_ENTRA_CLIENT_SECRET: z.string().optional(),
+  CHRONOS_MAIL_ENTRA_TENANT_ID: z.string().optional(),
+  // Which transport delivers notification email: "smtp" (Mailpit in
+  // development) or "graph" (Microsoft Graph app-only Mail.Send).
+  CHRONOS_MAIL_TRANSPORT: z.enum(['smtp', 'graph']).default('smtp'),
+  // Bun's request-head cap (16 KiB by default) answers 431 before any route
+  // runs; the OAuth proxy hands a preview its whole login payload in a query
+  // string. An empty or whitespace-only value keeps the default, the way the
+  // old `${CHRONOS_MAX_HTTP_HEADER_SIZE:-65536}` shell default did. The value
+  // is digits only: Bun's `--max-http-header-size` flag (which the image passes
+  // first) rejects `1e3`, `0x1000`, trailing spaces and the like, and the app
+  // takes the narrower digits-only form.
+  CHRONOS_MAX_HTTP_HEADER_SIZE: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z
+      .string()
+      .regex(/^\d+$/)
+      .transform(Number)
+      .pipe(z.number().int().positive())
+      .default(DEFAULT_MAX_HTTP_HEADER_SIZE)
+  ),
   // Defaults to production: the development branch opens the test-notification
   // endpoints to every signed-in user, echoes internal error messages to
   // clients and reflects any CORS origin. Making it explicit opt-in means a
   // deployment that forgets to set it fails safe. Set CHRONOS_MODE=development
   // to get the pretty logs and the test endpoints.
   CHRONOS_MODE: z.enum(['development', 'production']).default('production'),
-  CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce.number().default(60),
-  CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce.number().default(60),
-  CHRONOS_NOTIFICATION_DELAY_COHORT_RESELECTION_REQUIRED: z.coerce
+  CHRONOS_NOTIFICATION_DELAY_ANNOUNCEMENT: z.coerce
     .number()
-    .default(0),
-  CHRONOS_NOTIFICATION_DELAY_MOVED_LESSON: z.coerce.number().default(60),
+    .int()
+    .min(0)
+    .default(60),
+  CHRONOS_NOTIFICATION_DELAY_BLOG_POST: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(60),
+  // Debounced types: an edit inside the window cancels and re-arms the timer,
+  // so the window has to be at least one second. Zero would fire on the next
+  // timer tick and defeat the debounce entirely.
+  CHRONOS_NOTIFICATION_DELAY_MOVED_LESSON: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(60),
 
-  CHRONOS_NOTIFICATION_DELAY_SUBSTITUTION: z.coerce.number().default(60),
-  CHRONOS_NOTIFICATION_DELAY_SYSTEM_MESSAGE: z.coerce.number().default(60),
+  CHRONOS_NOTIFICATION_DELAY_SUBSTITUTION: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(60),
+  CHRONOS_NOTIFICATION_DELAY_SYSTEM_MESSAGE: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(60),
   CHRONOS_OAUTH_PROXY_SECRET: z.string().optional(),
   // OAuth proxy: lets preview deployments sign in through the production
   // origin, because Entra rejects wildcard redirect URIs. Both must be set for
@@ -94,6 +144,12 @@ const envShape = z.object({
   CHRONOS_SMTP_PORT: z.coerce.number().default(587),
   CHRONOS_SMTP_SECURE: boolean.default(false),
   CHRONOS_SMTP_USER: z.string().optional(),
+  CHRONOS_TIME_ZONE: z
+    .string()
+    .refine(isTimeZone, { message: 'Must be a valid IANA time zone' })
+    // `prefault` (not `default`) so the fallback itself runs the refine: a
+    // typo'd default must fail the env parse instead of shipping an unknown zone.
+    .prefault(DEFAULT_TIME_ZONE),
   CHRONOS_TRUSTED_ORIGINS: z.preprocess(
     (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : v),
     z.array(z.url()).optional()
@@ -147,3 +203,4 @@ const makeTypedEnvironment =
 const getEnv = makeTypedEnvironment((v) => envSchema.parse(v));
 
 export const env = getEnv(Bun.env);
+export const parseEnv = getEnv;

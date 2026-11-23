@@ -1,6 +1,11 @@
 import { useSession } from '@filcdev/auth/client';
 import { Spinner } from '@filcdev/ui/components/spinner';
-import { createFileRoute, Navigate, Outlet } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Navigate,
+  Outlet,
+  useLocation,
+} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_private')({
   component: AppLayoutComponent,
@@ -12,6 +17,7 @@ export const Route = createFileRoute('/_private')({
 
 function AppLayoutComponent() {
   const { data, isPending } = useSession();
+  const location = useLocation();
 
   if (isPending) {
     return (
@@ -26,7 +32,11 @@ function AppLayoutComponent() {
   // authentication is enforced here. Without it those routes would sit on
   // their loading skeleton forever for an anonymous visitor.
   if (!(data?.session && data?.user)) {
-    return <Navigate to="/auth/login" />;
+    // This router version drops the origin from `location.href`, so the login
+    // page receives a path it can compare against its own origin.
+    return (
+      <Navigate replace search={{ redirect: location.href }} to="/auth/login" />
+    );
   }
 
   return <Outlet />;

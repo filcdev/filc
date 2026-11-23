@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { lessonSchema } from './lesson';
+import { publicTeacherSchema } from './teacher';
 
 /** Path parameters for substitution endpoints addressed by substitution id. */
 export const substitutionIdParamsSchema = z.object({
@@ -37,21 +38,6 @@ export const manualCreateSchema = z.object({
 
 export type ManualCreateInput = z.infer<typeof manualCreateSchema>;
 
-/** `teacher` row. */
-export const teacherRowSchema = z.object({
-  email: z.string().nullable(),
-  firstName: z.string(),
-  gender: z
-    .string()
-    .max(1)
-    .regex(/^[01]+$/)
-    .nullable(),
-  id: z.uuid(),
-  lastName: z.string(),
-  short: z.string(),
-  userId: z.uuid().nullable(),
-});
-
 /** `substitution` row. */
 export const substitutionRowSchema = z.object({
   comment: z.string().nullable(),
@@ -60,18 +46,24 @@ export const substitutionRowSchema = z.object({
   substituter: z.uuid().nullable(),
 });
 
-/** Substitution with its linked lessons already enriched. */
+/**
+ * Substitution with its linked lessons already enriched.
+ *
+ * These three responses are unauthenticated, so `teacher` is the public shape:
+ * the substituter's name is what the timetable shows, and their email and
+ * linked user account are not public data.
+ */
 export const substitutionWithRelationsSchema = z.object({
   lessons: lessonSchema.array(),
   substitution: substitutionRowSchema,
-  teacher: teacherRowSchema.nullable(),
+  teacher: publicTeacherSchema.nullable(),
 });
 
 /** Substitution carrying bare linked lesson ids. */
 export const substitutionWithLessonIdsSchema = z.object({
   lessons: z.array(z.uuid()),
   substitution: substitutionRowSchema,
-  teacher: teacherRowSchema.nullable(),
+  teacher: publicTeacherSchema.nullable(),
 });
 
 export const substitutionsByCohortSchema = z.object({

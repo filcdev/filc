@@ -11,7 +11,7 @@ import {
 import { timestamps } from '#database/helpers';
 import { user } from '#database/schema/authentication';
 import type { NotificationPreferences } from '#utils/notifications/types';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '#utils/notifications/types';
+import { NOTIFICATION_PREFERENCES_COLUMN_DEFAULT } from '#utils/notifications/types';
 
 export const userPreferences = pgTable('user_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -19,9 +19,10 @@ export const userPreferences = pgTable('user_preferences', {
   colorScheme: text('color_scheme').default('default').notNull(),
   language: text('language').default('hu').notNull(),
   notificationPreferences: jsonb('notification_preferences')
-    .$type<NotificationPreferences>()
+    // Partial: readers merge `DEFAULT_NOTIFICATION_PREFERENCES` over it.
+    .$type<Partial<NotificationPreferences>>()
     .notNull()
-    .default(DEFAULT_NOTIFICATION_PREFERENCES),
+    .default(NOTIFICATION_PREFERENCES_COLUMN_DEFAULT),
   /**
    * The seasonal skin this visitor has already been told about. It exists so a
    * skin is announced once, not on every visit, and it is the skin id rather

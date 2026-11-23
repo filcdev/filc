@@ -18,24 +18,28 @@ import {
 import { Textarea } from '@filcdev/ui/components/textarea';
 import { useForm, useStore } from '@tanstack/react-form';
 import { createFileRoute, Navigate } from '@tanstack/react-router';
-import { Eye, Send } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Eye, Monitor, Send, Smartphone } from 'lucide-react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PermissionGuard } from '@/components/util/permission-guard';
 import {
+  describeTestNotificationError,
   NOTIFICATION_MOCKS,
-  NOTIFICATION_TYPES,
   usePreviewTestNotification,
   useSendTestNotification,
+  useTestNotificationRecordOptions,
 } from '@/hooks/dev-notifications';
+import { NOTIFICATION_TYPES, typeLabel } from '@/utils/notification-labels';
 
-type ChannelKey = 'emailEnabled' | 'inAppEnabled' | 'pushEnabled';
+type ChannelKey = 'channelEmail' | 'channelInApp' | 'channelPush';
+
+type PreviewMode = 'desktop' | 'phone';
 
 const CHANNELS: Array<{ key: ChannelKey; label: string }> = [
-  { key: 'inAppEnabled', label: 'devNotifications.channelInApp' },
-  { key: 'emailEnabled', label: 'devNotifications.channelEmail' },
-  { key: 'pushEnabled', label: 'devNotifications.channelPush' },
+  { key: 'channelInApp', label: 'devNotifications.channelInApp' },
+  { key: 'channelEmail', label: 'devNotifications.channelEmail' },
+  { key: 'channelPush', label: 'devNotifications.channelPush' },
 ];
 
 type FormValues = {
@@ -47,12 +51,12 @@ type FormValues = {
 } & Record<ChannelKey, boolean>;
 
 const defaultValues: FormValues = {
+  channelEmail: true,
+  channelInApp: true,
+  channelPush: false,
   content: '',
   email: '',
-  emailEnabled: true,
-  inAppEnabled: true,
   language: 'hu',
-  pushEnabled: false,
   subject: '',
   type: 'test',
 };
@@ -74,6 +78,12 @@ function DevNotificationsPage() {
   const { t } = useTranslation();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
+  const [selectedRecord, setSelectedRecord] = useState<{
+    id: string;
+    type: FormValues['type'];
+  } | null>(null);
+  const recordFieldId = useId();
 
   const sendNotification = useSendTestNotification();
   const sendAllNotification = useSendTestNotification({ silent: true });
@@ -82,14 +92,17 @@ function DevNotificationsPage() {
   const form = useForm({
     defaultValues,
     onSubmit: ({ value }) => {
+      const mock = NOTIFICATION_MOCKS[value.type]?.[value.language];
       sendNotification.mutate({
         channels: {
-          email: value.emailEnabled,
-          inApp: value.inAppEnabled,
-          push: value.pushEnabled,
+          email: value.channelEmail,
+          inApp: value.channelInApp,
+          push: value.channelPush,
         },
         content: value.content || undefined,
+        details: mock?.details,
         email: value.email || undefined,
+        highlights: mock?.highlights,
         language: value.language,
         subject: value.subject || undefined,
         type: value.type,
@@ -98,6 +111,14 @@ function DevNotificationsPage() {
   });
 
   const values = useStore(form.store, (state) => state.values);
+  const recordOptions = useTestNotificationRecordOptions(values.type);
+  const recordId =
+    selectedRecord &&
+    selectedRecord.type === values.type &&
+    recordOptions.some((option) => option.id === selectedRecord.id)
+      ? selectedRecord.id
+      : '';
+  const recordSelected = recordId !== '';
 
   // Keep subject/content filled with per-type mock data when the type or
   // language changes, so each type can be previewed/sent with one click.
@@ -110,13 +131,24 @@ function DevNotificationsPage() {
   }, [values.type, values.language, form.setFieldValue]);
 
   const handlePreview = async () => {
+    const mock = NOTIFICATION_MOCKS[values.type]?.[values.language];
     try {
-      const html = await previewNotification.mutateAsync({
-        content: values.content || undefined,
-        language: values.language,
-        subject: values.subject || undefined,
-        type: values.type,
-      });
+      const html = await previewNotification.mutateAsync(
+        recordSelected
+          ? {
+              entityId: recordId,
+              language: values.language,
+              type: values.type,
+            }
+          : {
+              content: values.content || undefined,
+              details: mock?.details,
+              highlights: mock?.highlights,
+              language: values.language,
+              subject: values.subject || undefined,
+              type: values.type,
+            }
+      );
       setPreviewHtml(html);
       setPreviewOpen(true);
     } catch {
@@ -126,9 +158,9 @@ function DevNotificationsPage() {
 
   const handleSendAll = async () => {
     const channels = {
-      email: values.emailEnabled,
-      inApp: values.inAppEnabled,
-      push: values.pushEnabled,
+      email: values.channelEmail,
+      inApp: values.channelInApp,
+      push: values.channelPush,
     };
     try {
       await Promise.all(
@@ -137,7 +169,9 @@ function DevNotificationsPage() {
           return sendAllNotification.mutateAsync({
             channels,
             content: mock.content,
+            details: mock.details,
             email: values.email || undefined,
+            highlights: mock.highlights,
             language: values.language,
             subject: mock.title,
             type,
@@ -145,13 +179,18 @@ function DevNotificationsPage() {
         })
       );
       toast.success(t('devNotifications.sendAllSuccess'));
-    } catch {
-      toast.error(t('devNotifications.sendError'));
+    } catch (error) {
+      toast.error(
+        describeTestNotificationError(error, {
+          disabled: t('devNotifications.disabled'),
+          fallback: t('devNotifications.sendError'),
+        })
+      );
     }
   };
 
   const typeOptions = NOTIFICATION_TYPES.map((type) => ({
-    label: type,
+    label: typeLabel(type, t),
     value: type,
   }));
 
@@ -215,6 +254,43 @@ function DevNotificationsPage() {
           </form.Field>
         </div>
 
+        {recordOptions.length > 0 && (
+          <Field>
+            <FieldLabel htmlFor={recordFieldId}>
+              {t('devNotifications.record')}
+            </FieldLabel>
+            <Select
+              items={[
+                {
+                  label: t('devNotifications.recordNone'),
+                  value: '',
+                },
+                ...recordOptions.map((option) => ({
+                  label: option.label,
+                  value: option.id,
+                })),
+              ]}
+              onValueChange={(value) =>
+                setSelectedRecord(
+                  value ? { id: value, type: values.type } : null
+                )
+              }
+              value={recordId}
+            >
+              <SelectTrigger className="w-full" id={recordFieldId}>
+                <SelectValue
+                  placeholder={t('devNotifications.recordPlaceholder')}
+                />
+              </SelectTrigger>
+            </Select>
+            {recordSelected && (
+              <p className="text-muted-foreground text-xs">
+                {t('devNotifications.recordHint')}
+              </p>
+            )}
+          </Field>
+        )}
+
         <form.Field name="email">
           {(field) => (
             <Field>
@@ -240,6 +316,7 @@ function DevNotificationsPage() {
                 {t('devNotifications.subject')}
               </FieldLabel>
               <Input
+                disabled={recordSelected}
                 id={field.name}
                 onChange={(e) => field.handleChange(e.target.value)}
                 placeholder={t('devNotifications.subjectPlaceholder')}
@@ -256,6 +333,7 @@ function DevNotificationsPage() {
                 {t('devNotifications.content')}
               </FieldLabel>
               <Textarea
+                disabled={recordSelected}
                 id={field.name}
                 onChange={(e) => field.handleChange(e.target.value)}
                 placeholder={t('devNotifications.contentPlaceholder')}
@@ -319,21 +397,64 @@ function DevNotificationsPage() {
         </div>
       </form>
 
-      <Dialog onOpenChange={setPreviewOpen} open={previewOpen}>
-        <DialogContent className="h-[80vh] w-full max-w-3xl">
+      <Dialog
+        onOpenChange={(open) => {
+          setPreviewOpen(open);
+          if (!open) {
+            setPreviewHtml(null);
+          }
+        }}
+        open={previewOpen}
+      >
+        <DialogContent className="flex h-[85dvh] max-w-[calc(100%-2rem)] flex-col gap-3 p-3 sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle>{t('devNotifications.previewTitle')}</DialogTitle>
             <DialogDescription>
               {t('devNotifications.previewDescription')}
             </DialogDescription>
           </DialogHeader>
+          <div className="flex items-center gap-2">
+            <Button
+              aria-pressed={previewMode === 'desktop'}
+              onClick={() => setPreviewMode('desktop')}
+              size="sm"
+              type="button"
+              variant={previewMode === 'desktop' ? 'default' : 'outline'}
+            >
+              <Monitor className="size-4" />
+              {t('devNotifications.previewDesktop')}
+            </Button>
+            <Button
+              aria-pressed={previewMode === 'phone'}
+              onClick={() => setPreviewMode('phone')}
+              size="sm"
+              type="button"
+              variant={previewMode === 'phone' ? 'default' : 'outline'}
+            >
+              <Smartphone className="size-4" />
+              {t('devNotifications.previewPhone')}
+            </Button>
+          </div>
           {previewHtml && (
-            <iframe
-              className="h-full w-full rounded-md border"
-              sandbox=""
-              srcDoc={previewHtml}
-              title={t('devNotifications.previewTitle')}
-            />
+            <div className="min-h-0 flex-1">
+              {previewMode === 'desktop' ? (
+                <iframe
+                  className="h-full w-full rounded-md border"
+                  sandbox=""
+                  srcDoc={previewHtml}
+                  title={t('devNotifications.previewTitle')}
+                />
+              ) : (
+                <div className="mx-auto h-full max-h-[844px] w-full max-w-[390px] overflow-hidden rounded-[2rem] border-4 border-foreground/10">
+                  <iframe
+                    className="h-full w-full"
+                    sandbox=""
+                    srcDoc={previewHtml}
+                    title={t('devNotifications.previewTitle')}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>

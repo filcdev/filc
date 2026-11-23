@@ -1,5 +1,9 @@
 import { oc } from '@orpc/contract';
-import { pingResponseSchema, uptimeResponseSchema } from '../domains/ping';
+import {
+  pingResponseSchema,
+  serverTimeResponseSchema,
+  uptimeResponseSchema,
+} from '../domains/ping';
 import { filcRoute } from './route';
 
 export const pingContract = {
@@ -14,6 +18,18 @@ export const pingContract = {
       })
     )
     .output(pingResponseSchema),
+  time: oc
+    .route(
+      filcRoute({
+        description:
+          "Returns the current server time in the school's configured timezone (Europe/Budapest by default), so a client can render the authoritative local date and UTC offset without trusting its own clock.",
+        method: 'GET',
+        operationId: 'getPingTime',
+        path: '/ping/time',
+        tags: ['Ping'],
+      })
+    )
+    .output(serverTimeResponseSchema),
   uptime: oc
     .route(
       filcRoute({

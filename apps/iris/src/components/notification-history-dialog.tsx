@@ -18,10 +18,13 @@ import {
   SelectValue,
 } from '@filcdev/ui/components/select';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
-import { MailCheck, MailX } from 'lucide-react';
+import { MailCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NotificationViewerDialog } from '@/components/notification-viewer-dialog';
+import {
+  NotificationHighlights,
+  NotificationViewerDialog,
+} from '@/components/notification-viewer-dialog';
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -34,6 +37,9 @@ type NotificationHistoryDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
+
+/** Highlights shown per row before the rest collapse into a `+N` badge. */
+const MAX_ROW_HIGHLIGHTS = 3;
 
 export function NotificationHistoryDialog({
   open,
@@ -169,6 +175,11 @@ export function NotificationHistoryDialog({
                             {typeLabel(notif.type, t)}
                           </Badge>
                         </div>
+                        <NotificationHighlights
+                          className="mt-1"
+                          highlights={notif.metadata?.highlights ?? []}
+                          max={MAX_ROW_HIGHLIGHTS}
+                        />
                         <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
                           {notif.content}
                         </p>
@@ -180,20 +191,19 @@ export function NotificationHistoryDialog({
                           })}
                         </p>
                       </div>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markReadMutation.mutate({ id: notif.id });
-                        }}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        {notif.read ? (
-                          <MailX className="h-4 w-4" />
-                        ) : (
+                      {notif.read ? null : (
+                        <Button
+                          aria-label={t('notifications.history.markRead')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markReadMutation.mutate({ id: notif.id });
+                          }}
+                          size="sm"
+                          variant="ghost"
+                        >
                           <MailCheck className="h-4 w-4" />
-                        )}
-                      </Button>
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

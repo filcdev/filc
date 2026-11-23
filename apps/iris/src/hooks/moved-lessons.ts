@@ -38,9 +38,10 @@ export type MutationCallbacks = {
 };
 
 /** Full moved-lesson list. */
-export function useMovedLessons() {
+export function useMovedLessons(enabled = true) {
   return useQuery({
     ...orpc.timetable.movedLessons.list.queryOptions(),
+    enabled,
     select: (data) => data.items,
   });
 }

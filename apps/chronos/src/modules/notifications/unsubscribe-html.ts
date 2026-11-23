@@ -1,7 +1,17 @@
+import { timingSafeEqual } from 'node:crypto';
 import { unsubscribeSchema } from '@filcdev/api/domains/notifications';
+import { getLogger } from '@logtape/logtape';
+import { eq } from 'drizzle-orm';
 import { db } from '#database';
 import { userPreferences } from '#modules/notifications/schema';
+import { channelDefaultsForUser } from '#utils/notifications/channel-defaults';
 import { generateUnsubscribeToken } from '#utils/notifications/providers/smtp';
+import {
+  applyPreferencesPatch,
+  completePreferences,
+} from '#utils/notifications/types';
+
+const logger = getLogger(['chronos', 'notifications', 'unsubscribe']);
 
 /**
  * `GET|POST /api/notifications/unsubscribe`: the two HTML pages the
@@ -28,7 +38,10 @@ const escapeHtml = (value: string): string =>
     }
   });
 
-export async function handleUnsubscribe(request: Request): Promise<Response> {
+export async function handleUnsubscribe(
+  request: Request,
+  requestId: string
+): Promise<Response> {
   const params =
     request.method === 'POST'
       ? new URLSearchParams(await request.text())
@@ -43,6 +56,13 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
 </html>`;
 
   if (!parsed.success) {
+    // A token of the wrong length never reaches the comparison below: the
+    // schema rejects it first. Log the rejection here so the malformed case
+    // leaves the same trace as a well-formed token that does not verify.
+    logger.warning('Rejected malformed unsubscribe request', {
+      method: request.method,
+      requestId,
+    });
     return new Response(invalidTokenHtml, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
       status: 400,
@@ -69,8 +89,8 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
 </head>
 <body>
   <div class="card">
-    <h1>Leiratkozás az értesítésekről</h1>
-    <p>Szeretnéd lemondani az összes email értesítést a Filc rendszertől? Ezután nem fogsz több emailt kapni.</p>
+    <h1>Leiratkozás az e-mailekről</h1>
+    <p>Szeretnéd lemondani az e-mail értesítéseket a Filc rendszertől? A rendszerüzeneteket ezután is megkapod.</p>
     <form method="POST" action="/api/notifications/unsubscribe">
       <input type="hidden" name="userId" value="${escapeHtml(userId)}">
       <input type="hidden" name="token" value="${escapeHtml(token)}">
@@ -86,30 +106,58 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
   }
 
   const expected = generateUnsubscribeToken(userId);
-  if (expected !== token) {
+  const given = Buffer.from(token);
+  const wanted = Buffer.from(expected);
+  // Length first: `timingSafeEqual` throws on a length mismatch, and the
+  // schema already pins the token to 64 hex characters.
+  const tokenValid =
+    given.length === wanted.length && timingSafeEqual(given, wanted);
+  if (!tokenValid) {
+    logger.warning('Rejected unsubscribe token for user {userId}', {
+      requestId,
+      userId,
+    });
     return new Response(invalidTokenHtml, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
       status: 400,
     });
   }
 
-  const allDisabled = {
-    announcement: false,
-    blogPost: false,
-    channelsEnabled: false,
-    doorlockCardUsed: false,
-    movedLesson: false,
-    substitution: false,
-    systemMessage: false,
-  };
+  // Unsubscribing turns email off only: the per-type flags are the user's
+  // other choices and stay as they are. The patch is applied over the
+  // *resolved* row, so the value written is the one the row already reads as:
+  // a legacy `channelsEnabled: false` row resolves to `emailEnabled: false`
+  // and a row that never named the flag resolves to the role default, and
+  // `applyPreferencesPatch` raises `channelsEnabled` back to the current shape
+  // only after that resolution. A legacy "everything off" row therefore stays
+  // off instead of the link silently switching it back on.
+  const [existing] = await db
+    .select({
+      notificationPreferences: userPreferences.notificationPreferences,
+    })
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, userId))
+    .limit(1);
+
+  const defaults = await channelDefaultsForUser(userId);
+  const notificationPreferences = applyPreferencesPatch(
+    completePreferences(existing?.notificationPreferences, defaults),
+    { emailEnabled: false },
+    defaults
+  );
 
   await db
     .insert(userPreferences)
-    .values({ notificationPreferences: allDisabled, userId })
+    .values({ notificationPreferences, userId })
     .onConflictDoUpdate({
-      set: { notificationPreferences: allDisabled },
+      set: { notificationPreferences },
       target: userPreferences.userId,
     });
+
+  logger.info('User {userId} unsubscribed from notification email', {
+    requestId,
+    userId,
+  });
 
   const html = `<!DOCTYPE html>
 <html lang="hu">
@@ -127,7 +175,7 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
 <body>
   <div class="card">
     <h1>Sikeres leiratkozás</h1>
-    <p>Innentől nem fogsz email értesítéseket kapni a Filc rendszertől.</p>
+    <p>Innentől nem fogsz e-mail értesítéseket kapni a Filc rendszertől. A rendszerüzeneteket továbbra is megkapod.</p>
   </div>
 </body>
 </html>`;

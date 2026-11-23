@@ -29,6 +29,7 @@ import { Route as PrivateAdminRolesRouteImport } from './routes/_private/admin/r
 import { Route as PrivateAdminThemeRouteImport } from './routes/_private/admin/theme'
 import { Route as PrivateAdminUsersRouteImport } from './routes/_private/admin/users'
 import { Route as PrivateCardsIndexRouteImport } from './routes/_private/cards/index'
+import { Route as PrivateSettingsNotificationsRouteImport } from './routes/_private/settings/notifications'
 import { Route as PrivateAdminDevNotificationsRouteImport } from './routes/_private/admin/dev/notifications'
 import { Route as PrivateAdminDoorlockIndexRouteImport } from './routes/_private/admin/doorlock/index'
 import { Route as PrivateAdminDoorlockCardsRouteImport } from './routes/_private/admin/doorlock/cards'
@@ -153,6 +154,12 @@ const PrivateCardsIndexRoute = PrivateCardsIndexRouteImport.update({
   path: '/cards/',
   getParentRoute: () => PrivateRouteRoute,
 } as any)
+const PrivateSettingsNotificationsRoute =
+  PrivateSettingsNotificationsRouteImport.update({
+    id: '/settings/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => PrivateRouteRoute,
+  } as any)
 const PrivateAdminDevNotificationsRoute =
   PrivateAdminDevNotificationsRouteImport.update({
     id: '/dev/notifications',
@@ -319,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/theme': typeof PrivateAdminThemeRoute
   '/admin/users': typeof PrivateAdminUsersRoute
+  '/settings/notifications': typeof PrivateSettingsNotificationsRoute
   '/cards/': typeof PrivateCardsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
@@ -364,6 +372,7 @@ export interface FileRoutesByTo {
   '/admin/roles': typeof PrivateAdminRolesRoute
   '/admin/theme': typeof PrivateAdminThemeRoute
   '/admin/users': typeof PrivateAdminUsersRoute
+  '/settings/notifications': typeof PrivateSettingsNotificationsRoute
   '/cards': typeof PrivateCardsIndexRoute
   '/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
@@ -412,6 +421,7 @@ export interface FileRoutesById {
   '/_private/admin/roles': typeof PrivateAdminRolesRoute
   '/_private/admin/theme': typeof PrivateAdminThemeRoute
   '/_private/admin/users': typeof PrivateAdminUsersRoute
+  '/_private/settings/notifications': typeof PrivateSettingsNotificationsRoute
   '/_private/cards/': typeof PrivateCardsIndexRoute
   '/_private/admin/dev/notifications': typeof PrivateAdminDevNotificationsRoute
   '/_private/admin/doorlock/cards': typeof PrivateAdminDoorlockCardsRoute
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/theme'
     | '/admin/users'
+    | '/settings/notifications'
     | '/cards/'
     | '/admin/dev/notifications'
     | '/admin/doorlock/cards'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/theme'
     | '/admin/users'
+    | '/settings/notifications'
     | '/cards'
     | '/admin/dev/notifications'
     | '/admin/doorlock/cards'
@@ -551,6 +563,7 @@ export interface FileRouteTypes {
     | '/_private/admin/roles'
     | '/_private/admin/theme'
     | '/_private/admin/users'
+    | '/_private/settings/notifications'
     | '/_private/cards/'
     | '/_private/admin/dev/notifications'
     | '/_private/admin/doorlock/cards'
@@ -727,6 +740,13 @@ declare module '@tanstack/react-router' {
       path: '/cards'
       fullPath: '/cards/'
       preLoaderRoute: typeof PrivateCardsIndexRouteImport
+      parentRoute: typeof PrivateRouteRoute
+    }
+    '/_private/settings/notifications': {
+      id: '/_private/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof PrivateSettingsNotificationsRouteImport
       parentRoute: typeof PrivateRouteRoute
     }
     '/_private/admin/dev/notifications': {
@@ -987,12 +1007,14 @@ const PrivateAdminRouteRouteWithChildren =
 interface PrivateRouteRouteChildren {
   PrivateAdminRouteRoute: typeof PrivateAdminRouteRouteWithChildren
   PrivateWifiRoute: typeof PrivateWifiRoute
+  PrivateSettingsNotificationsRoute: typeof PrivateSettingsNotificationsRoute
   PrivateCardsIndexRoute: typeof PrivateCardsIndexRoute
 }
 
 const PrivateRouteRouteChildren: PrivateRouteRouteChildren = {
   PrivateAdminRouteRoute: PrivateAdminRouteRouteWithChildren,
   PrivateWifiRoute: PrivateWifiRoute,
+  PrivateSettingsNotificationsRoute: PrivateSettingsNotificationsRoute,
   PrivateCardsIndexRoute: PrivateCardsIndexRoute,
 }
 

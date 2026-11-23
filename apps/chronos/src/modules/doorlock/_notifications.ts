@@ -1,5 +1,5 @@
+import { createTranslator } from '@filcdev/i18n';
 import { resolveAudienceForUser } from '#utils/notifications/engine';
-import { isHungarianLocale } from '#utils/notifications/locale';
 import type { NotificationHandler } from '#utils/notifications/types';
 
 /**
@@ -10,23 +10,13 @@ import type { NotificationHandler } from '#utils/notifications/types';
 export const doorlockNotifications: readonly NotificationHandler[] = [
   {
     buildContent: (payload, locale) => {
-      const p = payload as { deviceName: string };
-      const device = p.deviceName;
-      let content: string;
-      if (device) {
-        content = isHungarianLocale(locale)
-          ? `A belépőkártyád használatát észleltük: ${device}.`
-          : `Your access card was just used at ${device}.`;
-      } else {
-        content = isHungarianLocale(locale)
-          ? 'A belépőkártyád használatát észleltük.'
-          : 'Your access card was just used.';
-      }
+      const { deviceName } = payload as { deviceName: string };
+      const t = createTranslator(locale);
       return {
-        content,
-        title: isHungarianLocale(locale)
-          ? 'Belépőkártya használat'
-          : 'Card Used',
+        content: deviceName
+          ? t('doorlock.withDevice', { device: deviceName })
+          : t('doorlock.withoutDevice'),
+        title: t('doorlock.title'),
       };
     },
     getAudience: (payload) => resolveAudienceForUser(payload),
