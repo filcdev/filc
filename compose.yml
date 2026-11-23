@@ -40,7 +40,7 @@ services:
       retries: 5
 
   mailpit:
-    image: axllent/mailpit:v1.32.0
+    image: axllent/mailpit:v1.34.0
     container_name: filc-mailpit
     restart: unless-stopped
     ports:
@@ -52,7 +52,7 @@ services:
       - mailpit-data:/data
 
   garage:
-    image: dxflrs/garage:v2.4.1
+    image: dxflrs/garage:v2.5.0
     container_name: filc-garage
     restart: unless-stopped
     command: ["/garage", "server", "--single-node", "--default-bucket"]
