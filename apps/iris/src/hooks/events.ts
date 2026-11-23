@@ -344,7 +344,9 @@ export type ParticipantFilters = {
 
 /**
  * One page of an event's registrations. The previous page stays on screen while
- * the next one loads, so paging and filtering do not blank the table.
+ * the next one loads, so paging and filtering do not blank the table. The
+ * interval is what brings a registration made elsewhere into the list, and it
+ * stops when the table unmounts (and while the tab is hidden).
  */
 export function useEventParticipants(
   filters: ParticipantFilters,
@@ -363,14 +365,21 @@ export function useEventParticipants(
     }),
     enabled,
     placeholderData: keepPreviousData,
+    refetchInterval: EVENTS_REFETCH_MS,
   });
 }
 
-/** The organizer's numbers: seats, role and status counts, answers, timeline. */
+/**
+ * The organizer's numbers: seats, role and status counts, answers, timeline.
+ * A student registering elsewhere moves the seat count, so it is re-read on the
+ * same interval as the public pages; polling stops when the view unmounts (and
+ * while the tab is hidden).
+ */
 export function useEventStats(id: string, enabled = true) {
   return useQuery({
     ...orpc.events.stats.queryOptions({ input: { id } }),
     enabled,
+    refetchInterval: EVENTS_REFETCH_MS,
   });
 }
 
