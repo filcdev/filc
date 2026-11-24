@@ -320,7 +320,13 @@
     "weekAll": "Mindkettő",
     "filterLabel": "Szűrés",
     "viewBy": "Nézet",
-    "weekFilterLabel": "Hét"
+    "weekFilterLabel": "Hét",
+    "changeWeek": "Változások hete",
+    "selectDate": "Dátum kiválasztása",
+    "substitutedBy": "Helyettes: {{name}}",
+    "substitutingFor": "Helyettesít: {{name}}",
+    "movedTo": "Áthelyezve ide: {{target}}",
+    "movedHereFrom": "Áthelyezve ide innen: {{target}}"
   },
   "common": {
     "cancel": "Mégsem",

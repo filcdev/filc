@@ -8,6 +8,7 @@ import {
   getLessonGroupEmphasis,
 } from './helpers';
 import { LessonCard } from './lesson-card';
+import type { LessonOverlayLookup } from './lesson-overlay';
 import type {
   DayColumn,
   FilterType,
@@ -29,6 +30,8 @@ type TimetableGridProps = {
   selectedDivisionTags?: Set<string>;
   /** How split lessons are shown. `'none'` disables group handling. */
   groupDisplay?: GroupDisplay;
+  /** Timetable changes in the selected week, keyed by affected lesson id. */
+  overlays?: LessonOverlayLookup;
 };
 
 type DayHeaderCellProps = {
@@ -80,6 +83,7 @@ type SplitLessonsProps = {
   selectedDivisionTags?: Set<string>;
   selectedGroupIds?: Set<string>;
   showCohorts: boolean;
+  overlays?: LessonOverlayLookup;
   userColors?: Record<string, number>;
 };
 
@@ -90,6 +94,7 @@ function SplitLessons({
   selectedDivisionTags,
   selectedGroupIds,
   showCohorts,
+  overlays,
   userColors,
 }: SplitLessonsProps) {
   return (
@@ -110,6 +115,7 @@ function SplitLessons({
             key={lesson.id}
             lesson={lesson}
             onColorChange={onColorChange}
+            overlays={overlays?.get(lesson.id)}
             showCohorts={showCohorts}
             userColors={userColors}
           />
@@ -133,6 +139,7 @@ type DayCellProps = {
   selectedGroupIds?: Set<string>;
   showCohorts: boolean;
   slotIndex: number;
+  overlays?: LessonOverlayLookup;
   userColors?: Record<string, number>;
 };
 
@@ -150,6 +157,7 @@ function DayCell({
   selectedGroupIds,
   showCohorts,
   slotIndex,
+  overlays,
   userColors,
 }: DayCellProps) {
   if (emptyDayKeys.has(day.key)) {
@@ -194,6 +202,7 @@ function DayCell({
           )}
           lesson={firstLesson}
           onColorChange={onColorChange}
+          overlays={overlays?.get(firstLesson.id)}
           showCohorts={showCohorts}
           userColors={userColors}
         />
@@ -206,6 +215,7 @@ function DayCell({
       borderClass={borderClass}
       lessons={lessons}
       onColorChange={onColorChange}
+      overlays={overlays}
       selectedDivisionTags={selectedDivisionTags}
       selectedGroupIds={selectedGroupIds}
       showCohorts={showCohorts}
@@ -222,6 +232,7 @@ export function TimetableGrid({
   selectedGroupIds,
   selectedDivisionTags,
   groupDisplay = 'none',
+  overlays,
 }: TimetableGridProps) {
   const { days, timeSlots, grid } = model;
   const { t } = useTranslation();
@@ -310,6 +321,7 @@ export function TimetableGrid({
                       midSlot={midSlot}
                       noLessonsLabel={noLessonsLabel}
                       onColorChange={onColorChange}
+                      overlays={overlays}
                       selectedDivisionTags={selectedDivisionTags}
                       selectedGroupIds={selectedGroupIds}
                       showCohorts={showCohorts}

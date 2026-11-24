@@ -106,6 +106,20 @@ function SubstitutionsPage() {
       });
     }
 
+    // A dátumtartomány-választó ugyanazt a tartományt használja, mint az
+    // export: a végdátum egésze benne van, mert a picker helyi éjfélt ad vissza.
+    const from = dateRange.from ? dayjs(dateRange.from).startOf('day') : null;
+    const to = dateRange.to ? dayjs(dateRange.to).endOf('day') : null;
+    if (from || to) {
+      list = list.filter((sub) => {
+        const subDate = dayjs(sub.substitution.date);
+        return !(
+          (from && subDate.isBefore(from)) ||
+          (to && subDate.isAfter(to))
+        );
+      });
+    }
+
     // Keresés szerinti szűrés
     if (term) {
       list = list.filter((sub) => {
@@ -140,7 +154,7 @@ function SubstitutionsPage() {
     }
 
     return list;
-  }, [substitutionsQuery.data, search, showPast]);
+  }, [dateRange, search, showPast, substitutionsQuery.data]);
 
   const {
     column: sortColumn,

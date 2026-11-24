@@ -4,7 +4,13 @@ import {
   PopoverTrigger,
 } from '@filcdev/ui/components/popover';
 import { cn } from '@filcdev/ui/lib/utils';
-import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  Clock,
+  GraduationCap,
+  MapPinIcon,
+  UserIcon,
+} from 'lucide-react';
 import { ColorPicker } from './color-picker';
 import {
   formatCohorts,
@@ -13,6 +19,14 @@ import {
   getSubjectColor,
   toHHMM,
 } from './helpers';
+import {
+  dominantOverlayTone,
+  type LessonOverlay,
+  MOVED_OVERLAY_BADGE_CLASS,
+  MOVED_OVERLAY_RING_CLASS,
+  MOVED_OVERLAY_SOFT_CLASS,
+  overlayTextClass,
+} from './lesson-overlay';
 import type { LessonItem } from './types';
 import { WeekBadge } from './week-badge';
 
@@ -43,6 +57,79 @@ function formatGroupLabel(lesson: LessonItem): string {
   return '';
 }
 
+const overlayRingClass = (overlays?: LessonOverlay[]): string => {
+  const tone = dominantOverlayTone(overlays);
+  if (tone === 'cancelled') {
+    return 'ring-1 ring-destructive/60';
+  }
+  if (tone === 'moved') {
+    return `ring-1 ${MOVED_OVERLAY_RING_CLASS}`;
+  }
+  if (tone === 'substitution') {
+    return 'ring-1 ring-primary/60';
+  }
+  return '';
+};
+
+/**
+ * The teacher stays on the card when a change is overlaid — the change label
+ * is added underneath rather than replacing the name.
+ */
+function TeacherLine({
+  teacher,
+  overlays,
+}: {
+  teacher: string;
+  overlays?: LessonOverlay[];
+}) {
+  if (!(teacher || overlays?.length)) {
+    return null;
+  }
+  const tone = dominantOverlayTone(overlays) ?? 'substitution';
+
+  return (
+    <div className="mt-0.5 w-full min-w-0 text-center text-xs">
+      {teacher && (
+        <div className="truncate text-muted-foreground">{teacher}</div>
+      )}
+      {overlays?.length ? (
+        <div
+          className={cn(
+            'truncate font-semibold',
+            tone === 'moved'
+              ? MOVED_OVERLAY_BADGE_CLASS
+              : overlayTextClass(tone)
+          )}
+          title={overlays.map((overlay) => overlay.detail).join('\n')}
+        >
+          {overlays.map((overlay) => overlay.label).join(' ')}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function OverlayNotice({ overlay }: { overlay: LessonOverlay }) {
+  return (
+    <div
+      className={cn(
+        'mb-2 flex items-start gap-2 rounded-md px-2 py-1.5 text-xs last:mb-0',
+        overlay.tone === 'moved' ? MOVED_OVERLAY_SOFT_CLASS : 'bg-muted/60'
+      )}
+    >
+      <AlertTriangle
+        className={cn(
+          'mt-0.5 h-4 w-4 shrink-0',
+          overlayTextClass(overlay.tone)
+        )}
+      />
+      <span className={cn('font-semibold', overlayTextClass(overlay.tone))}>
+        {overlay.day} {overlay.detail}
+      </span>
+    </div>
+  );
+}
+
 type LessonCardProps = {
   lesson: LessonItem;
   userColors?: Record<string, number>;
@@ -55,6 +142,8 @@ type LessonCardProps = {
    * division the user has picked — faded), or `'neutral'`.
    */
   emphasis?: 'mine' | 'dim' | 'neutral';
+  /** Substitution/cancellation/move changes in the selected week. */
+  overlays?: LessonOverlay[];
 };
 
 export function LessonCard({
@@ -63,6 +152,7 @@ export function LessonCard({
   onColorChange,
   showCohorts = false,
   emphasis = 'neutral',
+  overlays,
 }: LessonCardProps) {
   const subject = lesson.subject?.name ?? '—';
   const short = lesson.subject?.short ?? subject;
@@ -88,7 +178,8 @@ export function LessonCard({
                 'group relative flex h-full flex-col items-center justify-center overflow-hidden rounded-md border border-l-2 p-1 transition-[filter,opacity] duration-150 hover:brightness-95',
                 color.bg,
                 color.border,
-                emphasis === 'dim' && 'opacity-70 saturate-90'
+                emphasis === 'dim' && 'opacity-70 saturate-90',
+                overlayRingClass(overlays)
               )}
             >
               <WeekBadge className="absolute top-1 left-1" lesson={lesson} />
@@ -118,11 +209,7 @@ export function LessonCard({
                   {groupLabel}
                 </div>
               )}
-              {teacher && (
-                <div className="mt-0.5 w-full truncate text-center text-muted-foreground text-xs">
-                  {teacher}
-                </div>
-              )}
+              <TeacherLine overlays={overlays} teacher={teacher} />
               {room && (
                 <div className="w-full truncate text-center text-muted-foreground text-xs">
                   {room}
@@ -149,6 +236,10 @@ export function LessonCard({
               <Clock className="h-4 w-4" />
               <span className="font-medium text-foreground">{timeRange}</span>
             </div>
+
+            {overlays?.map((overlay) => (
+              <OverlayNotice key={overlay.id} overlay={overlay} />
+            ))}
 
             <div className="space-y-2 text-xs">
               {cohort && (

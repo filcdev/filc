@@ -1,4 +1,5 @@
 import { Button } from '@filcdev/ui/components/button';
+import { DatePicker } from '@filcdev/ui/components/date-picker';
 import { Skeleton } from '@filcdev/ui/components/skeleton';
 import {
   ToggleGroup,
@@ -7,6 +8,7 @@ import {
 import { Building2, GraduationCap, Printer, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '@/utils/date-locale';
 import { FilterCombobox } from './filter-combobox';
 import type { WeekFilter } from './helpers';
 import { TimetableSelector } from './timetable-selector';
@@ -155,6 +157,8 @@ export function FilterBar({
   disabled,
   weekFilter,
   onWeekFilterChange,
+  selectedDate,
+  onSelectDate,
 }: {
   activeFilter: FilterType;
   onFilterChange: (value: FilterType) => void;
@@ -175,8 +179,10 @@ export function FilterBar({
   disabled?: boolean;
   weekFilter: WeekFilter;
   onWeekFilterChange: (value: WeekFilter) => void;
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 }) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const filterOptions = getFilterOptions(activeFilter, {
@@ -262,15 +268,33 @@ export function FilterBar({
         </div>
       </div>
 
-      {/* Row 2: the week, the timetable, and print. */}
-      <div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto">
+      {/* Row 2: the week, the changes week, the timetable, and print. */}
+      <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
         <WeekSelector
           disabled={disabled}
           onChange={onWeekFilterChange}
           value={weekFilter}
         />
 
-        <div className="min-w-0 flex-1 sm:w-40 sm:flex-none lg:w-44">
+        <div
+          className="w-full min-w-0 sm:w-40 sm:flex-none lg:w-44"
+          title={t('timetable.changeWeek')}
+        >
+          <DatePicker
+            date={selectedDate}
+            disabled={disabled}
+            locale={getIntlLocale(i18n.language)}
+            onDateChange={(date) => {
+              if (date) {
+                onSelectDate(date);
+              }
+            }}
+            placeholder={t('timetable.changeWeek')}
+            title={t('timetable.selectDate')}
+          />
+        </div>
+
+        <div className="w-full min-w-0 sm:w-40 sm:flex-none lg:w-44">
           <TimetableSelector
             loading={!timetables}
             onSelect={onSelectTimetable}

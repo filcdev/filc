@@ -338,7 +338,13 @@
     "weekAll": "All weeks",
     "filterLabel": "Filter by",
     "viewBy": "View as",
-    "weekFilterLabel": "Week"
+    "weekFilterLabel": "Week",
+    "changeWeek": "Changes week",
+    "selectDate": "Select date",
+    "substitutedBy": "Substitute: {{name}}",
+    "substitutingFor": "Substituting for: {{name}}",
+    "movedTo": "Moved to {{target}}",
+    "movedHereFrom": "Moved here from {{target}}"
   },
   "navigation": {
     "title": "Navigation",

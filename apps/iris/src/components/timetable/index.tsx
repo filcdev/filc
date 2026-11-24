@@ -18,6 +18,11 @@ import {
   filterLessonsForWeek,
   type WeekFilter,
 } from '@/components/timetable/helpers';
+import {
+  buildLessonOverlayLookup,
+  buildOverlayLessonExtras,
+  type LessonOverlayLookup,
+} from '@/components/timetable/lesson-overlay';
 import { PrintDialog } from '@/components/timetable/print-dialog';
 import { TimetableCardView } from '@/components/timetable/secondary';
 import type { SecondaryTimetableHeader } from '@/components/timetable/secondary/types';
@@ -38,6 +43,8 @@ import {
   useClassrooms,
   useLatestValidTimetable,
   useMyTeacher,
+  usePublicMovedLessons,
+  usePublicSubstitutions,
   useTeachers,
   useTimetableCohorts,
   useTimetableLessons,
@@ -138,6 +145,7 @@ type TimetableCardRender = {
   header: SecondaryTimetableHeader;
   language: string | undefined;
   lessons: LessonItem[];
+  overlays: LessonOverlayLookup;
   periods: PeriodItem[];
 };
 
@@ -147,6 +155,7 @@ type TimetableGridRender = {
   model: TimetableViewModel;
   handleColorChange?: (subject: string, colorIndex: number) => void;
   isAuthenticated: boolean;
+  overlays: LessonOverlayLookup;
   selectedDivisionTags: Set<string>;
   selectedGroupIds: Set<string>;
   userColors: Record<string, number>;
@@ -163,6 +172,7 @@ const renderTimetableBody = (
       header={card.header}
       language={card.language}
       lessons={card.lessons}
+      overlays={card.overlays}
       periods={card.periods}
     />
   ) : (
@@ -171,6 +181,7 @@ const renderTimetableBody = (
       groupDisplay={grid.groupDisplay}
       model={grid.model}
       onColorChange={grid.isAuthenticated ? grid.handleColorChange : undefined}
+      overlays={grid.overlays}
       selectedDivisionTags={grid.selectedDivisionTags}
       selectedGroupIds={grid.selectedGroupIds}
       userColors={grid.userColors}
@@ -592,6 +603,12 @@ function useTimetablePageData() {
 
   const periodsQuery = useTimetablePeriods(selectedTimetableId);
 
+  // The grid is date-free, so the toolbar's date picks the school week whose
+  // timetable changes are overlaid on the recurring lessons. Anonymous visitors
+  // never see substitutions, cancellations or moved lessons.
+  const substitutionsQuery = usePublicSubstitutions(isAuthenticated);
+  const movedLessonsQuery = usePublicMovedLessons(isAuthenticated);
+
   const myTeacherQuery = useMyTeacher(isAuthenticated, session?.user?.id);
   const myTeacher = myTeacherQuery.data ?? null;
 
@@ -621,6 +638,7 @@ function useTimetablePageData() {
   });
 
   const [weekFilter, setWeekFilter] = useState<WeekFilter>('all');
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   // Fetch lessons
   const lessonsQuery = useTimetableLessons(
@@ -664,6 +682,69 @@ function useTimetablePageData() {
     [lessonsQuery.data, weekFilter]
   );
 
+  // Overlay cards for entities the changed lesson does not point at (the
+  // substitute teacher, a move's target room) are built separately so the PDF
+  // keeps using a model made only of real lessons.
+  const baseLessonOverlays = useMemo(
+    () =>
+      buildLessonOverlayLookup(
+        isAuthenticated ? substitutionsQuery.data : undefined,
+        isAuthenticated ? movedLessonsQuery.data : undefined,
+        selectedDate,
+        i18n.language,
+        t
+      ),
+    [
+      isAuthenticated,
+      substitutionsQuery.data,
+      movedLessonsQuery.data,
+      selectedDate,
+      i18n.language,
+      t,
+    ]
+  );
+
+  const overlayExtras = useMemo(
+    () =>
+      buildOverlayLessonExtras({
+        activeFilter,
+        activeSelectionId,
+        language: i18n.language,
+        movedLessons: isAuthenticated ? movedLessonsQuery.data : undefined,
+        selectedDate,
+        substitutions: isAuthenticated ? substitutionsQuery.data : undefined,
+        t,
+      }),
+    [
+      activeFilter,
+      activeSelectionId,
+      isAuthenticated,
+      i18n.language,
+      movedLessonsQuery.data,
+      selectedDate,
+      substitutionsQuery.data,
+      t,
+    ]
+  );
+
+  const lessonOverlays = useMemo(() => {
+    const merged = new Map(baseLessonOverlays);
+    for (const [id, overlays] of overlayExtras.overlays) {
+      merged.set(id, overlays);
+    }
+    return merged;
+  }, [baseLessonOverlays, overlayExtras]);
+
+  const displayLessons = useMemo(
+    () =>
+      filterLessonsForWeek(
+        [...weekFilteredLessons, ...overlayExtras.lessons],
+        weekFilter
+      ),
+    [weekFilteredLessons, overlayExtras.lessons, weekFilter]
+  );
+
+  // The PDF deliberately uses `model`, which contains only real lessons.
   const model = useMemo(
     () =>
       buildViewModel(
@@ -674,15 +755,25 @@ function useTimetablePageData() {
     [weekFilteredLessons, periodsQuery.data, i18n.language]
   );
 
+  const overlayModel = useMemo(
+    () =>
+      buildViewModel(
+        displayLessons,
+        i18n.language,
+        (periodsQuery.data ?? []) as PeriodItem[]
+      ),
+    [displayLessons, periodsQuery.data, i18n.language]
+  );
+
   const cardLessons = useMemo(
     () =>
       filterLessonsForGroupDisplay(
-        weekFilteredLessons,
+        displayLessons,
         groupDisplay,
         selectedGroupIds,
         selectedDivisionTags
       ),
-    [weekFilteredLessons, groupDisplay, selectedGroupIds, selectedDivisionTags]
+    [displayLessons, groupDisplay, selectedGroupIds, selectedDivisionTags]
   );
 
   // Secondary (paper-like) view: the class code shown in the corner cell.
@@ -765,15 +856,18 @@ function useTimetablePageData() {
     isAuthenticated,
     isLoading,
     language: i18n.language,
-    lessonCount: weekFilteredLessons.length,
-    model,
+    lessonCount: displayLessons.length,
+    lessonOverlays,
+    overlayModel,
     periods: (periodsQuery.data ?? []) as PeriodItem[],
+    selectedDate,
     selectedDivisionTags,
     selectedGroupIds,
     selectedTimetableId,
     selections,
     selectorLoading,
     setActiveFilter,
+    setSelectedDate,
     setSelectedTimetableId,
     setSelections,
     setWeekFilter,
@@ -803,17 +897,20 @@ export function TimetableView() {
     isLoading,
     language,
     lessonCount,
-    model,
+    overlayModel,
     periods,
+    selectedDate,
     selectedDivisionTags,
     selectedGroupIds,
     selectedTimetableId,
     selections,
     selectorLoading,
     setActiveFilter,
+    setSelectedDate,
     setSelectedTimetableId,
     setSelections,
     setWeekFilter,
+    lessonOverlays,
     t,
     teachers,
     timetables,
@@ -830,6 +927,7 @@ export function TimetableView() {
       header: cardHeader,
       language,
       lessons: cardLessons,
+      overlays: lessonOverlays,
       periods,
     },
     {
@@ -837,7 +935,8 @@ export function TimetableView() {
       groupDisplay,
       handleColorChange,
       isAuthenticated,
-      model,
+      model: overlayModel,
+      overlays: lessonOverlays,
       selectedDivisionTags,
       selectedGroupIds,
       userColors,
@@ -887,6 +986,7 @@ export function TimetableView() {
           onFilterChange={setActiveFilter}
           onPrint={() => setPrintDialogOpen(true)}
           onSelectClass={(id) => setSelections((s) => ({ ...s, class: id }))}
+          onSelectDate={setSelectedDate}
           onSelectRoom={(id) => setSelections((s) => ({ ...s, classroom: id }))}
           onSelectTeacher={(id) =>
             setSelections((s) => ({ ...s, teacher: id }))
@@ -896,6 +996,7 @@ export function TimetableView() {
           selectedByClass={selections.class}
           selectedByRoom={selections.classroom}
           selectedByTeacher={selections.teacher}
+          selectedDate={selectedDate}
           selectedTimetableId={selectedTimetableId}
           selectorLoading={selectorLoading}
           teachers={teachers}

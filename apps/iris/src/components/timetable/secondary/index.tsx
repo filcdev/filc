@@ -8,6 +8,14 @@ import { Clock, GraduationCap, MapPinIcon, UserIcon } from 'lucide-react';
 import { type CSSProperties, Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSubjectColor, toHHMM } from '../helpers';
+import {
+  dominantOverlayTone,
+  type LessonOverlay,
+  type LessonOverlayLookup,
+  MOVED_OVERLAY_BADGE_CLASS,
+  MOVED_OVERLAY_SOFT_CLASS,
+  overlayTextClass,
+} from '../lesson-overlay';
 import type { LessonItem, PeriodItem } from '../types';
 import { WeekBadge } from '../week-badge';
 import {
@@ -37,6 +45,8 @@ type Props = {
   header: SecondaryTimetableHeader;
   /** Locale, used to pick the day-label language. Defaults to `hu`. */
   language?: string;
+  /** Timetable changes in the selected week, keyed by affected lesson id. */
+  overlays?: LessonOverlayLookup;
 };
 
 /**
@@ -48,10 +58,12 @@ function LessonEntry({
   lesson,
   half,
   cohortShort,
+  overlays,
 }: {
   lesson: LessonItem;
   half: boolean;
   cohortShort?: string;
+  overlays?: LessonOverlay[];
 }) {
   const subjectShort = formatSubjectShort(lesson);
   const subject = formatSubjectName(lesson);
@@ -71,6 +83,7 @@ function LessonEntry({
     lesson.period?.endTime
   )}`;
   const color = getSubjectColor(subject);
+  const overlayTone = dominantOverlayTone(overlays) ?? 'substitution';
 
   return (
     <Popover>
@@ -108,6 +121,19 @@ function LessonEntry({
                 {teacherSurname}
               </span>
             )}
+            {overlays?.length ? (
+              <span
+                className={cn(
+                  'absolute right-1 bottom-3 left-1 truncate text-center font-semibold text-[9px] leading-none',
+                  overlayTone === 'moved'
+                    ? MOVED_OVERLAY_BADGE_CLASS
+                    : overlayTextClass(overlayTone)
+                )}
+                title={overlays.map((overlay) => overlay.detail).join('\n')}
+              >
+                {overlays.map((overlay) => overlay.label).join(' ')}
+              </span>
+            ) : null}
           </div>
         }
       />
@@ -128,6 +154,20 @@ function LessonEntry({
             <Clock className="h-4 w-4" />
             <span className="font-medium text-foreground">{timeRange}</span>
           </div>
+          {overlays?.map((overlay) => (
+            <div
+              className={cn(
+                'mb-2 rounded-md px-2 py-1.5 font-semibold text-xs last:mb-0',
+                overlay.tone === 'moved'
+                  ? MOVED_OVERLAY_SOFT_CLASS
+                  : 'bg-muted/60',
+                overlayTextClass(overlay.tone)
+              )}
+              key={overlay.id}
+            >
+              {overlay.day} {overlay.detail}
+            </div>
+          ))}
           <div className="space-y-2 text-xs">
             {groupCode && (
               <div className="flex items-center gap-1.5">
@@ -167,12 +207,14 @@ function SlotCell({
   hasLeftBorder,
   hasTopBorder,
   style,
+  overlays,
 }: {
   lessons: LessonItem[];
   cohortShort?: string;
   hasLeftBorder: boolean;
   hasTopBorder: boolean;
   style?: CSSProperties;
+  overlays?: LessonOverlayLookup;
 }) {
   const base = cn(
     'overflow-hidden',
@@ -191,6 +233,7 @@ function SlotCell({
           cohortShort={cohortShort}
           half={false}
           lesson={lessons[0] as LessonItem}
+          overlays={overlays?.get((lessons[0] as LessonItem).id)}
         />
       </div>
     );
@@ -204,7 +247,12 @@ function SlotCell({
             <div className="shrink-0 border-border border-t border-dashed" />
           )}
           <div className="min-h-0 flex-1">
-            <LessonEntry cohortShort={cohortShort} half lesson={lesson} />
+            <LessonEntry
+              cohortShort={cohortShort}
+              half
+              lesson={lesson}
+              overlays={overlays?.get(lesson.id)}
+            />
           </div>
         </Fragment>
       ))}
@@ -224,6 +272,7 @@ export function TimetableCardView({
   periods,
   header,
   language,
+  overlays,
 }: Props) {
   const { t } = useTranslation();
 
@@ -305,6 +354,7 @@ export function TimetableCardView({
                   hasTopBorder={r > 0}
                   key={`${day.key}-${period.index}`}
                   lessons={model.grid.get(`${day.order}|${period.index}`) ?? []}
+                  overlays={overlays}
                   style={{ gridColumn: i + 2, gridRow: r + 2 }}
                 />
               ))}

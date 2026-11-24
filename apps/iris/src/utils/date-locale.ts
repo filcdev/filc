@@ -55,6 +55,35 @@ export function formatLocalizedDate(
   );
 }
 
+/**
+ * Canonical Hungarian weekday abbreviations used by the timetable, Monday
+ * first. `Intl`'s Hungarian `short` form emits `H`, `K`, `Sz`, … which is too
+ * terse for the change badges; the school timetable uses these two-letter
+ * (where possible) labels instead.
+ */
+export const HUNGARIAN_WEEKDAY_SHORT = [
+  'Hé',
+  'Ke',
+  'Sze',
+  'Csü',
+  'Pé',
+  'Szo',
+  'Va',
+] as const;
+
+/** Short weekday label for a concrete calendar day. */
+export function formatShortWeekday(
+  value: DateInput,
+  language: string | undefined
+): string {
+  if (getLanguageCode(language) !== 'hu') {
+    return formatLocalizedDate(value, language, { weekday: 'short' });
+  }
+
+  const date = parseDateOnly(typeof value === 'string' ? value : toDate(value));
+  return HUNGARIAN_WEEKDAY_SHORT[(date.getDay() + 6) % 7] ?? '';
+}
+
 export function normalizeDayText(value: string): string {
   return value
     .normalize('NFD')
@@ -144,6 +173,9 @@ export function getLocalizedWeekdayName(
   const order = getDayOrder(dayName, dayShort);
   if (order === 999) {
     return dayShort ?? dayName;
+  }
+  if (format === 'short' && getLanguageCode(language) === 'hu') {
+    return HUNGARIAN_WEEKDAY_SHORT[order] ?? dayShort ?? dayName;
   }
 
   const jsWeekdayIndex = (order + 1) % 7; // Convert Monday-based order to JS Sunday-based order.
