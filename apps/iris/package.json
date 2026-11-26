@@ -29,7 +29,7 @@
     "@tanstack/react-start": "^1.169.3",
     "better-auth": "catalog:",
     "dayjs": "catalog:",
-    "i18next": "^26.5.2",
+    "i18next": "^27.1.1",
     "i18next-browser-languagedetector": "^8.2.1",
     "i18next-http-backend": "^4.0.4",
     "lucide-react": "catalog:",
