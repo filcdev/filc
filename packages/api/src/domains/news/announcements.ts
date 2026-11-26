@@ -1,5 +1,5 @@
 import z from 'zod';
-import { listResponse } from '../list';
+import { listResponse, paginationSchema } from '../list';
 
 /**
  * A list of ids with no repeats. A duplicate would hit the targeting table's
@@ -30,11 +30,6 @@ export const blockContentSchema = z.array(
  * stray legacy shape would fail validation and take the whole list with it.
  */
 export const storedNewsContentSchema = z.json();
-
-export const paginationSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  offset: z.coerce.number().int().min(0).default(0),
-});
 
 export const announcementQuerySchema = paginationSchema.extend({
   includeAll: z.stringbool().default(false),

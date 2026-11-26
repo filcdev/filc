@@ -8,3 +8,12 @@ import z from 'zod';
  */
 export const listResponse = <T extends z.ZodType>(item: T) =>
   z.object({ items: z.array(item), total: z.number() });
+
+/**
+ * The page window every paged list endpoint takes: a bounded page size and a
+ * non-negative offset. Query parameters arrive as strings, so both coerce.
+ */
+export const paginationSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});

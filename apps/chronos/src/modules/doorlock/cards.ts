@@ -4,10 +4,7 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from '#database';
 import { user } from '#database/schema/authentication';
 import { requireAuthorization } from '#middleware/auth';
-import {
-  diffActivity,
-  recordActivity,
-} from '#modules/activity-log/utils/record';
+import { recordActivity } from '#modules/activity-log/utils/record';
 import { card } from '#modules/doorlock/schema';
 import {
   type DoorlockCardWithRelations,
@@ -19,6 +16,7 @@ import {
 import { syncDevicesByIds } from '#modules/doorlock/utils/device-sync';
 import { base } from '#orpc';
 import { notFound } from '#utils/http';
+import { diffActivity } from '#utils/values';
 
 const assertCardExists = (cardRecord?: DoorlockCardWithRelations | null) => {
   if (!cardRecord) {
