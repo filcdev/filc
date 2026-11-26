@@ -111,6 +111,27 @@ const formatCohort = (cohort: LessonItem['cohorts'][number]): string => {
 export const formatCohorts = (cohorts: LessonItem['cohorts']): string =>
   (cohorts ?? []).map(formatCohort).filter(Boolean).join(', ');
 
+/**
+ * Whole-class pseudo-group names. Older imports mark the class-wide group only
+ * by name, so `entireClass` alone is not enough to tell a split from a whole
+ * class.
+ */
+const WHOLE_CLASS_GROUP_NAMES = new Set(['Egész osztály', 'Egesz osztaly']);
+
+const isWholeClassGroup = (group: LessonItem['groups'][number]): boolean =>
+  group.entireClass === true || WHOLE_CLASS_GROUP_NAMES.has(group.name);
+
+/**
+ * The named groups a lesson is split into, in the order the lesson carries
+ * them. A whole-class lesson answers an empty list. This is the one notion of
+ * "split group" the card label, the card group code and the slot ordering all
+ * read, so they cannot disagree about which group a lesson belongs to.
+ */
+export const getSplitGroups = (lesson: LessonItem): LessonItem['groups'] =>
+  (lesson.groups ?? []).filter(
+    (group) => !isWholeClassGroup(group) && Boolean(group.name)
+  );
+
 export type GroupDisplay = 'highlight' | 'hide' | 'none';
 export type GroupEmphasis = 'mine' | 'dim' | 'neutral';
 
@@ -304,6 +325,94 @@ export const filterLessonsForWeek = (
   });
 };
 
+/** A-week lessons first, then B-week, then week-agnostic ones. */
+const WEEK_ORDER: Record<LessonWeekType, number> = {
+  A: 0,
+  all: 2,
+  B: 1,
+};
+
+/**
+ * The group's own ordinal: the trailing number of its name (`'11.A angol1'`
+ * → 1, `'13.AB mat3'` → 3, `'kemia2'` → 2). Names without one (`'Fiú'`,
+ * `'Haladó'`) are ordered among themselves by natural collation instead.
+ */
+const TRAILING_GROUP_INDEX_RE = /\d+$/;
+
+const getGroupOrdinal = (name: string): number | null => {
+  const match = TRAILING_GROUP_INDEX_RE.exec(name);
+  return match ? Number(match[0]) : null;
+};
+
+/**
+ * Position of a split lesson inside its cell, by the group it belongs to: the
+ * group's ordinal first, so group 1 always fills the first sub-column and
+ * group 2 the second (3+ groups scale the same way), then the group name with
+ * natural collation for names that carry no number (`angol1` before `angol2`,
+ * `Kezdő` before `Haladó`). The subject does not take part, so a group keeps
+ * its column even when a different subject is taught to each group. A lesson
+ * without a split group sorts after every grouped lesson, so a whole-class
+ * lesson never takes group 1's place.
+ */
+const compareGroupPosition = (
+  a: LessonItem['groups'][number] | undefined,
+  b: LessonItem['groups'][number] | undefined
+): number => {
+  if (!a) {
+    return b ? 1 : 0;
+  }
+  if (!b) {
+    return -1;
+  }
+
+  const aOrdinal = getGroupOrdinal(a.name);
+  const bOrdinal = getGroupOrdinal(b.name);
+  if (aOrdinal !== bOrdinal) {
+    if (aOrdinal === null) {
+      return 1;
+    }
+    if (bOrdinal === null) {
+      return -1;
+    }
+    return aOrdinal - bOrdinal;
+  }
+
+  return a.name.localeCompare(b.name, undefined, { numeric: true });
+};
+
+/**
+ * Deterministic left-to-right (and top-to-bottom in the card view) order of the
+ * lessons sharing one day/time cell. Without it the sub-columns follow whatever
+ * order the API happened to return, so the same group can move between days and
+ * periods and the reader can no longer scan by position.
+ */
+export const compareLessonsInSlot = (a: LessonItem, b: LessonItem): number => {
+  const groupDiff = compareGroupPosition(
+    getSplitGroups(a)[0],
+    getSplitGroups(b)[0]
+  );
+  if (groupDiff !== 0) {
+    return groupDiff;
+  }
+
+  const weekDiff =
+    WEEK_ORDER[getLessonWeekType(a)] - WEEK_ORDER[getLessonWeekType(b)];
+  if (weekDiff !== 0) {
+    return weekDiff;
+  }
+
+  const subjectDiff = (a.subject?.short ?? a.subject?.name ?? '').localeCompare(
+    b.subject?.short ?? b.subject?.name ?? '',
+    undefined,
+    { numeric: true }
+  );
+  if (subjectDiff !== 0) {
+    return subjectDiff;
+  }
+
+  return a.id.localeCompare(b.id);
+};
+
 /** Time slot metadata keyed by the lesson's `HH:mm` start time. */
 type TimeSlotMap = Map<
   string,
@@ -438,6 +547,12 @@ export const buildViewModel = (
 
   for (const lesson of lessons) {
     processLesson(lesson, dayMap, timeMap, grid);
+  }
+
+  // The API returns lessons in raw row order, so give every cell a stable
+  // left-to-right order before the grid (and the PDF built from it) renders it.
+  for (const cell of grid.values()) {
+    cell.lessons.sort(compareLessonsInSlot);
   }
 
   const days = buildDayColumns(dayMap, language);
